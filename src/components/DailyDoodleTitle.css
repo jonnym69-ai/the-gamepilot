@@ -1,0 +1,349 @@
+.daily-doodle {
+  width: min(720px, 95vw);
+  margin: 0 auto 32px;
+  perspective: 1600px;
+  transform-style: preserve-3d;
+}
+
+.daily-doodle .doodle-shell {
+  transition: transform 1s ease, opacity 1s ease, filter 1s ease;
+}
+
+.transition-slide-up .doodle-shell {
+  transform: translateY(50px) rotateX(10deg) scale(0.95);
+  opacity: 0;
+}
+
+.transition-slide-right .doodle-shell {
+  transform: translateX(-50px) rotateY(-6deg) scale(0.92);
+  opacity: 0;
+  filter: saturate(0.8);
+}
+
+.transition-zoom-pop .doodle-shell {
+  transform: scale(0.8) rotate(-2deg);
+  opacity: 0;
+}
+
+.transition-tilt-drop .doodle-shell {
+  transform: translateY(-40px) rotateX(-18deg) rotateY(8deg);
+  opacity: 0;
+  filter: blur(10px);
+}
+
+.transition-fade-glow .doodle-shell {
+  transform: scale(1);
+  opacity: 0;
+  filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.25));
+}
+
+.daily-doodle--enter .doodle-shell {
+  opacity: 1;
+  transform: rotateX(0deg) translateY(0);
+  filter: blur(0);
+}
+
+@keyframes doodle-logo-orbit {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(10px, -6px) rotate(4deg);
+  }
+  50% {
+    transform: translate(18px, 4px) rotate(-2deg);
+  }
+  75% {
+    transform: translate(6px, 10px) rotate(-5deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+.doodle-shell {
+  position: relative;
+  padding: 32px 36px 40px;
+  border-radius: 32px;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  opacity: 0;
+  transform: rotateX(15deg) translateY(40px);
+  filter: blur(8px);
+  transition: opacity 0.9s ease, transform 1s ease, filter 0.9s ease;
+}
+
+.doodle-wordmark {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(4px, 1.5vw, 12px);
+  font-size: clamp(2.7rem, 8vw, 4.8rem);
+  font-weight: 700;
+  letter-spacing: clamp(4px, 1vw, 12px);
+  mix-blend-mode: screen;
+}
+
+.doodle-letter {
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  padding: 0 4px;
+  animation: doodle-pop 1.2s ease forwards;
+  opacity: 0;
+}
+
+.doodle-letter:nth-child(odd) {
+  animation-delay: 0.1s;
+}
+
+.doodle-letter:nth-child(2n) {
+  animation-delay: 0.2s;
+}
+
+.doodle-letter:nth-child(3n) {
+  animation-delay: 0.3s;
+}
+
+.doodle-letter:nth-child(4n) {
+  animation-delay: 0.4s;
+}
+
+.doodle-letter:nth-child(5n) {
+  animation-delay: 0.5s;
+}
+
+.doodle-letter:nth-child(6n) {
+  animation-delay: 0.6s;
+}
+
+.doodle-letter:nth-child(7n) {
+  animation-delay: 0.7s;
+}
+
+.doodle-letter:nth-child(8n) {
+  animation-delay: 0.8s;
+}
+
+.doodle-meta {
+  margin-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: clamp(0.75rem, 2vw, 1rem);
+}
+
+.doodle-meta-greeting {
+  font-weight: 600;
+}
+
+.doodle-meta-tagline {
+  flex: 1 1 100%;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.doodle-logo {
+  position: absolute;
+  top: 32px;
+  left: 36px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  z-index: 2;
+  animation: doodle-logo-orbit 10s ease-in-out infinite;
+  will-change: transform;
+}
+
+.doodle-logo img {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.doodle-logo-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  animation: doodle-logo-pulse 4.5s ease-in-out infinite;
+}
+
+.doodle-accent {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  font-size: 2rem;
+  animation: doodle-accent-spin 12s linear infinite;
+}
+
+.doodle-orbit,
+.doodle-trail {
+  position: absolute;
+  inset: -40%;
+  border-radius: 50%;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.doodle-orbit {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: orbit-spin 18s linear infinite;
+}
+
+.doodle-trail {
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+  animation: orbit-spin 24s linear reverse infinite;
+}
+
+.pattern-grid::before,
+.pattern-grid::after,
+.pattern-pixels::before,
+.pattern-pixels::after,
+.pattern-stars::before,
+.pattern-stars::after,
+.pattern-circuit::before,
+.pattern-circuit::after,
+.pattern-brush::before,
+.pattern-brush::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.pattern-grid::before {
+  background-image: linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.pattern-grid::after {
+  background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15), transparent 40%);
+}
+
+.pattern-pixels::before {
+  background-image: linear-gradient(90deg, rgba(255,255,255,0.12) 25%, transparent 25%),
+    linear-gradient(rgba(255,255,255,0.12) 25%, transparent 25%);
+  background-size: 18px 18px;
+  mix-blend-mode: soft-light;
+}
+
+.pattern-pixels::after {
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 6px);
+}
+
+.pattern-stars::before {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.25) 1px, transparent 1px);
+  background-size: 120px 120px;
+  animation: twinkle 14s ease-in-out infinite;
+}
+
+.pattern-stars::after {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: twinkle 10s ease-in-out infinite reverse;
+}
+
+.pattern-circuit::before {
+  background: radial-gradient(circle, rgba(0,255,135,0.15) 1px, transparent 1px);
+  background-size: 70px 70px;
+  mix-blend-mode: screen;
+}
+
+.pattern-circuit::after {
+  background-image: linear-gradient(90deg, rgba(0,255,135,0.2) 1px, transparent 1px),
+    linear-gradient(rgba(0,255,135,0.2) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.25;
+}
+
+.pattern-brush::before {
+  background: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.4), transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(255,255,255,0.35), transparent 50%);
+}
+
+.pattern-brush::after {
+  background: repeating-linear-gradient(120deg, rgba(255,255,255,0.15) 0 12px, transparent 12px 24px);
+}
+
+@keyframes doodle-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.8) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-12px) scale(1.05) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes doodle-accent-spin {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  to {
+    transform: rotate(360deg) scale(1.05);
+  }
+}
+
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes doodle-logo-pulse {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+}
+
+@media (max-width: 640px) {
+  .doodle-shell {
+    padding: 24px 20px 32px;
+    border-radius: 24px;
+  }
+
+  .doodle-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doodle-accent {
+    font-size: 1.5rem;
+  }
+}

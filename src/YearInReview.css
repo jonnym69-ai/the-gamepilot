@@ -1,0 +1,692 @@
+.year-review-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-color);
+}
+
+/* Skeleton Loader Styles */
+.skeleton-card {
+  background: linear-gradient(145deg, var(--card-bg), var(--input-bg));
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 20px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.28);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.skeleton-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--card-bg) 50%, var(--input-bg) 75%);
+  background-size: 200% 100%;
+  border-radius: 12px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-title {
+  flex: 1;
+  height: 24px;
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--card-bg) 50%, var(--input-bg) 75%);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-line {
+  height: 16px;
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--card-bg) 50%, var(--input-bg) 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.year-review-shell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.year-review-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  padding: 32px;
+  margin-bottom: 20px;
+  background: linear-gradient(145deg, var(--card-bg), var(--input-bg));
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.28);
+}
+
+.year-review-hero-copy {
+  max-width: 760px;
+}
+
+.year-review-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color) 16%, transparent);
+  color: var(--text-accent, var(--accent-color));
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.year-review-hero h1 {
+  margin: 14px 0 12px;
+  color: var(--header-text, var(--text-color));
+  font-size: clamp(2.3rem, 4vw, 3.4rem);
+  line-height: 1.05;
+}
+
+.year-review-hero p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--text-color);
+  opacity: 0.88;
+  font-size: 1rem;
+}
+
+.year-review-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 260px;
+}
+
+.year-review-year-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.year-review-year-picker span {
+  font-size: 0.88rem;
+  opacity: 0.8;
+}
+
+.year-review-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.year-review-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.year-review-actions button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--accent-color);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+.year-review-actions button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.year-review-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+}
+
+.year-review-export-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 0;
+}
+
+.year-review-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.year-review-summary-card {
+  padding: 22px;
+  border-radius: 18px;
+  background: linear-gradient(165deg, var(--card-bg), var(--input-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.22);
+}
+
+.summary-card-title {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-color);
+  opacity: 0.72;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.year-review-summary-card strong {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--header-text, var(--text-color));
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.year-review-summary-card p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+.year-review-empty-state {
+  padding: 52px 28px;
+  text-align: center;
+  border-radius: 24px;
+  background: linear-gradient(155deg, var(--card-bg), var(--input-bg));
+  border: 1px dashed var(--card-border);
+  color: var(--text-color);
+}
+
+.year-review-empty-state svg {
+  margin-bottom: 14px;
+  color: var(--text-accent, var(--accent-color));
+}
+
+.year-review-empty-state h2 {
+  margin: 0 0 10px;
+  font-size: 1.6rem;
+  color: var(--header-text, var(--text-color));
+}
+
+.year-review-empty-state p {
+  max-width: 48ch;
+  margin: 0 auto;
+  color: var(--text-color);
+  opacity: 0.82;
+}
+
+.year-review-highlights-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.year-review-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+
+.year-review-mini-card svg {
+  color: var(--text-accent, var(--accent-color));
+}
+
+.year-review-mini-card span {
+  display: block;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
+.year-review-mini-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.2rem;
+}
+
+.year-review-main-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.year-review-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, var(--card-bg), var(--input-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.2);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panel-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  color: var(--header-text, var(--text-color));
+  font-size: 1.2rem;
+}
+
+.panel-heading p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.78;
+}
+
+.identity-badge {
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(255, 140, 66, 0.12);
+  border: 1px solid var(--card-border);
+}
+
+.identity-badge strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1.15rem;
+  color: var(--header-text, var(--text-color));
+}
+
+.identity-badge span {
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.identity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.identity-grid div,
+.identity-arc div {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.identity-grid span,
+.identity-arc span,
+.achievement-summary-strip span,
+.progression-headline span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.72;
+}
+
+.identity-grid strong,
+.identity-arc strong,
+.achievement-summary-strip strong,
+.progression-headline strong {
+  color: var(--header-text, var(--text-color));
+  font-size: 1rem;
+}
+
+.identity-arc {
+  display: grid;
+  gap: 12px;
+}
+
+.identity-arc p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.month-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.month-bar-row {
+  display: grid;
+  gap: 8px;
+}
+
+.month-bar-labels,
+.progression-group-labels,
+.challenge-quest-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.month-bar-track,
+.progression-group-track {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--input-bg);
+}
+
+.month-bar-fill,
+.progression-group-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--accent-color), rgba(255, 140, 66, 0.5));
+}
+
+.month-bar-row small {
+  color: var(--text-color);
+  opacity: 0.68;
+}
+
+.top-games-list,
+.achievement-highlight-list,
+.progression-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.top-game-row,
+.achievement-highlight-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.top-game-rank {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 140, 66, 0.14);
+  color: var(--text-accent, var(--accent-color));
+  font-weight: 800;
+}
+
+.top-game-copy,
+.achievement-highlight-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.top-game-copy strong,
+.achievement-highlight-copy strong {
+  color: var(--header-text, var(--text-color));
+}
+
+.top-game-copy span,
+.achievement-highlight-copy span,
+.top-game-stats small,
+.achievement-highlight-row small,
+.achievement-highlight-empty {
+  color: var(--text-color);
+  opacity: 0.76;
+}
+
+.top-game-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.achievement-summary-strip,
+.progression-headline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.achievement-summary-strip div,
+.progression-headline div {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.achievement-highlight-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 140, 66, 0.14);
+  font-size: 1.3rem;
+}
+
+.mix-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mix-columns > div {
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.mix-columns > div > span {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-color);
+  opacity: 0.72;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mix-columns ul {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.mix-columns li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card-bg);
+}
+
+.mix-columns li span {
+  color: var(--text-color);
+  opacity: 0.78;
+  font-size: 0.92rem;
+}
+
+.progression-group-row {
+  display: grid;
+  gap: 8px;
+}
+
+@media (max-width: 1080px) {
+  .year-review-hero,
+  .year-review-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .year-review-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .year-review-controls {
+    min-width: 0;
+  }
+
+  .mix-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .year-review-shell {
+    padding: 20px 14px 48px;
+  }
+
+  .year-review-hero,
+  .year-review-panel {
+    padding: 22px 18px;
+    border-radius: 20px;
+  }
+
+  .year-review-actions {
+    flex-direction: column;
+  }
+
+  .year-review-actions button,
+  .year-review-year-picker select {
+    width: 100%;
+  }
+
+  .year-review-main-grid,
+  .identity-grid,
+  .achievement-summary-strip,
+  .progression-headline {
+    grid-template-columns: 1fr;
+  }
+
+  .top-game-row,
+  .achievement-highlight-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .top-game-stats,
+  .achievement-highlight-row small {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
+/* Hover States */
+.year-review-summary-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.year-review-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.32);
+}
+
+.year-review-actions button {
+  transition: all 0.2s ease;
+}
+
+.year-review-actions button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.top-game-row {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.top-game-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.24);
+}
+
+.achievement-highlight-row {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.achievement-highlight-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.24);
+}
+
+.progression-group-row {
+  transition: background-color 0.2s ease;
+}
+
+.progression-group-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mix-columns li {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.mix-columns li:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
+}

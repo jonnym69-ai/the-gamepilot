@@ -1,0 +1,96 @@
+.library-value {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.library-value-title {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-value-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.value-main {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.value-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent-color);
+  background: linear-gradient(135deg, var(--accent-color), #4CAF50);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.value-games {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.value-details {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.value-total {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.value-unpriced {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .library-value {
+  background: var(--bg-card);
+  border-color: var(--border-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .value-amount {
+  background: linear-gradient(135deg, #4CAF50, #8BC34A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .library-value {
+    padding: 15px;
+    margin-top: 15px;
+  }
+  
+  .value-amount {
+    font-size: 24px;
+  }
+  
+  .value-details {
+    flex-direction: column;
+    gap: 5px;
+  }
+}

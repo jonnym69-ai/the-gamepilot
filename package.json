@@ -1,22 +1,49 @@
 {
   "name": "gamepilot",
-  "version": "0.1.0",
+  "version": "1.3.0",
   "private": true,
+  "main": "electron.js",
+  "homepage": "./",
+  "author": "GamePilot Team",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.13.5",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "html2canvas": "^1.4.1",
+    "https-browserify": "^1.0.0",
+    "lucide-react": "^0.575.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.0",
     "react-scripts": "5.0.1",
+    "recharts": "^3.7.0",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "systeminformation": "^5.31.4",
+    "url": "^0.11.4",
+    "util": "^0.12.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron": ".\\node_modules\\.bin\\electron.cmd .",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && .\\node_modules\\.bin\\electron.cmd .\"",
+    "electron-dev-win": "concurrently \"npm start\" \"wait-on http://localhost:3001 && electron .\"",
+    "build-electron": "npm run build && electron-builder",
+    "build-electron-win": "npm run build && electron-builder --win",
+    "build-electron-mac": "npm run build && electron-builder --mac",
+    "build-electron-linux": "npm run build && electron-builder --linux"
   },
   "eslintConfig": {
     "extends": [
@@ -35,5 +62,43 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^40.6.0",
+    "electron-builder": "^24.13.3",
+    "electron-reloader": "^1.2.3",
+    "react-app-rewired": "^2.2.1",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.gamepilot.app",
+    "productName": "GamePilot",
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/gamepilotlogo.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Game"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    }
   }
 }

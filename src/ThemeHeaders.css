@@ -1,0 +1,754 @@
+/* Theme-Aware Header & UI Styles with Unique Titles */
+
+/* Comprehensive Container Theming */
+.App, .app-container {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.container, .content-container, .main-content {
+  background: var(--container-bg) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.modal, .modal-content {
+  background: var(--modal-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.sidebar, .side-panel {
+  background: var(--sidebar-bg) !important;
+  color: var(--text-primary) !important;
+  border-right: 1px solid var(--border-color) !important;
+}
+
+.dropdown, .select, .options-menu {
+  background: var(--dropdown-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.tooltip, .popup {
+  background: var(--tooltip-bg) !important;
+  color: var(--button-primary-text) !important;
+  border: 1px solid var(--border-accent) !important;
+}
+
+.overlay, .modal-overlay {
+  background: var(--overlay-bg) !important;
+}
+
+/* Header Styles with better contrast */
+.header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.1)) !important;
+}
+
+.header h1,
+.header h2,
+.header h3,
+.header h4,
+.header h5,
+.header h6 {
+  color: var(--header-text) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.header .accent {
+  color: var(--header-accent) !important;
+  font-weight: 700;
+}
+
+/* Navigation Styles with better contrast */
+.nav {
+  background: var(--nav-bg) !important;
+  color: var(--nav-text) !important;
+}
+
+.nav-item {
+  color: var(--nav-text) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.nav-item:hover {
+  background: var(--nav-hover) !important;
+  color: var(--nav-text) !important;
+  border-color: var(--nav-hover) !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+
+.nav-item.active {
+  background: var(--nav-active) !important;
+  color: var(--button-primary-text) !important;
+  border-color: var(--nav-active) !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
+}
+
+/* Page Titles with unique theme names */
+.page-title {
+  color: var(--page-title) !important;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+
+.page-subtitle {
+  color: var(--page-subtitle) !important;
+  font-weight: 500;
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Section Headers with better contrast */
+.section-header {
+  color: var(--section-header) !important;
+  font-weight: 600;
+  border-bottom: 2px solid var(--section-border) !important;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.section-header h2,
+.section-header h3 {
+  color: var(--section-header) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Card Headers with better contrast */
+.card-header {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--card-border) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.card-header h3,
+.card-header h4 {
+  color: var(--text-primary) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Button Headers with better contrast */
+.button-header {
+  background: var(--button-primary-bg) !important;
+  color: var(--button-primary-text) !important;
+  border: 1px solid var(--button-primary-bg) !important;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+
+.button-header:hover {
+  background: var(--button-primary-hover) !important;
+  color: var(--button-primary-text) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow, 0 4px 12px rgba(0,0,0,0.15)) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+}
+
+/* Modal Headers with better contrast */
+.modal-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  padding: 1rem 1.5rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.modal-header h2,
+.modal-header h3 {
+  color: var(--header-text) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* Sidebar Headers with better contrast */
+.sidebar-header {
+  background: var(--nav-bg) !important;
+  color: var(--nav-text) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  padding: 1rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Tab Headers with better contrast */
+.tab-header {
+  background: var(--nav-bg) !important;
+  color: var(--nav-text) !important;
+  border-bottom: 2px solid var(--section-border) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.tab-header.active {
+  background: var(--nav-active) !important;
+  color: var(--button-primary-text) !important;
+  border-bottom-color: var(--nav-active) !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+
+/* Form Headers with better contrast */
+.form-header {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--card-border) !important;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px 8px 0 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Table Headers with better contrast */
+.table-header {
+  background: var(--nav-bg) !important;
+  color: var(--nav-text) !important;
+  border-bottom: 2px solid var(--section-border) !important;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.table-header th {
+  background: var(--nav-bg) !important;
+  color: var(--nav-text) !important;
+  border-color: var(--section-border) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* List Headers with better contrast */
+.list-header {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--card-border) !important;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Achievement Headers with unique titles - Theme Colors */
+.achievement-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow, 0 4px 16px rgba(0,0,0,0.2)) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  border: 2px solid var(--header-border) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.achievement-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.3), transparent);
+  animation: achievement-shine 3s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes achievement-shine {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+.achievement-header h2 {
+  color: var(--header-text) !important;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  font-weight: 800 !important;
+  position: relative;
+  z-index: 2;
+}
+
+.achievement-header h2::before {
+  content: var(--achievements-title, "🏆 Achievements") !important;
+  display: block;
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+  color: var(--accent-color) !important;
+}
+
+.achievement-header h1 {
+  color: var(--header-text) !important;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  font-weight: 800 !important;
+  position: relative;
+  z-index: 2;
+}
+
+.achievement-header h1::before {
+  content: var(--achievements-title, "🏆 Achievements") !important;
+  display: block;
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+  color: var(--accent-color) !important;
+}
+
+/* Settings Headers with unique titles - Theme Colors */
+.settings-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-left: 4px solid var(--accent-color) !important;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 0 8px 8px 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  position: relative;
+  z-index: 50;
+}
+
+.settings-header h3 {
+  color: var(--header-text) !important;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.settings-header h3::before {
+  content: var(--settings-title, "⚙️ Settings") !important;
+  display: block;
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+  color: var(--accent-color) !important;
+}
+
+/* Profile Headers with unique titles - Theme Colors */
+.profile-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow, 0 4px 16px rgba(0,0,0,0.2)) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  border: 2px solid var(--header-border) !important;
+}
+
+.profile-header h2 {
+  color: var(--header-text) !important;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+}
+
+.profile-header h2::before {
+  content: var(--profile-title, "👤 Profile") !important;
+  display: block;
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+  color: var(--accent-color) !important;
+}
+
+.profile-header .subtitle {
+  color: var(--page-subtitle) !important;
+  font-size: 1.1rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Library Headers with unique titles - Theme Colors */
+.library-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-bottom: 3px solid var(--accent-color) !important;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 12px 12px 0 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.library-header h2 {
+  color: var(--header-text) !important;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.library-header h2::before {
+  content: var(--library-title, "📚 Library") !important;
+  display: block;
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+  color: var(--accent-color) !important;
+}
+
+/* Stats Headers with unique titles - Theme Colors */
+.stats-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: var(--shadow, 0 8px 32px rgba(0,0,0,0.25)) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  border: 2px solid var(--header-border) !important;
+  position: relative !important;
+  z-index: 10 !important;
+  overflow: hidden;
+}
+
+.stats-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.3), transparent);
+  animation: stats-shine 3s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes stats-shine {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+.stats-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 16px !important;
+  z-index: 0;
+}
+
+.stats-header h2 {
+  color: var(--header-text) !important;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  position: relative;
+  z-index: 10 !important;
+}
+
+.stats-header h2::before {
+  content: var(--stats-title, "📊 Statistics") !important;
+  display: block;
+  font-size: 0.6em;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+  color: var(--accent-color) !important;
+}
+
+.stats-header h1 {
+  color: var(--header-text) !important;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8) !important;
+  position: relative;
+  z-index: 10 !important;
+}
+
+.stats-header h1::before {
+  content: var(--stats-title, "📊 Statistics") !important;
+  display: block;
+  font-size: 0.6em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+.stats-header p {
+  color: var(--button-primary-text) !important;
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  position: relative;
+  z-index: 10 !important;
+}
+
+.stats-subtitle {
+  color: var(--button-primary-text) !important;
+  opacity: 0.9 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  position: relative;
+  z-index: 10 !important;
+}
+
+/* GamePilot Home Title with unique theme names */
+.gamepilot-title {
+  color: var(--header-text) !important;
+  font-weight: 800;
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4) !important;
+  background: linear-gradient(135deg, var(--header-text), var(--header-accent)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.gamepilot-title::before {
+  content: var(--gamepilot-title, "🎮 GamePilot") !important;
+  display: block;
+  font-size: 0.4em;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+  background: var(--header-text) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Home page title */
+.home-title {
+  color: var(--page-title) !important;
+  font-weight: 700;
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+}
+
+.home-title::before {
+  content: var(--home-title, "🏠 Home") !important;
+  display: block;
+  font-size: 0.7em;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive Headers */
+@media (max-width: 768px) {
+  .header,
+  .nav,
+  .modal-header,
+  .sidebar-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .section-header {
+    font-size: 1.25rem;
+  }
+  
+  .achievement-header,
+  .profile-header,
+  .stats-header {
+    padding: 1.5rem;
+  }
+  
+  .gamepilot-title {
+    font-size: 2rem;
+  }
+  
+  .home-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* Theme Transition Effects */
+.header,
+.nav,
+.page-title,
+.section-header,
+.card-header,
+.modal-header,
+.tab-header,
+.form-header,
+.table-header,
+.list-header,
+.achievement-header,
+.settings-header,
+.profile-header,
+.library-header,
+.stats-header,
+.gamepilot-title,
+.home-title,
+.container,
+.content-container,
+.main-content,
+.modal,
+.sidebar,
+.dropdown,
+.tooltip {
+  transition: all 0.3s ease !important;
+}
+
+/* Light Theme Specific Header Overrides - Minimalist Black */
+.App.light .settings-header,
+.App.light .profile-header,
+.App.light .library-header,
+.App.light .stats-header,
+.App.light .achievement-header {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  text-shadow: none !important;
+}
+
+.App.light .settings-header h3,
+.App.light .profile-header h2,
+.App.light .library-header h1,
+.App.light .library-header h2,
+.App.light .library-title,
+.App.light .stats-header h2,
+.App.light .achievement-header h2,
+.App.light .achievement-header h1 {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+.App.light .settings-header h3::before,
+.App.light .profile-header h2::before,
+.App.light .library-header h1::before,
+.App.light .library-header h2::before,
+.App.light .stats-header h2::before,
+.App.light .stats-header h1::before,
+.App.light .achievement-header h2::before,
+.App.light .achievement-header h1::before {
+  color: #000000 !important;
+}
+
+/* ULTRA-SPECIFIC LIBRARY HEADER OVERRIDE - MAXIMUM SPECIFICITY */
+.App .library-header,
+.App .library-header h1,
+.App .library-header h2,
+.App .library-header h1.library-title,
+.App .library-header h2.library-title,
+.App .library-header .library-title,
+.App .library-title {
+  color: var(--header-text) !important;
+}
+
+/* Force override any Library.css rules */
+.App .library-header h1 {
+  color: var(--header-text) !important;
+}
+
+/* Override Library.css --text-primary variable */
+.App .library-header h1,
+.App .library-header h2,
+.App .library-title {
+  color: var(--header-text) !important;
+}
+
+.App .library-header {
+  background: var(--header-bg) !important;
+  border-bottom: 3px solid var(--accent-color) !important;
+}
+
+/* Library Header Specific Overrides */
+.App.dark .library-header,
+.App.dark .library-header h1,
+.App.dark .library-header h2,
+.App.dark .library-title {
+  color: #f5f5f5 !important;
+}
+
+.App.light .library-header,
+.App.light .library-header h1,
+.App.light .library-header h2,
+.App.light .library-title {
+  color: #000000 !important;
+}
+
+.App.sporty .library-header,
+.App.sporty .library-header h1,
+.App.sporty .library-header h2,
+.App.sporty .library-title {
+  color: #333333 !important;
+}
+
+.App.escapist .library-header,
+.App.escapist .library-header h1,
+.App.escapist .library-header h2,
+.App.escapist .library-title {
+  color: #00ffff !important;
+}
+
+.App.focused .library-header,
+.App.focused .library-header h1,
+.App.focused .library-header h2,
+.App.focused .library-title {
+  color: #ff6600 !important;
+}
+
+.App.retro .library-header,
+.App.retro .library-header h1,
+.App.retro .library-header h2,
+.App.retro .library-title {
+  color: #ff00ff !important;
+}
+
+.App.forest .library-header,
+.App.forest .library-header h1,
+.App.forest .library-header h2,
+.App.forest .library-title {
+  color: #8b4513 !important;
+}
+
+/* Ensure all headers respect theme with better contrast */
+[class*="header"],
+[class*="title"],
+[class*="Header"],
+[class*="Title"] {
+  color: var(--text-primary) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Specific component overrides */
+.App-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.main-header {
+  background: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.content-header {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--card-border) !important;
+  padding: 1rem 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Text readability improvements */
+.text-readable {
+  color: var(--text-primary) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  background: rgba(0,0,0,0.1) !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+}
+
+/* High contrast mode for better readability */
+.high-contrast-text {
+  color: var(--text-primary) !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+  background: rgba(0,0,0,0.2) !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--border-color) !important;
+}

@@ -1,0 +1,409 @@
+{
+  "cyberpunk_2077": {
+    "name": "Cyberpunk 2077",
+    "appid": "1091500",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 70
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 4,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 70
+      },
+      "ultra": {
+        "cpu_tier": 5,
+        "gpu_tier": 5,
+        "ram": 32,
+        "storage_type": "SSD",
+        "storage_size": 70
+      }
+    }
+  },
+  "elden_ring": {
+    "name": "Elden Ring",
+    "appid": "1245620",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 12,
+        "storage_type": "HDD",
+        "storage_size": 60
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 60
+      }
+    }
+  },
+  "baldurs_gate_3": {
+    "name": "Baldur's Gate 3",
+    "appid": "1086940",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 150
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 150
+      }
+    }
+  },
+  "starfield": {
+    "name": "Starfield",
+    "appid": "1716740",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 125
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 4,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 125
+      }
+    }
+  },
+  "red_dead_redemption_2": {
+    "name": "Red Dead Redemption 2",
+    "appid": "1174180",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 150
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 12,
+        "storage_type": "SSD",
+        "storage_size": 150
+      }
+    }
+  },
+  "hogwarts_legacy": {
+    "name": "Hogwarts Legacy",
+    "appid": "990080",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 16,
+        "storage_type": "HDD",
+        "storage_size": 85
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 85
+      }
+    }
+  },
+  "the_witcher_3": {
+    "name": "The Witcher 3: Wild Hunt",
+    "appid": "292030",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 2,
+        "ram": 6,
+        "storage_type": "HDD",
+        "storage_size": 50
+      },
+      "recommended": {
+        "cpu_tier": 3,
+        "gpu_tier": 3,
+        "ram": 8,
+        "storage_type": "SSD",
+        "storage_size": 50
+      }
+    }
+  },
+  "gta_v": {
+    "name": "Grand Theft Auto V",
+    "appid": "271590",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 2,
+        "ram": 4,
+        "storage_type": "HDD",
+        "storage_size": 72
+      },
+      "recommended": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 72
+      }
+    }
+  },
+  "call_of_duty_warzone": {
+    "name": "Call of Duty: Warzone",
+    "appid": "1962663",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 175
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 12,
+        "storage_type": "SSD",
+        "storage_size": 175
+      }
+    }
+  },
+  "counter_strike_2": {
+    "name": "Counter-Strike 2",
+    "appid": "730",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 85
+      },
+      "recommended": {
+        "cpu_tier": 3,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 85
+      }
+    }
+  },
+  "valorant": {
+    "name": "Valorant",
+    "appid": "valorant",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 1,
+        "ram": 4,
+        "storage_type": "HDD",
+        "storage_size": 30
+      },
+      "recommended": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 4,
+        "storage_type": "SSD",
+        "storage_size": 30
+      }
+    }
+  },
+  "minecraft": {
+    "name": "Minecraft",
+    "appid": "minecraft",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 1,
+        "ram": 4,
+        "storage_type": "HDD",
+        "storage_size": 4
+      },
+      "recommended": {
+        "cpu_tier": 2,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "SSD",
+        "storage_size": 4
+      }
+    }
+  },
+  "fortnite": {
+    "name": "Fortnite",
+    "appid": "fortnite",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 90
+      },
+      "recommended": {
+        "cpu_tier": 3,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 90
+      }
+    }
+  },
+  "apex_legends": {
+    "name": "Apex Legends",
+    "appid": "1172470",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 2,
+        "ram": 6,
+        "storage_type": "HDD",
+        "storage_size": 56
+      },
+      "recommended": {
+        "cpu_tier": 3,
+        "gpu_tier": 3,
+        "ram": 8,
+        "storage_type": "SSD",
+        "storage_size": 56
+      }
+    }
+  },
+  "palworld": {
+    "name": "Palworld",
+    "appid": "1623730",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 16,
+        "storage_type": "HDD",
+        "storage_size": 40
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 32,
+        "storage_type": "SSD",
+        "storage_size": 40
+      }
+    }
+  },
+  "spider_man_remastered": {
+    "name": "Spider-Man Remastered",
+    "appid": "1817070",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 75
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 75
+      }
+    }
+  },
+  "god_of_war": {
+    "name": "God of War",
+    "appid": "1593500",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 70
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 70
+      }
+    }
+  },
+  "resident_evil_4": {
+    "name": "Resident Evil 4",
+    "appid": "2050650",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "HDD",
+        "storage_size": 60
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 60
+      }
+    }
+  },
+  "sons_of_the_forest": {
+    "name": "Sons of the Forest",
+    "appid": "1326470",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 12,
+        "storage_type": "HDD",
+        "storage_size": 20
+      },
+      "recommended": {
+        "cpu_tier": 4,
+        "gpu_tier": 3,
+        "ram": 16,
+        "storage_type": "SSD",
+        "storage_size": 20
+      }
+    }
+  },
+  "lethal_company": {
+    "name": "Lethal Company",
+    "appid": "1966720",
+    "requirements": {
+      "minimum": {
+        "cpu_tier": 2,
+        "gpu_tier": 2,
+        "ram": 4,
+        "storage_type": "HDD",
+        "storage_size": 1
+      },
+      "recommended": {
+        "cpu_tier": 3,
+        "gpu_tier": 2,
+        "ram": 8,
+        "storage_type": "SSD",
+        "storage_size": 1
+      }
+    }
+  }
+}

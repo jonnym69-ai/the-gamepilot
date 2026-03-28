@@ -1,70 +1,198 @@
-# Getting Started with Create React App
+# GamePilot - Your Personal Gaming Library Manager
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**Version 1.1.0** | **Copyright © 2026 Moz** | **Proprietary Software**
 
-## Available Scripts
+GamePilot is a comprehensive desktop application for managing your gaming library, analyzing system performance, and getting smart game recommendations based on your mood, available time, and hardware capabilities.
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+### 📚 Library Management
+- Scan and import games from Steam, Epic Games, GOG, Origin, Ubisoft Connect, Battle.net, Rockstar Games, Xbox Game Pass, and PlayStation
+- Track playtime, completion status, and personal ratings
+- Organize games by mood, genre, and platform
+- Export library data in multiple formats
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 🎮 Game Compatibility Analysis
+- 770+ game database with detailed system requirements
+- Real-time compatibility checking against your hardware
+- Detailed system requirements breakdown in Game Modal
+- Performance level indicators (Ultra, High, Low, Ultra Low)
+- Estimated FPS calculations
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### ⚡ Performance Cockpit
+- Comprehensive system hardware analysis
+- Bottleneck detection and identification
+- Upgrade recommendations with cost estimates
+- Game compatibility matrix
+- Overall system performance score
 
-### `npm test`
+### 🎯 Smart Recommendations (Perfect Play)
+- Get game recommendations based on mood and genre
+- Filter by available playtime
+- Intelligent matching algorithm
+- Quick access to best matches
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 💰 Library Valuation
+- Calculate total library value
+- Multi-currency support (USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, INR, BRL, RUB)
+- Real-time price conversion
+- Game pricing from Steam API
 
-### `npm run build`
+### 🎨 Customization
+- Multiple theme options (Digital Ocean, Cyberpunk, Retro, etc.)
+- Dark/Light mode support
+- Customizable currency selection
+- Flexible UI layouts
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Windows
+1. Download `GamePilot Setup 1.1.0.exe` from the releases page
+2. Run the installer
+3. Follow the installation wizard
+4. Launch GamePilot from your Start Menu
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Development Setup
+```bash
+npm install
+npm start
+```
 
-### `npm run eject`
+### Building
+```bash
+npm run build
+npm run build-electron-win
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Usage
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Scanning Your Library
+1. Open GamePilot
+2. Click "Scan Library" to detect games from all installed platforms
+3. Wait for the scan to complete
+4. Your library will be automatically saved
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Checking Game Compatibility
+1. Click on any game in your library
+2. View the "System Compatibility" section
+3. See minimum, recommended, and ultra requirements
+4. Check estimated FPS for your system
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Performance Analysis
+1. Navigate to the Performance Cockpit
+2. View your system specifications and scores
+3. Check bottleneck analysis
+4. Review upgrade recommendations with costs
 
-## Learn More
+### Getting Recommendations
+1. Go to Perfect Play Selector
+2. Select your mood and preferred genres
+3. Choose available playtime
+4. Get personalized recommendations
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Legal & Privacy
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### ⚠️ Disclaimer
+GamePilot is **proprietary software** owned by Moz. See [DISCLAIMER.md](../DISCLAIMER.md) for complete legal information.
 
-### Code Splitting
+**Critical Points:**
+- ✅ Personal, non-commercial use only
+- ❌ **CANNOT be sold or distributed**
+- ❌ **CANNOT be used for commercial purposes or profit**
+- ❌ **CANNOT be modified or reverse-engineered**
+- ❌ **CANNOT be offered as a service (SaaS)**
+- ⚖️ **Violation may result in legal action**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### License
+GamePilot is proprietary software. See [LICENSE](../LICENSE) for full legal details.
 
-### Analyzing the Bundle Size
+**Key Points:**
+- Personal, non-commercial use only
+- Cannot be sold or distributed
+- Cannot be used commercially
+- Cannot be modified or reverse-engineered
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Privacy Policy
+See [PRIVACY.md](../PRIVACY.md) for complete details.
 
-### Making a Progressive Web App
+**Summary:**
+- ✅ Zero data collection
+- ✅ Local-only operation
+- ✅ No cloud storage
+- ✅ No telemetry or tracking
+- ✅ Your data, your control
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Terms of Service
+See [TERMS.md](../TERMS.md) for complete details.
 
-### Advanced Configuration
+**Summary:**
+- Personal use only
+- No warranties provided
+- Limited liability
+- You're responsible for backups
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## System Requirements
 
-### Deployment
+### Minimum
+- Windows 10 or later
+- 4GB RAM
+- 500MB free disk space
+- Intel i5 or equivalent
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Recommended
+- Windows 11
+- 8GB+ RAM
+- SSD with 1GB free space
+- Intel i7 or AMD Ryzen 7
 
-### `npm run build` fails to minify
+## Data Storage
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+All GamePilot data is stored locally on your computer:
+```
+C:\Users\[YourUsername]\AppData\Roaming\GamePilot\
+```
+
+You can:
+- Backup your data manually
+- Export your library at any time
+- Delete all data by removing the folder
+- Access raw data files directly
+
+## Troubleshooting
+
+### Library Scan Not Finding Games
+- Ensure Steam/Epic/GOG are installed in standard locations
+- Check that game folders have proper permissions
+- Try running GamePilot as Administrator
+
+### Compatibility Showing "Unknown"
+- Game may not be in the 770+ game database
+- System will estimate compatibility based on your hardware
+- Check Game Modal for detailed analysis
+
+### Performance Page Not Updating
+- Refresh the page or restart GamePilot
+- Ensure library has been scanned
+- Check that system info was detected correctly
+
+## Support & Contact
+
+For issues, questions, or suggestions, contact the author directly.
+
+## Changelog
+
+### v1.1.0 (March 14, 2026)
+- ✅ Added 770+ game compatibility database
+- ✅ Integrated real-time compatibility badges
+- ✅ Added detailed system requirements modal
+- ✅ Implemented Performance Cockpit analysis
+- ✅ Added multi-currency support for upgrade costs
+- ✅ Improved GPU scoring accuracy
+- ✅ User-friendly compatibility labels
+
+### v1.0.0 (Previous)
+- Initial release with library management and basic features
+
+---
+
+**GamePilot is your personal gaming companion. Enjoy!** 🎮

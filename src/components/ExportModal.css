@@ -1,0 +1,448 @@
+/* ExportModal.css - Enhanced Export Modal Styles */
+
+.export-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.export-modal {
+  background: var(--card);
+  border: 1px solid var(--border-color, #2a3f5f);
+  border-radius: 16px;
+  padding: 0;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.export-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--border-color, #2a3f5f);
+}
+
+.export-modal-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--text-muted, #8892b0);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: #ff6b35;
+  color: white;
+}
+
+.export-modal-content {
+  padding: 16px 24px;
+}
+
+.export-section {
+  margin-bottom: 24px;
+}
+
+.export-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+.page-options,
+.layout-options,
+.format-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-option,
+.layout-option,
+.format-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--button-secondary, #2a3f5f);
+  border: 1px solid var(--border-color, #3a4f6f);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9em;
+}
+
+.page-option:hover,
+.layout-option:hover,
+.format-option:hover {
+  background: var(--button-secondary-hover, #3a4f6f);
+  border-color: #ff6b35;
+  transform: translateY(-1px);
+}
+
+.page-option.active,
+.layout-option.active,
+.format-option.active {
+  background: #ff6b35;
+  border-color: #ff6b35;
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color, #ff6b35);
+  cursor: pointer;
+}
+
+.export-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid var(--border-color, #2a3f5f);
+  justify-content: flex-end;
+}
+
+.export-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-button.primary {
+  background: #ff6b35;
+  color: white;
+}
+
+.export-button.primary:hover {
+  background: var(--button-primary-hover, #3d8bfd);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.export-button.secondary {
+  background: var(--button-secondary, #2a3f5f);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color, #3a4f6f);
+}
+
+.export-button.secondary:hover {
+  background: var(--button-secondary-hover, #3a4f6f);
+  border-color: #ff6b35;
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .export-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .export-modal-header,
+  .export-modal-content,
+  .export-modal-footer {
+    padding: 16px;
+  }
+  
+  .page-options,
+  .layout-options,
+  .format-options {
+    flex-direction: column;
+  }
+  
+  .page-option,
+  .layout-option,
+  .format-option {
+    justify-content: center;
+  }
+  
+  .export-modal-footer {
+    flex-direction: column;
+  }
+  
+  .export-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Theme-specific styles */
+.App.light .export-modal {
+  background: var(--card);
+  border-color: var(--border-color, #e0e0e0);
+}
+
+.App.light .export-modal-header {
+  border-color: var(--border-color, #e0e0e0);
+}
+
+.App.light .export-modal-footer {
+  border-color: var(--border-color, #e0e0e0);
+}
+
+.App.light .page-option,
+.App.light .layout-option,
+.App.light .format-option {
+  background: var(--button-secondary, #f5f5f5);
+  border-color: var(--border-color, #e0e0e0);
+  color: var(--text-color, #333);
+}
+
+.App.light .page-option:hover,
+.App.light .layout-option:hover,
+.App.light .format-option:hover {
+  background: var(--button-secondary-hover, #e8e8e8);
+}
+
+.App.light .export-button.secondary {
+  background: var(--button-secondary, #f5f5f5);
+  color: var(--text-color, #333);
+  border-color: var(--border-color, #e0e0e0);
+}
+
+.App.light .export-button.secondary:hover {
+  background: var(--button-secondary-hover, #e8e8e8);
+}
+
+/* Loading state */
+.export-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.export-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.modal-content {
+  padding: 20px;
+  max-height: calc(80vh - 100px);
+  overflow-y: auto;
+}
+
+.export-stats {
+  background: var(--bg-secondary);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.export-stats p {
+  margin: 5px 0;
+  color: var(--text);
+}
+
+.export-options {
+  margin-bottom: 25px;
+}
+
+.format-selector {
+  margin-bottom: 15px;
+}
+
+.format-selector label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.format-selector select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.export-options-extra {
+  margin-top: 15px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--button-bg);
+}
+
+.export-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.export-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.export-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.export-button.csv {
+  background: #10b981;
+  color: white;
+}
+
+.export-button.csv:hover {
+  background: #059669;
+}
+
+.export-button.json {
+  background: #ff6b35;
+  color: white;
+}
+
+.export-button.json:hover {
+  background: #ff8c42;
+}
+
+.export-button.pdf {
+  background: #f59e0b;
+  color: white;
+}
+
+.export-button.pdf:hover {
+  background: #d97706;
+}
+
+.export-button.share {
+  background: #8b5cf6;
+  color: white;
+}
+
+.export-button.share:hover {
+  background: #7c3aed;
+}
+
+.shareable-link-result {
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.shareable-link-result p {
+  margin: 0 0 10px 0;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.shareable-link-result input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  margin-bottom: 8px;
+  cursor: text;
+}
+
+.shareable-link-result small {
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .export-modal {
+    width: 95vw;
+    max-height: 90vh;
+  }
+  
+  .modal-content {
+    padding: 15px;
+  }
+}

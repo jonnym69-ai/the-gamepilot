@@ -1,0 +1,1047 @@
+[
+  {
+    "id": "relaxed",
+    "name": "Relaxed",
+    "description": "2026 Calm Tech theme with muted sage greens, soft mineral blues, and digital lavender for reduced visual noise.",
+    "palette": {
+      "background": "linear-gradient(135deg, #e6f3f8 0%, #d4e4e4 15%, #c8e6c9 30%, #b8d4d3 45%, #a8d5d5 60%, #9bc4db 75%, #8fb3c9 90%, #84a9c8 100%)",
+      "surface": "rgba(255, 255, 255, 0.85)",
+      "primary": "#316263",
+      "secondary": "#84a9c8",
+      "text": "#1a2332",
+      "accent": "#a8b6cf",
+      "card": "rgba(255, 255, 255, 0.75)",
+      "hover": "rgba(49, 98, 98, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.01,
+      "grain": 0.002,
+      "bloom": 0.03,
+      "shadow": "0 4px 20px rgba(132, 169, 207, 0.2)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "social",
+    "name": "Social",
+    "description": "Fiery passion theme with deep red backgrounds and golden orange accents.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ffebee 0%, #fff3f0 100%)",
+      "surface": "#ffffff",
+      "primary": "#f44336",
+      "secondary": "#ef5350",
+      "text": "#d32f2f",
+      "accent": "#ff9800",
+      "card": "rgba(255, 255, 255, 0.9)",
+      "hover": "rgba(244, 67, 54, 0.1)"
+    },
+    "effects": {
+      "vignette": 0.06,
+      "grain": 0.015,
+      "bloom": 0.05,
+      "shadow": "0 4px 20px rgba(244, 67, 54, 0.2)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "focused",
+    "name": "Focused",
+    "description": "High-tech focus theme with black background and neon orange text for maximum concentration.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #141414 50%, #1a1a1a 75%, #000000 100%)",
+      "surface": "#0a0a0a",
+      "primary": "#ff6600",
+      "secondary": "#ff8800",
+      "text": "#ff6600",
+      "accent": "#ffaa00",
+      "card": "rgba(26, 26, 26, 0.85)",
+      "hover": "rgba(255, 102, 0, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.12,
+      "grain": 0.008,
+      "bloom": 0.15,
+      "shadow": "0 4px 20px rgba(255, 102, 0, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "creative",
+    "name": "Creative",
+    "description": "Artistic studio theme with vibrant colors and creative energy.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ff6b9d 0%, #c44569 15%, #f8b500 30%, #2d98da 45%, #6c5ce7 60%, #a29bfe 75%, #fd79a8 90%, #fdcb6e 100%)",
+      "surface": "rgba(108, 92, 231, 0.15)",
+      "primary": "#6c5ce7",
+      "secondary": "#2d98da",
+      "text": "#2d3436",
+      "accent": "#ff6b9d",
+      "card": "rgba(108, 92, 231, 0.25)",
+      "hover": "rgba(108, 92, 231, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.04,
+      "grain": 0.02,
+      "bloom": 0.07,
+      "shadow": "0 4px 20px rgba(108, 92, 231, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "escapist",
+    "name": "Escapist",
+    "description": "Cosmic escape theme with dark backgrounds and soft cyan text for comfortable viewing.",
+    "palette": {
+      "background": "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
+      "surface": "#2d2d2d",
+      "primary": "#ff5722",
+      "secondary": "#ff8a65",
+      "text": "#a0f0ff",
+      "accent": "#00e5ff",
+      "card": "rgba(45, 45, 45, 0.9)",
+      "hover": "rgba(255, 87, 34, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.08,
+      "grain": 0.03,
+      "bloom": 0.1,
+      "shadow": "0 4px 20px rgba(255, 87, 34, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "tactical",
+    "name": "Tactical",
+    "description": "Military precision theme with digital camouflage and bright orange targeting systems.",
+    "palette": {
+      "background": "linear-gradient(135deg, #1a1a1a 0%, #2d3e2d 25%, #3e4a3d 50%, #00ff00 75%, #ff0000 100%)",
+      "surface": "#1a1a1a",
+      "primary": "#ff6600",
+      "secondary": "#ff8800",
+      "text": "#ff8800",
+      "accent": "#ff6600",
+      "card": "rgba(26, 62, 45, 0.85)",
+      "hover": "rgba(255, 102, 0, 0.3)"
+    },
+    "effects": {
+      "vignette": 0.05,
+      "grain": 0.025,
+      "bloom": 0.03,
+      "shadow": "0 4px 20px rgba(255, 102, 0, 0.5)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "sporty",
+    "name": "Sporty",
+    "description": "Energetic athletic theme with half red, half blue background and sporty icons for competitive gaming.",
+    "palette": {
+      "background": "linear-gradient(90deg, #ff4444 0%, #ff4444 50%, #4444ff 50%, #4444ff 100%)",
+      "surface": "rgba(68, 68, 68, 0.15)",
+      "primary": "#ff4444",
+      "secondary": "#4444ff",
+      "text": "#ffffff",
+      "accent": "#ffff00",
+      "card": "rgba(68, 68, 68, 0.25)",
+      "hover": "rgba(255, 68, 68, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.04,
+      "grain": 0.012,
+      "bloom": 0.06,
+      "shadow": "0 4px 20px rgba(255, 68, 68, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "competitive",
+    "name": "Competitive",
+    "description": "Battle ready theme with crimson energy and electric blue accents.",
+    "palette": {
+      "background": "linear-gradient(135deg, #8b0000 0%, #cd5c5c 25%, #dc143c 50%, #ff1744 75%, #4169e1 100%)",
+      "surface": "#1a0d0d",
+      "primary": "#ff1744",
+      "secondary": "#4169e1",
+      "text": "#ffffff",
+      "accent": "#ffd700",
+      "card": "rgba(26, 13, 13, 0.95)",
+      "hover": "rgba(255, 23, 68, 0.3)"
+    },
+    "effects": {
+      "vignette": 0.07,
+      "grain": 0.028,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(255, 23, 68, 0.5)"
+    },
+    "isPremium": true,
+    "requiredTier": "basic"
+  },
+  {
+    "id": "sunset",
+    "name": "Sunset",
+    "description": "Golden hour theme with vibrant sunset colors and tropical vibes.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ff6b35 0%, #f7931e 15%, #fdc830 30%, #f37335 45%, #c23616 60%, #ff6348 75%, #ff9ff3 90%, #ee5a24 100%)",
+      "surface": "#2d1b0e",
+      "primary": "#ff6b35",
+      "secondary": "#f7931e",
+      "text": "#ffffff",
+      "accent": "#ff00ff",
+      "card": "rgba(45, 27, 14, 0.95)",
+      "hover": "rgba(255, 107, 53, 0.4)"
+    },
+    "effects": {
+      "vignette": 0.06,
+      "grain": 0.02,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(255, 107, 53, 0.5)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "midnight",
+    "name": "Midnight",
+    "description": "Deep space theme with cosmic nebula and stellar phenomena.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000000 0%, #0f0c29 20%, #302b63 40%, #24243e 60%, #6366f1 75%, #8b5cf6 90%, #06b6d4 100%)",
+      "surface": "#000000",
+      "primary": "#8b5cf6",
+      "secondary": "#06b6d4",
+      "text": "#ffff00",
+      "accent": "#fbbf24",
+      "card": "rgba(0, 0, 0, 0.95)",
+      "hover": "rgba(139, 92, 246, 0.4)"
+    },
+    "effects": {
+      "vignette": 0.09,
+      "grain": 0.04,
+      "bloom": 0.12,
+      "shadow": "0 4px 20px rgba(139, 92, 246, 0.6)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "retro",
+    "name": "16-Bit Retro",
+    "description": "Classic 16-bit retro gaming theme with vibrant SNES/Genesis era colors and pixel art aesthetics.",
+    "palette": {
+      "background": "linear-gradient(135deg, #2c1810 0%, #4a2c1a 25%, #6b3e2a 50%, #8b5a3b 75%, #a0724c 100%)",
+      "surface": "#1a0e08",
+      "primary": "#ff6b35",
+      "secondary": "#4ecdc4",
+      "text": "#ffd700",
+      "accent": "#ff00ff",
+      "card": "rgba(26, 14, 8, 0.95)",
+      "hover": "rgba(255, 107, 53, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.06,
+      "grain": 0.04,
+      "bloom": 0.15,
+      "shadow": "0 4px 20px rgba(255, 107, 53, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "forest",
+    "name": "Forest",
+    "description": "Enchanted woodland theme with natural greens and crisp white text for clarity.",
+    "palette": {
+      "background": "linear-gradient(135deg, #1a2e1a 0%, #2d4a2d 15%, #3e5f3e 30%, #4a6741 45%, #52734c 60%, #68a868 75%, #7fb069 90%, #8bc34a 100%)",
+      "surface": "#1a2e1a",
+      "primary": "#4caf50",
+      "secondary": "#689f38",
+      "text": "#ffffff",
+      "accent": "#ffeb3b",
+      "card": "rgba(26, 46, 26, 0.95)",
+      "hover": "rgba(76, 175, 80, 0.4)"
+    },
+    "effects": {
+      "vignette": 0.04,
+      "grain": 0.015,
+      "bloom": 0.03,
+      "shadow": "0 4px 20px rgba(76, 175, 80, 0.5)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "ocean",
+    "name": "Ocean",
+    "description": "Deep abyss theme with bioluminescent creatures and underwater volcanic vents.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000428 0%, #004e92 20%, #0c1424 35%, #16213e 50%, #1e3a5f 65%, #0f4c75 80%, #3282b8 90%, #00d4ff 100%)",
+      "surface": "#000428",
+      "primary": "#00d4ff",
+      "secondary": "#3282b8",
+      "text": "#ffffff",
+      "accent": "#ff6b35",
+      "card": "rgba(0, 4, 40, 0.95)",
+      "hover": "rgba(0, 212, 255, 0.4)"
+    },
+    "effects": {
+      "vignette": 0.08,
+      "grain": 0.03,
+      "bloom": 0.09,
+      "shadow": "0 4px 20px rgba(0, 212, 255, 0.5)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "dark",
+    "name": "Dark",
+    "description": "Professional dark theme with grey and orange accents for comfortable night-time gaming.",
+    "palette": {
+      "background": "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
+      "surface": "#2d2d2d",
+      "primary": "#ff6b35",
+      "secondary": "#ff8c42",
+      "text": "#f5f5f5",
+      "accent": "#ffab00",
+      "card": "#2a2a2a",
+      "hover": "#333333"
+    },
+    "effects": {
+      "vignette": 0.02,
+      "grain": 0.003,
+      "bloom": 0.04,
+      "shadow": "0 4px 20px rgba(255, 107, 53, 0.2)"
+    },
+    "isPremium": false
+  },
+  {
+    "id": "light",
+    "name": "Light",
+    "description": "Clean minimalist theme with off-white background and black accents for daytime productivity.",
+    "palette": {
+      "background": "linear-gradient(135deg, #fdf4ea 0%, #f7ede3 45%, #f3e3d4 100%)",
+      "surface": "#fff9f3",
+      "primary": "#e45b17",
+      "secondary": "#c38f6b",
+      "text": "#2b1a0f",
+      "accent": "#ffb65c",
+      "card": "#fff4eb",
+      "hover": "rgba(228,91,23,0.08)",
+      "buttonText": "#fff6ee",
+      "buttonSecondaryText": "#2b1a0f"
+    },
+    "effects": {
+      "vignette": 0.01,
+      "grain": 0.002,
+      "bloom": 0.03,
+      "shadow": "0 6px 18px rgba(226, 162, 120, 0.18)"
+    },
+    "isPremium": false
+  },
+  {
+    "id": "zen",
+    "name": "8-Bit Retro",
+    "description": "Classic 8-bit/16-bit retro gaming theme with pixel art aesthetics and nostalgic colors.",
+    "palette": {
+      "background": "linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #533483 75%, #e94560 100%)",
+      "surface": "#0f0f23",
+      "primary": "#00ff00",
+      "secondary": "#ff00ff",
+      "text": "#00ff00",
+      "accent": "#ffff00",
+      "card": "rgba(15, 15, 35, 0.95)",
+      "hover": "rgba(0, 255, 0, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.05,
+      "grain": 0.08,
+      "bloom": 0.1,
+      "shadow": "0 4px 20px rgba(0, 255, 0, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "cyberpunk",
+    "name": "Cyberpunk",
+    "description": "Neon cityscape theme with digital rain and futuristic cyber aesthetics.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0a0a 0%, #1a0033 25%, #330066 50%, #4d0099 75%, #6600cc 100%)",
+      "surface": "#1a1a2e",
+      "primary": "#00ff41",
+      "secondary": "#ff00ff",
+      "text": "#00ffff",
+      "accent": "#ffff00",
+      "card": "rgba(26, 26, 46, 0.95)",
+      "hover": "rgba(0, 255, 65, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.08,
+      "grain": 0.02,
+      "bloom": 0.12,
+      "shadow": "0 4px 20px rgba(0, 255, 65, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "candy",
+    "name": "Candy Shop",
+    "description": "Sweet candy theme with creamy pink backgrounds and mint green text for delightful gaming.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ffe0ec 0%, #ffccd5 25%, #ffb8d1 50%, #ffa4bd 75%, #ff90a9 100%)",
+      "surface": "#fff0f5",
+      "primary": "#00ff7f",
+      "secondary": "#ff69b4",
+      "text": "#00cc66",
+      "accent": "#ff1493",
+      "card": "rgba(255, 240, 245, 0.95)",
+      "hover": "rgba(0, 255, 127, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.03,
+      "grain": 0.008,
+      "bloom": 0.12,
+      "shadow": "0 4px 20px rgba(255, 105, 180, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "noir",
+    "name": "Comic Book",
+    "description": "Classic comic book theme with bold primary colors, halftone patterns, and superhero aesthetics.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ffdd00 0%, #ff6b35 25%, #0066cc 50%, #ff6b35 75%, #ffdd00 100%)",
+      "surface": "#ffffff",
+      "primary": "#0066cc",
+      "secondary": "#ff6b35",
+      "text": "#ffffff",
+      "accent": "#ffdd00",
+      "card": "rgba(255, 255, 255, 0.95)",
+      "hover": "rgba(0, 102, 204, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.08,
+      "grain": 0.12,
+      "bloom": 0.15,
+      "shadow": "0 4px 20px rgba(0, 0, 0, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "galaxy",
+    "name": "Galaxy",
+    "description": "Deep space theme with animated parallax stars, nebula clouds, and cosmic phenomena.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000000 0%, #0a0033 20%, #1a0066 40%, #330099 60%, #4d00cc 80%, #6600ff 100%)",
+      "surface": "rgba(10, 0, 51, 0.9)",
+      "primary": "#00ffff",
+      "secondary": "#ff00ff",
+      "text": "#ffffff",
+      "accent": "#ffff00",
+      "card": "rgba(26, 0, 102, 0.85)",
+      "hover": "rgba(0, 255, 255, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.15,
+      "grain": 0.01,
+      "bloom": 0.2,
+      "shadow": "0 4px 20px rgba(0, 255, 255, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "cosmic-nebula",
+    "name": "Cosmic Nebula",
+    "description": "Stunning space theme with swirling nebula colors, twinkling stars, and cosmic dust effects.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0e27 0%, #1a1f4e 20%, #2d1b69 40%, #4a148c 60%, #6a1b9a 80%, #8e24aa 100%)",
+      "surface": "rgba(26, 31, 78, 0.85)",
+      "primary": "#e91e63",
+      "secondary": "#9c27b0",
+      "text": "#ff0040",
+      "accent": "#ff6090",
+      "card": "rgba(26, 31, 78, 0.75)",
+      "hover": "rgba(233, 30, 99, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.15,
+      "grain": 0.008,
+      "bloom": 0.12,
+      "shadow": "0 4px 20px rgba(233, 30, 99, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "sunset-paradise",
+    "name": "Sunset Paradise",
+    "description": "Warm tropical sunset with golden oranges, soft pinks, and ocean blue reflections.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ff6b6b 0%, #feca57 20%, #ff9ff3 40%, #48dbfb 60%, #0abde3 80%, #006ba6 100%)",
+      "surface": "rgba(255, 154, 0, 0.15)",
+      "primary": "#ff6348",
+      "secondary": "#ffa502",
+      "text": "#2c3e50",
+      "accent": "#ff6b9d",
+      "card": "rgba(255, 99, 71, 0.25)",
+      "hover": "rgba(255, 99, 72, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.08,
+      "grain": 0.005,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(255, 99, 72, 0.25)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "arctic-aurora",
+    "name": "Arctic Aurora",
+    "description": "Northern lights dancing across arctic skies with ethereal greens and blues.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0f2027 0%, #203a43 25%, #2c5364 50%, #11998e 75%, #38ef7d 100%)",
+      "surface": "rgba(32, 58, 67, 0.85)",
+      "primary": "#38ef7d",
+      "secondary": "#11998e",
+      "text": "#ffffff",
+      "accent": "#00d2d3",
+      "card": "rgba(32, 58, 67, 0.75)",
+      "hover": "rgba(56, 239, 125, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.12,
+      "grain": 0.006,
+      "bloom": 0.15,
+      "shadow": "0 4px 20px rgba(56, 239, 125, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "cyberpunk-2077",
+    "name": "Cyberpunk 2077",
+    "description": "Neon-drenched cyberpunk cityscape with electric blues, hot pinks, and digital glitches.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0a0a 0%, #1a0033 25%, #330066 40%, #6600cc 60%, #ff0066 80%, #ff3366 100%)",
+      "surface": "rgba(26, 0, 51, 0.85)",
+      "primary": "#ff0066",
+      "secondary": "#00ffff",
+      "text": "#ffff00",
+      "accent": "#ff00ff",
+      "card": "rgba(26, 0, 51, 0.75)",
+      "hover": "rgba(255, 0, 102, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.18,
+      "grain": 0.012,
+      "bloom": 0.2,
+      "shadow": "0 4px 20px rgba(255, 0, 102, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "cherry-blossom",
+    "name": "Cherry Blossom",
+    "description": "Japanese spring with soft pink petals, gentle whites, and serene atmosphere.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ffeaa7 0%, #fab1a0 20%, #ff7675 40%, #fd79a8 60%, #e17055 80%, #d63031 100%)",
+      "surface": "rgba(253, 121, 168, 0.15)",
+      "primary": "#ff7675",
+      "secondary": "#fd79a8",
+      "text": "#8b0000",
+      "accent": "#fab1a0",
+      "card": "rgba(255, 118, 117, 0.25)",
+      "hover": "rgba(255, 118, 117, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.06,
+      "grain": 0.004,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(255, 118, 117, 0.2)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "deep-ocean",
+    "name": "Blue Skies",
+    "description": "Clear blue skies with fluffy white clouds and bright sunshine for a cheerful atmosphere.",
+    "palette": {
+      "background": "linear-gradient(135deg, #87CEEB 0%, #98D8E8 25%, #B0E0E6 40%, #E0F6FF 60%, #F0F8FF 80%, #FFFFFF 100%)",
+      "surface": "rgba(135, 206, 235, 0.15)",
+      "primary": "#4A90E2",
+      "secondary": "#87CEEB",
+      "text": "#2C3E50",
+      "accent": "#FFD700",
+      "card": "rgba(255, 255, 255, 0.25)",
+      "hover": "rgba(74, 144, 226, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.02,
+      "grain": 0.002,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(74, 144, 226, 0.2)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "desert-sunset",
+    "name": "Desert Sunset",
+    "description": "Warm desert landscape with golden sand dunes, terracotta rocks, and vibrant sunset colors.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ff6b35 0%, #f77b71 20%, #dd5e89 40%, #c44569 60%, #a84362 80%, #8b3a62 100%)",
+      "surface": "rgba(255, 107, 53, 0.15)",
+      "primary": "#ff6b35",
+      "secondary": "#f77b71",
+      "text": "#ffffff",
+      "accent": "#feca57",
+      "card": "rgba(221, 94, 137, 0.25)",
+      "hover": "rgba(255, 107, 53, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.1,
+      "grain": 0.008,
+      "bloom": 0.1,
+      "shadow": "0 4px 20px rgba(255, 107, 53, 0.25)"
+    },
+    "isPremium": true,
+    "requiredTier": "plus"
+  },
+  {
+    "id": "forest-mist",
+    "name": "Forest Mist",
+    "description": "Enchanted forest with mystical greens, earthy browns, and ethereal mist effects.",
+    "palette": {
+      "background": "linear-gradient(135deg, #134e5e 0%, #71b280 25%, #a8e6cf 40%, #dcedc1 60%, #ffd3b6 80%, #ffaaa5 100%)",
+      "surface": "rgba(113, 178, 128, 0.85)",
+      "primary": "#134e5e",
+      "secondary": "#71b280",
+      "text": "#696969",
+      "accent": "#a8e6cf",
+      "card": "rgba(113, 178, 128, 0.75)",
+      "hover": "rgba(19, 78, 94, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.12,
+      "grain": 0.009,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(19, 78, 94, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "galaxy-core",
+    "name": "Galaxy Core",
+    "description": "Supermassive black hole surrounded by swirling galaxies and cosmic energy.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000000 0%, #1a0033 15%, #330066 30%, #4d0099 45%, #6600cc 60%, #7f00ff 75%, #9933ff 90%, #b366ff 100%)",
+      "surface": "rgba(26, 0, 51, 0.85)",
+      "primary": "#7f00ff",
+      "secondary": "#9933ff",
+      "text": "#00ff00",
+      "accent": "#cc66ff",
+      "card": "rgba(26, 0, 51, 0.75)",
+      "hover": "rgba(127, 0, 255, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.2,
+      "grain": 0.015,
+      "bloom": 0.25,
+      "shadow": "0 4px 20px rgba(127, 0, 255, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "volcanic-lava",
+    "name": "Volcanic Lava",
+    "description": "Molten rock flows with intense reds, glowing oranges, and volcanic heat effects.",
+    "palette": {
+      "background": "linear-gradient(135deg, #1a0000 0%, #330000 20%, #660000 40%, #990000 60%, #cc0000 80%, #ff0000 100%)",
+      "surface": "rgba(51, 0, 0, 0.85)",
+      "primary": "#ff0000",
+      "secondary": "#cc0000",
+      "text": "#696969",
+      "accent": "#ff6600",
+      "card": "rgba(51, 0, 0, 0.75)",
+      "hover": "rgba(255, 0, 0, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.22,
+      "grain": 0.018,
+      "bloom": 0.3,
+      "shadow": "0 4px 20px rgba(255, 0, 0, 0.5)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "crystal-cave",
+    "name": "Crystal Cave",
+    "description": "Geode formations with crystalline purples, iridescent blues, and mineral sparkles.",
+    "palette": {
+      "background": "linear-gradient(135deg, #2c003e 0%, #512b58 20%, #6b5b95 40%, #8b78e6 60%, #a8dadc 80%, #f1faee 100%)",
+      "surface": "rgba(81, 43, 88, 0.85)",
+      "primary": "#8b78e6",
+      "secondary": "#6b5b95",
+      "text": "#ffffff",
+      "accent": "#a8dadc",
+      "card": "rgba(81, 43, 88, 0.75)",
+      "hover": "rgba(139, 120, 230, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.16,
+      "grain": 0.01,
+      "bloom": 0.18,
+      "shadow": "0 4px 20px rgba(139, 120, 230, 0.35)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "northern-lights",
+    "name": "Northern Lights",
+    "description": "Aurora borealis dancing across arctic skies with vibrant greens and ethereal blues.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000428 0%, #004e92 25%, #009ffd 40%, #00d2ff 60%, #3ae374 80%, #7bed9f 100%)",
+      "surface": "rgba(0, 78, 146, 0.85)",
+      "primary": "#00d2ff",
+      "secondary": "#3ae374",
+      "text": "#4a7c59",
+      "accent": "#7bed9f",
+      "card": "rgba(0, 78, 146, 0.75)",
+      "hover": "rgba(0, 210, 255, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.18,
+      "grain": 0.012,
+      "bloom": 0.22,
+      "shadow": "0 4px 20px rgba(0, 210, 255, 0.4)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "tropical-reef",
+    "name": "Tropical Reef",
+    "description": "Vibrant coral reef with tropical fish colors, ocean blues, and underwater life.",
+    "palette": {
+      "background": "linear-gradient(135deg, #006994 0%, #0099cc 20%, #00b4d8 40%, #00d4e6 60%, #5ed4e6 80%, #a8e6f3 100%)",
+      "surface": "rgba(0, 153, 204, 0.85)",
+      "primary": "#00d4e6",
+      "secondary": "#5ed4e6",
+      "text": "#ffb347",
+      "accent": "#ff9a00",
+      "card": "rgba(0, 153, 204, 0.75)",
+      "hover": "rgba(0, 212, 230, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.14,
+      "grain": 0.008,
+      "bloom": 0.16,
+      "shadow": "0 4px 20px rgba(0, 212, 230, 0.35)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "steampunk",
+    "name": "Steampunk",
+    "description": "Victorian mechanical theme with brass, copper, and industrial revolution aesthetics.",
+    "palette": {
+      "background": "linear-gradient(135deg, #3e2723 0%, #5d4037 20%, #795548 40%, #8d6e63 60%, #a1887f 80%, #bcaaa4 100%)",
+      "surface": "rgba(93, 64, 55, 0.85)",
+      "primary": "#d4a574",
+      "secondary": "#b8956a",
+      "text": "#808080",
+      "accent": "#cd853f",
+      "card": "rgba(93, 64, 55, 0.75)",
+      "hover": "rgba(212, 165, 116, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.12,
+      "grain": 0.02,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(212, 165, 116, 0.3)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "holographic",
+    "name": "Holographic",
+    "description": "Future tech interface with rainbow holograms, digital glitches, and cyber aesthetics.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 20%, #16213e 40%, #0f3460 60%, #533483 80%, #c06c84 100%)",
+      "surface": "rgba(26, 26, 46, 0.85)",
+      "primary": "#c06c84",
+      "secondary": "#533483",
+      "text": "#ff69b4",
+      "accent": "#e94560",
+      "card": "rgba(26, 26, 46, 0.75)",
+      "hover": "rgba(192, 108, 132, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.15,
+      "grain": 0.01,
+      "bloom": 0.2,
+      "shadow": "0 4px 20px rgba(192, 108, 132, 0.35)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "custom",
+    "name": "Custom Background",
+    "description": "Your personal background image with customizable overlay for perfect readability.",
+    "palette": {
+      "background": "var(--custom-bg-image, linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%))",
+      "surface": "rgba(30, 30, 30, 0.85)",
+      "primary": "#ff6b35",
+      "secondary": "#ff8c42",
+      "text": "#ffffff",
+      "accent": "#ffab00",
+      "card": "rgba(40, 40, 40, 0.9)",
+      "hover": "rgba(255, 107, 53, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.02,
+      "grain": 0.003,
+      "bloom": 0.04,
+      "shadow": "0 4px 20px rgba(255, 107, 53, 0.2)"
+    },
+    "customizable": true,
+    "isPremium": false
+  },
+  {
+    "id": "matrix-rain",
+    "name": "Matrix Rain",
+    "description": "Falling green code animation with digital rain effects and scanlines for ultimate hacker aesthetic.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000000 0%, #001a00 50%, #000000 100%)",
+      "surface": "rgba(0, 20, 0, 0.9)",
+      "primary": "#00ff41",
+      "secondary": "#00cc33",
+      "text": "#00ff41",
+      "accent": "#33ff66",
+      "card": "rgba(0, 26, 0, 0.85)",
+      "hover": "rgba(0, 255, 65, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.2,
+      "grain": 0.015,
+      "bloom": 0.25,
+      "shadow": "0 4px 20px rgba(0, 255, 65, 0.5)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "matrix-rain",
+      "speed": "medium",
+      "intensity": 0.7,
+      "particleCount": 100
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "neon-pulse",
+    "name": "Neon Pulse",
+    "description": "Pulsing neon borders with breathing glow effects and synthwave aesthetic for retro-futuristic vibes.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #2d1b4e 50%, #4a1a5e 75%, #6a1a7a 100%)",
+      "surface": "rgba(26, 10, 46, 0.85)",
+      "primary": "#ff00ff",
+      "secondary": "#00ffff",
+      "text": "#ffffff",
+      "accent": "#ff0099",
+      "card": "rgba(42, 26, 78, 0.8)",
+      "hover": "rgba(255, 0, 255, 0.3)"
+    },
+    "effects": {
+      "vignette": 0.12,
+      "grain": 0.008,
+      "bloom": 0.3,
+      "shadow": "0 4px 20px rgba(255, 0, 255, 0.6)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "pulse",
+      "speed": "slow",
+      "intensity": 0.6,
+      "glowColor": "#ff00ff",
+      "color": "rgba(255, 0, 255, 0.35)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "starfield-warp",
+    "name": "Starfield Warp",
+    "description": "Animated star streaks with parallax depth layers and hyperspace travel effects for cosmic journeys.",
+    "palette": {
+      "background": "linear-gradient(135deg, #000000 0%, #000033 25%, #000066 50%, #000099 75%, #0000cc 100%)",
+      "surface": "rgba(0, 0, 51, 0.85)",
+      "primary": "#ffffff",
+      "secondary": "#66ccff",
+      "text": "#ffffff",
+      "accent": "#00ccff",
+      "card": "rgba(0, 0, 102, 0.75)",
+      "hover": "rgba(102, 204, 255, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.18,
+      "grain": 0.005,
+      "bloom": 0.2,
+      "shadow": "0 4px 20px rgba(102, 204, 255, 0.4)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "fast",
+      "intensity": 0.8,
+      "particleCount": 150,
+      "direction": "forward"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "digital-ocean",
+    "name": "Digital Ocean",
+    "description": "Animated wave patterns with ripple effects and bioluminescent particles for underwater serenity.",
+    "palette": {
+      "background": "linear-gradient(135deg, #001a33 0%, #003366 25%, #004d99 50%, #0066cc 75%, #0080ff 100%)",
+      "surface": "rgba(0, 51, 102, 0.85)",
+      "primary": "#00ccff",
+      "secondary": "#0099ff",
+      "text": "#ffffff",
+      "accent": "#33ffcc",
+      "card": "rgba(0, 77, 153, 0.8)",
+      "hover": "rgba(0, 204, 255, 0.25)"
+    },
+    "effects": {
+      "vignette": 0.14,
+      "grain": 0.006,
+      "bloom": 0.18,
+      "shadow": "0 4px 20px rgba(0, 204, 255, 0.45)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "waves",
+      "speed": "slow",
+      "intensity": 0.5,
+      "particleCount": 80,
+      "rippleEffect": true,
+      "color": "rgba(0, 204, 255, 0.25)"
+    },
+    "isPremium": true,
+    "requiredTier": "gold"
+  },
+  {
+    "id": "rain-lounge",
+    "name": "Rain Lounge",
+    "description": "Midnight lounge lighting with reflective glass and animated rain streaks.",
+    "palette": {
+      "background": "linear-gradient(145deg, #050914 0%, #0f1c2c 40%, #1c3042 100%)",
+      "surface": "rgba(5, 9, 20, 0.85)",
+      "primary": "#66d5ff",
+      "secondary": "#2d9cdb",
+      "text": "#e2f6ff",
+      "accent": "#8cf6ff",
+      "card": "rgba(15, 28, 44, 0.8)",
+      "hover": "rgba(102, 213, 255, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.16,
+      "grain": 0.02,
+      "bloom": 0.12,
+      "shadow": "0 8px 28px rgba(102, 213, 255, 0.25)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "rain",
+      "speed": "medium",
+      "intensity": 0.8,
+      "color": "rgba(120, 200, 255, 0.85)"
+    },
+    "isPremium": true,
+    "requiredTier": "platinum",
+    "requiresFounderTier": "Platinum"
+  },
+  {
+    "id": "snowfall-hush",
+    "name": "Snowfall Hush",
+    "description": "Layered snowfall with frost gradients and cinematic depth of field blur.",
+    "palette": {
+      "background": "linear-gradient(160deg, #0c111b 0%, #142235 45%, #1f3652 100%)",
+      "surface": "rgba(20, 34, 53, 0.85)",
+      "primary": "#a1d8ff",
+      "secondary": "#79a6ff",
+      "text": "#f7fbff",
+      "accent": "#d6f0ff",
+      "card": "rgba(23, 40, 62, 0.85)",
+      "hover": "rgba(161, 216, 255, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.2,
+      "grain": 0.015,
+      "bloom": 0.18,
+      "shadow": "0 10px 30px rgba(161, 216, 255, 0.25)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "snow",
+      "speed": "slow",
+      "intensity": 0.6,
+      "color": "rgba(247, 251, 255, 0.9)"
+    },
+    "isPremium": true,
+    "requiredTier": "platinum",
+    "requiresFounderTier": "Platinum"
+  },
+  {
+    "id": "retro-pipeline",
+    "name": "Retro Pipeline",
+    "description": "Isometric neon corridors with scrolling pixel blocks and synth haze.",
+    "palette": {
+      "background": "linear-gradient(135deg, #1b0036 0%, #2d0055 40%, #43007a 70%, #5c00a3 100%)",
+      "surface": "rgba(27, 0, 54, 0.85)",
+      "primary": "#ff9f43",
+      "secondary": "#ff5e7e",
+      "text": "#ffe9ff",
+      "accent": "#ffd166",
+      "card": "rgba(45, 0, 85, 0.85)",
+      "hover": "rgba(255, 159, 67, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.18,
+      "grain": 0.025,
+      "bloom": 0.22,
+      "shadow": "0 10px 28px rgba(255, 159, 67, 0.35)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "retro-blocks",
+      "speed": "medium",
+      "intensity": 0.7,
+      "color": "rgba(255, 159, 67, 0.7)"
+    },
+    "isPremium": true,
+    "requiredTier": "platinum",
+    "requiresFounderTier": "Platinum"
+  }
+]
