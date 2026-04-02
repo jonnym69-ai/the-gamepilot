@@ -139,6 +139,38 @@ export class RecommendationEngine {
       }
     }
 
+    // --- Phase B: Ratings & Replay Intent Tuning ---
+    
+    // User Rating Bonus/Penalty (-30 to +30 points)
+    // Ratings are 0-10. 5 is neutral. 
+    if (typeof game.userRating === 'number') {
+      const ratingVariance = game.userRating - 5; // -5 to +5
+      score += (ratingVariance * 6); // Maps 10 -> +30, 0 -> -30
+    }
+
+    // Replay Intent Multiplier
+    if (game.replayIntent) {
+      switch (game.replayIntent) {
+        case 'active':
+          score += 25; // Currently playing -> highly recommend
+          break;
+        case 'soon':
+          score += 15; // Planning to play soon
+          break;
+        case 'endless':
+          score += 5; // Endless games are always decent fallbacks
+          break;
+        case 'finished':
+          score -= 20; // Finished games usually aren't played again immediately
+          break;
+        case 'none':
+        default:
+          break;
+      }
+    }
+
+    // --- End Phase B Tuning ---
+
     return Math.max(0, Math.min(100, score)); // Clamp 0-100
   }
 

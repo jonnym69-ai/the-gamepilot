@@ -48,6 +48,12 @@ const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
   };
 };
 
+const isPlainObject = (value) => (
+  Boolean(value)
+  && typeof value === 'object'
+  && !Array.isArray(value)
+);
+
 export class PlaytimeAutoLogger {
   static ACTIVE_SESSIONS_KEY = 'activeGameSessions';
   static SESSION_HISTORY_KEY = 'sessionHistory';
@@ -189,7 +195,7 @@ export class PlaytimeAutoLogger {
     const stored = localStorage.getItem(this.ACTIVE_SESSIONS_KEY);
     try {
       const parsedSessions = stored ? JSON.parse(stored) : {};
-      if (!parsedSessions || typeof parsedSessions !== 'object') {
+      if (!isPlainObject(parsedSessions)) {
         return {};
       }
 
@@ -254,7 +260,8 @@ export class PlaytimeAutoLogger {
   static getSessionHistory() {
     const stored = localStorage.getItem(this.SESSION_HISTORY_KEY);
     try {
-      return stored ? JSON.parse(stored) : [];
+      const parsedHistory = stored ? JSON.parse(stored) : [];
+      return Array.isArray(parsedHistory) ? parsedHistory : [];
     } catch (e) {
       console.error('Failed to parse session history:', e);
       return [];
@@ -270,7 +277,8 @@ export class PlaytimeAutoLogger {
       const storedLibrary = localStorage.getItem('gameLibrary');
       if (storedLibrary) {
         try {
-          library = JSON.parse(storedLibrary);
+          const parsedLibrary = JSON.parse(storedLibrary);
+          library = Array.isArray(parsedLibrary) ? parsedLibrary : null;
         } catch (e) {
           console.error('Failed to parse library:', e);
           return false;
@@ -279,6 +287,11 @@ export class PlaytimeAutoLogger {
         console.warn('[PlaytimeAutoLogger] No library provided to update playtime');
         return false;
       }
+    }
+
+    if (!Array.isArray(library)) {
+      console.warn('[PlaytimeAutoLogger] Library payload is not an array, skipping playtime update');
+      return false;
     }
 
     // Find and update game

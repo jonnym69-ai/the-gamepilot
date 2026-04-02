@@ -3,12 +3,15 @@ export const PLATFORM_ICONS = {
   'Steam': '🚂',
   'Epic': '🎮',
   'GOG': '🎯',
-  'Origin': '🌟',
+  'EA': '🌟',
   'Uplay': '🎪',
   'Battle.net': '⚔️',
   'Xbox': '🎯',
   'PlayStation': '🎮',
   'Rockstar': '🪨',
+  'BSG': '🔫',
+  'Riot': '👊',
+  'CurseForge': '⛏️',
   'Manual': '📝',
   'Unknown': '❓'
 };
@@ -17,12 +20,15 @@ export const PLATFORM_COLORS = {
   'Steam': '#1b2838',
   'Epic': '#3a3f52',
   'GOG': '#8b4513',
-  'Origin': '#ff6b35',
+  'EA': '#ff6b35',
   'Uplay': '#ff6b35',
   'Battle.net': '#ff8c42',
   'Xbox': '#107c10',
   'PlayStation': '#ff6b35',
   'Rockstar': '#ff0000',
+  'BSG': '#9a8866',
+  'Riot': '#d13639',
+  'CurseForge': '#f16436',
   'Manual': '#6b46c1',
   'Unknown': '#666666'
 };

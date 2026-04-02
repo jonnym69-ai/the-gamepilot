@@ -1,4 +1,5 @@
 import { AchievementTracker } from '../AchievementSystem';
+import { resolveGameArtwork } from './GameArtworkService';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
 import { StatsAggregationService } from './StatsAggregationService';
 
@@ -33,7 +34,12 @@ const readPreferences = () => {
 };
 
 const savePreferences = (preferences) => {
-  localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+  try {
+    const safePreferences = preferences && typeof preferences === 'object' ? preferences : {};
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(safePreferences));
+  } catch (error) {
+    console.error('Failed to save challenge board preferences:', error);
+  }
 };
 
 const formatPlaytime = (minutes) => {
@@ -63,14 +69,7 @@ const getGameId = (game = {}) => String(
     || ''
 );
 
-const getGameImage = (game = {}) => game.header_image
-  || game.headerImage
-  || game.capsule_image
-  || game.capsuleImage
-  || game.coverImage
-  || game.image
-  || game.background_image
-  || '';
+const getGameImage = (game = {}) => resolveGameArtwork(game, { surface: 'recommendation_card' }) || game.background_image || '';
 
 const toGameSummary = (game = {}) => ({
   id: getGameId(game),
@@ -184,10 +183,11 @@ export class ChallengeBoardService {
 
   static getChallengeBoardSnapshot(library = []) {
     try {
-      const dashboard = StatsAggregationService.getDashboardData(library);
+      const safeLibrary = Array.isArray(library) ? library : [];
+      const dashboard = StatsAggregationService.getDashboardData(safeLibrary);
       return {
         generatedAt: Date.now(),
-        periods: Object.keys(PERIOD_CONFIG).map((period) => this.getPeriodChallengeSnapshot(period, library, dashboard))
+        periods: Object.keys(PERIOD_CONFIG).map((period) => this.getPeriodChallengeSnapshot(period, safeLibrary, dashboard))
       };
     } catch (e) {
       console.error('ChallengeBoardService: Failed to get challenge board snapshot', e);
@@ -290,8 +290,9 @@ export class ChallengeBoardService {
 
   static getCuratedGames(period, library = []) {
     try {
+      const safeLibrary = Array.isArray(library) ? library : [];
       const byId = new Map(
-        (Array.isArray(library) ? library : [])
+        safeLibrary
           .map((game) => [getGameId(game), toGameSummary(game)])
           .filter(([id]) => Boolean(id))
       );
@@ -307,9 +308,10 @@ export class ChallengeBoardService {
 
   static getCandidateGames(period, library = []) {
     try {
+      const safeLibrary = Array.isArray(library) ? library : [];
       const currentIds = new Set(this.getCuratedGameIds(period));
       return sortCandidateGames(
-        (Array.isArray(library) ? library : [])
+        safeLibrary
           .map((game) => toGameSummary(game))
           .filter((game) => game.id && !currentIds.has(game.id))
       );
@@ -322,7 +324,8 @@ export class ChallengeBoardService {
   static getPeriodChallengeSnapshot(period, library = [], dashboard = null) {
     try {
       const config = PERIOD_CONFIG[period] || { title: period, context: period };
-      const statsDashboard = dashboard || StatsAggregationService.getDashboardData(library);
+      const safeLibrary = Array.isArray(library) ? library : [];
+      const statsDashboard = dashboard || StatsAggregationService.getDashboardData(safeLibrary);
       const periodStats = statsDashboard?.periods?.[period] || null;
       
       // Ensure periodStats has safe default values to prevent NaN
@@ -451,8 +454,9 @@ export class ChallengeBoardService {
 
   static getCuratedLineups(library = []) {
     try {
+      const safeLibrary = Array.isArray(library) ? library : [];
       return ['daily', 'weekly', 'monthly', 'yearly'].reduce((acc, period) => {
-        acc[period] = this.getCuratedGames(period, library);
+        acc[period] = this.getCuratedGames(period, safeLibrary);
         return acc;
       }, {});
     } catch (e) {

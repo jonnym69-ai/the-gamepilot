@@ -291,6 +291,8 @@ export const ThemeProvider = ({ children }) => {
     return 'dark';
   });
 
+  const [bigScreenMode, setBigScreenMode] = useState(false);
+
   // Validate Patreon code and apply XP boost (no direct content unlocks)
   const validatePatreonCode = (code) => {
     const result = AchievementTracker.activatePatreonXPBoost(code);
@@ -446,6 +448,14 @@ export const ThemeProvider = ({ children }) => {
   }, [currentTheme]);
 
   useEffect(() => {
+    if (bigScreenMode) {
+      document.body.classList.add('big-screen-mode');
+    } else {
+      document.body.classList.remove('big-screen-mode');
+    }
+  }, [bigScreenMode]);
+
+  useEffect(() => {
     const activeTheme = moodThemes.find((theme) => theme.id === currentTheme);
     if (activeTheme?.isPremium && !ProgressionUnlockService.isThemeUnlocked(currentTheme)) {
       setCurrentTheme('dark');
@@ -458,6 +468,10 @@ export const ThemeProvider = ({ children }) => {
       window.dispatchEvent(new CustomEvent('themeChange', { detail: currentTheme }));
     }
   }, [currentTheme]);
+
+  const toggleBigScreenMode = () => {
+    setBigScreenMode(prev => !prev);
+  };
 
   const value = {
     currentTheme,
@@ -491,7 +505,9 @@ export const ThemeProvider = ({ children }) => {
     isThemeUnlocked,
     getUnlockedThemes,
     getPremiumThemesByTier,
-    getAvailableThemes
+    getAvailableThemes,
+    bigScreenMode,
+    toggleBigScreenMode
   };
 
   return (

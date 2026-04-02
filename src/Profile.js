@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock } from 'lucide-react';
+import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
 import { GamingIdentity } from './GamingIdentity';
@@ -9,8 +9,13 @@ import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import NavBar from './NavBar';
+import { BackgroundScanner } from './BackgroundScanner';
+import LazyImage from './components/LazyImage';
 import GameCalendar from './components/GameCalendar';
 import CollapsibleSection from './components/CollapsibleSection';
+import ExportModal from './components/ExportModal';
+import CinematicExport from './components/CinematicExport';
+import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 
 const SUPPORT_TIER_WEIGHT = {
   Bronze: 1,
@@ -41,7 +46,16 @@ const getSessionStartTime = (sessionEntry) => {
   return null;
 };
 
-const Profile = ({ theme, library }) => {
+const readActiveSessions = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem('activeGameSessions') || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+};
+
+const Profile = ({ theme, library = [] }) => {
   const { success, error } = useToast();
   const [tempUsername, setTempUsername] = useState('');
   const [tempMessage, setTempMessage] = useState('Ready to find your perfect play?');
@@ -54,6 +68,8 @@ const Profile = ({ theme, library }) => {
   const [profilePic, setProfilePic] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('Ready to find your perfect play?');
   const [isEditing, setIsEditing] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
   const [isFounder, setIsFounder] = useState(false);
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [timeFormat, setTimeFormat] = useState('24-hour');
@@ -62,6 +78,7 @@ const Profile = ({ theme, library }) => {
   const [sessionStats, setSessionStats] = useState(null);
   const [rewardCatalog, setRewardCatalog] = useState(() => ProgressionUnlockService.getProfileRewardCatalog());
   const [rewardSummary, setRewardSummary] = useState(() => ProgressionUnlockService.getRewardCatalogSummary());
+  const [selectedSection, setSelectedSection] = useState(0);
 
   const refreshRewardCatalog = useCallback(() => {
     setRewardCatalog(ProgressionUnlockService.getProfileRewardCatalog());
@@ -150,12 +167,29 @@ const Profile = ({ theme, library }) => {
     }
   };
 
+  // Check for library updates quietly
+  useEffect(() => {
+    if (library.length > 0) {
+      BackgroundScanner.startScan(
+        ['steam', 'epic', 'xbox', 'gog', 'ea', 'ubisoft', 'playstation', 'battlenet'],
+        null,
+        (stats) => {
+          if (stats && (stats.newGames > 0 || stats.updatedGames > 0)) {
+            success(`Found ${stats.newGames} new and updated ${stats.updatedGames} games`);
+            StatsAggregationService.clearCache();
+          }
+        }
+      );
+    }
+  }, [library.length, success]);
+
   // Load completed games from localStorage
   useEffect(() => {
     const savedCompletedGames = localStorage.getItem('completedGames');
     if (savedCompletedGames) {
       try {
-        setCompletedGames(JSON.parse(savedCompletedGames));
+        const parsedCompletedGames = JSON.parse(savedCompletedGames);
+        setCompletedGames(Array.isArray(parsedCompletedGames) ? parsedCompletedGames : []);
       } catch (error) {
         setCompletedGames([]);
       }
@@ -268,7 +302,7 @@ const Profile = ({ theme, library }) => {
 
   // Calculate active sessions
   const activeSessionGames = useMemo(() => {
-    const activeSessions = JSON.parse(localStorage.getItem('activeGameSessions') || '{}');
+    const activeSessions = readActiveSessions();
     return Object.keys(activeSessions).map(gameName => {
       const game = library?.find(g => g.name === gameName);
       if (!game) return null;
@@ -417,7 +451,7 @@ const Profile = ({ theme, library }) => {
     if (window.endSession) {
       window.endSession(gameName);
     } else {
-      const sessions = JSON.parse(localStorage.getItem('activeGameSessions') || '{}');
+      const sessions = readActiveSessions();
       if (sessions[gameName]) {
         const sessionStartValue = getSessionStartTime(sessions[gameName]);
         const sessionStart = sessionStartValue ? new Date(sessionStartValue) : null;
@@ -470,7 +504,8 @@ const Profile = ({ theme, library }) => {
     
     let userFounders = [];
     try {
-      userFounders = JSON.parse(localStorage.getItem('userFounders') || '[]');
+      const parsedFounders = JSON.parse(localStorage.getItem('userFounders') || '[]');
+      userFounders = Array.isArray(parsedFounders) ? parsedFounders : [];
     } catch (err) {
       userFounders = [];
     }
@@ -581,14 +616,56 @@ const Profile = ({ theme, library }) => {
     success('Profile picture removed!');
   };
 
+  const handleProfileControllerInput = useCallback((action) => {
+    const sectionsCount = 5; // Adjust based on navigable sections in Profile
+    if (action === 'down' && selectedSection < sectionsCount - 1) {
+      setSelectedSection(prev => prev + 1);
+    } else if (action === 'up' && selectedSection > 0) {
+      setSelectedSection(prev => prev - 1);
+    } else if (action === 'confirm') {
+      // Trigger action based on selected section, e.g., open a modal or navigate
+      console.log('Controller confirm on section:', selectedSection);
+    }
+  }, [selectedSection]);
+
+  const getSectionClass = useCallback((index) => {
+    return `profile-section ${selectedSection === index ? 'selected' : ''}`;
+  }, [selectedSection]);
+
+  useEffect(() => {
+    const handleGlobalControllerInput = (event) => {
+      handleProfileControllerInput(event.detail.action);
+    };
+    window.addEventListener('controllerInput', handleGlobalControllerInput);
+    return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
+  }, [handleProfileControllerInput]);
+
   return (
     <div className="profile-page">
         <NavBar />
         <div className="profile-content">
           <div className="profile-container">
-          <div className="profile-header">
-            <User size={32} />
-            <h1 className="profile-title">{username ? `${username}'s Profile` : 'Player Profile'}</h1>
+          <div className="profile-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <User size={32} />
+              <h1 className="profile-title" style={{ margin: 0 }}>{username ? `${username}'s Profile` : 'Player Profile'}</h1>
+            </div>
+            <div className="profile-header-actions" style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className="action-btn" 
+                onClick={() => setIsCinematicExportOpen(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', background: 'var(--card)', border: '1px solid var(--border-color)', color: 'var(--text)', cursor: 'pointer' }}
+              >
+                <ImageIcon size={16} /> Cinematic Poster
+              </button>
+              <button 
+                className="action-btn" 
+                onClick={() => setIsExportModalOpen(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', background: 'var(--card)', border: '1px solid var(--border-color)', color: 'var(--text)', cursor: 'pointer' }}
+              >
+                <Download size={16} /> Export Data
+              </button>
+            </div>
           </div>
 
           <div
@@ -741,7 +818,8 @@ const Profile = ({ theme, library }) => {
           subtitle="Clock, timezone, and live play window context."
           badge={timeFormat === '12-hour' ? '12h clock' : '24h clock'}
           icon={<Clock size={18} />}
-          className="profile-folder"
+          className={getSectionClass(0)}
+          defaultOpen
         >
           <div className="datetime-card">
             <h3>Current Session</h3>
@@ -787,7 +865,7 @@ const Profile = ({ theme, library }) => {
             subtitle="Your playstyle summary and identity traits."
             badge={gamingIdentity.identity.personality}
             icon={<User size={18} />}
-            className="profile-folder"
+            className={getSectionClass(1)}
           >
             <div className="gaming-identity-card">
               <h3>Gaming Identity</h3>
@@ -826,7 +904,7 @@ const Profile = ({ theme, library }) => {
             subtitle="Your XP totals, level progress, and source breakdown."
             badge={`Lv ${xpStats.level}`}
             icon={<Star size={18} />}
-            className="profile-folder"
+            className={getSectionClass(2)}
             defaultOpen
           >
             <div className="gaming-identity-card">
@@ -877,7 +955,7 @@ const Profile = ({ theme, library }) => {
             subtitle="XP totals, category counts, and the next unlocks on your roadmap."
             badge={rewardSummary.nextUnlock ? `${rewardSummary.nextUnlock.remainingXP.toLocaleString()} XP left` : 'Complete'}
             icon={<Trophy size={18} />}
-            className="profile-folder"
+            className={getSectionClass(3)}
           >
             <div className="gaming-identity-card">
               <h3>Reward Economy</h3>
@@ -1008,7 +1086,7 @@ const Profile = ({ theme, library }) => {
             subtitle="Browse every unlockable profile, presentation, theme, and audio reward."
             badge="Unlockables"
             icon={<Lock size={18} />}
-            className="profile-folder"
+            className={getSectionClass(4)}
           >
             <div className="gaming-identity-card">
               <h3>Reward Catalog</h3>
@@ -1462,7 +1540,7 @@ const Profile = ({ theme, library }) => {
           subtitle="See what is running right now and end sessions manually if needed."
           badge={`${activeSessionGames.length} active`}
           icon={<Clock size={18} />}
-          className="profile-folder"
+          className={getSectionClass(5)}
           defaultOpen={activeSessionGames.length > 0}
         >
           <div className="gaming-identity-card">
@@ -1472,15 +1550,21 @@ const Profile = ({ theme, library }) => {
               {activeSessionGames.map((game, index) => (
                 <div key={index} className="active-session-card">
                   <div className="active-session-game">
-                    {game.iconUrl ? (
-                      <img src={game.iconUrl} alt={game.name} className="active-session-icon" />
-                    ) : (
-                      <div className="active-session-placeholder">
-                        {game.platform === 'Steam' ? '🚂' : 
-                         game.platform === 'Epic' ? '🎮' : 
-                         game.platform === 'Battle.net' ? '⚔️' : '🎯'}
-                      </div>
-                    )}
+                    <div className="game-card-image-wrapper" style={{ margin: '0', borderRadius: '8px' }}>
+                      {resolveGameArtwork(game, { surface: 'profile_icon' }) ? (
+                        <LazyImage
+                          src={resolveGameArtwork(game, { surface: 'profile_icon' })}
+                          alt={game.name}
+                          placeholder={getGameArtworkPlaceholder({ game, surface: 'profile_icon' })}
+                          className="active-session-icon"
+                          style={{ width: '48px', height: '48px', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div className="game-placeholder" style={{ width: '48px', height: '48px', margin: '0' }}>
+                          <span style={{ fontSize: '1.2rem' }}>🎮</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="active-session-info">
                       <h4 className="active-session-name">{game.name}</h4>
                       <p className="active-session-platform">{game.platform}</p>
@@ -1506,7 +1590,7 @@ const Profile = ({ theme, library }) => {
           subtitle="Your current heavy hitters ranked by tracked playtime."
           badge={`${mostPlayedGames.length} tracked`}
           icon={<Trophy size={18} />}
-          className="profile-folder"
+          className={getSectionClass(6)}
         >
           <div className="gaming-identity-card">
             <h3>Most Played Games</h3>
@@ -1515,16 +1599,25 @@ const Profile = ({ theme, library }) => {
           ) : (
             <div className="most-played-grid">
               {mostPlayedGames.map((game, index) => (
-                <div key={index} className="most-played-item">
+                <div key={index} className="most-played-item" style={{display: 'flex', alignItems: 'center', gap: '15px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
                   <div className="most-played-rank">#{index + 1}</div>
-                  <div className="most-played-game">
-                    {game.iconUrl ? (
-                      <img src={game.iconUrl} alt={game.name} className="most-played-icon" />
-                    ) : (
-                      <div className="most-played-placeholder">🎮</div>
-                    )}
-                    <div className="most-played-info">
-                      <h4 className="most-played-name">{game.name}</h4>
+                  <div className="most-played-game" style={{display: 'flex', alignItems: 'center', gap: '15px', flex: 1}}>
+                    <div className="game-card-image-wrapper" style={{ margin: '0', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                      {resolveGameArtwork(game, { surface: 'profile_icon' }) ? (
+                        <LazyImage
+                          src={resolveGameArtwork(game, { surface: 'profile_icon' })}
+                          alt={game.name}
+                          placeholder={getGameArtworkPlaceholder({ game, surface: 'profile_icon' })}
+                          className="most-played-icon"
+                          style={{ width: '48px', height: '48px', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div className="game-placeholder" style={{ width: '48px', height: '48px', margin: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)' }}>
+                          <span style={{ fontSize: '1.2rem' }}>🎮</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="most-played-info"><h4>{game.name}</h4>
                       <div className="most-played-stats">
                         <span>{Math.floor(game.totalMinutes / 60)}h {game.totalMinutes % 60}m</span>
                       </div>
@@ -1543,7 +1636,7 @@ const Profile = ({ theme, library }) => {
           subtitle="Track finished games and maintain your completion log."
           badge={`${getCompletionStats().total} logged`}
           icon={<Check size={18} />}
-          className="profile-folder"
+          className={getSectionClass(7)}
         >
           <div className="gaming-identity-card">
             <h3>Completed Games</h3>
@@ -1582,6 +1675,22 @@ const Profile = ({ theme, library }) => {
                 }
               }}
             />
+            
+            {isExportModalOpen && (
+              <ExportModal 
+                isOpen={isExportModalOpen} 
+                onClose={() => setIsExportModalOpen(false)} 
+                library={[]} 
+              />
+            )}
+            
+            {isCinematicExportOpen && (
+              <CinematicExport 
+                isOpen={isCinematicExportOpen} 
+                onClose={() => setIsCinematicExportOpen(false)} 
+                library={[]} 
+              />
+            )}
           </div>
           </div>
         </CollapsibleSection>
@@ -1593,7 +1702,7 @@ const Profile = ({ theme, library }) => {
             subtitle="A compact view of the behavior model learning from your sessions."
             badge={`${behaviorProfile.overallCompletionRate}% completion`}
             icon={<TrendingUp size={18} />}
-            className="profile-folder"
+            className={getSectionClass(8)}
           >
             <div className="gaming-identity-card">
               <h3>🎮 Your Gaming Style</h3>
@@ -1758,7 +1867,7 @@ const Profile = ({ theme, library }) => {
           subtitle="Upcoming launches and saved event reminders."
           badge="Calendar"
           icon={<Clock size={18} />}
-          className="profile-folder"
+          className={getSectionClass(9)}
         >
           <GameCalendar />
         </CollapsibleSection>
@@ -1769,7 +1878,7 @@ const Profile = ({ theme, library }) => {
           subtitle="Backup, restore, manual sync, and local data controls."
           badge={isSyncing ? 'Syncing' : 'Local-first'}
           icon={<Download size={18} />}
-          className="profile-folder"
+          className={getSectionClass(10)}
         >
           <div className="gaming-identity-card">
             <h3>⚙️ Data & Sync Management</h3>

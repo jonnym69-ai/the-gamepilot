@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import NavBar from './NavBar';
 import LazyImage from './components/LazyImage';
 import { AchievementTracker } from './AchievementSystem';
@@ -6,6 +6,7 @@ import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { RetentionQuestService } from './services/RetentionQuestService';
+import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
 import './Home.css';
 import './LibraryValue.css';
@@ -170,6 +171,63 @@ function Home({
   const [rediscoverGameResult, setRediscoverGameResult] = useState(null);
   const [showGettingStarted, setShowGettingStarted] = useState(false);
   const [retentionRefreshKey, setRetentionRefreshKey] = useState(0);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(-1);
+
+  const recentGames = useMemo(() => {
+    return library
+      .filter(game => game.last_played && game.time_played > 0)
+      .sort((a, b) => new Date(b.last_played) - new Date(a.last_played))
+      .slice(0, 5);
+  }, [library]);
+
+  const featuredGames = useMemo(() => {
+    return library
+      .filter(game => game.time_played > 120)
+      .sort((a, b) => b.time_played - a.time_played)
+      .slice(0, 5);
+  }, [library]);
+
+  const recommendations = useMemo(() => {
+    return library
+      .filter(game => game.time_played === 0 || !game.time_played)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 5);
+  }, [library]);
+
+  const allRecommendations = useMemo(() => {
+    return library
+      .filter(game => game.time_played === 0 || !game.time_played)
+      .sort(() => Math.random() - 0.5);
+  }, [library]);
+
+  const handleControllerInput = useCallback((action) => {
+    const itemsCount = 0 + 0 + (false ? 0 : 0);
+    if (action === 'down' && selectedItemIndex < itemsCount - 1) {
+      setSelectedItemIndex(prev => prev + 1);
+    } else if (action === 'up' && selectedItemIndex > 0) {
+      setSelectedItemIndex(prev => prev - 1);
+    } else if (action === 'confirm' && selectedItemIndex >= 0) {
+      let gameToLaunch;
+      if (selectedItemIndex < 0) {
+        gameToLaunch = null;
+      } else if (selectedItemIndex < 0 + 0) {
+        gameToLaunch = null;
+      } else {
+        gameToLaunch = false ? null : false;
+      }
+      if (gameToLaunch) {
+        onLaunchGame(gameToLaunch);
+      }
+    }
+  }, [selectedItemIndex, onLaunchGame]);
+
+  useEffect(() => {
+    const handleGlobalControllerInput = (event) => {
+      handleControllerInput(event.detail.action);
+    };
+    window.addEventListener('controllerInput', handleGlobalControllerInput);
+    return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
+  }, [handleControllerInput]);
 
   useEffect(() => {
     // Check and unlock achievements when component mounts
@@ -331,6 +389,8 @@ function Home({
   ), [lastPlayedGame, library, recommendationMood, time]);
   const continuePlayingEntry = continuePlayingResult?.primaryEntry || null;
   const continuePlayingGame = continuePlayingEntry?.game || continuePlayingResult?.primaryGame || null;
+  const continuePlayingArtwork = continuePlayingGame ? resolveGameArtwork(continuePlayingGame, { surface: 'recommendation_card' }) : null;
+  const continuePlayingPlaceholder = continuePlayingGame ? getGameArtworkPlaceholder({ game: continuePlayingGame, surface: 'recommendation_card' }) : null;
   const perfectPlayEntries = perfectPlayResult?.entries || [];
   const surpriseEntry = surpriseGameResult?.primaryEntry || null;
   const surpriseGame = surpriseEntry?.game || surpriseGameResult?.primaryGame || null;
@@ -396,6 +456,40 @@ function Home({
       </button>
     );
   };
+
+  const handleHomeControllerInput = useCallback((action) => {
+    const itemsCount = recentGames.length + featuredGames.length + (false ? allRecommendations.length : recommendations.length);
+    if (action === 'down' && selectedItemIndex < itemsCount - 1) {
+      setSelectedItemIndex(prev => prev + 1);
+    } else if (action === 'up' && selectedItemIndex > 0) {
+      setSelectedItemIndex(prev => prev - 1);
+    } else if (action === 'confirm' && selectedItemIndex >= 0) {
+      let gameToLaunch;
+      if (selectedItemIndex < recentGames.length) {
+        gameToLaunch = recentGames[selectedItemIndex];
+      } else if (selectedItemIndex < recentGames.length + featuredGames.length) {
+        gameToLaunch = featuredGames[selectedItemIndex - recentGames.length];
+      } else {
+        const recIndex = selectedItemIndex - recentGames.length - featuredGames.length;
+        gameToLaunch = false ? allRecommendations[recIndex] : recommendations[recIndex];
+      }
+      if (gameToLaunch) {
+        onLaunchGame(gameToLaunch);
+      }
+    }
+  }, [selectedItemIndex, recentGames, featuredGames, recommendations, allRecommendations, onLaunchGame]);
+
+  useEffect(() => {
+    const handleGlobalControllerInput = (event) => {
+      handleHomeControllerInput(event.detail.action);
+    };
+    window.addEventListener('controllerInput', handleGlobalControllerInput);
+    return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
+  }, [handleHomeControllerInput]);
+
+  const getGameCardClass = useCallback((index) => {
+    return `game-card fade-in ${selectedItemIndex === index ? 'selected' : ''}`;
+  }, [selectedItemIndex]);
 
   return (
     <div
@@ -464,10 +558,12 @@ function Home({
                 { name: 'Xbox', icon: '🎯', games: libraryList.filter(g => g.platform === 'Xbox').length },
                 { name: 'Rockstar', icon: '🪨', games: libraryList.filter(g => g.platform === 'Rockstar').length },
                 { name: 'Battle.net', icon: '⚔️', games: libraryList.filter(g => g.platform === 'Battle.net').length },
-                { name: 'Origin', icon: '🎪', games: libraryList.filter(g => g.platform === 'Origin').length },
-                { name: 'Uplay', icon: '🔷', games: libraryList.filter(g => g.platform === 'Uplay').length },
+                { name: 'EA', icon: '🎪', games: libraryList.filter(g => g.platform === 'EA').length },
+                { name: 'Ubisoft', icon: '🔷', games: libraryList.filter(g => g.platform === 'Ubisoft').length },
                 { name: 'GOG', icon: '🌌', games: libraryList.filter(g => g.platform === 'GOG').length },
-                { name: 'PlayStation (Brand)', icon: '🎮', games: libraryList.filter(g => g.brandPlatform === 'PlayStation').length }
+                { name: 'Riot Games', icon: '👊', games: libraryList.filter(g => g.platform === 'Riot').length },
+                { name: 'Battlestate Games', icon: '🔫', games: libraryList.filter(g => g.platform === 'BSG').length },
+                { name: 'PlayStation', icon: '🎮', games: libraryList.filter(g => g.brandPlatform === 'PlayStation' || g.platform === 'PlayStation').length }
               ];
               return launchers.map(launcher => (
                 <div
@@ -498,20 +594,22 @@ function Home({
             </h3>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
               <div className="game-card" style={{ maxWidth: '280px', padding: '15px' }}>
-                {continuePlayingGame.iconUrl ? (
-                  <LazyImage 
-                    src={continuePlayingGame.iconUrl} 
-                    alt={continuePlayingGame.name}
-                    placeholder={`https://placehold.co/184x69/${platformColors[continuePlayingGame.platform]?.replace('#', '') || '666666'}/fff?text=${encodeURIComponent(platformIcons[continuePlayingGame.platform] || '❓')}`}
-                    className="game-image"
-                  />
-                ) : (
-                  <div className="game-placeholder">
-                    <div className="platform-icon">
-                      {platformIcons[continuePlayingGame.platform] || '❓'}
+                <div className="game-card-image-wrapper">
+                  {continuePlayingArtwork ? (
+                    <LazyImage 
+                      src={continuePlayingArtwork} 
+                      alt={continuePlayingGame.name}
+                      placeholder={continuePlayingPlaceholder}
+                      className="game-image"
+                    />
+                  ) : (
+                    <div className="game-placeholder">
+                      <div className="platform-icon">
+                        {platformIcons[continuePlayingGame.platform] || '❓'}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
                 <h4 className="game-name">
                   {continuePlayingGame.name}
                 </h4>
@@ -690,24 +788,29 @@ function Home({
                       return null;
                     }
 
+                    const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
+                    const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
+
                     return (
-                      <div key={game.appid || game.name || index} className="game-card retention-pick-card">
+                      <div key={game.appid || game.name || index} className={getGameCardClass(index)}>
                         <span className="retention-pick-label">Pick {index + 1}</span>
                         <RecommendationReasoning entry={entry} />
-                        {game.iconUrl ? (
-                          <LazyImage
-                            src={game.iconUrl}
-                            alt={game.name}
-                            placeholder={`https://placehold.co/184x69/${platformColors[game.platform]?.replace('#', '') || '666666'}/fff?text=${encodeURIComponent(platformIcons[game.platform] || '❓')}`}
-                            className="game-image"
-                          />
-                        ) : (
-                          <div className="game-placeholder">
-                            <div className="platform-icon">
-                              {platformIcons[game.platform] || '❓'}
+                        <div className="game-card-image-wrapper">
+                          {gameArtwork ? (
+                            <LazyImage
+                              src={gameArtwork}
+                              alt={game.name}
+                              placeholder={gamePlaceholder}
+                              className="game-image"
+                            />
+                          ) : (
+                            <div className="game-placeholder">
+                              <div className="platform-icon">
+                                {platformIcons[game.platform] || '❓'}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                         <h4 className="game-name">
                           {game.name}
                         </h4>
@@ -919,23 +1022,28 @@ function Home({
                           return null;
                         }
 
+                        const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
+                        const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
+
                         return (
-                          <div key={game.appid || `perfect-${index}`} className="game-card">
+                          <div key={game.appid || `perfect-${index}`} className={getGameCardClass(index)}>
                             <RecommendationReasoning entry={entry} />
-                            {game.iconUrl ? (
-                              <LazyImage 
-                                src={game.iconUrl} 
-                                alt={game.name}
-                                placeholder={`https://placehold.co/184x69/${platformColors[game.platform]?.replace('#', '') || '666666'}/fff?text=${encodeURIComponent(platformIcons[game.platform] || '❓')}`}
-                                className="game-image"
-                              />
-                            ) : (
-                              <div className="game-placeholder">
-                                <div className="platform-icon">
-                                  {platformIcons[game.platform] || '❓'}
+                            <div className="game-card-image-wrapper">
+                              {gameArtwork ? (
+                                <LazyImage 
+                                  src={gameArtwork} 
+                                  alt={game.name}
+                                  placeholder={gamePlaceholder}
+                                  className="game-image"
+                                />
+                              ) : (
+                                <div className="game-placeholder">
+                                  <div className="platform-icon">
+                                    {platformIcons[game.platform] || '❓'}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                             <h4 className="game-name">
                               {game.name}
                             </h4>
@@ -944,7 +1052,7 @@ function Home({
                             </p>
                             <div className="game-info">
                               <span className="game-genre">
-                                {game.genres && game.genres.length > 0 ? game.genres.filter(genre => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                                {game.genres && game.genres.length > 0 ? game.genres.filter(g => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
                               </span>
                               {game.time_played && game.time_played > 0 && (
                                 <span className="game-playtime">
@@ -1074,7 +1182,7 @@ function Home({
                         }
 
                         return (
-                          <div key={game.appid || game.name || index} className="game-card">
+                          <div key={game.appid || game.name || index} className={getGameCardClass(index)}>
                             <RecommendationReasoning entry={entry} />
                             {game.iconUrl ? (
                               <LazyImage 

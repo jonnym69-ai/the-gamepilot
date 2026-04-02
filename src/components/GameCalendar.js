@@ -15,18 +15,37 @@ const GameCalendar = () => {
   });
 
   useEffect(() => {
-    const savedEvents = localStorage.getItem('gameCalendarEvents');
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
+    try {
+      const savedEvents = localStorage.getItem('gameCalendarEvents');
+      if (savedEvents) {
+        const parsed = JSON.parse(savedEvents);
+        if (Array.isArray(parsed)) {
+          setEvents(parsed);
+        } else {
+          setEvents([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading calendar events:', error);
+      setEvents([]);
     }
   }, []);
 
   const saveEvents = (updatedEvents) => {
-    setEvents(updatedEvents);
-    localStorage.setItem('gameCalendarEvents', JSON.stringify(updatedEvents));
+    try {
+      const safeEvents = Array.isArray(updatedEvents) ? updatedEvents : [];
+      setEvents(safeEvents);
+      localStorage.setItem('gameCalendarEvents', JSON.stringify(safeEvents));
+    } catch (error) {
+      console.error('Error saving calendar events:', error);
+    }
   };
 
   const getDaysInMonth = (date) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return { daysInMonth: 30, startingDayOfWeek: 0 }; // Safe defaults
+    }
+    
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -38,8 +57,17 @@ const GameCalendar = () => {
   };
 
   const getEventsForDate = (date) => {
-    const dateString = date.toISOString().split('T')[0];
-    return events.filter(event => event.date === dateString);
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return [];
+    }
+    
+    try {
+      const dateString = date.toISOString().split('T')[0];
+      return events.filter(event => event && event.date === dateString);
+    } catch (error) {
+      console.error('Error getting events for date:', error);
+      return [];
+    }
   };
 
   const handlePrevMonth = () => {

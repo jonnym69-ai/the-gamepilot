@@ -1,19 +1,11 @@
 // GameProcessMonitor.js - Monitors active game processes and tracks playtime
+import { getElectronAPI } from './services/ElectronBridge';
+
 export class GameProcessMonitor {
   static activeMonitors = new Map();
 
-  static getElectronIpc() {
-    if (!window.require) {
-      return null;
-    }
-
-    try {
-      const { ipcRenderer } = window.require('electron');
-      return ipcRenderer || null;
-    } catch (error) {
-      console.warn('IPC unavailable for game monitoring:', error);
-      return null;
-    }
+  static getElectronAPI() {
+    return getElectronAPI();
   }
 
   static matchesMonitorPayload(game, monitorId, payload) {
@@ -39,15 +31,21 @@ export class GameProcessMonitor {
 
     try {
       const monitor = this.activeMonitors.get(monitorId);
-      const ipcRenderer = monitor?.ipcRenderer || this.getElectronIpc();
+      const electronAPI = monitor?.electronAPI || this.getElectronAPI();
 
-      if (ipcRenderer && monitor) {
-        ipcRenderer.removeListener('game-started', monitor.handleGameStarted);
-        ipcRenderer.removeListener('game-closed', monitor.handleGameClosed);
-        ipcRenderer.removeListener('game-monitor-timeout', monitor.handleMonitorTimeout);
+      if (monitor) {
+        if (typeof monitor.unsubscribeGameStarted === 'function') {
+          monitor.unsubscribeGameStarted();
+        }
+        if (typeof monitor.unsubscribeGameClosed === 'function') {
+          monitor.unsubscribeGameClosed();
+        }
+        if (typeof monitor.unsubscribeMonitorTimeout === 'function') {
+          monitor.unsubscribeMonitorTimeout();
+        }
 
-        if (stopNative) {
-          ipcRenderer.invoke('stop-game-monitor', { monitorId }).catch((error) => {
+        if (stopNative && electronAPI && typeof electronAPI.stopGameMonitor === 'function') {
+          electronAPI.stopGameMonitor({ monitorId }).catch((error) => {
             console.warn(`⚠️ Failed to stop native process monitor for ${monitor.game.name}:`, error);
           });
         }
@@ -62,9 +60,10 @@ export class GameProcessMonitor {
 
   // Start monitoring a game process
   static startMonitoring(game, callbacks = {}) {
-    const ipcRenderer = this.getElectronIpc();
-    if (!ipcRenderer) {
-      console.warn('Electron IPC not available for process monitoring');
+    console.log(`[GameProcessMonitor] Starting monitoring for: ${game.name} (${game.platform})`);
+    const electronAPI = this.getElectronAPI();
+    if (!electronAPI) {
+      console.warn('[GameProcessMonitor] Electron IPC not available for process monitoring');
       return null;
     }
 
@@ -85,8 +84,10 @@ export class GameProcessMonitor {
       const monitorId = `${game.name}-${game.platform}-${Date.now()}`;
 
       const handleGameStarted = (event, payload) => {
+        console.log(`[GameProcessMonitor] Game start event received for ${game.name}, payload:`, payload);
         const { matches, meta } = this.matchesMonitorPayload(game, monitorId, payload);
         if (!matches) {
+          console.log(`[GameProcessMonitor] Game start payload doesn't match monitor ${monitorId} for ${game.name}`);
           return;
         }
 
@@ -95,8 +96,10 @@ export class GameProcessMonitor {
       };
 
       const handleGameClosed = (event, payload) => {
+        console.log(`[GameProcessMonitor] Game close event received for ${game.name}, payload:`, payload);
         const { matches, meta } = this.matchesMonitorPayload(game, monitorId, payload);
         if (!matches) {
+          console.log(`[GameProcessMonitor] Game close payload doesn't match monitor ${monitorId} for ${game.name}`);
           return;
         }
 
@@ -116,22 +119,31 @@ export class GameProcessMonitor {
         this.cleanupMonitor(monitorId, false);
       };
 
-      ipcRenderer.on('game-started', handleGameStarted);
-      ipcRenderer.on('game-closed', handleGameClosed);
-      ipcRenderer.on('game-monitor-timeout', handleMonitorTimeout);
+      const unsubscribeGameStarted = electronAPI.onGameStarted?.((payload) => {
+        handleGameStarted(null, payload);
+      });
+      const unsubscribeGameClosed = electronAPI.onGameClosed?.((payload) => {
+        handleGameClosed(null, payload);
+      });
+      const unsubscribeMonitorTimeout = electronAPI.onGameMonitorTimeout?.((payload) => {
+        handleMonitorTimeout(null, payload);
+      });
 
       this.activeMonitors.set(monitorId, {
         game,
-        handleGameStarted,
-        handleGameClosed,
-        handleMonitorTimeout,
-        ipcRenderer
+        electronAPI,
+        unsubscribeGameStarted,
+        unsubscribeGameClosed,
+        unsubscribeMonitorTimeout
       });
 
-      ipcRenderer.invoke('start-game-monitor', { monitorId, game }).then((result) => {
+      electronAPI.startGameMonitor({ monitorId, game }).then((result) => {
+        console.log(`[GameProcessMonitor] Native monitor start result for ${game.name}:`, result);
         if (!result?.success) {
           console.warn(`⚠️ Failed to start native process monitor for ${game.name}:`, result?.message || 'Unknown error');
           this.cleanupMonitor(monitorId, false);
+        } else {
+          console.log(`[GameProcessMonitor] ✅ Native monitor started successfully for ${game.name}, monitorId: ${monitorId}`);
         }
       }).catch((error) => {
         console.warn(`⚠️ Error starting native process monitor for ${game.name}:`, error);

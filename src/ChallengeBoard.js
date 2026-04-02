@@ -354,8 +354,14 @@ function ChallengeBoard({ library = [], onLaunchGame, activeSessions = {}, endSe
                         const isActive = Boolean(activeSessions?.[game.name]);
                         return (
                           <article key={game.id} className="lineup-game-card">
-                            <div className="lineup-game-art" style={game.image ? { backgroundImage: `url(${game.image})` } : undefined}>
-                              {!game.image && <Gamepad2 size={24} />}
+                            <div className="game-card-image-wrapper lineup-game-art">
+                              {game.image ? (
+                                <img src={game.image} alt={game.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <div className="game-placeholder" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Gamepad2 size={24} />
+                                </div>
+                              )}
                             </div>
                             <div className="lineup-game-copy">
                               <strong>{game.name}</strong>

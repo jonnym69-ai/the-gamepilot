@@ -17,10 +17,12 @@ export class BackgroundScanner {
             
             if (type === 'scan') {
               // Simulate scanning with progress updates
-              const platforms = data.platforms || [];
+              const platforms = Array.isArray(data.platforms) ? data.platforms : [];
               let totalGames = 0;
               
               platforms.forEach((platform, index) => {
+                if (!platform || typeof platform !== 'string') return;
+                
                 // Simulate platform scan
                 const progress = Math.round((index / platforms.length) * 100);
                 self.postMessage({
@@ -46,17 +48,18 @@ export class BackgroundScanner {
         this.scannerWorker = new Worker(workerUrl);
         
         this.scannerWorker.onmessage = (e) => {
+          if (!e || !e.data) return;
           const { type, progress, platform, totalGames } = e.data;
           
           if (type === 'progress') {
-            this.scanProgress = progress;
-            if (this.onProgressCallback) {
-              this.onProgressCallback({ progress, platform });
+            this.scanProgress = typeof progress === 'number' ? progress : 0;
+            if (typeof this.onProgressCallback === 'function') {
+              this.onProgressCallback({ progress: this.scanProgress, platform: platform || 'unknown' });
             }
           } else if (type === 'complete') {
             this.isScanning = false;
-            if (this.onCompleteCallback) {
-              this.onCompleteCallback({ totalGames });
+            if (typeof this.onCompleteCallback === 'function') {
+              this.onCompleteCallback({ totalGames: typeof totalGames === 'number' ? totalGames : 0 });
             }
           }
         };
@@ -77,39 +80,41 @@ export class BackgroundScanner {
       return;
     }
 
-    this.onProgressCallback = onProgress;
-    this.onCompleteCallback = onComplete;
+    const safePlatforms = Array.isArray(platforms) ? platforms : [];
+    this.onProgressCallback = typeof onProgress === 'function' ? onProgress : null;
+    this.onCompleteCallback = typeof onComplete === 'function' ? onComplete : null;
     this.isScanning = true;
     this.scanProgress = 0;
 
     if (this.scannerWorker) {
       this.scannerWorker.postMessage({
         type: 'scan',
-        data: { platforms }
+        data: { platforms: safePlatforms }
       });
     } else {
       // Fallback to main thread with throttling
-      this.mainThreadScan(platforms);
+      this.mainThreadScan(safePlatforms);
     }
   }
 
   // Main thread scanning with throttling to avoid UI blocking
   static mainThreadScan(platforms) {
+    const safePlatforms = Array.isArray(platforms) ? platforms : [];
     let index = 0;
 
     const scanNext = () => {
-      if (index >= platforms.length) {
+      if (index >= safePlatforms.length) {
         this.isScanning = false;
-        if (this.onCompleteCallback) {
+        if (typeof this.onCompleteCallback === 'function') {
           this.onCompleteCallback({ totalGames: 0 });
         }
         return;
       }
 
-      const platform = platforms[index];
-      const progress = Math.round((index / platforms.length) * 100);
+      const platform = safePlatforms[index] || 'unknown';
+      const progress = Math.round((index / safePlatforms.length) * 100);
 
-      if (this.onProgressCallback) {
+      if (typeof this.onProgressCallback === 'function') {
         this.onProgressCallback({ progress, platform });
       }
 

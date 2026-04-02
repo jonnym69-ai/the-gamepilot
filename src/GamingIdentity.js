@@ -244,9 +244,9 @@ export class GamingIdentity {
 
   static getPlatformIcon(platform) {
     const icons = {
-      'Steam': '🚂', 'Epic': '🎮', 'GOG': '🌌', 'Origin': '🎪',
+      'Steam': '🚂', 'Epic': '🎮', 'GOG': '🌌', 'EA': '🎪',
       'Uplay': '🔷', 'Battle.net': '⚔️', 'Xbox': '🎯',
-      'PlayStation': '🎮', 'Rockstar': '🪨', 'Manual': '📝'
+      'PlayStation': '🎮', 'Rockstar': '🪨', 'BSG': '🔫', 'Riot': '👊', 'Manual': '📝'
     };
     return icons[platform] || '❓';
   }

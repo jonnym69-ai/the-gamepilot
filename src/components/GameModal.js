@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { X, Star, Clock, Calendar, Play, ExternalLink, Heart } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Share2 } from 'lucide-react';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
 import { GameRequirements } from '../services/GameRequirements';
+import { openExternalUrl } from '../services/ElectronBridge';
 import { HardwareDetector } from '../services/HardwareDetector';
+import { LocalShareService } from '../services/LocalShareService';
 import './GameModal.css';
 
-const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavorite = false, onUpdatePrice }) => {
+const REPLAY_INTENT_OPTIONS = ['none', 'soon', 'active', 'finished', 'endless'];
+
+const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavorite = false, onUpdatePrice, onUpdateRating }) => {
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [screenshots, setScreenshots] = useState([]);
@@ -13,7 +17,36 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const [systemInfo, setSystemInfo] = useState(null);
   const [compatibility, setCompatibility] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [rating, setRating] = useState(game?.userRating || 0);
+  const [replayIntent, setReplayIntent] = useState(game?.replayIntent || 'none');
+  const [selectedControlIndex, setSelectedControlIndex] = useState(0);
   const fetchedGameId = React.useRef(null);
+
+  // Sync state when game prop changes
+  useEffect(() => {
+    if (game) {
+      setRating(game.userRating || 0);
+      setReplayIntent(game.replayIntent || 'none');
+      setSelectedControlIndex(0);
+    }
+  }, [game]);
+
+  const handleRatingChange = useCallback((newRating) => {
+    setRating(newRating);
+  }, []);
+
+  const handleRatingSave = useCallback((finalRating) => {
+    if (onUpdateRating) {
+      onUpdateRating(game.name, finalRating, replayIntent);
+    }
+  }, [game, onUpdateRating, replayIntent]);
+
+  const handleReplayIntentChange = useCallback((newIntent) => {
+    setReplayIntent(newIntent);
+    if (onUpdateRating) {
+      onUpdateRating(game.name, rating, newIntent);
+    }
+  }, [game, onUpdateRating, rating]);
 
   // Get system info on component mount
   useEffect(() => {
@@ -141,7 +174,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     }
   }, [isOpen, game, fetchGameDetails]);
 
-  const handleLaunchGame = useCallback(() => {
+  const handleLaunchGame = useCallback(async () => {
     if (!game) return;
 
     if (typeof onLaunch === 'function') {
@@ -149,20 +182,129 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
       return;
     }
 
-    if (window.require && game.appid) {
-      const { shell } = window.require('electron');
-      shell.openExternal(`steam://run/${game.appid}`);
+    if (game.appid) {
+      await openExternalUrl(`steam://run/${game.appid}`);
     }
   }, [game, onLaunch]);
 
-  const handleOpenStore = useCallback(() => {
-    if (!game?.appid || !window.require) {
+  const handleOpenStore = useCallback(async () => {
+    if (!game?.appid) {
       return;
     }
 
-    const { shell } = window.require('electron');
-    shell.openExternal(`https://store.steampowered.com/app/${game.appid}`);
+    await openExternalUrl(`https://store.steampowered.com/app/${game.appid}`);
   }, [game]);
+
+  const favoriteKey = game?.appid || game?.app_id || game?.steamAppId || game?.name;
+
+  const modalControls = useMemo(() => [
+    'launch',
+    'close',
+    'completion',
+    'rating',
+    'replay',
+    ...(game?.appid ? ['store'] : []),
+    ...(typeof onToggleFavorite === 'function' ? ['favorite'] : []),
+    'share'
+  ], [game?.appid, onToggleFavorite]);
+
+  useEffect(() => {
+    if (!isOpen || !game) {
+      return undefined;
+    }
+
+    const cycleReplayIntent = (direction) => {
+      const currentIndex = Math.max(0, REPLAY_INTENT_OPTIONS.indexOf(replayIntent));
+      const nextIndex = Math.max(0, Math.min(REPLAY_INTENT_OPTIONS.length - 1, currentIndex + direction));
+      const nextIntent = REPLAY_INTENT_OPTIONS[nextIndex];
+      handleReplayIntentChange(nextIntent);
+    };
+
+    const handleModalControllerInput = (event) => {
+      const action = event?.detail?.action;
+      const activeControl = modalControls[selectedControlIndex] || modalControls[0];
+
+      if (!action) {
+        return;
+      }
+
+      if (action === 'cancel') {
+        onClose();
+        return;
+      }
+
+      if (action === 'page_previous' || action === 'up') {
+        setSelectedControlIndex((prev) => Math.max(0, prev - 1));
+        return;
+      }
+
+      if (action === 'page_next' || action === 'down') {
+        setSelectedControlIndex((prev) => Math.min(modalControls.length - 1, prev + 1));
+        return;
+      }
+
+      if (activeControl === 'rating') {
+        if (action === 'left') {
+          const nextRating = Math.max(0, Number((rating - 0.5).toFixed(1)));
+          handleRatingChange(nextRating);
+          handleRatingSave(nextRating);
+          return;
+        }
+
+        if (action === 'right') {
+          const nextRating = Math.min(10, Number((rating + 0.5).toFixed(1)));
+          handleRatingChange(nextRating);
+          handleRatingSave(nextRating);
+          return;
+        }
+      }
+
+      if (activeControl === 'replay') {
+        if (action === 'left') {
+          cycleReplayIntent(-1);
+          return;
+        }
+
+        if (action === 'right') {
+          cycleReplayIntent(1);
+          return;
+        }
+      }
+
+      if (action !== 'confirm') {
+        return;
+      }
+
+      switch (activeControl) {
+        case 'launch':
+          handleLaunchGame();
+          break;
+        case 'close':
+          onClose();
+          break;
+        case 'completion':
+          toggleCompletion();
+          break;
+        case 'store':
+          handleOpenStore();
+          break;
+        case 'favorite':
+          onToggleFavorite?.(favoriteKey);
+          break;
+        case 'share': {
+          const shareText = `Check out ${game.name} on GamePilot! I've played for ${((game.time_played || 0) / 60).toFixed(1)} hours. #GamePilot`;
+          LocalShareService.copyTextToClipboard(shareText);
+          alert('Share text copied to clipboard!');
+          break;
+        }
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('controllerInput', handleModalControllerInput);
+    return () => window.removeEventListener('controllerInput', handleModalControllerInput);
+  }, [favoriteKey, game, handleLaunchGame, handleOpenStore, handleRatingChange, handleRatingSave, handleReplayIntentChange, isOpen, modalControls, onClose, onToggleFavorite, rating, replayIntent, selectedControlIndex, toggleCompletion]);
 
   if (!isOpen || !game) {
     return <div style={{ display: 'none' }} aria-hidden="true" />;
@@ -173,7 +315,6 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const genreLabels = gameDetails?.genres?.map((entry) => entry.description).filter(Boolean)
     || (Array.isArray(game.genres) ? game.genres.filter(Boolean) : []);
   const compatibilityLabel = compatibility ? GameRequirements.getSettingsLabel(compatibility.settingsLevel) : null;
-  const favoriteKey = game.appid || game.app_id || game.steamAppId || game.name;
   const fallbackOverview = `${game.name} is tracked in your ${platformLabel} library${game.mood ? ` and tagged for ${String(game.mood).toLowerCase()} sessions` : ''}.`;
   const formatDateValue = (value) => {
     if (!value) return null;
@@ -182,34 +323,34 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="game-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
+    <div className="game-modal-overlay" onClick={onClose}>
+      <div className="game-modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="game-modal-header">
+          <div className="game-modal-title">
             <img 
               src={iconSource} 
               alt={game.name} 
-              className="modal-game-icon"
+              className="game-modal-icon"
               onError={(e) => {
                 e.target.src = 'https://placehold.co/60x60.jpg?text=Loading...';
               }}
             />
             <h2>{game.name}</h2>
           </div>
-          <button className="modal-close" onClick={onClose}>
+          <button className="game-modal-close" onClick={onClose}>
             <X size={24} />
           </button>
         </div>
 
-        <div className="modal-content">
+        <div className="game-modal-body">
           {loading ? (
-            <div className="modal-loading">
-              <div className="spinner"></div>
+            <div className="game-modal-loading">
+              <div className="game-modal-spinner"></div>
               <p>Loading game details...</p>
             </div>
           ) : (
-            <div className="modal-layout">
-              <div className="modal-primary-column">
+            <div className="game-modal-layout">
+              <div className="game-modal-primary">
                 <div className="screenshots-section">
                   {screenshots.length > 0 ? (
                     <div className="screenshot-carousel">
@@ -231,7 +372,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                               key={`${screenshot.path_thumbnail}-${index}`}
                               src={screenshot.path_thumbnail}
                               alt={`Thumbnail ${index + 1}`}
-                              className={`thumbnail ${index === currentScreenshot ? 'active' : ''}`}
+                              className={`game-thumbnail ${index === currentScreenshot ? 'active' : ''}`}
                               onClick={() => setCurrentScreenshot(index)}
                               onError={(e) => {
                                 e.target.src = 'https://placehold.co/80x45.jpg?text=Loading...';
@@ -242,16 +383,16 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                       )}
                     </div>
                   ) : (
-                    <div className="modal-hero-fallback">
+                    <div className="game-hero-fallback">
                       <img 
                         src={iconSource}
                         alt={game.name}
-                        className="modal-hero-art"
+                        className="game-hero-art"
                         onError={(e) => {
                           e.target.src = 'https://placehold.co/160x160.jpg?text=Game';
                         }}
                       />
-                      <div className="modal-hero-copy">
+                      <div className="game-hero-copy">
                         <h3>{game.name}</h3>
                         <p>{fallbackOverview}</p>
                       </div>
@@ -259,7 +400,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                   )}
                 </div>
 
-                <div className="game-info-section">
+                <div className="game-info-panel">
                   <h3>Overview</h3>
                   {gameDetails?.short_description ? (
                     <p 
@@ -276,20 +417,93 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                       <span key={genre} className="meta-chip">{genre}</span>
                     ))}
                   </div>
+                  
+                  <div style={{ marginTop: '15px' }}>
+                    <button 
+                      className="share-btn"
+                      onClick={() => {
+                        const shareText = `Check out ${game.name} on GamePilot! I've played for ${((game.time_played || 0) / 60).toFixed(1)} hours. #GamePilot`;
+                        LocalShareService.copyTextToClipboard(shareText);
+                        alert('Share text copied to clipboard!');
+                      }}
+                      style={{
+                        outline: modalControls[selectedControlIndex] === 'share' ? '2px solid var(--accent, #ff6b35)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        color: 'var(--text)',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Share2 size={16} /> Share Game
+                    </button>
+                  </div>
                 </div>
 
                 {gameDetails?.developers && (
-                  <div className="game-info-section">
+                  <div className="game-info-panel">
                     <h3>Developers</h3>
                     <p className="game-description">{gameDetails.developers.join(', ')}</p>
                   </div>
                 )}
               </div>
 
-              <div className="modal-secondary-column">
-                <div className="game-info-section">
+              <div className="game-modal-secondary">
+                <div className="game-info-panel">
                   <h3>Game Details</h3>
                   <div className="info-grid">
+                    <div className="info-item rating-control">
+                      <Star size={16} />
+                      <span className="info-label">Your Rating</span>
+                      <div className="rating-slider-container" style={{ outline: modalControls[selectedControlIndex] === 'rating' ? '2px solid var(--accent, #ff6b35)' : 'none', borderRadius: '8px' }}>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="10" 
+                          step="0.5" 
+                          value={rating} 
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleRatingChange(parseFloat(e.target.value));
+                          }}
+                          onMouseUp={(e) => {
+                            e.stopPropagation();
+                            handleRatingSave(parseFloat(e.target.value));
+                          }}
+                          onTouchEnd={(e) => {
+                            e.stopPropagation();
+                            handleRatingSave(parseFloat(e.target.value));
+                          }}
+                          className="rating-slider"
+                        />
+                        <span className="rating-value">{rating.toFixed(1)}/10</span>
+                      </div>
+                    </div>
+                    <div className="info-item intent-control">
+                      <Play size={16} />
+                      <span className="info-label">Replay Intent</span>
+                      <select 
+                        value={replayIntent} 
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleReplayIntentChange(e.target.value);
+                        }}
+                        className="intent-select"
+                        style={{ outline: modalControls[selectedControlIndex] === 'replay' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
+                      >
+                        <option value="none">Not Planned</option>
+                        <option value="soon">Playing Soon</option>
+                        <option value="active">Currently Playing</option>
+                        <option value="finished">Finished/Done</option>
+                        <option value="endless">Endless/Ongoing</option>
+                      </select>
+                    </div>
                     <div className="info-item">
                       <Clock size={16} />
                       <span className="info-label">Playtime</span>
@@ -329,18 +543,19 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                   </div>
                 </div>
 
-                <div className="game-info-section">
+                <div className="game-info-panel">
                   <h3>Completion Status</h3>
                   <button 
                     onClick={toggleCompletion}
                     className={`completion-toggle ${isCompleted ? 'completed' : ''}`}
+                    style={{ outline: modalControls[selectedControlIndex] === 'completion' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
                   >
                     {isCompleted ? '✓ Completed' : '○ Mark as Completed'}
                   </button>
                 </div>
 
                 {gameDetails?.price_overview && (
-                  <div className="game-info-section">
+                  <div className="game-info-panel">
                     <h3>Price ({getCurrentCurrency()})</h3>
                     <div className="price-info">
                       {gameDetails.price_overview.discount_percent > 0 && (
@@ -367,7 +582,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                 )}
 
                 {compatibility && compatibilityLabel && (
-                  <div className="game-info-section">
+                  <div className="game-info-panel">
                     <h3>System Compatibility</h3>
                     <div className="compatibility-info">
                       <div className="compatibility-status">
@@ -439,11 +654,12 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
           )}
         </div>
 
-        <div className="modal-actions">
+        <div className="game-modal-footer">
           {(typeof onLaunch === 'function' || game.appid) && (
             <button 
               className="launch-button"
               onClick={handleLaunchGame}
+              style={{ outline: modalControls[selectedControlIndex] === 'launch' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
             >
               <Play size={16} />
               Launch Game
@@ -454,6 +670,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             <button 
               className="store-button"
               onClick={handleOpenStore}
+              style={{ outline: modalControls[selectedControlIndex] === 'store' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
             >
               <ExternalLink size={16} />
               View on Steam
@@ -464,6 +681,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             <button 
               className={`wishlist-button ${isFavorite ? 'wishlisted' : ''}`}
               onClick={() => onToggleFavorite(favoriteKey)}
+              style={{ outline: modalControls[selectedControlIndex] === 'favorite' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
             >
               <Heart size={16} />
               {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}

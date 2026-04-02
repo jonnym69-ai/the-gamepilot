@@ -75,12 +75,19 @@
     "appId": "com.gamepilot.app",
     "productName": "GamePilot",
     "npmRebuild": false,
+    "extraMetadata": {
+      "main": "electron.js"
+    },
     "directories": {
       "output": "dist"
     },
     "files": [
       "build/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "electron.js",
+      "launchHandler.js",
+      "nativeLibraryScanner.js",
+      "public/preload.js"
     ],
     "mac": {
       "category": "public.app-category.games",

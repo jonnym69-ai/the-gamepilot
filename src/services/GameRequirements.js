@@ -9,7 +9,8 @@ export class GameRequirements {
   static normalizedNameIndex = null;
 
   static normalizeLookupValue(value = '') {
-    return String(value).toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const safeValue = value != null ? String(value) : '';
+    return safeValue.toLowerCase().replace(/[^a-z0-9]+/g, '');
   }
 
   static getNameIndex() {
@@ -17,7 +18,8 @@ export class GameRequirements {
       return this.normalizedNameIndex;
     }
 
-    this.normalizedNameIndex = Object.entries(this.gameDatabase).reduce((acc, [id, requirements]) => {
+    const safeDatabase = this.gameDatabase && typeof this.gameDatabase === 'object' ? this.gameDatabase : {};
+    this.normalizedNameIndex = Object.entries(safeDatabase).reduce((acc, [id, requirements]) => {
       const normalizedName = this.normalizeLookupValue(requirements?.name);
       if (normalizedName) {
         acc[normalizedName] = id;
@@ -33,7 +35,8 @@ export class GameRequirements {
       return gameOrId.appid || gameOrId.app_id || gameOrId.steamAppId || gameOrId.id || gameOrId.name || gameOrId.title || 'unknown';
     }
 
-    return String(gameOrId || 'unknown');
+    const safeValue = gameOrId != null ? String(gameOrId) : 'unknown';
+    return safeValue;
   }
 
   static resolveGameRequirements(gameOrId) {
@@ -151,22 +154,34 @@ export class GameRequirements {
   static meetsRequirements(reqLevel, scores, systemInfo) {
     const issues = [];
     
-    if (scores.cpu < reqLevel.cpuScore) {
+    if (!reqLevel || typeof reqLevel !== 'object') {
+      return { passes: false, issues: [{ component: 'Requirements', required: 'Valid requirements object', actual: 'Missing or invalid' }] };
+    }
+    
+    if (!scores || typeof scores !== 'object') {
+      return { passes: false, issues: [{ component: 'Scores', required: 'Valid scores object', actual: 'Missing or invalid' }] };
+    }
+    
+    if (!systemInfo || typeof systemInfo !== 'object') {
+      return { passes: false, issues: [{ component: 'System Info', required: 'Valid system info object', actual: 'Missing or invalid' }] };
+    }
+    
+    if (typeof scores.cpu === 'number' && typeof reqLevel.cpuScore === 'number' && scores.cpu < reqLevel.cpuScore) {
       issues.push({ component: 'CPU', required: reqLevel.cpuScore, actual: scores.cpu });
     }
     
-    if (scores.gpu < reqLevel.gpuScore) {
+    if (typeof scores.gpu === 'number' && typeof reqLevel.gpuScore === 'number' && scores.gpu < reqLevel.gpuScore) {
       issues.push({ component: 'GPU', required: reqLevel.gpuScore, actual: scores.gpu });
     }
     
-    if (systemInfo.ram.total < reqLevel.ram) {
+    if (systemInfo.ram && typeof systemInfo.ram.total === 'number' && typeof reqLevel.ram === 'number' && systemInfo.ram.total < reqLevel.ram) {
       issues.push({ component: 'RAM', required: reqLevel.ram, actual: systemInfo.ram.total });
     }
     
     if (reqLevel.requiresSSD) {
       const storageDevices = Array.isArray(systemInfo.storage) ? systemInfo.storage : [];
-      const hasNVMe = storageDevices.some(d => d.isNVMe);
-      const hasSSD = storageDevices.some(d => d.isSSD);
+      const hasNVMe = storageDevices.some(d => d && d.isNVMe);
+      const hasSSD = storageDevices.some(d => d && d.isSSD);
       if (!hasNVMe && !hasSSD) {
         issues.push({ component: 'Storage', required: 'SSD', actual: 'HDD' });
       }
@@ -180,6 +195,10 @@ export class GameRequirements {
   
   static detectBottlenecks(requirements, scores, systemInfo, settingsLevel) {
     const bottlenecks = [];
+    
+    if (!requirements || typeof requirements !== 'object' || !scores || typeof scores !== 'object' || !systemInfo || typeof systemInfo !== 'object') {
+      return bottlenecks;
+    }
     
     const nextLevel = settingsLevel === 'low'
       ? requirements.recommended
@@ -196,54 +215,58 @@ export class GameRequirements {
           ? 'Minimum'
           : null;
     
-    if (nextLevel && targetLabel) {
-      const cpuGap = nextLevel.cpuScore - scores.cpu;
-      const gpuGap = nextLevel.gpuScore - scores.gpu;
-      const ramGap = nextLevel.ram - systemInfo.ram.total;
-      const storageDevices = Array.isArray(systemInfo.storage) ? systemInfo.storage : [];
-      const hasNVMe = storageDevices.some(d => d.isNVMe);
-      const hasSSD = storageDevices.some(d => d.isSSD);
-      
-      if (cpuGap > 0) {
-        bottlenecks.push({
-          component: 'CPU',
-          impact: cpuGap > 20 ? 'high' : cpuGap > 10 ? 'medium' : 'low',
-          message: `CPU is ${cpuGap} points below ${targetLabel} settings`,
-          scoreGap: cpuGap
-        });
-      }
-      
-      if (gpuGap > 0) {
-        bottlenecks.push({
-          component: 'GPU',
-          impact: gpuGap > 20 ? 'high' : gpuGap > 10 ? 'medium' : 'low',
-          message: `GPU is ${gpuGap} points below ${targetLabel} settings`,
-          scoreGap: gpuGap
-        });
-      }
-      
-      if (ramGap > 0) {
-        bottlenecks.push({
-          component: 'RAM',
-          impact: ramGap >= 8 ? 'high' : 'medium',
-          message: `Need ${ramGap}GB more RAM for ${targetLabel} settings`,
-          scoreGap: ramGap
-        });
-      }
+    if (!nextLevel || !targetLabel) {
+      return bottlenecks;
+    }
+    
+    const cpuGap = typeof nextLevel.cpuScore === 'number' && typeof scores.cpu === 'number' ? nextLevel.cpuScore - scores.cpu : 0;
+    const gpuGap = typeof nextLevel.gpuScore === 'number' && typeof scores.gpu === 'number' ? nextLevel.gpuScore - scores.gpu : 0;
+    const ramGap = typeof nextLevel.ram === 'number' && systemInfo.ram && typeof systemInfo.ram.total === 'number' ? nextLevel.ram - systemInfo.ram.total : 0;
+    const storageDevices = Array.isArray(systemInfo.storage) ? systemInfo.storage : [];
+    const hasNVMe = storageDevices.some(d => d && d.isNVMe);
+    const hasSSD = storageDevices.some(d => d && d.isSSD);
+    
+    if (cpuGap > 0) {
+      bottlenecks.push({
+        component: 'CPU',
+        impact: cpuGap > 20 ? 'high' : cpuGap > 10 ? 'medium' : 'low',
+        message: `CPU is ${cpuGap} points below ${targetLabel} settings`,
+        scoreGap: cpuGap
+      });
+    }
+    
+    if (gpuGap > 0) {
+      bottlenecks.push({
+        component: 'GPU',
+        impact: gpuGap > 20 ? 'high' : gpuGap > 10 ? 'medium' : 'low',
+        message: `GPU is ${gpuGap} points below ${targetLabel} settings`,
+        scoreGap: gpuGap
+      });
+    }
+    
+    if (ramGap > 0) {
+      bottlenecks.push({
+        component: 'RAM',
+        impact: ramGap >= 8 ? 'high' : 'medium',
+        message: `Need ${ramGap}GB more RAM for ${targetLabel} settings`,
+        scoreGap: ramGap
+      });
+    }
 
-      if (nextLevel.requiresSSD && !hasNVMe && !hasSSD) {
-        bottlenecks.push({
-          component: 'Storage',
-          impact: settingsLevel === 'cannot_run' ? 'high' : 'medium',
-          message: `Need SSD-class storage for ${targetLabel} settings`,
-          scoreGap: 1
-        });
-      }
+    if (nextLevel.requiresSSD && !hasNVMe && !hasSSD) {
+      bottlenecks.push({
+        component: 'Storage',
+        impact: settingsLevel === 'cannot_run' ? 'high' : 'medium',
+        message: `Need SSD-class storage for ${targetLabel} settings`,
+        scoreGap: 1
+      });
     }
     
     bottlenecks.sort((a, b) => {
       const impactOrder = { high: 3, medium: 2, low: 1 };
-      return impactOrder[b.impact] - impactOrder[a.impact];
+      const aImpact = impactOrder[a.impact] || 0;
+      const bImpact = impactOrder[b.impact] || 0;
+      return bImpact - aImpact;
     });
     
     return bottlenecks;

@@ -19,11 +19,21 @@ function GamingLinks({ theme = 'dark' }) {
 
   // Load links from localStorage on component mount
   useEffect(() => {
-    const savedLinks = localStorage.getItem('gamingLinks');
-    if (savedLinks) {
-      setLinks(JSON.parse(savedLinks));
-    } else {
-      // If no saved links, use defaults
+    try {
+      const savedLinks = localStorage.getItem('gamingLinks');
+      if (savedLinks) {
+        const parsed = JSON.parse(savedLinks);
+        if (Array.isArray(parsed)) {
+          setLinks(parsed);
+        } else {
+          setLinks(defaultLinks);
+        }
+      } else {
+        // If no saved links, use defaults
+        setLinks(defaultLinks);
+      }
+    } catch (error) {
+      console.error('Error loading gaming links:', error);
       setLinks(defaultLinks);
     }
   }, [defaultLinks]);
@@ -31,19 +41,35 @@ function GamingLinks({ theme = 'dark' }) {
   // Save links to localStorage whenever links change
   useEffect(() => {
     if (links.length > 0) {
-      localStorage.setItem('gamingLinks', JSON.stringify(links));
+      try {
+        localStorage.setItem('gamingLinks', JSON.stringify(links));
+      } catch (error) {
+        console.error('Error saving gaming links:', error);
+      }
     }
   }, [links]);
 
   const addLink = () => {
     if (newLink.name && newLink.url) {
-      setLinks([...links, { ...newLink, id: Date.now() }]);
-      setNewLink({ name: '', url: '', category: 'Store' });
+      try {
+        const safeName = String(newLink.name).trim();
+        const safeUrl = String(newLink.url).trim();
+        const safeCategory = String(newLink.category || 'Store').trim();
+        
+        if (safeName && safeUrl) {
+          setLinks([...links, { name: safeName, url: safeUrl, category: safeCategory, id: Date.now() }]);
+          setNewLink({ name: '', url: '', category: 'Store' });
+        }
+      } catch (error) {
+        console.error('Error adding link:', error);
+      }
     }
   };
 
   const removeLink = (id) => {
-    setLinks(links.filter(link => link.id !== id));
+    if (id != null && Number.isFinite(id)) {
+      setLinks(links.filter(link => link && link.id === id));
+    }
   };
 
   const restoreDefaults = () => {

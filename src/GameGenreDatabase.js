@@ -370,6 +370,10 @@ export const gameGenreDatabase = {
 
 // Normalize game name for better matching
 const normalizeGameName = (name) => {
+  if (typeof name !== 'string') {
+    return '';
+  }
+
   return name
     .toLowerCase()
     .trim()
@@ -389,11 +393,19 @@ const normalizeGameName = (name) => {
 
 // Helper function to check if a game belongs to a genre
 export const gameBelongsToGenre = (gameName, genre) => {
-  if (!gameGenreDatabase[genre]) return false;
-  
   const normalizedGameName = normalizeGameName(gameName);
+  if (!normalizedGameName) {
+    return false;
+  }
+
+  const resolvedGenre = Object.keys(gameGenreDatabase).find(
+    (databaseGenre) => databaseGenre.toLowerCase() === String(genre || '').toLowerCase()
+  );
+  if (!resolvedGenre) {
+    return false;
+  }
   
-  return gameGenreDatabase[genre].some(game => {
+  return gameGenreDatabase[resolvedGenre].some(game => {
     const normalizedDatabaseGame = normalizeGameName(game);
     
     // Exact match first
@@ -430,7 +442,10 @@ export const gameBelongsToGenre = (gameName, genre) => {
 
 // Keyword-based genre detection as fallback
 const detectGenreByKeywords = (gameName) => {
-  const normalized = gameName.toLowerCase();
+  const normalized = normalizeGameName(gameName);
+  if (!normalized) {
+    return [];
+  }
   const genres = [];
   
   // Shooter keywords
@@ -490,8 +505,12 @@ const detectGenreByKeywords = (gameName) => {
 const genreCache = new Map(); // Memoization cache
 
 export const getGameGenres = (gameName) => {
+  const cacheKey = normalizeGameName(gameName);
+  if (!cacheKey) {
+    return [];
+  }
+
   // Check cache first
-  const cacheKey = gameName.toLowerCase().trim();
   if (genreCache.has(cacheKey)) {
     return genreCache.get(cacheKey);
   }

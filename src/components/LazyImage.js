@@ -3,21 +3,45 @@ import './LazyImage.css';
 
 // Persistent cache for failed image URLs using localStorage
 const FAILED_IMAGES_KEY = 'gamepilot_failed_images';
+const FAILED_IMAGES_TTL_MS = 12 * 60 * 60 * 1000;
+
+const writeFailedImageCache = (cache) => {
+  try {
+    localStorage.setItem(FAILED_IMAGES_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.error('Failed to persist failed image cache:', e);
+  }
+};
 
 const getFailedImageCache = () => {
   try {
     const cached = localStorage.getItem(FAILED_IMAGES_KEY);
-    return cached ? new Set(JSON.parse(cached)) : new Set();
+    if (!cached) {
+      return {};
+    }
+
+    const parsed = JSON.parse(cached);
+
+    if (Array.isArray(parsed)) {
+      // Legacy format (string array). Do not keep permanent failures.
+      return {};
+    }
+
+    if (parsed && typeof parsed === 'object') {
+      return parsed;
+    }
+
+    return {};
   } catch (e) {
-    return new Set();
+    return {};
   }
 };
 
 const addToFailedCache = (url) => {
   try {
     const cache = getFailedImageCache();
-    cache.add(url);
-    localStorage.setItem(FAILED_IMAGES_KEY, JSON.stringify([...cache]));
+    cache[url] = Date.now();
+    writeFailedImageCache(cache);
   } catch (e) {
     console.error('Failed to cache failed image:', e);
   }
@@ -26,7 +50,20 @@ const addToFailedCache = (url) => {
 const isImageFailed = (url) => {
   try {
     const cache = getFailedImageCache();
-    return cache.has(url);
+    const failedAt = Number(cache?.[url] || 0);
+
+    if (!failedAt) {
+      return false;
+    }
+
+    const isStale = (Date.now() - failedAt) > FAILED_IMAGES_TTL_MS;
+    if (isStale) {
+      delete cache[url];
+      writeFailedImageCache(cache);
+      return false;
+    }
+
+    return true;
   } catch (e) {
     return false;
   }

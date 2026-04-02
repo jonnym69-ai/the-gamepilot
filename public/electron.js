@@ -142,6 +142,28 @@ ipcMain.on('launch-game', (event, game) => {
   }
 });
 
+// IPC Handler for scanning game libraries
+ipcMain.handle('scan-game-libraries', async () => {
+  try {
+    console.log('[Electron] Starting game library scan...');
+    // Import and run the native scanner
+    const { scanAllLibraries } = require('../nativeLibraryScanner.js');
+    console.log('[Electron] Imported scanAllLibraries function');
+    
+    const games = scanAllLibraries();
+    console.log(`[Electron] Scan complete: found ${games.length} games`);
+    console.log('[Electron] Game sample:', games.slice(0, 3));
+    
+    const result = { games };
+    console.log('[Electron] Returning result with games array');
+    return result;
+  } catch (error) {
+    console.error('[Electron] Library scan error:', error);
+    console.error('[Electron] Error stack:', error.stack);
+    return { games: [] };
+  }
+});
+
 // IPC Handler for getting system hardware info
 ipcMain.handle('get-system-info', async () => {
   try {

@@ -323,6 +323,30 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     requiredXP: 14040,
     rewardType: 'cosmetic',
     features: ['3d-transform', 'perspective']
+  },
+  {
+    id: 'glass_panels',
+    name: 'Glass Panels',
+    description: 'Frosted glass cards with soft blur and edge lighting.',
+    requiredXP: 16840,
+    rewardType: 'cosmetic',
+    features: ['glassmorphism', 'backdrop-blur', 'edge-lighting']
+  },
+  {
+    id: 'status_badges',
+    name: 'Status Badges',
+    description: 'Adds compact badges for quick category and priority scanning.',
+    requiredXP: 19800,
+    rewardType: 'cosmetic',
+    features: ['status-badges', 'priority-chips']
+  },
+  {
+    id: 'spotlight_rows',
+    name: 'Spotlight Rows',
+    description: 'Hero row styling for featured links and seasonal picks.',
+    requiredXP: 22840,
+    rewardType: 'cosmetic',
+    features: ['featured-row', 'hero-highlight', 'seasonal-accent']
   }
 ]);
 
@@ -720,8 +744,11 @@ export class ProgressionUnlockService {
   }
 
   static getGamingLinksFeatures() {
-    const currentXP = this.getTotalXP();
-    return GAMING_LINKS_UNLOCKS.map((reward) => buildRewardMeta(reward, currentXP));
+    return GAMING_LINKS_UNLOCKS.map((reward) => ({
+      ...reward,
+      unlocked: true,
+      progressPercent: 100
+    }));
   }
 
   static getRewardPresentationCustomization() {
@@ -732,7 +759,11 @@ export class ProgressionUnlockService {
       selectedLibraryVariant: getUnlockedRewardId(LIBRARY_PRESENTATION_UNLOCKS, storedCustomization.selectedLibraryVariant, currentXP),
       selectedHomeLayout: getUnlockedRewardId(HOME_LAYOUT_UNLOCKS, storedCustomization.selectedHomeLayout, currentXP),
       selectedRecommendationPack: getUnlockedRewardId(RECOMMENDATION_PACK_UNLOCKS, storedCustomization.selectedRecommendationPack, currentXP),
-      selectedGamingLinksFeatures: getUnlockedRewardId(GAMING_LINKS_UNLOCKS, storedCustomization.selectedGamingLinksFeatures, currentXP)
+      selectedGamingLinksFeatures: getUnlockedRewardId(
+        GAMING_LINKS_UNLOCKS,
+        storedCustomization.selectedGamingLinksFeatures,
+        Number.POSITIVE_INFINITY
+      )
     };
 
     const hasStoredCustomization = Object.keys(storedCustomization).length > 0;
@@ -754,7 +785,12 @@ export class ProgressionUnlockService {
     const sanitizedCustomization = {
       selectedLibraryVariant: getUnlockedRewardId(LIBRARY_PRESENTATION_UNLOCKS, mergedCustomization.selectedLibraryVariant, currentXP),
       selectedHomeLayout: getUnlockedRewardId(HOME_LAYOUT_UNLOCKS, mergedCustomization.selectedHomeLayout, currentXP),
-      selectedRecommendationPack: getUnlockedRewardId(RECOMMENDATION_PACK_UNLOCKS, mergedCustomization.selectedRecommendationPack, currentXP)
+      selectedRecommendationPack: getUnlockedRewardId(RECOMMENDATION_PACK_UNLOCKS, mergedCustomization.selectedRecommendationPack, currentXP),
+      selectedGamingLinksFeatures: getUnlockedRewardId(
+        GAMING_LINKS_UNLOCKS,
+        mergedCustomization.selectedGamingLinksFeatures,
+        Number.POSITIVE_INFINITY
+      )
     };
 
     localStorage.setItem(PRESENTATION_CUSTOMIZATION_STORAGE_KEY, JSON.stringify(sanitizedCustomization));
@@ -813,9 +849,6 @@ export class ProgressionUnlockService {
     const feature = this.getGamingLinksFeatures().find((reward) => reward.id === featureId);
     if (!feature) {
       return { success: false, message: 'Gaming Links feature not found.' };
-    }
-    if (!feature.unlocked) {
-      return { success: false, message: `${feature.name} unlocks at ${feature.requiredXP.toLocaleString()} XP.` };
     }
 
     return {

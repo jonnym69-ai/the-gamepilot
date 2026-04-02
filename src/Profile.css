@@ -1521,10 +1521,6 @@
 }
 
 /* Profile Theme Variations */
-.profile-page.theme-default {
-  /* Default theme - no changes needed */
-}
-
 .profile-page.theme-dark {
   --card: linear-gradient(135deg, #1a1a2e 0%, #2d3748 100%);
   --bg-primary: #0f172a;
@@ -2443,4 +2439,10 @@
     width: 100%;
     min-width: auto;
   }
+}
+/* Controller Navigation Feedback */
+body.big-screen-mode .profile-section.selected {
+  border: 3px solid #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
 }

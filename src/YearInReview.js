@@ -4,6 +4,7 @@ import { Award, Calendar, Clock, Download, FileText, Gamepad2, Image, Target, Tr
 import NavBar from './NavBar';
 import { DataExportService } from './services/DataExportService';
 import { YearInReviewService } from './services/YearInReviewService';
+import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import './YearInReview.css';
 
 const formatPlaytime = (minutes) => {
@@ -39,14 +40,14 @@ const SkeletonCard = () => (
   </div>
 );
 
-function YearInReview({ library = [], theme }) {
+function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, endSession, getPlaytimeStats, getMostPlayedGames }) {
   const exportRef = useRef(null);
   const noticeTimeoutRef = useRef(null);
-  const availableYears = useMemo(() => YearInReviewService.getAvailableYears(library), [library]);
+  const availableYears = useMemo(() => YearInReviewService.getAvailableYears(library || []), [library]);
   const [selectedYear, setSelectedYear] = useState(() => availableYears[0] || new Date().getFullYear());
   const [statusMessage, setStatusMessage] = useState('');
   const [isExportingImage, setIsExportingImage] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoading = false;
 
   useEffect(() => {
     if (!availableYears.includes(selectedYear)) {
@@ -69,12 +70,7 @@ function YearInReview({ library = [], theme }) {
   }, []);
 
   const snapshot = useMemo(
-    () => {
-      setIsLoading(true);
-      const result = YearInReviewService.getYearSnapshot(library, selectedYear);
-      setIsLoading(false);
-      return result;
-    },
+    () => YearInReviewService.getYearSnapshot(library || getEmptyLibraryFallback(), selectedYear),
     [library, selectedYear]
   );
 
@@ -88,7 +84,7 @@ function YearInReview({ library = [], theme }) {
 
   const handleExportJson = useCallback(() => {
     try {
-      const payload = YearInReviewService.buildExportPayload(library, selectedYear);
+      const payload = YearInReviewService.buildExportPayload(library || getEmptyLibraryFallback(), selectedYear);
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       DataExportService.downloadFile(blob, `gamepilot-year-in-review-${selectedYear}.json`);
       showStatus(`Year in Review JSON exported for ${selectedYear}.`);
@@ -292,30 +288,6 @@ function YearInReview({ library = [], theme }) {
                           <div className="month-bar-fill" style={{ width: `${Math.max((hours / maxMonthlyHours) * 100, hours > 0 ? 8 : 0)}%` }} />
                         </div>
                         <small>{snapshot.monthly.sessionCounts[month]} sessions</small>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-
-                <article className="year-review-panel year-review-top-games-panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h2><Gamepad2 size={20} /> Most Played Games</h2>
-                      <p>Your most-played lineup for the year.</p>
-                    </div>
-                  </div>
-                  <div className="top-games-list">
-                    {snapshot.topGames.map((game, index) => (
-                      <div key={game.id} className="top-game-row">
-                        <div className="top-game-rank">#{index + 1}</div>
-                        <div className="top-game-copy">
-                          <strong>{game.name}</strong>
-                          <span>{game.platform || 'Local Library'}</span>
-                        </div>
-                        <div className="top-game-stats">
-                          <span>{formatPlaytime(game.totalPlaytime)}</span>
-                          <small>{game.sessions} sessions · avg {formatPlaytime(game.avgSessionMinutes)}</small>
-                        </div>
                       </div>
                     ))}
                   </div>

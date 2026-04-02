@@ -7,6 +7,7 @@ import { PieChart, BarChart } from './components/StatsCharts';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './services/PersonaPerformanceInsights';
 import { StatsAggregationService } from './services/StatsAggregationService';
+import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
 import './Stats.css';
 
@@ -52,38 +53,32 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const calculateDashboardData = useCallback(() => StatsAggregationService.getDashboardData(library), [library]);
 
   const calculateLibraryStats = useCallback(() => {
-    // Use the same calculation logic as Library page
     const totalValue = library.reduce((total, game) => {
-      // Use actual Steam price if available, otherwise try stored price, then fallback
       let gamePrice = 0;
       
       if (game.priceNumeric) {
-        // Use stored numeric price
         gamePrice = game.priceNumeric;
       } else if (game.price) {
-        // Parse price string (e.g., "£19.99" -> 19.99)
         const priceMatch = game.price.toString().match(/[\d.]+/);
         gamePrice = priceMatch ? parseFloat(priceMatch[0]) : 0;
       } else {
-        // Check localStorage for stored price data
         const storedPrices = JSON.parse(localStorage.getItem('gamePrices') || '{}');
         const storedPrice = storedPrices[game.appid];
         if (storedPrice && storedPrice.priceNumeric) {
           gamePrice = storedPrice.priceNumeric;
         } else {
-          // Conservative fallback - use lower estimate
-          gamePrice = 15; // Reduced from £50 to be more realistic
+          gamePrice = 15; 
         }
       }
       
       return total + gamePrice;
     }, 0);
 
-    const pricedGames = library.filter(game => {
+    const pricedGames = Array.isArray(library) ? library.filter(game => {
       return (game.priceNumeric || game.price || 
         (JSON.parse(localStorage.getItem('gamePrices') || '{}')[game.appid]?.priceNumeric)
       );
-    }).length;
+    }).length : 0;
 
     // Platform distribution
     const platformCounts = {};
@@ -99,12 +94,11 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
     });
 
-    // Genre distribution (filter out 'Unknown')
+    // Genre distribution (CORRECTED SYNTAX BLOCK)
     const genreCounts = {};
     library.forEach(game => {
       if (game.genres && Array.isArray(game.genres)) {
         game.genres.forEach(genre => {
-          // Skip 'Unknown' genre
           if (genre && genre !== 'Unknown') {
             genreCounts[genre] = (genreCounts[genre] || 0) + 1;
           }
@@ -310,7 +304,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </div>
 
-        {/* Achievement Overview */}
         <div className="stats-section">
           <h2><Trophy size={24} /> Achievement Statistics</h2>
           <div className="stats-grid">
@@ -346,7 +339,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </div>
 
-        {/* Time-Based Achievement Counters */}
         <div className="stats-section">
           <h2><Calendar size={24} /> Time-Based Achievement Counters</h2>
           <div className="counters-grid">
@@ -521,7 +513,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         )}
 
-        {/* Library Statistics */}
         <div className="stats-section">
           <h2><Trophy size={24} /> Library Statistics</h2>
           <div className="stats-grid">
@@ -557,14 +548,11 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </div>
 
-        {/* Detailed Analytics with Charts */}
         <div className="stats-section">
-          <h2>� Library Breakdown</h2>
+          <h2>📊 Library Breakdown</h2>
           <p className="section-subtitle">Your owned collection by platform, genre, and mood.</p>
 
-          {/* Charts Grid */}
           <div className="charts-grid">
-            {/* Platform Distribution Chart */}
             {libraryStats.totalGames > 0 && Object.keys(libraryStats.platformCounts).length > 0 && (
               <PieChart 
                 data={libraryStats.platformCounts}
@@ -572,7 +560,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               />
             )}
 
-            {/* Genre Distribution Chart */}
             {libraryStats.totalGames > 0 && Object.keys(libraryStats.genreCounts).length > 0 && (
               <BarChart 
                 data={libraryStats.genreCounts}
@@ -580,7 +567,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               />
             )}
 
-            {/* Mood Distribution Chart */}
             {libraryStats.totalGames > 0 && Object.keys(libraryStats.moodCounts).length > 0 && (
               <PieChart 
                 data={libraryStats.moodCounts}
@@ -589,7 +575,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             )}
           </div>
 
-          {/* Top Categories */}
           <div className="analytics-row">
             <div className="analytics-card">
               <h3>🏆 Most Popular Platform</h3>
@@ -623,10 +608,9 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </div>
 
-        {/* Empty State */}
         {library.length === 0 && achievementData.unlocked.length === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
           <div className="empty-state">
-            <h2>📊 No Data Yet</h2>
+            <h2>{getEmptyLibraryFallback('Stats').message}</h2>
             <p>Start building your game library and unlocking achievements to see detailed analytics!</p>
           </div>
         )}

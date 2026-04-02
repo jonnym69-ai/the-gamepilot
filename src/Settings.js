@@ -10,7 +10,7 @@ import CollapsibleSection from './components/CollapsibleSection';
 import './Settings.css';
 
 function Settings() {
-  const { currentTheme, setTheme, availableThemes, validatePatreonCode, isThemeUnlocked } = useTheme();
+  const { currentTheme, setTheme, availableThemes, validatePatreonCode, isThemeUnlocked, bigScreenMode, toggleBigScreenMode } = useTheme();
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [timeFormat, setTimeFormat] = useState('24-hour');
   const [timezone, setTimezone] = useState('UTC');
@@ -715,6 +715,17 @@ function Settings() {
                   )}
                   
                   <div className="setting-item">
+                    <label>Big Screen/Controller Mode</label>
+                    <div className="toggle-switch" onClick={toggleBigScreenMode}>
+                      <div className={`toggle-slider ${bigScreenMode ? 'toggled' : ''}`}></div>
+                      <span className="toggle-label">{bigScreenMode ? 'ON' : 'OFF'}</span>
+                    </div>
+                    <p className="setting-description">
+                      Optimizes the interface for larger screens and enables controller navigation. Ideal for TV or console-like setups.
+                    </p>
+                  </div>
+                  
+                  <div className="setting-item">
                     <label>Auto-switch to system theme</label>
                     <div className="toggle-switch">
                       <input
@@ -730,6 +741,7 @@ function Settings() {
                 </div>
               </CollapsibleSection>
 
+              {/* Reward Presentation Section */}
               <CollapsibleSection
                 title="Reward Presentation"
                 subtitle="Equip XP-unlocked Home layouts, Library variants, and recommendation pack cosmetics."
@@ -1660,7 +1672,7 @@ function Settings() {
                 
                 <div className="copyright-notice">
                   <p><strong>Copyright Notice:</strong></p>
-                  <p>© 2026 Moz. All rights reserved.</p>
+                  <p> 2026 Moz. All rights reserved.</p>
                   <p>GamePilot is not affiliated with Steam, Epic Games, Microsoft, Sony, Nintendo, or any game publishers.</p>
                   <p>All game titles, logos, and images are trademarks of their respective owners.</p>
                 </div>

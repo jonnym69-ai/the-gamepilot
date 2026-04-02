@@ -1302,10 +1302,14 @@ a:hover {
   font-family: 'Press Start 2P', 'Courier New', 'Monaco', 'Menlo', monospace !important;
   letter-spacing: 0.02em !important;
   text-rendering: pixelated !important;
-  image-rendering: pixelated !important;
-  image-rendering: -moz-crisp-edges !important;
-  image-rendering: -webkit-optimize-contrast !important;
-  image-rendering: crisp-edges !important;
+  -ms-image-rendering: auto;
+  -webkit-image-rendering: crisp-edges;
+  -moz-image-rendering: crisp-edges;
+  -o-image-rendering: crisp-edges;
+  -ms-image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 /* 16-bit text effects - more refined than 8-bit */
@@ -1473,10 +1477,14 @@ a:hover {
   font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
   letter-spacing: 0.05em !important;
   text-rendering: pixelated !important;
-  image-rendering: pixelated !important;
-  image-rendering: -moz-crisp-edges !important;
-  image-rendering: -webkit-optimize-contrast !important;
-  image-rendering: crisp-edges !important;
+  -ms-image-rendering: auto;
+  -webkit-image-rendering: crisp-edges;
+  -moz-image-rendering: crisp-edges;
+  -o-image-rendering: crisp-edges;
+  -ms-image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 /* 8-bit text effects */
@@ -1688,6 +1696,7 @@ a:hover {
   background: rgba(26, 0, 102, 0.85) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
   box-shadow: 0 8px 32px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
   backdrop-filter: blur(10px) !important;
 }
 
@@ -1851,7 +1860,8 @@ a:hover {
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 32px;
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
   box-shadow: 0 8px 32px rgba(255, 140, 0, 0.1);
   position: relative;
   overflow: hidden;
@@ -1916,7 +1926,8 @@ a:hover {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px) !important;
+  backdrop-filter: blur(5px) !important;
 }
 
 .free-games-toggle:hover:not(:disabled) {
@@ -2085,7 +2096,8 @@ a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px) !important;
+  backdrop-filter: blur(5px) !important;
 }
 
 .free-games-hidden-bar span {
@@ -2142,5 +2154,27 @@ a:hover {
   .free-games-toggle {
     flex: 1;
     min-width: 0;
+  }
+}
+
+/* Big Screen Mode */
+@media screen and (min-width: 1200px) {
+  body.big-screen-mode {
+    font-size: 1.5rem; /* Larger base font size */
+  }
+  body.big-screen-mode .App {
+    max-width: 90%; /* Wider content area */
+    margin: 0 auto;
+  }
+  body.big-screen-mode nav, 
+  body.big-screen-mode button,
+  body.big-screen-mode .game-card {
+    font-size: 1.8rem; /* Larger fonts for navigation and interactive elements */
+    padding: 1.2em; /* Larger touch targets */
+  }
+  body.big-screen-mode .game-card img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9; /* Maintain aspect ratio for larger images */
   }
 }

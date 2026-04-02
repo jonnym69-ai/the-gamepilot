@@ -1,4 +1,5 @@
 // HardwareDetector.js - Detects system hardware specifications using Electron IPC
+import { getElectronAPI } from './ElectronBridge';
 
 export class HardwareDetector {
   static normalizeStorage(storage) {
@@ -29,16 +30,15 @@ export class HardwareDetector {
     try {
       console.log('[HardwareDetector] Starting hardware detection...');
       
-      // Check if running in Electron
-      if (!window.require) {
-        console.warn('[HardwareDetector] window.require not available, using fallback data');
+      const electronAPI = getElectronAPI();
+      if (!electronAPI || typeof electronAPI.getSystemInfo !== 'function') {
+        console.warn('[HardwareDetector] electronAPI not available, using fallback data');
         return this.getDefaultSystemInfo();
       }
 
       // Get real hardware info from Electron main process via IPC
-      const { ipcRenderer } = window.require('electron');
       console.log('[HardwareDetector] Calling IPC get-system-info...');
-      const rawInfo = await ipcRenderer.invoke('get-system-info');
+      const rawInfo = await electronAPI.getSystemInfo();
       console.log('[HardwareDetector] Received hardware info:', rawInfo);
       
       // Add tier and score calculations

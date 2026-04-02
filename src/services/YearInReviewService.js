@@ -25,21 +25,34 @@ const incrementCounter = (counter, key, amount = 1) => {
   counter[normalizedKey] = (counter[normalizedKey] || 0) + amount;
 };
 
-const sortCounts = (counts = {}) => Object.entries(counts)
-  .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
+const sortCounts = (counts = {}) => {
+  const safeCounts = counts && typeof counts === 'object' ? counts : {};
+  return Object.entries(safeCounts)
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
+};
 
-const buildRankedList = (counts = {}, limit = 5) => sortCounts(counts)
-  .slice(0, limit)
-  .map(([label, count]) => ({ label, count }));
+const buildRankedList = (counts = {}, limit = 5) => {
+  const safeCounts = counts && typeof counts === 'object' ? counts : {};
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 5;
+  return sortCounts(safeCounts)
+    .slice(0, safeLimit)
+    .map(([label, count]) => ({ label, count }));
+};
 
 const buildMonthlyBreakdown = (sessions = []) => {
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
   const playtimeMinutes = Object.fromEntries(MONTH_LABELS.map((label) => [label, 0]));
   const sessionCounts = Object.fromEntries(MONTH_LABELS.map((label) => [label, 0]));
 
-  sessions.forEach((session) => {
+  safeSessions.forEach((session) => {
+    if (!session || !session.timestamp || typeof session.playtimeMinutes !== 'number') {
+      return;
+    }
     const label = MONTH_LABELS[session.timestamp.getMonth()];
-    incrementCounter(playtimeMinutes, label, session.playtimeMinutes);
-    incrementCounter(sessionCounts, label, 1);
+    if (label) {
+      incrementCounter(playtimeMinutes, label, session.playtimeMinutes);
+      incrementCounter(sessionCounts, label, 1);
+    }
   });
 
   return {
@@ -346,18 +359,78 @@ export class YearInReviewService {
       };
     } catch (e) {
       console.error('YearInReviewService: Failed to generate year snapshot', e);
+      const fallbackYear = Number(selectedYear) || new Date().getFullYear();
+      const fallbackSummary = {
+        playtimeMinutes: 0,
+        sessions: 0,
+        uniqueGames: 0,
+        activeDays: 0,
+        avgSessionMinutes: 0,
+        longestSessionMinutes: 0,
+        playtimeHours: 0
+      };
+      const fallbackDistributions = {
+        platforms: {},
+        moods: {},
+        genres: {},
+        topPlatforms: [],
+        topMoods: [],
+        topGenres: []
+      };
+      const fallbackPersona = {
+        identityLabel: 'Uncharted Pilot',
+        identityDescription: 'Complete a few sessions to generate a local play identity for this year.',
+        dominantMood: null,
+        dominantGenre: null,
+        preferredSessionBucket: null,
+        preferredSessionLabel: 'Flexible Sessions',
+        peakPlayWindow: null,
+        avgSessionMinutes: 0,
+        moodMix: [],
+        genreMix: []
+      };
+      const fallbackAchievements = {
+        trackedUnlocksThisYear: 0,
+        highlights: [],
+        totalUnlocked: 0,
+        completionPercentage: 0,
+        historyAvailable: false
+      };
+      const fallbackProgression = {
+        xp: 0,
+        level: 1,
+        nextUnlock: null,
+        progressionGroups: [],
+        unlockedCounts: {},
+        totalCounts: {}
+      };
+      const fallbackMonthly = {
+        playtimeMinutes: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0])),
+        playtimeHours: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0])),
+        sessionCounts: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0]))
+      };
+
       return {
-        year: Number(selectedYear) || new Date().getFullYear(),
+        year: fallbackYear,
         generatedAt: Date.now(),
         hasData: false,
-        summary: { playtimeMinutes: 0, sessions: 0, uniqueGames: 0, activeDays: 0, avgSessionMinutes: 0, longestSessionMinutes: 0, playtimeHours: 0 },
-        distributions: { platforms: [], moods: [], genres: [], features: [] },
+        summary: fallbackSummary,
+        distributions: fallbackDistributions,
         topGames: [],
-        persona: { identity: 'Newcomer', traits: [], arc: [] },
-        achievements: { unlocked: 0, total: 0, completion: 0, highlights: [] },
-        progression: { xp: 0, level: 1, nextUnlock: null, progressionGroups: [], unlockedCounts: {}, totalCounts: {} },
-        monthly: [],
-        evolution: []
+        persona: fallbackPersona,
+        achievements: fallbackAchievements,
+        progression: fallbackProgression,
+        monthly: fallbackMonthly,
+        evolution: null,
+        summaryCards: buildSummaryCards({
+          year: fallbackYear,
+          summary: fallbackSummary,
+          topGames: [],
+          persona: fallbackPersona,
+          distributions: fallbackDistributions,
+          achievements: fallbackAchievements,
+          progression: fallbackProgression
+        })
       };
     }
   }

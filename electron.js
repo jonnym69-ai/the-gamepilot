@@ -394,6 +394,51 @@ ipcMain.on('launch-game', async (event, game) => {
   }
 });
 
+ipcMain.handle('launch-game', async (_event, game) => {
+  console.log('🚀 Launching game via invoke:', game.name, 'Platform:', game.platform);
+
+  try {
+    return await gameLauncher.launchGame(game);
+  } catch (error) {
+    console.error('❌ Launch error:', error);
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+});
+
+ipcMain.handle('scan-game-libraries', async () => {
+  try {
+    console.log('[Electron] Starting game library scan...');
+    const { scanAllLibraries } = require('./nativeLibraryScanner');
+    const games = scanAllLibraries();
+    const debug = global.lastScanDebug || null;
+    console.log(`[Electron] Scan complete: found ${games.length} games`);
+    return { games, debug };
+  } catch (error) {
+    console.error('[Electron] Library scan error:', error);
+    return {
+      games: [],
+      debug: {
+        error: error?.message || 'Unknown scan error'
+      }
+    };
+  }
+});
+
+ipcMain.handle('get-scan-debug', async () => global.lastScanDebug || null);
+
+ipcMain.handle('open-external-url', async (_event, url) => {
+  try {
+    await shell.openExternal(url);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to open external URL:', error);
+    return false;
+  }
+});
+
 ipcMain.handle('start-game-monitor', async (event, payload = {}) => {
   const monitorId = payload?.monitorId;
   const game = payload?.game;
@@ -492,6 +537,7 @@ function createWindow() {
       height: 800,
       title: 'GamePilot',
       webPreferences: {
+        preload: path.join(__dirname, 'public', 'preload.js'),
         nodeIntegration: true,
         contextIsolation: false,
         webSecurity: false,  // Allow local CSS loading

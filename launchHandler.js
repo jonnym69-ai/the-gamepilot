@@ -165,10 +165,15 @@ class GameLauncher {
           return this.launchRockstar(game);
           
         case 'Origin':
+        case 'EA':
           return this.launchOrigin(game);
           
         case 'Uplay':
+        case 'Ubisoft':
           return this.launchUplay(game);
+
+        case 'BSG':
+          return this.launchBSG(game);
           
         default:
           return { success: false, message: `Unsupported platform: ${game.platform}` };
@@ -349,6 +354,57 @@ class GameLauncher {
     // Fallback
     await this.shell.openExternal('uplay://');
     return { success: true, message: 'Uplay opened - please launch game manually' };
+  }
+
+  async launchBSG(game) {
+    console.log('🐻 BSG game data:', game);
+
+    const localAppDataPrograms = process.env.LOCALAPPDATA
+      ? path.join(process.env.LOCALAPPDATA, 'Programs')
+      : null;
+
+    const executableCandidates = [
+      game.executablePath,
+      game.executable,
+      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov.exe') : null,
+      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_BE.exe') : null,
+      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_Arena.exe') : null
+    ].filter(Boolean);
+
+    for (const executablePath of executableCandidates) {
+      if (!fs.existsSync(executablePath)) {
+        continue;
+      }
+
+      exec(`"${executablePath}"`, () => {});
+      return { success: true, message: `Launched ${game.name}` };
+    }
+
+    const launcherCandidates = [
+      game.installDir ? path.join(game.installDir, 'BsgLauncher.exe') : null,
+      game.installDir ? path.join(game.installDir, 'Launcher', 'BsgLauncher.exe') : null,
+      game.installDir ? path.join(game.installDir, 'BsgLauncher', 'BsgLauncher.exe') : null,
+      game.installDir ? path.join(game.installDir, '..', 'BsgLauncher', 'BsgLauncher.exe') : null,
+      game.installDir ? path.join(game.installDir, '..', 'Launcher', 'BsgLauncher.exe') : null,
+      'C:\\Battlestate Games\\BsgLauncher\\BsgLauncher.exe',
+      'D:\\Battlestate Games\\BsgLauncher\\BsgLauncher.exe',
+      'E:\\Battlestate Games\\BsgLauncher\\BsgLauncher.exe',
+      'C:\\Program Files\\BsgLauncher\\BsgLauncher.exe',
+      'C:\\Program Files (x86)\\BsgLauncher\\BsgLauncher.exe',
+      localAppDataPrograms ? path.join(localAppDataPrograms, 'BsgLauncher', 'BsgLauncher.exe') : null,
+      localAppDataPrograms ? path.join(localAppDataPrograms, 'Battlestate Games', 'BsgLauncher', 'BsgLauncher.exe') : null
+    ].filter(Boolean);
+
+    for (const launcherPath of launcherCandidates) {
+      if (!fs.existsSync(launcherPath)) {
+        continue;
+      }
+
+      await this.shell.openExternal(`file://${launcherPath}`);
+      return { success: true, message: 'BSG Launcher opened - please launch game manually' };
+    }
+
+    return { success: false, message: 'BSG Launcher not found - please install Escape from Tarkov' };
   }
 }
 

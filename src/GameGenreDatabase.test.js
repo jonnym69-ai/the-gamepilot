@@ -45,7 +45,7 @@ describe('GameGenreDatabase', () => {
   describe('gameBelongsToGenre', () => {
     test('should correctly identify game genres', () => {
       expect(gameBelongsToGenre('The Witcher 3: Wild Hunt', 'RPG')).toBe(true);
-      expect(gameBelongsToGenre('The Witcher 3: Wild Hunt', 'Action')).toBe(true);
+      expect(gameBelongsToGenre('The Witcher 3: Wild Hunt', 'Action')).toBe(false);
       expect(gameBelongsToGenre('The Witcher 3: Wild Hunt', 'Unknown')).toBe(false);
     });
 

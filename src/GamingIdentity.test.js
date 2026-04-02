@@ -1,127 +1,124 @@
 import { GamingIdentity } from './GamingIdentity';
+import { AchievementTracker } from './AchievementSystem';
+import { StatsAggregationService } from './services/StatsAggregationService';
 
-// Mock localStorage for testing
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-global.localStorage = localStorageMock;
+jest.mock('./AchievementSystem', () => ({
+  AchievementTracker: {
+    getUnlockedAchievements: jest.fn(),
+    getWeeklyMoodBadge: jest.fn(),
+    getPlatformStats: jest.fn(),
+    getFeatureStats: jest.fn(),
+    getMoodStats: jest.fn(),
+    getGenreStats: jest.fn(),
+    getTimeStats: jest.fn()
+  }
+}));
 
-// Mock Date for consistent testing
-const mockDate = new Date('2024-01-01T00:00:00Z');
-global.Date = jest.fn(() => mockDate);
-Date.now = jest.fn(() => mockDate.getTime());
-mockDate.toISOString = jest.fn(() => '2024-01-01T00:00:00.000Z');
+jest.mock('./services/StatsAggregationService', () => ({
+  StatsAggregationService: {
+    getDashboardData: jest.fn()
+  }
+}));
 
 describe('GamingIdentity', () => {
   beforeEach(() => {
-    // Clear all mocks before each test
+    localStorage.clear();
     jest.clearAllMocks();
 
-    // Reset localStorage mock
-    localStorageMock.getItem.mockClear();
-    localStorageMock.setItem.mockClear();
-  });
+    AchievementTracker.getUnlockedAchievements.mockReturnValue([]);
+    AchievementTracker.getWeeklyMoodBadge.mockReturnValue(null);
+    AchievementTracker.getPlatformStats.mockReturnValue({});
+    AchievementTracker.getFeatureStats.mockReturnValue({});
+    AchievementTracker.getMoodStats.mockReturnValue({});
+    AchievementTracker.getGenreStats.mockReturnValue({});
+    AchievementTracker.getTimeStats.mockReturnValue({ total: 0, sessions: 0 });
 
-  describe('getProfile', () => {
-    test('should return default profile when no stats exist', () => {
-      localStorageMock.getItem.mockReturnValue(null);
-
-      const profile = GamingIdentity.getProfile();
-
-      expect(profile).toEqual({
-        level: 1,
-        title: 'Casual Gamer',
-        xp: 0,
-        totalGames: 0,
-        totalPlaytime: 0,
-        favoriteGenre: 'Unknown',
-        gamerType: 'Casual',
-        joinDate: expect.any(String),
-        achievements: [],
-        stats: {
-          totalGames: 0,
-          totalPlaytime: 0,
-          favoriteGenre: 'Unknown',
-          averageSession: 0,
-          longestSession: 0,
-          mostPlayedDay: 'Unknown',
-          joinDate: expect.any(String)
+    StatsAggregationService.getDashboardData.mockReturnValue({
+      periods: {
+        all: {
+          playtimeMinutes: 0,
+          sessions: 0,
+          platformCounts: {},
+          moodCounts: {},
+          genreCounts: {},
+          featureUsage: { counts: {} }
         }
-      });
-    });
-
-    test('should return profile with existing stats', () => {
-      const mockStats = {
-        totalGames: 50,
-        totalPlaytime: 1200,
-        favoriteGenre: 'Action',
-        averageSession: 45,
-        longestSession: 180,
-        mostPlayedDay: 'Saturday'
-      };
-
-      localStorageMock.getItem.mockImplementation((key) => {
-        if (key === 'gamingStats') return JSON.stringify(mockStats);
-        if (key === 'joinDate') return '2023-01-01T00:00:00.000Z';
-        return null;
-      });
-
-      const profile = GamingIdentity.getProfile();
-
-      expect(profile.level).toBeGreaterThan(1);
-      expect(profile.stats).toEqual(mockStats);
+      }
     });
   });
 
-  describe('calculateLevel', () => {
-    test('should calculate correct level based on XP', () => {
-      expect(GamingIdentity.calculateLevel(0)).toBe(1);
-      expect(GamingIdentity.calculateLevel(100)).toBe(2);
-      expect(GamingIdentity.calculateLevel(500)).toBe(4);
-      expect(GamingIdentity.calculateLevel(1000)).toBe(6);
+  test('getGamingStats reads canonical all-time dashboard snapshot', () => {
+    localStorage.setItem('gameLibrary', JSON.stringify([
+      { name: 'Game A' },
+      { name: 'Game B' }
+    ]));
+
+    AchievementTracker.getUnlockedAchievements.mockReturnValue(['a1', 'a2']);
+    StatsAggregationService.getDashboardData.mockReturnValue({
+      periods: {
+        all: {
+          playtimeMinutes: 180,
+          sessions: 6,
+          platformCounts: { Steam: 4, Xbox: 2 },
+          moodCounts: { Relaxed: 3 },
+          genreCounts: { RPG: 2 },
+          featureUsage: { counts: { perfect_play: 5 } }
+        }
+      }
     });
+
+    const stats = GamingIdentity.getGamingStats();
+
+    expect(stats.totalPlayTime).toBe(180);
+    expect(stats.totalSessions).toBe(6);
+    expect(stats.averageSessionTime).toBe(30);
+    expect(stats.favoritePlatform).toBe('Steam');
+    expect(stats.favoriteMood).toBe('Relaxed');
+    expect(stats.favoriteGenre).toBe('RPG');
+    expect(stats.mostUsedFeature).toBe('perfect_play');
+    expect(stats.achievementProgress.unlocked).toBe(2);
+    expect(stats.librarySize).toBe(2);
   });
 
-  describe('calculateXP', () => {
-    test('should calculate XP based on playtime and achievements', () => {
-      const mockStats = {
-        totalPlaytime: 100, // 100 minutes = 100 XP
-        achievements: ['first_game', 'genre_explorer'] // 50 XP each
-      };
-
-      const xp = GamingIdentity.calculateXP(mockStats);
-      expect(xp).toBe(200); // 100 + 50 + 50
+  test('calculateGamerLevel scales with playtime, achievements, and library size', () => {
+    const level = GamingIdentity.calculateGamerLevel({
+      totalPlayTime: 6000,
+      achievementProgress: { unlocked: 8 },
+      librarySize: 30
     });
+
+    expect(level).toBeGreaterThan(1);
   });
 
-  describe('getLevelTitle', () => {
-    test('should return correct title for each level', () => {
-      expect(GamingIdentity.getLevelTitle(1)).toBe('Casual Gamer');
-      expect(GamingIdentity.getLevelTitle(5)).toBe('Dedicated Player');
-      expect(GamingIdentity.getLevelTitle(10)).toBe('Gaming Enthusiast');
-      expect(GamingIdentity.getLevelTitle(25)).toBe('Gaming Legend');
+  test('determineGamerType classifies hardcore players by total playtime', () => {
+    const gamerType = GamingIdentity.determineGamerType({
+      totalPlayTime: 5000,
+      platformDiversity: 2,
+      favoriteMood: 'Focused'
     });
+
+    expect(gamerType).toBe('Hardcore');
   });
 
-  describe('determineGamerType', () => {
-    test('should determine gamer type based on stats', () => {
-      const casualStats = { totalGames: 10, totalPlaytime: 50, favoriteGenre: 'Puzzle' };
-      expect(GamingIdentity.determineGamerType(casualStats)).toBe('Casual');
+  test('getProfile returns current identity shape and persists joinDate', () => {
+    const profile = GamingIdentity.getProfile();
 
-      const hardcoreStats = { totalGames: 200, totalPlaytime: 5000, favoriteGenre: 'RPG' };
-      expect(GamingIdentity.determineGamerType(hardcoreStats)).toBe('Hardcore');
-    });
+    expect(profile).toEqual(expect.objectContaining({
+      username: expect.any(String),
+      level: expect.any(Number),
+      title: expect.any(String),
+      stats: expect.any(Object),
+      identity: expect.any(Object),
+      joinDate: expect.any(String)
+    }));
+    expect(localStorage.getItem('joinDate')).toBeTruthy();
   });
 
-  describe('resetJoinDate', () => {
-    test('should reset join date to current date', () => {
-      const result = GamingIdentity.resetJoinDate();
+  test('resetJoinDate stores and returns an ISO timestamp', () => {
+    const resetValue = GamingIdentity.resetJoinDate();
 
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('joinDate', '2024-01-01T00:00:00.000Z');
-      expect(result).toBe('2024-01-01T00:00:00.000Z');
-    });
+    expect(typeof resetValue).toBe('string');
+    expect(new Date(resetValue).toString()).not.toBe('Invalid Date');
+    expect(localStorage.getItem('joinDate')).toBe(resetValue);
   });
 });

@@ -3,6 +3,7 @@ import { Heart, Coffee, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, Ale
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
+import { openExternalUrl } from './services/ElectronBridge';
 import './Donate.css';
 
 const TIER_LABEL_MAP = {
@@ -244,18 +245,11 @@ function Donate({ theme }) {
     }
   };
 
-  const handleLinkClick = (url) => {
-    // Check if we're in Electron environment
-    if (window.require && typeof window.require === 'function') {
-      try {
-        const { shell } = window.require('electron');
-        shell.openExternal(url);
-      } catch (error) {
-        window.open(url, '_blank');
-      }
-    } else {
-      // Fallback for web browsers
-      window.open(url, '_blank');
+  const handleLinkClick = async (url) => {
+    try {
+      await openExternalUrl(url);
+    } catch (error) {
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 

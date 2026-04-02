@@ -1,0 +1,8 @@
+# Exclude generated and archival artifacts from ripgrep/code search
+backups/
+releases/
+build/
+build-backup-*/
+dist/
+node_modules/
+*.log

@@ -61,8 +61,14 @@
   transition: opacity 0.8s ease-in-out;
 }
 
-.game-card .lazy-image-container {
+.home-page .game-card .lazy-image-container,
+.results-section .game-card .lazy-image-container {
   height: 184px;
+  width: 100%;
+}
+
+.library-page .game-card .lazy-image-container {
+  height: 100%;
   width: 100%;
 }
 
