@@ -75,6 +75,9 @@ export class PlaytimeAutoLogger {
     localStorage.setItem(this.ACTIVE_SESSIONS_KEY, JSON.stringify(sessions));
     console.log(`[PlaytimeAutoLogger] Session started: ${gameName}`);
     
+    // Trigger stats refresh event
+    window.dispatchEvent(new CustomEvent('gameSessionStarted', { detail: { gameName } }));
+    
     return sessions[gameName];
   }
 
@@ -123,6 +126,9 @@ export class PlaytimeAutoLogger {
     localStorage.setItem(this.ACTIVE_SESSIONS_KEY, JSON.stringify(sessions));
     
     console.log(`[PlaytimeAutoLogger] Session ended: ${gameName} (${playtimeMinutes} minutes)`);
+    
+    // Trigger stats refresh event
+    window.dispatchEvent(new CustomEvent('gameSessionEnded', { detail: { gameName, playtimeMinutes } }));
     
     return {
       gameName,

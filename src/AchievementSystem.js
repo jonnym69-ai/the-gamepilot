@@ -2220,7 +2220,14 @@ export class AchievementTracker {
     const unlockedAchievements = this.getUnlockedAchievements();
     const library = this.getStoredLibrary();
 
-    RollingAchievementsTracker.recomputeActivityFromHistory(library);
+    // Only recompute if library changed, not on every achievement check
+    const currentLibraryHash = JSON.stringify(library).slice(0, 100);
+    const lastLibraryHash = localStorage.getItem('lastLibraryHash');
+    
+    if (currentLibraryHash !== lastLibraryHash) {
+      RollingAchievementsTracker.recomputeActivityFromHistory(library);
+      localStorage.setItem('lastLibraryHash', currentLibraryHash);
+    }
     
     PERIOD_KEYS.forEach(period => {
       const activeIds = this.getActivePeriodAchievementIds(period);

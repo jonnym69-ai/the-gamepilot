@@ -482,7 +482,18 @@ function Achievements({ theme }) {
 
     loadRollingStats();
     const interval = setInterval(loadRollingStats, 30000); // Update every 30 seconds (optimized from 10s)
-    return () => clearInterval(interval);
+    
+    // Listen for rolling achievements updates
+    const handleRollingAchievementsUpdate = () => {
+      setTimeout(loadRollingStats, 500); // Small delay to ensure data is saved
+    };
+    
+    window.addEventListener('rollingAchievementsUpdated', handleRollingAchievementsUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('rollingAchievementsUpdated', handleRollingAchievementsUpdate);
+    };
   }, []);
 
   const getRewardIcon = (achievementId) => {

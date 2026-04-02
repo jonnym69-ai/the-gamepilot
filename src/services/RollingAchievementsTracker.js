@@ -388,14 +388,20 @@ export class RollingAchievementsTracker {
 
       this.saveData(data);
       
-      console.log('Rolling achievements updated:', {
+      console.log('[RollingAchievements] Playtime updated:', {
         daily: `${data.daily.playtime}min on ${data.daily.date}`,
         weekly: `${data.weekly.playtime}min for week ${data.weekly.weekStart}`,
         monthly: `${data.monthly.playtime}min for ${data.monthly.month}/${data.monthly.year}`,
         yearly: `${data.yearly.playtime}min for ${data.yearly.year}`
       });
+      
+      // Trigger window event for UI updates
+      window.dispatchEvent(new CustomEvent('rollingAchievementsUpdated', { 
+        detail: { minutes, period: 'all' } 
+      }));
+      
     } catch (error) {
-      console.error('Error updating playtime:', error);
+      console.error('[RollingAchievements] Error updating playtime:', error);
     }
   }
 
@@ -784,7 +790,8 @@ export class RollingAchievementsTracker {
 
   // Get all rolling stats
   static getAllStats() {
-    this.recomputeActivityFromHistory();
+    // Don't recompute on every stats call - this was wiping out progress
+    // Only use current data without resetting
     return {
       daily: this.getDailyStats(),
       weekly: this.getWeeklyStats(),

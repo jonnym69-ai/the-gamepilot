@@ -16,6 +16,23 @@ import DailyDoodleTitle from './components/DailyDoodleTitle';
 const platformIcons = PLATFORM_ICONS;
 const platformColors = PLATFORM_COLORS;
 
+// Helper function to format playtime accurately
+const formatPlaytime = (minutes) => {
+  if (!minutes || minutes <= 0) return null;
+  
+  if (minutes < 60) {
+    return `${Math.round(minutes)}m played`;
+  } else if (minutes < 120) {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return mins > 0 ? `${hours}h ${mins}m played` : `${hours}h played`;
+  } else {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m played`;
+  }
+};
+
 // ... (rest of the code remains the same)
 
 function GettingStartedModal({ isOpen, onClose, theme }) {
@@ -623,9 +640,9 @@ function Home({
                   <span className="game-genre">
                     {continuePlayingGame.genres && continuePlayingGame.genres.length > 0 ? continuePlayingGame.genres.filter(g => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
                   </span>
-                  {continuePlayingGame.time_played && continuePlayingGame.time_played > 0 && (
+                  {formatPlaytime(continuePlayingGame.time_played) && (
                     <span className="game-playtime">
-                      {Math.round(continuePlayingGame.time_played / 60)}h played
+                      {formatPlaytime(continuePlayingGame.time_played)}
                     </span>
                   )}
                 </div>
@@ -824,9 +841,9 @@ function Home({
                           <span className="game-genre">
                             {game.genres && game.genres.length > 0 ? game.genres.filter(genre => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
                           </span>
-                          {game.time_played && game.time_played > 0 && (
+                          {formatPlaytime(game.time_played) && (
                             <span className="game-playtime">
-                              {Math.round(game.time_played / 60)}h played
+                              {formatPlaytime(game.time_played)}
                             </span>
                           )}
                         </div>
@@ -1054,11 +1071,11 @@ function Home({
                               <span className="game-genre">
                                 {game.genres && game.genres.length > 0 ? game.genres.filter(g => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
                               </span>
-                              {game.time_played && game.time_played > 0 && (
-                                <span className="game-playtime">
-                                  {Math.round(game.time_played / 60)}h played
-                                </span>
-                              )}
+                              {formatPlaytime(game.time_played) && (
+                              <span className="game-playtime">
+                                {formatPlaytime(game.time_played)}
+                              </span>
+                            )}
                             </div>
                             <div className="game-actions">
                               <button 

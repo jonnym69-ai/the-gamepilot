@@ -363,9 +363,8 @@ class GameLauncher {
       ? path.join(process.env.LOCALAPPDATA, 'Programs')
       : null;
 
+    // Try to launch the game executable directly first
     const executableCandidates = [
-      game.executablePath,
-      game.executable,
       game.installDir ? path.join(game.installDir, 'EscapeFromTarkov.exe') : null,
       game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_BE.exe') : null,
       game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_Arena.exe') : null
@@ -380,6 +379,7 @@ class GameLauncher {
       return { success: true, message: `Launched ${game.name}` };
     }
 
+    // Fallback: Try to find BsgLauncher.exe in various locations
     const launcherCandidates = [
       game.installDir ? path.join(game.installDir, 'BsgLauncher.exe') : null,
       game.installDir ? path.join(game.installDir, 'Launcher', 'BsgLauncher.exe') : null,

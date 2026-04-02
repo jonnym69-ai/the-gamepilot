@@ -311,22 +311,24 @@ const Profile = ({ theme, library = [] }) => {
       if (!sessionStartValue) return null;
 
       const sessionStart = new Date(sessionStartValue);
-      if (Number.isNaN(sessionStart.getTime())) return null;
-
-      const sessionMinutes = Math.max(0, Math.floor((currentTime.getTime() - sessionStart.getTime()) / (1000 * 60)));
+      const currentMinutes = Math.round((Date.now() - sessionStart.getTime()) / 60000);
       
+      // Check if this is a launcher-based game that might be inaccurate
+      const isLauncherBased = ['EA', 'Rockstar', 'Uplay'].includes(game.platform);
+      const session = activeSessions[gameName];
+      const isPaused = session && session.paused;
+
       return {
         ...game,
-        sessionMinutes,
-        sessionStart: sessionStart.toLocaleString()
+        sessionStart: sessionStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sessionMinutes: currentMinutes,
+        sessionStartTime: sessionStartValue,
+        isLauncherBased,
+        isPaused,
+        sessionMetadata: session?.metadata || {}
       };
     }).filter(Boolean);
-  }, [currentTime, library]);
-
-  const selectedProfileFrame = useMemo(() => {
-    const selectedId = rewardCatalog?.customization?.selectedFrame;
-    return rewardCatalog?.frames?.find((frame) => frame.id === selectedId) || rewardCatalog?.frames?.[0] || null;
-  }, [rewardCatalog]);
+  }, [library]);
 
   const selectedProfileBanner = useMemo(() => {
     const selectedId = rewardCatalog?.customization?.selectedBanner;
@@ -346,6 +348,11 @@ const Profile = ({ theme, library = [] }) => {
   const selectedHomeLayout = useMemo(() => {
     const selectedId = rewardCatalog?.presentationCustomization?.selectedHomeLayout;
     return rewardCatalog?.homeLayouts?.find((layout) => layout.id === selectedId) || rewardCatalog?.homeLayouts?.[0] || null;
+  }, [rewardCatalog]);
+
+  const selectedProfileFrame = useMemo(() => {
+    const selectedId = rewardCatalog?.customization?.selectedFrame;
+    return rewardCatalog?.frames?.find((frame) => frame.id === selectedId) || rewardCatalog?.frames?.[0] || null;
   }, [rewardCatalog]);
 
   const selectedRecommendationPack = useMemo(() => {
@@ -494,6 +501,14 @@ const Profile = ({ theme, library = [] }) => {
     const savedTimezone = localStorage.getItem('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const savedTimeFormat = localStorage.getItem('timeFormat') || '24-hour';
     
+    console.log('[Profile] Loading saved data:', {
+      username: savedUsername,
+      hasProfilePic: !!savedProfilePic,
+      message: savedMessage,
+      timezone: savedTimezone,
+      timeFormat: savedTimeFormat
+    });
+
     setUsername(savedUsername);
     setProfilePic(savedProfilePic);
     setWelcomeMessage(savedMessage);
@@ -1571,7 +1586,14 @@ const Profile = ({ theme, library = [] }) => {
                       <div className="active-session-stats">
                         <span className="active-session-time">{game.sessionMinutes}m</span>
                         <span className="active-session-start">{game.sessionStart}</span>
+                        {game.isPaused && <span className="active-session-paused">PAUSED</span>}
                       </div>
+                      {game.isLauncherBased && (
+                        <div className="launcher-warning">
+                          <p>⚠️ Launcher-based game - time may be inaccurate</p>
+                          <p>End session when game actually closes</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <button onClick={() => handleEndSession(game.name)} className="end-session-button">End Session</button>

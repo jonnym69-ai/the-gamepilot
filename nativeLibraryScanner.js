@@ -2,6 +2,41 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Import genre database for game classification
+// Handle both development and production paths
+let getGameGenres;
+try {
+  // Try development path first
+  getGameGenres = require('./src/GameGenreDatabase.js').getGameGenres;
+} catch (error) {
+  try {
+    // Try production path (when bundled in app.asar)
+    getGameGenres = require('./GameGenreDatabase.js').getGameGenres;
+  } catch (prodError) {
+    console.log('[Scanner] GameGenreDatabase not found, using fallback genres');
+    // Fallback function if genre database is not available
+    getGameGenres = (gameName) => {
+      if (!gameName) return ['Story-driven'];
+      
+      const name = gameName.toLowerCase();
+      if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
+      if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
+      if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires')) return ['Strategy'];
+      if (name.includes('action') || name.includes('far cry') || name.includes('resident evil')) return ['Action'];
+      if (name.includes('adventure') || name.includes('tomb raider') || name.includes('zelda')) return ['Adventure'];
+      if (name.includes('simulation') || name.includes('sims') || name.includes('cities')) return ['Simulation'];
+      if (name.includes('racing') || name.includes('need for speed') || name.includes('forza')) return ['Racing'];
+      if (name.includes('sports') || name.includes('fifa') || name.includes('nba')) return ['Sports'];
+      if (name.includes('puzzle') || name.includes('tetris') || name.includes('candy')) return ['Puzzle'];
+      if (name.includes('platformer') || name.includes('mario') || name.includes('sonic')) return ['Platformer'];
+      if (name.includes('horror') || name.includes('outlast') || name.includes('amnesia')) return ['Horror'];
+      if (name.includes('indie') || name.includes('stardew') || name.includes('hollow')) return ['Indie'];
+      
+      return ['Story-driven']; // Default fallback
+    };
+  }
+}
+
 const scannerRuntimeCache = {
   activeDrives: null,
   battleNetInstallRoots: null,
@@ -503,10 +538,14 @@ const scanSteamLibrary = () => {
           return;
         }
 
+        // Get genres from database for better Perfect Play recommendations
+        const detectedGenres = getGameGenres(gameName);
+        
         games.push({
           name: gameName,
           platform: 'Steam',
           appid: appId,
+          genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
           iconUrl: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_231x87.jpg`,
           icon: '',
           executable: `steam://run/${appId}`,
@@ -550,9 +589,13 @@ const scanEpicLibrary = () => {
           const manifest = JSON.parse(content);
           if (!manifest?.DisplayName) return;
 
+          // Get genres from database for better Perfect Play recommendations
+          const detectedGenres = getGameGenres(manifest.DisplayName);
+
           games.push({
             name: manifest.DisplayName,
             platform: 'Epic',
+            genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
             iconUrl: '',
             icon: '',
             launchId: manifest.CatalogItemId || manifest.AppName || '',
@@ -563,6 +606,102 @@ const scanEpicLibrary = () => {
           // Ignore malformed Epic manifest
         }
       });
+  });
+
+  return games;
+};
+
+// Specialized Ubisoft scanner to handle subfolder executables (like Far Cry 6's bin_plus folder)
+const scanUbisoftLibrary = () => {
+  const games = [];
+  const uplayPaths = [
+    `${process.env.LOCALAPPDATA || process.env.localappdata}\\Ubisoft Game Launcher\\games`,
+    `${process.env.LOCALAPPDATA || process.env.localappdata}\\Ubisoft Connect\\games`,
+    `${process.env.ProgramData || process.env.programdata}\\Ubisoft\\Ubisoft Game Launcher\\games`,
+    `${process.env.ProgramData || process.env.programdata}\\Ubisoft Connect\\games`,
+    `${process.env['ProgramFiles(x86)']}\\Ubisoft\\Ubisoft Game Launcher\\games`,
+    `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft\\Ubisoft Game Launcher\\games`,
+    `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft\\games`,
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft\\games`
+  ];
+
+  // Add drive-specific paths
+  const activeDrives = getActiveDrives();
+  activeDrives.forEach((drive) => {
+    uplayPaths.push(`${drive}:\\Ubisoft`);
+    uplayPaths.push(`${drive}:\\Games\\Ubisoft`);
+    uplayPaths.push(`${drive}:\\Ubisoft Game Launcher\\games`);
+    uplayPaths.push(`${drive}:\\Ubisoft Connect\\games`);
+    uplayPaths.push(`${drive}:\\Games\\Ubisoft Connect`);
+  });
+
+  // Also check the main Ubisoft installation folder directly (for games like Far Cry 6)
+  const mainUbisoftPaths = [
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft`,
+    `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft`
+  ];
+
+  uplayPaths.push(...mainUbisoftPaths);
+
+  uplayPaths.forEach((basePath) => {
+    if (!fs.existsSync(basePath)) return;
+
+    safeReadDir(basePath).forEach((folder) => {
+      if (isLikelyNonGameFolder(folder)) return;
+
+      const gamePath = path.join(basePath, folder);
+      if (!fs.existsSync(gamePath) || !fs.statSync(gamePath).isDirectory()) return;
+
+      // Ubisoft games often have executables in subfolders like 'bin', 'bin_plus', etc.
+      const executableSubfolders = ['bin', 'bin_plus', 'Bin', 'BinPlus', 'support', 'Support'];
+      let foundExecutable = null;
+
+      // First try direct executable in game folder
+      const directExecutables = safeReadDir(gamePath).filter(file => 
+        file.toLowerCase().endsWith('.exe') && 
+        (file.toLowerCase().includes(folder.toLowerCase().replace(/\s+/g, '')) ||
+         file.toLowerCase().includes('launcher') ||
+         file.toLowerCase().includes('game'))
+      );
+
+      if (directExecutables.length > 0) {
+        foundExecutable = path.join(gamePath, directExecutables[0]);
+      } else {
+        // Try subfolders
+        for (const subfolder of executableSubfolders) {
+          const subfolderPath = path.join(gamePath, subfolder);
+          if (fs.existsSync(subfolderPath) && fs.statSync(subfolderPath).isDirectory()) {
+            const subfolderExecutables = safeReadDir(subfolderPath).filter(file => 
+              file.toLowerCase().endsWith('.exe')
+            );
+            if (subfolderExecutables.length > 0) {
+              foundExecutable = path.join(subfolderPath, subfolderExecutables[0]);
+              break;
+            }
+          }
+        }
+      }
+
+      if (foundExecutable) {
+        // Get genres from database for better Perfect Play recommendations
+        const gameName = folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+        const detectedGenres = getGameGenres(gameName);
+        
+        games.push({
+          name: gameName,
+          platform: 'Uplay',
+          genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
+          iconUrl: '',
+          icon: '',
+          executable: foundExecutable,
+          executablePath: foundExecutable,
+          installDir: gamePath,
+          launchId: folder,
+          ...createTrackedDefaults()
+        });
+        console.log('[Scanner] Added Ubisoft game:', gameName);
+      }
+    });
   });
 
   return games;
@@ -610,9 +749,14 @@ const scanFolderLibraries = (platform, paths, executableBuilder = null) => {
       const builderExists = builtExecutablePath ? fs.existsSync(builtExecutablePath) : false;
 
       if (hasExecutable || builderExists || detectedExecutablePath || looksInstalled) {
+        // Get genres from database for better Perfect Play recommendations
+        const gameName = extraMetadata.name || folder;
+        const detectedGenres = getGameGenres(gameName);
+        
         games.push({
-          name: extraMetadata.name || folder,
+          name: gameName,
           platform,
+          genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
           iconUrl: '',
           icon: '',
           executable: builderExists ? builtExecutable : (detectedExecutablePath || builtExecutable || null),
@@ -723,9 +867,13 @@ const scanBattleNetLibrary = () => {
       return;
     }
 
+    // Get genres from database for better Perfect Play recommendations
+    const detectedGenres = getGameGenres(game.name);
+    
     addGameIfUnique(games, {
       name: game.name,
       platform: 'Battle.net',
+      genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
       iconUrl: '',
       icon: '',
       code: game.code,
@@ -757,9 +905,14 @@ const scanBattleNetLibrary = () => {
           })
         ));
 
+        // Get genres from database for better Perfect Play recommendations
+        const gameName = matchedKnownGame?.name || folder;
+        const detectedGenres = getGameGenres(gameName);
+        
         addGameIfUnique(games, {
-          name: matchedKnownGame?.name || folder,
+          name: gameName,
           platform: 'Battle.net',
+          genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
           iconUrl: '',
           icon: '',
           code: matchedKnownGame?.code || null,
@@ -899,6 +1052,7 @@ const scanEALibrary = () => {
   });
 
   return scanFolderLibraries('EA', paths, (gamePath, folder) => ({
+    name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
     executable: findPreferredExecutable(gamePath, folder),
     installDir: gamePath,
     launchId: folder
@@ -974,6 +1128,34 @@ const scanBSGLibrary = () => {
   bsgPaths.forEach((rootPath) => {
     if (!fs.existsSync(rootPath)) return;
 
+    // First check for executables directly in the root Battlestate Games folder
+    const rootExecutables = safeReadDir(rootPath).filter(file => 
+      file.toLowerCase().endsWith('.exe') && 
+      (file.toLowerCase().includes('escapefromtarkov') || file.toLowerCase().includes('eft'))
+    );
+
+    rootExecutables.forEach((executableFile) => {
+      const executablePath = path.join(rootPath, executableFile);
+      if (fs.existsSync(executablePath)) {
+        const gameName = executableFile.toLowerCase().includes('escapefromtarkov_be') ? 'Escape from Tarkov: Arena' : 'Escape from Tarkov';
+        const detectedGenres = getGameGenres(gameName);
+        
+        games.push({
+          name: gameName,
+          platform: 'BSG',
+          genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
+          iconUrl: '',
+          icon: '',
+          executable: executablePath,
+          executablePath: executablePath,
+          installDir: rootPath,
+          ...createTrackedDefaults()
+        });
+        console.log('[Scanner] Added BSG game (root folder):', gameName);
+      }
+    });
+
+    // Then check for games in subfolders (original logic)
     safeReadDir(rootPath).forEach((folder) => {
       const gamePath = path.join(rootPath, folder);
       try {
@@ -981,12 +1163,25 @@ const scanBSGLibrary = () => {
           return;
         }
 
+        // Get genres from database for better Perfect Play recommendations
+        const gameName = folder === 'EFT' ? 'Escape from Tarkov' : folder === 'EFT Arena' ? 'Escape from Tarkov: Arena' : folder;
+        
+        // Check if game executable exists before adding
+        const executablePath = `${gamePath}\\EscapeFromTarkov.exe`;
+        if (!fs.existsSync(executablePath)) {
+          console.log('[Scanner] Skipping BSG game (no executable):', gameName);
+          return;
+        }
+
+        const detectedGenres = getGameGenres(gameName);
+
         games.push({
-          name: folder === 'EFT' ? 'Escape from Tarkov' : folder === 'EFT Arena' ? 'Escape from Tarkov: Arena' : folder,
+          name: gameName,
           platform: 'BSG',
+          genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
           iconUrl: '',
           icon: '',
-          executable: `${gamePath}\\EscapeFromTarkov.exe`, // Approximation, usually launched via BsgLauncher.exe though
+          executable: executablePath,
           executablePath: findPreferredExecutable(gamePath, folder),
           installDir: gamePath,
           ...createTrackedDefaults()
@@ -1106,6 +1301,17 @@ const dedupeGames = (games) => {
 };
 
 const scanAllLibraries = () => {
+  console.log('[Scanner] Starting scanAllLibraries...');
+  
+  // Test if getGameGenres is working
+  console.log('[Scanner] Testing getGameGenres function...');
+  try {
+    const testGenres = getGameGenres('Escape from Tarkov');
+    console.log('[Scanner] getGameGenres test result:', testGenres);
+  } catch (error) {
+    console.log('[Scanner] getGameGenres test failed:', error.message);
+  }
+  
   const activeDrives = getActiveDrives();
 
   // Dynamically generate GOG paths
@@ -1182,7 +1388,6 @@ const scanAllLibraries = () => {
     rockstarPaths.push(`${drive}:\\Games\\Rockstar`);
   });
 
-  console.log('[Scanner] Starting scanAllLibraries...');
   console.log('[Scanner] Active drives:', activeDrives);
   console.log('[Scanner] GOG paths:', gogPaths);
   console.log('[Scanner] Origin paths:', originPaths);
@@ -1198,18 +1403,56 @@ const scanAllLibraries = () => {
   const gogGames = scanFolderLibraries('GOG', gogPaths);
   console.log('[Scanner] GOG found:', gogGames.length, 'games');
   
-  const uplayGames = scanFolderLibraries('Uplay', uplayPaths, (gamePath, folder) => ({
-    executable: findBestExecutablePath(gamePath, folder) || findPreferredExecutable(gamePath, folder),
-    installDir: gamePath,
-    launchId: folder,
-    name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim()
-  })).filter((game) => looksLikeInstalledGameDirectory(game.installDir, game.name));
+  const uplayGames = scanUbisoftLibrary();
   const rockstarGames = scanFolderLibraries('Rockstar', rockstarPaths, (gamePath, folder) => ({
+    name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
     executable: path.join(gamePath, 'Launcher.exe'),
     installDir: gamePath,
     launchId: folder
   }));
+  console.log('[Scanner] Rockstar debug - checking paths:');
+  rockstarPaths.forEach((rockstarPath, index) => {
+    const exists = fs.existsSync(rockstarPath);
+    console.log(`[Scanner] Rockstar path ${index}: ${rockstarPath} - exists: ${exists}`);
+    if (exists) {
+      try {
+        const contents = safeReadDir(rockstarPath);
+        console.log(`[Scanner] Rockstar path ${index} contents:`, contents);
+      } catch (error) {
+        console.log(`[Scanner] Rockstar path ${index} error reading:`, error.message);
+      }
+    }
+  });
+  console.log('[Scanner] Rockstar found:', rockstarGames.length, 'games');
+  
   const eaGames = scanEALibrary();
+  console.log('[Scanner] EA debug - checking paths:');
+  const eaDebugPaths = [
+    `${process.env.ProgramData || 'C:\\ProgramData'}\\Origin\\LocalContent`,
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Origin Games`,
+    `${process.env.ProgramFiles || 'C:\\Program Files'}\\EA Games`,
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\EA Games`,
+    `${process.env.ProgramData || 'C:\\ProgramData'}\\EA Desktop\\InstallData`,
+    `${process.env.ProgramData || 'C:\\ProgramData'}\\Electronic Arts\\EA Desktop`,
+    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\Electronic Arts`,
+    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\EA Desktop`,
+    `${process.env.ProgramFiles || 'C:\\Program Files'}\\Electronic Arts`,
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Electronic Arts`
+  ];
+  eaDebugPaths.forEach((eaPath, index) => {
+    const exists = fs.existsSync(eaPath);
+    console.log(`[Scanner] EA path ${index}: ${eaPath} - exists: ${exists}`);
+    if (exists) {
+      try {
+        const contents = safeReadDir(eaPath);
+        console.log(`[Scanner] EA path ${index} contents:`, contents);
+      } catch (error) {
+        console.log(`[Scanner] EA path ${index} error reading:`, error.message);
+      }
+    }
+  });
+  console.log(`[Scanner] EA found: ${eaGames.length} games`);
+
   const playstationGames = scanPlaystationLibrary();
   const battleNetGames = scanBattleNetLibrary();
   const xboxGames = scanXboxLibrary();

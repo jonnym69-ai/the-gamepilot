@@ -430,7 +430,16 @@ export class StatsAggregationService {
   static getDashboardData(library = [], referenceDate = new Date()) {
     const sessionHistory = this.getNormalizedSessionHistory(library);
 
-    RollingAchievementsTracker.recomputeActivityFromHistory(library);
+    // Only recompute if we have new library data, not on every refresh
+    // This prevents wiping out current tracking progress
+    const currentLibraryHash = JSON.stringify(library).slice(0, 100);
+    const lastLibraryHash = localStorage.getItem('lastLibraryHash');
+    
+    if (currentLibraryHash !== lastLibraryHash) {
+      RollingAchievementsTracker.recomputeActivityFromHistory(library);
+      localStorage.setItem('lastLibraryHash', currentLibraryHash);
+    }
+    
     const rollingStats = {
       daily: RollingAchievementsTracker.getDailyStats(),
       weekly: RollingAchievementsTracker.getWeeklyStats(),

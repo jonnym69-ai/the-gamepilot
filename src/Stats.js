@@ -231,11 +231,42 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     refreshStats();
   }, [refreshStats]);
 
+  // Auto-refresh stats every 30 seconds and when window gains focus
   useEffect(() => {
     const handleFocus = () => refreshStats();
     window.addEventListener('focus', handleFocus);
+    
+    // Set up auto-refresh interval
+    const intervalId = setInterval(() => {
+      refreshStats();
+    }, 30000); // Refresh every 30 seconds
+
     return () => {
       window.removeEventListener('focus', handleFocus);
+      clearInterval(intervalId);
+    };
+  }, [refreshStats]);
+
+  // Listen for game session events to trigger immediate refresh
+  useEffect(() => {
+    const handleGameSession = () => {
+      // Small delay to ensure data is saved
+      setTimeout(() => refreshStats(), 1000);
+    };
+
+    const handleRollingAchievementsUpdate = () => {
+      // Immediate refresh when rolling achievements are updated
+      setTimeout(() => refreshStats(), 500);
+    };
+
+    window.addEventListener('gameSessionEnded', handleGameSession);
+    window.addEventListener('gameSessionStarted', handleGameSession);
+    window.addEventListener('rollingAchievementsUpdated', handleRollingAchievementsUpdate);
+
+    return () => {
+      window.removeEventListener('gameSessionEnded', handleGameSession);
+      window.removeEventListener('gameSessionStarted', handleGameSession);
+      window.removeEventListener('rollingAchievementsUpdated', handleRollingAchievementsUpdate);
     };
   }, [refreshStats]);
 
