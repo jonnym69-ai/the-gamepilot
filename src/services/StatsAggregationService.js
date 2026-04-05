@@ -1,6 +1,8 @@
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
 import { FeatureTracker } from './FeatureTracker';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
+import { QuestHistoryService } from './QuestHistoryService';
+import { AchievementTracker } from '../AchievementSystem';
 
 const FEATURE_KEYS = Object.freeze([
   'perfectPlay',
@@ -355,6 +357,88 @@ const buildFeatureUsage = (period, rollingStats) => {
   };
 };
 
+const isQuestEntryInPeriod = (entry, period, referenceDate = new Date()) => {
+  const completedAt = new Date(Number(entry?.completedAt || 0));
+  if (Number.isNaN(completedAt.getTime())) {
+    return false;
+  }
+
+  switch (period) {
+    case 'daily':
+      return completedAt.toDateString() === referenceDate.toDateString();
+    case 'weekly':
+      return RollingAchievementsTracker.getWeekStart(completedAt) === RollingAchievementsTracker.getWeekStart(referenceDate);
+    case 'monthly':
+      return completedAt.getFullYear() === referenceDate.getFullYear() && completedAt.getMonth() === referenceDate.getMonth();
+    case 'yearly':
+      return completedAt.getFullYear() === referenceDate.getFullYear();
+    case 'all':
+      return true;
+    default:
+      return false;
+  }
+};
+
+const buildQuestUsage = (period, referenceDate = new Date()) => {
+  const entries = QuestHistoryService.getQuestCompletionHistory()
+    .filter((entry) => isQuestEntryInPeriod(entry, period, referenceDate));
+  const periodCounts = { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
+  entries.forEach((entry) => {
+    if (periodCounts[entry.period] !== undefined) {
+      periodCounts[entry.period] += 1;
+    }
+  });
+  const topQuest = entries[0] || null;
+
+  return {
+    totalCompleted: entries.length,
+    periodCounts,
+    recent: entries.slice(0, 5),
+    topQuest: topQuest
+      ? {
+        achievementId: topQuest.achievementId,
+        name: topQuest.name,
+        period: topQuest.period,
+        completedAt: topQuest.completedAt
+      }
+      : null
+  };
+};
+
+const isAchievementEntryInPeriod = (entry, period, referenceDate = new Date()) => {
+  const unlockedAt = new Date(Number(entry?.unlockedAt || 0));
+  if (Number.isNaN(unlockedAt.getTime())) {
+    return false;
+  }
+
+  switch (period) {
+    case 'daily':
+      return unlockedAt.toDateString() === referenceDate.toDateString();
+    case 'weekly':
+      return RollingAchievementsTracker.getWeekStart(unlockedAt) === RollingAchievementsTracker.getWeekStart(referenceDate);
+    case 'monthly':
+      return unlockedAt.getFullYear() === referenceDate.getFullYear() && unlockedAt.getMonth() === referenceDate.getMonth();
+    case 'yearly':
+      return unlockedAt.getFullYear() === referenceDate.getFullYear();
+    case 'all':
+      return true;
+    default:
+      return false;
+  }
+};
+
+const buildAchievementUsage = (period, referenceDate = new Date()) => {
+  const entries = AchievementTracker.getAchievementUnlockHistory()
+    .filter((entry) => isAchievementEntryInPeriod(entry, period, referenceDate))
+    .sort((left, right) => Number(right?.unlockedAt || 0) - Number(left?.unlockedAt || 0));
+
+  return {
+    totalUnlocked: entries.length,
+    recent: entries.slice(0, 5),
+    topUnlock: entries[0] || null
+  };
+};
+
 const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
   const playtimeMinutes = sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0);
   const sessionCount = sessions.length;
@@ -373,6 +457,8 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
   });
 
   const featureUsage = buildFeatureUsage(period, rollingStats);
+  const questUsage = buildQuestUsage(period, referenceDate);
+  const achievementUsage = buildAchievementUsage(period, referenceDate);
   const streak = period === 'all'
     ? { ...(rollingStats?.daily?.streak || { current: 0, best: 0 }) }
     : { ...(rollingStats?.[period]?.streak || { current: 0, best: 0 }) };
@@ -392,6 +478,8 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
     moodCounts,
     genreCounts,
     featureUsage,
+    questUsage,
+    achievementUsage,
     streak,
     timeline: buildTimeline(sessions, period),
     topGames: buildTopGames(sessions),

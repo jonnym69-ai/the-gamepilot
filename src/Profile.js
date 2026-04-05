@@ -46,6 +46,32 @@ const getSessionStartTime = (sessionEntry) => {
   return null;
 };
 
+const buildRankedUsage = (sessions = [], valueSelector) => {
+  const counts = {};
+  const totalMinutes = {};
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+
+  safeSessions.forEach((session) => {
+    const label = typeof valueSelector === 'function' ? valueSelector(session) : null;
+    if (!label || label === 'Unknown') {
+      return;
+    }
+    counts[label] = (counts[label] || 0) + 1;
+    totalMinutes[label] = (totalMinutes[label] || 0) + Number(session?.playtimeMinutes || 0);
+  });
+
+  const totalSessions = safeSessions.length || 1;
+  return Object.entries(counts)
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, 3)
+    .map(([label, count]) => ({
+      label,
+      count,
+      sharePercent: Math.round((count / totalSessions) * 100),
+      avgPlaytime: Math.round((totalMinutes[label] || 0) / count)
+    }));
+};
+
 const readActiveSessions = () => {
   try {
     const parsed = JSON.parse(localStorage.getItem('activeGameSessions') || '{}');
@@ -286,14 +312,6 @@ const Profile = ({ theme, library = [] }) => {
 
   const handleEquipProfileTitle = useCallback((titleId) => {
     handleApplyRewardChange(ProgressionUnlockService.selectProfileTitle(titleId));
-  }, [handleApplyRewardChange]);
-
-  const handleEquipLibraryVariant = useCallback((variantId) => {
-    handleApplyRewardChange(ProgressionUnlockService.selectLibraryPresentationVariant(variantId));
-  }, [handleApplyRewardChange]);
-
-  const handleEquipHomeLayout = useCallback((layoutId) => {
-    handleApplyRewardChange(ProgressionUnlockService.selectHomeLayoutVariant(layoutId));
   }, [handleApplyRewardChange]);
 
   const handleEquipRecommendationPack = useCallback((packId) => {
@@ -538,11 +556,23 @@ const Profile = ({ theme, library = [] }) => {
     setXpStats(xpData);
 
     // Load behavior profile and session stats
-    const profile = UserBehaviorProfile.getProfileSummary();
-    setBehaviorProfile(profile);
+    const rawBehaviorProfile = UserBehaviorProfile.getProfile();
 
     const statsDashboard = StatsAggregationService.getDashboardData(library);
     const allTimeSnapshot = statsDashboard?.periods?.all;
+    const normalizedSessions = StatsAggregationService.getNormalizedSessionHistory(library);
+    const topMoodUsage = buildRankedUsage(normalizedSessions, (session) => session?.mood);
+    const topGenreUsage = buildRankedUsage(normalizedSessions, (session) => session?.primaryGenre);
+
+    setBehaviorProfile({
+      totalSelectionsTracked: Number(allTimeSnapshot?.sessions || normalizedSessions.length || 0),
+      totalCompleted: Number(allTimeSnapshot?.uniqueGames || 0),
+      overallCompletionRate: 0,
+      avgSessionLength: Number(allTimeSnapshot?.avgSessionMinutes || 0),
+      topMoods: topMoodUsage,
+      topGenres: topGenreUsage,
+      lastUpdated: rawBehaviorProfile?.lastUpdated || null
+    });
 
     const canonicalMostPlayedGames = (allTimeSnapshot?.topGames || []).slice(0, 5).map((game) => {
       const matchingLibraryGame = Array.isArray(library)
@@ -564,8 +594,6 @@ const Profile = ({ theme, library = [] }) => {
 
     const stats = {
       mostPlayedGames: canonicalMostPlayedGames,
-      topMoods: UserBehaviorProfile.getTopMoods(3),
-      topGenres: UserBehaviorProfile.getTopGenres(3),
       peakHours: UserBehaviorProfile.getPeakPlayHours(3)
     };
     setSessionStats(stats);
@@ -635,12 +663,16 @@ const Profile = ({ theme, library = [] }) => {
     const sectionsCount = 5; // Adjust based on navigable sections in Profile
     if (action === 'down' && selectedSection < sectionsCount - 1) {
       setSelectedSection(prev => prev + 1);
+      return true;
     } else if (action === 'up' && selectedSection > 0) {
       setSelectedSection(prev => prev - 1);
+      return true;
     } else if (action === 'confirm') {
       // Trigger action based on selected section, e.g., open a modal or navigate
       console.log('Controller confirm on section:', selectedSection);
+      return true;
     }
+    return false;
   }, [selectedSection]);
 
   const getSectionClass = useCallback((index) => {
@@ -649,7 +681,9 @@ const Profile = ({ theme, library = [] }) => {
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
-      handleProfileControllerInput(event.detail.action);
+      if (handleProfileControllerInput(event?.detail?.action)) {
+        event.preventDefault();
+      }
     };
     window.addEventListener('controllerInput', handleGlobalControllerInput);
     return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
@@ -1114,148 +1148,72 @@ const Profile = ({ theme, library = [] }) => {
                 className="profile-folder reward-folder"
               >
                 <div className="reward-type-shell">
-                <div className="reward-type-shell-header">
-                  <span className="reward-type-shell-kicker">Theme + Audio Rewards</span>
-                  <h4>XP milestones that change how GamePilot looks and sounds</h4>
-                  <p>These rewards unlock premium themes and individual audio packs that you can activate from Settings as your XP grows.</p>
-                </div>
-
-                <div className="reward-customization-section">
-                  <div className="reward-section-heading">
-                    <div>
-                      <h4>Theme Tier Roadmap</h4>
-                      <p>Each tier unlocks a new pool of premium themes.</p>
-                    </div>
-                    <span className="reward-count-pill">{rewardTypeSummary.themes.unlocked}/{rewardTypeSummary.themes.total} themes unlocked</span>
+                  <div className="reward-type-shell-header">
+                    <span className="reward-type-shell-kicker">Theme + Audio Rewards</span>
+                    <h4>Appearance and audio now have dedicated destinations</h4>
+                    <p>Use Themes for visual browsing and use Settings for toggles like music, ambient sound, and controller mode.</p>
                   </div>
+
                   <div className="reward-summary-grid">
-                    {rewardCatalog.themeTiers.map((tier) => (
-                      <div key={tier.id} className="reward-summary-card">
-                        <span className="reward-summary-label">{tier.name}</span>
-                        <strong className="reward-summary-value">{tier.unlockedThemeCount}/{tier.totalThemeCount}</strong>
-                        <span className="reward-summary-caption">
-                          {tier.requiredXP.toLocaleString()} XP {tier.unlocked ? 'reached' : 'required'}
-                        </span>
+                    <div className="reward-summary-card">
+                      <span className="reward-summary-label">Premium Themes</span>
+                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.premiumThemes}/{rewardSummary.totalCounts.premiumThemes}</strong>
+                      <span className="reward-summary-caption">Unlocked through XP tier progression</span>
+                    </div>
+                    <div className="reward-summary-card">
+                      <span className="reward-summary-label">Music Packs</span>
+                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.musicPacks}/{rewardSummary.totalCounts.musicPacks}</strong>
+                      <span className="reward-summary-caption">Background tracks configurable in Settings</span>
+                    </div>
+                    <div className="reward-summary-card">
+                      <span className="reward-summary-label">Atmosphere Packs</span>
+                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.ambientPacks}/{rewardSummary.totalCounts.ambientPacks}</strong>
+                      <span className="reward-summary-caption">Ambient loops for mood and theme matching</span>
+                    </div>
+                    <div className="reward-summary-card">
+                      <span className="reward-summary-label">Button Packs</span>
+                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.buttonPacks}/{rewardSummary.totalCounts.buttonPacks}</strong>
+                      <span className="reward-summary-caption">UI interaction sounds unlocked over time</span>
+                    </div>
+                  </div>
+
+                  <div className="reward-customization-section">
+                    <div className="reward-section-heading">
+                      <div>
+                        <h4>Open the dedicated pages</h4>
+                        <p>Browse full reward details without bloating Profile.</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="reward-customization-section">
-                  <div className="reward-section-heading">
-                    <div>
-                      <h4>Premium Themes</h4>
-                      <p>Color systems and mood variants unlocked through tier progression.</p>
                     </div>
-                    <span className="reward-count-pill">{rewardSummary.unlockedCounts.premiumThemes}/{rewardSummary.totalCounts.premiumThemes} unlocked</span>
-                  </div>
-                  <div className="reward-option-grid">
-                    {rewardCatalog.premiumThemes.map((themeReward) => (
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                       <button
-                        key={themeReward.id}
                         type="button"
-                        className={`reward-option-card${themeReward.unlocked ? '' : ' locked'}`}
-                        disabled
-                        style={{ cursor: 'default' }}
+                        className="save-button"
+                        onClick={() => {
+                          window.location.hash = '#/themes';
+                        }}
                       >
-                        <span className="reward-option-preview reward-banner-preview" style={{ background: themeReward.preview }}></span>
-                        <span className="reward-option-name">{themeReward.name}</span>
-                        <span className="reward-option-description">{themeReward.description}</span>
-                        <span className="reward-option-meta">
-                          {themeReward.unlocked
-                            ? `Unlocked in ${themeReward.requiredTier} tier`
-                            : `Unlock at ${themeReward.requiredXP.toLocaleString()} XP`}
-                        </span>
+                        Open Themes
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="reward-customization-section">
-                  <div className="reward-section-heading">
-                    <div>
-                      <h4>Music Packs</h4>
-                      <p>Background tracks for the Settings music player.</p>
+                      <button
+                        type="button"
+                        className="save-button"
+                        onClick={() => {
+                          window.location.hash = '#/rewards';
+                        }}
+                      >
+                        Open Rewards
+                      </button>
+                      <button
+                        type="button"
+                        className="save-button"
+                        onClick={() => {
+                          window.location.hash = '#/settings';
+                        }}
+                      >
+                        Open Settings Audio Controls
+                      </button>
                     </div>
-                    <span className="reward-count-pill">{rewardSummary.unlockedCounts.musicPacks}/{rewardSummary.totalCounts.musicPacks} unlocked</span>
                   </div>
-                  <div className="reward-option-grid">
-                    {rewardCatalog.musicPacks.map((pack) => (
-                      <button
-                        key={pack.id}
-                        type="button"
-                        className={`reward-option-card${pack.unlocked ? '' : ' locked'}`}
-                        disabled
-                        style={{ cursor: 'default' }}
-                      >
-                        <span className="reward-option-preview reward-banner-preview" style={{ background: pack.preview }}></span>
-                        <span className="reward-option-name">{pack.label}</span>
-                        <span className="reward-option-description">{pack.description}</span>
-                        <span className="reward-option-meta">
-                          {pack.unlocked ? 'Available in Settings' : `Unlock at ${pack.requiredXP.toLocaleString()} XP`}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="reward-customization-section">
-                  <div className="reward-section-heading">
-                    <div>
-                      <h4>Atmosphere Packs</h4>
-                      <p>Ambient loops that can match your theme or be selected manually.</p>
-                    </div>
-                    <span className="reward-count-pill">{rewardSummary.unlockedCounts.ambientPacks}/{rewardSummary.totalCounts.ambientPacks} unlocked</span>
-                  </div>
-                  <div className="reward-option-grid">
-                    {rewardCatalog.ambientPacks.map((pack) => (
-                      <button
-                        key={pack.id}
-                        type="button"
-                        className={`reward-option-card${pack.unlocked ? '' : ' locked'}`}
-                        disabled
-                        style={{ cursor: 'default' }}
-                      >
-                        <span className="reward-option-preview reward-banner-preview" style={{ background: pack.preview }}></span>
-                        <span className="reward-option-name">{pack.label}</span>
-                        <span className="reward-option-description">{pack.description}</span>
-                        <span className="reward-option-meta">
-                          {pack.unlocked ? 'Available in Settings' : `Unlock at ${pack.requiredXP.toLocaleString()} XP`}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="reward-customization-section">
-                  <div className="reward-section-heading">
-                    <div>
-                      <h4>Button Packs</h4>
-                      <p>Sample packs and synth click sets for UI interactions.</p>
-                    </div>
-                    <span className="reward-count-pill">{rewardSummary.unlockedCounts.buttonPacks}/{rewardSummary.totalCounts.buttonPacks} unlocked</span>
-                  </div>
-                  <div className="reward-option-grid">
-                    {rewardCatalog.buttonPacks.map((pack) => (
-                      <button
-                        key={pack.id}
-                        type="button"
-                        className={`reward-option-card${pack.unlocked ? '' : ' locked'}`}
-                        disabled
-                        style={{ cursor: 'default' }}
-                      >
-                        <span className="reward-option-preview reward-banner-preview" style={{ background: pack.preview }}></span>
-                        <span className="reward-option-name">{pack.label}</span>
-                        <span className="reward-option-description">{pack.description}</span>
-                        <span className="reward-option-meta">
-                          {pack.unlocked
-                            ? `Available in Settings • ${pack.packType === 'synth' ? 'Synth' : 'Sample'}`
-                            : `Unlock at ${pack.requiredXP.toLocaleString()} XP`}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 </div>
               </CollapsibleSection>
 
@@ -1411,7 +1369,7 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="reward-type-shell-header">
                   <span className="reward-type-shell-kicker">Utility Rewards</span>
                   <h4>Presentation tools and functional profile options</h4>
-                  <p>These unlock new ways to surface your achievements and reshape how Home and Library present your collection.</p>
+                  <p>Keep your showcase controls here, and use Rewards for the bigger presentation catalog browsing experience.</p>
                 </div>
 
                 <div className="reward-customization-section reward-showcase-section">
@@ -1484,60 +1442,41 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="reward-customization-section">
                   <div className="reward-section-heading">
                     <div>
-                      <h4>Library Presentation</h4>
-                      <p>Change how your collection cards and list rows feel in the Library.</p>
+                      <h4>Presentation Summary</h4>
+                      <p>Your Home and Library presentation rewards now have a clearer home in the Rewards page.</p>
                     </div>
-                    <span className="reward-count-pill">{rewardSummary.unlockedCounts.libraryVariants}/{rewardSummary.totalCounts.libraryVariants} unlocked</span>
                   </div>
-                  <div className="reward-option-grid">
-                    {rewardCatalog.libraryVariants.map((variant) => (
-                      <button
-                        key={variant.id}
-                        type="button"
-                        className={`reward-option-card${selectedLibraryVariant?.id === variant.id ? ' selected' : ''}${variant.unlocked ? '' : ' locked'}`}
-                        onClick={() => handleEquipLibraryVariant(variant.id)}
-                        disabled={!variant.unlocked}
-                      >
-                        <span className="reward-option-preview reward-banner-preview" style={{ background: variant.preview }}></span>
-                        <span className="reward-option-name">{variant.name}</span>
-                        <span className="reward-option-description">{variant.description}</span>
-                        <span className="reward-option-meta">
-                          {variant.unlocked
-                            ? (selectedLibraryVariant?.id === variant.id ? 'Equipped in Library' : 'Equip variant')
-                            : `Unlock at ${variant.requiredXP.toLocaleString()} XP`}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="reward-customization-section">
-                  <div className="reward-section-heading">
-                    <div>
-                      <h4>Home Layouts</h4>
-                      <p>Swap the layout of your mission-control landing page.</p>
+                  <div className="reward-summary-grid">
+                    <div className="reward-summary-card">
+                      <span className="reward-summary-label">Library Variants</span>
+                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.libraryVariants}/{rewardSummary.totalCounts.libraryVariants}</strong>
+                      <span className="reward-summary-caption">Current: {selectedLibraryVariant?.name || 'Classic Shelf'}</span>
                     </div>
-                    <span className="reward-count-pill">{rewardSummary.unlockedCounts.homeLayouts}/{rewardSummary.totalCounts.homeLayouts} unlocked</span>
+                    <div className="reward-summary-card">
+                      <span className="reward-summary-label">Home Layouts</span>
+                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.homeLayouts}/{rewardSummary.totalCounts.homeLayouts}</strong>
+                      <span className="reward-summary-caption">Current: {selectedHomeLayout?.name || 'Mission Control'}</span>
+                    </div>
                   </div>
-                  <div className="reward-option-grid">
-                    {rewardCatalog.homeLayouts.map((layout) => (
-                      <button
-                        key={layout.id}
-                        type="button"
-                        className={`reward-option-card${selectedHomeLayout?.id === layout.id ? ' selected' : ''}${layout.unlocked ? '' : ' locked'}`}
-                        onClick={() => handleEquipHomeLayout(layout.id)}
-                        disabled={!layout.unlocked}
-                      >
-                        <span className="reward-option-preview reward-banner-preview" style={{ background: layout.preview }}></span>
-                        <span className="reward-option-name">{layout.name}</span>
-                        <span className="reward-option-description">{layout.description}</span>
-                        <span className="reward-option-meta">
-                          {layout.unlocked
-                            ? (selectedHomeLayout?.id === layout.id ? 'Equipped on Home' : 'Equip layout')
-                            : `Unlock at ${layout.requiredXP.toLocaleString()} XP`}
-                        </span>
-                      </button>
-                    ))}
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+                    <button
+                      type="button"
+                      className="save-button"
+                      onClick={() => {
+                        window.location.hash = '#/rewards';
+                      }}
+                    >
+                      Open Rewards
+                    </button>
+                    <button
+                      type="button"
+                      className="save-button"
+                      onClick={() => {
+                        window.location.hash = '#/settings';
+                      }}
+                    >
+                      Open Settings
+                    </button>
                   </div>
                 </div>
                 </div>
@@ -1722,7 +1661,7 @@ const Profile = ({ theme, library = [] }) => {
           <CollapsibleSection
             title="Your Gaming Style"
             subtitle="A compact view of the behavior model learning from your sessions."
-            badge={`${behaviorProfile.overallCompletionRate}% completion`}
+            badge={`${behaviorProfile.totalSelectionsTracked} sessions`}
             icon={<TrendingUp size={18} />}
             className={getSectionClass(8)}
           >
@@ -1733,15 +1672,15 @@ const Profile = ({ theme, library = [] }) => {
             <div className="gaming-style-overview">
               <div className="overview-stat">
                 <span className="stat-number">{behaviorProfile.totalSelectionsTracked}</span>
-                <span className="stat-label">Selections Tracked</span>
+                <span className="stat-label">Sessions Tracked</span>
               </div>
               <div className="overview-stat">
                 <span className="stat-number">{behaviorProfile.totalCompleted}</span>
-                <span className="stat-label">Games Completed</span>
+                <span className="stat-label">Games Played</span>
               </div>
               <div className="overview-stat">
-                <span className="stat-number">{behaviorProfile.overallCompletionRate}%</span>
-                <span className="stat-label">Completion Rate</span>
+                <span className="stat-number">{behaviorProfile.topMoods?.[0]?.sharePercent || 0}%</span>
+                <span className="stat-label">Top Mood Share</span>
               </div>
               <div className="overview-stat">
                 <span className="stat-number">{behaviorProfile.avgSessionLength}</span>
@@ -1756,15 +1695,15 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="preference-grid">
                   {behaviorProfile.topMoods.map((mood, idx) => (
                     <div key={idx} className="preference-card">
-                      <div className="preference-name">{mood.mood}</div>
+                      <div className="preference-name">{mood.label}</div>
                       <div className="preference-stats">
                         <div className="stat-row">
-                          <span>Selected:</span>
+                          <span>Sessions:</span>
                           <span className="stat-value">{mood.count}x</span>
                         </div>
                         <div className="stat-row">
-                          <span>Completion:</span>
-                          <span className="stat-value">{mood.completionRate}%</span>
+                          <span>Share:</span>
+                          <span className="stat-value">{mood.sharePercent}%</span>
                         </div>
                         <div className="stat-row">
                           <span>Avg Time:</span>
@@ -1774,7 +1713,7 @@ const Profile = ({ theme, library = [] }) => {
                       <div className="completion-bar">
                         <div 
                           className="completion-fill" 
-                          style={{ width: `${mood.completionRate}%` }}
+                          style={{ width: `${mood.sharePercent}%` }}
                         ></div>
                       </div>
                     </div>
@@ -1790,15 +1729,15 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="preference-grid">
                   {behaviorProfile.topGenres.map((genre, idx) => (
                     <div key={idx} className="preference-card">
-                      <div className="preference-name">{genre.genre}</div>
+                      <div className="preference-name">{genre.label}</div>
                       <div className="preference-stats">
                         <div className="stat-row">
-                          <span>Selected:</span>
+                          <span>Sessions:</span>
                           <span className="stat-value">{genre.count}x</span>
                         </div>
                         <div className="stat-row">
-                          <span>Completion:</span>
-                          <span className="stat-value">{genre.completionRate}%</span>
+                          <span>Share:</span>
+                          <span className="stat-value">{genre.sharePercent}%</span>
                         </div>
                         <div className="stat-row">
                           <span>Avg Time:</span>
@@ -1808,7 +1747,7 @@ const Profile = ({ theme, library = [] }) => {
                       <div className="completion-bar">
                         <div 
                           className="completion-fill" 
-                          style={{ width: `${genre.completionRate}%` }}
+                          style={{ width: `${genre.sharePercent}%` }}
                         ></div>
                       </div>
                     </div>

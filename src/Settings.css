@@ -2351,6 +2351,38 @@ input:checked + .toggle-slider:before {
   opacity: 1;
 }
 
+.setting-description {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.72;
+  color: var(--text);
+}
+
+.shortcut-setting-item {
+  gap: 16px;
+}
+
+.shortcut-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: min(100%, 360px);
+}
+
+.shortcut-input {
+  min-width: 180px;
+  max-width: 240px;
+}
+
+.shortcut-reset-button,
+.shortcut-help-button {
+  min-width: 100px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .notification-section {
@@ -2363,6 +2395,17 @@ input:checked + .toggle-slider:before {
 
   .notification-section .setting-item label {
     font-size: 0.9rem;
+  }
+
+  .shortcut-edit-row {
+    width: 100%;
+  }
+
+  .shortcut-input,
+  .shortcut-reset-button,
+  .shortcut-help-button {
+    width: 100%;
+    max-width: none;
   }
 }
 

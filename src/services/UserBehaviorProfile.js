@@ -56,13 +56,49 @@ export class UserBehaviorProfile {
     const stored = localStorage.getItem(this.STORAGE_KEY);
     if (stored) {
       try {
-        return JSON.parse(stored);
+        return this.hydrateProfile(JSON.parse(stored));
       } catch (e) {
         console.error('Failed to parse behavior profile:', e);
         return this.createEmptyProfile();
       }
     }
     return this.createEmptyProfile();
+  }
+
+  static hydrateProfile(profile = {}) {
+    const defaults = this.createEmptyProfile();
+    return {
+      ...defaults,
+      ...(profile || {}),
+      moodPreferences: profile?.moodPreferences && typeof profile.moodPreferences === 'object' ? profile.moodPreferences : {},
+      genrePreferences: profile?.genrePreferences && typeof profile.genrePreferences === 'object' ? profile.genrePreferences : {},
+      timeSlotPreferences: profile?.timeSlotPreferences && typeof profile.timeSlotPreferences === 'object' ? profile.timeSlotPreferences : {},
+      playstylePatterns: {
+        ...defaults.playstylePatterns,
+        ...(profile?.playstylePatterns || {}),
+        preferredSessionLengths: profile?.playstylePatterns?.preferredSessionLengths && typeof profile.playstylePatterns.preferredSessionLengths === 'object'
+          ? profile.playstylePatterns.preferredSessionLengths
+          : {},
+        peakPlayTimes: profile?.playstylePatterns?.peakPlayTimes && typeof profile.playstylePatterns.peakPlayTimes === 'object'
+          ? profile.playstylePatterns.peakPlayTimes
+          : {}
+      },
+      completionStats: {
+        ...defaults.completionStats,
+        ...(profile?.completionStats || {}),
+        completedByMood: profile?.completionStats?.completedByMood && typeof profile.completionStats.completedByMood === 'object'
+          ? profile.completionStats.completedByMood
+          : {},
+        completedByGenre: profile?.completionStats?.completedByGenre && typeof profile.completionStats.completedByGenre === 'object'
+          ? profile.completionStats.completedByGenre
+          : {}
+      },
+      feedbackPreferences: {
+        ...defaults.feedbackPreferences,
+        ...(profile?.feedbackPreferences || {})
+      },
+      selectionHistory: Array.isArray(profile?.selectionHistory) ? profile.selectionHistory : []
+    };
   }
 
   /**
@@ -86,6 +122,10 @@ export class UserBehaviorProfile {
         completedByMood: {}, // { mood: count }
         completedByGenre: {}, // { genre: count }
         averageCompletionTime: 0 // minutes
+      },
+      feedbackPreferences: {
+        recommendationPromptEnabled: true,
+        sessionPromptEnabled: true
       },
       selectionHistory: [] // { mood, genre, time, selectedGameId, timestamp, completed }
     };
@@ -138,6 +178,62 @@ export class UserBehaviorProfile {
     // Keep only last 100 selections for performance
     if (profile.selectionHistory.length > 100) {
       profile.selectionHistory = profile.selectionHistory.slice(-100);
+    }
+
+    profile.lastUpdated = new Date().toISOString();
+    this.saveProfile(profile);
+    return profile;
+  }
+
+  static setFeedbackPromptEnabled(promptType, enabled) {
+    const profile = this.getProfile();
+    const preferenceKey = promptType === 'session' ? 'sessionPromptEnabled' : 'recommendationPromptEnabled';
+    profile.feedbackPreferences = {
+      ...(profile.feedbackPreferences || {}),
+      [preferenceKey]: Boolean(enabled)
+    };
+    profile.lastUpdated = new Date().toISOString();
+    this.saveProfile(profile);
+    return profile.feedbackPreferences;
+  }
+
+  static getFeedbackPreferences() {
+    const profile = this.getProfile();
+    return {
+      recommendationPromptEnabled: profile.feedbackPreferences?.recommendationPromptEnabled !== false,
+      sessionPromptEnabled: profile.feedbackPreferences?.sessionPromptEnabled !== false
+    };
+  }
+
+  static trackRecommendationFeedback(recommendationType, gameId, helpful, metadata = {}) {
+    if (!recommendationType || !gameId || typeof helpful !== 'boolean') {
+      return this.getProfile();
+    }
+
+    const profile = this.getProfile();
+    const normalizedGameId = String(gameId);
+    const historyMatch = [...profile.selectionHistory]
+      .reverse()
+      .find((entry) => {
+        if (entry?.recommendationType !== recommendationType) {
+          return false;
+        }
+
+        const selectedGameId = entry?.selectedGameId ? String(entry.selectedGameId) : null;
+        const launchedGameId = entry?.launchedGameId ? String(entry.launchedGameId) : null;
+        const recommendedGameIds = Array.isArray(entry?.recommendedGameIds)
+          ? entry.recommendedGameIds.map((id) => String(id))
+          : [];
+
+        return selectedGameId === normalizedGameId
+          || launchedGameId === normalizedGameId
+          || recommendedGameIds.includes(normalizedGameId);
+      });
+
+    if (historyMatch) {
+      historyMatch.recommendationHelpful = helpful;
+      historyMatch.recommendationFeedbackAt = new Date().toISOString();
+      Object.assign(historyMatch, metadata);
     }
 
     profile.lastUpdated = new Date().toISOString();
@@ -286,6 +382,69 @@ export class UserBehaviorProfile {
     return profile;
   }
 
+  static trackSessionFeedback(gameName, enjoyed, metadata = {}) {
+    if (!gameName || typeof enjoyed !== 'boolean') {
+      return this.getProfile();
+    }
+
+    const profile = this.getProfile();
+    const resolvedMood = metadata?.mood || null;
+    const resolvedGenre = metadata?.genre || null;
+    const playtimeMinutes = Number(metadata?.playtimeMinutes) || 0;
+    const normalizedGameId = metadata?.gameId ? String(metadata.gameId) : null;
+
+    if (resolvedMood) {
+      if (!profile.moodPreferences[resolvedMood]) {
+        profile.moodPreferences[resolvedMood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
+      }
+      profile.moodPreferences[resolvedMood].sessionFeedbackCount = (profile.moodPreferences[resolvedMood].sessionFeedbackCount || 0) + 1;
+      profile.moodPreferences[resolvedMood].enjoyedSessionCount = (profile.moodPreferences[resolvedMood].enjoyedSessionCount || 0) + (enjoyed ? 1 : 0);
+      if (playtimeMinutes > 0) {
+        profile.moodPreferences[resolvedMood].totalPlaytime = (profile.moodPreferences[resolvedMood].totalPlaytime || 0) + playtimeMinutes;
+      }
+    }
+
+    if (resolvedGenre) {
+      if (!profile.genrePreferences[resolvedGenre]) {
+        profile.genrePreferences[resolvedGenre] = { count: 0, totalPlaytime: 0, completedCount: 0 };
+      }
+      profile.genrePreferences[resolvedGenre].sessionFeedbackCount = (profile.genrePreferences[resolvedGenre].sessionFeedbackCount || 0) + 1;
+      profile.genrePreferences[resolvedGenre].enjoyedSessionCount = (profile.genrePreferences[resolvedGenre].enjoyedSessionCount || 0) + (enjoyed ? 1 : 0);
+      if (playtimeMinutes > 0) {
+        profile.genrePreferences[resolvedGenre].totalPlaytime = (profile.genrePreferences[resolvedGenre].totalPlaytime || 0) + playtimeMinutes;
+      }
+    }
+
+    const historyMatch = [...profile.selectionHistory]
+      .reverse()
+      .find((entry) => {
+        const selectedGameId = entry?.selectedGameId ? String(entry.selectedGameId) : null;
+        const launchedGameId = entry?.launchedGameId ? String(entry.launchedGameId) : null;
+        const recommendedGameIds = Array.isArray(entry?.recommendedGameIds)
+          ? entry.recommendedGameIds.map((id) => String(id))
+          : [];
+
+        if (normalizedGameId) {
+          return selectedGameId === normalizedGameId
+            || launchedGameId === normalizedGameId
+            || recommendedGameIds.includes(normalizedGameId);
+        }
+
+        return selectedGameId === String(gameName) || launchedGameId === String(gameName);
+      });
+
+    if (historyMatch) {
+      historyMatch.sessionEnjoyed = enjoyed;
+      historyMatch.sessionFeedbackAt = new Date().toISOString();
+      historyMatch.sessionPlaytimeMinutes = playtimeMinutes;
+      Object.assign(historyMatch, metadata);
+    }
+
+    profile.lastUpdated = new Date().toISOString();
+    this.saveProfile(profile);
+    return profile;
+  }
+
   /**
    * Track session length
    */
@@ -324,6 +483,9 @@ export class UserBehaviorProfile {
     const profile = this.getProfile();
     const moodData = profile.moodPreferences[mood];
     if (!moodData || moodData.count === 0) return 0;
+    if (moodData.sessionFeedbackCount > 0) {
+      return Math.round(((moodData.enjoyedSessionCount || 0) / moodData.sessionFeedbackCount) * 100);
+    }
     return Math.round((moodData.completedCount / moodData.count) * 100);
   }
 
@@ -334,6 +496,9 @@ export class UserBehaviorProfile {
     const profile = this.getProfile();
     const genreData = profile.genrePreferences[genre];
     if (!genreData || genreData.count === 0) return 0;
+    if (genreData.sessionFeedbackCount > 0) {
+      return Math.round(((genreData.enjoyedSessionCount || 0) / genreData.sessionFeedbackCount) * 100);
+    }
     return Math.round((genreData.completedCount / genreData.count) * 100);
   }
 
@@ -348,7 +513,7 @@ export class UserBehaviorProfile {
       .map(([mood, data]) => ({
         mood,
         count: data.count,
-        completionRate: Math.round((data.completedCount / data.count) * 100),
+        completionRate: this.getMoodCompletionRate(mood),
         avgPlaytime: Math.round(data.totalPlaytime / data.count)
       }));
   }
@@ -364,7 +529,7 @@ export class UserBehaviorProfile {
       .map(([genre, data]) => ({
         genre,
         count: data.count,
-        completionRate: Math.round((data.completedCount / data.count) * 100),
+        completionRate: this.getGenreCompletionRate(genre),
         avgPlaytime: Math.round(data.totalPlaytime / data.count)
       }));
   }
@@ -530,9 +695,9 @@ export class UserBehaviorProfile {
     if (mood) {
       const moodRate = this.getMoodCompletionRate(mood);
       if (moodRate > 70) {
-        reasons.push(`You complete ${moodRate}% of ${mood} games - high success rate with this mood`);
+        reasons.push(`You enjoy ${moodRate}% of your ${mood} sessions - strong match for this mood`);
       } else if (moodRate > 50) {
-        reasons.push(`You have a ${moodRate}% completion rate with ${mood} games`);
+        reasons.push(`You usually have a good time with ${mood} picks`);
       }
     }
 
@@ -540,9 +705,9 @@ export class UserBehaviorProfile {
     if (genre) {
       const genreRate = this.getGenreCompletionRate(genre);
       if (genreRate > 70) {
-        reasons.push(`You complete ${genreRate}% of ${genre} games - strong preference`);
+        reasons.push(`You enjoy ${genreRate}% of your ${genre} sessions - strong preference`);
       } else if (genreRate > 50) {
-        reasons.push(`You have a ${genreRate}% completion rate with ${genre} games`);
+        reasons.push(`Your recent ${genre} sessions tend to land well`);
       }
     }
 

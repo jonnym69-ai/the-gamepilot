@@ -314,8 +314,8 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                       <strong>{snapshot.achievements.totalUnlocked}</strong>
                     </div>
                     <div>
-                      <span>Completion</span>
-                      <strong>{snapshot.achievements.completionPercentage}%</strong>
+                      <span>Quests completed</span>
+                      <strong>{snapshot.achievements.questsCompletedThisYear}</strong>
                     </div>
                   </div>
                   <div className="achievement-highlight-list">

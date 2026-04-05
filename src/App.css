@@ -28,6 +28,7 @@ body {
   padding: 1rem 2rem !important;
   display: flex !important;
   justify-content: center !important;
+  align-items: center !important;
   gap: 20px !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35) !important;
   border-bottom: 2px solid rgba(255, 255, 255, 0.05) !important;
@@ -41,7 +42,102 @@ body {
   backdrop-filter: blur(18px) saturate(160%);
 }
 
-.navbar a {
+/* Primary navigation section */
+.navbar-primary {
+  display: flex !important;
+  gap: 20px !important;
+  align-items: center !important;
+}
+
+/* Dropdown section */
+.navbar-dropdown {
+  position: relative !important;
+  margin-left: auto !important;
+}
+
+/* Dropdown toggle button */
+.dropdown-toggle {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 18px !important;
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--nav-text) !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-size: 14px !important;
+}
+
+.dropdown-toggle:hover {
+  background-color: var(--nav-hover) !important;
+  color: var(--nav-text) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Desktop-optimized dropdown positioning */
+.dropdown-menu {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0px !important;
+  margin-top: 8px !important;
+  background: var(--nav-bg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
+  min-width: 200px !important;
+  max-width: 300px !important;
+  z-index: 10000 !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+}
+
+/* Dropdown sections */
+.dropdown-section {
+  padding: 8px 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.dropdown-section:last-child {
+  border-bottom: none !important;
+}
+
+.dropdown-section-title {
+  padding: 8px 16px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  color: var(--nav-text) !important;
+  opacity: 0.6 !important;
+}
+
+/* Dropdown items */
+.dropdown-item {
+  display: block !important;
+  padding: 10px 16px !important;
+  color: var(--nav-text) !important;
+  text-decoration: none !important;
+  font-weight: 400 !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+}
+
+.dropdown-item:hover {
+  background-color: var(--nav-hover) !important;
+  color: var(--nav-text) !important;
+}
+
+.dropdown-item:active {
+  background-color: var(--nav-active) !important;
+  color: #ffffff !important;
+}
+
+.navbar a,
+.navbar .nav-link {
   color: var(--nav-text) !important;
   text-decoration: none !important;
   font-weight: 500 !important;
@@ -54,14 +150,16 @@ body {
   background: transparent !important;
 }
 
-.navbar a:hover {
+.navbar a:hover,
+.navbar .nav-link:hover {
   background-color: var(--nav-hover) !important;
   color: var(--nav-text) !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
-.navbar a.active {
+.navbar a.active,
+.navbar .nav-link.active {
   background-color: var(--nav-active) !important;
   color: #ffffff !important;
   border-color: var(--nav-active) !important;
@@ -2121,6 +2219,8 @@ a:hover {
   background: rgba(255, 140, 0, 0.2);
   border-color: rgba(255, 140, 0, 0.5);
 }
+
+/* Removed mobile responsive styles - GamePilot is desktop-only */
 
 /* Responsive design */
 @media (max-width: 768px) {

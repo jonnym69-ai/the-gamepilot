@@ -1,7 +1,7 @@
 // Achievements.js - Achievement Display Component
 import React, { useState, useEffect } from 'react';
 import { Trophy, Star, Target, Clock, Gamepad2, Award, Zap, Crown, Medal, Flame, TrendingUp } from 'lucide-react';
-import { ACHIEVEMENTS, AchievementTracker, AchievementStats } from './AchievementSystem';
+import { ACHIEVEMENTS, AchievementTracker } from './AchievementSystem';
 import { RollingAchievementsTracker } from './services/RollingAchievementsTracker';
 import NavBar from './NavBar';
 import './Achievements.css';
@@ -39,24 +39,11 @@ function Achievements({ theme }) {
   const [totalPoints, setTotalPoints] = useState(0);
   const [rarestAchievement, setRarestAchievement] = useState(null);
   const [recentUnlocks, setRecentUnlocks] = useState([]);
-
-  // Rolling achievements state
-  const defaultRollingPeriod = () => ({
-    playtime: 0,
-    sessions: 0,
-    gamesPlayed: 0,
-    genresPlayed: 0,
-    moodsUsed: 0,
-    featuresUsed: {},
-    activeDays: 0,
-    streak: { current: 0, best: 0 }
-  });
-
-  const [rollingStats, setRollingStats] = useState({
-    daily: defaultRollingPeriod(),
-    weekly: defaultRollingPeriod(),
-    monthly: defaultRollingPeriod(),
-    yearly: defaultRollingPeriod()
+  const [activeAssignments, setActiveAssignments] = useState({
+    daily: [],
+    weekly: [],
+    monthly: [],
+    yearly: []
   });
 
   const achievementCatalog = React.useMemo(() => (
@@ -64,36 +51,6 @@ function Achievements({ theme }) {
       (Array.isArray(definitions) ? definitions : []).map(definition => ({ ...definition, category }))
     )
   ), []);
-
-  // Calculate statistics
-  const calculateStatistics = React.useCallback(() => {
-    // Calculate total points
-    let points = 0;
-    unlockedAchievements.forEach(achievementId => {
-      points += getRewardPoints(achievementId) || 0;
-    });
-    
-    // Find rarest unlocked achievement
-    let rarest = null;
-    let highestRarityWeight = 0;
-    unlockedAchievements.forEach(achievementId => {
-      const achievement = achievementCatalog.find(a => a.id === achievementId);
-      if (achievement && achievement.rarity) {
-        const rarityWeight = getRarityWeight(achievement.rarity);
-        if (rarityWeight > highestRarityWeight) {
-          highestRarityWeight = rarityWeight;
-          rarest = achievement;
-        }
-      }
-    });
-    
-    setTotalPoints(points);
-    setRarestAchievement(rarest);
-    
-    // Get recent unlocks (last 5)
-    const recent = AchievementTracker.getRecentlyUnlocked() || [];
-    setRecentUnlocks(recent.slice(0, 5));
-  }, [unlockedAchievements, achievementCatalog]);
 
   const getRarityWeight = (rarity) => {
     const weights = {
@@ -115,10 +72,28 @@ function Achievements({ theme }) {
     return colors[rarity] || '#808080';
   };
 
-  const formatStreak = (streak = {}) => {
-    const current = streak.current || 0;
-    const best = streak.best || 0;
-    return `${current} current · ${best} best`;
+  const periodLabels = {
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    yearly: 'Yearly'
+  };
+
+  const periodSubtitles = {
+    daily: 'Today\'s rotating quests and achievement assignments.',
+    weekly: 'Current weekly objectives tied to your tracked local play.',
+    monthly: 'Month-long goals built from your actual local usage.',
+    yearly: 'Longer-term assignments that feed your recap and momentum.'
+  };
+
+  const formatProgressValue = (snapshot = {}) => {
+    const current = Number(snapshot.current || 0);
+    const target = Number(snapshot.target || 0);
+    const metric = snapshot.metric || 'progress';
+    if (metric === 'playtime') {
+      return `${(current / 60).toFixed(1)}h / ${(target / 60).toFixed(1)}h`;
+    }
+    return `${current} / ${target}`;
   };
 
   // Progress hints for locked achievements
@@ -427,57 +402,56 @@ function Achievements({ theme }) {
 
   // Calculate statistics when achievements change
   useEffect(() => {
-    if (achievementCatalog.length > 0) {
-      calculateStatistics();
-    }
-  }, [unlockedAchievements, achievementCatalog, calculateStatistics]);
+    let points = 0;
+    unlockedAchievements.forEach(achievementId => {
+      points += getRewardPoints(achievementId) || 0;
+    });
+
+    let rarest = null;
+    let highestRarityWeight = 0;
+    unlockedAchievements.forEach(achievementId => {
+      const achievement = achievementCatalog.find(a => a.id === achievementId);
+      if (achievement && achievement.rarity) {
+        const rarityWeight = getRarityWeight(achievement.rarity);
+        if (rarityWeight > highestRarityWeight) {
+          highestRarityWeight = rarityWeight;
+          rarest = achievement;
+        }
+      }
+    });
+
+    setTotalPoints(points);
+    setRarestAchievement(rarest);
+
+    const recent = AchievementTracker.getRecentlyUnlocked() || [];
+    setRecentUnlocks(recent.slice(0, 5));
+  }, [achievementCatalog, unlockedAchievements]);
 
   // Load rolling achievements data
   useEffect(() => {
     const loadRollingStats = () => {
-      const stats = RollingAchievementsTracker.getAllStats();
-      setRollingStats({
-        daily: {
-          playtime: stats.daily.playtime || 0,
-          sessions: stats.daily.sessions || 0,
-          gamesPlayed: stats.daily.gamesPlayed || 0,
-          genresPlayed: stats.daily.genresPlayed || 0,
-          moodsUsed: stats.daily.moodsUsed || 0,
-          featuresUsed: stats.daily.featuresUsed || {},
-          activeDays: stats.daily.activeDays || 0,
-          streak: stats.daily.streak || { current: 0, best: 0 }
-        },
-        weekly: {
-          playtime: stats.weekly.playtime || 0,
-          sessions: stats.weekly.sessions || 0,
-          gamesPlayed: stats.weekly.gamesPlayed || 0,
-          genresPlayed: stats.weekly.genresPlayed || 0,
-          moodsUsed: stats.weekly.moodsUsed || 0,
-          featuresUsed: stats.weekly.featuresUsed || {},
-          activeDays: stats.weekly.activeDays || 0,
-          streak: stats.weekly.streak || { current: 0, best: 0 }
-        },
-        monthly: {
-          playtime: stats.monthly.playtime || 0,
-          sessions: stats.monthly.sessions || 0,
-          gamesPlayed: stats.monthly.gamesPlayed || 0,
-          genresPlayed: stats.monthly.genresPlayed || 0,
-          moodsUsed: stats.monthly.moodsUsed || 0,
-          featuresUsed: stats.monthly.featuresUsed || {},
-          activeDays: stats.monthly.activeDays || 0,
-          streak: stats.monthly.streak || { current: 0, best: 0 }
-        },
-        yearly: {
-          playtime: stats.yearly.playtime || 0,
-          sessions: stats.yearly.sessions || 0,
-          gamesPlayed: stats.yearly.gamesPlayed || 0,
-          genresPlayed: stats.yearly.genresPlayed || 0,
-          moodsUsed: stats.yearly.moodsUsed || 0,
-          featuresUsed: stats.yearly.featuresUsed || {},
-          activeDays: stats.yearly.activeDays || 0,
-          streak: stats.yearly.streak || { current: 0, best: 0 }
-        }
-      });
+      const activeRollingDefs = ['daily', 'weekly', 'monthly', 'yearly'].reduce((acc, period) => {
+        const activeDefs = AchievementTracker.getActivePeriodAchievementDefinitions(period);
+        const fallbackDefs = ACHIEVEMENTS[period] || [];
+        const sourceDefs = Array.isArray(activeDefs) && activeDefs.length > 0 ? activeDefs : fallbackDefs;
+        acc[period] = sourceDefs.map(def => ({ ...def, category: period }));
+        return acc;
+      }, {});
+
+      setActiveAssignments(
+        Object.entries(activeRollingDefs).reduce((acc, [period, defs]) => {
+          acc[period] = defs.map((definition) => {
+            const progressSnapshot = RollingAchievementsTracker.getAchievementProgressSnapshot(definition.id);
+            return {
+              ...definition,
+              progressSnapshot,
+              progressPercent: Math.min(Number(progressSnapshot?.progressPercent || 0), 100),
+              completed: Boolean(progressSnapshot?.unlocked || AchievementTracker.isTimeBasedAchievementUnlocked(period, definition.id))
+            };
+          });
+          return acc;
+        }, { daily: [], weekly: [], monthly: [], yearly: [] })
+      );
     };
 
     loadRollingStats();
@@ -1592,10 +1566,8 @@ function Achievements({ theme }) {
     { id: 'yearly', name: 'Yearly', icon: '🎊' }
   ];
 
-  const overallCompletionStats = AchievementStats.getCompletionRate(unlockedAchievements);
-  const unlockedCount = overallCompletionStats.unlocked;
-  const totalCount = overallCompletionStats.total;
-  const completionPercentage = Math.round(overallCompletionStats.completion);
+  const unlockedCount = unlockedAchievements.length;
+  const totalCount = achievementCatalog.length;
 
   return (
     <div className={`App ${theme}`}>
@@ -1613,8 +1585,8 @@ function Achievements({ theme }) {
               <div className="summary-label">Total</div>
             </div>
             <div className="summary-item">
-              <div className="summary-number">{completionPercentage}%</div>
-              <div className="summary-label">Complete</div>
+              <div className="summary-number">{recentUnlocks.length}</div>
+              <div className="summary-label">Recent</div>
             </div>
           </div>
         </div>
@@ -1634,8 +1606,8 @@ function Achievements({ theme }) {
             <div className="stat-card">
               <div className="stat-icon">🎯</div>
               <div className="stat-content">
-                <div className="stat-number">{completionPercentage}%</div>
-                <div className="stat-label">Completion Rate</div>
+                <div className="stat-number">{unlockedCount}</div>
+                <div className="stat-label">Unlocked Locally</div>
               </div>
             </div>
             
@@ -1749,163 +1721,40 @@ function Achievements({ theme }) {
           })}
         </div>
 
-        {/* Rolling Achievements Section */}
         <div className="rolling-achievements-section">
-          <h2 className="rolling-title">📊 Rolling Achievements</h2>
-          <p className="rolling-subtitle">Track your progress across different time periods</p>
-          
+          <h2 className="rolling-title">🎯 Active Assignments</h2>
+          <p className="rolling-subtitle">Live daily, weekly, monthly, and yearly quest progress built from your local tracked activity.</p>
           <div className="rolling-grid">
-            {/* Daily */}
-            <div className="rolling-card">
-              <div className="rolling-header">
-                <h3>📅 Daily</h3>
-                <span className="rolling-date">{new Date().toLocaleDateString()}</span>
-              </div>
-              <div className="rolling-stats">
-                <div className="stat-row">
-                  <span className="stat-label">⏱️ Playtime:</span>
-                  <span className="stat-value">{(rollingStats.daily.playtime / 60).toFixed(1)}h</span>
+            {Object.entries(activeAssignments).map(([period, assignments]) => (
+              <div key={period} className="rolling-card">
+                <div className="rolling-header">
+                  <h3>{periodLabels[period]}</h3>
+                  <span className="rolling-date">{periodSubtitles[period]}</span>
                 </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎮 Sessions:</span>
-                  <span className="stat-value">{rollingStats.daily.sessions}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎯 Games:</span>
-                  <span className="stat-value">{rollingStats.daily.gamesPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎨 Genres:</span>
-                  <span className="stat-value">{rollingStats.daily.genresPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">😌 Moods:</span>
-                  <span className="stat-value">{rollingStats.daily.moodsUsed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🔥 Active Days:</span>
-                  <span className="stat-value">{rollingStats.daily.activeDays}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🏅 Streak:</span>
-                  <span className="stat-value">{formatStreak(rollingStats.daily.streak)}</span>
+                <div className="rolling-stats">
+                  {assignments.length > 0 ? assignments.map((assignment) => (
+                    <div key={assignment.id} className="stat-row" style={{ display: 'block', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+                        <span className="stat-label" style={{ fontWeight: 600 }}>{assignment.icon} {assignment.name}</span>
+                        <span className="stat-value">{assignment.completed ? 'Complete' : formatProgressValue(assignment.progressSnapshot)}</span>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '4px' }}>{assignment.desc}</div>
+                      <div className="progress-bar" style={{ marginTop: '8px' }}>
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${assignment.completed ? 100 : assignment.progressPercent}%` }}
+                        ></div>
+                        <span className="progress-text">{Math.round(assignment.completed ? 100 : assignment.progressPercent)}%</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="stat-row">
+                      <span className="stat-label">No active assignments yet</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Weekly */}
-            <div className="rolling-card">
-              <div className="rolling-header">
-                <h3>📆 Weekly</h3>
-                <span className="rolling-date">This Week</span>
-              </div>
-              <div className="rolling-stats">
-                <div className="stat-row">
-                  <span className="stat-label">⏱️ Playtime:</span>
-                  <span className="stat-value">{(rollingStats.weekly.playtime / 60).toFixed(1)}h</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎮 Sessions:</span>
-                  <span className="stat-value">{rollingStats.weekly.sessions}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎯 Games:</span>
-                  <span className="stat-value">{rollingStats.weekly.gamesPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎨 Genres:</span>
-                  <span className="stat-value">{rollingStats.weekly.genresPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">😌 Moods:</span>
-                  <span className="stat-value">{rollingStats.weekly.moodsUsed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🔥 Active Days:</span>
-                  <span className="stat-value">{rollingStats.weekly.activeDays}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🏅 Streak:</span>
-                  <span className="stat-value">{formatStreak(rollingStats.weekly.streak)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Monthly */}
-            <div className="rolling-card">
-              <div className="rolling-header">
-                <h3>📊 Monthly</h3>
-                <span className="rolling-date">This Month</span>
-              </div>
-              <div className="rolling-stats">
-                <div className="stat-row">
-                  <span className="stat-label">⏱️ Playtime:</span>
-                  <span className="stat-value">{(rollingStats.monthly.playtime / 60).toFixed(1)}h</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎮 Sessions:</span>
-                  <span className="stat-value">{rollingStats.monthly.sessions}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎯 Games:</span>
-                  <span className="stat-value">{rollingStats.monthly.gamesPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎨 Genres:</span>
-                  <span className="stat-value">{rollingStats.monthly.genresPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">😌 Moods:</span>
-                  <span className="stat-value">{rollingStats.monthly.moodsUsed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🔥 Active Days:</span>
-                  <span className="stat-value">{rollingStats.monthly.activeDays}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🏅 Streak:</span>
-                  <span className="stat-value">{formatStreak(rollingStats.monthly.streak)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Yearly */}
-            <div className="rolling-card">
-              <div className="rolling-header">
-                <h3>🎊 Yearly</h3>
-                <span className="rolling-date">{new Date().getFullYear()}</span>
-              </div>
-              <div className="rolling-stats">
-                <div className="stat-row">
-                  <span className="stat-label">⏱️ Playtime:</span>
-                  <span className="stat-value">{(rollingStats.yearly.playtime / 60).toFixed(1)}h</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎮 Sessions:</span>
-                  <span className="stat-value">{rollingStats.yearly.sessions}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎯 Games:</span>
-                  <span className="stat-value">{rollingStats.yearly.gamesPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🎨 Genres:</span>
-                  <span className="stat-value">{rollingStats.yearly.genresPlayed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">😌 Moods:</span>
-                  <span className="stat-value">{rollingStats.yearly.moodsUsed}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🔥 Active Days:</span>
-                  <span className="stat-value">{rollingStats.yearly.activeDays}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">🏅 Streak:</span>
-                  <span className="stat-value">{formatStreak(rollingStats.yearly.streak)}</span>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 

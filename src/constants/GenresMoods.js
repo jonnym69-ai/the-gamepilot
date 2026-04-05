@@ -184,9 +184,13 @@ const DEFAULT_FALLBACK_GENRE = 'Story-driven';
 const scoreMoodsFromGenres = (genres) => {
   const moodScores = {};
   genres.forEach((genre) => {
-    const mood = GENRE_TO_MOOD[genre];
-    if (!mood) return;
-    moodScores[mood] = (moodScores[mood] || 0) + 1;
+    Object.entries(GENRE_MOOD_MAP).forEach(([mood, mappedGenres]) => {
+      if (!Array.isArray(mappedGenres) || !mappedGenres.includes(genre)) {
+        return;
+      }
+
+      moodScores[mood] = (moodScores[mood] || 0) + 1;
+    });
   });
   return moodScores;
 };

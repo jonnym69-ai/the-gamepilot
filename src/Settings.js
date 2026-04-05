@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Settings as SettingsIcon, Palette, Bell, Database, Download, Upload, Trash2, Save, AlertCircle, Heart, Music2, Waves } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Download, Upload, Trash2, Save, AlertCircle, Heart, Music2, Waves, Keyboard } from 'lucide-react';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
 import { audioManager } from './services/AudioManager';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
 import CollapsibleSection from './components/CollapsibleSection';
 import './Settings.css';
 
@@ -26,7 +27,7 @@ function Settings() {
   const [patreonCode, setPatreonCode] = useState('');
   const [activationResult, setActivationResult] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
-  const [previewTheme, setPreviewTheme] = useState(currentTheme);
+  const [previewTheme] = useState(currentTheme);
   const [showLegalModal, setShowLegalModal] = useState(null);
   const [customBgImage, setCustomBgImage] = useState('');
   const [customBgOverlay, setCustomBgOverlay] = useState(30);
@@ -53,6 +54,8 @@ function Settings() {
   const [homeLayoutOptions, setHomeLayoutOptions] = useState(() => ProgressionUnlockService.getHomeLayoutVariants());
   const [recommendationPackOptions, setRecommendationPackOptions] = useState(() => ProgressionUnlockService.getRecommendationPacks());
   const [rewardCatalogSummary, setRewardCatalogSummary] = useState(() => ProgressionUnlockService.getRewardCatalogSummary());
+  const [shortcutSettings, setShortcutSettings] = useState(() => KeyboardShortcuts.getSettings());
+  const [shortcutEntries, setShortcutEntries] = useState(() => KeyboardShortcuts.getShortcutList());
   const { success, error: toastError } = useToast();
   const currentAmbientPackMeta = ambientPackOptions.find((pack) => pack.id === ambientSoundPack) || null;
   const currentMusicPackMeta = musicPackOptions.find((pack) => pack.id === musicPack) || null;
@@ -143,6 +146,11 @@ function Settings() {
     setRewardCatalogSummary(ProgressionUnlockService.getRewardCatalogSummary());
   }, []);
 
+  const refreshShortcutSettings = useCallback(() => {
+    setShortcutSettings(KeyboardShortcuts.getSettings());
+    setShortcutEntries(KeyboardShortcuts.getShortcutList());
+  }, []);
+
   const refreshAudioLocks = useCallback(() => {
     const settings = audioManager.getSettings();
     setAmbientEnabledSetting(settings.ambientEnabled);
@@ -163,29 +171,6 @@ function Settings() {
     setMusicPackOptions(audioManager.getMusicPacks());
     setButtonPackOptions(audioManager.getButtonPacks());
   }, []);
-
-  const handleApplyRewardPresentationChange = useCallback((result) => {
-    if (!result?.success) {
-      toastError(result?.message || 'Unable to update reward presentation.');
-      return false;
-    }
-
-    refreshRewardPresentation();
-    success(result.message);
-    return true;
-  }, [refreshRewardPresentation, success, toastError]);
-
-  const handleEquipLibraryVariant = useCallback((variantId) => {
-    handleApplyRewardPresentationChange(ProgressionUnlockService.selectLibraryPresentationVariant(variantId));
-  }, [handleApplyRewardPresentationChange]);
-
-  const handleEquipHomeLayout = useCallback((layoutId) => {
-    handleApplyRewardPresentationChange(ProgressionUnlockService.selectHomeLayoutVariant(layoutId));
-  }, [handleApplyRewardPresentationChange]);
-
-  const handleEquipRecommendationPack = useCallback((packId) => {
-    handleApplyRewardPresentationChange(ProgressionUnlockService.selectRecommendationPack(packId));
-  }, [handleApplyRewardPresentationChange]);
 
   useEffect(() => {
     setDateFormat(localStorage.getItem('dateFormat') || 'DD/MM/YYYY');
@@ -209,7 +194,31 @@ function Settings() {
     setCustomBgOverlay(parseInt(localStorage.getItem('customBgOverlay') || '30'));
     refreshAudioLocks();
     refreshRewardPresentation();
-  }, [refreshAudioLocks, refreshRewardPresentation]);
+    refreshShortcutSettings();
+  }, [refreshAudioLocks, refreshRewardPresentation, refreshShortcutSettings]);
+
+  const handleShortcutToggle = (enabled) => {
+    KeyboardShortcuts.setEnabled(enabled);
+    refreshShortcutSettings();
+    success(`Keyboard shortcuts ${enabled ? 'enabled' : 'disabled'}.`);
+  };
+
+  const handleShortcutChange = (actionId, value) => {
+    const result = KeyboardShortcuts.setShortcutForAction(actionId, value);
+    if (!result.success) {
+      toastError(result.message);
+      refreshShortcutSettings();
+      return;
+    }
+    refreshShortcutSettings();
+    success(result.message);
+  };
+
+  const handleShortcutReset = (actionId) => {
+    KeyboardShortcuts.resetShortcut(actionId);
+    refreshShortcutSettings();
+    success('Shortcut reset to default.');
+  };
 
   const handleAmbientToggle = (enabled) => {
     audioManager.setAmbientEnabled(enabled);
@@ -619,97 +628,48 @@ function Settings() {
                   {themeMode === 'custom' && (
                     <div className="setting-item">
                       <label>Custom Theme</label>
-                      <div className="theme-wheel">
-                        <button 
-                          className="theme-wheel-btn"
-                          onClick={() => {
-                            const themeIds = Object.keys(availableThemes);
-                            const currentIndex = themeIds.indexOf(previewTheme);
-                            const prevIndex = currentIndex === 0 ? themeIds.length - 1 : currentIndex - 1;
-                            const prevTheme = themeIds[prevIndex];
-                            
-                            // Update preview
-                            setPreviewTheme(prevTheme);
-                            
-                            // Only apply theme if it's unlocked
-                            if (!availableThemes[prevTheme]?.isPremium || isThemeUnlocked(prevTheme)) {
-                              setTheme(prevTheme);
-                            }
-                            AchievementTracker.trackFeatureUsage('theme_changes');
-                          }}
-                        >
-                          <SettingsIcon size={16} />
-                        </button>
-                        
-                        <div className="theme-wheel-display">
-                          <div className="theme-wheel-preview">
-                            <div 
-                              className="theme-preview"
-                              style={{
-                                background: availableThemes[previewTheme]?.preview || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                width: '100%',
-                                height: '100%',
-                                borderRadius: '8px',
-                                position: 'relative'
-                              }}
-                            >
-                              {availableThemes[previewTheme]?.isPremium && !isThemeUnlocked(previewTheme) && (
-                                <div className="theme-wheel-lock-overlay">
-                                  <Heart size={20} />
-                                  <div className="theme-wheel-lock-text">Locked</div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="theme-wheel-info">
-                            <div className="theme-wheel-name">
-                              {availableThemes[previewTheme]?.name || 'Unknown Theme'}
-                            </div>
-                            <div className="theme-wheel-index">
-                              {Object.keys(availableThemes).indexOf(previewTheme) + 1} / {Object.keys(availableThemes).length}
-                            </div>
+                      <div className="theme-wheel-display" style={{ alignItems: 'stretch' }}>
+                        <div className="theme-wheel-preview">
+                          <div
+                            className="theme-preview"
+                            style={{
+                              background: availableThemes[previewTheme]?.preview || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              width: '100%',
+                              height: '100%',
+                              borderRadius: '8px',
+                              position: 'relative'
+                            }}
+                          >
                             {availableThemes[previewTheme]?.isPremium && !isThemeUnlocked(previewTheme) && (
-                              <div className="theme-wheel-premium-badge">
-                                <Heart size={12} />
-                                {`Locked - ${Number(availableThemes[previewTheme]?.requiredXP || 0).toLocaleString()} XP required`}
-                              </div>
-                            )}
-                            {availableThemes[previewTheme]?.isPremium && isThemeUnlocked(previewTheme) && (
-                              <div className="theme-wheel-premium-badge" style={{ color: '#4CAF50' }}>
-                                <Heart size={12} />
-                                Unlocked
-                              </div>
-                            )}
-                            {!availableThemes[previewTheme]?.isPremium && (
-                              <div className="theme-wheel-premium-badge" style={{ color: '#2196F3' }}>
-                                <SettingsIcon size={12} />
-                                Free Theme
+                              <div className="theme-wheel-lock-overlay">
+                                <Heart size={20} />
+                                <div className="theme-wheel-lock-text">Locked</div>
                               </div>
                             )}
                           </div>
                         </div>
-                        
-                        <button 
-                          className="theme-wheel-btn"
-                          onClick={() => {
-                            const themeIds = Object.keys(availableThemes);
-                            const currentIndex = themeIds.indexOf(previewTheme);
-                            const nextIndex = currentIndex === themeIds.length - 1 ? 0 : currentIndex + 1;
-                            const nextTheme = themeIds[nextIndex];
-                            
-                            // Update preview
-                            setPreviewTheme(nextTheme);
-                            
-                            // Only apply theme if it's unlocked
-                            if (!availableThemes[nextTheme]?.isPremium || isThemeUnlocked(nextTheme)) {
-                              setTheme(nextTheme);
-                            }
-                            AchievementTracker.trackFeatureUsage('theme_changes');
-                          }}
-                        >
-                          <SettingsIcon size={16} />
-                        </button>
+
+                        <div className="theme-wheel-info" style={{ gap: '10px' }}>
+                          <div className="theme-wheel-name">
+                            {availableThemes[previewTheme]?.name || currentTheme || 'Current Theme'}
+                          </div>
+                          <div className="theme-wheel-index">
+                            {Object.keys(availableThemes).length} themes available in your collection
+                          </div>
+                          <div className="theme-wheel-premium-badge" style={{ color: 'var(--text-primary)' }}>
+                            <Palette size={12} />
+                            Browse and switch themes from the dedicated Themes page
+                          </div>
+                          <button
+                            type="button"
+                            className="save-btn"
+                            onClick={() => {
+                              window.location.hash = '#/themes';
+                            }}
+                          >
+                            Open Themes Page
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -759,7 +719,7 @@ function Settings() {
                       <div className="presentation-reward-stat">
                         <span className="presentation-reward-stat-label">Reward XP</span>
                         <strong>{Number(rewardCatalogSummary?.xp || 0).toLocaleString()} XP</strong>
-                        <span className="presentation-reward-stat-caption">Local-only unlocks shape how Home and Library feel as you level up.</span>
+                        <span className="presentation-reward-stat-caption">Local-only unlocks still shape how Home and Library feel as you level up.</span>
                       </div>
                       <div className="presentation-reward-stat">
                         <span className="presentation-reward-stat-label">Equipped Home Layout</span>
@@ -769,7 +729,7 @@ function Settings() {
                       <div className="presentation-reward-stat">
                         <span className="presentation-reward-stat-label">Equipped Library Variant</span>
                         <strong>{selectedLibraryPresentation?.name || 'Classic Shelf'}</strong>
-                        <span className="presentation-reward-stat-caption">Applied alongside {selectedHomeLayout?.name || 'Mission Control'} for your browsing flow.</span>
+                        <span className="presentation-reward-stat-caption">Rewards now have a dedicated page for full browsing.</span>
                       </div>
                     </div>
 
@@ -786,106 +746,20 @@ function Settings() {
                       </div>
                     )}
 
-                    <div className="presentation-reward-group">
-                      <div className="presentation-reward-group-header">
-                        <h3>Library Variants</h3>
-                        <span>{selectedLibraryPresentation?.name || 'Classic Shelf'} equipped</span>
-                      </div>
-                      <div className="presentation-reward-grid">
-                        {libraryPresentationOptions.map((variant) => {
-                          const isSelected = selectedLibraryPresentation?.id === variant.id;
-
-                          return (
-                            <button
-                              key={variant.id}
-                              type="button"
-                              className={`presentation-reward-card${isSelected ? ' selected' : ''}${variant.unlocked ? '' : ' locked'}`}
-                              onClick={() => handleEquipLibraryVariant(variant.id)}
-                              disabled={!variant.unlocked}
-                            >
-                              <span className="presentation-reward-preview" style={{ background: variant.preview }}></span>
-                              <span className="presentation-reward-card-title">
-                                <strong>{variant.name}</strong>
-                                <span className={`presentation-reward-status${variant.unlocked ? '' : ' locked'}`}>
-                                  {variant.unlocked ? (isSelected ? 'Equipped' : 'Equip') : `${variant.progressPercent}%`}
-                                </span>
-                              </span>
-                              <span className="presentation-reward-card-description">{variant.description}</span>
-                              <span className="presentation-reward-card-meta">
-                                {variant.unlocked ? (isSelected ? 'Applied to Library' : 'Use in Library') : `Unlock at ${Number(variant.requiredXP || 0).toLocaleString()} XP`}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="presentation-reward-group">
-                      <div className="presentation-reward-group-header">
-                        <h3>Home Layouts</h3>
-                        <span>{selectedHomeLayout?.name || 'Mission Control'} equipped</span>
-                      </div>
-                      <div className="presentation-reward-grid">
-                        {homeLayoutOptions.map((layout) => {
-                          const isSelected = selectedHomeLayout?.id === layout.id;
-
-                          return (
-                            <button
-                              key={layout.id}
-                              type="button"
-                              className={`presentation-reward-card${isSelected ? ' selected' : ''}${layout.unlocked ? '' : ' locked'}`}
-                              onClick={() => handleEquipHomeLayout(layout.id)}
-                              disabled={!layout.unlocked}
-                            >
-                              <span className="presentation-reward-preview" style={{ background: layout.preview }}></span>
-                              <span className="presentation-reward-card-title">
-                                <strong>{layout.name}</strong>
-                                <span className={`presentation-reward-status${layout.unlocked ? '' : ' locked'}`}>
-                                  {layout.unlocked ? (isSelected ? 'Equipped' : 'Equip') : `${layout.progressPercent}%`}
-                                </span>
-                              </span>
-                              <span className="presentation-reward-card-description">{layout.description}</span>
-                              <span className="presentation-reward-card-meta">
-                                {layout.unlocked ? (isSelected ? 'Applied on Home' : 'Use on Home') : `Unlock at ${Number(layout.requiredXP || 0).toLocaleString()} XP`}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="presentation-reward-group">
-                      <div className="presentation-reward-group-header">
-                        <h3>Recommendation Packs</h3>
-                        <span>{selectedRecommendationPack?.name || 'Classic Glow'} equipped</span>
-                      </div>
-                      <div className="presentation-reward-grid">
-                        {recommendationPackOptions.map((pack) => {
-                          const isSelected = selectedRecommendationPack?.id === pack.id;
-
-                          return (
-                            <button
-                              key={pack.id}
-                              type="button"
-                              className={`presentation-reward-card${isSelected ? ' selected' : ''}${pack.unlocked ? '' : ' locked'}`}
-                              onClick={() => handleEquipRecommendationPack(pack.id)}
-                              disabled={!pack.unlocked}
-                            >
-                              <span className="presentation-reward-preview" style={{ background: pack.preview }}></span>
-                              <span className="presentation-reward-card-title">
-                                <strong>{pack.name}</strong>
-                                <span className={`presentation-reward-status${pack.unlocked ? '' : ' locked'}`}>
-                                  {pack.unlocked ? (isSelected ? 'Equipped' : 'Equip') : `${pack.progressPercent}%`}
-                                </span>
-                              </span>
-                              <span className="presentation-reward-card-description">{pack.description}</span>
-                              <span className="presentation-reward-card-meta">
-                                {pack.unlocked ? (isSelected ? 'Applied to recommendations' : 'Use on recommendation cards') : `Unlock at ${Number(pack.requiredXP || 0).toLocaleString()} XP`}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                    <div className="setting-item">
+                      <label>Full Reward Management</label>
+                      <p className="setting-description">
+                        Use the Rewards page to browse locked and unlocked presentation rewards in one place, while Settings stays focused on app configuration.
+                      </p>
+                      <button
+                        type="button"
+                        className="save-btn"
+                        onClick={() => {
+                          window.location.hash = '#/rewards';
+                        }}
+                      >
+                        Open Rewards Page
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1487,6 +1361,85 @@ function Settings() {
                       <label htmlFor="cache" className="toggle-slider"></label>
                     </div>
                   </div>
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Keyboard Shortcuts"
+                subtitle="Enable shortcut help and customize the quick actions you use most often."
+                badge={shortcutSettings.enabled ? `${shortcutEntries.length} active` : 'Disabled'}
+                icon={<Keyboard size={18} />}
+                className="settings-folder"
+              >
+                <div className="settings-section">
+                  <div className="section-header">
+                    <Keyboard size={20} />
+                    <h2>Keyboard Shortcuts</h2>
+                  </div>
+                  <div className="preferences-settings">
+                    <div className="setting-item">
+                      <div>
+                        <label>Enable keyboard shortcuts</label>
+                        <p className="setting-description">Turn the global shortcut layer on or off without losing your custom bindings.</p>
+                      </div>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={shortcutSettings.enabled}
+                          onChange={(e) => handleShortcutToggle(e.target.checked)}
+                          id="keyboard-shortcuts-enabled"
+                        />
+                        <label htmlFor="keyboard-shortcuts-enabled" className="toggle-slider"></label>
+                      </div>
+                    </div>
+
+                    <div className="notification-section">
+                      <h4>Shortcut Bindings</h4>
+                      <p className="setting-description" style={{ marginBottom: '16px' }}>
+                        Use combinations like <strong>Ctrl+K</strong>, <strong>Ctrl+Shift+P</strong>, or <strong>?</strong>. Clear a field to fall back to the default binding.
+                      </p>
+                      {shortcutEntries.map((shortcutEntry) => (
+                        <div key={shortcutEntry.actionId} className="setting-item shortcut-setting-item">
+                          <div>
+                            <label>{shortcutEntry.description}</label>
+                            <p className="setting-description">Default: {shortcutEntry.defaultKey || 'Unassigned'}</p>
+                          </div>
+                          <div className="shortcut-edit-row">
+                            <input
+                              type="text"
+                              value={shortcutEntry.key || ''}
+                              onChange={(e) => handleShortcutChange(shortcutEntry.actionId, e.target.value)}
+                              className="settings-select shortcut-input"
+                              placeholder={shortcutEntry.defaultKey || 'Type shortcut'}
+                              title={`Shortcut for ${shortcutEntry.description}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleShortcutReset(shortcutEntry.actionId)}
+                              className="data-button reset shortcut-reset-button"
+                              title={`Reset ${shortcutEntry.description} to ${shortcutEntry.defaultKey}`}
+                            >
+                              Reset
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="setting-item shortcut-setting-item">
+                        <div>
+                          <label>Shortcut help overlay</label>
+                          <p className="setting-description">Use {KeyboardShortcuts.getShortcutForAction('show_shortcuts') || '?'} anywhere outside text inputs to see the current shortcut list.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => KeyboardShortcuts.showHelp()}
+                          className="data-button export shortcut-help-button"
+                          title="Open keyboard shortcut help"
+                        >
+                          Show Help
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CollapsibleSection>

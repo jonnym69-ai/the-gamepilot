@@ -3,20 +3,31 @@ import { useEffect, useCallback, useRef } from 'react';
 function ControllerSupport({ children, onControllerInput }) {
   const lastInputRef = useRef({});
 
+  const isControllerModeEnabled = useCallback(() => {
+    return typeof document !== 'undefined' && document.body.classList.contains('big-screen-mode');
+  }, []);
+
   const emitControllerInput = useCallback((...args) => {
     const [action, payload] = args;
+
+    if (!isControllerModeEnabled() && action !== 'connected' && action !== 'disconnected') {
+      return false;
+    }
 
     if (typeof onControllerInput === 'function') {
       onControllerInput(...args);
     }
 
-    window.dispatchEvent(new CustomEvent('controllerInput', {
+    const controllerEvent = new CustomEvent('controllerInput', {
+      cancelable: true,
       detail: {
         action,
         payload
       }
-    }));
-  }, [onControllerInput]);
+    });
+
+    return window.dispatchEvent(controllerEvent);
+  }, [isControllerModeEnabled, onControllerInput]);
 
   const emitDebouncedInput = useCallback((action, payload = null, cooldownMs = 180) => {
     const now = Date.now();

@@ -12,6 +12,11 @@
 /build
 /dist
 
+# backups and releases
+/backups
+/releases
+/build-backup-*
+
 # misc
 .DS_Store
 .env

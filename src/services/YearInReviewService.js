@@ -1,7 +1,8 @@
-import { AchievementTracker, AchievementStats } from '../AchievementSystem';
+import { AchievementTracker } from '../AchievementSystem';
 import { StatsAggregationService } from './StatsAggregationService';
 import { ProgressionUnlockService } from './ProgressionUnlockService';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
+import { QuestHistoryService } from './QuestHistoryService';
 
 const MONTH_LABELS = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 const SESSION_BUCKET_LABELS = Object.freeze({
@@ -100,6 +101,59 @@ const buildTopGames = (sessions = [], limit = 5) => {
     .slice(0, limit);
 };
 
+const getSessionStyleDescriptor = (bucket) => {
+  switch (bucket) {
+    case '0-30':
+      return 'quick-hit';
+    case '30-60':
+      return 'steady';
+    case '60-120':
+      return 'deep-session';
+    case '120+':
+      return 'marathon';
+    default:
+      return 'flexible';
+  }
+};
+
+const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSessionBucket, peakPlayWindow }) => {
+  if (!dominantMood && !dominantGenre && !preferredSessionBucket) {
+    return {
+      label: 'Adaptive Pilot',
+      description: 'Your local profile is still taking shape across moods, genres, and session rhythm.'
+    };
+  }
+
+  const moodIdentity = dominantMood
+    ? UserBehaviorProfile.buildPersonaIdentity([{ mood: dominantMood, count: 1, completionRate: 0 }])
+    : null;
+  const moodLabel = moodIdentity?.label || (dominantMood ? `${dominantMood} Pilot` : 'Adaptive Pilot');
+  const styleDescriptor = getSessionStyleDescriptor(preferredSessionBucket);
+  const genreDescriptor = dominantGenre ? `${dominantGenre} leaning` : 'wide-angle';
+  const label = dominantMood
+    ? `${moodLabel} · ${genreDescriptor}`
+    : `${genreDescriptor} ${styleDescriptor} player`;
+
+  const descriptionParts = [];
+  if (dominantMood) {
+    descriptionParts.push(`${dominantMood} showed up as your strongest mood signal`);
+  }
+  if (dominantGenre) {
+    descriptionParts.push(`${dominantGenre.toLowerCase()} games shaped the genre side of your profile`);
+  }
+  if (preferredSessionBucket) {
+    descriptionParts.push(`${SESSION_BUCKET_LABELS[preferredSessionBucket] || 'Flexible Sessions'} gave your year a ${styleDescriptor} rhythm`);
+  }
+  if (peakPlayWindow) {
+    descriptionParts.push(`${peakPlayWindow.toLowerCase()} was your most active play window`);
+  }
+
+  return {
+    label,
+    description: `${descriptionParts.join('. ')}.`
+  };
+};
+
 const buildPersonaFromSessions = (sessions = []) => {
   if (!sessions.length) {
     return {
@@ -142,18 +196,22 @@ const buildPersonaFromSessions = (sessions = []) => {
   const [peakHour] = sortCounts(hourCounts)[0] || [null, 0];
   const avgSessionMinutes = Math.round(totalMinutes / sessions.length);
   const preferredSessionBucket = UserBehaviorProfile.getSessionLengthCategory(avgSessionMinutes);
-  const personaIdentity = topMoodEntries.length > 0 ? UserBehaviorProfile.buildPersonaIdentity(topMoodEntries) : null;
+  const peakPlayWindow = peakHour !== null ? UserBehaviorProfile.getTimeOfDay(Number(peakHour)) : null;
+  const personaIdentity = buildBlendedPersonaIdentity({
+    dominantMood,
+    dominantGenre,
+    preferredSessionBucket,
+    peakPlayWindow
+  });
 
   return {
     identityLabel: personaIdentity?.label || (dominantMood ? `${dominantMood} Pilot` : 'Adaptive Pilot'),
-    identityDescription: personaIdentity?.description || (dominantGenre
-      ? `Spent the year leaning into ${dominantGenre.toLowerCase()} sessions.`
-      : 'Built a unique local play profile through completed sessions.'),
+    identityDescription: personaIdentity?.description || 'Built a unique local play profile through completed sessions.',
     dominantMood,
     dominantGenre,
     preferredSessionBucket,
     preferredSessionLabel: SESSION_BUCKET_LABELS[preferredSessionBucket] || 'Flexible Sessions',
-    peakPlayWindow: peakHour !== null ? UserBehaviorProfile.getTimeOfDay(Number(peakHour)) : null,
+    peakPlayWindow,
     avgSessionMinutes,
     moodMix: buildRankedList(moodCounts, 3),
     genreMix: buildRankedList(genreCounts, 3)
@@ -192,13 +250,15 @@ const buildAchievementSummary = (selectedYear) => {
   const fallbackHighlights = AchievementTracker.getRecentlyUnlocked()
     .filter((entry) => new Date(entry?.unlockedAt || 0).getFullYear() === selectedYear)
     .sort((left, right) => Number(right?.unlockedAt || 0) - Number(left?.unlockedAt || 0));
-  const completion = AchievementStats.getCompletionRate();
+  const questSummary = QuestHistoryService.getQuestCompletionSummaryForYear(selectedYear);
 
   return {
     trackedUnlocksThisYear: history.length,
     highlights: (history.length > 0 ? history : fallbackHighlights).slice(0, 8),
     totalUnlocked: AchievementTracker.getUnlockedAchievements().length,
-    completionPercentage: Math.round(completion.completion),
+    questsCompletedThisYear: questSummary.totalCompleted,
+    questPeriodCounts: questSummary.periodCounts,
+    topQuestPeriod: questSummary.topPeriod,
     historyAvailable: history.length > 0
   };
 };
@@ -266,6 +326,14 @@ const buildSummaryCards = ({ year, summary, topGames, persona, distributions, ac
       title: 'Achievement Highlights',
       value: `${achievements.trackedUnlocksThisYear}`,
       detail: achievements.historyAvailable ? 'Tracked unlocks captured this year' : 'Recent highlight tracking is just getting started'
+    },
+    {
+      id: 'quests',
+      title: 'Quest Completions',
+      value: `${achievements.questsCompletedThisYear || 0}`,
+      detail: achievements.topQuestPeriod
+        ? `${achievements.topQuestPeriod.period} quests led with ${achievements.topQuestPeriod.count}`
+        : 'Complete rotating quests to build your local challenge history'
     },
     {
       id: 'level',
@@ -393,7 +461,9 @@ export class YearInReviewService {
         trackedUnlocksThisYear: 0,
         highlights: [],
         totalUnlocked: 0,
-        completionPercentage: 0,
+        questsCompletedThisYear: 0,
+        questPeriodCounts: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
+        topQuestPeriod: null,
         historyAvailable: false
       };
       const fallbackProgression = {

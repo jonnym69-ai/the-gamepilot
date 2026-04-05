@@ -7,10 +7,31 @@ import { RecommendationEngine } from './services/RecommendationEngine';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { RetentionQuestService } from './services/RetentionQuestService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
 import './Home.css';
 import './LibraryValue.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
+
+const GETTING_STARTED_PREFERENCE_KEY = 'gettingStartedPreferences';
+
+const readGettingStartedPreferences = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(GETTING_STARTED_PREFERENCE_KEY) || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed
+      : { hasSeen: false, hidden: false };
+  } catch (error) {
+    return { hasSeen: false, hidden: false };
+  }
+};
+
+const saveGettingStartedPreferences = (preferences = {}) => {
+  localStorage.setItem(GETTING_STARTED_PREFERENCE_KEY, JSON.stringify({
+    hasSeen: Boolean(preferences.hasSeen),
+    hidden: Boolean(preferences.hidden)
+  }));
+};
 
 // Use centralized platform constants
 const platformIcons = PLATFORM_ICONS;
@@ -35,8 +56,17 @@ const formatPlaytime = (minutes) => {
 
 // ... (rest of the code remains the same)
 
-function GettingStartedModal({ isOpen, onClose, theme }) {
+function GettingStartedModal({ isOpen, onClose, onHidePermanently, theme }) {
   if (!isOpen) return null;
+
+  const shortcutHints = [
+    { label: 'Search', key: KeyboardShortcuts.getShortcutForAction('focus_search') || 'Ctrl+K' },
+    { label: 'Library', key: KeyboardShortcuts.getShortcutForAction('go_library') || 'Ctrl+L' },
+    { label: 'Stats', key: KeyboardShortcuts.getShortcutForAction('go_stats') || 'Ctrl+S' },
+    { label: 'Settings', key: KeyboardShortcuts.getShortcutForAction('go_settings') || 'Ctrl+T' },
+    { label: 'Exports', key: KeyboardShortcuts.getShortcutForAction('go_exports') || 'Ctrl+E' },
+    { label: 'Shortcut Help', key: KeyboardShortcuts.getShortcutForAction('show_shortcuts') || '?' }
+  ];
 
   return (
     <div className="modal-overlay">
@@ -95,12 +125,18 @@ function GettingStartedModal({ isOpen, onClose, theme }) {
         <div className="tips-section">
           <h1 className={`library-title ${theme}`}>Quick Tips</h1>
           <ul>
-            <li>Use <strong>Ctrl+K</strong> for quick keyboard shortcuts</li>
+            {shortcutHints.map((shortcutHint) => (
+              <li key={shortcutHint.label}>Use <strong>{shortcutHint.key}</strong> for {shortcutHint.label.toLowerCase()}</li>
+            ))}
             <li>Try different <strong>moods</strong> to get varied recommendations</li>
             <li>Enable <strong>bulk mode</strong> to manage multiple games efficiently</li>
             <li>Check your <strong>achievements</strong> regularly for new goals</li>
             <li>Export your library regularly as a <strong>backup</strong></li>
           </ul>
+        </div>
+        <div className="getting-started-actions">
+          <button onClick={onClose} className="getting-started-primary">Let's Go</button>
+          <button onClick={onHidePermanently} className="getting-started-secondary">Don't show again</button>
         </div>
       </div>
     </div>
@@ -166,17 +202,17 @@ function RecommendationReasoning({ entry }) {
 
 function Home({ 
   onScan, 
-  setMood, 
-  setTime, 
-  setSelectedGenre, 
-  mood, 
-  time, 
-  selectedGenre, 
+  setMood = () => {}, 
+  setTime = () => {}, 
+  setSelectedGenre = () => {}, 
+  mood = '', 
+  time = '', 
+  selectedGenre = '', 
   onLaunchGame, 
   lastPlayedGame, 
   loading, 
   library, 
-  theme,
+  theme = 'dark',
   activeSessions = {},
   endSession = () => {}
 }) {
@@ -186,9 +222,15 @@ function Home({
   const [perfectPlayResult, setPerfectPlayResult] = useState(null);
   const [surpriseGameResult, setSurpriseGameResult] = useState(null);
   const [rediscoverGameResult, setRediscoverGameResult] = useState(null);
-  const [showGettingStarted, setShowGettingStarted] = useState(false);
+  const [showGettingStarted, setShowGettingStarted] = useState(() => {
+    const preferences = readGettingStartedPreferences();
+    return !preferences.hasSeen && !preferences.hidden;
+  });
   const [retentionRefreshKey, setRetentionRefreshKey] = useState(0);
   const [selectedItemIndex, setSelectedItemIndex] = useState(-1);
+  const [feedbackPreferences, setFeedbackPreferences] = useState(() => UserBehaviorProfile.getFeedbackPreferences());
+  const [recommendationFeedbackState, setRecommendationFeedbackState] = useState({});
+  const [sessionFeedbackPrompt, setSessionFeedbackPrompt] = useState(null);
 
   const recentGames = useMemo(() => {
     return library
@@ -204,6 +246,24 @@ function Home({
       .slice(0, 5);
   }, [library]);
 
+  const topRatedGames = useMemo(() => {
+    if (!Array.isArray(library)) {
+      return [];
+    }
+
+    return library
+      .filter((game) => typeof game?.userRating === 'number' && game.userRating > 0)
+      .sort((left, right) => {
+        const ratingDiff = (right.userRating || 0) - (left.userRating || 0);
+        if (ratingDiff !== 0) {
+          return ratingDiff;
+        }
+
+        return (right.time_played || 0) - (left.time_played || 0);
+      })
+      .slice(0, 6);
+  }, [library]);
+
   const recommendations = useMemo(() => {
     return library
       .filter(game => game.time_played === 0 || !game.time_played)
@@ -216,35 +276,6 @@ function Home({
       .filter(game => game.time_played === 0 || !game.time_played)
       .sort(() => Math.random() - 0.5);
   }, [library]);
-
-  const handleControllerInput = useCallback((action) => {
-    const itemsCount = 0 + 0 + (false ? 0 : 0);
-    if (action === 'down' && selectedItemIndex < itemsCount - 1) {
-      setSelectedItemIndex(prev => prev + 1);
-    } else if (action === 'up' && selectedItemIndex > 0) {
-      setSelectedItemIndex(prev => prev - 1);
-    } else if (action === 'confirm' && selectedItemIndex >= 0) {
-      let gameToLaunch;
-      if (selectedItemIndex < 0) {
-        gameToLaunch = null;
-      } else if (selectedItemIndex < 0 + 0) {
-        gameToLaunch = null;
-      } else {
-        gameToLaunch = false ? null : false;
-      }
-      if (gameToLaunch) {
-        onLaunchGame(gameToLaunch);
-      }
-    }
-  }, [selectedItemIndex, onLaunchGame]);
-
-  useEffect(() => {
-    const handleGlobalControllerInput = (event) => {
-      handleControllerInput(event.detail.action);
-    };
-    window.addEventListener('controllerInput', handleGlobalControllerInput);
-    return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
-  }, [handleControllerInput]);
 
   useEffect(() => {
     // Check and unlock achievements when component mounts
@@ -261,6 +292,41 @@ function Home({
     setWelcomeMessage(savedMessage);
     setProfilePic(savedProfilePic);
   }, []);
+
+  const closeGettingStarted = useCallback(() => {
+    const preferences = {
+      ...readGettingStartedPreferences(),
+      hasSeen: true
+    };
+    saveGettingStartedPreferences(preferences);
+    setShowGettingStarted(false);
+  }, []);
+
+  const hideGettingStartedPermanently = useCallback(() => {
+    saveGettingStartedPreferences({ hasSeen: true, hidden: true });
+    setShowGettingStarted(false);
+  }, []);
+
+  useEffect(() => {
+    const handleSessionEnded = (event) => {
+      if (!feedbackPreferences.sessionPromptEnabled) {
+        return;
+      }
+
+      const detail = event?.detail;
+      if (!detail?.gameName) {
+        return;
+      }
+
+      setSessionFeedbackPrompt({
+        ...detail,
+        promptKey: `${detail.gameId || detail.gameName}-${detail.endTime || Date.now()}`
+      });
+    };
+
+    window.addEventListener('gamepilot:session-ended', handleSessionEnded);
+    return () => window.removeEventListener('gamepilot:session-ended', handleSessionEnded);
+  }, [feedbackPreferences.sessionPromptEnabled]);
 
   // Helper to clear other results when a new feature is used
   const clearResults = () => {
@@ -343,19 +409,160 @@ function Home({
     onLaunchGame(game);
   };
 
+  const getRecommendationFeedbackKey = (result, game) => {
+    const recommendationType = result?.tracking?.recommendationType || 'recommendation';
+    const gameId = game?.appid || game?.name || 'unknown-game';
+    return `${recommendationType}:${gameId}`;
+  };
+
+  const submitRecommendationFeedback = (result, game, helpful) => {
+    const recommendationType = result?.tracking?.recommendationType;
+    const gameId = game?.appid || game?.name || null;
+
+    if (!recommendationType || !gameId || typeof helpful !== 'boolean') {
+      return;
+    }
+
+    UserBehaviorProfile.trackRecommendationFeedback(recommendationType, gameId, helpful, {
+      mood: result?.tracking?.mood || game?.mood || null,
+      genre: result?.tracking?.genre || RecommendationEngine.getPrimaryGenre(game) || null,
+      timeAvailable: result?.tracking?.timeAvailable ?? null
+    });
+
+    setRecommendationFeedbackState((current) => ({
+      ...current,
+      [getRecommendationFeedbackKey(result, game)]: helpful
+    }));
+  };
+
+  const disableRecommendationFeedback = () => {
+    UserBehaviorProfile.setFeedbackPromptEnabled('recommendation', false);
+    setFeedbackPreferences((current) => ({
+      ...current,
+      recommendationPromptEnabled: false
+    }));
+  };
+
+  const enableRecommendationFeedback = () => {
+    UserBehaviorProfile.setFeedbackPromptEnabled('recommendation', true);
+    setFeedbackPreferences((current) => ({
+      ...current,
+      recommendationPromptEnabled: true
+    }));
+  };
+
+  const submitSessionFeedback = (enjoyed) => {
+    if (!sessionFeedbackPrompt || typeof enjoyed !== 'boolean') {
+      setSessionFeedbackPrompt(null);
+      return;
+    }
+
+    UserBehaviorProfile.trackSessionFeedback(sessionFeedbackPrompt.gameName, enjoyed, {
+      gameId: sessionFeedbackPrompt.gameId,
+      mood: sessionFeedbackPrompt.mood,
+      genre: sessionFeedbackPrompt.genre,
+      playtimeMinutes: sessionFeedbackPrompt.playtimeMinutes,
+      endTime: sessionFeedbackPrompt.endTime
+    });
+
+    setSessionFeedbackPrompt(null);
+  };
+
+  const disableSessionFeedback = () => {
+    UserBehaviorProfile.setFeedbackPromptEnabled('session', false);
+    setFeedbackPreferences((current) => ({
+      ...current,
+      sessionPromptEnabled: false
+    }));
+    setSessionFeedbackPrompt(null);
+  };
+
+  const renderRecommendationFeedback = (entry, result) => {
+    const game = entry?.game;
+    if (!game || !result?.tracking?.recommendationType) {
+      return null;
+    }
+
+    if (!feedbackPreferences.recommendationPromptEnabled) {
+      return (
+        <div style={{ marginTop: '12px', textAlign: 'center' }}>
+          <button
+            onClick={enableRecommendationFeedback}
+            className="clear-button"
+          >
+            Re-enable recommendation feedback
+          </button>
+        </div>
+      );
+    }
+
+    const feedbackKey = getRecommendationFeedbackKey(result, game);
+    const submittedFeedback = recommendationFeedbackState[feedbackKey];
+    const yesSelected = submittedFeedback === true;
+    const noSelected = submittedFeedback === false;
+
+    return (
+      <div style={{ marginTop: '12px', textAlign: 'center' }}>
+        <div style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '8px' }}>
+          Was this a good recommendation?
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => submitRecommendationFeedback(result, game, true)}
+            className="clear-button"
+            title="Tell GamePilot this recommendation landed well so future picks improve"
+            style={{
+              opacity: yesSelected ? 1 : 0.75,
+              background: yesSelected ? 'rgba(76, 175, 80, 0.2)' : undefined,
+              borderColor: yesSelected ? '#4CAF50' : undefined,
+              color: yesSelected ? '#4CAF50' : undefined,
+              transform: yesSelected ? 'translateY(-1px)' : undefined,
+              fontWeight: yesSelected ? 700 : 500
+            }}
+          >
+            {yesSelected ? '✅ Liked' : '👍 Yes'}
+          </button>
+          <button
+            onClick={() => submitRecommendationFeedback(result, game, false)}
+            className="clear-button"
+            title="Tell GamePilot this recommendation missed so it can tune future suggestions"
+            style={{
+              opacity: noSelected ? 1 : 0.75,
+              background: noSelected ? 'rgba(244, 67, 54, 0.2)' : undefined,
+              borderColor: noSelected ? '#F44336' : undefined,
+              color: noSelected ? '#F44336' : undefined,
+              transform: noSelected ? 'translateY(-1px)' : undefined,
+              fontWeight: noSelected ? 700 : 500
+            }}
+          >
+            {noSelected ? '✅ Saved' : '👎 No'}
+          </button>
+          <button
+            onClick={disableRecommendationFeedback}
+            className="clear-button"
+            title="Hide recommendation feedback prompts if you do not want to train suggestions this way"
+          >
+            Hide this
+          </button>
+        </div>
+        {typeof submittedFeedback === 'boolean' && (
+          <p style={{ color: submittedFeedback ? '#4CAF50' : '#F44336', fontSize: '0.78rem', marginTop: '8px', marginBottom: '0' }}>
+            Feedback saved. GamePilot will use this to improve future picks.
+          </p>
+        )}
+        <p style={{ color: 'var(--text)', opacity: 0.65, fontSize: '0.75rem', marginTop: '8px' }}>
+          Hiding this will reduce one of the signals GamePilot can use to improve recommendations.
+        </p>
+      </div>
+    );
+  };
+
   // Get available filter options from library
   const availableMoods = React.useMemo(() => {
-    const moods = new Set();
-    if (library && Array.isArray(library)) {
-      library.forEach(game => {
-        if (game.mood) moods.add(game.mood);
-      });
-    }
-    // If no games scanned yet, show common mood options (emotional states)
-    return Array.from(moods).length > 0 ? Array.from(moods).sort() : [
-      'Relaxed', 'Social', 'Focused', 'Creative', 'Escapist', 'Tactical', 'Sporty', 'Competitive'
-    ];
-  }, [library]);
+    // Always show all 8 moods regardless of library content
+    // This ensures users can select any mood even if no games currently have that mood
+    return ['Relaxed', 'Social', 'Focused', 'Creative', 'Escapist', 'Tactical', 'Sporty', 'Competitive'];
+  }, []);
 
   const availableGenres = React.useMemo(() => {
     const genres = new Set();
@@ -411,6 +618,8 @@ function Home({
   const perfectPlayEntries = perfectPlayResult?.entries || [];
   const surpriseEntry = surpriseGameResult?.primaryEntry || null;
   const surpriseGame = surpriseEntry?.game || surpriseGameResult?.primaryGame || null;
+  const surpriseGameArtwork = surpriseGame ? resolveGameArtwork(surpriseGame, { surface: 'recommendation_card' }) : null;
+  const surpriseGamePlaceholder = surpriseGame ? getGameArtworkPlaceholder({ game: surpriseGame, surface: 'recommendation_card' }) : null;
   const rediscoverEntries = rediscoverGameResult?.entries || [];
   const retentionSnapshot = React.useMemo(() => (
     RetentionQuestService.getHomeRetentionSnapshot(library, retentionRefreshKey)
@@ -468,6 +677,7 @@ function Home({
           endSession(gameName);
         }}
         style={endSessionButtonStyle}
+        title="End the active tracked session for this game"
       >
         🛑 End Session
       </button>
@@ -478,8 +688,10 @@ function Home({
     const itemsCount = recentGames.length + featuredGames.length + (false ? allRecommendations.length : recommendations.length);
     if (action === 'down' && selectedItemIndex < itemsCount - 1) {
       setSelectedItemIndex(prev => prev + 1);
+      return true;
     } else if (action === 'up' && selectedItemIndex > 0) {
       setSelectedItemIndex(prev => prev - 1);
+      return true;
     } else if (action === 'confirm' && selectedItemIndex >= 0) {
       let gameToLaunch;
       if (selectedItemIndex < recentGames.length) {
@@ -492,13 +704,17 @@ function Home({
       }
       if (gameToLaunch) {
         onLaunchGame(gameToLaunch);
+        return true;
       }
     }
+    return false;
   }, [selectedItemIndex, recentGames, featuredGames, recommendations, allRecommendations, onLaunchGame]);
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
-      handleHomeControllerInput(event.detail.action);
+      if (handleHomeControllerInput(event?.detail?.action)) {
+        event.preventDefault();
+      }
     };
     window.addEventListener('controllerInput', handleGlobalControllerInput);
     return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
@@ -1091,6 +1307,7 @@ function Home({
                               </button>
                               {renderEndSessionButton(game.name)}
                             </div>
+                            {renderRecommendationFeedback(entry, perfectPlayResult)}
                           </div>
                         );
                       })}
@@ -1122,20 +1339,22 @@ function Home({
                 ) : surpriseGame ? (
                   <div style={{ textAlign: 'center' }}>
                     <RecommendationReasoning entry={surpriseEntry} />
-                    {surpriseGame.iconUrl ? (
-                      <LazyImage 
-                        src={surpriseGame.iconUrl} 
-                        alt={surpriseGame.name}
-                        placeholder={`https://placehold.co/184x69/${platformColors[surpriseGame.platform]?.replace('#', '') || '666666'}/fff?text=${encodeURIComponent(platformIcons[surpriseGame.platform] || '❓')}`}
-                        className="game-image"
-                      />
-                    ) : (
-                      <div className="game-placeholder">
-                        <div className="platform-icon">
-                          {platformIcons[surpriseGame.platform] || '❓'}
+                    <div className="game-card-image-wrapper">
+                      {surpriseGameArtwork ? (
+                        <LazyImage 
+                          src={surpriseGameArtwork} 
+                          alt={surpriseGame.name}
+                          placeholder={surpriseGamePlaceholder}
+                          className="game-image"
+                        />
+                      ) : (
+                        <div className="game-placeholder">
+                          <div className="platform-icon">
+                            {platformIcons[surpriseGame.platform] || '❓'}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     <h4 className="game-name">
                       {surpriseGame.name}
                     </h4>
@@ -1165,6 +1384,7 @@ function Home({
                         Clear
                       </button>
                     </div>
+                    {renderRecommendationFeedback(surpriseEntry, surpriseGameResult)}
                   </div>
                 ) : null}
               </div>
@@ -1235,6 +1455,7 @@ function Home({
                               </button>
                               {renderEndSessionButton(game.name)}
                             </div>
+                            {renderRecommendationFeedback(entry, rediscoverGameResult)}
                           </div>
                         );
                       })}
@@ -1246,10 +1467,77 @@ function Home({
           </div>
         )}
 
+        {topRatedGames.length > 0 && (
+          <div className="results-section">
+            <div className="result-card">
+              <h3 className="result-title">
+                ⭐ Your Top Rated Games
+              </h3>
+              <p style={{ color: 'var(--text)', opacity: 0.7, marginBottom: '18px' }}>
+                Your own favourites, kept separate from Perfect Play so recommendations can stay focused on discovery.
+              </p>
+              <div className="game-grid">
+                {topRatedGames.map((game, index) => {
+                  const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
+                  const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
+
+                  return (
+                    <div key={game.appid || game.name || `top-rated-${index}`} className={getGameCardClass(index)}>
+                      <div className="recommendation-badge-container">
+                        <div className="match-score" title={`Rated ${game.userRating}/10`}>
+                          ⭐ {game.userRating}/10
+                        </div>
+                      </div>
+                      <div className="game-card-image-wrapper">
+                        {gameArtwork ? (
+                          <LazyImage
+                            src={gameArtwork}
+                            alt={game.name}
+                            placeholder={gamePlaceholder}
+                            className="game-image"
+                          />
+                        ) : (
+                          <div className="game-placeholder">
+                            <div className="platform-icon">
+                              {platformIcons[game.platform] || '❓'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="game-name">{game.name}</h4>
+                      <p className="game-platform">{game.platform}</p>
+                      <div className="game-info">
+                        <span className="game-genre">
+                          {game.genres && game.genres.length > 0 ? game.genres.filter(g => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                        </span>
+                        {formatPlaytime(game.time_played) && (
+                          <span className="game-playtime">
+                            {formatPlaytime(game.time_played)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="game-actions">
+                        <button
+                          onClick={() => onLaunchGame(game)}
+                          className="game-launch-button primary"
+                        >
+                          🎮 Launch
+                        </button>
+                        {renderEndSessionButton(game.name)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="getting-started-section">
           <button 
             onClick={() => setShowGettingStarted(true)}
             className="getting-started-button"
+            title="Open the getting started guide and shortcut overview"
           >
             📖 Getting Started Guide
           </button>
@@ -1258,9 +1546,35 @@ function Home({
 
       <GettingStartedModal 
         isOpen={showGettingStarted} 
-        onClose={() => setShowGettingStarted(false)}
+        onClose={closeGettingStarted}
+        onHidePermanently={hideGettingStartedPermanently}
         theme={theme}
       />
+
+      {sessionFeedbackPrompt && feedbackPreferences.sessionPromptEnabled && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className={`modal-title ${theme}`}>How was that session?</h2>
+            <p style={{ marginBottom: '16px' }}>
+              Did you enjoy playing <strong>{sessionFeedbackPrompt.gameName}</strong>?
+            </p>
+            <p style={{ fontSize: '0.9rem', opacity: 0.75, marginBottom: '20px' }}>
+              This helps GamePilot learn which recommendations actually land well for you.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+              <button onClick={() => submitSessionFeedback(true)} className="action-button primary">👍 Good Session</button>
+              <button onClick={() => submitSessionFeedback(false)} className="action-button secondary">👎 Not Really</button>
+              <button onClick={() => setSessionFeedbackPrompt(null)} className="clear-button">Skip</button>
+            </div>
+            <button onClick={disableSessionFeedback} className="clear-button">
+              Hide this feature
+            </button>
+            <p style={{ color: 'var(--text)', opacity: 0.6, fontSize: '0.8rem', marginTop: '12px' }}>
+              Turning this off removes a learning signal that can improve future recommendations.
+            </p>
+          </div>
+        </div>
+      )}
 
       <footer className="contact-footer">
         <div className="contact-content">

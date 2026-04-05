@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import NavBar from './NavBar';
-import { AchievementTracker, AchievementStats } from './AchievementSystem';
-import { Trophy, Star, TrendingUp, Calendar, Award, User, Sparkles, RefreshCcw } from 'lucide-react';
+import { AchievementTracker } from './AchievementSystem';
+import { Trophy, Star, TrendingUp, Award, User, Sparkles, RefreshCcw } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
@@ -35,17 +35,43 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const [lastRefresh, setLastRefresh] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('all');
 
-  const calculateAchievementData = useCallback(() => {
+  const calculateAchievementData = useCallback((dashboardSnapshot = null) => {
     const unlockedAchievements = AchievementTracker.getUnlockedAchievements();
-    const timeCounters = AchievementTracker.getAllTimeCounters();
     const xpStats = AchievementTracker.getXPStats();
-    const completionStats = AchievementStats.getCompletionRate(unlockedAchievements);
+    const periods = dashboardSnapshot?.periods || {};
+    const currentYear = new Date().getFullYear();
+
+    const timeCounters = {
+      daily: {
+        count: Number(periods?.daily?.questUsage?.totalCompleted || 0),
+        day: new Date().toLocaleDateString()
+      },
+      weekly: {
+        count: Number(periods?.weekly?.questUsage?.totalCompleted || 0),
+        week: periods?.weekly?.rangeLabel || 'This Week'
+      },
+      monthly: {
+        count: Number(periods?.monthly?.questUsage?.totalCompleted || 0),
+        month: periods?.monthly?.rangeLabel || 'This Month'
+      },
+      yearly: {
+        count: Number(periods?.yearly?.questUsage?.totalCompleted || 0),
+        year: currentYear
+      }
+    };
+
+    const unlockCounters = {
+      daily: Number(periods?.daily?.achievementUsage?.totalUnlocked || 0),
+      weekly: Number(periods?.weekly?.achievementUsage?.totalUnlocked || 0),
+      monthly: Number(periods?.monthly?.achievementUsage?.totalUnlocked || 0),
+      yearly: Number(periods?.yearly?.achievementUsage?.totalUnlocked || 0),
+      all: Number(periods?.all?.achievementUsage?.totalUnlocked || unlockedAchievements.length || 0)
+    };
 
     return {
       unlocked: unlockedAchievements,
-      totalAchievements: completionStats.total,
-      completionPercentage: Math.round(completionStats.completion),
       timeCounters,
+      unlockCounters,
       xpStats
     };
   }, []);
@@ -132,37 +158,37 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     };
   }, [library, currency]);
 
-  const calculatePersonaData = useCallback(() => {
+  const calculatePersonaData = useCallback((dashboardSnapshot = null) => {
     const snapshot = UserBehaviorProfile.getPersonaSnapshot();
-    const profile = UserBehaviorProfile.getProfile();
-    const moodCompletion = Object.entries(profile.moodPreferences || {})
+    const allPeriodStats = dashboardSnapshot?.periods?.all || {};
+    const moodUsage = Object.entries(allPeriodStats.moodCounts || {})
       .map(([mood, data]) => ({
         label: mood,
-        completion: data.count ? Math.round((data.completedCount / data.count) * 100) : 0,
-        count: data.count
+        count: Number(data || 0)
       }))
-      .sort((a, b) => b.completion - a.completion)
+      .filter((entry) => entry.label && entry.label !== 'Unknown' && entry.count > 0)
+      .sort((a, b) => b.count - a.count)
       .slice(0, 6);
 
-    const genreCompletion = Object.entries(profile.genrePreferences || {})
+    const genreUsage = Object.entries(allPeriodStats.genreCounts || {})
       .map(([genre, data]) => ({
         label: genre,
-        completion: data.count ? Math.round((data.completedCount / data.count) * 100) : 0,
-        count: data.count
+        count: Number(data || 0)
       }))
-      .sort((a, b) => b.completion - a.completion)
+      .filter((entry) => entry.label && entry.label !== 'Unknown' && entry.count > 0)
+      .sort((a, b) => b.count - a.count)
       .slice(0, 6);
 
+    const profile = UserBehaviorProfile.getProfile();
     const sessionBuckets = profile.playstylePatterns?.preferredSessionLengths || {};
     const preferredBucket = Object.entries(sessionBuckets)
       .sort((a, b) => b[1] - a[1])[0]?.[0] || snapshot?.preferredSessionBucket;
 
     return {
       snapshot,
-      moodCompletion,
-      genreCompletion,
-      preferredBucket,
-      overallCompletion: snapshot?.overallCompletionRate || 0
+      moodUsage,
+      genreUsage,
+      preferredBucket
     };
   }, []);
 
@@ -207,9 +233,9 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   }, [library]);
 
   const refreshStats = useCallback(() => {
-    const achievementSnapshot = calculateAchievementData();
     const dashboardSnapshot = calculateDashboardData();
-    const personaSnapshot = calculatePersonaData();
+    const achievementSnapshot = calculateAchievementData(dashboardSnapshot);
+    const personaSnapshot = calculatePersonaData(dashboardSnapshot);
     const librarySnapshot = calculateLibraryStats();
     const synergy = calculateHardwareSynergy(personaSnapshot.snapshot);
 
@@ -314,6 +340,12 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     );
   }
 
+  const allTimeStats = dashboardData?.periods?.all || {};
+  const totalFeatureUses = Number(allTimeStats?.featureUsage?.totalUses || 0);
+  const favoriteFeature = allTimeStats?.featureUsage?.favoriteFeature || '—';
+  const currentStreak = Number(allTimeStats?.streak?.current || 0);
+  const bestStreak = Number(allTimeStats?.streak?.best || 0);
+
   return (
     <div className={`App ${theme}`}>
       <NavBar />
@@ -322,7 +354,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
         <div className="stats-header">
           <h1 className="stats-title">📊 Gaming Analytics Dashboard</h1>
           <p className="stats-subtitle">
-            Achievement Progress: {achievementData.completionPercentage}%
+            Local-first insights from your tracked sessions, moods, genres, features, and play habits.
           </p>
           <div className="stats-header-actions">
             <button className="stats-refresh-button" onClick={refreshStats}>
@@ -353,8 +385,18 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 <TrendingUp size={32} />
               </div>
               <div className="stat-content">
-                <h3>{achievementData.completionPercentage}%</h3>
-                <p>Completion Rate</p>
+                <h3>{achievementData.timeCounters.yearly.count}</h3>
+                <p>Quests This Year</p>
+              </div>
+            </div>
+
+            <div className="stat-card achievement-card">
+              <div className="stat-icon">
+                <Trophy size={32} />
+              </div>
+              <div className="stat-content">
+                <h3>{achievementData.unlockCounters.yearly}</h3>
+                <p>Unlocks This Year</p>
               </div>
             </div>
 
@@ -366,47 +408,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 <h3>Level {achievementData.xpStats.level}</h3>
                 <p>{achievementData.xpStats.xpProgress}/{achievementData.xpStats.xpToNextLevel} XP</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="stats-section">
-          <h2><Calendar size={24} /> Time-Based Achievement Counters</h2>
-          <div className="counters-grid">
-            <div className="counter-stat-card">
-              <div className="counter-header">
-                <span className="counter-icon">📅</span>
-                <span className="counter-period">Today</span>
-              </div>
-              <div className="counter-number">{achievementData.timeCounters.daily.count}</div>
-              <div className="counter-label">Achievements</div>
-            </div>
-
-            <div className="counter-stat-card">
-              <div className="counter-header">
-                <span className="counter-icon">📊</span>
-                <span className="counter-period">This Week</span>
-              </div>
-              <div className="counter-number">{achievementData.timeCounters.weekly.count}</div>
-              <div className="counter-label">Achievements</div>
-            </div>
-
-            <div className="counter-stat-card">
-              <div className="counter-header">
-                <span className="counter-icon">📈</span>
-                <span className="counter-period">This Month</span>
-              </div>
-              <div className="counter-number">{achievementData.timeCounters.monthly.count}</div>
-              <div className="counter-label">Achievements</div>
-            </div>
-
-            <div className="counter-stat-card">
-              <div className="counter-header">
-                <span className="counter-icon">🏆</span>
-                <span className="counter-period">{achievementData.timeCounters.yearly.year}</span>
-              </div>
-              <div className="counter-number">{achievementData.timeCounters.yearly.count}</div>
-              <div className="counter-label">Achievements</div>
             </div>
           </div>
         </div>
@@ -455,54 +456,77 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                   </div>
                 </div>
                 <div className="persona-progress">
-                  <span>Completion Confidence</span>
+                  <span>Activity Streak</span>
                   <div className="persona-progress-bar">
                     <div
                       className="persona-progress-fill"
-                      style={{ width: `${personaData.overallCompletion}%` }}
+                      style={{ width: `${Math.min(bestStreak > 0 ? Math.round((currentStreak / bestStreak) * 100) : 0, 100)}%` }}
                     />
                   </div>
-                  <small>{personaData.overallCompletion}% of tracked sessions close out successfully</small>
+                  <small>{currentStreak} current active days • {bestStreak} best streak</small>
                 </div>
               </div>
 
               <div className="persona-card heatmap-card">
                 <div className="persona-header">
                   <div>
-                    <p className="persona-label">Momentum Heatmap</p>
-                    <h3>Mood &amp; Genre Win Rates</h3>
+                    <p className="persona-label">Local Usage Snapshot</p>
+                    <h3>Mood, Genre &amp; Feature Usage</h3>
                   </div>
                   <Sparkles size={20} />
                 </div>
                 <div className="heatmap-grid">
-                  {personaData.moodCompletion.length > 0 && (
+                  {personaData.moodUsage.length > 0 && (
                     <div className="heatmap-column">
                       <h4>Moods</h4>
-                      {personaData.moodCompletion.map((item) => (
+                      {personaData.moodUsage.map((item) => (
                         <div key={item.label} className="heatmap-row">
                           <span>{item.label}</span>
                           <div className="heatmap-bar">
-                            <div style={{ width: `${item.completion}%` }} />
+                            <div style={{ width: `${Math.min(item.count * 10, 100)}%` }} />
                           </div>
-                          <span className="heatmap-value">{item.completion}%</span>
+                          <span className="heatmap-value">{item.count}</span>
                         </div>
                       ))}
                     </div>
                   )}
-                  {personaData.genreCompletion.length > 0 && (
+                  {personaData.genreUsage.length > 0 && (
                     <div className="heatmap-column">
                       <h4>Genres</h4>
-                      {personaData.genreCompletion.map((item) => (
+                      {personaData.genreUsage.map((item) => (
                         <div key={item.label} className="heatmap-row">
                           <span>{item.label}</span>
                           <div className="heatmap-bar">
-                            <div style={{ width: `${item.completion}%` }} />
+                            <div style={{ width: `${Math.min(item.count * 10, 100)}%` }} />
                           </div>
-                          <span className="heatmap-value">{item.completion}%</span>
+                          <span className="heatmap-value">{item.count}</span>
                         </div>
                       ))}
                     </div>
                   )}
+                  <div className="heatmap-column">
+                    <h4>Usage</h4>
+                    <div className="heatmap-row">
+                      <span>Games Played</span>
+                      <span className="heatmap-value">{allTimeStats.uniqueGames || 0}</span>
+                    </div>
+                    <div className="heatmap-row">
+                      <span>Sessions</span>
+                      <span className="heatmap-value">{allTimeStats.sessions || 0}</span>
+                    </div>
+                    <div className="heatmap-row">
+                      <span>Active Days</span>
+                      <span className="heatmap-value">{allTimeStats.activeDays || 0}</span>
+                    </div>
+                    <div className="heatmap-row">
+                      <span>Feature Uses</span>
+                      <span className="heatmap-value">{totalFeatureUses}</span>
+                    </div>
+                    <div className="heatmap-row">
+                      <span>Top Feature</span>
+                      <span className="heatmap-value">{favoriteFeature}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

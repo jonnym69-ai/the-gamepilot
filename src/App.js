@@ -12,6 +12,9 @@ import Profile from './Profile';
 import YearInReview from './YearInReview';
 import ChallengeBoard from './ChallengeBoard';
 import PerformanceCockpit from './PerformanceCockpit';
+import Themes from './Themes';
+import Rewards from './Rewards';
+ import ExportHub from './ExportHub';
 import moodThemes from './themes/moodThemes.json';
 import { ThemeProvider } from './ThemeContext';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
@@ -103,6 +106,7 @@ const CONTROLLER_NAV_ROUTES = [
   '/stats',
   '/achievements',
   '/year-in-review',
+  '/exports',
   '/challenge-board',
   '/performance',
   '/gaming-links',
@@ -127,6 +131,9 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const [library, setLibrary] = useState([]);
+  const [filterMood, setFilterMood] = useState('');
+  const [filterTime, setFilterTime] = useState('');
+  const [filterGenre, setFilterGenre] = useState('');
   const [theme, setTheme] = useState(() => {
     // Get theme from localStorage or default to 'relaxed'
     const savedTheme = localStorage.getItem('gamepilot-theme');
@@ -136,6 +143,7 @@ function AppContent() {
   const [lastPlayedGame, setLastPlayedGame] = useState(null);
   const [isOnline, setIsOnline] = useState(OfflineManager.isOnline);
   const [syncStatus, setSyncStatus] = useState(OfflineManager.getSyncStatus());
+  const [activeSessions, setActiveSessions] = useState(() => PlaytimeAutoLogger.getActiveSessions());
 
   // Memoization caches for performance
   const playtimeStatsCache = useRef(new Map());
@@ -153,32 +161,38 @@ function AppContent() {
         return;
       }
 
-      if (action === 'scroll_down') {
-        window.scrollBy({ top: 220, behavior: 'smooth' });
-        return;
-      }
+      window.setTimeout(() => {
+        if (event.defaultPrevented) {
+          return;
+        }
 
-      if (action === 'scroll_up') {
-        window.scrollBy({ top: -220, behavior: 'smooth' });
-        return;
-      }
+        if (action === 'scroll_down') {
+          window.scrollBy({ top: 220, behavior: 'smooth' });
+          return;
+        }
 
-      if (currentPath === '/library') {
-        return;
-      }
+        if (action === 'scroll_up') {
+          window.scrollBy({ top: -220, behavior: 'smooth' });
+          return;
+        }
 
-      const currentRouteIndex = Math.max(0, CONTROLLER_NAV_ROUTES.indexOf(currentPath));
+        if (currentPath === '/library') {
+          return;
+        }
 
-      if (action === 'page_next') {
-        const nextRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex + 1) % CONTROLLER_NAV_ROUTES.length];
-        navigate(nextRoute);
-        return;
-      }
+        const currentRouteIndex = Math.max(0, CONTROLLER_NAV_ROUTES.indexOf(currentPath));
 
-      if (action === 'page_previous') {
-        const previousRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length];
-        navigate(previousRoute);
-      }
+        if (action === 'page_next') {
+          const nextRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex + 1) % CONTROLLER_NAV_ROUTES.length];
+          navigate(nextRoute);
+          return;
+        }
+
+        if (action === 'page_previous') {
+          const previousRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length];
+          navigate(previousRoute);
+        }
+      }, 0);
     };
 
     window.addEventListener('controllerInput', handleGlobalControllerNavigation);
@@ -216,8 +230,7 @@ function AppContent() {
 
   // Initialize keyboard shortcuts
   useEffect(() => {
-    // Register global shortcuts
-    KeyboardShortcuts.register('Ctrl+K', () => {
+    KeyboardShortcuts.registerAction('focus_search', 'Ctrl+K', () => {
       // Focus search input if we're on the library page
       const searchInput = document.querySelector('input[placeholder*="search"], input[placeholder*="Search"]');
       if (searchInput) {
@@ -226,50 +239,48 @@ function AppContent() {
       }
     }, 'Focus search');
 
-    KeyboardShortcuts.register('Ctrl+L', () => {
-      // Navigate to Library
+    KeyboardShortcuts.registerAction('go_library', 'Ctrl+L', () => {
       window.location.hash = '#/library';
     }, 'Go to Library');
 
-    KeyboardShortcuts.register('Ctrl+H', () => {
-      // Navigate to Home
+    KeyboardShortcuts.registerAction('go_home', 'Ctrl+H', () => {
       window.location.hash = '#/';
     }, 'Go to Home');
 
-    KeyboardShortcuts.register('Ctrl+P', () => {
-      // Navigate to Profile
+    KeyboardShortcuts.registerAction('go_profile', 'Ctrl+P', () => {
       window.location.hash = '#/profile';
     }, 'Go to Profile');
 
-    KeyboardShortcuts.register('Ctrl+A', () => {
-      // Navigate to Achievements
+    KeyboardShortcuts.registerAction('go_achievements', 'Ctrl+A', () => {
       window.location.hash = '#/achievements';
     }, 'Go to Achievements');
 
-    KeyboardShortcuts.register('Ctrl+S', () => {
-      // Navigate to Stats
+    KeyboardShortcuts.registerAction('go_stats', 'Ctrl+S', () => {
       window.location.hash = '#/stats';
     }, 'Go to Stats');
 
-    KeyboardShortcuts.register('Ctrl+T', () => {
-      // Navigate to Settings
+    KeyboardShortcuts.registerAction('go_settings', 'Ctrl+T', () => {
       window.location.hash = '#/settings';
     }, 'Go to Settings');
 
-    KeyboardShortcuts.register('?', () => {
+    KeyboardShortcuts.registerAction('go_exports', 'Ctrl+E', () => {
+      window.location.hash = '#/exports';
+    }, 'Go to Export & Share');
+
+    KeyboardShortcuts.registerAction('show_shortcuts', '?', () => {
       KeyboardShortcuts.showHelp();
     }, 'Show keyboard shortcuts');
 
-    // Cleanup function to unregister shortcuts
     return () => {
-      KeyboardShortcuts.unregister('Ctrl+K');
-      KeyboardShortcuts.unregister('Ctrl+L');
-      KeyboardShortcuts.unregister('Ctrl+H');
-      KeyboardShortcuts.unregister('Ctrl+P');
-      KeyboardShortcuts.unregister('Ctrl+A');
-      KeyboardShortcuts.unregister('Ctrl+S');
-      KeyboardShortcuts.unregister('Ctrl+T');
-      KeyboardShortcuts.unregister('?');
+      KeyboardShortcuts.unregisterAction('focus_search');
+      KeyboardShortcuts.unregisterAction('go_library');
+      KeyboardShortcuts.unregisterAction('go_home');
+      KeyboardShortcuts.unregisterAction('go_profile');
+      KeyboardShortcuts.unregisterAction('go_achievements');
+      KeyboardShortcuts.unregisterAction('go_stats');
+      KeyboardShortcuts.unregisterAction('go_settings');
+      KeyboardShortcuts.unregisterAction('go_exports');
+      KeyboardShortcuts.unregisterAction('show_shortcuts');
     };
   }, []);
 
@@ -553,12 +564,16 @@ function AppContent() {
       return null;
     }
 
+    let endedGameSnapshot = null;
+
     setLibrary((previousLibrary) => {
       const normalizedLibrary = normalizeLibraryData(previousLibrary);
       const updatedLibrary = normalizedLibrary.map((game) => {
         if (!game || game.name !== gameName) {
           return game;
         }
+
+        endedGameSnapshot = game;
 
         const nextTimePlayed = normalizeTrackedNumber(game.time_played) + normalizeTrackedNumber(sessionResult.playtimeMinutes);
         const sessionEndTimestamp = normalizeLastPlayedValue(sessionResult.endTime) || Date.now();
@@ -588,6 +603,21 @@ function AppContent() {
       PlaytimeAutoLogger.autoSyncOnSessionEnd(gameName, updatedLibrary);
       return updatedLibrary;
     });
+
+    setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+
+    window.dispatchEvent(new CustomEvent('gamepilot:session-ended', {
+      detail: {
+        gameName,
+        gameId: endedGameSnapshot?.appid || endedGameSnapshot?.name || gameName,
+        mood: endedGameSnapshot?.mood || null,
+        genre: Array.isArray(endedGameSnapshot?.genres)
+          ? endedGameSnapshot.genres.find((genre) => genre && genre !== 'Unknown') || null
+          : null,
+        playtimeMinutes: normalizeTrackedNumber(sessionResult.playtimeMinutes),
+        endTime: sessionResult.endTime || Date.now()
+      }
+    }));
 
     return sessionResult;
   }, [saveLibrary]);
@@ -632,6 +662,7 @@ function AppContent() {
         alert(result.message);
       } else {
         console.log(' Game launched successfully:', result.result?.message || 'Launched');
+        setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
       }
       
       console.log(' Launch request submitted for:', game.name);
@@ -692,16 +723,19 @@ function AppContent() {
     <div className="App-container">
       <ControllerSupport />
       <Routes>
-        <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} />} />
+        <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
         <Route path="/library" element={<Library library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} loading={loading} />} />
         <Route path="/stats" element={<Stats library={library} />} />
         <Route path="/achievements" element={<Achievements library={library} />} />
+        <Route path="/themes" element={<Themes />} />
+        <Route path="/rewards" element={<Rewards />} />
         <Route path="/links" element={<GamingLinks />} />
         <Route path="/gaming-links" element={<GamingLinks />} />
         <Route path="/donate" element={<Donate />} />
         <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} />} />
         <Route path="/profile" element={<Profile library={library} />} />
         <Route path="/year-in-review" element={<YearInReview library={library} />} />
+        <Route path="/exports" element={<ExportHub library={library} theme={theme} />} />
         <Route path="/challenge-board" element={<ChallengeBoard library={library} />} />
         <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />
         <Route path="/performance" element={<PerformanceCockpit library={library} />} />

@@ -1,22 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import HybridNavBar from './components/HybridNavBar';
 
-function NavBar() {
-  return (
-    <nav className="navbar">
-      <Link to="/">Home</Link>
-      <Link to="/library">Library</Link>
-      <Link to="/stats">Stats</Link>
-      <Link to="/achievements">🏆 Achievements</Link>
-      <Link to="/year-in-review">📊 Year in Review</Link>
-      <Link to="/challenge-board">🎯 Challenge Board</Link>
-      <Link to="/performance">⚡ Performance</Link>
-      <Link to="/gaming-links">Gaming Links</Link>
-      <Link to="/donate">Founders</Link>
-      <Link to="/profile">Profile</Link>
-      <Link to="/settings">Settings</Link>
-    </nav>
-  );
-}
-
-export default NavBar;
+// This file now exports the HybridNavBar as the default NavBar
+// The original NavBar is backed up in NavBar_backup.js
+export default HybridNavBar;

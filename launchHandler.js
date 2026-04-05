@@ -363,23 +363,7 @@ class GameLauncher {
       ? path.join(process.env.LOCALAPPDATA, 'Programs')
       : null;
 
-    // Try to launch the game executable directly first
-    const executableCandidates = [
-      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov.exe') : null,
-      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_BE.exe') : null,
-      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_Arena.exe') : null
-    ].filter(Boolean);
-
-    for (const executablePath of executableCandidates) {
-      if (!fs.existsSync(executablePath)) {
-        continue;
-      }
-
-      exec(`"${executablePath}"`, () => {});
-      return { success: true, message: `Launched ${game.name}` };
-    }
-
-    // Fallback: Try to find BsgLauncher.exe in various locations
+    // Prefer the official launcher first so BattlEye-protected games initialize correctly.
     const launcherCandidates = [
       game.installDir ? path.join(game.installDir, 'BsgLauncher.exe') : null,
       game.installDir ? path.join(game.installDir, 'Launcher', 'BsgLauncher.exe') : null,
@@ -400,8 +384,33 @@ class GameLauncher {
         continue;
       }
 
-      await this.shell.openExternal(`file://${launcherPath}`);
-      return { success: true, message: 'BSG Launcher opened - please launch game manually' };
+      return new Promise((resolve) => {
+        exec(`"${launcherPath}"`, (error) => {
+          if (error) {
+            console.error('❌ BSG launcher failed:', error);
+            resolve({ success: false, message: `Failed to open BSG Launcher: ${error.message}` });
+            return;
+          }
+
+          resolve({ success: true, message: 'BSG Launcher opened - launch Escape from Tarkov from the launcher to satisfy BattlEye' });
+        });
+      });
+    }
+
+    // Only fall back to direct executables if no launcher is installed.
+    const executableCandidates = [
+      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_BE.exe') : null,
+      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov.exe') : null,
+      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_Arena.exe') : null
+    ].filter(Boolean);
+
+    for (const executablePath of executableCandidates) {
+      if (!fs.existsSync(executablePath)) {
+        continue;
+      }
+
+      exec(`"${executablePath}"`, () => {});
+      return { success: true, message: `Launched ${game.name}` };
     }
 
     return { success: false, message: 'BSG Launcher not found - please install Escape from Tarkov' };

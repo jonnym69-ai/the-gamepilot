@@ -1,6 +1,8 @@
 // AchievementSystem.js - GamePilot Achievement and Analytics System
 import { RollingAchievementsTracker } from './services/RollingAchievementsTracker';
 import { StatsAggregationService } from './services/StatsAggregationService';
+import { QuestHistoryService } from './services/QuestHistoryService';
+import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
 
 // Achievement rarity system
 export const ACHIEVEMENT_RARITY = {
@@ -191,6 +193,16 @@ export const ACHIEVEMENTS = {
     
     // Settings achievements
     { id: 'settings_3', name: 'Customizer', desc: 'Change 3 different settings', icon: '⚙️', rarity: 'COMMON' }
+  ],
+  quests: [
+    { id: 'quest_total_1', name: 'Quest Initiate', desc: 'Complete your first rotating quest', icon: '🧭', rarity: 'COMMON' },
+    { id: 'quest_total_10', name: 'Quest Runner', desc: 'Complete 10 rotating quests', icon: '🗺️', rarity: 'RARE' },
+    { id: 'quest_total_25', name: 'Quest Specialist', desc: 'Complete 25 rotating quests', icon: '🎯', rarity: 'EPIC' },
+    { id: 'quest_total_50', name: 'Quest Vanguard', desc: 'Complete 50 rotating quests', icon: '🚀', rarity: 'LEGENDARY' },
+    { id: 'quest_daily_10', name: 'Daily Cadence', desc: 'Complete 10 daily quests', icon: '🌅', rarity: 'RARE' },
+    { id: 'quest_weekly_10', name: 'Weekly Rhythm', desc: 'Complete 10 weekly quests', icon: '📆', rarity: 'RARE' },
+    { id: 'quest_monthly_5', name: 'Monthly Momentum', desc: 'Complete 5 monthly quests', icon: '🗓️', rarity: 'EPIC' },
+    { id: 'quest_yearly_3', name: 'Yearly Legend', desc: 'Complete 3 yearly quests', icon: '🏆', rarity: 'LEGENDARY' }
   ],
   uniqueGames: [
     { id: 'unique_game_1', name: 'Fresh Start', desc: 'Play 1 unique game', icon: '🎯', rarity: 'COMMON' },
@@ -577,6 +589,39 @@ const resolveStoredBoostMeta = (profile = {}) => {
   }
 
   return buildTierBoostMeta(profile.tier, profile.isMonthly ? 'Monthly' : 'Supporter');
+};
+
+const parseTimestamp = (value) => {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) {
+    return numeric;
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getBoostEligibleXP = (activatedAt, achievementPoints) => {
+  const activationTimestamp = parseTimestamp(activatedAt);
+  if (!activationTimestamp) {
+    return 0;
+  }
+
+  const achievementXP = AchievementTracker.getAchievementUnlockHistory()
+    .filter((entry) => parseTimestamp(entry?.unlockedAt) >= activationTimestamp)
+    .reduce((sum, entry) => {
+      const explicitXP = Number(entry?.xp);
+      if (Number.isFinite(explicitXP) && explicitXP >= 0) {
+        return sum + explicitXP;
+      }
+      return sum + Number(achievementPoints?.[entry?.id] || 0);
+    }, 0);
+
+  const playtimeXP = PlaytimeAutoLogger.getSessionHistory()
+    .filter((session) => parseTimestamp(session?.timestamp || session?.endTime || session?.date) >= activationTimestamp)
+    .reduce((sum, session) => sum + Math.max(0, Math.round(Number(session?.playtimeMinutes) || 0)), 0);
+
+  return achievementXP + playtimeXP;
 };
 
 const PATREON_XP_BOOST_CODES = Object.freeze({
@@ -1346,6 +1391,21 @@ export class AchievementTracker {
     if (!achievements[achievementId]) {
       achievements[achievementId] = true;
       this.setTimeBasedAchievements(period, achievements);
+      const achievement = this.getAchievementById(achievementId);
+      const progress = RollingAchievementsTracker.getAchievementProgressSnapshot(achievementId);
+      QuestHistoryService.recordQuestCompletion({
+        achievementId,
+        period,
+        periodKey: this.getPeriodCurrentKey(period),
+        name: achievement?.name || achievementId,
+        description: achievement?.desc || '',
+        icon: achievement?.icon || '🏆',
+        rarity: achievement?.rarity || 'COMMON',
+        metric: progress?.metric || '',
+        target: Number(progress?.target || 0),
+        current: Number(progress?.current || 0),
+        completedAt: Date.now()
+      });
       
       // Add to recently unlocked
       this.addRecentlyUnlocked(achievementId);
@@ -1483,6 +1543,27 @@ export class AchievementTracker {
     return null;
   }
 
+  static getQuestCompletionStats() {
+    const history = QuestHistoryService.getQuestCompletionHistory();
+    const periodCounts = {
+      daily: 0,
+      weekly: 0,
+      monthly: 0,
+      yearly: 0
+    };
+
+    history.forEach((entry) => {
+      if (periodCounts[entry?.period] !== undefined) {
+        periodCounts[entry.period] += 1;
+      }
+    });
+
+    return {
+      totalCompleted: history.length,
+      periodCounts
+    };
+  }
+
   // XP and Level System
   static getAchievementPoints() {
     const pointsMap = {
@@ -1607,9 +1688,18 @@ export class AchievementTracker {
       'export_1': 45,
       'export_5': 100,
       'export_10': 200,
-      'export_25': 400,
-      'export_50': 800,
-      'settings_3': 50,
+      'export_25': 240,
+      'export_50': 480,
+      'settings_3': 30,
+      'quest_total_1': 15,
+      'quest_total_10': 80,
+      'quest_total_25': 180,
+      'quest_total_50': 360,
+      'quest_daily_10': 90,
+      'quest_weekly_10': 140,
+      'quest_monthly_5': 240,
+      'quest_yearly_3': 420,
+      'first_session': 25,
       'settings_8': 110,
       'settings_15': 200,
       'settings_25': 350,
@@ -1866,7 +1956,7 @@ export class AchievementTracker {
     const multiplierLabel = formatXPBoostMultiplier(boostMeta.multiplier);
     return {
       success: true,
-      message: `XP boost activated! You now earn XP at ${multiplierLabel} the base rate from all progression sources.`,
+      message: `XP boost activated! Future progression now earns XP at ${multiplierLabel} the base rate.`,
       multiplier: boostMeta.multiplier,
       multiplierLabel,
       tier: normalizeSupportTier(boostMeta.tier),
@@ -1937,7 +2027,7 @@ export class AchievementTracker {
     const multiplierLabel = formatXPBoostMultiplier(monthlyCodeMeta.multiplier);
     return {
       success: true,
-      message: `Monthly ${normalizeSupportTier(monthlyCodeMeta.tier) || monthlyCodeMeta.tier} XP boost activated! You now earn XP at ${multiplierLabel} the base rate until ${monthlyCodeMeta.expiry}.`,
+      message: `Monthly ${normalizeSupportTier(monthlyCodeMeta.tier) || monthlyCodeMeta.tier} XP boost activated! Future progression now earns XP at ${multiplierLabel} the base rate until ${monthlyCodeMeta.expiry}.`,
       multiplier: monthlyCodeMeta.multiplier,
       multiplierLabel,
       tier: normalizeSupportTier(monthlyCodeMeta.tier),
@@ -2033,8 +2123,11 @@ export class AchievementTracker {
     // Check for monthly boost expiry before getting boost profile
     const boostProfile = this.checkMonthlyBoostExpiry();
     const boostMultiplier = boostProfile.multiplier || 1;
-    const totalXP = Math.round(baseXP * boostMultiplier);
-    const bonusXP = Math.max(0, totalXP - baseXP);
+    const boostEligibleXP = boostMultiplier > 1
+      ? getBoostEligibleXP(boostProfile.activatedAt, achievementPoints)
+      : 0;
+    const bonusXP = Math.max(0, Math.round(boostEligibleXP * Math.max(0, boostMultiplier - 1)));
+    const totalXP = baseXP + bonusXP;
     const level = this.calculateLevel(totalXP);
     const xpForCurrentLevel = this.getXPForLevel(level);
     const xpForNextLevel = this.getXPForLevel(level + 1);
@@ -2048,6 +2141,7 @@ export class AchievementTracker {
       launchXP,
       launchCount: launchRewardStats.launches,
       baseXP,
+      boostEligibleXP,
       bonusXP,
       boostMultiplier,
       boostLabel: boostProfile.label,
@@ -2208,6 +2302,26 @@ export class AchievementTracker {
       });
     });
 
+    // Quest completion achievements
+    const questStats = this.getQuestCompletionStats();
+    const questThresholds = [
+      { id: 'quest_total_1', threshold: 1, count: questStats.totalCompleted },
+      { id: 'quest_total_10', threshold: 10, count: questStats.totalCompleted },
+      { id: 'quest_total_25', threshold: 25, count: questStats.totalCompleted },
+      { id: 'quest_total_50', threshold: 50, count: questStats.totalCompleted },
+      { id: 'quest_daily_10', threshold: 10, count: questStats.periodCounts.daily || 0 },
+      { id: 'quest_weekly_10', threshold: 10, count: questStats.periodCounts.weekly || 0 },
+      { id: 'quest_monthly_5', threshold: 5, count: questStats.periodCounts.monthly || 0 },
+      { id: 'quest_yearly_3', threshold: 3, count: questStats.periodCounts.yearly || 0 }
+    ];
+
+    questThresholds.forEach(({ id, threshold, count }) => {
+      if (count >= threshold && !unlocked.includes(id)) {
+        this.unlockAchievement(id);
+        unlocked.push(id);
+      }
+    });
+
     // Time-based achievements
     this.checkTimeBasedAchievements();
     } catch (error) {
@@ -2272,18 +2386,19 @@ export class AchievementTracker {
         message: 'Invalid activation code. Valid codes: PATREON-2024-FOUNDERS, GAMEPILOT-SUPPORTER-2024, FOUNDER-PACK-2024, EARLY-ADOPTER-2024, SUPPORTER-2025, FOUNDER-2025, PATREON-SUPPORTER' 
       };
     }
+
+    const boostMeta = this.validatePatreonBoostCode(upperCode);
+    const boostResult = boostMeta ? this.activatePatreonXPBoost(upperCode) : null;
     
-    if (this.isAchievementUnlocked(achievementId)) {
-      return { success: false, message: 'Achievement already unlocked' };
+    if (!this.isAchievementUnlocked(achievementId)) {
+      this.unlockAchievement(achievementId);
     }
-    
-    // Unlock the achievement
-    this.unlockAchievement(achievementId);
-    
-    // Return success with founder recognition
+
     return { 
       success: true, 
-      message: '🎉 Founder recognition unlocked! Patreon support now boosts progression through XP multipliers rather than direct XP grants.',
+      message: boostResult?.success
+        ? `🎉 Founder recognition unlocked! ${boostResult.message}`
+        : '🎉 Founder recognition unlocked! Patreon support now boosts progression through XP multipliers rather than direct content unlocks.',
       xp: 0,
       achievementId: achievementId
     };

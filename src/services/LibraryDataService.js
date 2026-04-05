@@ -1,3 +1,5 @@
+import { getBrandPlatform } from './PlatformBranding';
+
 const normalizeTrackedNumber = (value) => {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 0;
@@ -21,10 +23,20 @@ const normalizePlatformName = (platform) => {
   return normalizedPlatform;
 };
 
-const normalizeBrandPlatformName = (brandPlatform, platform) => {
+const normalizeBrandPlatformName = (brandPlatform, platform, game = {}) => {
   const normalizedBrandPlatform = String(brandPlatform || '').trim();
   if (normalizedBrandPlatform) {
     return normalizePlatformName(normalizedBrandPlatform);
+  }
+
+  const inferredBrandPlatform = getBrandPlatform({
+    developer: game?.developer || game?.developers || '',
+    publisher: game?.publisher || game?.publishers || '',
+    gameName: game?.name || '',
+    tags: Array.isArray(game?.tags) ? game.tags : []
+  });
+  if (inferredBrandPlatform) {
+    return normalizePlatformName(inferredBrandPlatform);
   }
 
   const normalizedPlatform = normalizePlatformName(platform);
@@ -62,7 +74,7 @@ const normalizeGameLibraryEntry = (game) => {
   return {
     ...game,
     platform: normalizePlatformName(game?.platform),
-    brandPlatform: normalizeBrandPlatformName(game?.brandPlatform, game?.platform),
+    brandPlatform: normalizeBrandPlatformName(game?.brandPlatform, game?.platform, game),
     time_played: resolvedTimePlayed,
     launch_count: normalizeTrackedNumber(game?.launch_count),
     last_played: normalizeLastPlayedValue(game?.last_played),

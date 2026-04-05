@@ -8,6 +8,7 @@ import CinematicExport from './components/CinematicExport';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
 import { useToast } from './components/Toast';
+import { MOODS, getMoodForGame, getMoodScoresForGame, mapGameGenresToValid } from './constants/GenresMoods';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
@@ -24,6 +25,15 @@ const FAVORITES_STORAGE_KEY = 'favorites';
 const getResolvedMood = (game) => {
   if (!game || typeof game !== 'object') {
     return '';
+  }
+
+  const inferredMood = getMoodForGame(game.genres);
+  if (typeof game.mood === 'string' && game.mood.trim() && game.mood.trim() === inferredMood) {
+    return game.mood.trim();
+  }
+
+  if (inferredMood) {
+    return inferredMood;
   }
 
   if (typeof game.mood === 'string' && game.mood.trim()) {
@@ -407,12 +417,13 @@ function Library({
     if (!Array.isArray(library)) return [];
     
     let filtered = library.filter(game => {
-      if (!game) return false;
       const displayPlatform = getDisplayPlatform(game);
       const resolvedMood = getResolvedMood(game);
+      const moodScores = getMoodScoresForGame(game?.genres);
+      const normalizedGenres = mapGameGenresToValid(game?.genres);
       const matchesSearch = game.name ? game.name.toLowerCase().includes(localSearchQuery.toLowerCase()) : false;
-      const matchesMood = !localFilterMood || resolvedMood === localFilterMood;
-      const matchesGenre = !localFilterGenre || (game.genres && Array.isArray(game.genres) && game.genres.includes(localFilterGenre));
+      const matchesMood = !localFilterMood || resolvedMood === localFilterMood || Number(moodScores?.[localFilterMood] || 0) > 0;
+      const matchesGenre = !localFilterGenre || normalizedGenres.includes(localFilterGenre);
       const matchesPlatform = !localFilterPlatform || displayPlatform === localFilterPlatform;
       const gamePlaytime = game.time_played || 0;
       const maxTimeFilter = localFilterMaxTime === '' ? null : parseInt(localFilterMaxTime, 10);
@@ -584,78 +595,84 @@ function Library({
     const gridColumnCount = getGridColumnCount();
 
     if (isModalOpen) {
-      return;
+      return false;
     }
 
     if (action === 'cancel') {
       goToPreviousPage();
-      return;
+      return true;
     }
 
     if (action === 'page_previous') {
       goToPreviousPage();
-      return;
+      return true;
     }
 
     if (action === 'page_next') {
       goToNextPage();
-      return;
+      return true;
     }
 
     if (action === 'scroll_down') {
       window.scrollBy({ top: 220, behavior: 'smooth' });
-      return;
+      return true;
     }
 
     if (action === 'scroll_up') {
       window.scrollBy({ top: -220, behavior: 'smooth' });
-      return;
+      return true;
     }
 
     if (viewMode === 'grid') {
       if (action === 'left') {
         moveSelectionByOffset(-1);
-        return;
+        return true;
       }
 
       if (action === 'right') {
         moveSelectionByOffset(1);
-        return;
+        return true;
       }
 
       if (action === 'up') {
         moveSelectionByOffset(-gridColumnCount);
-        return;
+        return true;
       }
 
       if (action === 'down') {
         moveSelectionByOffset(gridColumnCount);
-        return;
+        return true;
       }
     }
 
     if (action === 'left') {
       moveSelectionByPage(-1);
-      return;
+      return true;
     }
 
     if (action === 'right') {
       moveSelectionByPage(1);
-      return;
+      return true;
     }
 
     if (action === 'down' && selectedGameIndex < visibleGameCount - 1) {
       moveSelectionByOffset(1);
+      return true;
     } else if (action === 'up' && selectedGameIndex > 0) {
       moveSelectionByOffset(-1);
+      return true;
     } else if (action === 'confirm' && selectedGameIndex >= 0 && selectedGameIndex < visibleGameCount) {
       openGameModal(displayedGames[selectedGameIndex]);
+      return true;
     }
+    return false;
   }, [selectedGameIndex, getVisibleGameCount, getGridColumnCount, isModalOpen, goToPreviousPage, goToNextPage, moveSelectionByOffset, moveSelectionByPage, openGameModal, displayedGames, viewMode]);
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
-      handleControllerInput(event?.detail?.action);
+      if (handleControllerInput(event?.detail?.action)) {
+        event.preventDefault();
+      }
     };
     window.addEventListener('controllerInput', handleGlobalControllerInput);
     return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
@@ -840,7 +857,7 @@ function Library({
           <label>Mood</label>
           <select value={localFilterMood} onChange={(e) => handleMoodFilterChange(e.target.value)} className="filter-select">
             <option value="">All Moods</option>
-            {['Relaxed', 'Social', 'Creative', 'Competitive', 'Focused', 'Tactical', 'Escapist', 'Sporty'].map(mood => (
+            {MOODS.map(mood => (
               <option key={mood} value={mood}>{mood}</option>
             ))}
           </select>

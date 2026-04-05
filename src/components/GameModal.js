@@ -228,6 +228,8 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
         return;
       }
 
+      event.preventDefault();
+
       if (action === 'cancel') {
         onClose();
         return;

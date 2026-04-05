@@ -42,6 +42,19 @@ const formatSessionTimestamp = (timestamp) => {
   });
 };
 
+const formatQuestTimestamp = (timestamp) => {
+  if (!timestamp) {
+    return 'Just now';
+  }
+
+  return new Date(timestamp).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+};
+
 const buildTimelineChart = (timeline = {}) => Object.fromEntries(
   Object.entries(timeline)
     .filter(([, value]) => Number(value) > 0)
@@ -88,9 +101,12 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
   const topGenre = getTopEntry(snapshot.genreCounts);
   const topGames = snapshot.topGames || [];
   const recentSessions = snapshot.recentSessions || [];
+  const recentQuests = snapshot.questUsage?.recent || [];
+  const recentUnlocks = snapshot.achievementUsage?.recent || [];
   const hasSessionData = snapshot.sessions > 0;
   const favoriteFeatureKey = snapshot.featureUsage?.favoriteFeature;
   const favoriteFeature = favoriteFeatureKey ? FEATURE_METADATA[favoriteFeatureKey]?.label || favoriteFeatureKey : null;
+  const questCounts = snapshot.questUsage?.periodCounts || { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
 
   return (
     <>
@@ -174,6 +190,26 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
             <div className="stat-content">
               <h3>{snapshot.streak?.current || 0}</h3>
               <p>Current Streak · Best {snapshot.streak?.best || 0}</p>
+            </div>
+          </div>
+
+          <div className="stat-card activity-card">
+            <div className="stat-icon">
+              <Star size={32} />
+            </div>
+            <div className="stat-content">
+              <h3>{snapshot.questUsage?.totalCompleted || 0}</h3>
+              <p>Quests Completed</p>
+            </div>
+          </div>
+
+          <div className="stat-card activity-card">
+            <div className="stat-icon">
+              <TrendingUp size={32} />
+            </div>
+            <div className="stat-content">
+              <h3>{snapshot.achievementUsage?.totalUnlocked || 0}</h3>
+              <p>Achievement Unlocks</p>
             </div>
           </div>
         </div>
@@ -265,6 +301,51 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
         </div>
       )}
 
+      <div className="stats-section">
+        <div className="stats-section-header">
+          <div>
+            <h2><Star size={24} /> Quest Momentum</h2>
+            <p className="section-subtitle">
+              {snapshot.questUsage?.totalCompleted || 0} rotating quests completed in {snapshot.label.toLowerCase()}.
+            </p>
+          </div>
+        </div>
+
+        <div className="analytics-row">
+          <div className="analytics-card">
+            <h3>🌅 Daily</h3>
+            <div className="top-category">
+              <div className="category-name">{questCounts.daily}</div>
+              <div className="category-count">daily quests completed</div>
+            </div>
+          </div>
+
+          <div className="analytics-card">
+            <h3>📅 Weekly</h3>
+            <div className="top-category">
+              <div className="category-name">{questCounts.weekly}</div>
+              <div className="category-count">weekly quests completed</div>
+            </div>
+          </div>
+
+          <div className="analytics-card">
+            <h3>📆 Monthly</h3>
+            <div className="top-category">
+              <div className="category-name">{questCounts.monthly}</div>
+              <div className="category-count">monthly quests completed</div>
+            </div>
+          </div>
+
+          <div className="analytics-card">
+            <h3>🎊 Yearly</h3>
+            <div className="top-category">
+              <div className="category-name">{questCounts.yearly}</div>
+              <div className="category-count">yearly quests completed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {topGames.length > 0 && (
         <div className="stats-section">
           <div className="stats-section-header">
@@ -328,6 +409,66 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
                   )}
                   {session.launchMethod && (
                     <span className="recent-session-tag">{session.launchMethod}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {recentQuests.length > 0 && (
+        <div className="stats-section">
+          <div className="stats-section-header">
+            <div>
+              <h2>🏁 Recent Quest Completions</h2>
+              <p className="section-subtitle">Latest rotating challenges completed in this selected window.</p>
+            </div>
+          </div>
+
+          <div className="recent-sessions-list">
+            {recentQuests.map((quest, index) => (
+              <div key={`${quest.achievementId}-${quest.completedAt}-${index}`} className="recent-session-item">
+                <div className="recent-session-main">
+                  <h4>{quest.icon || '🏆'} {quest.name}</h4>
+                  <p>{quest.period} quest · {formatQuestTimestamp(quest.completedAt)}</p>
+                </div>
+                <div className="recent-session-tags">
+                  {quest.rarity && (
+                    <span className="recent-session-tag">{quest.rarity}</span>
+                  )}
+                  {quest.metric && (
+                    <span className="recent-session-tag">{quest.metric}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {recentUnlocks.length > 0 && (
+        <div className="stats-section">
+          <div className="stats-section-header">
+            <div>
+              <h2>🏆 Recent Achievement Unlocks</h2>
+              <p className="section-subtitle">Latest unlocks recorded in this selected window.</p>
+            </div>
+          </div>
+
+          <div className="recent-sessions-list">
+            {recentUnlocks.map((achievement, index) => (
+              <div key={`${achievement.id}-${achievement.unlockedAt}-${index}`} className="recent-session-item">
+                <div className="recent-session-main">
+                  <h4>{achievement.icon || '🏆'} {achievement.name}</h4>
+                  <p>{formatQuestTimestamp(achievement.unlockedAt)}</p>
+                </div>
+                <div className="recent-session-tags">
+                  {achievement.rarity && (
+                    <span className="recent-session-tag">{achievement.rarity}</span>
+                  )}
+                  {Number.isFinite(achievement.xp) && (
+                    <span className="recent-session-tag">{achievement.xp} XP</span>
                   )}
                 </div>
               </div>

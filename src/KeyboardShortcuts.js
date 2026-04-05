@@ -1,25 +1,175 @@
 // KeyboardShortcuts.js - Global keyboard shortcut handler
+const SHORTCUT_SETTINGS_KEY = 'keyboardShortcutSettings';
+
+const normalizeShortcut = (shortcut) => String(shortcut || '')
+  .trim()
+  .split('+')
+  .map((part) => part.trim())
+  .filter(Boolean)
+  .map((part, index, parts) => {
+    const lower = part.toLowerCase();
+    if (lower === 'cmd' || lower === 'meta' || lower === 'control' || lower === 'ctrl') {
+      return 'Ctrl';
+    }
+    if (lower === 'option' || lower === 'alt') {
+      return 'Alt';
+    }
+    if (lower === 'shift') {
+      return 'Shift';
+    }
+    if (parts.length === 1 && part === '?') {
+      return '?';
+    }
+    return part.length === 1 ? part.toUpperCase() : `${part.charAt(0).toUpperCase()}${part.slice(1)}`;
+  })
+  .join('+');
+
+const readShortcutSettings = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SHORTCUT_SETTINGS_KEY) || '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { enabled: true, bindings: {} };
+    }
+    return {
+      enabled: parsed.enabled !== false,
+      bindings: parsed.bindings && typeof parsed.bindings === 'object' && !Array.isArray(parsed.bindings)
+        ? parsed.bindings
+        : {}
+    };
+  } catch (error) {
+    return { enabled: true, bindings: {} };
+  }
+};
+
 export class KeyboardShortcuts {
-  static shortcuts = new Map();
+  static actions = new Map();
+  static shortcutToAction = new Map();
   static isListening = false;
+  static settings = readShortcutSettings();
 
   static init() {
     if (this.isListening) return;
 
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
     this.isListening = true;
+    this.rebuildShortcutIndex();
+  }
+
+  static persistSettings() {
+    localStorage.setItem(SHORTCUT_SETTINGS_KEY, JSON.stringify(this.settings));
+  }
+
+  static rebuildShortcutIndex() {
+    this.shortcutToAction = new Map();
+    this.actions.forEach((config, actionId) => {
+      const shortcut = this.getShortcutForAction(actionId);
+      if (shortcut) {
+        this.shortcutToAction.set(shortcut, actionId);
+      }
+    });
+  }
+
+  static registerAction(actionId, defaultShortcut, callback, description = '') {
+    if (!actionId) {
+      return;
+    }
+
+    this.actions.set(actionId, {
+      actionId,
+      defaultShortcut: normalizeShortcut(defaultShortcut),
+      callback,
+      description
+    });
+    this.rebuildShortcutIndex();
+  }
+
+  static unregisterAction(actionId) {
+    this.actions.delete(actionId);
+    this.rebuildShortcutIndex();
   }
 
   static register(shortcut, callback, description = '') {
-    this.shortcuts.set(shortcut, { callback, description });
+    const normalizedShortcut = normalizeShortcut(shortcut);
+    this.registerAction(normalizedShortcut, normalizedShortcut, callback, description);
   }
 
   static unregister(shortcut) {
-    this.shortcuts.delete(shortcut);
+    const normalizedShortcut = normalizeShortcut(shortcut);
+    this.unregisterAction(normalizedShortcut);
+  }
+
+  static setEnabled(enabled) {
+    this.settings.enabled = Boolean(enabled);
+    this.persistSettings();
+  }
+
+  static isEnabled() {
+    return this.settings.enabled !== false;
+  }
+
+  static getShortcutForAction(actionId) {
+    const action = this.actions.get(actionId);
+    if (!action) {
+      return '';
+    }
+
+    const customShortcut = normalizeShortcut(this.settings.bindings?.[actionId] || '');
+    return customShortcut || action.defaultShortcut || '';
+  }
+
+  static setShortcutForAction(actionId, shortcut) {
+    if (!this.actions.has(actionId)) {
+      return { success: false, message: 'Shortcut action not found.' };
+    }
+
+    const normalizedShortcut = normalizeShortcut(shortcut);
+    if (!normalizedShortcut) {
+      delete this.settings.bindings[actionId];
+      this.persistSettings();
+      this.rebuildShortcutIndex();
+      return { success: true, message: 'Shortcut reset to default.' };
+    }
+
+    const duplicateAction = Array.from(this.actions.keys()).find((candidateId) => (
+      candidateId !== actionId && this.getShortcutForAction(candidateId) === normalizedShortcut
+    ));
+
+    if (duplicateAction) {
+      const duplicateMeta = this.actions.get(duplicateAction);
+      return {
+        success: false,
+        message: `${normalizedShortcut} is already assigned to ${duplicateMeta?.description || duplicateAction}.`
+      };
+    }
+
+    this.settings.bindings[actionId] = normalizedShortcut;
+    this.persistSettings();
+    this.rebuildShortcutIndex();
+    return { success: true, message: 'Shortcut updated.' };
+  }
+
+  static resetShortcut(actionId) {
+    if (typeof actionId === 'string' && actionId) {
+      delete this.settings.bindings[actionId];
+    } else {
+      this.settings.bindings = {};
+    }
+    this.persistSettings();
+    this.rebuildShortcutIndex();
+  }
+
+  static getSettings() {
+    return {
+      enabled: this.isEnabled(),
+      bindings: { ...(this.settings.bindings || {}) }
+    };
   }
 
   static handleKeyDown(event) {
-    // Don't trigger shortcuts when user is typing in input fields
+    if (!this.isEnabled()) {
+      return;
+    }
+
     if (event.target.tagName === 'INPUT' ||
         event.target.tagName === 'TEXTAREA' ||
         event.target.contentEditable === 'true') {
@@ -27,11 +177,12 @@ export class KeyboardShortcuts {
     }
 
     const key = this.getKeyString(event);
+    const actionId = this.shortcutToAction.get(key);
 
-    if (this.shortcuts.has(key)) {
+    if (actionId && this.actions.has(actionId)) {
       event.preventDefault();
       event.stopPropagation();
-      this.shortcuts.get(key).callback(event);
+      this.actions.get(actionId).callback(event);
     }
   }
 
@@ -42,14 +193,17 @@ export class KeyboardShortcuts {
     if (event.altKey) parts.push('Alt');
     if (event.shiftKey) parts.push('Shift');
 
-    parts.push(event.key.toUpperCase());
+    const keyValue = event.key === ' ' ? 'Space' : event.key;
+    parts.push(typeof keyValue === 'string' ? keyValue.toUpperCase() : String(keyValue));
 
-    return parts.join('+');
+    return normalizeShortcut(parts.join('+'));
   }
 
   static getShortcutList() {
-    return Array.from(this.shortcuts.entries()).map(([key, value]) => ({
-      key,
+    return Array.from(this.actions.entries()).map(([actionId, value]) => ({
+      actionId,
+      key: this.getShortcutForAction(actionId),
+      defaultKey: value.defaultShortcut,
       description: value.description
     }));
   }
@@ -59,12 +213,11 @@ export class KeyboardShortcuts {
     if (shortcuts.length === 0) return;
 
     const helpText = shortcuts
-      .map(shortcut => `${shortcut.key}: ${shortcut.description}`)
+      .map((shortcut) => `${shortcut.key}: ${shortcut.description}`)
       .join('\n');
 
     alert(`Keyboard Shortcuts:\n\n${helpText}`);
   }
 }
 
-// Initialize keyboard shortcuts system
 KeyboardShortcuts.init();

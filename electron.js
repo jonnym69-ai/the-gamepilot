@@ -540,8 +540,6 @@ function createWindow() {
         preload: path.join(__dirname, 'public', 'preload.js'),
         nodeIntegration: true,
         contextIsolation: false,
-        webSecurity: false,  // Allow local CSS loading
-        allowRunningInsecureContent: true,  // Allow mixed content
       },
       show: true,
     });
