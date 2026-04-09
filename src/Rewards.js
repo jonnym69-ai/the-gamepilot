@@ -1,147 +1,226 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import NavBar from './NavBar';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
-import './Home.css';
+import { Gamepad2, Sparkles, Library, LayoutGrid, Zap, Gift, PlayCircle, Image } from 'lucide-react';
+import './Rewards.css';
 
-const pageStyle = {
-  minHeight: '100vh',
-  padding: '24px',
-  color: 'var(--text)'
-};
+// Card style definitions with preview data
+const CARD_STYLES = [
+  {
+    id: 'standard',
+    name: 'Standard Cards',
+    description: 'Clean, classic game cards with subtle shadows.',
+    locked: false,
+    preview: {
+      border: '1px solid var(--border-color)',
+      background: 'var(--card-bg)',
+      shadow: '0 2px 8px rgba(0,0,0,0.1)'
+    }
+  },
+  {
+    id: 'neon',
+    name: 'Neon Frames',
+    description: 'Glowing neon borders that pulse on hover.',
+    locked: false,
+    preview: {
+      border: '2px solid #00d4ff',
+      background: 'linear-gradient(135deg, rgba(0,212,255,0.1) 0%, transparent 100%)',
+      shadow: '0 0 20px rgba(0,212,255,0.3), inset 0 0 20px rgba(0,212,255,0.1)'
+    }
+  },
+  {
+    id: 'glass',
+    name: 'Glass Prism',
+    description: 'Frosted glass cards with backdrop blur and sheen.',
+    locked: false,
+    preview: {
+      border: '1px solid rgba(255,255,255,0.2)',
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+      shadow: '0 8px 32px rgba(0,0,0,0.3)',
+      backdropFilter: 'blur(10px)'
+    }
+  },
+  {
+    id: 'retro',
+    name: 'Retro Pixels',
+    description: '8-bit inspired borders with pixelated corners.',
+    locked: false,
+    active: true,
+    preview: {
+      border: '3px solid #4ade80',
+      background: 'var(--card-bg)',
+      shadow: '4px 4px 0 #1f2937',
+      borderRadius: '4px'
+    }
+  },
+  {
+    id: 'holographic',
+    name: 'Holographic',
+    description: 'Shifting rainbow sheen on premium cards.',
+    locked: true,
+    requiredXP: 17180,
+    preview: {
+      border: '2px solid transparent',
+      background: 'linear-gradient(135deg, rgba(255,0,128,0.2) 0%, rgba(0,255,255,0.2) 50%, rgba(255,255,0,0.2) 100%)',
+      shadow: '0 0 30px rgba(255,0,128,0.3)',
+      borderImage: 'linear-gradient(135deg, #ff0080, #00ffff, #ffff00) 1'
+    }
+  }
+];
 
-const sectionStyle = {
-  maxWidth: '1200px',
-  margin: '0 auto 24px',
-  background: 'var(--card-bg)',
-  border: '1px solid var(--border-color)',
-  borderRadius: '16px',
-  padding: '24px',
-  boxShadow: 'var(--shadow)'
-};
+// Sidebar sections matching the screenshot
+const CUSTOMIZE_SECTIONS = [
+  { id: 'cardStyles', label: 'Card Styles', icon: Gamepad2, count: { current: 6, total: 7 } },
+  { id: 'transitions', label: 'Transitions', icon: Sparkles, count: { current: 4, total: 6 } },
+  { id: 'libraryView', label: 'Library View', icon: Library, count: { current: 3, total: 4 } },
+  { id: 'homeLayout', label: 'Home Layout', icon: LayoutGrid, count: { current: 2, total: 3 } },
+  { id: 'recommendationStyle', label: 'Recommendation Style', icon: Zap, count: { current: 3, total: 4 } },
+  { id: 'surpriseMe', label: 'Surprise Me', icon: Gift, count: { current: 5, total: 7 } },
+  { id: 'logoAnimation', label: 'Logo Animation', icon: PlayCircle, count: { current: 4, total: 8 } }
+];
 
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-  gap: '16px'
-};
+// Sample game card for preview
+const SampleGameCard = ({ style, isActive }) => (
+  <div 
+    className={`reward-sample-card ${isActive ? 'active' : ''} ${style.locked ? 'locked' : ''}`}
+    style={{
+      border: style.preview.border,
+      background: style.preview.background,
+      boxShadow: style.preview.shadow,
+      borderRadius: style.preview.borderRadius || '12px',
+      backdropFilter: style.preview.backdropFilter
+    }}
+  >
+    <div className="reward-sample-image">
+      <Gamepad2 size={32} style={{ opacity: 0.6 }} />
+    </div>
+    <div className="reward-sample-info">
+      <h4>Sample Game 1</h4>
+      <span className="reward-sample-platform">Steam</span>
+      <div className="reward-sample-tags">
+        <span className="reward-sample-tag">Action</span>
+        <span className="reward-sample-tag">Adventure</span>
+      </div>
+    </div>
+    {isActive && (
+      <div className="reward-active-badge">Active</div>
+    )}
+    {style.locked && (
+      <div className="reward-locked-overlay">
+        <div className="reward-lock-icon">🔒</div>
+        <span>Unlocks at {style.requiredXP?.toLocaleString()} XP</span>
+      </div>
+    )}
+  </div>
+);
 
-const cardStyle = {
-  border: '1px solid var(--border-color)',
-  borderRadius: '14px',
-  padding: '16px',
-  background: 'var(--bg-secondary)'
-};
+// Card Styles Panel
+const CardStylesPanel = () => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Card Styles</h2>
+      <p>Change how game cards look in your library</p>
+    </div>
+    <div className="rewards-card-grid">
+      {CARD_STYLES.map((style) => (
+        <div key={style.id} className="rewards-card-item">
+          <SampleGameCard style={style} isActive={style.active} />
+          <div className="rewards-card-info">
+            <h3>{style.name}</h3>
+            <p>{style.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
-const getRewardCount = (items = []) => Array.isArray(items) ? items.filter((item) => item?.unlocked).length : 0;
+// Placeholder panels for other sections
+const PlaceholderPanel = ({ title, description }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>{title}</h2>
+      <p>{description}</p>
+    </div>
+    <div className="rewards-placeholder">
+      <Image size={48} style={{ opacity: 0.3 }} />
+      <p>Coming soon</p>
+    </div>
+  </div>
+);
 
 function Rewards() {
+  const [activeSection, setActiveSection] = useState('cardStyles');
+  
   const summary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
-  const catalog = useMemo(() => ProgressionUnlockService.getProfileRewardCatalog(), []);
 
-  const sections = useMemo(() => ([
-    {
-      id: 'themes',
-      title: 'Themes',
-      description: 'Premium visual themes unlocked through progression.',
-      items: catalog.premiumThemes || []
-    },
-    {
-      id: 'profile',
-      title: 'Profile Cosmetics',
-      description: 'Frames, banners, and titles for your profile identity.',
-      items: [...(catalog.frames || []), ...(catalog.banners || []), ...(catalog.titles || [])]
-    },
-    {
-      id: 'presentation',
-      title: 'Presentation Rewards',
-      description: 'Library variants, home layouts, and recommendation packs.',
-      items: [...(catalog.libraryVariants || []), ...(catalog.homeLayouts || []), ...(catalog.recommendationPacks || [])]
-    },
-    {
-      id: 'audio',
-      title: 'Audio Rewards',
-      description: 'Music, ambient packs, and button audio unlocks.',
-      items: [...(catalog.musicPacks || []), ...(catalog.ambientPacks || []), ...(catalog.buttonPacks || [])]
-    },
-    {
-      id: 'utility',
-      title: 'Utility Unlocks',
-      description: 'Showcase slots and Gaming Links feature upgrades.',
-      items: [
-        ...(catalog.showcaseSlots || []).map((slot) => ({
-          id: slot.id,
-          name: `Showcase Slot ${slot.slotNumber}`,
-          description: 'Adds another achievement showcase slot to your profile.',
-          requiredXP: slot.requiredXP,
-          unlocked: slot.unlocked,
-          progressPercent: slot.progressPercent
-        })),
-        ...(catalog.gamingLinks || [])
-      ]
+  const renderPanel = () => {
+    switch (activeSection) {
+      case 'cardStyles':
+        return <CardStylesPanel />;
+      case 'transitions':
+        return <PlaceholderPanel title="Transitions" description="Customize animations between screens" />;
+      case 'libraryView':
+        return <PlaceholderPanel title="Library View" description="Change how your library is organized" />;
+      case 'homeLayout':
+        return <PlaceholderPanel title="Home Layout" description="Customize your home dashboard layout" />;
+      case 'recommendationStyle':
+        return <PlaceholderPanel title="Recommendation Style" description="Change how recommendations appear" />;
+      case 'surpriseMe':
+        return <PlaceholderPanel title="Surprise Me" description="Configure your surprise game feature" />;
+      case 'logoAnimation':
+        return <PlaceholderPanel title="Logo Animation" description="Choose your startup animation" />;
+      default:
+        return <CardStylesPanel />;
     }
-  ]), [catalog]);
+  };
 
   return (
-    <div className="home-page" style={pageStyle}>
+    <div className="rewards-page">
       <NavBar />
-
-      <section style={sectionStyle}>
-        <p style={{ opacity: 0.7, marginBottom: '8px' }}>Progression</p>
-        <h1 style={{ margin: 0, marginBottom: '8px' }}>Rewards</h1>
-        <p style={{ margin: 0, opacity: 0.82 }}>
-          See what you have unlocked, what is still locked, and what each reward actually changes in GamePilot.
-        </p>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
-          <span className="confidence-badge">Level {summary?.level ?? 0}</span>
-          <span className="match-score">XP: {summary?.xp ?? 0}</span>
-          {summary?.nextUnlock && (
-            <span className="confidence-badge">Next: {summary.nextUnlock.name} ({summary.nextUnlock.remainingXP} XP)</span>
-          )}
-        </div>
-      </section>
-
-      <section style={sectionStyle}>
-        <h2 style={{ marginTop: 0 }}>Reward Categories</h2>
-        <div style={gridStyle}>
-          {sections.map((section) => (
-            <div key={section.id} style={cardStyle}>
-              <h3 style={{ marginTop: 0 }}>{section.title}</h3>
-              <p style={{ opacity: 0.8 }}>{section.description}</p>
-              <p style={{ fontSize: '0.9rem', marginBottom: '8px' }}>
-                Unlocked {getRewardCount(section.items)} / {section.items.length}
-              </p>
-              <div className="weekly-quest-progress-bar">
-                <span style={{ width: `${section.items.length > 0 ? (getRewardCount(section.items) / section.items.length) * 100 : 0}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {sections.map((section) => (
-        <section key={section.id} style={sectionStyle}>
-          <h2 style={{ marginTop: 0 }}>{section.title}</h2>
-          <div style={gridStyle}>
-            {section.items.map((reward) => (
-              <div key={reward.id} style={cardStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'start' }}>
-                  <h3 style={{ marginTop: 0, marginBottom: '8px' }}>{reward.name}</h3>
-                  <span className="confidence-badge">{reward.unlocked ? 'Unlocked' : 'Locked'}</span>
-                </div>
-                <p style={{ marginTop: 0, opacity: 0.8 }}>{reward.description || 'Progression reward.'}</p>
-                <p style={{ fontSize: '0.9rem', marginBottom: '8px' }}>
-                  {reward.unlocked ? 'Ready to use now.' : `Unlocks at ${reward.requiredXP || 0} XP`}
-                </p>
-                {typeof reward.progressPercent === 'number' && (
-                  <div className="weekly-quest-progress-bar">
-                    <span style={{ width: `${reward.progressPercent}%` }} />
-                  </div>
-                )}
-              </div>
-            ))}
+      
+      <div className="rewards-container">
+        {/* Header */}
+        <div className="rewards-header">
+          <div>
+            <span className="rewards-kicker">CUSTOMIZE</span>
+            <h1>Presentation</h1>
+            <p>Equip and activate your unlocked rewards to customize GamePilot's look and feel.</p>
           </div>
-        </section>
-      ))}
+          <div className="rewards-level-badge">
+            <span className="rewards-level">Level {summary?.level ?? 0}</span>
+            <span className="rewards-xp">{summary?.xp?.toLocaleString() ?? 0} XP</span>
+          </div>
+        </div>
+
+        <div className="rewards-layout">
+          {/* Left Sidebar */}
+          <div className="rewards-sidebar">
+            {CUSTOMIZE_SECTIONS.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  className={`rewards-section-btn ${isActive ? 'active' : ''}`}
+                  onClick={() => setActiveSection(section.id)}
+                >
+                  <Icon size={18} />
+                  <span className="rewards-section-label">{section.label}</span>
+                  <span className="rewards-section-count">
+                    {section.count.current}/{section.count.total}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Main Content */}
+          <div className="rewards-content">
+            {renderPanel()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

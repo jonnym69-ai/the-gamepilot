@@ -1086,6 +1086,128 @@ function Home({
       )}
 
       <div className="home-content">
+        {/* Match My Mood Section */}
+        <div className="match-my-mood-section">
+          <h2 className="match-my-mood-title">
+            🎭 Match My Mood
+          </h2>
+          <p className="match-my-mood-subtitle">
+            Tell us how you're feeling and what you need right now
+          </p>
+          
+          <div className="quick-vibes">
+            <h3 className="quick-vibes-title">Quick Vibes</h3>
+            <div className="vibe-buttons">
+              {[
+                { id: 'stress_relief', label: 'Stress Relief', icon: '🧘', mood: 'Relaxed' },
+                { id: 'feel_powerful', label: 'Feel Powerful', icon: '💪', mood: 'Competitive' },
+                { id: 'mindless_fun', label: 'Mindless Fun', icon: '🎮', mood: 'Escapist' },
+                { id: 'play_with_friends', label: 'Play With Friends', icon: '👥', mood: 'Social' },
+                { id: 'get_creative', label: 'Get Creative', icon: '🎨', mood: 'Creative' },
+                { id: 'epic_escape', label: 'Epic Escape', icon: '🏔️', mood: 'Escapist' },
+                { id: 'test_my_skills', label: 'Test My Skills', icon: '🎯', mood: 'Tactical' },
+                { id: 'nostalgia_trip', label: 'Nostalgia Trip', icon: '🕹️', mood: 'Relaxed' }
+              ].map((vibe) => (
+                <button
+                  key={vibe.id}
+                  className={`vibe-button ${mood === vibe.mood ? 'active' : ''}`}
+                  onClick={() => {
+                    setMood(vibe.mood);
+                    AchievementTracker.logGameplayMood(vibe.mood);
+                    syncAchievementsSafely();
+                  }}
+                >
+                  <span className="vibe-icon">{vibe.icon}</span>
+                  <span className="vibe-label">{vibe.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mood-divider">
+            <span>Or select from options</span>
+          </div>
+
+          <div className="mood-filter-row">
+            <select 
+              value={mood} 
+              onChange={(event) => {
+                setMood(event.target.value);
+                if (event.target.value) {
+                  AchievementTracker.logGameplayMood(event.target.value);
+                  syncAchievementsSafely();
+                }
+              }}
+              className="mood-filter-select"
+            >
+              <option value="">How was your day?</option>
+              {availableMoods.map((moodOption) => (
+                <option key={moodOption} value={moodOption}>
+                  {moodOption}
+                </option>
+              ))}
+            </select>
+
+            <select 
+              value={selectedGenre} 
+              onChange={(event) => {
+                setSelectedGenre(event.target.value);
+                if (event.target.value) {
+                  AchievementTracker.logGameplayGenre(event.target.value);
+                  syncAchievementsSafely();
+                }
+              }}
+              className="mood-filter-select"
+            >
+              <option value="">What do you want?</option>
+              {availableGenres.map((genreOption) => (
+                <option key={genreOption} value={genreOption}>
+                  {genreOption}
+                </option>
+              ))}
+            </select>
+
+            <select 
+              value={time} 
+              onChange={(event) => setTime(event.target.value)}
+              className="mood-filter-select"
+            >
+              <option value="">How much time do you have?</option>
+              <option value="quick">⚡ Quick (15-30 min)</option>
+              <option value="medium">⏰ Medium (1-2 hours)</option>
+              <option value="long">🌙 Long (2+ hours)</option>
+              <option value="weekend">📅 Weekend Session</option>
+            </select>
+
+            <button 
+              onClick={() => {
+                clearResults();
+                const result = RecommendationEngine.getPerfectPlayResult(
+                  library || [],
+                  mood || null,
+                  selectedGenre || null,
+                  time || null,
+                  3
+                );
+
+                if (result?.entries?.length > 0) {
+                  setPerfectPlayResult(result);
+                  trackRecommendationResult(result);
+                } else {
+                  setPerfectPlayResult({
+                    error: Array.isArray(library) && library.length > 0
+                      ? 'No games found matching your criteria. Try adjusting your filters!'
+                      : 'Scan your games first to generate recommendations.'
+                  });
+                }
+              }}
+              className="find-games-for-mood-btn"
+            >
+              🔮 Find Games For My Mood
+            </button>
+          </div>
+        </div>
+
         <div className="perfect-play-section">
           <h2 className="perfect-play-title">
             🎯 Find Your Perfect Play

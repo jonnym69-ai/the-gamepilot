@@ -1,0 +1,317 @@
+/* Rewards / Customize Presentation Page Styles */
+
+.rewards-page {
+  min-height: 100vh;
+  background: var(--bg-primary, #0f0f1a);
+  color: var(--text-primary, #fff);
+  padding: 20px;
+}
+
+.rewards-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.rewards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  padding: 0 10px;
+}
+
+.rewards-header h1 {
+  font-size: 2rem;
+  margin: 8px 0 12px;
+  font-weight: 600;
+}
+
+.rewards-kicker {
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary, #8b8b9a);
+  font-weight: 500;
+}
+
+.rewards-header p {
+  color: var(--text-secondary, #8b8b9a);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.rewards-level-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.rewards-level {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.rewards-xp {
+  color: var(--text-secondary, #8b8b9a);
+  font-size: 0.85rem;
+}
+
+/* Layout */
+.rewards-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+}
+
+/* Sidebar */
+.rewards-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rewards-section-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--text-secondary, #8b8b9a);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.rewards-section-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary, #fff);
+}
+
+.rewards-section-btn.active {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.4);
+  color: #a855f7;
+}
+
+.rewards-section-label {
+  flex: 1;
+}
+
+.rewards-section-count {
+  font-size: 0.8rem;
+  color: var(--text-tertiary, #6b6b7b);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.rewards-section-btn.active .rewards-section-count {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.2);
+}
+
+/* Main Content Panel */
+.rewards-content {
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid var(--border-color, #2a2a3e);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.rewards-panel-header {
+  margin-bottom: 24px;
+}
+
+.rewards-panel-header h2 {
+  font-size: 1.4rem;
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.rewards-panel-header p {
+  color: var(--text-secondary, #8b8b9a);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Card Grid */
+.rewards-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.rewards-card-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rewards-card-info h3 {
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.rewards-card-info p {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #8b8b9a);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Sample Game Card */
+.reward-sample-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3/4;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.reward-sample-card:hover {
+  transform: translateY(-4px);
+}
+
+.reward-sample-card.locked {
+  opacity: 0.6;
+}
+
+.reward-sample-image {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+.reward-sample-info {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.reward-sample-info h4 {
+  font-size: 0.85rem;
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.reward-sample-platform {
+  font-size: 0.7rem;
+  color: var(--text-tertiary, #6b6b7b);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.reward-sample-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.reward-sample-tag {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: var(--text-tertiary, #6b6b7b);
+}
+
+/* Active Badge */
+.reward-active-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+/* Locked Overlay */
+.reward-locked-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.reward-lock-icon {
+  font-size: 1.5rem;
+}
+
+.reward-locked-overlay span {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #8b8b9a);
+  text-align: center;
+  padding: 0 16px;
+}
+
+/* Placeholder */
+.rewards-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-tertiary, #6b6b7b);
+  gap: 16px;
+}
+
+.rewards-placeholder p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .rewards-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .rewards-sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  
+  .rewards-section-btn {
+    min-width: 160px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .rewards-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .rewards-level-badge {
+    align-items: flex-start;
+  }
+  
+  .rewards-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
