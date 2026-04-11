@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Calendar, Trash2, Clock, Gamepad2, Trophy } from 'lucide-react';
+import { PlaytimeAutoLogger } from '../services/PlaytimeAutoLogger';
 import './GameCalendar.css';
 
 const GameCalendar = () => {
@@ -13,6 +14,8 @@ const GameCalendar = () => {
     description: '',
     time: ''
   });
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [selectedDateStats, setSelectedDateStats] = useState(null);
 
   useEffect(() => {
     try {
@@ -81,7 +84,23 @@ const GameCalendar = () => {
   const handleDateClick = (day) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     setSelectedDate(clickedDate);
-    setShowAddModal(true);
+    
+    // Get stats for this date
+    const dateStr = clickedDate.toISOString().split('T')[0];
+    const history = PlaytimeAutoLogger.getSessionHistory();
+    const daySessions = history.filter(s => s.timestamp && s.timestamp.startsWith(dateStr));
+    
+    const totalPlaytime = daySessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0);
+    const uniqueGames = [...new Set(daySessions.map(s => s.gameName))];
+    
+    setSelectedDateStats({
+      date: clickedDate,
+      playtimeMinutes: totalPlaytime,
+      gamesPlayed: uniqueGames.length,
+      sessions: daySessions.length,
+      games: uniqueGames
+    });
+    setShowStatsModal(true);
   };
 
   const handleAddEvent = () => {
@@ -226,6 +245,73 @@ const GameCalendar = () => {
           <p className="no-events">No upcoming events. Click a date to add one!</p>
         )}
       </div>
+
+      {showStatsModal && selectedDateStats && (
+        <div className="modal-overlay" onClick={() => setShowStatsModal(false)}>
+          <div className="modal-content stats-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <Trophy size={20} />
+                Daily Stats - {selectedDateStats.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </h3>
+              <button onClick={() => setShowStatsModal(false)} className="close-modal">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="stats-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '20px' }}>
+                <div className="stat-box" style={{ textAlign: 'center', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                  <Clock size={24} style={{ marginBottom: '8px', opacity: 0.8 }} />
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                    {Math.floor(selectedDateStats.playtimeMinutes / 60)}h {selectedDateStats.playtimeMinutes % 60}m
+                  </div>
+                  <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Playtime</div>
+                </div>
+                <div className="stat-box" style={{ textAlign: 'center', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                  <Gamepad2 size={24} style={{ marginBottom: '8px', opacity: 0.8 }} />
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{selectedDateStats.gamesPlayed}</div>
+                  <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Games Played</div>
+                </div>
+                <div className="stat-box" style={{ textAlign: 'center', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                  <Trophy size={24} style={{ marginBottom: '8px', opacity: 0.8 }} />
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{selectedDateStats.sessions}</div>
+                  <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Sessions</div>
+                </div>
+              </div>
+              
+              {selectedDateStats.games.length > 0 ? (
+                <div className="games-list">
+                  <h4 style={{ marginBottom: '10px' }}>Games Played</h4>
+                  {selectedDateStats.games.map((game, idx) => (
+                    <div key={idx} className="game-item" style={{ 
+                      padding: '8px 12px', 
+                      background: 'rgba(255,255,255,0.03)', 
+                      borderRadius: '6px',
+                      marginBottom: '6px',
+                      fontSize: '0.9rem'
+                    }}>
+                      {game}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ textAlign: 'center', opacity: 0.6, padding: '20px' }}>
+                  No gaming activity recorded for this date.
+                </p>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => { setShowStatsModal(false); setShowAddModal(true); }} className="btn-add" style={{ marginRight: '10px' }}>
+                <Plus size={16} />
+                Add Event
+              </button>
+              <button onClick={() => setShowStatsModal(false)} className="btn-cancel">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>

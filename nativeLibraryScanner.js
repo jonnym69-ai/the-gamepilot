@@ -323,6 +323,11 @@ const findBestExecutablePath = (gamePath, folderName) => {
   return null;
 };
 
+/**
+ * Decide if a directory reasonably looks like a standalone installed game folder
+ * by checking for likely executables in itself or immediate subfolders and
+ * ruling out common non-game folders.
+ */
 const looksLikeInstalledGameDirectory = (gamePath, folderName) => {
   if (!gamePath || !fs.existsSync(gamePath)) {
     return false;
@@ -347,7 +352,7 @@ const looksLikeInstalledGameDirectory = (gamePath, folderName) => {
       .filter((entryPath) => {
         try {
           return fs.statSync(entryPath).isDirectory();
-        } catch (error) {
+        } catch (_) {
           return false;
         }
       });
@@ -357,9 +362,40 @@ const looksLikeInstalledGameDirectory = (gamePath, folderName) => {
     }
 
     return false;
-  } catch (error) {
+  } catch (_) {
     return false;
   }
+};
+
+/**
+ * Deep scan up to a given depth under rootDir for the largest plausible game executable.
+ * Excludes known launcher/updater executables using isLikelyGameExecutable + NON_GAME_EXECUTABLE_TOKENS.
+ */
+const findExecutableDeep = (rootDir, maxDepth = 3) => {
+  if (!rootDir || !fs.existsSync(rootDir)) return null;
+  let bestExe = null;
+  let bestSize = 0;
+
+  const walk = (dir, depth) => {
+    if (depth < 0) return;
+    safeReadDir(dir).forEach((entry) => {
+      const entryPath = path.join(dir, entry);
+      try {
+        const stats = fs.statSync(entryPath);
+        if (stats.isDirectory()) {
+          walk(entryPath, depth - 1);
+        } else if (stats.isFile() && entry.toLowerCase().endsWith('.exe') && isLikelyGameExecutable(entry, path.basename(dir))) {
+          if (stats.size > bestSize) {
+            bestSize = stats.size;
+            bestExe = entryPath;
+          }
+        }
+      } catch (e) {}
+    });
+  };
+
+  walk(rootDir, maxDepth);
+  return bestExe;
 };
 
 const getActiveDrives = () => {
@@ -1051,12 +1087,63 @@ const scanEALibrary = () => {
     addUniquePath(paths, installRoot);
   });
 
-  return scanFolderLibraries('EA', paths, (gamePath, folder) => ({
-    name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
-    executable: findPreferredExecutable(gamePath, folder),
-    installDir: gamePath,
-    launchId: folder
-  })).filter((game) => looksLikeInstalledGameDirectory(game.installDir, game.name));
+  // EA Desktop stores manifests in InstallData.  Each sub-folder holds a *.mfst JSON file with an `installDir`.
+  const eaGames = [];
+  paths.forEach((eaPath) => {
+    if (!fs.existsSync(eaPath)) return;
+
+    safeReadDir(eaPath).forEach((folder) => {
+      if (isLikelyNonGameFolder(folder)) return;
+      const installDataPath = path.join(eaPath, folder);
+      if (!fs.existsSync(installDataPath) || !fs.statSync(installDataPath).isDirectory()) return;
+
+      // 1. Try executables directly in InstallData folder (Origin-era layout)
+      const directExe = findBestExecutablePath(installDataPath, folder);
+      if (directExe) {
+        const displayName = folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+        eaGames.push({
+          name: displayName,
+          platform: 'EA',
+          genres: getGameGenres(displayName) ?? ['Story-driven'],
+          executable: directExe,
+          executablePath: directExe,
+          installDir: installDataPath,
+          launchId: folder,
+          ...createTrackedDefaults()
+        });
+        return; // done with this folder
+      }
+
+      // 2. EA App layout – read manifest to find real installDir
+      const mfstFile = safeReadDir(installDataPath).find((f) => f.endsWith('.mfst'));
+      if (!mfstFile) return;
+
+      const manifest = safeReadJson(path.join(installDataPath, mfstFile));
+      if (!manifest || !manifest.installDir) return;
+
+      const realInstallDir = manifest.installDir;
+      const displayName = manifest.displayName || manifest.productName || folder;
+      const titleId = manifest.productId || manifest.titleId || folder;
+      let resolvedExe = findBestExecutablePath(realInstallDir, path.basename(realInstallDir));
+      if (!resolvedExe) {
+        resolvedExe = findExecutableDeep(realInstallDir, 3);
+        if (!resolvedExe) return;
+      }
+
+      eaGames.push({
+        name: displayName,
+        platform: 'EA',
+        genres: getGameGenres(displayName) ?? ['Story-driven'],
+        executable: resolvedExe,
+        executablePath: resolvedExe,
+        installDir: realInstallDir,
+        launchId: titleId,
+        ...createTrackedDefaults()
+      });
+    });
+  });
+
+  return eaGames;
 };
 
 const scanPlaystationLibrary = () => {
@@ -1219,15 +1306,29 @@ const scanRiotLibrary = () => {
         }
 
         let executable = '';
-        if (folder.toLowerCase() === 'valorant') {
+        let launchId = '';
+        const normalizedFolder = folder.toLowerCase();
+        
+        if (normalizedFolder === 'valorant') {
+          launchId = 'valorant';
           executable = `"${rootPath}\\Riot Client\\RiotClientServices.exe" --launch-product=valorant --launch-patchline=live`;
-        } else if (folder.toLowerCase() === 'league of legends') {
+        } else if (normalizedFolder === 'league of legends') {
+          launchId = 'league_of_legends';
           executable = `"${rootPath}\\Riot Client\\RiotClientServices.exe" --launch-product=league_of_legends --launch-patchline=live`;
-        } else if (folder.toLowerCase() === 'legends of runeterra') {
+        } else if (normalizedFolder === 'legends of runeterra') {
+          launchId = 'bacon';
           executable = `"${rootPath}\\Riot Client\\RiotClientServices.exe" --launch-product=bacon --launch-patchline=live`;
+        } else if (normalizedFolder === 'teamfight tactics') {
+          launchId = 'tft';
+          executable = `"${rootPath}\\Riot Client\\RiotClientServices.exe" --launch-product=tft --launch-patchline=live`;
         } else {
+          launchId = normalizedFolder.replace(/\s+/g, '_');
           executable = `"${rootPath}\\Riot Client\\RiotClientServices.exe"`;
         }
+
+        // Skip if we already have this game by launchId
+        const alreadyExists = games.some(g => g.launchId === launchId);
+        if (alreadyExists) return;
 
         games.push({
           name: folder,
@@ -1235,6 +1336,7 @@ const scanRiotLibrary = () => {
           iconUrl: '',
           icon: '',
           executable,
+          launchId,
           installDir: gamePath,
           ...createTrackedDefaults()
         });
@@ -1297,6 +1399,48 @@ const dedupeGames = (games) => {
     }
     seen.add(key);
     return true;
+  });
+};
+
+// Filter out cross-platform duplicates - prefer Epic/Steam over Rockstar/others
+const filterCrossPlatformDuplicates = (games) => {
+  // Priority: Steam > Epic > GOG > Xbox > EA > Uplay > Battle.net > Rockstar > others
+  const platformPriority = {
+    'Steam': 1,
+    'Epic': 2,
+    'GOG': 3,
+    'Xbox': 4,
+    'EA': 5,
+    'Uplay': 6,
+    'Battle.net': 7,
+    'Rockstar': 8,
+    'PlayStation': 9,
+    'BSG': 10,
+    'Riot': 11,
+    'CurseForge': 12
+  };
+
+  const gamesByName = new Map();
+  
+  games.forEach((game) => {
+    const normalizedName = (game.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!normalizedName) return;
+    
+    const existing = gamesByName.get(normalizedName);
+    const currentPriority = platformPriority[game.platform] || 99;
+    const existingPriority = existing ? (platformPriority[existing.platform] || 99) : 99;
+    
+    // Keep the one with better priority (lower number = better)
+    if (!existing || currentPriority < existingPriority) {
+      gamesByName.set(normalizedName, game);
+    }
+  });
+  
+  // Return games that are the best version of their name
+  return games.filter((game) => {
+    const normalizedName = (game.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const bestVersion = gamesByName.get(normalizedName);
+    return bestVersion === game;
   });
 };
 
@@ -1404,12 +1548,54 @@ const scanAllLibraries = () => {
   console.log('[Scanner] GOG found:', gogGames.length, 'games');
   
   const uplayGames = scanUbisoftLibrary();
-  const rockstarGames = scanFolderLibraries('Rockstar', rockstarPaths, (gamePath, folder) => ({
-    name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
-    executable: path.join(gamePath, 'Launcher.exe'),
-    installDir: gamePath,
-    launchId: folder
-  }));
+  // Rockstar games have executables in subfolders (e.g., 'GTAV Enhanced', 'Red Dead Redemption 2')
+  // not in a hardcoded 'Launcher.exe' location
+  const rockstarGames = [];
+  rockstarPaths.forEach((rockstarPath) => {
+    if (!fs.existsSync(rockstarPath)) return;
+    
+    const rockstarContents = safeReadDir(rockstarPath);
+    rockstarContents.forEach((folder) => {
+      // Skip launcher/social club folders
+      if (isLikelyNonGameFolder(folder)) return;
+      if (folder.toLowerCase().includes('launcher') || folder.toLowerCase().includes('social club')) return;
+      
+      const gamePath = path.join(rockstarPath, folder);
+      try {
+        if (!fs.statSync(gamePath).isDirectory()) return;
+        
+        // Find the actual game executable – allow one extra nested level (e.g. Game\*)
+        let executablePath = findBestExecutablePath(gamePath, folder);
+        if (!executablePath) {
+          // recurse one more level for common patterns like Game/ or Windows/ binaries
+          const deeperDirs = collectNestedGameDirectories(gamePath, 1);
+          for (const subDir of deeperDirs) {
+            executablePath = findBestExecutablePath(subDir, path.basename(subDir));
+            if (executablePath) break;
+          }
+        }
+        if (!executablePath) {
+          executablePath = findExecutableDeep(gamePath, 3);
+        }
+        if (executablePath) {
+          rockstarGames.push({
+            name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
+            platform: 'Rockstar',
+            genres: getGameGenres(folder).length > 0 ? getGameGenres(folder) : ['Story-driven'],
+            iconUrl: '',
+            icon: '',
+            executable: executablePath,
+            executablePath: executablePath,
+            installDir: gamePath,
+            launchId: folder,
+            ...createTrackedDefaults()
+          });
+        }
+      } catch (error) {
+        // Ignore inaccessible folders
+      }
+    });
+  });
   console.log('[Scanner] Rockstar debug - checking paths:');
   rockstarPaths.forEach((rockstarPath, index) => {
     const exists = fs.existsSync(rockstarPath);
@@ -1488,7 +1674,13 @@ const scanAllLibraries = () => {
   ];
 
   console.log('[Scanner] Total games before dedupe:', games.length);
-  const deduped = dedupeGames(games);
+  
+  // First filter cross-platform duplicates (prefer Epic/Steam over Rockstar)
+  const crossPlatformFiltered = filterCrossPlatformDuplicates(games);
+  console.log('[Scanner] After cross-platform dedupe:', crossPlatformFiltered.length);
+  
+  // Then dedupe within same platform
+  const deduped = dedupeGames(crossPlatformFiltered);
   console.log('[Scanner] Total games after dedupe:', deduped.length);
   
   // Store debug info globally so we can access it from renderer

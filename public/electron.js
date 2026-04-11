@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { spawn, exec } = require('child_process');
 const si = require('systeminformation');
 const isDev = process.env.NODE_ENV === 'development';
@@ -124,6 +125,56 @@ ipcMain.on('launch-game', (event, game) => {
           launchCommand = `uplay://launch/${game.launchId}`;
           shell.openExternal(launchCommand);
           success = true;
+        }
+        break;
+
+      case 'Riot':
+        // Riot Games uses command line args through RiotClientServices.exe
+        if (game.executable) {
+          // The executable field contains the full command with args
+          exec(game.executable, { shell: true });
+          success = true;
+        } else if (game.executablePath) {
+          spawn(game.executablePath, { detached: true });
+          success = true;
+        } else {
+          // Fallback: open Riot Client
+          const riotClientPath = path.join(process.env.LOCALAPPDATA || '', 'Riot Games', 'Riot Client', 'RiotClientServices.exe');
+          if (fs.existsSync(riotClientPath)) {
+            spawn(riotClientPath, { detached: true });
+            success = true;
+          }
+        }
+        break;
+
+      case 'CurseForge':
+        // CurseForge uses the Overwolf launcher
+        if (game.launchId) {
+          launchCommand = `curseforge://launch/${game.launchId}`;
+          shell.openExternal(launchCommand);
+          success = true;
+        } else if (game.executable && game.executable.startsWith('curseforge://')) {
+          // Scanner may provide the full CurseForge protocol URL in the executable field
+          shell.openExternal(game.executable);
+          success = true;
+        } else if (game.executablePath) {
+          spawn(game.executablePath, { detached: true });
+          success = true;
+        } else {
+          // Fallback: try to find CurseForge in Program Files
+          const curseForgePaths = [
+            'C:\\Program Files (x86)\\Overwolf\\CurseForge',
+            'C:\\Program Files\\Overwolf\\CurseForge',
+            path.join(process.env.LOCALAPPDATA || '', 'Programs', 'CurseForge')
+          ];
+          for (const cfPath of curseForgePaths) {
+            if (fs.existsSync(cfPath)) {
+              // Open CurseForge app
+              exec(`start "" "${cfPath}"`, { shell: true });
+              success = true;
+              break;
+            }
+          }
         }
         break;
 

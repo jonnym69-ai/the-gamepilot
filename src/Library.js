@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useContext, useEffect, useCallback, useRef } from 'react';
-import { Search, Download, Grid, List, Clock, Heart, Trash2 } from 'lucide-react';
+import { Search, Download, Grid, List, Clock, Heart, Trash2, Sparkles, Dices } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
 import GameModal from './components/GameModal';
@@ -8,7 +8,7 @@ import CinematicExport from './components/CinematicExport';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
 import { useToast } from './components/Toast';
-import { MOODS, getMoodForGame, getMoodScoresForGame, mapGameGenresToValid } from './constants/GenresMoods';
+import { MOODS } from './constants/GenresMoods';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
@@ -25,15 +25,6 @@ const FAVORITES_STORAGE_KEY = 'favorites';
 const getResolvedMood = (game) => {
   if (!game || typeof game !== 'object') {
     return '';
-  }
-
-  const inferredMood = getMoodForGame(game.genres);
-  if (typeof game.mood === 'string' && game.mood.trim() && game.mood.trim() === inferredMood) {
-    return game.mood.trim();
-  }
-
-  if (inferredMood) {
-    return inferredMood;
   }
 
   if (typeof game.mood === 'string' && game.mood.trim()) {
@@ -256,6 +247,7 @@ function Library({
   const [localFilterMaxTime, setLocalFilterMaxTime] = useState(filterMaxTime);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [selectedGameIndex, setSelectedGameIndex] = useState(-1);
+  const [librarianPick, setLibrarianPick] = useState(null);
   const libraryContainerRef = useRef(null);
 
   useEffect(() => {
@@ -417,13 +409,12 @@ function Library({
     if (!Array.isArray(library)) return [];
     
     let filtered = library.filter(game => {
+      if (!game) return false;
       const displayPlatform = getDisplayPlatform(game);
       const resolvedMood = getResolvedMood(game);
-      const moodScores = getMoodScoresForGame(game?.genres);
-      const normalizedGenres = mapGameGenresToValid(game?.genres);
       const matchesSearch = game.name ? game.name.toLowerCase().includes(localSearchQuery.toLowerCase()) : false;
-      const matchesMood = !localFilterMood || resolvedMood === localFilterMood || Number(moodScores?.[localFilterMood] || 0) > 0;
-      const matchesGenre = !localFilterGenre || normalizedGenres.includes(localFilterGenre);
+      const matchesMood = !localFilterMood || resolvedMood === localFilterMood;
+      const matchesGenre = !localFilterGenre || (game.genres && Array.isArray(game.genres) && game.genres.includes(localFilterGenre));
       const matchesPlatform = !localFilterPlatform || displayPlatform === localFilterPlatform;
       const gamePlaytime = game.time_played || 0;
       const maxTimeFilter = localFilterMaxTime === '' ? null : parseInt(localFilterMaxTime, 10);
@@ -590,89 +581,123 @@ function Library({
     setSelectedGameIndex(0);
   };
 
+  // Librarian: Pick For Me - Smart recommendation from filtered games
+  const handlePickForMe = () => {
+    if (filteredAndSortedGames.length === 0) return;
+    
+    const scoredGames = filteredAndSortedGames.map(game => {
+      let score = Math.random() * 20;
+      
+      // Prefer games with some playtime but not too much
+      const playtime = game.time_played || 0;
+      if (playtime > 0 && playtime < 180) score += 15;
+      else if (playtime === 0) score += 10;
+      
+      // Favorites bonus
+      if (favorites.includes(getFavoriteGameKey(game))) score += 12;
+      
+      return { game, score };
+    });
+    
+    scoredGames.sort((a, b) => b.score - a.score);
+    const pick = scoredGames[0];
+    
+    setLibrarianPick({
+      game: pick.game,
+      method: 'smart'
+    });
+  };
+
+  // Librarian: Feeling Lucky - Random with personality
+  const handleFeelingLucky = () => {
+    if (filteredAndSortedGames.length === 0) return;
+    
+    const randomIndex = Math.floor(Math.random() * filteredAndSortedGames.length);
+    const game = filteredAndSortedGames[randomIndex];
+    
+    setLibrarianPick({
+      game,
+      method: 'random'
+    });
+  };
+
   const handleControllerInput = useCallback((action) => {
     const visibleGameCount = getVisibleGameCount();
     const gridColumnCount = getGridColumnCount();
 
     if (isModalOpen) {
-      return false;
+      return;
     }
 
     if (action === 'cancel') {
       goToPreviousPage();
-      return true;
+      return;
     }
 
     if (action === 'page_previous') {
       goToPreviousPage();
-      return true;
+      return;
     }
 
     if (action === 'page_next') {
       goToNextPage();
-      return true;
+      return;
     }
 
     if (action === 'scroll_down') {
       window.scrollBy({ top: 220, behavior: 'smooth' });
-      return true;
+      return;
     }
 
     if (action === 'scroll_up') {
       window.scrollBy({ top: -220, behavior: 'smooth' });
-      return true;
+      return;
     }
 
     if (viewMode === 'grid') {
       if (action === 'left') {
         moveSelectionByOffset(-1);
-        return true;
+        return;
       }
 
       if (action === 'right') {
         moveSelectionByOffset(1);
-        return true;
+        return;
       }
 
       if (action === 'up') {
         moveSelectionByOffset(-gridColumnCount);
-        return true;
+        return;
       }
 
       if (action === 'down') {
         moveSelectionByOffset(gridColumnCount);
-        return true;
+        return;
       }
     }
 
     if (action === 'left') {
       moveSelectionByPage(-1);
-      return true;
+      return;
     }
 
     if (action === 'right') {
       moveSelectionByPage(1);
-      return true;
+      return;
     }
 
     if (action === 'down' && selectedGameIndex < visibleGameCount - 1) {
       moveSelectionByOffset(1);
-      return true;
     } else if (action === 'up' && selectedGameIndex > 0) {
       moveSelectionByOffset(-1);
-      return true;
     } else if (action === 'confirm' && selectedGameIndex >= 0 && selectedGameIndex < visibleGameCount) {
       openGameModal(displayedGames[selectedGameIndex]);
-      return true;
     }
-    return false;
   }, [selectedGameIndex, getVisibleGameCount, getGridColumnCount, isModalOpen, goToPreviousPage, goToNextPage, moveSelectionByOffset, moveSelectionByPage, openGameModal, displayedGames, viewMode]);
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
-      if (handleControllerInput(event?.detail?.action)) {
-        event.preventDefault();
-      }
+      handleControllerInput(event?.detail?.action);
     };
     window.addEventListener('controllerInput', handleGlobalControllerInput);
     return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
@@ -730,6 +755,79 @@ function Library({
         </div>
       </div>
 
+      {/* Librarian Pick Display */}
+      {librarianPick && (
+        <div className="librarian-pick-banner" style={{ 
+          margin: '20px', 
+          padding: '20px', 
+          background: librarianPick.method === 'smart' 
+            ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)'
+            : 'linear-gradient(135deg, rgba(240, 147, 251, 0.15) 0%, rgba(245, 87, 108, 0.15) 100%)',
+          borderRadius: '12px',
+          border: `1px solid ${librarianPick.method === 'smart' ? 'rgba(102, 126, 234, 0.3)' : 'rgba(240, 147, 251, 0.3)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ fontSize: '2rem' }}>
+            {librarianPick.method === 'smart' ? '✨' : '🎲'}
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>
+              {librarianPick.method === 'smart' ? 'Your Librarian Recommends:' : 'Feeling Lucky?'}
+            </h3>
+            <p style={{ margin: 0, opacity: 0.8, fontSize: '0.95rem' }}>
+              {librarianPick.method === 'smart' 
+                ? 'Smart pick based on your gaming patterns' 
+                : 'Random selection from your library'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                padding: '10px 15px',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '8px'
+              }}
+            >
+              <span style={{ fontWeight: 600 }}>{librarianPick.game.name}</span>
+              <button 
+                onClick={() => onLaunchGame(librarianPick.game)}
+                style={{ 
+                  padding: '6px 12px', 
+                  fontSize: '0.85rem',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: 'linear-gradient(135deg, var(--library-presentation-accent), var(--library-presentation-secondary))',
+                  color: '#fff',
+                  cursor: 'pointer'
+                }}
+              >
+                ▶ Play
+              </button>
+            </div>
+            <button 
+              onClick={() => setLibrarianPick(null)}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'var(--text-color)',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                lineHeight: 1
+              }}
+              title="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Free Games Section */}
       {showFreeGames ? (
         <div className="free-games-section">
@@ -779,6 +877,27 @@ function Library({
         <button onClick={scanLibraryHandler} className="export-button" style={{ marginLeft: '12px' }}>
           🔄 Scan Library
         </button>
+        
+        {/* Librarian Features */}
+        <button 
+          onClick={handlePickForMe} 
+          className="export-button"
+          style={{ marginLeft: '12px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}
+          disabled={filteredAndSortedGames.length === 0}
+          title="Smart recommendation from your filtered games"
+        >
+          <Sparkles size={16} /> Pick For Me
+        </button>
+        <button 
+          onClick={handleFeelingLucky} 
+          className="export-button"
+          style={{ marginLeft: '12px', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}
+          disabled={filteredAndSortedGames.length === 0}
+          title="Random game from your library"
+        >
+          <Dices size={16} /> Feeling Lucky
+        </button>
+        
         <button 
           onClick={toggleBulkMode} 
           className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}

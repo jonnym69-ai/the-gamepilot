@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Settings as SettingsIcon, Palette, Bell, Database, Download, Upload, Trash2, Save, AlertCircle, Heart, Music2, Waves, Keyboard } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Download, Upload, Trash2, Save, AlertCircle, Heart, Music2, Waves, Keyboard, Sparkles } from 'lucide-react';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
 import NavBar from './NavBar';
@@ -56,6 +56,7 @@ function Settings() {
   const [rewardCatalogSummary, setRewardCatalogSummary] = useState(() => ProgressionUnlockService.getRewardCatalogSummary());
   const [shortcutSettings, setShortcutSettings] = useState(() => KeyboardShortcuts.getSettings());
   const [shortcutEntries, setShortcutEntries] = useState(() => KeyboardShortcuts.getShortcutList());
+  const [recommendationStyle, setRecommendationStyle] = useState(() => localStorage.getItem('gamepilot_recommendation_style') || 'balanced');
   const { success, error: toastError } = useToast();
   const currentAmbientPackMeta = ambientPackOptions.find((pack) => pack.id === ambientSoundPack) || null;
   const currentMusicPackMeta = musicPackOptions.find((pack) => pack.id === musicPack) || null;
@@ -760,6 +761,44 @@ function Settings() {
                       >
                         Open Rewards Page
                       </button>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              {/* Recommendation Style Section */}
+              <CollapsibleSection
+                title="Recommendation Style"
+                subtitle="Choose how GamePilot suggests games to you."
+                badge={recommendationStyle === 'balanced' ? 'Balanced' : recommendationStyle}
+                icon={<Sparkles size={18} />}
+                className="settings-folder"
+              >
+                <div className="settings-section">
+                  <div className="section-header">
+                    <Sparkles size={20} />
+                    <h2>Recommendation Style</h2>
+                  </div>
+                  <div className="settings-group">
+                    <div className="setting-item">
+                      <label>Recommendation Style</label>
+                      <p className="setting-description">
+                        Choose how GamePilot prioritizes game suggestions in the Home page and Librarian features.
+                      </p>
+                      <select 
+                        value={recommendationStyle} 
+                        onChange={(e) => {
+                          setRecommendationStyle(e.target.value);
+                          localStorage.setItem('gamepilot_recommendation_style', e.target.value);
+                        }}
+                        className="settings-select"
+                        style={{ marginTop: '8px' }}
+                      >
+                        <option value="balanced">Balanced - Mix of favorites and discoveries</option>
+                        <option value="discovery">Discovery - Prioritize unplayed and hidden gems</option>
+                        <option value="comfort">Comfort - Stick to your favorites and most-played</option>
+                        <option value="nostalgia">Nostalgia - Bring back games you haven't played in a while</option>
+                      </select>
                     </div>
                   </div>
                 </div>

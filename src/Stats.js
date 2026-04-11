@@ -7,6 +7,7 @@ import { PieChart, BarChart } from './components/StatsCharts';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './services/PersonaPerformanceInsights';
 import { StatsAggregationService } from './services/StatsAggregationService';
+import { MilestoneService } from './services/MilestoneService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
 import './Stats.css';
@@ -661,6 +662,107 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Milestones & Prestige Section */}
+        <div className="stats-section">
+          <h2>🏆 Milestones & Prestige</h2>
+          <p className="section-subtitle">Track your major XP achievements and prestige progress.</p>
+          
+          <div className="milestones-container" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '15px',
+            marginTop: '20px'
+          }}>
+            {MilestoneService.getAllMilestones().map((milestone) => (
+              <div 
+                key={milestone.id}
+                className={`milestone-card ${milestone.achieved ? 'achieved' : ''}`}
+                style={{
+                  padding: '15px',
+                  borderRadius: '12px',
+                  background: milestone.achieved 
+                    ? 'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,140,0,0.15) 100%)'
+                    : 'var(--card-bg)',
+                  border: `2px solid ${milestone.achieved ? '#ffd700' : 'var(--border-color)'}`,
+                  opacity: milestone.achieved ? 1 : 0.7,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>{milestone.icon}</div>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem' }}>{milestone.name}</h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8 }}>{milestone.description}</p>
+                <div style={{ marginTop: '10px' }}>
+                  <div style={{ 
+                    height: '6px', 
+                    background: 'rgba(255,255,255,0.1)', 
+                    borderRadius: '3px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${milestone.progressPercent}%`,
+                      height: '100%',
+                      background: milestone.achieved ? '#ffd700' : 'var(--accent-primary)',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '0.75rem', opacity: 0.6 }}>
+                    {milestone.achieved 
+                      ? `Achieved! (${milestone.xp.toLocaleString()} XP)` 
+                      : `${milestone.xpRemaining.toLocaleString()} XP remaining`}
+                  </p>
+                </div>
+                {milestone.achieved && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: '#ffd700',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px'
+                  }}>✓</div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          {/* Prestige Status */}
+          {(() => {
+            const prestige = MilestoneService.getPrestigeStatus();
+            return prestige.prestigeLevel > 0 ? (
+              <div className="prestige-banner" style={{
+                marginTop: '25px',
+                padding: '20px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
+                border: '2px solid rgba(147, 51, 234, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px'
+              }}>
+                <div style={{ fontSize: '3rem' }}>✨</div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: '0 0 5px 0' }}>Prestige Level {prestige.prestigeLevel}</h3>
+                  <p style={{ margin: 0, opacity: 0.8 }}>
+                    {prestige.xpMultiplier}% XP bonus active • {prestige.exclusiveRewards.length} exclusive rewards unlocked
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#a855f7' }}>
+                    +{prestige.xpMultiplier}%
+                  </div>
+                  <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>XP Boost</div>
+                </div>
+              </div>
+            ) : null;
+          })()}
         </div>
 
         {library.length === 0 && achievementData.unlocked.length === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
