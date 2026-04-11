@@ -1,11 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Gift } from 'lucide-react';
+import DailySpin from './DailySpin';
+import { DailyEngagementService } from '../services/DailyEngagementService';
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showSpin, setShowSpin] = useState(false);
+  const [engagementStatus, setEngagementStatus] = useState(null);
   const location = useLocation();
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    setEngagementStatus(DailyEngagementService.getStatus());
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -43,7 +51,23 @@ function HybridNavBar() {
         <Link to="/stats" className="nav-link" title="View local-first playtime, quest, and achievement stats">Stats</Link>
         <Link to="/profile" className="nav-link" title="See your progression, identity, and reward roadmap">Profile</Link>
         <Link to="/settings" className="nav-link" title="Customize themes, shortcuts, controller mode, and preferences">Settings</Link>
+        <button 
+          className={`nav-link spin-nav-button ${engagementStatus?.canSpin ? 'has-spin' : ''}`}
+          onClick={() => setShowSpin(true)}
+          title="Daily reward spin - come back every day!"
+        >
+          <Gift size={18} />
+          <span>Daily</span>
+          {engagementStatus?.currentStreak > 0 && (
+            <span className="streak-badge">{engagementStatus.currentStreak}</span>
+          )}
+        </button>
       </div>
+
+      <DailySpin isOpen={showSpin} onClose={() => {
+        setShowSpin(false);
+        setEngagementStatus(DailyEngagementService.getStatus());
+      }} />
 
       {/* Dropdown Menu for Less Frequent Items */}
       <div className="navbar-dropdown" ref={dropdownRef}>

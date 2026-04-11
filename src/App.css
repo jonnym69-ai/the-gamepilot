@@ -183,6 +183,44 @@ body {
   border-color: var(--nav-active) !important;
 }
 
+.spin-nav-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #4ade80, #22c55e) !important;
+  color: #1a1a2e !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.2s !important;
+}
+
+.spin-nav-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4) !important;
+}
+
+.spin-nav-button.has-spin {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(74, 222, 128, 0); }
+  50% { box-shadow: 0 0 20px rgba(74, 222, 128, 0.5); }
+}
+
+.streak-badge {
+  background: #fbbf24;
+  color: #1a1a2e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
 /* Floating Back to Top button */
 .back-to-top-button {
   position: fixed;

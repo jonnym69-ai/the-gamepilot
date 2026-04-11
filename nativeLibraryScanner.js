@@ -2,6 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Import modular scanners
+const { scanSteamLibrary: scanSteamLibraryNew } = require('./src/services/scanner/steamScanner');
+const { scanEALibrary: scanEALibraryNew } = require('./src/services/scanner/eaScanner');
+const { scanRockstarLibrary: scanRockstarLibraryNew } = require('./src/services/scanner/rockstarScanner');
+
 // Import genre database for game classification
 // Handle both development and production paths
 let getGameGenres;
@@ -1538,7 +1543,7 @@ const scanAllLibraries = () => {
   console.log('[Scanner] Uplay paths:', uplayPaths);
   console.log('[Scanner] Rockstar paths:', rockstarPaths);
 
-  const steamGames = scanSteamLibrary();
+  const steamGames = scanSteamLibraryNew();
   console.log('[Scanner] Steam found:', steamGames.length, 'games');
   
   const epicGames = scanEpicLibrary();
@@ -1548,95 +1553,10 @@ const scanAllLibraries = () => {
   console.log('[Scanner] GOG found:', gogGames.length, 'games');
   
   const uplayGames = scanUbisoftLibrary();
-  // Rockstar games have executables in subfolders (e.g., 'GTAV Enhanced', 'Red Dead Redemption 2')
-  // not in a hardcoded 'Launcher.exe' location
-  const rockstarGames = [];
-  rockstarPaths.forEach((rockstarPath) => {
-    if (!fs.existsSync(rockstarPath)) return;
-    
-    const rockstarContents = safeReadDir(rockstarPath);
-    rockstarContents.forEach((folder) => {
-      // Skip launcher/social club folders
-      if (isLikelyNonGameFolder(folder)) return;
-      if (folder.toLowerCase().includes('launcher') || folder.toLowerCase().includes('social club')) return;
-      
-      const gamePath = path.join(rockstarPath, folder);
-      try {
-        if (!fs.statSync(gamePath).isDirectory()) return;
-        
-        // Find the actual game executable – allow one extra nested level (e.g. Game\*)
-        let executablePath = findBestExecutablePath(gamePath, folder);
-        if (!executablePath) {
-          // recurse one more level for common patterns like Game/ or Windows/ binaries
-          const deeperDirs = collectNestedGameDirectories(gamePath, 1);
-          for (const subDir of deeperDirs) {
-            executablePath = findBestExecutablePath(subDir, path.basename(subDir));
-            if (executablePath) break;
-          }
-        }
-        if (!executablePath) {
-          executablePath = findExecutableDeep(gamePath, 3);
-        }
-        if (executablePath) {
-          rockstarGames.push({
-            name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
-            platform: 'Rockstar',
-            genres: getGameGenres(folder).length > 0 ? getGameGenres(folder) : ['Story-driven'],
-            iconUrl: '',
-            icon: '',
-            executable: executablePath,
-            executablePath: executablePath,
-            installDir: gamePath,
-            launchId: folder,
-            ...createTrackedDefaults()
-          });
-        }
-      } catch (error) {
-        // Ignore inaccessible folders
-      }
-    });
-  });
-  console.log('[Scanner] Rockstar debug - checking paths:');
-  rockstarPaths.forEach((rockstarPath, index) => {
-    const exists = fs.existsSync(rockstarPath);
-    console.log(`[Scanner] Rockstar path ${index}: ${rockstarPath} - exists: ${exists}`);
-    if (exists) {
-      try {
-        const contents = safeReadDir(rockstarPath);
-        console.log(`[Scanner] Rockstar path ${index} contents:`, contents);
-      } catch (error) {
-        console.log(`[Scanner] Rockstar path ${index} error reading:`, error.message);
-      }
-    }
-  });
+  const rockstarGames = scanRockstarLibraryNew();
   console.log('[Scanner] Rockstar found:', rockstarGames.length, 'games');
   
-  const eaGames = scanEALibrary();
-  console.log('[Scanner] EA debug - checking paths:');
-  const eaDebugPaths = [
-    `${process.env.ProgramData || 'C:\\ProgramData'}\\Origin\\LocalContent`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Origin Games`,
-    `${process.env.ProgramFiles || 'C:\\Program Files'}\\EA Games`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\EA Games`,
-    `${process.env.ProgramData || 'C:\\ProgramData'}\\EA Desktop\\InstallData`,
-    `${process.env.ProgramData || 'C:\\ProgramData'}\\Electronic Arts\\EA Desktop`,
-    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\Electronic Arts`,
-    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\EA Desktop`,
-    `${process.env.ProgramFiles || 'C:\\Program Files'}\\Electronic Arts`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Electronic Arts`
-  ];
-  eaDebugPaths.forEach((eaPath, index) => {
-    const exists = fs.existsSync(eaPath);
-    console.log(`[Scanner] EA path ${index}: ${eaPath} - exists: ${exists}`);
-    if (exists) {
-      try {
-        const contents = safeReadDir(eaPath);
-        console.log(`[Scanner] EA path ${index} contents:`, contents);
-      } catch (error) {
-        console.log(`[Scanner] EA path ${index} error reading:`, error.message);
-      }
-    }
-  });
+  const eaGames = scanEALibraryNew();
   console.log(`[Scanner] EA found: ${eaGames.length} games`);
 
   const playstationGames = scanPlaystationLibrary();

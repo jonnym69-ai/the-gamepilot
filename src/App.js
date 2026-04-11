@@ -23,7 +23,13 @@ import ControllerSupport from './components/ControllerSupport';
 import { GameLaunchCoordinatorService } from './services/GameLaunchCoordinatorService';
 import { LibraryScanCoordinatorService } from './services/LibraryScanCoordinatorService';
 import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, useToast } from './components/Toast';
+import LevelUpToast from './components/LevelUpToast';
+import WeeklySummaryToast from './components/WeeklySummaryToast';
+import { DailyEngagementService } from './services/DailyEngagementService';
+import { QuickChallengeService } from './services/QuickChallengeService';
+import { AchievementTracker } from './AchievementSystem';
+import { EasterEggService } from './services/EasterEggService';
 
 const FAVORITES_STORAGE_KEY = 'favorites';
 
@@ -144,6 +150,11 @@ function AppContent() {
   const [isOnline, setIsOnline] = useState(OfflineManager.isOnline);
   const [syncStatus, setSyncStatus] = useState(OfflineManager.getSyncStatus());
   const [activeSessions, setActiveSessions] = useState(() => PlaytimeAutoLogger.getActiveSessions());
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [showWeeklySummary, setShowWeeklySummary] = useState(false);
+  const [weeklyStats, setWeeklyStats] = useState(null);
+  const [previousLevel, setPreviousLevel] = useState(1);
 
   // Memoization caches for performance
   const playtimeStatsCache = useRef(new Map());
@@ -283,6 +294,86 @@ function AppContent() {
       KeyboardShortcuts.unregisterAction('show_shortcuts');
     };
   }, []);
+
+  // Listen for easter egg inputs
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const result = EasterEggService.handleKeyPress(e.key);
+      if (result?.type === 'activated') {
+        console.log(`[EasterEgg] ${result.message}`);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Check for level-up and weekly summary on app load
+  useEffect(() => {
+    const checkLevelUp = () => {
+      const xpStats = AchievementTracker.getXPStats();
+      const newLevel = xpStats.level || 1;
+      if (newLevel > previousLevel) {
+        setCurrentLevel(newLevel);
+        setShowLevelUp(true);
+      }
+      setPreviousLevel(newLevel);
+    };
+
+    const checkWeeklySummary = () => {
+      const dayOfWeek = new Date().getDay();
+      const lastSummary = localStorage.getItem('lastWeeklySummary');
+      const today = new Date().toISOString().split('T')[0];
+
+      if (dayOfWeek === 0 && lastSummary !== today) {
+        const stats = DailyEngagementService.getWeeklySummary();
+        const timeStats = AchievementTracker.getTimeStats();
+        
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+        let hoursThisWeek = 0;
+        let hoursLastWeek = 0;
+        let gamesPlayed = new Set();
+
+        Object.entries(timeStats.daily || {}).forEach(([date, minutes]) => {
+          if (date >= weekAgo.toISOString().split('T')[0]) {
+            hoursThisWeek += minutes;
+          } else if (date >= twoWeeksAgo.toISOString().split('T')[0]) {
+            hoursLastWeek += minutes;
+          }
+        });
+
+        library.forEach(game => {
+          if (game.last_played) {
+            const lastPlayed = new Date(game.last_played);
+            if (lastPlayed >= weekAgo) {
+              gamesPlayed.add(game.name);
+            }
+          }
+        });
+
+        const topGame = library.length > 0 ? library.sort((a, b) => 
+          (b.time_played || 0) - (a.time_played || 0)
+        )[0]?.name : null;
+
+        setWeeklyStats({
+          hoursThisWeek: Math.round(hoursThisWeek / 60),
+          hoursLastWeek: Math.round(hoursLastWeek / 60),
+          gamesPlayed: gamesPlayed.size,
+          topGame,
+          streak: stats?.currentStreak || 0
+        });
+        setShowWeeklySummary(true);
+        localStorage.setItem('lastWeeklySummary', today);
+      }
+    };
+
+    checkLevelUp();
+    checkWeeklySummary();
+  }, [library, previousLevel]);
 
   // Apply theme globally and save to localStorage
   useEffect(() => {
@@ -722,6 +813,17 @@ function AppContent() {
   return (
     <div className="App-container">
       <ControllerSupport />
+      <LevelUpToast 
+        show={showLevelUp} 
+        level={currentLevel} 
+        xpTotal={AchievementTracker.getXPStats().totalXP}
+        onClose={() => setShowLevelUp(false)}
+      />
+      <WeeklySummaryToast 
+        show={showWeeklySummary} 
+        stats={weeklyStats}
+        onClose={() => setShowWeeklySummary(false)}
+      />
       <Routes>
         <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
         <Route path="/library" element={<Library library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} loading={loading} />} />

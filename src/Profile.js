@@ -15,6 +15,7 @@ import GameCalendar from './components/GameCalendar';
 import CollapsibleSection from './components/CollapsibleSection';
 import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
+import PlaytimeHeatmap from './components/PlaytimeHeatmap';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 
 const SUPPORT_TIER_WEIGHT = {
@@ -1833,13 +1834,24 @@ const Profile = ({ theme, library = [] }) => {
           <GameCalendar />
         </CollapsibleSection>
 
+        {/* Playtime Heatmap */}
+        <CollapsibleSection
+          title="Activity Heatmap"
+          subtitle="Your gaming activity over the past year."
+          badge="Stats"
+          icon={<Clock size={18} />}
+          className={getSectionClass(10)}
+        >
+          <PlaytimeHeatmap library={library} />
+        </CollapsibleSection>
+
         {/* Data & Sync Section */}
         <CollapsibleSection
           title="Data & Sync Management"
           subtitle="Backup, restore, manual sync, and local data controls."
           badge={isSyncing ? 'Syncing' : 'Local-first'}
           icon={<Download size={18} />}
-          className={getSectionClass(10)}
+          className={getSectionClass(11)}
         >
           <div className="gaming-identity-card">
             <h3>⚙️ Data & Sync Management</h3>
