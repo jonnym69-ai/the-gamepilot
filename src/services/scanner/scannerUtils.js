@@ -65,7 +65,10 @@ const NON_GAME_FOLDER_TOKENS = [
   'runtime', 'service', 'services', 'setup', 'uninstall', 'uninstaller',
   'bonus content', 'soundtrack', 'artbook', 'directx', 'vcredist', 'dotnet',
   'engine', 'sdk', 'launcherdata', 'anticheat', 'easyanticheat', 'eac', 'beclient',
-  'games', 'game', 'battleye', 'battlEye', 'escapefromtarkov_data', 'eft_data', 'data'
+  'games', 'game', 'battleye', 'battlEye', 'escapefromtarkov_data', 'eft_data', 'data',
+  'program files', 'program files (x86)', 'windows', 'users', 'documents and settings',
+  'appdata', 'application data', 'local settings', 'programdata', 'perflogs',
+  'system volume information', 'recycle.bin', '$recycle.bin'
 ];
 
 const isLikelyNonGameFolder = (folderName) => {

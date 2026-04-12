@@ -6,6 +6,7 @@ const si = require('systeminformation');
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
+const activeMonitors = new Map();
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -214,6 +215,95 @@ ipcMain.handle('scan-game-libraries', async () => {
     return { games: [] };
   }
 });
+
+// IPC Handler for starting game process monitoring
+ipcMain.handle('start-game-monitor', async (event, { monitorId, game }) => {
+  try {
+    console.log(`[Electron] Starting monitor ${monitorId} for ${game.name}`);
+    
+    if (!game.executable && !game.executablePath) {
+      return { success: false, message: 'No executable path provided' };
+    }
+
+    const exeName = game.executable 
+      ? path.basename(game.executable) 
+      : path.basename(game.executablePath);
+    
+    activeMonitors.set(monitorId, {
+      gameName: game.name,
+      exeName: exeName.toLowerCase(),
+      startTime: Date.now()
+    });
+
+    return { success: true, monitorId };
+  } catch (error) {
+    console.error('[Electron] Start monitor error:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// IPC Handler for stopping game process monitoring
+ipcMain.handle('stop-game-monitor', async (event, { monitorId }) => {
+  try {
+    const monitor = activeMonitors.get(monitorId);
+    if (monitor) {
+      console.log(`[Electron] Stopping monitor ${monitorId} for ${monitor.gameName}`);
+      activeMonitors.delete(monitorId);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+});
+
+// Poll for game process status every 5 seconds
+setInterval(async () => {
+  if (activeMonitors.size === 0 || !mainWindow) return;
+
+  try {
+    const processes = await si.processes();
+    const runningGames = [];
+
+    for (const [monitorId, monitor] of activeMonitors) {
+      const found = processes.list.find(p => 
+        p.name && p.name.toLowerCase().includes(monitor.exeName.replace('.exe', ''))
+      );
+      
+      if (found) {
+        runningGames.push({ monitorId, gameName: monitor.gameName, pid: found.pid });
+      }
+    }
+
+    // Check for games that closed
+    const closedGames = [];
+    for (const [monitorId, monitor] of activeMonitors) {
+      if (!runningGames.find(g => g.monitorId === monitorId)) {
+        closedGames.push({ monitorId, gameName: monitor.gameName });
+      }
+    }
+
+    // Notify about closed games
+    for (const closed of closedGames) {
+      console.log(`[Electron] Game closed detected: ${closed.gameName}`);
+      mainWindow.webContents.send('game-closed', { 
+        gameName: closed.gameName, 
+        monitorId: closed.monitorId 
+      });
+      activeMonitors.delete(closed.monitorId);
+    }
+
+    // Notify about started games
+    for (const running of runningGames) {
+      mainWindow.webContents.send('game-started', { 
+        gameName: running.gameName, 
+        monitorId: running.monitorId,
+        pid: running.pid
+      });
+    }
+  } catch (error) {
+    console.error('[Electron] Process poll error:', error);
+  }
+}, 5000);
 
 // IPC Handler for getting system hardware info
 ipcMain.handle('get-system-info', async () => {

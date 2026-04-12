@@ -1043,5 +1043,97 @@
     "isPremium": true,
     "requiredTier": "platinum",
     "requiresFounderTier": "Platinum"
+  },
+  {
+    "id": "spring-bloom",
+    "name": "Spring Bloom",
+    "description": "Fresh spring theme with cherry blossoms, soft pinks, and new growth greens.",
+    "palette": {
+      "background": "linear-gradient(135deg, #ffe4e6 0%, #fce7f3 25%, #fbcfe8 50%, #bbf7d0 75%, #86efac 100%)",
+      "surface": "rgba(255, 255, 255, 0.8)",
+      "primary": "#ec4899",
+      "secondary": "#34d399",
+      "text": "#831843",
+      "accent": "#f472b6",
+      "card": "rgba(255, 255, 255, 0.85)",
+      "hover": "rgba(236, 72, 153, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.02,
+      "grain": 0.005,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(236, 72, 153, 0.15)"
+    },
+    "seasonal": "spring",
+    "isPremium": false
+  },
+  {
+    "id": "summer-heat",
+    "name": "Summer Heat",
+    "description": "Hot summer theme with bright sunshine, beach vibes, and vibrant energy.",
+    "palette": {
+      "background": "linear-gradient(135deg, #fef08a 0%, #fde047 25%, #fb923c 50%, #f97316 75%, #dc2626 100%)",
+      "surface": "rgba(255, 248, 220, 0.85)",
+      "primary": "#ea580c",
+      "secondary": "#facc15",
+      "text": "#7c2d12",
+      "accent": "#fb923c",
+      "card": "rgba(255, 255, 255, 0.85)",
+      "hover": "rgba(234, 88, 12, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.03,
+      "grain": 0.008,
+      "bloom": 0.15,
+      "shadow": "0 4px 20px rgba(234, 88, 12, 0.25)"
+    },
+    "seasonal": "summer",
+    "isPremium": false
+  },
+  {
+    "id": "autumn-harvest",
+    "name": "Autumn Harvest",
+    "description": "Cozy fall theme with warm oranges, golden leaves, and harvest feelings.",
+    "palette": {
+      "background": "linear-gradient(135deg, #fef3c7 0%, #fde68a 25%, #fbbf24 50%, #d97706 75%, #92400e 100%)",
+      "surface": "rgba(255, 248, 230, 0.85)",
+      "primary": "#b45309",
+      "secondary": "#d97706",
+      "text": "#78350f",
+      "accent": "#f59e0b",
+      "card": "rgba(255, 255, 255, 0.85)",
+      "hover": "rgba(180, 83, 9, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.04,
+      "grain": 0.006,
+      "bloom": 0.1,
+      "shadow": "0 4px 20px rgba(180, 83, 9, 0.2)"
+    },
+    "seasonal": "autumn",
+    "isPremium": false
+  },
+  {
+    "id": "winter-frost",
+    "name": "Winter Frost",
+    "description": "Cold winter theme with icy blues, snow whites, and crisp frosty air.",
+    "palette": {
+      "background": "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 25%, #7dd3fc 50%, #38bdf8 75%, #0ea5e9 100%)",
+      "surface": "rgba(255, 255, 255, 0.85)",
+      "primary": "#0284c7",
+      "secondary": "#7dd3fc",
+      "text": "#0c4a6e",
+      "accent": "#38bdf8",
+      "card": "rgba(255, 255, 255, 0.9)",
+      "hover": "rgba(2, 132, 199, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.02,
+      "grain": 0.004,
+      "bloom": 0.12,
+      "shadow": "0 4px 20px rgba(2, 132, 199, 0.2)"
+    },
+    "seasonal": "winter",
+    "isPremium": false
   }
 ]

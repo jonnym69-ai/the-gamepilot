@@ -30,6 +30,7 @@ import { DailyEngagementService } from './services/DailyEngagementService';
 import { QuickChallengeService } from './services/QuickChallengeService';
 import { AchievementTracker } from './AchievementSystem';
 import { EasterEggService } from './services/EasterEggService';
+import { SeasonalRewardService } from './services/SeasonalRewardService';
 
 const FAVORITES_STORAGE_KEY = 'favorites';
 
@@ -754,6 +755,12 @@ function AppContent() {
       } else {
         console.log(' Game launched successfully:', result.result?.message || 'Launched');
         setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+        
+        // Track seasonal reward progress
+        const seasonalReward = SeasonalRewardService.trackGamePlay(game);
+        if (seasonalReward) {
+          console.log(' Seasonal theme unlocked:', seasonalReward.name);
+        }
       }
       
       console.log(' Launch request submitted for:', game.name);

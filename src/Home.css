@@ -229,6 +229,48 @@
   color: white;
 }
 
+.home-guided-section,
+.home-tools-section {
+  max-width: 1300px;
+  margin: 0 auto 50px;
+  padding: 0 25px;
+}
+
+.home-guided-section-secondary {
+  margin-bottom: 42px;
+}
+
+.home-section-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.home-section-heading {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.home-section-heading.compact {
+  max-width: 680px;
+}
+
+.home-section-title {
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.home-section-copy {
+  margin: 0;
+  color: var(--text);
+  opacity: 0.78;
+  line-height: 1.6;
+}
+
 /* Main Content Container */
 .home-content {
   max-width: 1300px;
@@ -367,6 +409,24 @@
   padding: 50px;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
   position: relative;
+  overflow: hidden;
+}
+
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  opacity: 0.72;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .perfect-play-section::before {
@@ -380,34 +440,19 @@
   pointer-events: none;
 }
 
-.gamepilot-title {
-  font-size: 3rem;
-  margin-bottom: 10px;
-}
-
 .perfect-play-title {
   font-size: 2.5rem;
   margin-bottom: 15px;
   text-align: center;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 800;
-  position: relative;
-  z-index: 1;
+  color: var(--accent-primary);
 }
 
 .perfect-play-subtitle {
   text-align: center;
-  color: var(--text);
-  opacity: 0.85;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
   margin-bottom: 40px;
-  font-size: 1.2rem;
-  font-weight: 500;
-  position: relative;
-  z-index: 1;
-  max-width: 500px;
+  max-width: 760px;
   margin-left: auto;
   margin-right: auto;
   line-height: 1.5;
@@ -571,6 +616,16 @@
 
 /* Responsive Match My Mood */
 @media (max-width: 768px) {
+  .home-guided-section,
+  .home-tools-section {
+    padding: 0 15px;
+    margin-bottom: 36px;
+  }
+
+  .home-section-title {
+    font-size: 1.65rem;
+  }
+
   .match-my-mood-section {
     padding: 30px 20px;
   }
@@ -783,6 +838,42 @@
 
 .result-card.rediscover {
   border-color: #ff6b35;
+}
+
+.library-story-card {
+  border-color: rgba(255, 214, 102, 0.5);
+}
+
+.library-story-intro {
+  text-align: center;
+  color: var(--text);
+  opacity: 0.78;
+  margin-bottom: 20px;
+}
+
+.library-story-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.library-story-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.library-story-marker {
+  color: var(--accent-primary, #ff6b35);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  opacity: 0.95;
 }
 
 .result-title {
@@ -1615,6 +1706,14 @@
   .game-grid {
     grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  .library-story-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-card {
+    padding: 20px;
   }
 
   .modal-content {

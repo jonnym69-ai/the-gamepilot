@@ -1,8 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import NavBar from './NavBar';
+import { ExternalLink, Plus, Trash2, RotateCcw } from 'lucide-react';
+
+const FAVICON_BASE = 'https://www.google.com/s2/favicons?domain=';
+
+const getFaviconUrl = (url) => {
+  try {
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname.replace('www.', '');
+    return `${FAVICON_BASE}${domain}&sz=64`;
+  } catch {
+    return null;
+  }
+};
+
+const CATEGORY_COLORS = {
+  Store: '#1b2838',
+  Community: '#5865F2',
+  Streaming: '#9146FF',
+  News: '#ff4500',
+  Tools: '#4ade80',
+  Other: '#6b7280'
+};
 
 function GamingLinks({ theme = 'dark' }) {
-  // Original default links
   const defaultLinks = useMemo(() => [
     { id: 1, name: 'Steam', url: 'https://store.steampowered.com', category: 'Store' },
     { id: 2, name: 'Epic Games', url: 'https://store.epicgames.com', category: 'Store' },
@@ -11,7 +32,7 @@ function GamingLinks({ theme = 'dark' }) {
     { id: 5, name: 'Discord', url: 'https://discord.com', category: 'Community' },
     { id: 6, name: 'Reddit', url: 'https://www.reddit.com/r/gaming', category: 'Community' },
     { id: 7, name: 'Twitch', url: 'https://www.twitch.tv', category: 'Streaming' },
-    { id: 8, name: 'YouTube Gaming', url: 'https://www.youtube.com/gaming', category: 'Streaming' }
+    { id: 8, name: 'YouTube', url: 'https://www.youtube.com', category: 'Streaming' }
   ], []);
 
   const [links, setLinks] = useState([]);
@@ -76,38 +97,49 @@ function GamingLinks({ theme = 'dark' }) {
     setLinks(defaultLinks);
   };
 
+  const groupedLinks = useMemo(() => {
+    const groups = {};
+    links.forEach(link => {
+      if (!groups[link.category]) groups[link.category] = [];
+      groups[link.category].push(link);
+    });
+    return groups;
+  }, [links]);
+
   return (
     <div style={{ backgroundColor: 'var(--primary)', color: 'var(--text)', minHeight: '100vh' }}>
       <NavBar />
-      <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
-        <h1>Gaming Links</h1>
-        <p style={{ marginBottom: '30px', color: 'var(--text)', opacity: 0.8 }}>
-          Your personal collection of gaming links and resources. Add your favorite sites!
-        </p>
+      <div style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>Gaming Links</h1>
+          <p style={{ margin: 0, color: 'var(--text)', opacity: 0.7, fontSize: '15px' }}>
+            Your personal collection of gaming sites and resources
+          </p>
+        </div>
 
         {/* Add new link form */}
         <div style={{ 
           backgroundColor: 'var(--card)', 
-          padding: '20px', 
-          borderRadius: '8px', 
-          marginBottom: '30px',
+          padding: '24px', 
+          borderRadius: '12px', 
+          marginBottom: '32px',
           border: '1px solid var(--border)'
         }}>
-          <h3>Add New Link</h3>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Add New Link</h3>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <input
               type="text"
               placeholder="Link name"
               value={newLink.name}
               onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
               style={{ 
-                flex: 1, 
-                padding: '8px', 
-                borderRadius: '4px', 
+                flex: '1 1 180px',
+                padding: '12px 16px', 
+                borderRadius: '8px', 
                 border: '1px solid var(--border)',
                 backgroundColor: 'var(--input)',
                 color: 'var(--text)',
-                minWidth: '200px'
+                fontSize: '14px'
               }}
             />
             <input
@@ -116,24 +148,26 @@ function GamingLinks({ theme = 'dark' }) {
               value={newLink.url}
               onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
               style={{ 
-                flex: 2, 
-                padding: '8px', 
-                borderRadius: '4px', 
+                flex: '2 1 280px',
+                padding: '12px 16px', 
+                borderRadius: '8px', 
                 border: '1px solid var(--border)',
                 backgroundColor: 'var(--input)',
                 color: 'var(--text)',
-                minWidth: '300px'
+                fontSize: '14px'
               }}
             />
             <select
               value={newLink.category}
               onChange={(e) => setNewLink({ ...newLink, category: e.target.value })}
               style={{ 
-                padding: '8px', 
-                borderRadius: '4px', 
+                padding: '12px 16px', 
+                borderRadius: '8px', 
                 border: '1px solid var(--border)',
                 backgroundColor: 'var(--input)',
-                color: 'var(--text)'
+                color: 'var(--text)',
+                fontSize: '14px',
+                minWidth: '140px'
               }}
             >
               <option value="Store">Store</option>
@@ -146,107 +180,186 @@ function GamingLinks({ theme = 'dark' }) {
           </div>
           <button
             onClick={addLink}
+            disabled={!newLink.name || !newLink.url}
             style={{
-              backgroundColor: 'var(--button-primary-bg)',
+              backgroundColor: newLink.name && newLink.url ? 'var(--button-primary-bg)' : 'var(--border)',
               color: '#ffffff',
               border: 'none',
-              padding: '10px 20px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: newLink.name && newLink.url ? 'pointer' : 'not-allowed',
+              fontWeight: '600',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            Add Link
+            <Plus size={18} /> Add Link
           </button>
         </div>
 
-        {/* Links grid */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-          gap: '20px' 
-        }}>
-          {links.map(link => (
-            <div key={link.id} style={{
-              backgroundColor: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '8px',
-              padding: '20px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s ease'
+        {/* Links by category */}
+        {Object.entries(groupedLinks).map(([category, categoryLinks]) => (
+          <div key={category} style={{ marginBottom: '32px' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              marginBottom: '16px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid var(--border)'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h3 style={{ margin: 0, color: 'var(--text)' }}>{link.name}</h3>
-                <button
-                  onClick={() => removeLink(link.id)}
+              <span style={{ 
+                backgroundColor: CATEGORY_COLORS[category] || CATEGORY_COLORS.Other,
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#fff'
+              }}>
+                {category}
+              </span>
+              <span style={{ color: 'var(--text)', opacity: 0.5, fontSize: '13px' }}>
+                {categoryLinks.length} link{categoryLinks.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+              gap: '16px' 
+            }}>
+              {categoryLinks.map(link => (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
-                    backgroundColor: '#dc3545',
-                    color: 'white',
-                    border: 'none',
-                    padding: '5px 10px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    padding: '16px 20px',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.borderColor = 'var(--button-primary-bg)';
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
-                  Delete
-                </button>
-              </div>
-              <div style={{ marginBottom: '10px' }}>
-                <span style={{ 
-                  backgroundColor: 'var(--button-accent-bg)', 
-                  color: 'var(--button-accent-text)', 
-                  padding: '2px 8px', 
-                  borderRadius: '12px', 
-                  fontSize: '12px' 
-                }}>
-                  {link.category}
-                </span>
-              </div>
-              <a 
-                href={link.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  color: 'var(--button-primary-bg)',
-                  textDecoration: 'none',
-                  wordBreak: 'break-all'
-                }}
-              >
-                {link.url}
-              </a>
+                  <img 
+                    src={getFaviconUrl(link.url)} 
+                    alt=""
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                    style={{ 
+                      width: '32px', 
+                      height: '32px', 
+                      borderRadius: '8px',
+                      objectFit: 'cover',
+                      backgroundColor: '#fff'
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ 
+                      color: 'var(--text)', 
+                      fontWeight: '600', 
+                      fontSize: '15px',
+                      marginBottom: '4px'
+                    }}>
+                      {link.name}
+                    </div>
+                    <div style={{ 
+                      color: 'var(--text)', 
+                      opacity: 0.5, 
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {link.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeLink(link.id);
+                    }}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: 'var(--text)',
+                      opacity: 0.3,
+                      cursor: 'pointer',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                      e.currentTarget.style.opacity = '1';
+                      e.currentTarget.style.color = '#dc3545';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.opacity = '0.3';
+                      e.currentTarget.style.color = 'var(--text)';
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <ExternalLink size={14} style={{ color: 'var(--text)', opacity: 0.3 }} />
+                </a>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
 
         {/* Control buttons */}
-        <div style={{ display: 'flex', gap: '15px', marginTop: '30px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap' }}>
           <button
             onClick={restoreDefaults}
             style={{
-              backgroundColor: 'var(--button-secondary-bg)',
-              color: 'var(--button-secondary-text)',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '4px',
+              backgroundColor: 'var(--card)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              padding: '12px 20px',
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontWeight: 'bold'
+              fontWeight: '600',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            Restore Defaults
+            <RotateCcw size={16} /> Restore Defaults
           </button>
 
           {links.length > 0 && (
             <button
               onClick={() => setLinks([])}
               style={{
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                padding: '10px 20px',
-                borderRadius: '4px',
+                backgroundColor: 'transparent',
+                color: '#dc3545',
+                border: '1px solid #dc3545',
+                padding: '12px 20px',
+                borderRadius: '8px',
                 cursor: 'pointer',
-                fontWeight: 'bold'
+                fontWeight: '600',
+                fontSize: '14px'
               }}
             >
               Clear All Links

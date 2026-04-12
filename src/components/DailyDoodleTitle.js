@@ -297,6 +297,12 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     return () => cancelAnimationFrame(frame);
   }, [normalizedTheme, doodle.id, transitionVariant]);
 
+  const handleDoodleClick = () => {
+    setMounted(false);
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  };
+
   const dayLabel = useMemo(() => {
     const now = new Date();
     const weekday = now.toLocaleDateString(undefined, { weekday: 'long' });
@@ -337,7 +343,15 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     .join(' ');
 
   return (
-    <div className={wrapperClasses} aria-label={`GamePilot daily doodle - ${doodle.name}`}>
+    <div 
+      className={wrapperClasses} 
+      aria-label={`GamePilot daily doodle - ${doodle.name}`}
+      onClick={handleDoodleClick}
+      style={{ cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDoodleClick(); }}
+    >
       <div
         className={`doodle-shell pattern-${doodle.pattern}`}
         style={{

@@ -41,9 +41,29 @@ const getRockstarInstallPaths = () => {
     paths.push(`${drive}:\\Rockstar Games`);
     paths.push(`${drive}:\\Games\\Rockstar Games`);
     paths.push(`${drive}:\\Games\\Rockstar`);
+    paths.push(`${drive}:\\`);
   });
   paths.push(`${process.env.LOCALAPPDATA || ''}\\Rockstar Games`);
+  
+  // Also check specific known Rockstar game locations
+  getActiveDrives().forEach((drive) => {
+    paths.push(`${drive}:\\Red Dead Redemption 2`);
+    paths.push(`${drive}:\\RDR 2`);
+    paths.push(`${drive}:\\Games\\Red Dead Redemption 2`);
+  });
+  
   return paths.filter(Boolean);
+};
+
+const SYSTEM_FOLDER_PATTERNS = [
+  'program files', 'program files (x86)', 'windows', 'users', 'documents and settings',
+  'appdata', 'application data', 'local settings', 'programdata', 'perflogs',
+  'system volume', 'recycle.bin', '$recycle.bin'
+];
+
+const isSystemPath = (filePath) => {
+  const normalized = filePath.toLowerCase();
+  return SYSTEM_FOLDER_PATTERNS.some(pattern => normalized.includes(pattern));
 };
 
 const scanRockstarLibrary = () => {
@@ -52,11 +72,13 @@ const scanRockstarLibrary = () => {
 
   rockstarPaths.forEach((rockstarPath) => {
     if (!fs.existsSync(rockstarPath)) return;
+    if (isSystemPath(rockstarPath)) return;
 
     const rockstarContents = safeReadDir(rockstarPath);
     rockstarContents.forEach((folder) => {
       if (isLikelyNonGameFolder(folder)) return;
       if (folder.toLowerCase().includes('launcher') || folder.toLowerCase().includes('social club')) return;
+      if (isSystemPath(folder)) return;
 
       const gamePath = path.join(rockstarPath, folder);
       try {
@@ -73,7 +95,7 @@ const scanRockstarLibrary = () => {
         if (!executablePath) {
           executablePath = findExecutableDeep(gamePath, 3);
         }
-        if (executablePath) {
+        if (executablePath && !isSystemPath(executablePath)) {
           rockstarGames.push({
             name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
             platform: 'Rockstar',

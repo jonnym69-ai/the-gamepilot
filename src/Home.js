@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import NavBar from './NavBar';
-import LazyImage from './components/LazyImage';
+import SurpriseSlotMachine from './components/SurpriseSlotMachine';
 import { AchievementTracker } from './AchievementSystem';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { RecommendationEngine } from './services/RecommendationEngine';
@@ -12,6 +12,11 @@ import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
 import './Home.css';
 import './LibraryValue.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
+import {
+  HomeGuidedContent,
+  HomeSection,
+  HomeToolsContent,
+} from './components/HomeDashboardSections';
 
 const GETTING_STARTED_PREFERENCE_KEY = 'gettingStartedPreferences';
 
@@ -160,46 +165,6 @@ const formatLastPlayed = (lastPlayedTimestamp) => {
   return `${Math.floor(diffDays / 30)}mo ago`;
 };
 
-function RecommendationReasoning({ entry }) {
-  const explanation = entry?.explanation;
-
-  if (!explanation) {
-    return null;
-  }
-
-  const confidence = Number(explanation.confidence || 0);
-  const matchScore = Number(explanation.matchScore || 0);
-  const reasons = Array.isArray(explanation.reasons) && explanation.reasons.length > 0
-    ? explanation.reasons
-    : ['Recommended for you'];
-
-  return (
-    <>
-      <div className="recommendation-badge-container">
-        <div className="confidence-badge" title={`${confidence}% confident match`}>
-          {confidence}%
-        </div>
-        <div className="match-score" title={`${matchScore}/100 match score`}>
-          ⭐ {matchScore}
-        </div>
-      </div>
-      <div className="recommendation-reasoning">
-        <details className="reasoning-details">
-          <summary>Why this game?</summary>
-          <div className="reasoning-content">
-            {reasons.map((reason, index) => (
-              <div key={`${entry?.game?.appid || entry?.game?.name || 'recommendation'}-${index}`} className="reasoning-item">
-                <span className="reason-bullet">✓</span>
-                <span className="reason-text">{reason}</span>
-              </div>
-            ))}
-          </div>
-        </details>
-      </div>
-    </>
-  );
-}
-
 function Home({ 
   onScan, 
   setMood = () => {}, 
@@ -222,6 +187,8 @@ function Home({
   const [perfectPlayResult, setPerfectPlayResult] = useState(null);
   const [surpriseGameResult, setSurpriseGameResult] = useState(null);
   const [rediscoverGameResult, setRediscoverGameResult] = useState(null);
+  const [showSlotMachine, setShowSlotMachine] = useState(false);
+  const [slotMachineGames, setSlotMachineGames] = useState([]);
   const [showGettingStarted, setShowGettingStarted] = useState(() => {
     const preferences = readGettingStartedPreferences();
     return !preferences.hasSeen && !preferences.hidden;
@@ -333,6 +300,125 @@ function Home({
     setPerfectPlayResult(null);
     setSurpriseGameResult(null);
     setRediscoverGameResult(null);
+  };
+
+  const handleMoodSelection = (nextMood) => {
+    setMood(nextMood);
+    if (nextMood) {
+      AchievementTracker.logGameplayMood(nextMood);
+      syncAchievementsSafely();
+    }
+  };
+
+  const handleGenreSelection = (nextGenre) => {
+    setSelectedGenre(nextGenre);
+    if (nextGenre) {
+      AchievementTracker.logGameplayGenre(nextGenre);
+      syncAchievementsSafely();
+    }
+  };
+
+  const handlePerfectPlaySearch = () => {
+    clearResults();
+    const result = RecommendationEngine.getPerfectPlayResult(
+      library || [],
+      mood || null,
+      selectedGenre || null,
+      time || null,
+      3
+    );
+
+    if (result?.entries?.length > 0) {
+      setPerfectPlayResult(result);
+      trackRecommendationResult(result);
+    } else {
+      setPerfectPlayResult({
+        error: Array.isArray(library) && library.length > 0
+          ? 'No games found matching your criteria. Try adjusting your filters!'
+          : 'Scan your games first to generate recommendations.'
+      });
+    }
+  };
+
+  const clearPerfectPlayResult = () => {
+    setPerfectPlayResult(null);
+  };
+
+  const clearSurpriseResult = () => {
+    setSurpriseGameResult(null);
+  };
+
+  const closeRediscoverResult = () => {
+    setRediscoverGameResult(null);
+  };
+
+  const openGettingStartedGuide = () => {
+    setShowGettingStarted(true);
+  };
+
+  const launchTonightPick = () => {
+    handleTrackedLaunch(tonightPickGame, {
+      feature: 'home_tonight_pick',
+      result: tonightPickEntry === continuePlayingEntry ? continuePlayingResult : (perfectPlayResult || gamePilotPicksResult)
+    });
+  };
+
+  const launchContinuePlaying = () => {
+    handleTrackedLaunch(continuePlayingGame, {
+      feature: 'continue_playing',
+      result: continuePlayingResult
+    });
+  };
+
+  const launchRediscoverShelf = () => {
+    handleTrackedLaunch(rediscoverShelfGame, {
+      feature: 'rediscover',
+      result: rediscoverGameResult
+    });
+  };
+
+  const launchFavoriteShelf = () => {
+    onLaunchGame(favoriteShelfGame);
+  };
+
+  const handleSurpriseSearch = () => {
+    clearResults();
+    const result = RecommendationEngine.getSurpriseMeResult(
+      library || [],
+      recommendationMood,
+      time || null
+    );
+
+    if (result?.games?.length > 0) {
+      setSlotMachineGames(result.games.slice(0, 10));
+      setShowSlotMachine(true);
+    } else if (result?.primaryGame) {
+      setSurpriseGameResult(result);
+      trackRecommendationResult(result);
+    } else {
+      setSurpriseGameResult({
+        error: 'No games available for surprise! Scan your games first.'
+      });
+    }
+  };
+
+  const handleRediscoverSearch = () => {
+    clearResults();
+    const result = RecommendationEngine.getRediscoverResult(
+      library || [],
+      recommendationMood,
+      time || null,
+      3
+    );
+
+    if (result?.entries?.length > 0) {
+      setRediscoverGameResult(result);
+      trackRecommendationResult(result);
+    } else {
+      setRediscoverGameResult({
+        error: 'Scan your games first to rediscover old favorites!'
+      });
+    }
   };
 
   const trackRecommendationResult = (result) => {
@@ -636,6 +722,41 @@ function Home({
   const gamePilotPicksResult = retentionSnapshot?.gamePilotPicks || null;
   const gamePilotPickEntries = gamePilotPicksResult?.entries || [];
   const trackedRetentionPicksKeyRef = React.useRef('');
+  const tonightPickEntry = perfectPlayEntries[0] || gamePilotPickEntries[0] || continuePlayingEntry || null;
+  const tonightPickGame = tonightPickEntry?.game || null;
+  const tonightPickArtwork = tonightPickGame ? resolveGameArtwork(tonightPickGame, { surface: 'recommendation_card' }) : null;
+  const tonightPickPlaceholder = tonightPickGame ? getGameArtworkPlaceholder({ game: tonightPickGame, surface: 'recommendation_card' }) : null;
+  const rediscoverShelfEntry = rediscoverEntries[0] || null;
+  const rediscoverShelfGame = rediscoverShelfEntry?.game || null;
+  const rediscoverShelfArtwork = rediscoverShelfGame ? resolveGameArtwork(rediscoverShelfGame, { surface: 'recommendation_card' }) : null;
+  const rediscoverShelfPlaceholder = rediscoverShelfGame ? getGameArtworkPlaceholder({ game: rediscoverShelfGame, surface: 'recommendation_card' }) : null;
+  const favoriteShelfGame = topRatedGames[0] || null;
+  const favoriteShelfArtwork = favoriteShelfGame ? resolveGameArtwork(favoriteShelfGame, { surface: 'recommendation_card' }) : null;
+  const favoriteShelfPlaceholder = favoriteShelfGame ? getGameArtworkPlaceholder({ game: favoriteShelfGame, surface: 'recommendation_card' }) : null;
+  const homeShelfCards = [tonightPickGame, continuePlayingGame, rediscoverShelfGame, favoriteShelfGame].filter(Boolean).length;
+  const weeklyQuestSummary = weeklyQuest?.primaryQuest?.title || weeklyQuest?.label || 'A few thoughtful picks are ready for you.';
+  const weeklyPlayDays = weeklyQuest?.weeklyStats?.activeDays || 0;
+  const weeklyPlaytimeHours = weeklyQuest?.weeklyStats?.playtimeHours || 0;
+  const recentLibraryActivity = recentGames.length;
+  const shouldShowLegacyContinueSection = continuePlayingGame && homeShelfCards === 0;
+  const shouldShowLegacyTopRatedSection = topRatedGames.length > 0 && !favoriteShelfGame;
+  const storyLeadGame = recentGames[0] || featuredGames[0] || favoriteShelfGame || tonightPickGame || null;
+  const storyMood = mood || recommendationMood || 'your current mood';
+  const storyGenre = storyLeadGame?.genres?.find((genre) => genre && genre !== 'Unknown') || null;
+  const libraryStoryItems = [
+    recentGames.length > 0
+      ? `You have revisited ${recentGames.length} game${recentGames.length === 1 ? '' : 's'} recently${recentGames[0]?.name ? `, with ${recentGames[0].name} freshest in rotation.` : '.'}`
+      : null,
+    weeklyPlaytimeHours > 0
+      ? `You have logged ${weeklyPlaytimeHours} hour${weeklyPlaytimeHours === 1 ? '' : 's'} this week across ${weeklyPlayDays} play day${weeklyPlayDays === 1 ? '' : 's'}.`
+      : null,
+    storyGenre
+      ? `Your library is currently surfacing strong ${storyGenre.toLowerCase()} energy, which pairs well with ${storyMood.toLowerCase()}.`
+      : null,
+    favoriteShelfGame?.name
+      ? `${favoriteShelfGame.name} is still one of your clearest personal favourites, which helps keep recommendations grounded in your actual taste.`
+      : null
+  ].filter(Boolean).slice(0, 3);
 
   useEffect(() => {
     const recommendedIds = gamePilotPicksResult?.tracking?.recommendedGameIds || [];
@@ -818,853 +939,98 @@ function Home({
         </div>
       </div>
 
-      {/* Continue Playing Section */}
-      {continuePlayingGame && (
-        <div className="results-section">
-          <div className="result-card">
-            <h3 className="result-title">
-              ▶️ Continue Playing
-            </h3>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-              <div className="game-card" style={{ maxWidth: '280px', padding: '15px' }}>
-                <div className="game-card-image-wrapper">
-                  {continuePlayingArtwork ? (
-                    <LazyImage 
-                      src={continuePlayingArtwork} 
-                      alt={continuePlayingGame.name}
-                      placeholder={continuePlayingPlaceholder}
-                      className="game-image"
-                    />
-                  ) : (
-                    <div className="game-placeholder">
-                      <div className="platform-icon">
-                        {platformIcons[continuePlayingGame.platform] || '❓'}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <h4 className="game-name">
-                  {continuePlayingGame.name}
-                </h4>
-                <p className="game-platform">
-                  {continuePlayingGame.platform}
-                </p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text)', opacity: 0.6, margin: '4px 0' }}>
-                  Last played: {formatLastPlayed(continuePlayingGame.last_played)}
-                </p>
-                <div className="game-info">
-                  <span className="game-genre">
-                    {continuePlayingGame.genres && continuePlayingGame.genres.length > 0 ? continuePlayingGame.genres.filter(g => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
-                  </span>
-                  {formatPlaytime(continuePlayingGame.time_played) && (
-                    <span className="game-playtime">
-                      {formatPlaytime(continuePlayingGame.time_played)}
-                    </span>
-                  )}
-                </div>
-                <RecommendationReasoning entry={continuePlayingEntry} />
-                <div className="game-actions">
-                  <button 
-                    onClick={() => {
-                      handleTrackedLaunch(continuePlayingGame, {
-                        feature: 'continue_playing',
-                        result: continuePlayingResult
-                      });
-                    }}
-                    className="launch-button"
-                  >
-                    🚀 Launch
-                  </button>
-                  {renderEndSessionButton(continuePlayingGame.name)}
-                </div>
-                <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                  <p style={{ color: 'var(--text)', opacity: 0.6, fontSize: '0.85rem', marginBottom: '10px' }}>
-                    {continuePlayingResult?.message || 'Pick up where you left off!'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <HomeGuidedContent
+        homeShelfCards={homeShelfCards}
+        weeklyQuestSummary={weeklyQuestSummary}
+        weeklyPlayDays={weeklyPlayDays}
+        weeklyPlaytimeHours={weeklyPlaytimeHours}
+        recentLibraryActivity={recentLibraryActivity}
+        tonightPickGame={tonightPickGame}
+        tonightPickEntry={tonightPickEntry}
+        tonightPickArtwork={tonightPickArtwork}
+        tonightPickPlaceholder={tonightPickPlaceholder}
+        continuePlayingGame={continuePlayingGame}
+        continuePlayingEntry={continuePlayingEntry}
+        continuePlayingArtwork={continuePlayingArtwork}
+        continuePlayingPlaceholder={continuePlayingPlaceholder}
+        rediscoverShelfGame={rediscoverShelfGame}
+        rediscoverShelfEntry={rediscoverShelfEntry}
+        rediscoverShelfArtwork={rediscoverShelfArtwork}
+        rediscoverShelfPlaceholder={rediscoverShelfPlaceholder}
+        favoriteShelfGame={favoriteShelfGame}
+        favoriteShelfArtwork={favoriteShelfArtwork}
+        favoriteShelfPlaceholder={favoriteShelfPlaceholder}
+        platformIcons={platformIcons}
+        onLaunchTonightPick={launchTonightPick}
+        onLaunchContinuePlaying={launchContinuePlaying}
+        onLaunchRediscover={launchRediscoverShelf}
+        onLaunchFavorite={launchFavoriteShelf}
+        formatLastPlayed={formatLastPlayed}
+        formatPlaytime={formatPlaytime}
+        libraryStoryItems={libraryStoryItems}
+        shouldShowLegacyContinueSection={shouldShowLegacyContinueSection}
+        continuePlayingMessage={continuePlayingResult?.message}
+        continuePlayingEndSessionButton={renderEndSessionButton(continuePlayingGame?.name)}
+        weeklyQuest={weeklyQuest}
+        gamePilotPickEntries={gamePilotPickEntries}
+        gamePilotPicksResult={gamePilotPicksResult}
+        getGameCardClass={getGameCardClass}
+        resolveGameArtwork={resolveGameArtwork}
+        getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+        onLaunchGame={onLaunchGame}
+        trackRecommendationLaunch={trackRecommendationLaunch}
+        renderEndSessionButton={renderEndSessionButton}
+        handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
+      />
 
-      {(weeklyQuest.primaryQuest || gamePilotPickEntries.length > 0) && (
-        <div className="retention-section">
-          <div className="retention-grid">
-            <div className="retention-panel weekly-quest-panel">
-              <div className="retention-panel-header">
-                <div>
-                  <p className="retention-eyebrow">Weekly Focus</p>
-                  <h3 className="retention-title">🧭 This Week&apos;s Quest</h3>
-                </div>
-                <div className="retention-summary-badge">
-                  {weeklyQuest.completedCount} of {weeklyQuest.totalCount || 0} done
-                </div>
-              </div>
-
-              <p className="retention-panel-copy">
-                Keep your momentum going with one featured goal and a few bonus targets.
-              </p>
-
-              <div className="retention-meta-strip">
-                <span>{weeklyQuest.label || 'This Week'}</span>
-                <span>{weeklyQuest.weeklyStats?.activeDays || 0} play days</span>
-                <span>{weeklyQuest.weeklyStats?.playtimeHours || 0}h logged</span>
-              </div>
-
-              {weeklyQuest.primaryQuest ? (
-                <div className={`weekly-quest-feature ${weeklyQuest.primaryQuest.completed ? 'is-complete' : ''}`}>
-                  <div className="weekly-quest-feature-header">
-                    <span className="weekly-quest-rarity">{weeklyQuest.primaryQuest.rarity}</span>
-                    <span className="weekly-quest-xp">+{weeklyQuest.primaryQuest.xpReward} XP</span>
-                  </div>
-                  <h4 className="weekly-quest-feature-title">
-                    <span>{weeklyQuest.primaryQuest.icon}</span>
-                    <span>{weeklyQuest.primaryQuest.name}</span>
-                  </h4>
-                  <p className="weekly-quest-feature-desc">{weeklyQuest.primaryQuest.desc}</p>
-                  <p className="weekly-quest-feature-requirement">{weeklyQuest.primaryQuest.requirementLabel}</p>
-                  <div className="weekly-quest-progress-meta">
-                    <span>{weeklyQuest.primaryQuest.progressLabel}</span>
-                    <span>
-                      {weeklyQuest.primaryQuest.completed
-                        ? (weeklyQuest.primaryQuest.permanentlyUnlocked ? 'Completed this week' : 'Unlocked now')
-                        : weeklyQuest.primaryQuest.remainingLabel}
-                    </span>
-                  </div>
-                  <div className="weekly-quest-progress-bar">
-                    <span style={{ width: `${weeklyQuest.primaryQuest.progressPercent}%` }} />
-                  </div>
-                  <div className="weekly-quest-feature-actions">
-                    <button
-                      onClick={() => handleWeeklyQuestPinToggle(weeklyQuest.primaryQuest)}
-                      className={`weekly-quest-pin-button ${weeklyQuest.primaryQuest.isPinned ? 'is-active' : ''}`}
-                    >
-                      {weeklyQuest.primaryQuest.isPinned ? 'Focused Goal' : 'Focus This'}
-                    </button>
-                    <span className={`weekly-quest-status ${weeklyQuest.primaryQuest.completed ? 'is-complete' : ''}`}>
-                      {weeklyQuest.primaryQuest.completed ? 'Completed' : 'In Progress'}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="retention-empty-state">
-                  Your weekly lineup will show up as soon as fresh goals are ready.
-                </div>
-              )}
-
-              {weeklyQuest.quests.length > 0 && (
-                <div className="weekly-quest-list">
-                  {weeklyQuest.quests.map((quest) => (
-                    <div
-                      key={quest.id}
-                      className={`weekly-quest-card ${quest.isPinned ? 'is-pinned' : ''} ${quest.completed ? 'is-complete' : ''}`}
-                    >
-                      <div className="weekly-quest-card-top">
-                        <div>
-                          <p className="weekly-quest-card-metric">{quest.metricTitle}</p>
-                          <h4 className="weekly-quest-card-title">
-                            <span>{quest.icon}</span>
-                            <span>{quest.name}</span>
-                          </h4>
-                        </div>
-                        <button
-                          onClick={() => handleWeeklyQuestPinToggle(quest)}
-                          className={`weekly-quest-card-pin ${quest.isPinned ? 'is-active' : ''}`}
-                        >
-                          {quest.isPinned ? 'Focused' : 'Focus'}
-                        </button>
-                      </div>
-                      <p className="weekly-quest-card-desc">{quest.desc}</p>
-                      <p className="weekly-quest-card-requirement">{quest.requirementLabel}</p>
-                      <div className="weekly-quest-progress-meta">
-                        <span>{quest.progressLabel}</span>
-                        <span>
-                          {quest.completed
-                            ? (quest.permanentlyUnlocked ? 'Completed this week' : 'Unlocked now')
-                            : quest.remainingLabel}
-                        </span>
-                      </div>
-                      <div className="weekly-quest-progress-bar">
-                        <span style={{ width: `${quest.progressPercent}%` }} />
-                      </div>
-                      <div className="weekly-quest-card-footer">
-                        <span className="weekly-quest-card-reward">+{quest.xpReward} XP</span>
-                        <span className={`weekly-quest-status ${quest.completed ? 'is-complete' : ''}`}>
-                          {quest.completed ? 'Complete' : 'In Progress'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {gamePilotPickEntries.length > 0 && (
-              <div className="retention-panel retention-picks-panel">
-                <div className="retention-panel-header">
-                  <div>
-                    <p className="retention-eyebrow">Picked for You</p>
-                    <h3 className="retention-title">✨ GamePilot Picks</h3>
-                  </div>
-                  <div className="retention-summary-badge">
-                    {gamePilotPicksResult?.usedFallback ? 'Fresh mix' : 'Dialed in'}
-                  </div>
-                </div>
-                <p className="retention-panel-copy">
-                  {gamePilotPicksResult?.message || 'A short list tuned to what you have been into lately.'}
-                </p>
-                <div className="retention-picks-grid">
-                  {gamePilotPickEntries.map((entry, index) => {
-                    const game = entry?.game;
-                    if (!game) {
-                      return null;
-                    }
-
-                    const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
-                    const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
-
-                    return (
-                      <div key={game.appid || game.name || index} className={getGameCardClass(index)}>
-                        <span className="retention-pick-label">Pick {index + 1}</span>
-                        <RecommendationReasoning entry={entry} />
-                        <div className="game-card-image-wrapper">
-                          {gameArtwork ? (
-                            <LazyImage
-                              src={gameArtwork}
-                              alt={game.name}
-                              placeholder={gamePlaceholder}
-                              className="game-image"
-                            />
-                          ) : (
-                            <div className="game-placeholder">
-                              <div className="platform-icon">
-                                {platformIcons[game.platform] || '❓'}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <h4 className="game-name">
-                          {game.name}
-                        </h4>
-                        <p className="game-platform">
-                          {game.platform}
-                        </p>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text)', opacity: 0.6, margin: '4px 0' }}>
-                          Last played: {formatLastPlayed(game.last_played)}
-                        </p>
-                        <div className="game-info">
-                          <span className="game-genre">
-                            {game.genres && game.genres.length > 0 ? game.genres.filter(genre => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
-                          </span>
-                          {formatPlaytime(game.time_played) && (
-                            <span className="game-playtime">
-                              {formatPlaytime(game.time_played)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="game-actions">
-                          <button
-                            onClick={() => {
-                              trackRecommendationLaunch(gamePilotPicksResult, game);
-                              onLaunchGame(game);
-                            }}
-                            className="launch-button"
-                          >
-                            🚀 Launch
-                          </button>
-                          {renderEndSessionButton(game.name)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="home-content">
-        {/* Match My Mood Section */}
-        <div className="match-my-mood-section">
-          <h2 className="match-my-mood-title">
-            🎭 Match My Mood
-          </h2>
-          <p className="match-my-mood-subtitle">
-            Tell us how you're feeling and what you need right now
-          </p>
-          
-          <div className="quick-vibes">
-            <h3 className="quick-vibes-title">Quick Vibes</h3>
-            <div className="vibe-buttons">
-              {[
-                { id: 'stress_relief', label: 'Stress Relief', icon: '🧘', mood: 'Relaxed' },
-                { id: 'feel_powerful', label: 'Feel Powerful', icon: '💪', mood: 'Competitive' },
-                { id: 'mindless_fun', label: 'Mindless Fun', icon: '🎮', mood: 'Escapist' },
-                { id: 'play_with_friends', label: 'Play With Friends', icon: '👥', mood: 'Social' },
-                { id: 'get_creative', label: 'Get Creative', icon: '🎨', mood: 'Creative' },
-                { id: 'epic_escape', label: 'Epic Escape', icon: '🏔️', mood: 'Escapist' },
-                { id: 'test_my_skills', label: 'Test My Skills', icon: '🎯', mood: 'Tactical' },
-                { id: 'nostalgia_trip', label: 'Nostalgia Trip', icon: '🕹️', mood: 'Relaxed' }
-              ].map((vibe) => (
-                <button
-                  key={vibe.id}
-                  className={`vibe-button ${mood === vibe.mood ? 'active' : ''}`}
-                  onClick={() => {
-                    setMood(vibe.mood);
-                    AchievementTracker.logGameplayMood(vibe.mood);
-                    syncAchievementsSafely();
-                  }}
-                >
-                  <span className="vibe-icon">{vibe.icon}</span>
-                  <span className="vibe-label">{vibe.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mood-divider">
-            <span>Or select from options</span>
-          </div>
-
-          <div className="mood-filter-row">
-            <select 
-              value={mood} 
-              onChange={(event) => {
-                setMood(event.target.value);
-                if (event.target.value) {
-                  AchievementTracker.logGameplayMood(event.target.value);
-                  syncAchievementsSafely();
-                }
-              }}
-              className="mood-filter-select"
-            >
-              <option value="">How was your day?</option>
-              {availableMoods.map((moodOption) => (
-                <option key={moodOption} value={moodOption}>
-                  {moodOption}
-                </option>
-              ))}
-            </select>
-
-            <select 
-              value={selectedGenre} 
-              onChange={(event) => {
-                setSelectedGenre(event.target.value);
-                if (event.target.value) {
-                  AchievementTracker.logGameplayGenre(event.target.value);
-                  syncAchievementsSafely();
-                }
-              }}
-              className="mood-filter-select"
-            >
-              <option value="">What do you want?</option>
-              {availableGenres.map((genreOption) => (
-                <option key={genreOption} value={genreOption}>
-                  {genreOption}
-                </option>
-              ))}
-            </select>
-
-            <select 
-              value={time} 
-              onChange={(event) => setTime(event.target.value)}
-              className="mood-filter-select"
-            >
-              <option value="">How much time do you have?</option>
-              <option value="quick">⚡ Quick (15-30 min)</option>
-              <option value="medium">⏰ Medium (1-2 hours)</option>
-              <option value="long">🌙 Long (2+ hours)</option>
-              <option value="weekend">📅 Weekend Session</option>
-            </select>
-
-            <button 
-              onClick={() => {
-                clearResults();
-                const result = RecommendationEngine.getPerfectPlayResult(
-                  library || [],
-                  mood || null,
-                  selectedGenre || null,
-                  time || null,
-                  3
-                );
-
-                if (result?.entries?.length > 0) {
-                  setPerfectPlayResult(result);
-                  trackRecommendationResult(result);
-                } else {
-                  setPerfectPlayResult({
-                    error: Array.isArray(library) && library.length > 0
-                      ? 'No games found matching your criteria. Try adjusting your filters!'
-                      : 'Scan your games first to generate recommendations.'
-                  });
-                }
-              }}
-              className="find-games-for-mood-btn"
-            >
-              🔮 Find Games For My Mood
-            </button>
-          </div>
-        </div>
-
-        <div className="perfect-play-section">
-          <h2 className="perfect-play-title">
-            🎯 Find Your Perfect Play
-          </h2>
-          <p className="perfect-play-subtitle">
-            Tell us what you're in the mood for and we'll find the perfect game
-          </p>
-          <div className="filter-grid">
-            <div className="filter-card">
-              <label className="filter-label">
-                😌 Mood
-              </label>
-              <select 
-                value={mood} 
-                onChange={(event) => {
-                  setMood(event.target.value);
-                  if (event.target.value) {
-                    AchievementTracker.logGameplayMood(event.target.value);
-                    syncAchievementsSafely();
-                  }
-                }}
-                className="filter-select"
-              >
-                <option value="">Any Mood</option>
-                {availableMoods.map((moodOption) => (
-                  <option key={moodOption} value={moodOption}>
-                    {moodOption}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="filter-card">
-              <label className="filter-label">
-                🎮 Genre
-              </label>
-              <select 
-                value={selectedGenre} 
-                onChange={(event) => {
-                  setSelectedGenre(event.target.value);
-                  if (event.target.value) {
-                    AchievementTracker.logGameplayGenre(event.target.value);
-                    syncAchievementsSafely();
-                  }
-                }}
-                className="filter-select"
-              >
-                <option value="">Any Genre</option>
-                {availableGenres.map((genreOption) => (
-                  <option key={genreOption} value={genreOption}>
-                    {genreOption}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="filter-card">
-              <label className="filter-label">
-                ⏰ Time Available
-              </label>
-              <select 
-                value={time} 
-                onChange={(event) => {
-                  setTime(event.target.value);
-                }}
-                className="filter-select"
-              >
-                <option value="">Any Time</option>
-                <option value="quick">⚡ Quick (15-30 min)</option>
-                <option value="medium">⏰ Medium (1-2 hours)</option>
-                <option value="long">🌙 Long (2+ hours)</option>
-                <option value="weekend">📅 Weekend Session</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="action-buttons">
-            <button 
-              onClick={() => {
-                clearResults();
-                const result = RecommendationEngine.getPerfectPlayResult(
-                  library || [],
-                  mood || null,
-                  selectedGenre || null,
-                  time || null,
-                  3
-                );
-
-                if (result?.entries?.length > 0) {
-                  setPerfectPlayResult(result);
-                  trackRecommendationResult(result);
-                } else {
-                  setPerfectPlayResult({
-                    error: Array.isArray(library) && library.length > 0
-                      ? 'No games found matching your criteria. Try adjusting your filters!'
-                      : 'Scan your games first to generate recommendations.'
-                  });
-                }
-              }}
-              className="action-button primary"
-            >
-              🎯 Find Perfect Play
-            </button>
-            <button 
-              onClick={() => {
-                clearResults();
-                const result = RecommendationEngine.getSurpriseMeResult(
-                  library || [],
-                  recommendationMood,
-                  time || null
-                );
-
-                if (result?.primaryGame) {
-                  setSurpriseGameResult(result);
-                  trackRecommendationResult(result);
-                } else {
-                  setSurpriseGameResult({
-                    error: 'No games available for surprise! Scan your games first.'
-                  });
-                }
-              }}
-              className="action-button accent"
-            >
-              🎲 Surprise Me
-            </button>
-            <button 
-              onClick={() => {
-                clearResults();
-                const result = RecommendationEngine.getRediscoverResult(
-                  library || [],
-                  recommendationMood,
-                  time || null,
-                  3
-                );
-
-                if (result?.entries?.length > 0) {
-                  setRediscoverGameResult(result);
-                  trackRecommendationResult(result);
-                } else {
-                  setRediscoverGameResult({
-                    error: 'Scan your games first to rediscover old favorites!'
-                  });
-                }
-              }}
-              className="action-button secondary"
-            >
-              🔄 Rediscover Games
-            </button>
-          </div>
-        </div>
-
-        {(perfectPlayResult || surpriseGameResult || rediscoverGameResult) && (
-          <div className="results-section">
-            {perfectPlayResult && (
-              <div className={`result-card ${perfectPlayResult.error ? 'error' : ''}`}>
-                <h3 className="result-title">
-                  🎯 Perfect Play Result
-                </h3>
-                {perfectPlayResult.error ? (
-                  <p className="result-error">
-                    {perfectPlayResult.error}
-                  </p>
-                ) : (
-                  <div>
-                    <div className="game-grid">
-                      {perfectPlayEntries.map((entry, index) => {
-                        const game = entry?.game;
-                        if (!game) {
-                          return null;
-                        }
-
-                        const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
-                        const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
-
-                        return (
-                          <div key={game.appid || `perfect-${index}`} className={getGameCardClass(index)}>
-                            <RecommendationReasoning entry={entry} />
-                            <div className="game-card-image-wrapper">
-                              {gameArtwork ? (
-                                <LazyImage 
-                                  src={gameArtwork} 
-                                  alt={game.name}
-                                  placeholder={gamePlaceholder}
-                                  className="game-image"
-                                />
-                              ) : (
-                                <div className="game-placeholder">
-                                  <div className="platform-icon">
-                                    {platformIcons[game.platform] || '❓'}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <h4 className="game-name">
-                              {game.name}
-                            </h4>
-                            <p className="game-platform">
-                              {game.platform}
-                            </p>
-                            <div className="game-info">
-                              <span className="game-genre">
-                                {game.genres && game.genres.length > 0 ? game.genres.filter(g => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
-                              </span>
-                              {formatPlaytime(game.time_played) && (
-                              <span className="game-playtime">
-                                {formatPlaytime(game.time_played)}
-                              </span>
-                            )}
-                            </div>
-                            <div className="game-actions">
-                              <button 
-                                onClick={() => {
-                                  handleTrackedLaunch(game, {
-                                    feature: 'perfect_play',
-                                    result: perfectPlayResult
-                                  });
-                                }}
-                                className="game-launch-button primary"
-                              >
-                                🎮 Launch
-                              </button>
-                              {renderEndSessionButton(game.name)}
-                            </div>
-                            {renderRecommendationFeedback(entry, perfectPlayResult)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                      <p style={{ color: 'var(--text)', opacity: 0.6, fontSize: '0.9rem', marginBottom: '15px' }}>
-                        {perfectPlayResult.message || 'Hand-picked based on your current filters and play style.'}
-                      </p>
-                      <button 
-                        onClick={() => setPerfectPlayResult(null)}
-                        className="clear-button"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {surpriseGameResult && (
-              <div className={`result-card surprise ${surpriseGameResult.error ? 'error' : ''}`}>
-                <h3 className="result-title">
-                  🎲 Surprise Game
-                </h3>
-                {surpriseGameResult.error ? (
-                  <p className="result-error">
-                    {surpriseGameResult.error}
-                  </p>
-                ) : surpriseGame ? (
-                  <div style={{ textAlign: 'center' }}>
-                    <RecommendationReasoning entry={surpriseEntry} />
-                    <div className="game-card-image-wrapper">
-                      {surpriseGameArtwork ? (
-                        <LazyImage 
-                          src={surpriseGameArtwork} 
-                          alt={surpriseGame.name}
-                          placeholder={surpriseGamePlaceholder}
-                          className="game-image"
-                        />
-                      ) : (
-                        <div className="game-placeholder">
-                          <div className="platform-icon">
-                            {platformIcons[surpriseGame.platform] || '❓'}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <h4 className="game-name">
-                      {surpriseGame.name}
-                    </h4>
-                    <p className="game-platform">
-                      {surpriseGame.platform}
-                    </p>
-                    <p className="game-description">
-                      {surpriseGameResult.message || 'A wildcard pick to shake up your rotation.'}
-                    </p>
-                    <div className="game-actions">
-                      <button 
-                        onClick={() => {
-                          handleTrackedLaunch(surpriseGame, {
-                            feature: 'surprise',
-                            result: surpriseGameResult
-                          });
-                        }}
-                        className="game-launch-button accent"
-                      >
-                        🎮 Launch Game
-                      </button>
-                      {renderEndSessionButton(surpriseGame.name)}
-                      <button 
-                        onClick={() => setSurpriseGameResult(null)}
-                        className="clear-button"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    {renderRecommendationFeedback(surpriseEntry, surpriseGameResult)}
-                  </div>
-                ) : null}
-              </div>
-            )}
-            {rediscoverGameResult && (
-              <div className={`result-card rediscover ${rediscoverGameResult.error ? 'error' : ''}`}>
-                <h3 className="result-title">
-                  🔄 Rediscover Games
-                </h3>
-                {rediscoverGameResult.error ? (
-                  <p className="result-error">
-                    {rediscoverGameResult.error}
-                  </p>
-                ) : (
-                  <div>
-                    <div className="rediscover-header">
-                      <p className="rediscover-message">
-                        {rediscoverGameResult.message || 'A few overlooked favorites worth another run.'}
-                      </p>
-                      <button 
-                        onClick={() => setRediscoverGameResult(null)}
-                        className="close-button"
-                      >
-                        ✖️ Close
-                      </button>
-                    </div>
-                    <div className="game-grid">
-                      {rediscoverEntries.map((entry, index) => {
-                        const game = entry?.game;
-                        if (!game) {
-                          return null;
-                        }
-
-                        return (
-                          <div key={game.appid || game.name || index} className={getGameCardClass(index)}>
-                            <RecommendationReasoning entry={entry} />
-                            {game.iconUrl ? (
-                              <LazyImage 
-                                src={game.iconUrl} 
-                                alt={game.name}
-                                placeholder={`https://placehold.co/184x69/${platformColors[game.platform]?.replace('#', '') || '666666'}/fff?text=${encodeURIComponent(platformIcons[game.platform] || '❓')}`}
-                                className="game-image"
-                              />
-                            ) : (
-                              <div className="game-placeholder">
-                                <div className="platform-icon">
-                                  {platformIcons[game.platform] || '❓'}
-                                </div>
-                              </div>
-                            )}
-                            <h4 className="game-name" style={{ fontSize: '0.9rem' }}>
-                              {game.name}
-                            </h4>
-                            <p className="game-platform">
-                              {game.platform}
-                            </p>
-                            <div className="game-actions">
-                              <button 
-                                onClick={() => {
-                                  handleTrackedLaunch(game, {
-                                    feature: 'rediscover',
-                                    result: rediscoverGameResult
-                                  });
-                                }}
-                                className="game-launch-button secondary"
-                              >
-                                🎮 Launch
-                              </button>
-                              {renderEndSessionButton(game.name)}
-                            </div>
-                            {renderRecommendationFeedback(entry, rediscoverGameResult)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {topRatedGames.length > 0 && (
-          <div className="results-section">
-            <div className="result-card">
-              <h3 className="result-title">
-                ⭐ Your Top Rated Games
-              </h3>
-              <p style={{ color: 'var(--text)', opacity: 0.7, marginBottom: '18px' }}>
-                Your own favourites, kept separate from Perfect Play so recommendations can stay focused on discovery.
-              </p>
-              <div className="game-grid">
-                {topRatedGames.map((game, index) => {
-                  const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
-                  const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
-
-                  return (
-                    <div key={game.appid || game.name || `top-rated-${index}`} className={getGameCardClass(index)}>
-                      <div className="recommendation-badge-container">
-                        <div className="match-score" title={`Rated ${game.userRating}/10`}>
-                          ⭐ {game.userRating}/10
-                        </div>
-                      </div>
-                      <div className="game-card-image-wrapper">
-                        {gameArtwork ? (
-                          <LazyImage
-                            src={gameArtwork}
-                            alt={game.name}
-                            placeholder={gamePlaceholder}
-                            className="game-image"
-                          />
-                        ) : (
-                          <div className="game-placeholder">
-                            <div className="platform-icon">
-                              {platformIcons[game.platform] || '❓'}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="game-name">{game.name}</h4>
-                      <p className="game-platform">{game.platform}</p>
-                      <div className="game-info">
-                        <span className="game-genre">
-                          {game.genres && game.genres.length > 0 ? game.genres.filter(g => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
-                        </span>
-                        {formatPlaytime(game.time_played) && (
-                          <span className="game-playtime">
-                            {formatPlaytime(game.time_played)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="game-actions">
-                        <button
-                          onClick={() => onLaunchGame(game)}
-                          className="game-launch-button primary"
-                        >
-                          🎮 Launch
-                        </button>
-                        {renderEndSessionButton(game.name)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="getting-started-section">
-          <button 
-            onClick={() => setShowGettingStarted(true)}
-            className="getting-started-button"
-            title="Open the getting started guide and shortcut overview"
-          >
-            📖 Getting Started Guide
-          </button>
-        </div>
-      </div>
+      <HomeSection
+        className="home-tools-section"
+        eyebrow="Shape The Shelf"
+        title="Refine what GamePilot shows you"
+        copy="When you want more control, use these tools to steer by mood, energy, genre, and session length."
+        compact
+      >
+        <HomeToolsContent
+          mood={mood}
+          selectedGenre={selectedGenre}
+          time={time}
+          availableMoods={availableMoods}
+          availableGenres={availableGenres}
+          onSelectVibe={handleMoodSelection}
+          onMoodChange={handleMoodSelection}
+          onGenreChange={handleGenreSelection}
+          onTimeChange={setTime}
+          onFindGamesForMood={handlePerfectPlaySearch}
+          onFindPerfectPlay={handlePerfectPlaySearch}
+          onSurpriseMe={handleSurpriseSearch}
+          onRediscover={handleRediscoverSearch}
+          perfectPlayResult={perfectPlayResult}
+          perfectPlayEntries={perfectPlayEntries}
+          surpriseGameResult={surpriseGameResult}
+          surpriseGame={surpriseGame}
+          surpriseEntry={surpriseEntry}
+          surpriseGameArtwork={surpriseGameArtwork}
+          surpriseGamePlaceholder={surpriseGamePlaceholder}
+          rediscoverGameResult={rediscoverGameResult}
+          rediscoverEntries={rediscoverEntries}
+          topRatedGames={topRatedGames}
+          shouldShowLegacyTopRatedSection={shouldShowLegacyTopRatedSection}
+          getGameCardClass={getGameCardClass}
+          resolveGameArtwork={resolveGameArtwork}
+          getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+          platformColors={platformColors}
+          platformIcons={platformIcons}
+          formatPlaytime={formatPlaytime}
+          handleTrackedLaunch={handleTrackedLaunch}
+          renderEndSessionButton={renderEndSessionButton}
+          renderRecommendationFeedback={renderRecommendationFeedback}
+          onClearPerfectPlay={clearPerfectPlayResult}
+          onClearSurprise={clearSurpriseResult}
+          onCloseRediscover={closeRediscoverResult}
+          onLaunchGame={onLaunchGame}
+          onOpenGettingStarted={openGettingStartedGuide}
+        />
+      </HomeSection>
 
       <GettingStartedModal 
         isOpen={showGettingStarted} 
@@ -1714,6 +1080,22 @@ function Home({
           </p>
         </div>
       </footer>
+
+      {showSlotMachine && (
+        <SurpriseSlotMachine
+          games={slotMachineGames}
+          onComplete={(selectedGame) => {
+            setShowSlotMachine(false);
+            const result = {
+              primaryGame: selectedGame,
+              games: slotMachineGames,
+              message: 'A wildcard pick to shake up your rotation!'
+            };
+            setSurpriseGameResult(result);
+            trackRecommendationResult(result);
+          }}
+        />
+      )}
     </div>
   );
 }

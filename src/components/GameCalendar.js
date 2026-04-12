@@ -85,10 +85,29 @@ const GameCalendar = () => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     setSelectedDate(clickedDate);
     
-    // Get stats for this date
+    // Get stats for this date - try both timestamp and date fields
     const dateStr = clickedDate.toISOString().split('T')[0];
+    const localeDateStr = clickedDate.toLocaleDateString();
     const history = PlaytimeAutoLogger.getSessionHistory();
-    const daySessions = history.filter(s => s.timestamp && s.timestamp.startsWith(dateStr));
+    
+    const daySessions = history.filter(s => {
+      if (s.timestamp && s.timestamp.startsWith(dateStr)) return true;
+      if (s.date === localeDateStr) return true;
+      return false;
+    });
+    
+    // Calculate per-game playtime
+    const gamePlaytime = {};
+    daySessions.forEach(s => {
+      const gameName = s.gameName;
+      if (!gamePlaytime[gameName]) gamePlaytime[gameName] = 0;
+      gamePlaytime[gameName] += s.playtimeMinutes || 0;
+    });
+    
+    // Sort games by playtime to find top game
+    const sortedGames = Object.entries(gamePlaytime).sort((a, b) => b[1] - a[1]);
+    const topGame = sortedGames.length > 0 ? sortedGames[0][0] : null;
+    const topGameTime = sortedGames.length > 0 ? sortedGames[0][1] : 0;
     
     const totalPlaytime = daySessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0);
     const uniqueGames = [...new Set(daySessions.map(s => s.gameName))];
@@ -98,7 +117,9 @@ const GameCalendar = () => {
       playtimeMinutes: totalPlaytime,
       gamesPlayed: uniqueGames.length,
       sessions: daySessions.length,
-      games: uniqueGames
+      games: uniqueGames,
+      topGame,
+      topGameTime
     });
     setShowStatsModal(true);
   };
@@ -279,9 +300,25 @@ const GameCalendar = () => {
                 </div>
               </div>
               
+              {selectedDateStats.topGame && (
+                <div style={{ 
+                  padding: '16px', 
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.15))', 
+                  borderRadius: '12px',
+                  marginBottom: '16px',
+                  border: '1px solid rgba(139, 92, 246, 0.3)'
+                }}>
+                  <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '4px' }}>TOP GAME</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '4px' }}>{selectedDateStats.topGame}</div>
+                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                    {Math.floor(selectedDateStats.topGameTime / 60)}h {selectedDateStats.topGameTime % 60}m played
+                  </div>
+                </div>
+              )}
+              
               {selectedDateStats.games.length > 0 ? (
                 <div className="games-list">
-                  <h4 style={{ marginBottom: '10px' }}>Games Played</h4>
+                  <h4 style={{ marginBottom: '10px' }}>All Games Played</h4>
                   {selectedDateStats.games.map((game, idx) => (
                     <div key={idx} className="game-item" style={{ 
                       padding: '8px 12px', 

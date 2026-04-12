@@ -49,6 +49,7 @@ const getEAInstallPaths = () => {
     paths.push(`${drive}:\\Games\\EA`);
     paths.push(`${drive}:\\Electronic Arts`);
     paths.push(`${drive}:\\Games\\Electronic Arts`);
+    paths.push(`${drive}:\\`);
   });
 
   explicitInstallRoots.forEach((installRoot) => {
@@ -58,21 +59,60 @@ const getEAInstallPaths = () => {
   return paths;
 };
 
+const KNOWN_EA_EXECUTABLES = {
+  'FIFA 20': 'FIFA20.exe',
+  'FIFA 21': 'FIFA21.exe',
+  'FIFA 22': 'FIFA22.exe',
+  'FIFA 23': 'FIFA23.exe',
+  'Skate': 'Skate.exe',
+  'Battlefield 1': 'BF1.exe',
+  'Battlefield 4': 'BF4.exe',
+  'Battlefield V': 'BFV.exe',
+  'Battlefield 2042': 'BF2042.exe',
+  'Apex Legends': 'r5apex.exe',
+  'The Sims 4': 'Game/bin/TS4.exe',
+  'NHL 20': 'nhl20.exe',
+  'NHL 21': 'nhl21.exe',
+  'Madden NFL 20': 'madden20.exe',
+  'Madden NFL 21': 'madden21.exe',
+  'Star Wars Jedi: Fallen Order': 'StarWarsJediFallenOrder.exe',
+  'Medal of Honor Above and Beyond': 'mohaab.exe'
+};
+
+const EA_SYSTEM_FOLDER_PATTERNS = [
+  'program files', 'program files (x86)', 'windows', 'users', 'documents and settings',
+  'appdata', 'application data', 'local settings', 'programdata', 'perflogs',
+  'system volume', 'recycle.bin', '$recycle.bin'
+];
+
+const isEASystemPath = (filePath) => {
+  const normalized = filePath.toLowerCase();
+  return EA_SYSTEM_FOLDER_PATTERNS.some(pattern => normalized.includes(pattern));
+};
+
 const scanEALibrary = () => {
   const paths = getEAInstallPaths();
   const eaGames = [];
+  const foundGames = new Set();
 
   paths.forEach((eaPath) => {
     if (!fs.existsSync(eaPath)) return;
+    if (isEASystemPath(eaPath)) return;
 
     safeReadDir(eaPath).forEach((folder) => {
       if (isLikelyNonGameFolder(folder)) return;
+      if (isEASystemPath(folder)) return;
       const installDataPath = path.join(eaPath, folder);
-      if (!fs.existsSync(installDataPath) || !fs.statSync(installDataPath).isDirectory()) return;
+      if (!fs.existsSync(installDataPath)) return;
+      
+      const isDir = fs.statSync(installDataPath).isDirectory();
+      if (!isDir) return;
 
       const directExe = findBestExecutablePath(installDataPath, folder);
-      if (directExe) {
+      if (directExe && !isEASystemPath(directExe)) {
         const displayName = folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+        if (foundGames.has(displayName.toLowerCase())) return;
+        foundGames.add(displayName.toLowerCase());
         eaGames.push({
           name: displayName,
           platform: 'EA',
@@ -100,6 +140,10 @@ const scanEALibrary = () => {
         resolvedExe = findExecutableDeep(realInstallDir, 3);
         if (!resolvedExe) return;
       }
+      
+      if (isEASystemPath(resolvedExe)) return;
+      if (foundGames.has(displayName.toLowerCase())) return;
+      foundGames.add(displayName.toLowerCase());
 
       eaGames.push({
         name: displayName,

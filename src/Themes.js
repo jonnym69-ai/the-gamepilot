@@ -1,9 +1,32 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import NavBar from './NavBar';
 import { useTheme } from './ThemeContext';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import { SeasonalRewardService } from './services/SeasonalRewardService';
 import moodThemes from './themes/moodThemes.json';
 import './Home.css';
+
+const SEASONAL_THEMES = {
+  spring: 'spring-bloom',
+  summer: 'summer-heat',
+  autumn: 'autumn-harvest',
+  winter: 'winter-frost'
+};
+
+const getCurrentSeason = () => {
+  const month = new Date().getMonth();
+  if (month >= 2 && month <= 4) return 'spring';
+  if (month >= 5 && month <= 7) return 'summer';
+  if (month >= 8 && month <= 10) return 'autumn';
+  return 'winter';
+};
+
+const SEASON_LABELS = {
+  spring: 'Spring Bloom',
+  summer: 'Summer Heat',
+  autumn: 'Autumn Harvest',
+  winter: 'Winter Frost'
+};
 
 const pageStyle = {
   minHeight: '100vh',
@@ -60,9 +83,29 @@ function Themes() {
     isThemeUnlocked
   } = useTheme();
 
+  const [autoSeasonal, setAutoSeasonal] = useState(() => {
+    return localStorage.getItem('autoSeasonalTheme') !== 'false';
+  });
+
+  const currentSeason = useMemo(() => getCurrentSeason(), []);
+  const seasonalThemeId = SEASONAL_THEMES[currentSeason];
+
+  useEffect(() => {
+    localStorage.setItem('autoSeasonalTheme', autoSeasonal);
+  }, [autoSeasonal]);
+
+  const handleToggleAutoSeasonal = () => {
+    if (!autoSeasonal) {
+      setTheme(seasonalThemeId);
+    }
+    setAutoSeasonal(!autoSeasonal);
+  };
+
   const rewardSummary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
   const themeTierProgression = useMemo(() => ProgressionUnlockService.getThemeTierProgression(), []);
   const premiumThemes = useMemo(() => ProgressionUnlockService.getPremiumThemes(), []);
+  const seasonalChallenges = useMemo(() => SeasonalRewardService.getActiveChallenges(), []);
+  const currentChallenge = seasonalChallenges.find(c => c.isActive);
 
   const themeCards = useMemo(() => {
     const basicThemes = Object.values(availableThemes || {}).map((themeMeta) => ({
@@ -113,6 +156,83 @@ function Themes() {
           <span className="confidence-badge">Current: {currentTheme}</span>
           <span className="match-score">Unlocked Themes: {rewardSummary?.unlockedCounts?.premiumThemes ?? 0}/{rewardSummary?.totalCounts?.premiumThemes ?? 0}</span>
         </div>
+
+        {/* Seasonal Theme Toggle */}
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '16px', 
+          background: 'var(--bg-secondary)', 
+          borderRadius: '12px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>Seasonal Themes</h3>
+            <p style={{ margin: 0, opacity: 0.7, fontSize: '13px' }}>
+              Auto-switch to {SEASON_LABELS[currentSeason]} based on the current month
+            </p>
+          </div>
+          <button
+            onClick={handleToggleAutoSeasonal}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '8px',
+              border: 'none',
+              background: autoSeasonal ? 'var(--button-primary-bg)' : 'var(--border)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px'
+            }}
+          >
+            {autoSeasonal ? 'Auto: On' : 'Auto: Off'}
+          </button>
+        </div>
+
+        {/* Seasonal Challenge Progress */}
+        {currentChallenge && !currentChallenge.unlocked && (
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '16px', 
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2))', 
+            borderRadius: '12px',
+            border: '1px solid rgba(139, 92, 246, 0.3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ margin: 0, fontSize: '15px', color: '#a78bfa' }}>Limited Time: {currentChallenge.name}</h3>
+              <span style={{ fontSize: '12px', opacity: 0.7 }}>{currentChallenge.plays}/{currentChallenge.requirement.count} games</span>
+            </div>
+            <p style={{ margin: '0 0 12px 0', fontSize: '13px', opacity: 0.8 }}>{currentChallenge.description}</p>
+            <div className="weekly-quest-progress-bar" style={{ height: '8px' }}>
+              <span style={{ width: `${currentChallenge.progressPercent}%`, background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)' }} />
+            </div>
+            <p style={{ margin: '8px 0 0 0', fontSize: '11px', opacity: 0.6 }}>
+              Play {currentChallenge.requirement.count - currentChallenge.plays} more to unlock the theme!
+            </p>
+          </div>
+        )}
+
+        {/* Unlocked Seasonal Reward */}
+        {currentChallenge?.unlocked && (
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '16px', 
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(59, 130, 246, 0.2))', 
+            borderRadius: '12px',
+            border: '1px solid rgba(34, 197, 94, 0.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '24px' }}> unlocked!</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', color: '#4ade80' }}>{currentChallenge.name} Theme Unlocked!</h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', opacity: 0.8 }}>You can now use this theme anytime.</p>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section style={sectionStyle}>

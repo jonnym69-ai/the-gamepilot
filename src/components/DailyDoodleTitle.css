@@ -5,6 +5,19 @@
   transform-style: preserve-3d;
 }
 
+.daily-doodle:hover .doodle-shell {
+  transform: scale(1.02);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+}
+
+.daily-doodle:hover .doodle-logo {
+  animation-duration: 3s;
+}
+
+.daily-doodle:hover .doodle-accent {
+  animation-duration: 4s;
+}
+
 .daily-doodle .doodle-shell {
   transition: transform 1s ease, opacity 1s ease, filter 1s ease;
 }
