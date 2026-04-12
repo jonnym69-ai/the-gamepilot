@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { DailyEngagementService, DAILY_REWARDS } from '../services/DailyEngagementService';
 import { X, Gift, Zap, Star, Trophy, Sparkles } from 'lucide-react';
 import './DailySpin.css';
@@ -14,6 +15,24 @@ const DailySpin = ({ isOpen, onClose }) => {
       setStatus(DailyEngagementService.getStatus());
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const handleSpin = () => {
     if (!status?.canSpin || spinning) return;
@@ -41,9 +60,9 @@ const DailySpin = ({ isOpen, onClose }) => {
   const rewards = DailyEngagementService.getAvailableRewards();
   const segmentAngle = 360 / rewards.length;
 
-  return (
-    <div className="spin-overlay">
-      <div className="spin-modal">
+  return createPortal((
+    <div className="spin-overlay" onClick={onClose}>
+      <div className="spin-modal" onClick={(event) => event.stopPropagation()}>
         <button className="spin-close" onClick={onClose}>
           <X size={24} />
         </button>
@@ -116,7 +135,7 @@ const DailySpin = ({ isOpen, onClose }) => {
         )}
       </div>
     </div>
-  );
+  ), document.body);
 };
 
 export default DailySpin;

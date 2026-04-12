@@ -238,6 +238,14 @@ function Home({
       .slice(0, 5);
   }, [library]);
 
+  const getHomeShelfGameKey = useCallback((game) => {
+    if (!game) {
+      return null;
+    }
+
+    return game.appid || game.name || null;
+  }, []);
+
   const allRecommendations = useMemo(() => {
     return library
       .filter(game => game.time_played === 0 || !game.time_played)
@@ -727,10 +735,49 @@ function Home({
   const tonightPickArtwork = tonightPickGame ? resolveGameArtwork(tonightPickGame, { surface: 'recommendation_card' }) : null;
   const tonightPickPlaceholder = tonightPickGame ? getGameArtworkPlaceholder({ game: tonightPickGame, surface: 'recommendation_card' }) : null;
   const rediscoverShelfEntry = rediscoverEntries[0] || null;
-  const rediscoverShelfGame = rediscoverShelfEntry?.game || null;
+  const rediscoverShelfFallback = useMemo(() => {
+    if (!Array.isArray(library) || library.length === 0) {
+      return null;
+    }
+
+    const excludedKeys = new Set([
+      getHomeShelfGameKey(tonightPickGame),
+      getHomeShelfGameKey(continuePlayingGame)
+    ].filter(Boolean));
+
+    return library
+      .filter((game) => {
+        const gameKey = getHomeShelfGameKey(game);
+        return gameKey && !excludedKeys.has(gameKey) && (game.time_played || 0) > 0;
+      })
+      .sort((left, right) => {
+        const leftLastPlayed = left.last_played ? new Date(left.last_played).getTime() : 0;
+        const rightLastPlayed = right.last_played ? new Date(right.last_played).getTime() : 0;
+
+        if (leftLastPlayed !== rightLastPlayed) {
+          return leftLastPlayed - rightLastPlayed;
+        }
+
+        return (right.time_played || 0) - (left.time_played || 0);
+      })[0] || null;
+  }, [continuePlayingGame, getHomeShelfGameKey, library, tonightPickGame]);
+  const rediscoverShelfGame = rediscoverShelfEntry?.game || rediscoverShelfFallback || null;
   const rediscoverShelfArtwork = rediscoverShelfGame ? resolveGameArtwork(rediscoverShelfGame, { surface: 'recommendation_card' }) : null;
   const rediscoverShelfPlaceholder = rediscoverShelfGame ? getGameArtworkPlaceholder({ game: rediscoverShelfGame, surface: 'recommendation_card' }) : null;
-  const favoriteShelfGame = topRatedGames[0] || null;
+  const favoriteShelfFallback = useMemo(() => {
+    const excludedKeys = new Set([
+      getHomeShelfGameKey(tonightPickGame),
+      getHomeShelfGameKey(continuePlayingGame),
+      getHomeShelfGameKey(rediscoverShelfGame)
+    ].filter(Boolean));
+
+    return [...featuredGames, ...recentGames]
+      .find((game) => {
+        const gameKey = getHomeShelfGameKey(game);
+        return gameKey && !excludedKeys.has(gameKey);
+      }) || null;
+  }, [continuePlayingGame, featuredGames, getHomeShelfGameKey, recentGames, rediscoverShelfGame, tonightPickGame]);
+  const favoriteShelfGame = topRatedGames[0] || favoriteShelfFallback || null;
   const favoriteShelfArtwork = favoriteShelfGame ? resolveGameArtwork(favoriteShelfGame, { surface: 'recommendation_card' }) : null;
   const favoriteShelfPlaceholder = favoriteShelfGame ? getGameArtworkPlaceholder({ game: favoriteShelfGame, surface: 'recommendation_card' }) : null;
   const homeShelfCards = [tonightPickGame, continuePlayingGame, rediscoverShelfGame, favoriteShelfGame].filter(Boolean).length;
@@ -754,7 +801,9 @@ function Home({
       ? `Your library is currently surfacing strong ${storyGenre.toLowerCase()} energy, which pairs well with ${storyMood.toLowerCase()}.`
       : null,
     favoriteShelfGame?.name
-      ? `${favoriteShelfGame.name} is still one of your clearest personal favourites, which helps keep recommendations grounded in your actual taste.`
+      ? typeof favoriteShelfGame?.userRating === 'number' && favoriteShelfGame.userRating > 0
+        ? `${favoriteShelfGame.name} is still one of your clearest personal favourites, which helps keep recommendations grounded in your actual taste.`
+        : `${favoriteShelfGame.name} is carrying a lot of your recent library identity, so it stays close as a dependable anchor pick.`
       : null
   ].filter(Boolean).slice(0, 3);
 
