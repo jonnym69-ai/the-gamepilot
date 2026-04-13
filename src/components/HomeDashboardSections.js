@@ -1,5 +1,6 @@
 import React from 'react';
 import LazyImage from './LazyImage';
+import EmptyState from './EmptyState';
 
 export function HomeSection({ className = '', eyebrow, title, copy, compact = false, children }) {
   const headingClassName = `home-section-heading${compact ? ' compact' : ''}`;
@@ -797,6 +798,7 @@ export function SurpriseGameResultSection({
   artwork,
   placeholder,
   platformIcons,
+  formatPlaytime,
   handleTrackedLaunch,
   renderEndSessionButton,
   renderRecommendationFeedback,
@@ -817,7 +819,6 @@ export function SurpriseGameResultSection({
         </p>
       ) : game ? (
         <div style={{ textAlign: 'center' }}>
-          <RecommendationReasoning entry={entry} />
           <div className="game-card-image-wrapper">
             {artwork ? (
               <LazyImage
@@ -840,6 +841,16 @@ export function SurpriseGameResultSection({
           <p className="game-platform">
             {game.platform}
           </p>
+          <div className="game-info">
+            <span className="game-genre">
+              {game.genres && game.genres.length > 0 ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
+            </span>
+            {formatPlaytime(game.time_played) && (
+              <span className="game-playtime">
+                {formatPlaytime(game.time_played)}
+              </span>
+            )}
+          </div>
           <p className="game-description">
             {result.message || 'A wildcard pick to shake up your rotation.'}
           </p>
@@ -871,8 +882,10 @@ export function RediscoverResultSection({
   result,
   entries,
   getGameCardClass,
-  platformColors,
+  resolveGameArtwork,
+  getGameArtworkPlaceholder,
   platformIcons,
+  formatPlaytime,
   handleTrackedLaunch,
   renderEndSessionButton,
   renderRecommendationFeedback,
@@ -908,29 +921,44 @@ export function RediscoverResultSection({
                 return null;
               }
 
+              const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
+              const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
+
               return (
                 <div key={game.appid || game.name || index} className={getGameCardClass(index)}>
                   <RecommendationReasoning entry={entry} />
-                  {game.iconUrl ? (
-                    <LazyImage
-                      src={game.iconUrl}
-                      alt={game.name}
-                      placeholder={`https://placehold.co/184x69/${platformColors[game.platform]?.replace('#', '') || '666666'}/fff?text=${encodeURIComponent(platformIcons[game.platform] || '❓')}`}
-                      className="game-image"
-                    />
-                  ) : (
-                    <div className="game-placeholder">
-                      <div className="platform-icon">
-                        {platformIcons[game.platform] || '❓'}
+                  <div className="game-card-image-wrapper">
+                    {gameArtwork ? (
+                      <LazyImage
+                        src={gameArtwork}
+                        alt={game.name}
+                        placeholder={gamePlaceholder}
+                        className="game-image"
+                      />
+                    ) : (
+                      <div className="game-placeholder">
+                        <div className="platform-icon">
+                          {platformIcons[game.platform] || '❓'}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <h4 className="game-name" style={{ fontSize: '0.9rem' }}>
+                    )}
+                  </div>
+                  <h4 className="game-name">
                     {game.name}
                   </h4>
                   <p className="game-platform">
                     {game.platform}
                   </p>
+                  <div className="game-info">
+                    <span className="game-genre">
+                      {game.genres && game.genres.length > 0 ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                    </span>
+                    {formatPlaytime(game.time_played) && (
+                      <span className="game-playtime">
+                        {formatPlaytime(game.time_played)}
+                      </span>
+                    )}
+                  </div>
                   <div className="game-actions">
                     <button
                       onClick={() => {
@@ -963,6 +991,15 @@ export function RecommendationResultsSection({ children, hasResults }) {
 
   return (
     <div className="results-section">
+      <div style={{ marginBottom: '16px' }}>
+        <p className="section-eyebrow" style={{ marginBottom: '6px' }}>Recommendation Results</p>
+        <h3 className="result-title" style={{ marginBottom: '6px' }}>
+          Here&apos;s what GamePilot came back with
+        </h3>
+        <p style={{ color: 'var(--text)', opacity: 0.72, margin: 0 }}>
+          Use these as short-term decision helpers, then clear them when you want the guided shelves to lead again.
+        </p>
+      </div>
       {children}
     </div>
   );
@@ -983,6 +1020,7 @@ export function GettingStartedSection({ onOpen }) {
 }
 
 export function HomeToolsContent({
+  libraryCount,
   mood,
   selectedGenre,
   time,
@@ -1022,20 +1060,45 @@ export function HomeToolsContent({
   onLaunchGame,
   onOpenGettingStarted
 }) {
+  const hasLibrary = Number(libraryCount || 0) > 0;
+  const hasMeaningfulLibrary = Number(libraryCount || 0) >= 3;
+
   return (
     <div className="home-content">
-      <MatchMyMoodSection
-        mood={mood}
-        selectedGenre={selectedGenre}
-        time={time}
-        availableMoods={availableMoods}
-        availableGenres={availableGenres}
-        onSelectVibe={onSelectVibe}
-        onMoodChange={onMoodChange}
-        onGenreChange={onGenreChange}
-        onTimeChange={onTimeChange}
-        onFindGamesForMood={onFindGamesForMood}
-      />
+      {hasMeaningfulLibrary && (
+        <MatchMyMoodSection
+          mood={mood}
+          selectedGenre={selectedGenre}
+          time={time}
+          availableMoods={availableMoods}
+          availableGenres={availableGenres}
+          onSelectVibe={onSelectVibe}
+          onMoodChange={onMoodChange}
+          onGenreChange={onGenreChange}
+          onTimeChange={onTimeChange}
+          onFindGamesForMood={onFindGamesForMood}
+        />
+      )}
+
+      {!hasLibrary && (
+        <EmptyState
+          icon="🛰️"
+          title="Scan your library to unlock smarter Home recommendations"
+          description="Once GamePilot can see your installed games, this area becomes much more useful for mood matching, surprise picks, rediscovery, and guided recommendations."
+          compact
+          style={{ marginBottom: '20px' }}
+        />
+      )}
+
+      {hasLibrary && !hasMeaningfulLibrary && (
+        <EmptyState
+          icon="🧪"
+          title="Your Home tools are still calibrating"
+          description="You already have a few games in the library, but GamePilot gets noticeably better once you scan more titles and build a little session history. For now, the core filters below are the most useful controls."
+          compact
+          style={{ marginBottom: '20px' }}
+        />
+      )}
 
       <TuneYourNextPickSection
         mood={mood}
@@ -1072,6 +1135,7 @@ export function HomeToolsContent({
           artwork={surpriseGameArtwork}
           placeholder={surpriseGamePlaceholder}
           platformIcons={platformIcons}
+          formatPlaytime={formatPlaytime}
           handleTrackedLaunch={handleTrackedLaunch}
           renderEndSessionButton={renderEndSessionButton}
           renderRecommendationFeedback={renderRecommendationFeedback}
@@ -1081,8 +1145,10 @@ export function HomeToolsContent({
           result={rediscoverGameResult}
           entries={rediscoverEntries}
           getGameCardClass={getGameCardClass}
-          platformColors={platformColors}
+          resolveGameArtwork={resolveGameArtwork}
+          getGameArtworkPlaceholder={getGameArtworkPlaceholder}
           platformIcons={platformIcons}
+          formatPlaytime={formatPlaytime}
           handleTrackedLaunch={handleTrackedLaunch}
           renderEndSessionButton={renderEndSessionButton}
           renderRecommendationFeedback={renderRecommendationFeedback}
@@ -1109,6 +1175,7 @@ export function HomeToolsContent({
 }
 
 export function HomeGuidedContent({
+  libraryCount,
   homeShelfCards,
   weeklyQuestSummary,
   weeklyPlayDays,
@@ -1151,6 +1218,8 @@ export function HomeGuidedContent({
   renderEndSessionButton,
   handleWeeklyQuestPinToggle
 }) {
+  const hasLibrary = Number(libraryCount || 0) > 0;
+
   return (
     <>
       <HomeSection
@@ -1158,37 +1227,47 @@ export function HomeGuidedContent({
         title="Let GamePilot lead the first choice"
         copy="Start with the shelves and story below, then drop into the curation tools when you want to steer more precisely."
       >
-        <LibraryTodaySection
-          homeShelfCards={homeShelfCards}
-          weeklyQuestSummary={weeklyQuestSummary}
-          weeklyPlayDays={weeklyPlayDays}
-          weeklyPlaytimeHours={weeklyPlaytimeHours}
-          recentLibraryActivity={recentLibraryActivity}
-          tonightPickGame={tonightPickGame}
-          tonightPickEntry={tonightPickEntry}
-          tonightPickArtwork={tonightPickArtwork}
-          tonightPickPlaceholder={tonightPickPlaceholder}
-          continuePlayingGame={continuePlayingGame}
-          continuePlayingEntry={continuePlayingEntry}
-          continuePlayingArtwork={continuePlayingArtwork}
-          continuePlayingPlaceholder={continuePlayingPlaceholder}
-          rediscoverShelfGame={rediscoverShelfGame}
-          rediscoverShelfEntry={rediscoverShelfEntry}
-          rediscoverShelfArtwork={rediscoverShelfArtwork}
-          rediscoverShelfPlaceholder={rediscoverShelfPlaceholder}
-          favoriteShelfGame={favoriteShelfGame}
-          favoriteShelfArtwork={favoriteShelfArtwork}
-          favoriteShelfPlaceholder={favoriteShelfPlaceholder}
-          platformIcons={platformIcons}
-          onLaunchTonightPick={onLaunchTonightPick}
-          onLaunchContinuePlaying={onLaunchContinuePlaying}
-          onLaunchRediscover={onLaunchRediscover}
-          onLaunchFavorite={onLaunchFavorite}
-          formatLastPlayed={formatLastPlayed}
-          formatPlaytime={formatPlaytime}
-        />
+        {hasLibrary ? (
+          <>
+            <LibraryTodaySection
+              homeShelfCards={homeShelfCards}
+              weeklyQuestSummary={weeklyQuestSummary}
+              weeklyPlayDays={weeklyPlayDays}
+              weeklyPlaytimeHours={weeklyPlaytimeHours}
+              recentLibraryActivity={recentLibraryActivity}
+              tonightPickGame={tonightPickGame}
+              tonightPickEntry={tonightPickEntry}
+              tonightPickArtwork={tonightPickArtwork}
+              tonightPickPlaceholder={tonightPickPlaceholder}
+              continuePlayingGame={continuePlayingGame}
+              continuePlayingEntry={continuePlayingEntry}
+              continuePlayingArtwork={continuePlayingArtwork}
+              continuePlayingPlaceholder={continuePlayingPlaceholder}
+              rediscoverShelfGame={rediscoverShelfGame}
+              rediscoverShelfEntry={rediscoverShelfEntry}
+              rediscoverShelfArtwork={rediscoverShelfArtwork}
+              rediscoverShelfPlaceholder={rediscoverShelfPlaceholder}
+              favoriteShelfGame={favoriteShelfGame}
+              favoriteShelfArtwork={favoriteShelfArtwork}
+              favoriteShelfPlaceholder={favoriteShelfPlaceholder}
+              platformIcons={platformIcons}
+              onLaunchTonightPick={onLaunchTonightPick}
+              onLaunchContinuePlaying={onLaunchContinuePlaying}
+              onLaunchRediscover={onLaunchRediscover}
+              onLaunchFavorite={onLaunchFavorite}
+              formatLastPlayed={formatLastPlayed}
+              formatPlaytime={formatPlaytime}
+            />
 
-        <LibraryStoryCard items={libraryStoryItems} />
+            <LibraryStoryCard items={libraryStoryItems} />
+          </>
+        ) : (
+          <EmptyState
+            icon="🎮"
+            title="Your Home shelves will appear after your first scan"
+            description="Scan your local games to unlock Tonight's Best Pick, Continue Playing, Rediscover, and the rest of the guided Home view."
+          />
+        )}
       </HomeSection>
 
       {shouldShowLegacyContinueSection && (
@@ -1255,7 +1334,18 @@ export function LibraryTodaySection({
   formatPlaytime
 }) {
   if (!homeShelfCards) {
-    return null;
+    return (
+      <div className="results-section">
+        <div className="result-card">
+          <EmptyState
+            icon="🧭"
+            title="GamePilot is still assembling today's shelves"
+            description="As soon as there is enough local activity, this area will surface a strong pick for tonight, a comeback game, something worth rediscovering, and a favourite to keep close."
+            compact
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1354,7 +1444,18 @@ export function LibraryTodaySection({
 
 export function LibraryStoryCard({ items }) {
   if (!Array.isArray(items) || items.length === 0) {
-    return null;
+    return (
+      <div className="results-section">
+        <div className="result-card library-story-card">
+          <EmptyState
+            icon="📝"
+            title="Your library story will become clearer with more play history"
+            description="Once you scan more games and log a few sessions, GamePilot will summarize what your library has been saying lately."
+            compact
+          />
+        </div>
+      </div>
+    );
   }
 
   return (

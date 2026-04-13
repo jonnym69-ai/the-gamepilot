@@ -894,6 +894,32 @@ function Home({
     return `game-card fade-in ${selectedItemIndex === index ? 'selected' : ''}`;
   }, [selectedItemIndex]);
 
+  const launcherSummary = useMemo(() => {
+    const libraryList = Array.isArray(library) ? library : [];
+    const launchers = [
+      { name: 'Steam', icon: '🚂', games: libraryList.filter((game) => game.platform === 'Steam').length },
+      { name: 'Epic Games', icon: '🎮', games: libraryList.filter((game) => game.platform === 'Epic').length },
+      { name: 'Xbox', icon: '🎯', games: libraryList.filter((game) => game.platform === 'Xbox').length },
+      { name: 'Rockstar', icon: '🪨', games: libraryList.filter((game) => game.platform === 'Rockstar').length },
+      { name: 'Battle.net', icon: '⚔️', games: libraryList.filter((game) => game.platform === 'Battle.net').length },
+      { name: 'EA', icon: '🎪', games: libraryList.filter((game) => game.platform === 'EA').length },
+      { name: 'Ubisoft', icon: '🔷', games: libraryList.filter((game) => game.platform === 'Ubisoft').length },
+      { name: 'GOG', icon: '🌌', games: libraryList.filter((game) => game.platform === 'GOG').length },
+      { name: 'Riot Games', icon: '👊', games: libraryList.filter((game) => game.platform === 'Riot').length },
+      { name: 'Battlestate Games', icon: '🔫', games: libraryList.filter((game) => game.platform === 'BSG').length },
+      { name: 'PlayStation', icon: '🎮', games: libraryList.filter((game) => game.brandPlatform === 'PlayStation' || game.platform === 'PlayStation').length }
+    ];
+
+    const detectedLaunchers = launchers.filter((launcher) => launcher.games > 0);
+
+    return {
+      launchers,
+      detectedLaunchers,
+      detectedLauncherCount: detectedLaunchers.length,
+      totalGames: libraryList.length
+    };
+  }, [library]);
+
   return (
     <div
       className={`home-page ${theme} home-layout-${selectedHomeLayout?.id || 'mission_control'} recommendation-pack-${selectedRecommendationPack?.id || 'classic_glow'}`}
@@ -911,6 +937,12 @@ function Home({
         />
         <p className="home-subtitle">
           {username ? 'Your personalized gaming mission control' : 'Your Smart Gaming Library Manager'}
+        </p>
+
+        <p className="home-hero-summary">
+          {launcherSummary.totalGames > 0
+            ? `${launcherSummary.totalGames} game${launcherSummary.totalGames === 1 ? '' : 's'} tracked across ${launcherSummary.detectedLauncherCount} platform${launcherSummary.detectedLauncherCount === 1 ? '' : 's'} in your current library.`
+            : 'Scan your local installs to build a cleaner launcher overview and unlock guided Home picks.'}
         </p>
 
         <div className="home-reward-strip">
@@ -949,30 +981,28 @@ function Home({
         
         {/* Launcher Status */}
         <div className="launcher-status">
-          <h4 className="launcher-status-title">
-            🎯 Detected Launchers & Brands:
-          </h4>
+          <div className="launcher-status-header">
+            <div>
+              <h4 className="launcher-status-title">
+                🎯 Launcher Overview
+              </h4>
+              <p className="launcher-status-copy">
+                {launcherSummary.totalGames > 0
+                  ? `Showing the platforms currently represented in your merged library, not just the latest scan pass.`
+                  : 'After your first scan, this strip becomes a quick read on where your library currently lives.'}
+              </p>
+            </div>
+            <div className="launcher-status-pill">
+              <span>Detected</span>
+              <strong>{launcherSummary.detectedLauncherCount}</strong>
+            </div>
+          </div>
           <div className="launcher-grid">
-            {(() => {
-              const libraryList = library || [];
-              const launchers = [
-                { name: 'Steam', icon: '🚂', games: libraryList.filter(g => g.platform === 'Steam').length },
-                { name: 'Epic Games', icon: '🎮', games: libraryList.filter(g => g.platform === 'Epic').length },
-                { name: 'Xbox', icon: '🎯', games: libraryList.filter(g => g.platform === 'Xbox').length },
-                { name: 'Rockstar', icon: '🪨', games: libraryList.filter(g => g.platform === 'Rockstar').length },
-                { name: 'Battle.net', icon: '⚔️', games: libraryList.filter(g => g.platform === 'Battle.net').length },
-                { name: 'EA', icon: '🎪', games: libraryList.filter(g => g.platform === 'EA').length },
-                { name: 'Ubisoft', icon: '🔷', games: libraryList.filter(g => g.platform === 'Ubisoft').length },
-                { name: 'GOG', icon: '🌌', games: libraryList.filter(g => g.platform === 'GOG').length },
-                { name: 'Riot Games', icon: '👊', games: libraryList.filter(g => g.platform === 'Riot').length },
-                { name: 'Battlestate Games', icon: '🔫', games: libraryList.filter(g => g.platform === 'BSG').length },
-                { name: 'PlayStation', icon: '🎮', games: libraryList.filter(g => g.brandPlatform === 'PlayStation' || g.platform === 'PlayStation').length }
-              ];
-              return launchers.map(launcher => (
+            {launcherSummary.launchers.map((launcher) => (
                 <div
                   key={launcher.name}
                   className={`launcher-badge ${launcher.games > 0 ? 'detected' : ''}`}
-                  title={`${launcher.name}: ${launcher.games} games found`}
+                  title={`${launcher.name}: ${launcher.games} game${launcher.games === 1 ? '' : 's'} currently represented in your library`}
                 >
                   <span>{launcher.icon}</span>
                   <span>{launcher.name}</span>
@@ -982,13 +1012,13 @@ function Home({
                     </span>
                   )}
                 </div>
-              ));
-            })()}
+              ))}
           </div>
         </div>
       </div>
 
       <HomeGuidedContent
+        libraryCount={library?.length || 0}
         homeShelfCards={homeShelfCards}
         weeklyQuestSummary={weeklyQuestSummary}
         weeklyPlayDays={weeklyPlayDays}
@@ -1040,6 +1070,7 @@ function Home({
         compact
       >
         <HomeToolsContent
+          libraryCount={library?.length || 0}
           mood={mood}
           selectedGenre={selectedGenre}
           time={time}

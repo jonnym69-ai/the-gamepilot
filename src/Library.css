@@ -6,6 +6,43 @@
   gap: 12px;
   margin-bottom: 24px;
   padding: 0 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.library-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.library-action-group-accent {
+  margin-left: auto;
+}
+
+.library-bulk-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 110px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--library-presentation-card-border, rgba(255, 255, 255, 0.14));
+}
+
+.library-bulk-status span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.library-bulk-status strong {
+  font-size: 0.92rem;
+  color: var(--text-primary);
 }
 
 .export-button {
@@ -24,6 +61,16 @@
   box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.export-button-recommend {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.export-button-lucky {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
 }
 
 .export-button:hover {
@@ -133,6 +180,17 @@
   background: var(--accent-primary, #ff6b35);
   color: white;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.library-clear-filters-btn {
+  border: 1px solid var(--library-presentation-card-border, rgba(255, 255, 255, 0.16));
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Quick Filters */
@@ -262,6 +320,18 @@
     justify-content: center;
   }
 
+  .library-action-group,
+  .library-action-group-accent {
+    width: 100%;
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  .library-bulk-status {
+    width: 100%;
+    align-items: center;
+  }
+
   .search-filter-section {
     flex-direction: column;
     gap: 16px;
@@ -270,6 +340,10 @@
 
   .search-bar {
     min-width: auto;
+    width: 100%;
+  }
+
+  .library-clear-filters-btn {
     width: 100%;
   }
 
@@ -442,6 +516,34 @@
   padding: 6px 12px;
   font-size: 0.85rem;
   white-space: nowrap;
+}
+
+.library-pagination-footer {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.library-pagination-copy {
+  margin-bottom: 12px;
+  opacity: 0.75;
+}
+
+.library-pagination-button {
+  border: none;
+  border-radius: 25px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--library-presentation-accent), var(--library-presentation-secondary));
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.library-pagination-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
 /* Responsive List View */
@@ -710,6 +812,14 @@
   max-width: 420px;
 }
 
+.library-header-summary {
+  margin: 0;
+  color: var(--text-primary);
+  opacity: 0.78;
+  line-height: 1.55;
+  font-size: 0.98rem;
+}
+
 .library-reward-pill {
   display: flex;
   flex-direction: column;
@@ -778,6 +888,38 @@
   letter-spacing: 0.08em;
 }
 
+.library-context-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 20px 24px;
+}
+
+.library-context-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--library-presentation-card-border, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+
+.library-context-pill span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.64;
+}
+
+.library-context-pill strong {
+  font-size: 0.96rem;
+  color: var(--text-primary);
+}
+
 .library-page .game-card,
 .library-page .game-list-item {
   position: relative;
@@ -835,6 +977,106 @@
   margin-bottom: 10px;
 }
 
+.library-game-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.library-game-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.library-favorite-button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.library-favorite-button.is-favorite {
+  background: var(--library-presentation-tag-bg);
+  color: var(--library-presentation-accent);
+}
+
+.library-game-playtime {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0.72;
+  font-size: 0.88rem;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.library-game-value {
+  opacity: 0.8;
+  font-size: 0.84rem;
+  margin-top: 4px;
+  margin-bottom: 0;
+  color: var(--text-secondary);
+}
+
+.library-game-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.library-game-tag {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.library-game-tag.platform,
+.library-game-tag.mood {
+  color: var(--library-presentation-tag-color);
+  background: var(--library-presentation-tag-bg);
+}
+
+.library-game-tag.genre {
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.06);
+}
+
+.library-game-actions {
+  display: flex;
+  align-items: center;
+}
+
+.library-game-actions.grid-mode {
+  margin-top: 14px;
+}
+
+.library-game-actions.list-mode {
+  margin-left: 14px;
+}
+
+.library-launch-button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--library-presentation-accent), var(--library-presentation-secondary));
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
 .library-page .game-actions,
 .library-page .game-list-actions {
   gap: 10px;
@@ -883,13 +1125,30 @@
     align-items: center;
   }
 
+  .library-header-summary {
+    text-align: center;
+  }
+
   .library-reward-pill {
     width: 100%;
     max-width: 280px;
   }
 
+  .library-context-bar {
+    margin: 0 15px 20px;
+  }
+
+  .library-context-pill {
+    flex: 1 1 140px;
+  }
+
   .library-page .library-stats {
     justify-content: center;
+  }
+
+  .library-game-actions.list-mode {
+    margin-left: 0;
+    margin-top: 10px;
   }
 }
 /* Controller Navigation Feedback */

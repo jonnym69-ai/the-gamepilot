@@ -5,6 +5,7 @@ const {
   safeReadJson,
   addUniquePath,
   isLikelyNonGameFolder,
+  isProtectedSystemPath,
   findBestExecutablePath,
   findExecutableDeep,
   createTrackedDefaults,
@@ -49,7 +50,6 @@ const getEAInstallPaths = () => {
     paths.push(`${drive}:\\Games\\EA`);
     paths.push(`${drive}:\\Electronic Arts`);
     paths.push(`${drive}:\\Games\\Electronic Arts`);
-    paths.push(`${drive}:\\`);
   });
 
   explicitInstallRoots.forEach((installRoot) => {
@@ -57,6 +57,27 @@ const getEAInstallPaths = () => {
   });
 
   return paths;
+};
+
+const EA_EXCLUDED_TITLE_TOKENS = [
+  'battle.net',
+  'blizzard',
+  'diablo',
+  'warcraft',
+  'overwatch',
+  'starcraft',
+  'hearthstone',
+  'heroes of the storm',
+  'call of duty'
+];
+
+const isExcludedFromEA = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  return EA_EXCLUDED_TITLE_TOKENS.some((token) => normalized.includes(token));
 };
 
 const KNOWN_EA_EXECUTABLES = {
@@ -97,20 +118,23 @@ const scanEALibrary = () => {
 
   paths.forEach((eaPath) => {
     if (!fs.existsSync(eaPath)) return;
-    if (isEASystemPath(eaPath)) return;
+    if (isProtectedSystemPath(eaPath) || isEASystemPath(eaPath) || isExcludedFromEA(eaPath)) return;
 
     safeReadDir(eaPath).forEach((folder) => {
       if (isLikelyNonGameFolder(folder)) return;
       if (isEASystemPath(folder)) return;
+      if (isExcludedFromEA(folder)) return;
       const installDataPath = path.join(eaPath, folder);
       if (!fs.existsSync(installDataPath)) return;
+      if (isProtectedSystemPath(installDataPath)) return;
       
       const isDir = fs.statSync(installDataPath).isDirectory();
       if (!isDir) return;
 
       const directExe = findBestExecutablePath(installDataPath, folder);
-      if (directExe && !isEASystemPath(directExe)) {
+      if (directExe && !isEASystemPath(directExe) && !isExcludedFromEA(directExe)) {
         const displayName = folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+        if (isExcludedFromEA(displayName)) return;
         if (foundGames.has(displayName.toLowerCase())) return;
         foundGames.add(displayName.toLowerCase());
         eaGames.push({
@@ -135,13 +159,14 @@ const scanEALibrary = () => {
       const realInstallDir = manifest.installDir;
       const displayName = manifest.displayName || manifest.productName || folder;
       const titleId = manifest.productId || manifest.titleId || folder;
+      if (isProtectedSystemPath(realInstallDir) || isExcludedFromEA(realInstallDir) || isExcludedFromEA(displayName) || isExcludedFromEA(titleId)) return;
       let resolvedExe = findBestExecutablePath(realInstallDir, path.basename(realInstallDir));
       if (!resolvedExe) {
         resolvedExe = findExecutableDeep(realInstallDir, 3);
         if (!resolvedExe) return;
       }
       
-      if (isEASystemPath(resolvedExe)) return;
+      if (isEASystemPath(resolvedExe) || isExcludedFromEA(resolvedExe)) return;
       if (foundGames.has(displayName.toLowerCase())) return;
       foundGames.add(displayName.toLowerCase());
 

@@ -3,6 +3,7 @@ const path = require('path');
 const {
   safeReadDir,
   isLikelyNonGameFolder,
+  isProtectedSystemPath,
   findBestExecutablePath,
   findExecutableDeep,
   collectNestedGameDirectories,
@@ -41,7 +42,6 @@ const getRockstarInstallPaths = () => {
     paths.push(`${drive}:\\Rockstar Games`);
     paths.push(`${drive}:\\Games\\Rockstar Games`);
     paths.push(`${drive}:\\Games\\Rockstar`);
-    paths.push(`${drive}:\\`);
   });
   paths.push(`${process.env.LOCALAPPDATA || ''}\\Rockstar Games`);
   
@@ -72,7 +72,7 @@ const scanRockstarLibrary = () => {
 
   rockstarPaths.forEach((rockstarPath) => {
     if (!fs.existsSync(rockstarPath)) return;
-    if (isSystemPath(rockstarPath)) return;
+    if (isProtectedSystemPath(rockstarPath) || isSystemPath(rockstarPath)) return;
 
     const rockstarContents = safeReadDir(rockstarPath);
     rockstarContents.forEach((folder) => {
@@ -82,6 +82,7 @@ const scanRockstarLibrary = () => {
 
       const gamePath = path.join(rockstarPath, folder);
       try {
+        if (isProtectedSystemPath(gamePath)) return;
         if (!fs.statSync(gamePath).isDirectory()) return;
 
         let executablePath = findBestExecutablePath(gamePath, folder);
@@ -95,7 +96,7 @@ const scanRockstarLibrary = () => {
         if (!executablePath) {
           executablePath = findExecutableDeep(gamePath, 3);
         }
-        if (executablePath && !isSystemPath(executablePath)) {
+        if (executablePath && !isProtectedSystemPath(executablePath) && !isSystemPath(executablePath)) {
           rockstarGames.push({
             name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
             platform: 'Rockstar',

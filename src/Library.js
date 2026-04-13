@@ -5,6 +5,7 @@ import NavBar from './NavBar';
 import GameModal from './components/GameModal';
 import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
+import EmptyLibraryState from './components/EmptyLibraryState';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
 import { useToast } from './components/Toast';
@@ -337,12 +338,31 @@ function Library({
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setLocalSearchQuery(value);
+    setCurrentPage(0);
+    setSelectedGameIndex(0);
     debouncedSearch(value);
   };
 
   const handleSortChange = (value) => {
     setLocalSortBy(value);
     setSortBy(value);
+    setCurrentPage(0);
+    setSelectedGameIndex(0);
+  };
+
+  const clearAllFilters = () => {
+    setLocalSearchQuery('');
+    setSearchQuery('');
+    setLocalFilterPlatform('');
+    setFilterPlatform('');
+    setLocalFilterMood('');
+    setFilterMood('');
+    setLocalFilterGenre('');
+    setFilterGenre('');
+    setLocalFilterMaxTime('');
+    setFilterMaxTime('');
+    setCurrentPage(0);
+    setSelectedGameIndex(0);
   };
 
   const handlePlatformFilterChange = (value) => {
@@ -727,6 +747,17 @@ function Library({
     return `game-card fade-in ${selectedGameIndex === index ? 'selected' : ''}`;
   }, [selectedGameIndex]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage));
+  const playedGameCount = library.filter((game) => (game.time_played || 0) > 0).length;
+  const totalPlaytimeMinutes = library.reduce((sum, game) => sum + (game.time_played || 0), 0);
+  const activeFilterCount = [
+    localSearchQuery,
+    localFilterPlatform,
+    localFilterMood,
+    localFilterGenre,
+    localFilterMaxTime
+  ].filter(Boolean).length;
+
   return (
     <div className={`App ${theme} library-page library-presentation-${libraryPresentationId}`} style={libraryRootStyle}>
       <NavBar />
@@ -734,6 +765,11 @@ function Library({
       <div className="library-header">
         <div className="library-header-copy">
           <h1 className="library-title">{currentTheme ? getThemeSpecificLibraryTitle(currentTheme.id) : "📚 Library"}</h1>
+          <p className="library-header-summary">
+            {library.length > 0
+              ? `${filteredAndSortedGames.length} visible game${filteredAndSortedGames.length === 1 ? '' : 's'} from ${library.length} total in your current library view.`
+              : 'Your library summary, filters, and quick actions will appear here once games have been scanned in.'}
+          </p>
           <div className="library-reward-pill">
             <span>Library Presentation</span>
             <strong>{selectedLibraryPresentation?.name || 'Classic Shelf'}</strong>
@@ -745,81 +781,45 @@ function Library({
             <span className="stat-label">Total Games</span>
           </div>
           <div className="stat-card">
-            <span className="stat-number">{library.filter(g => g.time_played > 0).length}</span>
+            <span className="stat-number">{playedGameCount}</span>
             <span className="stat-label">Games Played</span>
           </div>
           <div className="stat-card">
-            <span className="stat-number">{library.reduce((sum, g) => sum + (g.time_played || 0), 0)}</span>
-            <span className="stat-label">Total Minutes</span>
+            <span className="stat-number">{Math.floor(totalPlaytimeMinutes / 60)}</span>
+            <span className="stat-label">Hours Logged</span>
           </div>
         </div>
       </div>
 
       {/* Librarian Pick Display */}
       {librarianPick && (
-        <div className="librarian-pick-banner" style={{ 
-          margin: '20px', 
-          padding: '20px', 
-          background: librarianPick.method === 'smart' 
-            ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)'
-            : 'linear-gradient(135deg, rgba(240, 147, 251, 0.15) 0%, rgba(245, 87, 108, 0.15) 100%)',
-          borderRadius: '12px',
-          border: `1px solid ${librarianPick.method === 'smart' ? 'rgba(102, 126, 234, 0.3)' : 'rgba(240, 147, 251, 0.3)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '15px',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ fontSize: '2rem' }}>
+        <div className={`librarian-pick-banner ${librarianPick.method === 'smart' ? 'smart' : 'random'}`}>
+          <div className="librarian-pick-icon">
             {librarianPick.method === 'smart' ? '✨' : '🎲'}
           </div>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>
+          <div className="librarian-pick-copy">
+            <h3>
               {librarianPick.method === 'smart' ? 'Your Librarian Recommends:' : 'Feeling Lucky?'}
             </h3>
-            <p style={{ margin: 0, opacity: 0.8, fontSize: '0.95rem' }}>
+            <p>
               {librarianPick.method === 'smart' 
-                ? 'Smart pick based on your gaming patterns' 
+                ? 'A quick filtered pick based on your current library patterns.' 
                 : 'Random selection from your library'}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '10px',
-                padding: '10px 15px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '8px'
-              }}
-            >
-              <span style={{ fontWeight: 600 }}>{librarianPick.game.name}</span>
+          <div className="librarian-pick-actions">
+            <div className="librarian-pick-game-chip">
+              <span>{librarianPick.game.name}</span>
               <button 
                 onClick={() => onLaunchGame(librarianPick.game)}
-                style={{ 
-                  padding: '6px 12px', 
-                  fontSize: '0.85rem',
-                  border: 'none',
-                  borderRadius: '6px',
-                  background: 'linear-gradient(135deg, var(--library-presentation-accent), var(--library-presentation-secondary))',
-                  color: '#fff',
-                  cursor: 'pointer'
-                }}
+                className="librarian-pick-play"
               >
                 ▶ Play
               </button>
             </div>
             <button 
               onClick={() => setLibrarianPick(null)}
-              style={{ 
-                background: 'transparent', 
-                border: 'none', 
-                color: 'var(--text-color)',
-                cursor: 'pointer',
-                fontSize: '1.5rem',
-                lineHeight: 1
-              }}
+              className="librarian-pick-dismiss"
               title="Dismiss"
             >
               ×
@@ -834,7 +834,7 @@ function Library({
           <div className="free-games-header">
             <div>
               <h3>🆓 Weekly Free Games</h3>
-              <p>Powered by Epic Games Store — auto-refreshes hourly.</p>
+              <p>Optional radar from Epic Games Store — auto-refreshes hourly.</p>
             </div>
             <div className="free-games-controls">
               <button onClick={refreshFreeGames} disabled={loadingFreeGames}>Refresh</button>
@@ -866,64 +866,70 @@ function Library({
         </div>
       )}
 
-      {/* Action Bar */}
       <div className="export-section">
-        <button onClick={() => setIsExportModalOpen(true)} className="export-button">
-          <Download size={16} /> Export Data
-        </button>
-        <button onClick={() => setIsCinematicExportOpen(true)} className="export-button" style={{ marginLeft: '12px' }}>
-          <Grid size={16} /> Cinematic Poster
-        </button>
-        <button onClick={scanLibraryHandler} className="export-button" style={{ marginLeft: '12px' }}>
-          🔄 Scan Library
-        </button>
-        
-        {/* Librarian Features */}
-        <button 
-          onClick={handlePickForMe} 
-          className="export-button"
-          style={{ marginLeft: '12px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}
-          disabled={filteredAndSortedGames.length === 0}
-          title="Smart recommendation from your filtered games"
-        >
-          <Sparkles size={16} /> Pick For Me
-        </button>
-        <button 
-          onClick={handleFeelingLucky} 
-          className="export-button"
-          style={{ marginLeft: '12px', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}
-          disabled={filteredAndSortedGames.length === 0}
-          title="Random game from your library"
-        >
-          <Dices size={16} /> Feeling Lucky
-        </button>
-        
-        <button 
-          onClick={toggleBulkMode} 
-          className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
-          style={{ marginLeft: '12px' }}
-        >
-          {bulkMode ? 'Exit Bulk Mode' : 'Bulk Mode'}
-        </button>
-        {bulkMode && selectedGames.size > 0 && (
-          <button
-            onClick={bulkMarkCompleted}
-            className="export-button"
-            style={{ marginLeft: '12px' }}
-          >
-            Mark {selectedGames.size} Completed
+        <div className="library-action-group">
+          <button onClick={() => setIsExportModalOpen(true)} className="export-button">
+            <Download size={16} /> Export Data
           </button>
-        )}
-        {bulkMode && selectedGames.size > 0 && (
-          <button
-            onClick={bulkRemoveGames}
-            className="export-button"
-            style={{ marginLeft: '12px' }}
-          >
-            <Trash2 size={16} /> Remove {selectedGames.size}
+          <button onClick={() => setIsCinematicExportOpen(true)} className="export-button">
+            <Grid size={16} /> Cinematic Poster
           </button>
-        )}
+          <button onClick={scanLibraryHandler} className="export-button">
+            🔄 Scan Library
+          </button>
+        </div>
+        <div className="library-action-group library-action-group-accent">
+          <button 
+            onClick={handlePickForMe} 
+            className="export-button export-button-recommend"
+            disabled={filteredAndSortedGames.length === 0}
+            title="Smart recommendation from your filtered games"
+          >
+            <Sparkles size={16} /> Pick For Me
+          </button>
+          <button 
+            onClick={handleFeelingLucky} 
+            className="export-button export-button-lucky"
+            disabled={filteredAndSortedGames.length === 0}
+            title="Random game from your library"
+          >
+            <Dices size={16} /> Feeling Lucky
+          </button>
+          <button 
+            onClick={toggleBulkMode} 
+            className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
+          >
+            {bulkMode ? 'Exit Bulk Mode' : 'Bulk Mode'}
+          </button>
+          {bulkMode && (
+            <div className="library-bulk-status" role="status" aria-live="polite">
+              <span>Bulk Mode</span>
+              <strong>{selectedGames.size} selected</strong>
+            </div>
+          )}
+          {bulkMode && selectedGames.size > 0 && (
+            <button
+              onClick={bulkMarkCompleted}
+              className="export-button"
+            >
+              Mark {selectedGames.size} Completed
+            </button>
+          )}
+          {bulkMode && selectedGames.size > 0 && (
+            <button
+              onClick={bulkRemoveGames}
+              className="export-button"
+            >
+              <Trash2 size={16} /> Remove {selectedGames.size}
+            </button>
+          )}
+        </div>
       </div>
+
+      {library.length === 0 ? (
+        <EmptyLibraryState onScan={scanLibraryHandler} theme={theme} />
+      ) : (
+        <>
 
       {/* Search and Grid */}
       <div className="search-filter-section">
@@ -950,6 +956,11 @@ function Library({
           <button onClick={() => setViewMode('grid')} className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}><Grid size={20} /></button>
           <button onClick={() => setViewMode('list')} className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}><List size={20} /></button>
         </div>
+        {activeFilterCount > 0 && (
+          <button onClick={clearAllFilters} className="library-clear-filters-btn">
+            Clear Filters
+          </button>
+        )}
       </div>
 
       <div className="quick-filters">
@@ -1002,6 +1013,25 @@ function Library({
             <option value="600">Under 10 hours</option>
             <option value="3000">Under 50 hours</option>
           </select>
+        </div>
+      </div>
+
+      <div className="library-context-bar">
+        <div className="library-context-pill">
+          <span>Showing</span>
+          <strong>{displayedGames.length} of {filteredAndSortedGames.length}</strong>
+        </div>
+        <div className="library-context-pill">
+          <span>Filters</span>
+          <strong>{activeFilterCount > 0 ? `${activeFilterCount} active` : 'None'}</strong>
+        </div>
+        <div className="library-context-pill">
+          <span>Page</span>
+          <strong>{currentPage + 1} / {totalPages}</strong>
+        </div>
+        <div className="library-context-pill">
+          <span>Free Games Radar</span>
+          <strong>{showFreeGames ? 'Visible' : 'Hidden'}</strong>
         </div>
       </div>
 
@@ -1096,79 +1126,51 @@ function Library({
             </div>
 
             <div className="game-info" style={{ flexGrow: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>{game.name}</h3>
+              <div className="library-game-title-row">
+                <h3 className="library-game-title">{game.name}</h3>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleToggleFavorite(favoriteKey);
                   }}
                   aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
-                  style={{
-                    border: 'none',
-                    background: isFavorite ? 'var(--library-presentation-tag-bg)' : 'transparent',
-                    color: isFavorite ? 'var(--library-presentation-accent)' : 'var(--text-secondary)',
-                    borderRadius: '999px',
-                    width: '36px',
-                    height: '36px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer'
-                  }}
+                  className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
                 >
                   <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
                 </button>
               </div>
-              <p className="playtime" style={{ display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.7, fontSize: '0.9rem', marginTop: '4px' }}>
+              <p className="playtime library-game-playtime">
                 <Clock size={12} /> {formatTimePlayed(game.time_played)}
               </p>
               {gameValue > 0 && (
-                <p style={{ opacity: 0.8, fontSize: '0.85rem', marginTop: '4px', marginBottom: 0, color: 'var(--text-secondary)' }}>
+                <p className="library-game-value">
                   Value: {formatPrice(gameValue, currency)}
                 </p>
               )}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--library-presentation-accent)', background: 'var(--library-presentation-tag-bg)', padding: '4px 8px', borderRadius: '999px' }}>
+              <div className="library-game-tags">
+                <span className="library-game-tag platform">
                   {getDisplayPlatform(game)}
                 </span>
                 {resolvedMood && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--library-presentation-tag-color)', background: 'var(--library-presentation-tag-bg)', padding: '4px 8px', borderRadius: '999px' }}>
+                  <span className="library-game-tag mood">
                     {resolvedMood}
                   </span>
                 )}
                 {Array.isArray(game.genres) && game.genres[0] && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.06)', padding: '4px 8px', borderRadius: '999px' }}>
+                  <span className="library-game-tag genre">
                     {game.genres[0]}
                   </span>
                 )}
               </div>
-              {viewMode === 'list' && (
-                  <div className="platform-tag" style={{ marginTop: '5px' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--library-presentation-accent)' }}>
-                          {getDisplayPlatform(game)}
-                      </span>
-                  </div>
-              )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: viewMode === 'grid' ? 'stretch' : 'center', marginTop: viewMode === 'grid' ? '14px' : 0, marginLeft: viewMode === 'list' ? '14px' : 0 }}>
+            <div className={`library-game-actions ${viewMode === 'list' ? 'list-mode' : 'grid-mode'}`}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onLaunchGame(game);
                 }}
-                style={{
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  background: 'linear-gradient(135deg, var(--library-presentation-accent), var(--library-presentation-secondary))',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  whiteSpace: 'nowrap'
-                }}
+                className="library-launch-button"
               >
                 Launch
               </button>
@@ -1179,36 +1181,20 @@ function Library({
 
       {/* Show More/Less Button */}
       {filteredAndSortedGames.length > itemsPerPage && (
-        <div style={{ textAlign: 'center', marginTop: '30px' }}>
-          <div style={{ marginBottom: '12px', opacity: 0.75 }}>
+        <div className="library-pagination-footer">
+          <div className="library-pagination-copy">
             Page {currentPage + 1} of {Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage))}
           </div>
           <button
             onClick={() => toggleShowAll()}
-            style={{
-              border: 'none',
-              borderRadius: '25px',
-              padding: '12px 24px',
-              background: 'linear-gradient(135deg, var(--library-presentation-accent), var(--library-presentation-secondary))',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '0.9rem',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-            }}
-            onMouseOver={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
-            }}
+            className="library-pagination-button"
           >
-            {currentPage >= Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage)) - 1 ? 'Back to First Page' : 'Jump to Last Page'}
+            {currentPage >= Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage)) - 1 ? 'Return to First Page' : 'Jump to Final Page'}
           </button>
         </div>
+      )}
+
+        </>
       )}
 
       {/* Modals */}

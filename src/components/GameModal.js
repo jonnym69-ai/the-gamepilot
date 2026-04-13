@@ -318,6 +318,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     || (Array.isArray(game.genres) ? game.genres.filter(Boolean) : []);
   const compatibilityLabel = compatibility ? GameRequirements.getSettingsLabel(compatibility.settingsLevel) : null;
   const fallbackOverview = `${game.name} is tracked in your ${platformLabel} library${game.mood ? ` and tagged for ${String(game.mood).toLowerCase()} sessions` : ''}.`;
+  const playtimeHours = ((game.time_played || 0) / 60).toFixed(1);
   const formatDateValue = (value) => {
     if (!value) return null;
     const parsed = new Date(value);
@@ -337,7 +338,12 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                 e.target.src = 'https://placehold.co/60x60.jpg?text=Loading...';
               }}
             />
-            <h2>{game.name}</h2>
+            <div className="game-modal-title-copy">
+              <h2>{game.name}</h2>
+              <p className="game-modal-subtitle">
+                {platformLabel} • {playtimeHours}h played{game.mood ? ` • ${game.mood}` : ''}
+              </p>
+            </div>
           </div>
           <button className="game-modal-close" onClick={onClose}>
             <X size={24} />
@@ -412,39 +418,34 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                   ) : (
                     <p className="game-description">{fallbackOverview}</p>
                   )}
+                  <div className="game-quick-summary">
+                    <div className="game-quick-summary-item">
+                      <span className="game-quick-summary-label">Platform</span>
+                      <strong>{platformLabel}</strong>
+                    </div>
+                    <div className="game-quick-summary-item">
+                      <span className="game-quick-summary-label">Playtime</span>
+                      <strong>{playtimeHours} hours</strong>
+                    </div>
+                    {game.last_played && (
+                      <div className="game-quick-summary-item">
+                        <span className="game-quick-summary-label">Last Played</span>
+                        <strong>{formatDateValue(game.last_played)}</strong>
+                      </div>
+                    )}
+                    {typeof game.launch_count === 'number' && (
+                      <div className="game-quick-summary-item">
+                        <span className="game-quick-summary-label">Launches</span>
+                        <strong>{game.launch_count}</strong>
+                      </div>
+                    )}
+                  </div>
                   <div className="meta-chip-row">
                     <span className="meta-chip">{platformLabel}</span>
                     {game.mood && <span className="meta-chip">Mood: {game.mood}</span>}
                     {genreLabels.slice(0, 4).map((genre) => (
                       <span key={genre} className="meta-chip">{genre}</span>
                     ))}
-                  </div>
-                  
-                  <div style={{ marginTop: '15px' }}>
-                    <button 
-                      className="share-btn"
-                      onClick={() => {
-                        const shareText = `Check out ${game.name} on GamePilot! I've played for ${((game.time_played || 0) / 60).toFixed(1)} hours. #GamePilot`;
-                        LocalShareService.copyTextToClipboard(shareText);
-                        alert('Share text copied to clipboard!');
-                      }}
-                      style={{
-                        outline: modalControls[selectedControlIndex] === 'share' ? '2px solid var(--accent, #ff6b35)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        borderRadius: '8px',
-                        color: 'var(--text)',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <Share2 size={16} /> Share Game
-                    </button>
                   </div>
                 </div>
 
@@ -509,11 +510,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                     <div className="info-item">
                       <Clock size={16} />
                       <span className="info-label">Playtime</span>
-                      <span>{((game.time_played || 0) / 60).toFixed(1)} hours played</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Platform</span>
-                      <span>{platformLabel}</span>
+                      <span>{playtimeHours} hours played</span>
                     </div>
                     {gameDetails?.release_date && (
                       <div className="info-item">
@@ -689,6 +686,19 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
               {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
             </button>
           )}
+
+          <button 
+            className="share-btn"
+            onClick={() => {
+              const shareText = `Check out ${game.name} on GamePilot! I've played for ${playtimeHours} hours. #GamePilot`;
+              LocalShareService.copyTextToClipboard(shareText);
+              alert('Share text copied to clipboard!');
+            }}
+            style={{ outline: modalControls[selectedControlIndex] === 'share' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
+          >
+            <Share2 size={16} />
+            Share Game
+          </button>
         </div>
       </div>
     </div>

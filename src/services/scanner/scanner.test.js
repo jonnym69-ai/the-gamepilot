@@ -1,5 +1,6 @@
 const {
   isLikelyNonGameFolder,
+  isProtectedSystemPath,
   isLikelyGameExecutable,
   safeReadDir,
   createTrackedDefaults,
@@ -24,6 +25,21 @@ describe('Scanner Utils', () => {
       expect(isLikelyNonGameFolder('Elden Ring')).toBe(false);
       expect(isLikelyNonGameFolder('GTA V')).toBe(false);
       expect(isLikelyNonGameFolder('FIFA 24')).toBe(false);
+    });
+  });
+
+  describe('isProtectedSystemPath', () => {
+    test('returns true for drive roots and Windows system paths', () => {
+      expect(isProtectedSystemPath('C:\\')).toBe(true);
+      expect(isProtectedSystemPath('D:\\')).toBe(true);
+      expect(isProtectedSystemPath('C:\\Windows')).toBe(true);
+      expect(isProtectedSystemPath('C:\\Users\\User')).toBe(true);
+      expect(isProtectedSystemPath('C:\\Program Files (x86)')).toBe(true);
+    });
+
+    test('returns false for plausible game install locations', () => {
+      expect(isProtectedSystemPath('D:\\Games\\Elden Ring')).toBe(false);
+      expect(isProtectedSystemPath('E:\\SteamLibrary\\steamapps\\common\\Hades')).toBe(false);
     });
   });
 

@@ -13,6 +13,7 @@ import { BackgroundScanner } from './BackgroundScanner';
 import LazyImage from './components/LazyImage';
 import GameCalendar from './components/GameCalendar';
 import CollapsibleSection from './components/CollapsibleSection';
+import EmptyState from './components/EmptyState';
 import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
@@ -1055,7 +1056,7 @@ const Profile = ({ theme, library = [] }) => {
               <div className="reward-summary-card">
                 <span className="reward-summary-label">Button Packs</span>
                 <strong className="reward-summary-value">{rewardSummary.unlockedCounts.buttonPacks}/{rewardSummary.totalCounts.buttonPacks}</strong>
-                <span className="reward-summary-caption">Sample and synth click sets for UI feedback</span>
+                <span className="reward-summary-caption">UI interaction sounds unlocked over time</span>
               </div>
               <div className="reward-summary-card">
                 <span className="reward-summary-label">Frames</span>
@@ -1541,7 +1542,12 @@ const Profile = ({ theme, library = [] }) => {
               ))}
             </div>
           ) : (
-            <div className="no-active-sessions"><p>No active game sessions found.</p></div>
+            <EmptyState
+              icon="⏸️"
+              title="No active game sessions right now"
+              description="When you launch a game through GamePilot, active sessions will appear here so you can monitor or end them manually."
+              compact
+            />
           )}
           </div>
         </CollapsibleSection>
@@ -1557,7 +1563,12 @@ const Profile = ({ theme, library = [] }) => {
           <div className="gaming-identity-card">
             <h3>Most Played Games</h3>
           {mostPlayedGames.length === 0 ? (
-            <div className="no-playtime-data"><p>No playtime data available yet.</p></div>
+            <EmptyState
+              icon="🎮"
+              title="No playtime leaders yet"
+              description="Your most played games will show up here once you have a few tracked sessions in the library."
+              compact
+            />
           ) : (
             <div className="most-played-grid">
               {mostPlayedGames.map((game, index) => (
@@ -1612,6 +1623,15 @@ const Profile = ({ theme, library = [] }) => {
               <span className="stat-label">Rate</span>
             </div>
           </div>
+          {completedGames.length === 0 && (
+            <EmptyState
+              icon="✅"
+              title="No completed games logged yet"
+              description="Track finished games here to build a personal completion log and keep your profile milestones feeling real."
+              compact
+              style={{ marginBottom: '18px' }}
+            />
+          )}
           {completedGames.length > 0 && (
             <div className="completed-games-list">
               {completedGames.slice(0, 5).map((game, index) => (
@@ -1658,7 +1678,7 @@ const Profile = ({ theme, library = [] }) => {
         </CollapsibleSection>
 
         {/* Gaming Style Dashboard */}
-        {behaviorProfile && (
+        {behaviorProfile ? (
           <CollapsibleSection
             title="Your Gaming Style"
             subtitle="A compact view of the behavior model learning from your sessions."
@@ -1668,157 +1688,159 @@ const Profile = ({ theme, library = [] }) => {
           >
             <div className="gaming-identity-card">
               <h3>🎮 Your Gaming Style</h3>
-            
-            {/* Overview Stats */}
-            <div className="gaming-style-overview">
-              <div className="overview-stat">
-                <span className="stat-number">{behaviorProfile.totalSelectionsTracked}</span>
-                <span className="stat-label">Sessions Tracked</span>
+
+              <div className="gaming-style-overview">
+                <div className="overview-stat">
+                  <span className="stat-number">{behaviorProfile.totalSelectionsTracked}</span>
+                  <span className="stat-label">Sessions Tracked</span>
+                </div>
+                <div className="overview-stat">
+                  <span className="stat-number">{behaviorProfile.totalCompleted}</span>
+                  <span className="stat-label">Games Played</span>
+                </div>
+                <div className="overview-stat">
+                  <span className="stat-number">{behaviorProfile.topMoods?.[0]?.sharePercent || 0}%</span>
+                  <span className="stat-label">Top Mood Share</span>
+                </div>
+                <div className="overview-stat">
+                  <span className="stat-number">{behaviorProfile.avgSessionLength}</span>
+                  <span className="stat-label">Avg Session (min)</span>
+                </div>
               </div>
-              <div className="overview-stat">
-                <span className="stat-number">{behaviorProfile.totalCompleted}</span>
-                <span className="stat-label">Games Played</span>
-              </div>
-              <div className="overview-stat">
-                <span className="stat-number">{behaviorProfile.topMoods?.[0]?.sharePercent || 0}%</span>
-                <span className="stat-label">Top Mood Share</span>
-              </div>
-              <div className="overview-stat">
-                <span className="stat-number">{behaviorProfile.avgSessionLength}</span>
-                <span className="stat-label">Avg Session (min)</span>
+
+              {behaviorProfile.topMoods && behaviorProfile.topMoods.length > 0 && (
+                <div className="gaming-preference-section">
+                  <h4>🎭 Favorite Moods</h4>
+                  <div className="preference-grid">
+                    {behaviorProfile.topMoods.map((mood, idx) => (
+                      <div key={idx} className="preference-card">
+                        <div className="preference-name">{mood.label}</div>
+                        <div className="preference-stats">
+                          <div className="stat-row">
+                            <span>Sessions:</span>
+                            <span className="stat-value">{mood.count}x</span>
+                          </div>
+                          <div className="stat-row">
+                            <span>Share:</span>
+                            <span className="stat-value">{mood.sharePercent}%</span>
+                          </div>
+                          <div className="stat-row">
+                            <span>Avg Time:</span>
+                            <span className="stat-value">{mood.avgPlaytime}m</span>
+                          </div>
+                        </div>
+                        <div className="completion-bar">
+                          <div className="completion-fill" style={{ width: `${mood.sharePercent}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {behaviorProfile.topGenres && behaviorProfile.topGenres.length > 0 && (
+                <div className="gaming-preference-section">
+                  <h4>🎯 Favorite Genres</h4>
+                  <div className="preference-grid">
+                    {behaviorProfile.topGenres.map((genre, idx) => (
+                      <div key={idx} className="preference-card">
+                        <div className="preference-name">{genre.label}</div>
+                        <div className="preference-stats">
+                          <div className="stat-row">
+                            <span>Sessions:</span>
+                            <span className="stat-value">{genre.count}x</span>
+                          </div>
+                          <div className="stat-row">
+                            <span>Share:</span>
+                            <span className="stat-value">{genre.sharePercent}%</span>
+                          </div>
+                          <div className="stat-row">
+                            <span>Avg Time:</span>
+                            <span className="stat-value">{genre.avgPlaytime}m</span>
+                          </div>
+                        </div>
+                        <div className="completion-bar">
+                          <div className="completion-fill" style={{ width: `${genre.sharePercent}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {sessionStats && sessionStats.peakHours && sessionStats.peakHours.length > 0 && (
+                <div className="gaming-preference-section">
+                  <h4>⏰ Peak Gaming Times</h4>
+                  <div className="peak-hours-grid">
+                    {sessionStats.peakHours.map((hour, idx) => (
+                      <div key={idx} className="peak-hour-card">
+                        <div className="hour-time">{String(hour.hour).padStart(2, '0')}:00</div>
+                        <div className="hour-label">{hour.timeOfDay}</div>
+                        <div className="hour-count">{hour.count} sessions</div>
+                        <div className="hour-bar">
+                          <div
+                            className="hour-fill"
+                            style={{ height: `${(hour.count / Math.max(...sessionStats.peakHours.map((entry) => entry.count))) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {sessionStats && sessionStats.mostPlayedGames && sessionStats.mostPlayedGames.length > 0 && (
+                <div className="gaming-preference-section">
+                  <h4>🏆 Most Played Games</h4>
+                  <div className="most-played-list">
+                    {sessionStats.mostPlayedGames.map((game, idx) => (
+                      <div key={idx} className="most-played-item">
+                        <div className="rank-badge">{idx + 1}</div>
+                        <div className="game-info">
+                          <div className="game-title">{game.gameName}</div>
+                          <div className="game-stats">
+                            {Math.round(game.totalPlaytime / 60)}h • {game.sessions} sessions
+                          </div>
+                        </div>
+                        <div className="playtime-bar">
+                          <div
+                            className="playtime-fill"
+                            style={{ width: `${(game.totalPlaytime / Math.max(...sessionStats.mostPlayedGames.map((entry) => entry.totalPlaytime))) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="learning-status">
+                <div className="status-message">
+                  <TrendingUp size={16} />
+                  <span>GamePilot is learning your playstyle. The more you play, the better recommendations become!</span>
+                </div>
+                <div className="last-updated">
+                  Last updated: {behaviorProfile.lastUpdated ? new Date(behaviorProfile.lastUpdated).toLocaleDateString() : 'Never'}
+                </div>
               </div>
             </div>
-
-            {/* Top Moods */}
-            {behaviorProfile.topMoods && behaviorProfile.topMoods.length > 0 && (
-              <div className="gaming-preference-section">
-                <h4>🎭 Favorite Moods</h4>
-                <div className="preference-grid">
-                  {behaviorProfile.topMoods.map((mood, idx) => (
-                    <div key={idx} className="preference-card">
-                      <div className="preference-name">{mood.label}</div>
-                      <div className="preference-stats">
-                        <div className="stat-row">
-                          <span>Sessions:</span>
-                          <span className="stat-value">{mood.count}x</span>
-                        </div>
-                        <div className="stat-row">
-                          <span>Share:</span>
-                          <span className="stat-value">{mood.sharePercent}%</span>
-                        </div>
-                        <div className="stat-row">
-                          <span>Avg Time:</span>
-                          <span className="stat-value">{mood.avgPlaytime}m</span>
-                        </div>
-                      </div>
-                      <div className="completion-bar">
-                        <div 
-                          className="completion-fill" 
-                          style={{ width: `${mood.sharePercent}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Top Genres */}
-            {behaviorProfile.topGenres && behaviorProfile.topGenres.length > 0 && (
-              <div className="gaming-preference-section">
-                <h4>🎯 Favorite Genres</h4>
-                <div className="preference-grid">
-                  {behaviorProfile.topGenres.map((genre, idx) => (
-                    <div key={idx} className="preference-card">
-                      <div className="preference-name">{genre.label}</div>
-                      <div className="preference-stats">
-                        <div className="stat-row">
-                          <span>Sessions:</span>
-                          <span className="stat-value">{genre.count}x</span>
-                        </div>
-                        <div className="stat-row">
-                          <span>Share:</span>
-                          <span className="stat-value">{genre.sharePercent}%</span>
-                        </div>
-                        <div className="stat-row">
-                          <span>Avg Time:</span>
-                          <span className="stat-value">{genre.avgPlaytime}m</span>
-                        </div>
-                      </div>
-                      <div className="completion-bar">
-                        <div 
-                          className="completion-fill" 
-                          style={{ width: `${genre.sharePercent}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Peak Play Hours */}
-            {sessionStats && sessionStats.peakHours && sessionStats.peakHours.length > 0 && (
-              <div className="gaming-preference-section">
-                <h4>⏰ Peak Gaming Times</h4>
-                <div className="peak-hours-grid">
-                  {sessionStats.peakHours.map((hour, idx) => (
-                    <div key={idx} className="peak-hour-card">
-                      <div className="hour-time">{String(hour.hour).padStart(2, '0')}:00</div>
-                      <div className="hour-label">{hour.timeOfDay}</div>
-                      <div className="hour-count">{hour.count} sessions</div>
-                      <div className="hour-bar">
-                        <div 
-                          className="hour-fill" 
-                          style={{ 
-                            height: `${(hour.count / Math.max(...sessionStats.peakHours.map(h => h.count))) * 100}%` 
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Most Played Games */}
-            {sessionStats && sessionStats.mostPlayedGames && sessionStats.mostPlayedGames.length > 0 && (
-              <div className="gaming-preference-section">
-                <h4>🏆 Most Played Games</h4>
-                <div className="most-played-list">
-                  {sessionStats.mostPlayedGames.map((game, idx) => (
-                    <div key={idx} className="most-played-item">
-                      <div className="rank-badge">{idx + 1}</div>
-                      <div className="game-info">
-                        <div className="game-title">{game.gameName}</div>
-                        <div className="game-stats">
-                          {Math.round(game.totalPlaytime / 60)}h • {game.sessions} sessions
-                        </div>
-                      </div>
-                      <div className="playtime-bar">
-                        <div 
-                          className="playtime-fill" 
-                          style={{ 
-                            width: `${(game.totalPlaytime / Math.max(...sessionStats.mostPlayedGames.map(g => g.totalPlaytime))) * 100}%` 
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Learning Status */}
-            <div className="learning-status">
-              <div className="status-message">
-                <TrendingUp size={16} />
-                <span>GamePilot is learning your playstyle. The more you play, the better recommendations become!</span>
-              </div>
-              <div className="last-updated">
-                Last updated: {behaviorProfile.lastUpdated ? new Date(behaviorProfile.lastUpdated).toLocaleDateString() : 'Never'}
-              </div>
-            </div>
+          </CollapsibleSection>
+        ) : (
+          <CollapsibleSection
+            title="Your Gaming Style"
+            subtitle="A compact view of the behavior model learning from your sessions."
+            badge="Calibrating"
+            icon={<TrendingUp size={18} />}
+            className={getSectionClass(8)}
+          >
+            <div className="gaming-identity-card">
+              <h3>🎮 Your Gaming Style</h3>
+              <EmptyState
+                icon="📡"
+                title="Your gaming style is still calibrating"
+                description="Once GamePilot has enough local session history, it will summarize your top moods, genres, peak hours, and most-played habits here."
+                compact
+              />
             </div>
           </CollapsibleSection>
         )}

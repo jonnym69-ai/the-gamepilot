@@ -2005,18 +2005,101 @@ a:hover {
   pointer-events: none !important;
 }
 
+.librarian-pick-banner {
+  margin: 0 20px 20px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.librarian-pick-banner.smart {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-color: rgba(102, 126, 234, 0.24);
+}
+
+.librarian-pick-banner.random {
+  background: linear-gradient(135deg, rgba(240, 147, 251, 0.12) 0%, rgba(245, 87, 108, 0.1) 100%);
+  border-color: rgba(240, 147, 251, 0.24);
+}
+
+.librarian-pick-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.librarian-pick-copy {
+  flex: 1;
+  min-width: 220px;
+}
+
+.librarian-pick-copy h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.librarian-pick-copy p {
+  margin: 0;
+  opacity: 0.76;
+  font-size: 0.9rem;
+}
+
+.librarian-pick-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.librarian-pick-game-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.librarian-pick-game-chip span {
+  font-weight: 600;
+}
+
+.librarian-pick-play {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--library-presentation-accent), var(--library-presentation-secondary));
+  color: #fff;
+  cursor: pointer;
+}
+
+.librarian-pick-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--text-color, inherit);
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+  opacity: 0.72;
+}
+
 /* ===== FREE GAMES SECTION STYLING ===== */
 
 /* Main free games container */
 .free-games-section {
-  background: linear-gradient(135deg, rgba(255, 140, 0, 0.08), rgba(255, 165, 0, 0.04));
-  border: 1px solid rgba(255, 140, 0, 0.2);
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.05), rgba(255, 165, 0, 0.025));
+  border: 1px solid rgba(255, 140, 0, 0.16);
   border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 32px;
+  padding: 18px;
+  margin: 0 20px 20px;
   -webkit-backdrop-filter: blur(10px) !important;
   backdrop-filter: blur(10px) !important;
-  box-shadow: 0 8px 32px rgba(255, 140, 0, 0.1);
+  box-shadow: 0 8px 22px rgba(255, 140, 0, 0.08);
   position: relative;
   overflow: hidden;
 }
@@ -2043,15 +2126,15 @@ a:hover {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   gap: 20px;
 }
 
 .free-games-header h3 {
   color: #ff8c00;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2059,7 +2142,7 @@ a:hover {
 
 .free-games-header p {
   color: var(--text-secondary, #888);
-  font-size: 14px;
+  font-size: 13px;
   margin: 0;
   line-height: 1.4;
 }
@@ -2129,8 +2212,8 @@ a:hover {
 /* Free games grid */
 .free-games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
 }
 
 /* Individual free game card */
@@ -2152,7 +2235,7 @@ a:hover {
 
 .free-game-thumb {
   width: 100%;
-  height: 140px;
+  height: 120px;
   background-size: cover;
   background-position: center;
   background-color: var(--surface-tertiary, rgba(0, 0, 0, 0.2));
@@ -2170,7 +2253,7 @@ a:hover {
 }
 
 .free-game-body {
-  padding: 16px;
+  padding: 14px;
 }
 
 .free-game-title {
@@ -2246,7 +2329,7 @@ a:hover {
   border: 1px solid rgba(255, 140, 0, 0.2);
   border-radius: 8px;
   padding: 12px 16px;
-  margin-bottom: 20px;
+  margin: 0 20px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2295,6 +2378,13 @@ a:hover {
   
   .free-games-section {
     padding: 16px;
+    margin: 0 15px 18px;
+  }
+
+  .librarian-pick-banner,
+  .free-games-hidden-bar {
+    margin-left: 15px;
+    margin-right: 15px;
   }
 }
 

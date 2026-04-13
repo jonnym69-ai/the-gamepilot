@@ -8,10 +8,10 @@
 
 .home-hero {
   text-align: center;
-  padding: 60px 20px 50px;
+  padding: 56px 20px 44px;
   background: linear-gradient(135deg, var(--card) 0%, var(--input-bg, rgba(42, 63, 95, 0.8)) 100%);
   border-radius: 0 0 40px 40px;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -53,12 +53,23 @@
   line-height: 1.4;
 }
 
+.home-hero-summary {
+  margin: -18px auto 10px;
+  max-width: 720px;
+  color: var(--text);
+  opacity: 0.78;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+}
+
 .home-reward-strip {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 26px;
+  margin-bottom: 20px;
   position: relative;
   z-index: 1;
   max-width: 760px;
@@ -169,8 +180,8 @@
 
 /* Launcher Status */
 .launcher-status {
-  margin-top: 25px;
-  padding: 20px;
+  margin-top: 18px;
+  padding: 18px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -181,8 +192,16 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
+.launcher-status-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
 .launcher-status-title {
-  margin: 0 0 12px 0;
+  margin: 0 0 6px 0;
   color: var(--text);
   font-size: 1rem;
   font-weight: 600;
@@ -190,6 +209,41 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.launcher-status-copy {
+  margin: 0;
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  max-width: 560px;
+}
+
+.launcher-status-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  min-width: 96px;
+}
+
+.launcher-status-pill span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.launcher-status-pill strong {
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--text);
 }
 
 .launcher-grid {
@@ -232,18 +286,18 @@
 .home-guided-section,
 .home-tools-section {
   max-width: 1300px;
-  margin: 0 auto 50px;
+  margin: 0 auto 40px;
   padding: 0 25px;
 }
 
 .home-guided-section-secondary {
-  margin-bottom: 42px;
+  margin-bottom: 34px;
 }
 
 .home-section-shell {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
 }
 
 .home-section-heading {
@@ -295,6 +349,11 @@
   border: 2px solid #28a745;
   position: relative;
   overflow: hidden;
+}
+
+.results-section > .section-eyebrow,
+.results-section > .result-title {
+  text-align: left;
 }
 
 .continue-card::before {
@@ -403,10 +462,10 @@
 
 /* Perfect Play Section */
 .perfect-play-section {
-  margin-bottom: 60px;
+  margin-bottom: 44px;
   background: var(--card-bg);
   border-radius: 24px;
-  padding: 50px;
+  padding: 42px;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
   position: relative;
   overflow: hidden;
@@ -619,7 +678,7 @@
   .home-guided-section,
   .home-tools-section {
     padding: 0 15px;
-    margin-bottom: 36px;
+    margin-bottom: 30px;
   }
 
   .home-section-title {
@@ -815,13 +874,13 @@
 
 /* Results Section */
 .results-section {
-  margin-bottom: 50px;
+  margin-bottom: 38px;
 }
 
 .result-card {
   background: var(--card);
   border-radius: 24px;
-  padding: 40px;
+  padding: 32px;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
   border: 2px solid var(--accent-primary, #ff6b35);
   position: relative;
@@ -848,7 +907,7 @@
   text-align: center;
   color: var(--text);
   opacity: 0.78;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .library-story-grid {
@@ -1104,7 +1163,7 @@
 
 .retention-section {
   max-width: 1300px;
-  margin: 0 auto 50px;
+  margin: 0 auto 36px;
   padding: 0 25px;
 }
 
@@ -1505,7 +1564,7 @@
 /* Getting Started Section */
 .getting-started-section {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 32px;
 }
 
 .getting-started-button {
@@ -1658,11 +1717,12 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .home-hero {
-    padding: 50px 15px 40px;
+    padding: 46px 15px 34px;
   }
 
-  .home-title {
-    font-size: 2.5rem;
+  .home-hero-summary {
+    margin-top: -12px;
+    font-size: 0.92rem;
   }
 
   .home-subtitle {
@@ -1680,13 +1740,22 @@
     font-size: 0.75rem;
   }
 
+  .launcher-status-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .launcher-status-pill {
+    align-items: flex-start;
+  }
+
   .launcher-badge {
     padding: 4px 8px;
     font-size: 0.7rem;
   }
 
   .perfect-play-section {
-    padding: 30px 20px;
+    padding: 26px 18px;
   }
 
   .perfect-play-title {
@@ -1736,7 +1805,7 @@
   }
 
   .retention-panel {
-    padding: 22px;
+    padding: 20px;
   }
 
   .retention-panel-header {
@@ -2167,51 +2236,51 @@ body.big-screen-mode .home-section-title.selected {
 /* Recommendation Badge Container */
 .recommendation-badge-container {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   z-index: 10;
 }
 
 .confidence-badge {
   background: linear-gradient(135deg, #4CAF50, #66BB6A);
   color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 3px 8px rgba(76, 175, 80, 0.24);
   cursor: help;
   transition: all 0.3s ease;
 }
 
 .confidence-badge:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(76, 175, 80, 0.32);
 }
 
 .match-score {
   background: linear-gradient(135deg, #2196F3, #42A5F5);
   color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  box-shadow: 0 3px 8px rgba(33, 150, 243, 0.24);
   cursor: help;
   transition: all 0.3s ease;
 }
 
 .match-score:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(33, 150, 243, 0.32);
 }
 
 /* Recommendation Reasoning */
 .recommendation-reasoning {
-  margin: 12px 0;
-  padding: 10px;
+  margin: 10px 0;
+  padding: 8px 10px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -2224,10 +2293,10 @@ body.big-screen-mode .home-section-title.selected {
 }
 
 .reasoning-details summary {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--accent-primary, #ff6b35);
-  padding: 5px;
+  padding: 3px 4px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2243,19 +2312,19 @@ body.big-screen-mode .home-section-title.selected {
 }
 
 .reasoning-content {
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .reasoning-item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text);
   opacity: 0.85;
   line-height: 1.4;

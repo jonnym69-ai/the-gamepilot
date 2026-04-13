@@ -54,6 +54,12 @@
   gap: 18px;
 }
 
+.game-modal-title-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .game-modal-icon {
   width: 64px;
   height: 64px;
@@ -70,6 +76,13 @@
   font-weight: 700;
   letter-spacing: -0.01em;
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.game-modal-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .game-modal-close {
@@ -289,6 +302,36 @@
   margin: 0 0 20px 0;
 }
 
+.game-quick-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.game-quick-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.game-quick-summary-label {
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.game-quick-summary-item strong {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+}
+
 .game-description a {
   color: var(--accent-primary, #ff6b35);
   text-decoration: none;
@@ -472,6 +515,17 @@
 
 .wishlist-button.wishlisted:hover {
   background: rgba(244, 63, 94, 0.15);
+}
+
+.share-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.share-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
 }
 
 .compatibility-status {
@@ -667,6 +721,18 @@
     max-height: 95vh;
   }
 
+  .game-modal-title {
+    align-items: flex-start;
+  }
+
+  .game-modal-title-copy {
+    min-width: 0;
+  }
+
+  .game-modal-subtitle {
+    font-size: 0.88rem;
+  }
+
   .modal-header {
     padding: 16px;
     gap: 12px;
@@ -700,6 +766,10 @@
   .modal-hero-art {
     width: 112px;
     height: 112px;
+  }
+
+  .game-quick-summary {
+    grid-template-columns: 1fr 1fr;
   }
 
   .requirements-grid {

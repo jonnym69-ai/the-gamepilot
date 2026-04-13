@@ -4,10 +4,12 @@ import { AchievementTracker } from './AchievementSystem';
 import { Trophy, Star, TrendingUp, Award, User, Sparkles, RefreshCcw } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
+import EmptyState from './components/EmptyState';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './services/PersonaPerformanceInsights';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { MilestoneService } from './services/MilestoneService';
+
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
 import './Stats.css';
@@ -419,7 +421,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           onSelectPeriod={setSelectedPeriod}
         />
 
-        {personaData.snapshot && (
+        {personaData.snapshot ? (
           <div className="stats-section persona-insights">
             <h2><User size={24} /> Flight Persona Snapshot</h2>
             <div className="persona-grid">
@@ -532,12 +534,23 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               </div>
             </div>
           </div>
+        ) : (
+          <div className="stats-section persona-insights">
+            <h2><User size={24} /> Flight Persona Snapshot</h2>
+            <EmptyState
+              icon="🧭"
+              title="Your persona will appear after a few sessions"
+              description="GamePilot builds this locally from your play habits, moods, genres, and session length patterns once there is enough signal to read from."
+              compact
+            />
+          </div>
         )}
 
-        {personaData.snapshot && hardwareSynergy.length > 0 && (
+        {personaData.snapshot && hardwareSynergy.length > 0 ? (
           <div className="stats-section hardware-synergy">
             <h2><Sparkles size={24} /> Rig + Persona Ready Queue</h2>
             <p className="section-subtitle">Games that match your identity and run smoothly on this hardware.</p>
+
             <div className="synergy-list">
               {hardwareSynergy.map((item) => (
                 <div key={item.id} className="synergy-card">
@@ -567,101 +580,88 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               ))}
             </div>
           </div>
-        )}
-
-        <div className="stats-section">
-          <h2><Trophy size={24} /> Library Statistics</h2>
-          <div className="stats-grid">
-            <div className="stat-card library-card">
-              <div className="stat-icon">
-                <Trophy size={32} />
-              </div>
-              <div className="stat-content">
-                <h3>{libraryStats.totalGames}</h3>
-                <p>Total Games</p>
-              </div>
-            </div>
-
-            <div className="stat-card library-card">
-              <div className="stat-icon">
-                <Award size={32} />
-              </div>
-              <div className="stat-content">
-                <h3>{libraryStats.uniquePlatforms}</h3>
-                <p>Unique Platforms</p>
-              </div>
-            </div>
-
-            <div className="stat-card library-card">
-              <div className="stat-icon">
-                <Star size={32} />
-              </div>
-              <div className="stat-content">
-                <h3>{libraryStats.uniqueGenres}</h3>
-                <p>Unique Genres</p>
-              </div>
-            </div>
+        ) : (
+          <div className="stats-section hardware-synergy">
+            <h2><Sparkles size={24} /> Rig + Persona Ready Queue</h2>
+            <p className="section-subtitle">Games that match your identity and run smoothly on this hardware.</p>
+            <EmptyState
+              icon="🤖"
+              title="Your hardware synergy will appear here"
+              description="GamePilot analyzes your hardware and playstyle to suggest games that run smoothly and match your interests."
+              compact
+            />
           </div>
-        </div>
+        )}
 
         <div className="stats-section">
           <h2>📊 Library Breakdown</h2>
           <p className="section-subtitle">Your owned collection by platform, genre, and mood.</p>
 
-          <div className="charts-grid">
-            {libraryStats.totalGames > 0 && Object.keys(libraryStats.platformCounts).length > 0 && (
-              <PieChart 
-                data={libraryStats.platformCounts}
-                title="🎮 Platform Distribution"
-              />
-            )}
+          {libraryStats.totalGames > 0 ? (
+            <>
+              <div className="charts-grid">
+                {Object.keys(libraryStats.platformCounts).length > 0 && (
+                  <PieChart 
+                    data={libraryStats.platformCounts}
+                    title="🎮 Platform Distribution"
+                  />
+                )}
 
-            {libraryStats.totalGames > 0 && Object.keys(libraryStats.genreCounts).length > 0 && (
-              <BarChart 
-                data={libraryStats.genreCounts}
-                title="🎨 Genre Distribution"
-              />
-            )}
+                {Object.keys(libraryStats.genreCounts).length > 0 && (
+                  <BarChart 
+                    data={libraryStats.genreCounts}
+                    title="🎨 Genre Distribution"
+                  />
+                )}
 
-            {libraryStats.totalGames > 0 && Object.keys(libraryStats.moodCounts).length > 0 && (
-              <PieChart 
-                data={libraryStats.moodCounts}
-                title="😌 Mood Distribution"
-              />
-            )}
-          </div>
+                {Object.keys(libraryStats.moodCounts).length > 0 && (
+                  <PieChart 
+                    data={libraryStats.moodCounts}
+                    title="😌 Mood Distribution"
+                  />
+                )}
+              </div>
 
-          <div className="analytics-row">
-            <div className="analytics-card">
-              <h3>🏆 Most Popular Platform</h3>
-              <div className="top-category">
-                <div className="category-name">{libraryStats.mostCommonPlatform}</div>
-                <div className="category-count">
-                  {libraryStats.platformCounts[libraryStats.mostCommonPlatform] || 0} games
+              <div className="analytics-row">
+                <div className="analytics-card">
+                  <h3>🏆 Most Popular Platform</h3>
+                  <div className="top-category">
+                    <div className="category-name">{libraryStats.mostCommonPlatform}</div>
+                    <div className="category-count">
+                      {libraryStats.platformCounts[libraryStats.mostCommonPlatform] || 0} games
+                    </div>
+                  </div>
+                </div>
+
+                <div className="analytics-card">
+                  <h3>😌 Most Common Mood</h3>
+                  <div className="top-category">
+                    <div className="category-name">{libraryStats.mostCommonMood}</div>
+                    <div className="category-count">
+                      {libraryStats.moodCounts[libraryStats.mostCommonMood] || 0} games
+                    </div>
+                  </div>
+                </div>
+
+                <div className="analytics-card">
+                  <h3>🎮 Most Common Genre</h3>
+                  <div className="top-category">
+                    <div className="category-name">{libraryStats.mostCommonGenre}</div>
+                    <div className="category-count">
+                      {libraryStats.genreCounts[libraryStats.mostCommonGenre] || 0} games
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="analytics-card">
-              <h3>😌 Most Common Mood</h3>
-              <div className="top-category">
-                <div className="category-name">{libraryStats.mostCommonMood}</div>
-                <div className="category-count">
-                  {libraryStats.moodCounts[libraryStats.mostCommonMood] || 0} games
-                </div>
-              </div>
-            </div>
-
-            <div className="analytics-card">
-              <h3>🎮 Most Common Genre</h3>
-              <div className="top-category">
-                <div className="category-name">{libraryStats.mostCommonGenre}</div>
-                <div className="category-count">
-                  {libraryStats.genreCounts[libraryStats.mostCommonGenre] || 0} games
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          ) : (
+            <EmptyState
+              icon="📚"
+              title="Your library breakdown will appear here"
+              description="Scan some games and GamePilot will map your collection by platform, genre, mood, and other library signals."
+              compact
+            />
+          )}
         </div>
 
         {/* Milestones & Prestige Section */}
@@ -766,10 +766,11 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
         </div>
 
         {library.length === 0 && achievementData.unlocked.length === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
-          <div className="empty-state">
-            <h2>{getEmptyLibraryFallback('Stats').message}</h2>
-            <p>Start building your game library and unlocking achievements to see detailed analytics!</p>
-          </div>
+          <EmptyState
+            icon="📈"
+            title={getEmptyLibraryFallback('Stats').message}
+            description="Start building your game library and logging a few sessions to unlock richer analytics, streaks, usage insights, and achievement trends."
+          />
         )}
       </div>
     </div>

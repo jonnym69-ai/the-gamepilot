@@ -71,6 +71,19 @@ const NON_GAME_FOLDER_TOKENS = [
   'system volume information', 'recycle.bin', '$recycle.bin'
 ];
 
+const SYSTEM_PATH_PATTERNS = [
+  '\\windows',
+  '\\users',
+  '\\program files',
+  '\\program files (x86)',
+  '\\programdata',
+  '\\perflogs',
+  '\\appdata',
+  '\\documents and settings',
+  '\\$recycle.bin',
+  '\\system volume information'
+];
+
 const isLikelyNonGameFolder = (folderName) => {
   const normalized = String(folderName || '').trim().toLowerCase();
   if (!normalized || normalized.length < 2) return true;
@@ -80,6 +93,30 @@ const isLikelyNonGameFolder = (folderName) => {
     normalized.includes(` ${token}`) ||
     normalized.includes(`_${token}`) ||
     normalized.includes(`-${token}`)
+  ));
+};
+
+const normalizePathForScanner = (targetPath) => String(targetPath || '')
+  .replace(/\//g, '\\')
+  .trim()
+  .toLowerCase();
+
+const isDriveRootPath = (targetPath) => /^[a-z]:\\?$/i.test(String(targetPath || '').trim());
+
+const isProtectedSystemPath = (targetPath) => {
+  const normalizedPath = normalizePathForScanner(targetPath);
+  if (!normalizedPath) {
+    return true;
+  }
+
+  if (isDriveRootPath(normalizedPath)) {
+    return true;
+  }
+
+  return SYSTEM_PATH_PATTERNS.some((pattern) => (
+    normalizedPath === pattern.slice(1)
+    || normalizedPath.endsWith(pattern)
+    || normalizedPath.includes(`${pattern}\\`)
   ));
 };
 
@@ -146,6 +183,9 @@ const findBestExecutablePath = (gamePath, folderName) => {
 
 const looksLikeInstalledGameDirectory = (gamePath, folderName) => {
   if (!gamePath || !fs.existsSync(gamePath)) {
+    return false;
+  }
+  if (isProtectedSystemPath(gamePath)) {
     return false;
   }
   if (isLikelyNonGameFolder(folderName || path.basename(gamePath))) {
@@ -315,6 +355,7 @@ module.exports = {
   addUniquePath,
   queryRegistryValue,
   isLikelyNonGameFolder,
+  isProtectedSystemPath,
   isLikelyGameExecutable,
   findPreferredExecutable,
   findBestExecutablePath,
