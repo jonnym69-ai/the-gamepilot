@@ -3,6 +3,8 @@ import { RecommendationEngine } from './RecommendationEngine';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
 import { StatsAggregationService } from './StatsAggregationService';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
+import StorageService from './StorageService';
+import { QuestRerollService } from './QuestRerollService';
 
 const RETENTION_QUEST_PREFERENCES_KEY = 'retentionQuestPreferences';
 
@@ -74,7 +76,7 @@ const METRIC_COPY = Object.freeze({
 
 const readPreferences = () => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(RETENTION_QUEST_PREFERENCES_KEY) || '{}');
+    const parsed = StorageService.get(RETENTION_QUEST_PREFERENCES_KEY, {});
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch (error) {
     return {};
@@ -82,7 +84,7 @@ const readPreferences = () => {
 };
 
 const savePreferences = (preferences) => {
-  localStorage.setItem(RETENTION_QUEST_PREFERENCES_KEY, JSON.stringify(preferences));
+  StorageService.set(RETENTION_QUEST_PREFERENCES_KEY, preferences);
 };
 
 const formatPlaytime = (minutes) => {
@@ -332,6 +334,38 @@ export class RetentionQuestService {
       weeklyQuestId: weeklyQuest?.primaryQuest?.id || null,
       message: buildPicksMessage(persona, weeklyQuest)
     });
+  }
+
+  // Spend 1 token and swap a single weekly quest. Returns the new quest definition or an error.
+  static rerollWeeklyQuest(oldQuestId = null) {
+    const spend = QuestRerollService.spendToken(1);
+    if (!spend.success) {
+      return { success: false, message: spend.message };
+    }
+
+    const activeDefs = AchievementTracker.getActivePeriodAchievementDefinitions('weekly');
+    if (!Array.isArray(activeDefs) || activeDefs.length === 0) {
+      return { success: false, message: 'No active quests to reroll.' };
+    }
+
+    const pool = activeDefs.filter((q) => q.id !== oldQuestId);
+    if (pool.length === 0) {
+      return { success: false, message: 'No alternative quests available.' };
+    }
+
+    const newQuest = pool[Math.floor(Math.random() * pool.length)];
+    return { success: true, newQuest, remainingTokens: spend.remaining };
+  }
+
+  // Spend 1 token to reroll the entire weekly quest set (new random period key preserves).
+  static rerollAllWeeklyQuests() {
+    const spend = QuestRerollService.spendToken(1);
+    if (!spend.success) {
+      return { success: false, message: spend.message };
+    }
+    // Clearing the weekly period key forces AchievementTracker to regenerate next snapshot call.
+    AchievementTracker.forceWeeklyQuestRefresh?.(); // optional hook in AchievementTracker
+    return { success: true, remainingTokens: spend.remaining };
   }
 
   static getHomeRetentionSnapshot(library = []) {

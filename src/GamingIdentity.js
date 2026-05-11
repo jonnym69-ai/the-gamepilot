@@ -1,6 +1,8 @@
 // GamingIdentity.js - Enhanced Gaming Identity System
 import { AchievementTracker } from './AchievementSystem';
 import { StatsAggregationService } from './services/StatsAggregationService';
+import { StartupPersonalizationService } from './services/StartupPersonalizationService';
+import StorageService from './services/StorageService';
 
 export class GamingIdentity {
   static getProfile() {
@@ -8,16 +10,16 @@ export class GamingIdentity {
     const identity = this.getGamingIdentity(stats);
     
     // Get or set join date
-    let joinDate = localStorage.getItem('joinDate');
+    let joinDate = StorageService.getString('joinDate');
     if (!joinDate) {
       joinDate = new Date().toISOString();
-      localStorage.setItem('joinDate', joinDate);
+      StorageService.setString('joinDate', joinDate);
     }
-    
+
     return {
-      username: localStorage.getItem('profileUsername') || 'Gamer',
-      profilePic: localStorage.getItem('profilePic') || '',
-      welcomeMessage: localStorage.getItem('welcomeMessage') || 'Ready to find your perfect play?',
+      username: StorageService.getString('profileUsername', 'Gamer'),
+      profilePic: StorageService.getString('profilePic', ''),
+      welcomeMessage: StorageService.getString('welcomeMessage', 'Ready to find your perfect play?'),
       joinDate: joinDate,
       level: this.calculateGamerLevel(stats),
       title: this.getGamerTitle(stats),
@@ -76,7 +78,7 @@ export class GamingIdentity {
         type: 'achievement',
         icon: this.getAchievementIcon(achievementId),
         name: this.getAchievementName(achievementId),
-        date: localStorage.getItem(`achievement_${achievementId}_date`) || new Date().toISOString()
+        date: StorageService.getString(`achievement_${achievementId}_date`, new Date().toISOString())
       });
     });
     
@@ -112,10 +114,11 @@ export class GamingIdentity {
   }
 
   static getGamingStats() {
-    const library = JSON.parse(localStorage.getItem('gameLibrary') || '[]');
+    const library = StorageService.get('library', []);
     const librarySize = library.length;
     const dashboardData = StatsAggregationService.getDashboardData(library);
     const allTimeSnapshot = dashboardData?.periods?.all;
+    const onboardingSeed = StartupPersonalizationService.getSeededRecommendationContext();
     const legacyTimeStats = AchievementTracker.getTimeStats();
     const platformStats = Object.keys(allTimeSnapshot?.platformCounts || {}).length > 0
       ? allTimeSnapshot.platformCounts
@@ -138,14 +141,15 @@ export class GamingIdentity {
       averageSessionTime: totalSessions > 0 ? Math.round(totalPlayTime / totalSessions) : 0,
       favoritePlatform: this.getFavoritePlatform(platformStats),
       mostUsedFeature: this.getMostUsedFeature(featureStats),
-      favoriteMood: this.getFavoriteMood(moodStats),
-      favoriteGenre: this.getFavoriteGenre(genreStats),
+      favoriteMood: this.getFavoriteMood(moodStats) !== 'None' ? this.getFavoriteMood(moodStats) : (onboardingSeed?.moods?.[0] || 'None'),
+      favoriteGenre: this.getFavoriteGenre(genreStats) !== 'None' ? this.getFavoriteGenre(genreStats) : (onboardingSeed?.genres?.[0] || 'None'),
       platformDiversity: Object.keys(platformStats).length,
       achievementProgress: {
         unlocked: AchievementTracker.getUnlockedAchievements().length,
         total: this.getTotalAchievements()
       },
-      librarySize: librarySize
+      librarySize: librarySize,
+      onboardingSeed
     };
   }
 
@@ -160,7 +164,7 @@ export class GamingIdentity {
       personality: gamerType,
       playStyle: playStyle,
       favoriteMood: stats.favoriteMood || 'None',
-      description: `${habits.frequency} ${gamerType} gamer with ${playStyle.toLowerCase()} sessions`,
+      description: `${habits.frequency} ${gamerType} gamer with ${playStyle.toLowerCase()} sessions${stats.onboardingSeed?.playerVibe ? ` • seeded by ${stats.onboardingSeed.playerVibe.toLowerCase()}` : ''}`,
       preferences: preferences,
       habits: habits,
       signature: this.generateGamerSignature(stats, { type: gamerType, playStyle })
@@ -297,20 +301,20 @@ export class GamingIdentity {
   static updateGamingIdentity() {
     // Update level and title when achievements are unlocked
     const profile = this.getProfile();
-    localStorage.setItem('gamerLevel', profile.level);
-    localStorage.setItem('gamerTitle', profile.title);
-    localStorage.setItem('gamerType', this.determineGamerType(profile.stats));
+    StorageService.setString('gamerLevel', profile.level);
+    StorageService.setString('gamerTitle', profile.title);
+    StorageService.setString('gamerType', this.determineGamerType(profile.stats));
   }
 
   static resetJoinDate() {
     // Reset join date to current date (for testing or correction)
     const currentDate = new Date().toISOString();
-    localStorage.setItem('joinDate', currentDate);
+    StorageService.setString('joinDate', currentDate);
     return currentDate;
   }
 
   static getJoinDateFormatted() {
-    const joinDate = localStorage.getItem('joinDate');
+    const joinDate = StorageService.getString('joinDate');
     if (!joinDate) return 'Unknown';
     
     const date = new Date(joinDate);

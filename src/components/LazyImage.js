@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import StorageService from '../services/StorageService';
 import './LazyImage.css';
 
 // Persistent cache for failed image URLs using localStorage
@@ -7,7 +8,7 @@ const FAILED_IMAGES_TTL_MS = 12 * 60 * 60 * 1000;
 
 const writeFailedImageCache = (cache) => {
   try {
-    localStorage.setItem(FAILED_IMAGES_KEY, JSON.stringify(cache));
+    StorageService.set(FAILED_IMAGES_KEY, cache);
   } catch (e) {
     console.error('Failed to persist failed image cache:', e);
   }
@@ -15,22 +16,14 @@ const writeFailedImageCache = (cache) => {
 
 const getFailedImageCache = () => {
   try {
-    const cached = localStorage.getItem(FAILED_IMAGES_KEY);
-    if (!cached) {
-      return {};
-    }
-
-    const parsed = JSON.parse(cached);
-
-    if (Array.isArray(parsed)) {
+    const cached = StorageService.get(FAILED_IMAGES_KEY, {});
+    if (Array.isArray(cached)) {
       // Legacy format (string array). Do not keep permanent failures.
       return {};
     }
-
-    if (parsed && typeof parsed === 'object') {
-      return parsed;
+    if (cached && typeof cached === 'object') {
+      return cached;
     }
-
     return {};
   } catch (e) {
     return {};

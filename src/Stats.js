@@ -1,17 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
-import { Trophy, Star, TrendingUp, Award, User, Sparkles, RefreshCcw } from 'lucide-react';
+import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
 import EmptyState from './components/EmptyState';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
-import { PersonaPerformanceInsights } from './services/PersonaPerformanceInsights';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { MilestoneService } from './services/MilestoneService';
-
+import StorageService from './services/StorageService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
+import PlaytimeHeatmap from './components/PlaytimeHeatmap';
+import CollapsibleSection from './components/CollapsibleSection';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
@@ -34,7 +35,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const [dashboardData, setDashboardData] = useState(null);
   const [libraryStats, setLibraryStats] = useState(null);
   const [personaData, setPersonaData] = useState(null);
-  const [hardwareSynergy, setHardwareSynergy] = useState([]);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('all');
 
@@ -91,12 +91,16 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
         const priceMatch = game.price.toString().match(/[\d.]+/);
         gamePrice = priceMatch ? parseFloat(priceMatch[0]) : 0;
       } else {
-        const storedPrices = JSON.parse(localStorage.getItem('gamePrices') || '{}');
-        const storedPrice = storedPrices[game.appid];
-        if (storedPrice && storedPrice.priceNumeric) {
-          gamePrice = storedPrice.priceNumeric;
-        } else {
-          gamePrice = 15; 
+        try {
+          const storedPrices = StorageService.get('gamePrices', {});
+          const storedPrice = storedPrices[game.appid];
+          if (storedPrice && storedPrice.priceNumeric) {
+            gamePrice = storedPrice.priceNumeric;
+          } else {
+            gamePrice = 15; 
+          }
+        } catch (e) {
+          gamePrice = 15;
         }
       }
       
@@ -104,9 +108,13 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     }, 0);
 
     const pricedGames = Array.isArray(library) ? library.filter(game => {
-      return (game.priceNumeric || game.price || 
-        (JSON.parse(localStorage.getItem('gamePrices') || '{}')[game.appid]?.priceNumeric)
-      );
+      if (game.priceNumeric || game.price) return true;
+      try {
+        const storedPrices = StorageService.get('gamePrices', {});
+        return storedPrices[game.appid]?.priceNumeric;
+      } catch (e) {
+        return false;
+      }
     }).length : 0;
 
     // Platform distribution
@@ -195,65 +203,22 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     };
   }, []);
 
-  const calculateHardwareSynergy = useCallback((personaSnapshot) => {
-    if (!personaSnapshot || !library.length) {
-      return [];
-    }
-
-    return library
-      .map((game) => {
-        if (!game) return null;
-        const compatibility = PersonaPerformanceInsights.getCompatibility(game);
-        if (!compatibility || !compatibility.canRun || compatibility.settingsLevel === 'cannot_run') {
-          return null;
-        }
-
-        const alignment = UserBehaviorProfile.getPersonaAlignmentScore({
-          mood: personaSnapshot.dominantMood,
-          genres: PersonaPerformanceInsights.extractGenres(game, personaSnapshot.dominantGenre),
-          sessionMinutes: PersonaPerformanceInsights.estimateSessionMinutes(game)
-        });
-
-        if (!alignment) {
-          return null;
-        }
-
-        const hardwareMatch = PersonaPerformanceInsights.getHardwareMatchContribution(compatibility) || 0;
-        const compositeScore = alignment * 0.6 + hardwareMatch * 0.4;
-
-        return {
-          id: game.appid || game.app_id || game.steamAppId || game.name,
-          name: game.name || 'Unknown Game',
-          alignment,
-          hardwareMatch,
-          compatibility,
-          compositeScore
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.compositeScore - a.compositeScore)
-      .slice(0, 5);
-  }, [library]);
-
   const refreshStats = useCallback(() => {
     const dashboardSnapshot = calculateDashboardData();
     const achievementSnapshot = calculateAchievementData(dashboardSnapshot);
     const personaSnapshot = calculatePersonaData(dashboardSnapshot);
     const librarySnapshot = calculateLibraryStats();
-    const synergy = calculateHardwareSynergy(personaSnapshot.snapshot);
 
     setAchievementData(achievementSnapshot);
     setDashboardData(dashboardSnapshot);
     setPersonaData(personaSnapshot);
     setLibraryStats(librarySnapshot);
-    setHardwareSynergy(synergy);
     setLastRefresh(Date.now());
   }, [
     calculateAchievementData,
     calculateDashboardData,
     calculatePersonaData,
-    calculateLibraryStats,
-    calculateHardwareSynergy
+    calculateLibraryStats
   ]);
 
   useEffect(() => {
@@ -312,24 +277,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     return labels[bucket] || bucket;
   };
 
-  const getPerformanceLabel = (level) => {
-    const labels = {
-      ultra: 'Ultra',
-      high: 'High',
-      low: 'Low'
-    };
-    return labels[level] || level;
-  };
-
-  const getPerformanceColor = (level) => {
-    const colors = {
-      ultra: '#4caf50',
-      high: '#2196f3',
-      low: '#ff9800'
-    };
-    return colors[level] || '#666';
-  };
-
   if (isLoading) {
     return (
       <div className={`App ${theme}`}>
@@ -348,6 +295,8 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const favoriteFeature = allTimeStats?.featureUsage?.favoriteFeature || '—';
   const currentStreak = Number(allTimeStats?.streak?.current || 0);
   const bestStreak = Number(allTimeStats?.streak?.best || 0);
+  const selectedStats = dashboardData?.periods?.[selectedPeriod] || allTimeStats;
+  const habitInsights = selectedStats?.habitInsights || {};
 
   return (
     <div className={`App ${theme}`}>
@@ -370,12 +319,27 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </div>
 
-        <div className="stats-section">
-          <h2><Trophy size={24} /> Achievement Statistics</h2>
+        <CollapsibleSection
+          title="Playtime Heatmap"
+          subtitle="Visual calendar of your gaming activity."
+          icon={<Calendar size={18} />}
+          className="stats-section stats-hero-heatmap"
+        >
+          <PlaytimeHeatmap library={library} />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Achievement Statistics"
+          subtitle="Your unlocks, quests, XP and level progress."
+          badge={`Lv ${achievementData.xpStats.level}`}
+          icon={<Trophy size={18} />}
+          className="stats-section"
+          defaultOpen
+        >
           <div className="stats-grid">
             <div className="stat-card achievement-card">
               <div className="stat-icon">
-                <Award size={32} />
+                <Award size={24} />
               </div>
               <div className="stat-content">
                 <h3>{achievementData.unlocked.length}</h3>
@@ -385,7 +349,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
             <div className="stat-card achievement-card">
               <div className="stat-icon">
-                <TrendingUp size={32} />
+                <TrendingUp size={24} />
               </div>
               <div className="stat-content">
                 <h3>{achievementData.timeCounters.yearly.count}</h3>
@@ -395,7 +359,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
             <div className="stat-card achievement-card">
               <div className="stat-icon">
-                <Trophy size={32} />
+                <Trophy size={24} />
               </div>
               <div className="stat-content">
                 <h3>{achievementData.unlockCounters.yearly}</h3>
@@ -405,7 +369,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
             <div className="stat-card level-card">
               <div className="stat-icon">
-                <Star size={32} />
+                <Star size={24} />
               </div>
               <div className="stat-content">
                 <h3>Level {achievementData.xpStats.level}</h3>
@@ -413,17 +377,80 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               </div>
             </div>
           </div>
-        </div>
+        </CollapsibleSection>
 
-        <StatsBackbonePanel
-          dashboardData={dashboardData}
-          selectedPeriod={selectedPeriod}
-          onSelectPeriod={setSelectedPeriod}
-        />
+        <CollapsibleSection
+          title="Stats Backbone"
+          subtitle="Deep-dive analytics across periods."
+          icon={<BarChart3 size={18} />}
+          className="stats-section"
+        >
+          <StatsBackbonePanel
+            dashboardData={dashboardData}
+            selectedPeriod={selectedPeriod}
+            onSelectPeriod={setSelectedPeriod}
+          />
+        </CollapsibleSection>
 
-        {personaData.snapshot ? (
-          <div className="stats-section persona-insights">
-            <h2><User size={24} /> Flight Persona Snapshot</h2>
+        <CollapsibleSection
+          title="Deeper Play Habits"
+          subtitle={`Period-aware insights for ${selectedStats?.rangeLabel || 'this range'}.`}
+          icon={<TrendingUp size={18} />}
+          className="stats-section stats-habit-insights"
+        >
+          <div className="habit-insights-grid">
+            <div className="habit-insight-card habit-insight-featured">
+              <span>Longest session</span>
+              <strong>{habitInsights.longestSession?.gameName || '—'}</strong>
+              <p>
+                {habitInsights.longestSession
+                  ? `${habitInsights.longestSession.playtimeMinutes} min${habitInsights.longestSession.dateLabel ? ` · ${habitInsights.longestSession.dateLabel}` : ''}`
+                  : 'Finish a tracked session to reveal your biggest single sitting.'}
+              </p>
+            </div>
+            <div className="habit-insight-card">
+              <span>Busiest day</span>
+              <strong>{habitInsights.busiestDay?.dateLabel || '—'}</strong>
+              <p>
+                {habitInsights.busiestDay
+                  ? `${habitInsights.busiestDay.playtimeMinutes} min · ${habitInsights.busiestDay.sessions} sessions`
+                  : 'Your most active day will appear here.'}
+              </p>
+            </div>
+            <div className="habit-insight-card">
+              <span>Most returned to</span>
+              <strong>{habitInsights.mostReturnedTo?.name || '—'}</strong>
+              <p>
+                {habitInsights.mostReturnedTo
+                  ? `${habitInsights.mostReturnedTo.sessions} sessions · ${habitInsights.mostReturnedTo.totalPlaytime} min`
+                  : 'The game you keep returning to will appear here.'}
+              </p>
+            </div>
+            <div className="habit-insight-card">
+              <span>Late-night runs</span>
+              <strong>{habitInsights.lateNightSessions || 0}</strong>
+              <p>{habitInsights.lateNightPlaytimeMinutes || 0} minutes played after-hours.</p>
+            </div>
+            <div className="habit-insight-card">
+              <span>Weekend play</span>
+              <strong>{habitInsights.weekendSessions || 0}</strong>
+              <p>{habitInsights.weekendPlaytimeMinutes || 0} minutes logged on weekends.</p>
+            </div>
+            <div className="habit-insight-card">
+              <span>Repeat games</span>
+              <strong>{habitInsights.repeatGames || 0}</strong>
+              <p>Games with more than one tracked session in this period.</p>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Flight Persona Snapshot"
+          subtitle="Your gaming identity and playstyle traits."
+          icon={<User size={18} />}
+          className="stats-section persona-insights"
+        >
+          {personaData.snapshot ? (
             <div className="persona-grid">
               <div className="persona-card">
                 <div className="persona-header">
@@ -476,7 +503,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                     <p className="persona-label">Local Usage Snapshot</p>
                     <h3>Mood, Genre &amp; Feature Usage</h3>
                   </div>
-                  <Sparkles size={20} />
+                  ✨
                 </div>
                 <div className="heatmap-grid">
                   {personaData.moodUsage.length > 0 && (
@@ -533,70 +560,23 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="stats-section persona-insights">
-            <h2><User size={24} /> Flight Persona Snapshot</h2>
+          ) : (
             <EmptyState
               icon="🧭"
               title="Your persona will appear after a few sessions"
               description="GamePilot builds this locally from your play habits, moods, genres, and session length patterns once there is enough signal to read from."
               compact
             />
-          </div>
-        )}
+          )}
+        </CollapsibleSection>
 
-        {personaData.snapshot && hardwareSynergy.length > 0 ? (
-          <div className="stats-section hardware-synergy">
-            <h2><Sparkles size={24} /> Rig + Persona Ready Queue</h2>
-            <p className="section-subtitle">Games that match your identity and run smoothly on this hardware.</p>
-
-            <div className="synergy-list">
-              {hardwareSynergy.map((item) => (
-                <div key={item.id} className="synergy-card">
-                  <div className="synergy-header">
-                    <h3>{item.name}</h3>
-                    <span
-                      className="synergy-badge"
-                      style={{ background: getPerformanceColor(item.compatibility.settingsLevel) }}
-                    >
-                      {getPerformanceLabel(item.compatibility.settingsLevel)}
-                    </span>
-                  </div>
-                  <div className="synergy-metrics">
-                    <div>
-                      <span>Persona Alignment</span>
-                      <strong>{item.alignment}%</strong>
-                    </div>
-                    <div>
-                      <span>Hardware Match</span>
-                      <strong>{item.hardwareMatch}%</strong>
-                    </div>
-                  </div>
-                  <p className="synergy-detail">
-                    {PersonaPerformanceInsights.describeCompatibility(item.compatibility)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="stats-section hardware-synergy">
-            <h2><Sparkles size={24} /> Rig + Persona Ready Queue</h2>
-            <p className="section-subtitle">Games that match your identity and run smoothly on this hardware.</p>
-            <EmptyState
-              icon="🤖"
-              title="Your hardware synergy will appear here"
-              description="GamePilot analyzes your hardware and playstyle to suggest games that run smoothly and match your interests."
-              compact
-            />
-          </div>
-        )}
-
-        <div className="stats-section">
-          <h2>📊 Library Breakdown</h2>
-          <p className="section-subtitle">Your owned collection by platform, genre, and mood.</p>
-
+        <CollapsibleSection
+          title="Library Breakdown"
+          subtitle="Your collection by platform, genre, and mood."
+          badge={`${libraryStats.totalGames} games`}
+          icon={<PieChartIcon size={18} />}
+          className="stats-section"
+        >
           {libraryStats.totalGames > 0 ? (
             <>
               <div className="charts-grid">
@@ -662,13 +642,14 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               compact
             />
           )}
-        </div>
+        </CollapsibleSection>
 
-        {/* Milestones & Prestige Section */}
-        <div className="stats-section">
-          <h2>🏆 Milestones & Prestige</h2>
-          <p className="section-subtitle">Track your major XP achievements and prestige progress.</p>
-          
+        <CollapsibleSection
+          title="Milestones & Prestige"
+          subtitle="Track your major XP achievements and prestige progress."
+          icon={<Medal size={18} />}
+          className="stats-section"
+        >
           <div className="milestones-container" style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
@@ -763,7 +744,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               </div>
             ) : null;
           })()}
-        </div>
+        </CollapsibleSection>
 
         {library.length === 0 && achievementData.unlocked.length === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
           <EmptyState

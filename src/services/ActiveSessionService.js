@@ -1,10 +1,12 @@
+import StorageService from './StorageService';
+
 const ACTIVE_GAME_SESSIONS_KEY = 'activeGameSessions';
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
 export const readActiveGameSessions = () => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(ACTIVE_GAME_SESSIONS_KEY) || '{}');
+    const parsed = StorageService.get(ACTIVE_GAME_SESSIONS_KEY, {});
     return isPlainObject(parsed) ? parsed : {};
   } catch (error) {
     console.error('Error reading active sessions:', error);
@@ -73,12 +75,12 @@ export const normalizeAndPersistActiveSessions = () => {
     return acc;
   }, {});
 
-  localStorage.setItem(ACTIVE_GAME_SESSIONS_KEY, JSON.stringify(normalizedSessions));
+  StorageService.set(ACTIVE_GAME_SESSIONS_KEY, normalizedSessions);
   return normalizedSessions;
 };
 
 export const persistActiveGameSessions = (sessions) => {
-  localStorage.setItem(ACTIVE_GAME_SESSIONS_KEY, JSON.stringify(sessions));
+  StorageService.set(ACTIVE_GAME_SESSIONS_KEY, sessions);
 };
 
 export { ACTIVE_GAME_SESSIONS_KEY };

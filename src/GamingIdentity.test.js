@@ -1,6 +1,7 @@
 import { GamingIdentity } from './GamingIdentity';
 import { AchievementTracker } from './AchievementSystem';
 import { StatsAggregationService } from './services/StatsAggregationService';
+import StorageService from './services/StorageService';
 
 jest.mock('./AchievementSystem', () => ({
   AchievementTracker: {
@@ -22,7 +23,7 @@ jest.mock('./services/StatsAggregationService', () => ({
 
 describe('GamingIdentity', () => {
   beforeEach(() => {
-    localStorage.clear();
+    StorageService.clear();
     jest.clearAllMocks();
 
     AchievementTracker.getUnlockedAchievements.mockReturnValue([]);
@@ -48,10 +49,10 @@ describe('GamingIdentity', () => {
   });
 
   test('getGamingStats reads canonical all-time dashboard snapshot', () => {
-    localStorage.setItem('gameLibrary', JSON.stringify([
+    StorageService.set('library', [
       { name: 'Game A' },
       { name: 'Game B' }
-    ]));
+    ]);
 
     AchievementTracker.getUnlockedAchievements.mockReturnValue(['a1', 'a2']);
     StatsAggregationService.getDashboardData.mockReturnValue({
@@ -111,7 +112,7 @@ describe('GamingIdentity', () => {
       identity: expect.any(Object),
       joinDate: expect.any(String)
     }));
-    expect(localStorage.getItem('joinDate')).toBeTruthy();
+    expect(StorageService.getString('joinDate')).toBeTruthy();
   });
 
   test('resetJoinDate stores and returns an ISO timestamp', () => {
@@ -119,6 +120,6 @@ describe('GamingIdentity', () => {
 
     expect(typeof resetValue).toBe('string');
     expect(new Date(resetValue).toString()).not.toBe('Invalid Date');
-    expect(localStorage.getItem('joinDate')).toBe(resetValue);
+    expect(StorageService.getString('joinDate')).toBe(resetValue);
   });
 });

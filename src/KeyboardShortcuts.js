@@ -1,4 +1,6 @@
 // KeyboardShortcuts.js - Global keyboard shortcut handler
+import StorageService from './services/StorageService';
+
 const SHORTCUT_SETTINGS_KEY = 'keyboardShortcutSettings';
 
 const normalizeShortcut = (shortcut) => String(shortcut || '')
@@ -26,7 +28,7 @@ const normalizeShortcut = (shortcut) => String(shortcut || '')
 
 const readShortcutSettings = () => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(SHORTCUT_SETTINGS_KEY) || '{}');
+    const parsed = StorageService.get(SHORTCUT_SETTINGS_KEY, {});
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return { enabled: true, bindings: {} };
     }
@@ -56,7 +58,7 @@ export class KeyboardShortcuts {
   }
 
   static persistSettings() {
-    localStorage.setItem(SHORTCUT_SETTINGS_KEY, JSON.stringify(this.settings));
+    StorageService.set(SHORTCUT_SETTINGS_KEY, this.settings);
   }
 
   static rebuildShortcutIndex() {
@@ -191,7 +193,16 @@ export class KeyboardShortcuts {
 
     if (event.ctrlKey || event.metaKey) parts.push('Ctrl');
     if (event.altKey) parts.push('Alt');
-    if (event.shiftKey) parts.push('Shift');
+    if (event.shiftKey) {
+      // For single-character symbols that require Shift (e.g. ?, !, {), the
+      // key already encodes the shifted state, so adding Shift would break
+      // matching against shortcuts registered as the raw symbol.
+      const key = event.key;
+      const isSingleNonLetter = typeof key === 'string' && key.length === 1 && !/[A-Z]/.test(key);
+      if (!isSingleNonLetter) {
+        parts.push('Shift');
+      }
+    }
 
     const keyValue = event.key === ' ' ? 'Space' : event.key;
     parts.push(typeof keyValue === 'string' ? keyValue.toUpperCase() : String(keyValue));

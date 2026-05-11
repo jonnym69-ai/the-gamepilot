@@ -1,9 +1,10 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Heart, Coffee, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle, Key, Download, Upload, FileText, Sparkles, Shield } from 'lucide-react';
+import { Heart, Coffee, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle, Key, Sparkles, Shield, Palette, Image as ImageIcon, Layers3, LockKeyhole, FileText } from 'lucide-react';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
 import { openExternalUrl } from './services/ElectronBridge';
+import StorageService from './services/StorageService';
 import './Donate.css';
 
 const TIER_LABEL_MAP = {
@@ -42,10 +43,7 @@ function Donate({ theme }) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
   const [validationSuccess, setValidationSuccess] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [importMessage, setImportMessage] = useState('');
   const codeFormRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   const canonicalPatreonCodes = useMemo(() => {
     const codes = {};
@@ -82,7 +80,7 @@ function Donate({ theme }) {
     },
     {
       name: 'YouTube',
-      url: 'https://youtube.com/@mozmakesstuff?si=VKNpHeMBWJcTStFd',
+      url: 'https://youtube.com/@mozog91?si=rJyzBqLF3-4arDhU',
       description: 'Subscribe for updates',
       icon: <Play size={24} />
     },
@@ -151,13 +149,22 @@ function Donate({ theme }) {
     }
   ];
 
-  const userFounders = JSON.parse(localStorage.getItem('userFounders') || '[]');
+  const userFounders = StorageService.get('userFounders', []);
 
   // Founders data - merge static founders with user-added Patreon supporters
   const founders = [
     ...staticFounders,
     ...userFounders
   ];
+
+  const savedUsername = StorageService.getString('profileUsername', '');
+  const activeBoostProfile = AchievementTracker.getPatreonBoostProfile();
+  const currentFounder = founders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
+  const effectiveTier = currentFounder?.tier || activeBoostProfile.tier || null;
+  const loungeUnlocked = Boolean(effectiveTier);
+  const activeFounderName = currentFounder?.name || savedUsername || 'Pilot';
+  const founderJoinDate = currentFounder?.date || activeBoostProfile.activatedAt || null;
+  const xpMultiplierLabel = activeBoostProfile?.multiplier > 1 ? `${activeBoostProfile.multiplier}x XP boost active` : 'No XP boost active';
 
   const tierOrder = ['Platinum', 'Gold', 'Silver', 'Bronze'];
   const tierBreakdown = tierOrder.map(tier => ({
@@ -167,7 +174,7 @@ function Donate({ theme }) {
 
   const founderStats = [
     { label: 'Founding Members', value: founders.length.toString() },
-    { label: 'Founder Codes Redeemed', value: userFounders.length.toString() },
+    { label: 'Your Founder Tier', value: effectiveTier || 'Visitor' },
     { label: 'Progression Model', value: 'Play to unlock • Local-first' }
   ];
 
@@ -214,6 +221,59 @@ function Donate({ theme }) {
     Silver: ['3x XP boost multiplier', 'Silver founder recognition on the Founders Wall', 'Supports ongoing cockpit polish and quality-of-life updates'],
     Bronze: ['2x XP boost multiplier', 'Bronze founder recognition on the Founders Wall', 'Supports ongoing local-first development']
   };
+
+  const founderLoungeFeatures = [
+    {
+      title: 'Founder Identity Pack',
+      description: 'Exclusive founder badge, profile frame, banner styling, and title direction that make support feel permanent and visible.',
+      icon: <Shield size={22} />,
+      tier: 'Bronze+',
+      tags: ['Founder badge', 'Profile frame', 'Founder title'],
+      unlocked: loungeUnlocked
+    },
+    {
+      title: 'Founder Atmosphere',
+      description: 'A prestige presentation pack for the lounge itself with richer lighting, premium ambiance, and a supporters-only tone.',
+      icon: <Palette size={22} />,
+      tier: 'Silver+',
+      tags: ['Prestige theme', 'Lounge styling', 'Founder mood'],
+      unlocked: ['Silver', 'Gold', 'Platinum'].includes(effectiveTier)
+    },
+    {
+      title: 'Founder Year in Review Style',
+      description: 'Premium recap/export treatment with a Founding Supporter stamp, elevated card polish, and collector-style identity framing.',
+      icon: <ImageIcon size={22} />,
+      tier: 'Gold+',
+      tags: ['Recap stamp', 'Premium export styling', 'Collector polish'],
+      unlocked: ['Gold', 'Platinum'].includes(effectiveTier)
+    },
+    {
+      title: 'Founder Showcase Shelf',
+      description: 'A lounge-style identity shelf for spotlighting your support era, your founder tier, and the kind of cockpit you helped fund.',
+      icon: <Layers3 size={22} />,
+      tier: 'Platinum',
+      tags: ['Founder shelf', 'Support timeline', 'Identity plaque'],
+      unlocked: effectiveTier === 'Platinum'
+    }
+  ];
+
+  const founderLoungeMoments = [
+    {
+      title: 'Founder Crest',
+      detail: loungeUnlocked ? `${effectiveTier} crest active for ${activeFounderName}.` : 'Unlock your crest by redeeming a Patreon founder code.',
+      status: loungeUnlocked ? 'Active' : 'Locked'
+    },
+    {
+      title: 'Support Timeline',
+      detail: founderJoinDate ? `Founder since ${new Date(founderJoinDate).toLocaleDateString()}.` : 'Your founder join date will appear here once the lounge is unlocked.',
+      status: founderJoinDate ? 'Tracked' : 'Waiting'
+    },
+    {
+      title: 'Export Signature',
+      detail: ['Gold', 'Platinum'].includes(effectiveTier) ? 'Founder export styling is eligible for premium recap treatment.' : 'Higher founder tiers can unlock premium recap/export styling.',
+      status: ['Gold', 'Platinum'].includes(effectiveTier) ? 'Eligible' : 'Preview'
+    }
+  ];
 
   const scrollToCodeForm = () => {
     if (codeFormRef.current) {
@@ -277,7 +337,7 @@ function Donate({ theme }) {
       
       if (codeData) {
         // Check if this code has already been used
-        const existingFounders = JSON.parse(localStorage.getItem('userFounders') || '[]');
+        const existingFounders = StorageService.get('userFounders', []);
         const codeAlreadyUsed = existingFounders.some(founder => 
           founder.code === normalizedCode
         );
@@ -310,7 +370,7 @@ function Donate({ theme }) {
           };
           
           existingFounders.push(newFounder);
-          localStorage.setItem('userFounders', JSON.stringify(existingFounders));
+          StorageService.set('userFounders', existingFounders);
           
           setValidationMessage(`Welcome to the founders club! You've been added as a ${codeData.tier} founder.${boostMessage}`);
           setValidationSuccess(true);
@@ -331,108 +391,6 @@ function Donate({ theme }) {
     }, 1000);
   };
 
-  // Export founders data as JSON file
-  const exportFoundersData = () => {
-    // Get all founders (static + user-added)
-    const allFounders = [
-      ...staticFounders,
-      ...JSON.parse(localStorage.getItem('userFounders') || '[]')
-    ];
-
-    const exportData = {
-      version: "1.0",
-      exportedAt: new Date().toISOString(),
-      totalFounders: allFounders.length,
-      founders: allFounders
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `gamepilot-founders-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    
-    setImportMessage('Founders data exported successfully!');
-    setTimeout(() => setImportMessage(''), 3000);
-  };
-
-  // Handle file drop for importing founders data
-  const handleFileDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (file.type === 'application/json' || file.name.endsWith('.json')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const importData = JSON.parse(event.target.result);
-            
-            // Validate import data structure
-            if (!importData.founders || !Array.isArray(importData.founders)) {
-              setImportMessage('Invalid file format. Expected founders array.');
-              return;
-            }
-            
-            // Validate each founder has required fields
-            const validFounders = importData.founders.filter(founder => 
-              founder.name && founder.tier && founder.date && founder.contribution
-            );
-            
-            if (validFounders.length !== importData.founders.length) {
-              setImportMessage('Some founders data is invalid. Only valid entries will be imported.');
-            }
-            
-            // Separate static founders from user-added ones
-            // Filter out user-added founders that match static ones
-            const userFounders = validFounders.filter(founder => 
-              !staticFounders.some(staticFounder => staticFounder.name === founder.name)
-            );
-            
-            // Save user founders
-            localStorage.setItem('userFounders', JSON.stringify(userFounders));
-            
-            setImportMessage(`Successfully imported ${userFounders.length} founder entries!`);
-            setTimeout(() => {
-              window.location.reload(); // Refresh to show new founders
-            }, 2000);
-            
-          } catch (error) {
-            setImportMessage('Error parsing JSON file. Please check the file format.');
-          }
-        };
-        reader.readAsText(file);
-      } else {
-        setImportMessage('Please drop a valid JSON file.');
-      }
-    }
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleFileInputChange = (e) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    const fakeEvent = {
-      preventDefault: () => {},
-      dataTransfer: { files: [file] }
-    };
-    handleFileDrop(fakeEvent);
-  };
-
   return (
     <div className={`App ${theme}`}>
       <NavBar />
@@ -440,15 +398,15 @@ function Donate({ theme }) {
         <section className="founder-hero">
           <div className="hero-text">
             <div className="hero-badge">
-              <Sparkles size={16} /> Founder Recognition & XP Boosts
+              <Sparkles size={16} /> Founder Lounge
             </div>
-            <h1>Help build the cockpit gamers actually want.</h1>
+            <h1>The private lounge for the players helping build GamePilot.</h1>
             <p>
-              Progression unlocks content through playtime and achievements. Patreon codes add optional XP boosts, while founders get permanent recognition on the Hall of Fame wall.
+              The Founder Lounge is where supporter identity, founder cosmetics, premium recap style, and your support timeline come together. Everyone still progresses through play. Founders just get a more personal cockpit layer.
             </p>
             <div className="hero-actions">
               <button className="hero-primary" onClick={scrollToCodeForm}>
-                Redeem Patreon Code
+                Unlock Founder Lounge
               </button>
               <button className="hero-secondary" onClick={() => handleLinkClick(supportLinks[0].url)}>
                 Visit Patreon
@@ -467,14 +425,47 @@ function Donate({ theme }) {
             </div>
           </div>
           <div className="hero-card">
-            <h3>Supporter Benefits</h3>
+            <h3>{loungeUnlocked ? `${activeFounderName}'s Lounge Access` : 'Founder Lounge Access'}</h3>
+            <div className={`lounge-status-card ${loungeUnlocked ? 'unlocked' : 'locked'}`}>
+              <div>
+                <span className="lounge-status-label">Status</span>
+                <strong>{loungeUnlocked ? `${effectiveTier} Founder active` : 'Locked until founder code is redeemed'}</strong>
+              </div>
+              <div>
+                <span className="lounge-status-label">Progression</span>
+                <strong>{xpMultiplierLabel}</strong>
+              </div>
+            </div>
             <ul>
-              <li>Optional XP boost multipliers from Patreon codes</li>
-              <li>Founder Hall recognition with your display name</li>
-              <li>Support helps fund new themes, audio, and polish for everyone</li>
-              <li>Everything still unlocks through play inside the app</li>
+              <li>Founder badge, title, and identity pack direction</li>
+              <li>Founder-only atmosphere and prestige page styling</li>
+              <li>Premium Year in Review / export presentation roadmap</li>
+              <li>All stored locally with no account dependency</li>
             </ul>
-            <p>Everything is stored locally. No accounts. No telemetry. Just your cockpit.</p>
+            <p>{loungeUnlocked ? 'Your founder tier is now part of your local identity layer inside GamePilot.' : 'Redeem a valid founder code to turn this page into your personalized founder space.'}</p>
+          </div>
+        </section>
+
+        <section className="founder-lounge-overview">
+          <div className="lounge-overview-copy">
+            <div className="updates-pill">
+              <Shield size={14} /> Lounge Identity
+            </div>
+            <h2>{loungeUnlocked ? `Welcome back, ${activeFounderName}.` : 'Founder Lounge preview'}</h2>
+            <p>
+              {loungeUnlocked
+                ? `Your ${effectiveTier} founder access is active. This lounge highlights the identity, prestige styling, and supporter recognition your local profile now carries.`
+                : 'Preview the founder-only identity layer before you unlock it. Support stays local-first, tasteful, and focused on prestige instead of gating the core experience.'}
+            </p>
+          </div>
+          <div className="lounge-moment-grid">
+            {founderLoungeMoments.map((moment) => (
+              <div key={moment.title} className="lounge-moment-card">
+                <span>{moment.title}</span>
+                <strong>{moment.status}</strong>
+                <p>{moment.detail}</p>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -511,20 +502,41 @@ function Donate({ theme }) {
         </div>
 
         <CollapsibleSection
-          title="Supporter Tiers & XP Boosts"
-          subtitle="Optional Patreon multipliers, founder recognition, and local-only supporter rewards."
+          title="Founder Lounge Perks"
+          subtitle="A prestige identity layer for supporters: founder cosmetics, recap styling, and a private lounge feel without pay-to-win unlocks."
           badge={`${tierPerks.length} tiers`}
           icon={<Heart size={18} />}
           className="donate-folder"
         >
           <section className="founder-feature-section tier-perks">
             <div className="feature-heading">
-              <h2>Supporter Tiers & XP Boosts</h2>
+              <h2>Founder Lounge Perks</h2>
               <p>
-                Progression unlocks themes, audio, and presentation rewards through XP for everyone. Patreon tiers add optional
-                XP boost multipliers, founder recognition, and help fund new content without bypassing the progression system.
-                100% local — no online accounts, ever.
+                Support unlocks a founder-only identity layer built around prestige, atmosphere, and supporter recognition.
+                It complements progression instead of replacing it, and keeps the app local-first with no online account requirement.
               </p>
+            </div>
+            <div className="feature-grid founder-lounge-grid">
+              {founderLoungeFeatures.map((feature) => (
+                <div key={feature.title} className={`feature-card ${feature.unlocked ? 'animated' : ''}`}>
+                  <div className="feature-card-header">
+                    <div className="feature-icon">{feature.unlocked ? feature.icon : <LockKeyhole size={22} />}</div>
+                    <div>
+                      <h3>{feature.title}</h3>
+                      <p>{feature.description}</p>
+                    </div>
+                  </div>
+                  <div className="feature-meta">
+                    <span className={`tier-pill ${(effectiveTier || 'bronze').toLowerCase()}`}>{feature.tier}</span>
+                    <span className="coming-soon">{feature.unlocked ? 'Unlocked for your lounge' : 'Tier preview'}</span>
+                  </div>
+                  <div className="feature-tags-inline">
+                    {feature.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="tier-perks-grid">
               {tierPerks.map((tierInfo) => (
@@ -562,17 +574,17 @@ function Donate({ theme }) {
         {/* Become a Founder Section */}
         <div ref={codeFormRef}>
           <CollapsibleSection
-            title="Redeem Founder / Patreon Code"
-            subtitle="Join the founders wall and activate any included XP multiplier from your code."
+            title="Unlock Your Founder Lounge"
+            subtitle="Redeem your founder code to activate your supporter tier, founder recognition, and any included XP multiplier."
             badge={validationSuccess ? 'Code accepted' : 'Redeem code'}
             icon={<Key size={18} />}
             className="donate-folder"
           >
             <div className="become-founder-section">
-              <h2><Key size={24} /> Redeem Founder / Patreon Code</h2>
+              <h2><Key size={24} /> Unlock Your Founder Lounge</h2>
               <p className="founder-signup-intro">
-                Redeem your code to join the founders wall.
-                Patreon XP boost codes also activate your progression multiplier.
+                Redeem your founder code to unlock the lounge, add your display name to the founders wall,
+                and activate any included XP multiplier.
               </p>
 
               <div className="code-entry-form">
@@ -626,7 +638,7 @@ function Donate({ theme }) {
                     <li>Subscribe to our <a href="https://patreon.com/GamePilot" target="_blank" rel="noopener noreferrer">Patreon</a></li>
                     <li>Check your welcome email/message for your unique founder code</li>
                     <li>Enter your display name and code above</li>
-                    <li>Click "Validate Code" to join the founders wall and activate XP boosts (if included)</li>
+                    <li>Click "Validate Code" to unlock your Founder Lounge access and activate XP boosts (if included)</li>
                   </ol>
                 </div>
               </div>
@@ -636,17 +648,16 @@ function Donate({ theme }) {
 
         {/* Founders Section */}
         <CollapsibleSection
-          title="GamePilot Founders"
-          subtitle="Browse the founders wall, contribution tiers, and supporter recognition."
+          title="Founders Wall"
+          subtitle="Browse the current founders wall, supporter tiers, and the players helping shape the cockpit." 
           badge={`${founders.length} founders`}
           icon={<Trophy size={18} />}
           className="donate-folder"
         >
           <div className="founders-section">
-            <h2>🏆 GamePilot Founders</h2>
+            <h2>🏆 Founders Wall</h2>
             <p className="founders-intro">
-              Special thanks to our founding members who made GamePilot possible!
-              Their support helps us continue developing and improving your favorite gaming library manager.
+              These are the supporters helping fund the lounge, new reward polish, and the local-first future of GamePilot.
             </p>
             
             {founders.length > 0 ? (
@@ -693,70 +704,24 @@ function Donate({ theme }) {
             </div>
 
             <div className="founders-footer">
-              <h3>🌟 Become a Founder</h3>
+              <h3>🌟 Step into the Founder Lounge</h3>
               <p>
-                Founders receive special recognition and help shape the future of GamePilot.
-                All supporters are featured here based on their contribution level.
+                Founder access is about identity, prestige, and supporting the roadmap without locking core play-driven progression.
               </p>
               <div className="tier-info">
                 <div className="tier-item">
-                  <Crown size={16} /> <strong>Platinum:</strong> Major contributors
+                  <Crown size={16} /> <strong>Platinum:</strong> Full founder lounge package + top-tier prestige
                 </div>
                 <div className="tier-item">
-                  <Trophy size={16} /> <strong>Gold:</strong> Generous supporters
+                  <Trophy size={16} /> <strong>Gold:</strong> Premium recap/export styling direction + founder prestige
                 </div>
                 <div className="tier-item">
-                  <Star size={16} /> <strong>Silver:</strong> Regular contributors
+                  <Star size={16} /> <strong>Silver:</strong> Founder atmosphere and upgraded lounge identity
                 </div>
                 <div className="tier-item">
-                  <Gem size={16} /> <strong>Bronze:</strong> Appreciated supporters
+                  <Gem size={16} /> <strong>Bronze:</strong> Founder badge, wall placement, and lounge access
                 </div>
               </div>
-
-              {/* Admin Data Management Section */}
-              <CollapsibleSection
-                title="Admin: Founders Data Management"
-                subtitle="Export or import founders wall data from local JSON files."
-                badge="Import / export"
-                icon={<FileText size={18} />}
-                className="donate-folder donate-subfolder"
-              >
-                <div className="admin-data-section">
-                  <h4><FileText size={16} /> Admin: Founders Data Management</h4>
-                  <div className="data-management-controls">
-                    <button onClick={exportFoundersData} className="data-button export">
-                      <Download size={16} />
-                      Export Founders Data
-                    </button>
-                    
-                    <div 
-                      className={`drop-zone ${isDragOver ? 'drag-over' : ''}`}
-                      onDrop={handleFileDrop}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload size={24} />
-                      <p>Drop founders JSON file here to import</p>
-                      <small>Or click to select file</small>
-                      <input 
-                        type="file" 
-                        accept=".json" 
-                        ref={fileInputRef}
-                        onChange={handleFileInputChange}
-                        style={{ display: 'none' }}
-                      />
-                    </div>
-                  </div>
-                  
-                  {importMessage && (
-                    <div className={`import-message ${importMessage.includes('success') ? 'success' : 'error'}`}>
-                      {importMessage.includes('success') ? <Check size={16} /> : <AlertCircle size={16} />}
-                      <span>{importMessage}</span>
-                    </div>
-                  )}
-                </div>
-              </CollapsibleSection>
             </div>
           </div>
         </CollapsibleSection>
@@ -766,10 +731,10 @@ function Donate({ theme }) {
             Your support helps maintain GamePilot and develop new features like:
           </p>
           <ul>
-            <li>Advanced game recommendations</li>
-            <li>Cross-platform game library sync</li>
-            <li>Performance optimizations</li>
-            <li>Mobile app version</li>
+            <li>Founder identity packs and profile prestige styling</li>
+            <li>Expanded Year in Review and export presentation polish</li>
+            <li>New local-first reward drops, themes, and audio atmosphere</li>
+            <li>Core reliability and launcher polish for everyone</li>
           </ul>
         </div>
       </div>

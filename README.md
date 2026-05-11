@@ -1,6 +1,6 @@
 # GamePilot - Your Personal Gaming Library Manager
 
-**Version 1.1.0** | **Copyright © 2026 Moz** | **Proprietary Software**
+**Version 1.4.0** | **Copyright © 2026 Moz** | **MIT License**
 
 GamePilot is a comprehensive desktop application for managing your gaming library, analyzing system performance, and getting smart game recommendations based on your mood, available time, and hardware capabilities.
 
@@ -38,7 +38,7 @@ GamePilot is a comprehensive desktop application for managing your gaming librar
 - Real-time price conversion
 - Game pricing from Steam API
 
-### 🎨 Customization
+### Customization
 - Multiple theme options (Digital Ocean, Cyberpunk, Retro, etc.)
 - Dark/Light mode support
 - Customizable currency selection
@@ -47,7 +47,7 @@ GamePilot is a comprehensive desktop application for managing your gaming librar
 ## Installation
 
 ### Windows
-1. Download `GamePilot Setup 1.1.0.exe` from the releases page
+1. Download `GamePilot Setup 1.4.0.exe` from the releases page
 2. Run the installer
 3. Follow the installation wizard
 4. Launch GamePilot from your Start Menu
@@ -90,30 +90,19 @@ npm run build-electron-win
 3. Choose available playtime
 4. Get personalized recommendations
 
-## Legal & Privacy
-
-### ⚠️ Disclaimer
-GamePilot is **proprietary software** owned by Moz. See [DISCLAIMER.md](../DISCLAIMER.md) for complete legal information.
-
-**Critical Points:**
-- ✅ Personal, non-commercial use only
-- ❌ **CANNOT be sold or distributed**
-- ❌ **CANNOT be used for commercial purposes or profit**
-- ❌ **CANNOT be modified or reverse-engineered**
-- ❌ **CANNOT be offered as a service (SaaS)**
-- ⚖️ **Violation may result in legal action**
+## License & Privacy
 
 ### License
-GamePilot is proprietary software. See [LICENSE](../LICENSE) for full legal details.
+GamePilot is open source under the MIT License. See [LICENSE](LICENSE) for full details.
 
-**Key Points:**
-- Personal, non-commercial use only
-- Cannot be sold or distributed
-- Cannot be used commercially
-- Cannot be modified or reverse-engineered
+**What this means:**
+- ✅ You can view, study, and learn from the source code
+- ✅ You can use GamePilot for personal projects
+- ✅ You can modify the code for your own use
+- ❌ You cannot claim GamePilot as your own work
+- ❌ You cannot use the author's name to endorse your products
 
 ### Privacy Policy
-See [PRIVACY.md](../PRIVACY.md) for complete details.
 
 **Summary:**
 - ✅ Zero data collection
@@ -122,14 +111,14 @@ See [PRIVACY.md](../PRIVACY.md) for complete details.
 - ✅ No telemetry or tracking
 - ✅ Your data, your control
 
-### Terms of Service
-See [TERMS.md](../TERMS.md) for complete details.
+### Source Code
+The complete source code is available for download on itch.io as "Source Code (View Only)". This allows you to:
+- Study how GamePilot works
+- Learn from the implementation
+- Understand the local-first architecture
+- Verify the privacy claims
 
-**Summary:**
-- Personal use only
-- No warranties provided
-- Limited liability
-- You're responsible for backups
+For running GamePilot, please download the installer from the main downloads section.
 
 ## System Requirements
 
@@ -180,6 +169,13 @@ You can:
 For issues, questions, or suggestions, contact the author directly.
 
 ## Changelog
+
+### v1.4.0 (Current)
+- ✅ Enhanced Year in Review with deeper stats (longest session, busiest day, repeat games)
+- ✅ Added period-aware deeper insights to Stats page
+- ✅ Fixed Epic mystery games in Free Games Radar
+- ✅ Improved local-first session aggregation
+- ✅ Source code available for viewing
 
 ### v1.1.0 (March 14, 2026)
 - ✅ Added 770+ game compatibility database

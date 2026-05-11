@@ -6,12 +6,12 @@ export class LibraryScanCoordinatorService {
     return LibraryScannerService.isElectronRuntime();
   }
 
-  static async collectScannedGames(assignMoodToGame) {
-    return LibraryScannerService.scanAllLibraries(assignMoodToGame);
+  static async collectScannedGames(assignMoodToGame, options = {}) {
+    return LibraryScannerService.scanAllLibraries(assignMoodToGame, options);
   }
 
-  static async scanAndMergeLibrary({ currentLibrary = [], assignMoodToGame }) {
-    const allGames = await this.collectScannedGames(assignMoodToGame);
+  static async scanAndMergeLibrary({ currentLibrary = [], assignMoodToGame, manual = false }) {
+    const allGames = await this.collectScannedGames(assignMoodToGame, { manual });
     const mergedLibrary = mergeLibraryUpdates(currentLibrary, allGames);
     const scanReport = LibraryScannerService.getLastScanDebug();
 

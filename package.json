@@ -1,6 +1,7 @@
 {
   "name": "gamepilot",
-  "version": "1.3.0",
+  "version": "1.4.0",
+  "description": "A local-first PC gaming library manager and launcher.",
   "private": true,
   "main": "electron.js",
   "homepage": "./",
@@ -38,8 +39,8 @@
     "eject": "react-scripts eject",
     "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron": ".\\node_modules\\.bin\\electron.cmd .",
-    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && .\\node_modules\\.bin\\electron.cmd .\"",
-    "electron-dev-win": "concurrently \"npm start\" \"wait-on http://localhost:3001 && electron .\"",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && set ELECTRON_ENABLE_RELOADER=true&& .\\node_modules\\.bin\\electron.cmd .\"",
+    "electron-dev-win": "concurrently \"npm start\" \"wait-on http://localhost:3001 && set ELECTRON_ENABLE_RELOADER=true&& electron .\"",
     "build-electron": "npm run build && electron-builder",
     "build-electron-win": "npm run build && electron-builder --win",
     "build-electron-mac": "npm run build && electron-builder --mac",
@@ -87,7 +88,9 @@
       "electron.js",
       "launchHandler.js",
       "nativeLibraryScanner.js",
-      "public/preload.js"
+      "public/preload.js",
+      "src/services/scanner/**/*",
+      "src/GameGenreDatabase.js"
     ],
     "mac": {
       "category": "public.app-category.games",

@@ -12,6 +12,8 @@ export const PLATFORM_ICONS = {
   'BSG': '🔫',
   'Riot': '👊',
   'CurseForge': '⛏️',
+  'Amazon': '📦',
+  'Itch.io': '🎲',
   'Manual': '📝',
   'Unknown': '❓'
 };
@@ -29,6 +31,8 @@ export const PLATFORM_COLORS = {
   'BSG': '#9a8866',
   'Riot': '#d13639',
   'CurseForge': '#f16436',
+  'Amazon': '#00a8e1',
+  'Itch.io': '#fa5c5c',
   'Manual': '#6b46c1',
   'Unknown': '#666666'
 };

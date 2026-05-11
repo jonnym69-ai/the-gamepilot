@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
+import StorageService from '../services/StorageService';
 import './DailyDoodleTitle.css';
 
 const TITLE_TEXT = 'GamePilot';
@@ -256,6 +258,12 @@ const getBaseIndex = (doodleId) => {
 const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => {
   const normalizedTheme = themeId ? themeId.toLowerCase() : null;
   const [daySignature, setDaySignature] = useState(getDayOfYear());
+  const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
+  const [selectedLogoAnimation, setSelectedLogoAnimation] = useState(() => ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway');
+  const doodleEnabled = StorageService.getString('enableDailyDoodle') !== 'false';
+  const preferredTimeZone = StorageService.getString('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const resolvedLogoAnimation = selectedLogoAnimation || 'synthwave-runway';
+
 
   useEffect(() => {
     const syncSignature = () => setDaySignature(getDayOfYear());
@@ -263,9 +271,31 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleRewardPresentationUpdated = (event) => {
+      const nextAnimation = event?.detail?.selectedLogoAnimation;
+      if (nextAnimation) {
+        setSelectedLogoAnimation(nextAnimation);
+        return;
+      }
+
+      setSelectedLogoAnimation(ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway');
+    };
+
+    window.addEventListener('gamepilot:reward-presentation-updated', handleRewardPresentationUpdated);
+    return () => window.removeEventListener('gamepilot:reward-presentation-updated', handleRewardPresentationUpdated);
+  }, []);
+
   const doodle = useMemo(() => {
     const dayIndex = daySignature % DOODLE_LIBRARY.length;
-
     if (normalizedTheme) {
       const mappedId = THEME_DOODLE_MAP[normalizedTheme];
       if (mappedId) {
@@ -276,7 +306,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     }
 
     return DOODLE_LIBRARY[dayIndex];
-  }, [normalizedTheme, daySignature]);
+  }, [daySignature, normalizedTheme]);
 
   const transitionVariant = useMemo(() => {
     if (normalizedTheme) {
@@ -304,11 +334,34 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   };
 
   const dayLabel = useMemo(() => {
-    const now = new Date();
-    const weekday = now.toLocaleDateString(undefined, { weekday: 'long' });
-    const monthDay = now.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    const weekday = new Intl.DateTimeFormat('en-GB', {
+      weekday: 'long',
+      timeZone: preferredTimeZone
+    }).format(currentDateTime);
+    const monthDay = new Intl.DateTimeFormat('en-GB', {
+      month: 'long',
+      day: 'numeric',
+      timeZone: preferredTimeZone
+    }).format(currentDateTime);
     return `${weekday} • ${monthDay}`;
-  }, []);
+  }, [currentDateTime, preferredTimeZone]);
+
+  const timeLabel = useMemo(() => (
+    new Intl.DateTimeFormat('en-GB', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: preferredTimeZone
+    }).format(currentDateTime)
+  ), [currentDateTime, preferredTimeZone]);
+
+  const timeZoneLabel = useMemo(() => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: preferredTimeZone,
+      timeZoneName: 'short'
+    }).formatToParts(currentDateTime);
+
+    return parts.find((part) => part.type === 'timeZoneName')?.value || preferredTimeZone;
+  }, [currentDateTime, preferredTimeZone]);
 
   const letters = useMemo(() => {
     const palette = doodle.letterPalette;
@@ -342,6 +395,12 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     .filter(Boolean)
     .join(' ');
 
+  if (!doodleEnabled) {
+    return (
+      <img src={LOGO_SRC} alt="GamePilot logo" className="logo-static" />
+    );
+  }
+
   return (
     <div 
       className={wrapperClasses} 
@@ -363,8 +422,13 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       >
         <div className="doodle-orbit" />
         <div className="doodle-trail" />
-        <div className="doodle-logo" aria-hidden="true">
+        <div className={`doodle-logo logo-animation-${resolvedLogoAnimation}`} aria-hidden="true">
           <div className="doodle-logo-ring" />
+          <div className="doodle-logo-particles">
+            <span className="doodle-logo-particle particle-a" />
+            <span className="doodle-logo-particle particle-b" />
+            <span className="doodle-logo-particle particle-c" />
+          </div>
           <img src={avatarSrc} alt={avatarAlt} loading="lazy" />
         </div>
         <div className="doodle-accent">{doodle.accent}</div>
@@ -373,6 +437,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
         </div>
         <div className="doodle-meta" style={doodle.metaStyle}>
           <span className="doodle-meta-label">{doodle.name} — {dayLabel}</span>
+          <span className="doodle-meta-datetime">{timeLabel} <span className="doodle-meta-timezone">{timeZoneLabel}</span></span>
           <span className="doodle-meta-greeting">{greeting}</span>
           {welcomeMessage && (
             <span className="doodle-meta-tagline">{welcomeMessage}</span>

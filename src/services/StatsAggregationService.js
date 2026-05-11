@@ -3,6 +3,8 @@ import { FeatureTracker } from './FeatureTracker';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
 import { QuestHistoryService } from './QuestHistoryService';
 import { AchievementTracker } from '../AchievementSystem';
+import { getDateKey } from './DateKeyService';
+import StorageService from './StorageService';
 
 const FEATURE_KEYS = Object.freeze([
   'perfectPlay',
@@ -32,7 +34,7 @@ const ALL_TIME_FEATURE_STORAGE_KEYS = Object.freeze({
 
 const getStoredAchievementFeatureStats = () => {
   try {
-    return JSON.parse(localStorage.getItem('featureStats') || '{}');
+    return StorageService.get('featureStats', {});
   } catch (error) {
     console.warn('Error reading achievement-backed feature stats:', error);
     return {};
@@ -314,6 +316,68 @@ const buildRecentSessions = (sessions) => sessions
     launchMethod: session.launchMethod
   }));
 
+const formatInsightDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+const buildHabitInsights = (sessions, topGames) => {
+  const longestSession = sessions.reduce((best, session) => {
+    if (!best || session.playtimeMinutes > best.playtimeMinutes) {
+      return session;
+    }
+    return best;
+  }, null);
+  const dayMap = new Map();
+  const weekendSessions = sessions.filter((session) => [0, 6].includes(session.timestamp.getDay()));
+  const lateNightSessions = sessions.filter((session) => {
+    const hour = session.timestamp.getHours();
+    return hour >= 22 || hour < 5;
+  });
+
+  sessions.forEach((session) => {
+    const dateKey = getDateKey(session.timestamp);
+    const entry = dayMap.get(dateKey) || {
+      dateKey,
+      dateLabel: formatInsightDate(session.timestamp),
+      playtimeMinutes: 0,
+      sessions: 0
+    };
+    entry.playtimeMinutes += session.playtimeMinutes;
+    entry.sessions += 1;
+    dayMap.set(dateKey, entry);
+  });
+
+  const busiestDay = Array.from(dayMap.values())
+    .sort((left, right) => right.playtimeMinutes - left.playtimeMinutes || right.sessions - left.sessions)[0] || null;
+  const mostReturnedTo = [...topGames]
+    .sort((left, right) => right.sessions - left.sessions || right.totalPlaytime - left.totalPlaytime)[0] || null;
+
+  return {
+    longestSession: longestSession ? {
+      gameName: longestSession.gameName,
+      platform: longestSession.platform,
+      playtimeMinutes: longestSession.playtimeMinutes,
+      dateLabel: formatInsightDate(longestSession.timestamp)
+    } : null,
+    busiestDay,
+    mostReturnedTo,
+    weekendSessions: weekendSessions.length,
+    weekendPlaytimeMinutes: weekendSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
+    lateNightSessions: lateNightSessions.length,
+    lateNightPlaytimeMinutes: lateNightSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
+    repeatGames: topGames.filter((game) => game.sessions > 1).length
+  };
+};
+
 const buildFeatureUsage = (period, rollingStats) => {
   if (period === 'all') {
     const storedCounts = FeatureTracker.getTrackingData()?.features || {};
@@ -443,7 +507,7 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
   const playtimeMinutes = sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0);
   const sessionCount = sessions.length;
   const uniqueGames = new Set(sessions.map((session) => String(session.gameId || session.gameName))).size;
-  const activeDays = new Set(sessions.map((session) => session.timestamp.toISOString().split('T')[0])).size;
+  const activeDays = new Set(sessions.map((session) => getDateKey(session.timestamp))).size;
   const longestSessionMinutes = sessions.reduce((max, session) => Math.max(max, session.playtimeMinutes), 0);
   const avgSessionMinutes = sessionCount > 0 ? Math.round(playtimeMinutes / sessionCount) : 0;
   const platformCounts = {};
@@ -459,6 +523,9 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
   const featureUsage = buildFeatureUsage(period, rollingStats);
   const questUsage = buildQuestUsage(period, referenceDate);
   const achievementUsage = buildAchievementUsage(period, referenceDate);
+  const topGames = buildTopGames(sessions);
+  const recentSessions = buildRecentSessions(sessions);
+  const habitInsights = buildHabitInsights(sessions, topGames);
   const streak = period === 'all'
     ? { ...(rollingStats?.daily?.streak || { current: 0, best: 0 }) }
     : { ...(rollingStats?.[period]?.streak || { current: 0, best: 0 }) };
@@ -482,12 +549,17 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
     achievementUsage,
     streak,
     timeline: buildTimeline(sessions, period),
-    topGames: buildTopGames(sessions),
-    recentSessions: buildRecentSessions(sessions)
+    topGames,
+    recentSessions,
+    habitInsights
   };
 };
 
 export class StatsAggregationService {
+  static clearCache() {
+    StorageService.remove('lastLibraryHash');
+  }
+
   static getPeriodOptions() {
     return PERIOD_KEYS.map((key) => ({
       key,
@@ -521,11 +593,11 @@ export class StatsAggregationService {
     // Only recompute if we have new library data, not on every refresh
     // This prevents wiping out current tracking progress
     const currentLibraryHash = JSON.stringify(library).slice(0, 100);
-    const lastLibraryHash = localStorage.getItem('lastLibraryHash');
+    const lastLibraryHash = StorageService.getString('lastLibraryHash');
     
     if (currentLibraryHash !== lastLibraryHash) {
       RollingAchievementsTracker.recomputeActivityFromHistory(library);
-      localStorage.setItem('lastLibraryHash', currentLibraryHash);
+      StorageService.setString('lastLibraryHash', currentLibraryHash);
     }
     
     const rollingStats = {

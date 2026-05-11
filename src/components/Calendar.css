@@ -8,6 +8,7 @@
     0 20px 40px rgba(0, 0, 0, 0.1),
     0 0 0 1px rgba(255, 255, 255, 0.1);
   border: 1px solid var(--border-color);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
@@ -439,9 +440,6 @@
     width: 100%;
   }
 }
-  align-items: center;
-  gap: 8px;
-  margin: 0;
 
 .add-event-button {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
@@ -706,7 +704,7 @@
 /* Event Modal */
 .modal-overlay {
   position: fixed !important;
-  top: 0 !important;
+  top: var(--app-navbar-offset) !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
@@ -724,7 +722,7 @@
   padding: 24px;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
+  max-height: calc(100vh - var(--app-navbar-offset) - 40px);
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Download, FileText, FolderUp, Image as ImageIcon, Link as LinkIcon, RefreshCcw, Settings as SettingsIcon, Share2, Trash2, Upload } from 'lucide-react';
+import { Download, FileText, Image as ImageIcon, Link as LinkIcon, RefreshCcw, Share2, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
 import ExportModal from './components/ExportModal';
@@ -88,7 +88,6 @@ const getFallbackLibrary = () => {
 function ExportHub({ library = [], theme }) {
   const { success, error } = useToast();
   const navigate = useNavigate();
-  const settingsImportRef = useRef(null);
   const backupImportRef = useRef(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
@@ -156,73 +155,6 @@ function ExportHub({ library = [], theme }) {
     window.setTimeout(() => window.location.reload(), 1200);
   };
 
-  const handleSettingsExport = () => {
-    try {
-      const settings = {
-        dateFormat: localStorage.getItem('dateFormat') || 'DD/MM/YYYY',
-        timeFormat: localStorage.getItem('timeFormat') || '24-hour',
-        timezone: localStorage.getItem('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone,
-        theme: localStorage.getItem('gamepilot-theme') || theme || 'dark',
-        autoTheme: localStorage.getItem('autoTheme') === 'true',
-        notificationsEnabled: localStorage.getItem('notificationsEnabled') !== 'false',
-        achievementNotifications: localStorage.getItem('achievementNotifications') !== 'false',
-        gameLaunchNotifications: localStorage.getItem('gameLaunchNotifications') !== 'false',
-        dailySummaryNotifications: localStorage.getItem('dailySummaryNotifications') === 'true',
-        scanCompleteNotifications: localStorage.getItem('scanCompleteNotifications') !== 'false',
-        backupReminders: localStorage.getItem('backupReminders') === 'true',
-        cacheEnabled: localStorage.getItem('cacheEnabled') !== 'false',
-        rewardPresentationCustomization: ProgressionUnlockService.getRewardPresentationCustomization(),
-        exportDate: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
-      DataExportService.downloadFile(blob, `gamepilot-settings-${new Date().toISOString().split('T')[0]}.json`);
-      success('Settings exported successfully.');
-    } catch (err) {
-      error(`Settings export failed: ${err.message}`);
-    }
-  };
-
-  const handleSettingsImport = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      try {
-        const settings = JSON.parse(loadEvent?.target?.result);
-        const persist = (key, value) => {
-          if (typeof value !== 'undefined') {
-            localStorage.setItem(key, String(value));
-          }
-        };
-
-        persist('dateFormat', settings.dateFormat);
-        persist('timeFormat', settings.timeFormat);
-        persist('timezone', settings.timezone);
-        persist('gamepilot-theme', settings.theme);
-        persist('autoTheme', settings.autoTheme);
-        persist('notificationsEnabled', settings.notificationsEnabled);
-        persist('achievementNotifications', settings.achievementNotifications);
-        persist('gameLaunchNotifications', settings.gameLaunchNotifications);
-        persist('dailySummaryNotifications', settings.dailySummaryNotifications);
-        persist('scanCompleteNotifications', settings.scanCompleteNotifications);
-        persist('backupReminders', settings.backupReminders);
-        persist('cacheEnabled', settings.cacheEnabled);
-
-        if (settings.rewardPresentationCustomization && typeof settings.rewardPresentationCustomization === 'object') {
-          ProgressionUnlockService.updateRewardPresentationCustomization(settings.rewardPresentationCustomization);
-        }
-
-        success('Settings imported successfully. Reloading...');
-        window.setTimeout(() => window.location.reload(), 1200);
-      } catch (err) {
-        error('Invalid settings file.');
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  };
-
   const handleCopyYearShare = async () => {
     const copied = await LocalShareService.copyTextToClipboard(shareText);
     if (copied) {
@@ -258,7 +190,7 @@ function ExportHub({ library = [], theme }) {
           <div className="confidence-badge">Local-first export center</div>
           <h1 style={{ margin: '12px 0 8px' }}>Export, Import & Share</h1>
           <p style={{ margin: 0, maxWidth: '760px', opacity: 0.82 }}>
-            Keep backups safe, move settings cleanly, export your library in multiple formats, and share your GamePilot recap from one place.
+            Keep backups safe, export your library as a spreadsheet, and create visual recap/share assets from one place.
           </p>
         </div>
         <button type="button" style={buttonStyle} onClick={() => navigate('/year-in-review')} title="Open the full recap page with visuals and exports">
@@ -289,7 +221,7 @@ function ExportHub({ library = [], theme }) {
       <div style={cardGridStyle}>
         <section style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>Full Backup</h2>
-          <p style={{ opacity: 0.8 }}>Export or restore your full local GamePilot state, including progression, profile, rewards, and usage history.</p>
+          <p style={{ opacity: 0.8 }}>Save or restore your complete local GamePilot profile, including library curation, progression, rewards, settings, and usage history.</p>
           <div style={buttonRowStyle}>
             <button type="button" style={buttonStyle} onClick={handleBackupExport} title="Download a full local backup including progression and profile data">
               <Download size={16} />
@@ -308,32 +240,9 @@ function ExportHub({ library = [], theme }) {
         </section>
 
         <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Settings</h2>
-          <p style={{ opacity: 0.8 }}>Move preference-only data separately when you just want themes, audio, notifications, and presentation setup.</p>
-          <div style={buttonRowStyle}>
-            <button type="button" style={buttonStyle} onClick={handleSettingsExport} title="Export only preferences like theme, notifications, and presentation setup">
-              <SettingsIcon size={16} />
-              <span>Export Settings</span>
-            </button>
-            <button type="button" style={buttonStyle} onClick={() => settingsImportRef.current?.click()} title="Import preference-only settings without replacing the whole backup">
-              <FolderUp size={16} />
-              <span>Import Settings</span>
-            </button>
-          </div>
-          <input ref={settingsImportRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleSettingsImport} />
-        </section>
-
-        <section style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>Library Exports</h2>
-          <p style={{ opacity: 0.8 }}>Export your library as raw local data, CSV, or a more visual showcase using the existing poster/export surfaces.</p>
+          <p style={{ opacity: 0.8 }}>Export your catalogue as a spreadsheet-friendly CSV or create visual showcase images and posters.</p>
           <div style={buttonRowStyle}>
-            <button type="button" style={buttonStyle} onClick={() => {
-              DataExportService.exportLibraryAsJSON(library || []);
-              success('Library JSON exported.');
-            }} title="Export your library as structured local JSON data">
-              <FileText size={16} />
-              <span>Export JSON</span>
-            </button>
             <button type="button" style={buttonStyle} onClick={() => {
               const exported = DataExportService.exportLibraryAsCSV(library || []);
               if (exported) {
@@ -377,15 +286,6 @@ function ExportHub({ library = [], theme }) {
             <button type="button" style={buttonStyle} onClick={handleDownloadYearShare} title="Download your recap summary as a plain text file">
               <FileText size={16} />
               <span>Download Share Text</span>
-            </button>
-            <button type="button" style={buttonStyle} onClick={() => {
-              const payload = YearInReviewService.buildExportPayload(safeLibrary, resolvedYear);
-              const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-              DataExportService.downloadFile(blob, `gamepilot-year-in-review-${resolvedYear}.json`);
-              success(`Year in Review JSON exported for ${resolvedYear}.`);
-            }} title="Export the full structured Year in Review data for the selected year">
-              <Download size={16} />
-              <span>Export Review JSON</span>
             </button>
           </div>
           <div style={buttonRowStyle}>

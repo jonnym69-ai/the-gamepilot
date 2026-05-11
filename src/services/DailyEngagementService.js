@@ -1,131 +1,137 @@
-const ENGAGEMENT_STORAGE_KEY = 'dailyEngagement';
-const LAUNCH_REWARD_STATS_KEY = 'launchRewardStats';
+import { getDateKey } from './DateKeyService';
+import StorageService from './StorageService';
+import { QuestRerollService } from './QuestRerollService';
+
+const ENGAGEMENT_KEY = 'dailyEngagement';
+const LAUNCH_REWARD_KEY = 'launchRewardStats';
+const EVENT_BONUSES_KEY = 'dailyEventBonuses';
+
+const isChristmasDay = (date = new Date()) => date.getMonth() === 11 && date.getDate() === 25;
+
+const getStoredEventBonuses = () => StorageService.get(EVENT_BONUSES_KEY, {});
+
+const saveStoredEventBonuses = (data) => StorageService.set(EVENT_BONUSES_KEY, data);
+
+const grantXP = (amount) => {
+  const stored = StorageService.get(LAUNCH_REWARD_KEY, { totalXP: 0, launches: 0 });
+  stored.totalXP = (stored.totalXP || 0) + amount;
+  StorageService.set(LAUNCH_REWARD_KEY, stored);
+};
+
+const applyDuplicateCosmeticReward = (reward) => {
+  const fallbackXP = reward.duplicateXP || 175;
+  grantXP(fallbackXP);
+  return { applied: true, message: `${reward.label} already owned, converted to +${fallbackXP} XP!` };
+};
 
 const applyReward = (reward) => {
   if (reward.type === 'xp' && reward.amount > 0) {
-    try {
-      const stored = JSON.parse(localStorage.getItem(LAUNCH_REWARD_STATS_KEY) || '{}');
-      const currentXP = Math.max(0, Math.round(Number(stored?.totalXP) || 0));
-      localStorage.setItem(LAUNCH_REWARD_STATS_KEY, JSON.stringify({
-        totalXP: currentXP + reward.amount,
-        launches: stored?.launches || 0
-      }));
-      return { applied: true, message: `+${reward.amount} XP added!` };
-    } catch (e) {
-      return { applied: false, message: 'Failed to add XP' };
-    }
+    grantXP(reward.amount);
+    return { applied: true, message: `+${reward.amount} XP rewarded!` };
   }
 
   if (reward.type === 'theme' && reward.themeId) {
-    try {
-      const unlockedThemes = JSON.parse(localStorage.getItem('unlockedThemes') || '[]');
-      if (!unlockedThemes.includes(reward.themeId)) {
-        unlockedThemes.push(reward.themeId);
-        localStorage.setItem('unlockedThemes', JSON.stringify(unlockedThemes));
-      }
-      return { applied: true, message: `${reward.label} unlocked!` };
-    } catch (e) {
-      return { applied: false, message: 'Failed to unlock theme' };
+    const unlockedThemes = StorageService.get('unlockedThemes', []);
+    if (unlockedThemes.includes(reward.themeId)) {
+      return applyDuplicateCosmeticReward(reward);
     }
+    if (!unlockedThemes.includes(reward.themeId)) {
+      unlockedThemes.push(reward.themeId);
+    }
+    StorageService.set('unlockedThemes', unlockedThemes);
+    return { applied: true, message: `${reward.label} unlocked!` };
   }
 
   if (reward.type === 'frame' && reward.frameId) {
-    try {
-      const unlockedFrames = JSON.parse(localStorage.getItem('unlockedProfileFrames') || '[]');
-      if (!unlockedFrames.includes(reward.frameId)) {
-        unlockedFrames.push(reward.frameId);
-        localStorage.setItem('unlockedProfileFrames', JSON.stringify(unlockedFrames));
-      }
-      return { applied: true, message: `${reward.label} unlocked!` };
-    } catch (e) {
-      return { applied: false, message: 'Failed to unlock frame' };
+    const unlockedFrames = StorageService.get('unlockedProfileFrames', []);
+    if (unlockedFrames.includes(reward.frameId)) {
+      return applyDuplicateCosmeticReward(reward);
     }
+    if (!unlockedFrames.includes(reward.frameId)) {
+      unlockedFrames.push(reward.frameId);
+    }
+    StorageService.set('unlockedProfileFrames', unlockedFrames);
+    return { applied: true, message: `${reward.label} unlocked!` };
   }
 
   if (reward.type === 'banner' && reward.bannerId) {
-    try {
-      const unlockedBanners = JSON.parse(localStorage.getItem('unlockedProfileBanners') || '[]');
-      if (!unlockedBanners.includes(reward.bannerId)) {
-        unlockedBanners.push(reward.bannerId);
-        localStorage.setItem('unlockedProfileBanners', JSON.stringify(unlockedBanners));
-      }
-      return { applied: true, message: `${reward.label} unlocked!` };
-    } catch (e) {
-      return { applied: false, message: 'Failed to unlock banner' };
+    const unlockedBanners = StorageService.get('unlockedProfileBanners', []);
+    if (unlockedBanners.includes(reward.bannerId)) {
+      return applyDuplicateCosmeticReward(reward);
     }
+    if (!unlockedBanners.includes(reward.bannerId)) {
+      unlockedBanners.push(reward.bannerId);
+    }
+    StorageService.set('unlockedProfileBanners', unlockedBanners);
+    return { applied: true, message: `${reward.label} unlocked!` };
   }
 
   if (reward.type === 'title' && reward.titleId) {
-    try {
-      const unlockedTitles = JSON.parse(localStorage.getItem('unlockedProfileTitles') || '[]');
-      if (!unlockedTitles.includes(reward.titleId)) {
-        unlockedTitles.push(reward.titleId);
-        localStorage.setItem('unlockedProfileTitles', JSON.stringify(unlockedTitles));
-      }
-      return { applied: true, message: `${reward.label} unlocked!` };
-    } catch (e) {
-      return { applied: false, message: 'Failed to unlock title' };
+    const unlockedTitles = StorageService.get('unlockedProfileTitles', []);
+    if (unlockedTitles.includes(reward.titleId)) {
+      return applyDuplicateCosmeticReward(reward);
     }
+    if (!unlockedTitles.includes(reward.titleId)) {
+      unlockedTitles.push(reward.titleId);
+    }
+    StorageService.set('unlockedProfileTitles', unlockedTitles);
+    return { applied: true, message: `${reward.label} unlocked!` };
   }
 
   if (reward.type === 'booster' && reward.amount > 0) {
-    try {
-      const stored = JSON.parse(localStorage.getItem('xpBoosters') || '{"active": [], "history": []}');
-      stored.active.push({
-        hours: reward.amount,
-        activatedAt: new Date().toISOString()
-      });
-      localStorage.setItem('xpBoosters', JSON.stringify(stored));
-      return { applied: true, message: `${reward.amount}h XP Booster activated!` };
-    } catch (e) {
-      return { applied: false, message: 'Failed to activate booster' };
-    }
+    const stored = StorageService.get('xpBoosters', { active: [], history: [] });
+    stored.active.push({
+      hours: reward.amount,
+      activatedAt: new Date().toISOString()
+    });
+    StorageService.set('xpBoosters', stored);
+    return { applied: true, message: `${reward.amount}h XP Booster activated!` };
+  }
+
+  if (reward.type === 'reroll' && reward.amount > 0) {
+    QuestRerollService.addTokens(reward.amount, 'Daily Spin');
+    return { applied: true, message: `${reward.amount} quest reroll${reward.amount === 1 ? '' : 's'} added!` };
+  }
+
+  if (reward.type === 'spin' && reward.amount > 0) {
+    return { applied: true, message: `${reward.amount} bonus ${reward.amount === 1 ? 'spin' : 'spins'} queued!` };
   }
 
   return { applied: false, message: '' };
 };
 
 export const DAILY_REWARDS = [
-  { id: 'xp_10', type: 'xp', amount: 10, label: '+10 XP', weight: 25 },
-  { id: 'xp_25', type: 'xp', amount: 25, label: '+25 XP', weight: 20 },
-  { id: 'xp_50', type: 'xp', amount: 50, label: '+50 XP', weight: 15 },
-  { id: 'theme_basic', type: 'theme', themeId: 'cyber-minimal', label: 'Cyber Theme', weight: 5 },
-  { id: 'theme_retro', type: 'theme', themeId: 'retro-arcade', label: 'Retro Theme', weight: 5 },
-  { id: 'frame_starter', type: 'frame', frameId: 'starter_halo', label: 'Starter Frame', weight: 3 },
-  { id: 'banner_basic', type: 'banner', bannerId: 'pixel_pioneer', label: 'Pixel Banner', weight: 5 },
-  { id: 'title_rookie', type: 'title', titleId: 'Rookie', label: 'Rookie Title', weight: 5 },
-  { id: 'booster_1h', type: 'booster', amount: 1, label: '1h XP Booster', weight: 7 },
-  { id: 'booster_2h', type: 'booster', amount: 2, label: '2h XP Booster', weight: 5 },
-  { id: 'nothing', type: 'nothing', amount: 0, label: 'Better luck next time!', weight: 5 }
+  { id: 'xp_125', type: 'xp', amount: 125, label: '+125 XP', weight: 26 },
+  { id: 'xp_150', type: 'xp', amount: 150, label: '+150 XP', weight: 24 },
+  { id: 'xp_200', type: 'xp', amount: 200, label: '+200 XP', weight: 14 },
+  { id: 'xp_275', type: 'xp', amount: 275, label: '+275 XP', weight: 7 },
+  { id: 'booster_24h', type: 'booster', amount: 24, label: '24h XP Boost', weight: 9 },
+  { id: 'booster_48h', type: 'booster', amount: 48, label: '48h XP Boost', weight: 3 },
+  { id: 'bonus_spin', type: 'spin', amount: 1, label: 'Bonus Spin', weight: 7 },
+  { id: 'bonus_spin_double', type: 'spin', amount: 2, label: '2 Bonus Spins', weight: 2 },
+  { id: 'reroll_1', type: 'reroll', amount: 1, label: 'Quest Reroll Token', weight: 2 },
+  { id: 'reroll_3', type: 'reroll', amount: 3, label: '3 Quest Rerolls', weight: 0.8 },
+  { id: 'frame_starter', type: 'frame', frameId: 'starter_halo', label: 'Starter Halo Frame', weight: 2 },
+  { id: 'banner_sunset', type: 'banner', bannerId: 'pilot_sunset', label: 'Pilot Sunset Banner', weight: 2 },
+  { id: 'title_rookie_pilot', type: 'title', titleId: 'rookie_pilot', label: 'Rookie Pilot Title', weight: 1.5 },
+  { id: 'theme_basic', type: 'theme', themeId: 'cyber-minimal', label: 'Cyber Minimal Theme', weight: 1.5 },
+  { id: 'theme_retro', type: 'theme', themeId: 'retro-arcade', label: 'Retro Arcade Theme', weight: 1 }
 ];
 
 const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100, 365];
 
-const getStoredEngagement = () => {
-  try {
-    const stored = localStorage.getItem(ENGAGEMENT_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch (error) {
-    return null;
-  }
-};
+const getStoredEngagement = () => StorageService.get(ENGAGEMENT_KEY, null);
 
-const saveEngagement = (data) => {
-  try {
-    localStorage.setItem(ENGAGEMENT_STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('[DailyEngagement] Failed to save:', error);
-  }
-};
+const saveEngagement = (data) => StorageService.set(ENGAGEMENT_KEY, data);
 
 const getTodayDateString = () => {
-  return new Date().toISOString().split('T')[0];
+  return getDateKey(new Date());
 };
 
 const getYesterdayDateString = () => {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.toISOString().split('T')[0];
+  return getDateKey(yesterday);
 };
 
 const getDaysBetween = (date1, date2) => {
@@ -158,17 +164,41 @@ export const DailyEngagementService = {
         data.currentStreak = 0;
       }
 
+      if (daysSinceLastLogin === 1) {
+        data.currentStreak = (data.currentStreak || 0) + 1;
+      } else if (!data.lastLoginDate || daysSinceLastLogin > 1) {
+        data.currentStreak = 1;
+      }
+
+      data.longestStreak = Math.max(data.longestStreak || 0, data.currentStreak || 0);
+
       data.lastLoginDate = today;
       data.totalLogins = (data.totalLogins || 0) + 1;
       data.spinsRemaining = 1;
+
+      if (isChristmasDay()) {
+        const eventBonuses = getStoredEventBonuses();
+        const christmasGrantKey = `christmas_${new Date().getFullYear()}`;
+
+        if (!eventBonuses[christmasGrantKey]) {
+          data.spinsRemaining = Math.max(data.spinsRemaining, 5);
+          eventBonuses[christmasGrantKey] = {
+            grantedAt: new Date().toISOString(),
+            spinsGranted: 5
+          };
+          saveStoredEventBonuses(eventBonuses);
+        }
+      }
 
       saveEngagement(data);
     }
 
     return {
       ...data,
-      canSpin: data.spinsRemaining > 0 && data.lastSpinDate !== today,
-      streakAtRisk: data.currentStreak > 0 && data.lastLoginDate !== today && data.lastLoginDate !== yesterday
+      canSpin: data.spinsRemaining > 0,
+      streakAtRisk: data.currentStreak > 0 && data.lastLoginDate !== today && data.lastLoginDate !== yesterday,
+      isChristmasDay: isChristmasDay(),
+      rewardFloorXP: 125
     };
   },
 
@@ -176,7 +206,7 @@ export const DailyEngagementService = {
     const data = getStoredEngagement();
     const today = getTodayDateString();
 
-    if (!data || data.spinsRemaining <= 0 || data.lastSpinDate === today) {
+    if (!data || data.spinsRemaining <= 0) {
       return { success: false, reward: null, message: 'No spins remaining today' };
     }
 
@@ -192,10 +222,15 @@ export const DailyEngagementService = {
       }
     }
 
-    const rewardResult = applyReward(selectedReward);
-
-    data.spinsRemaining = 0;
+    data.spinsRemaining = Math.max(0, (Number(data.spinsRemaining) || 0) - 1);
     data.lastSpinDate = today;
+
+    const rewardResult = applyReward(selectedReward);
+    if (selectedReward.type === 'spin' && selectedReward.amount > 0) {
+      data.spinsRemaining += selectedReward.amount;
+      rewardResult.message = `${selectedReward.amount} bonus ${selectedReward.amount === 1 ? 'spin' : 'spins'} added!`;
+    }
+
     data.claimedRewards = data.claimedRewards || [];
     data.claimedRewards.push({
       ...selectedReward,
@@ -244,7 +279,7 @@ export const DailyEngagementService = {
       currentStreak: data.currentStreak || 0,
       longestStreak: data.longestStreak || 0,
       totalLogins: data.totalLogins || 0,
-      spinsUsed: data.claimedRewards?.filter(r => r.date >= weekAgo.toISOString().split('T')[0]).length || 0
+      spinsUsed: data.claimedRewards?.filter(r => r.date >= getDateKey(weekAgo)).length || 0
     };
 
     return stats;
@@ -268,6 +303,39 @@ export const DailyEngagementService = {
     const data = getStoredEngagement() || {};
     data.weeklySummaryShown = getTodayDateString();
     saveEngagement(data);
+  },
+
+  grantBonusSpins: (amount = 1, source = 'Bonus Spin') => {
+    const parsedAmount = Math.max(0, Math.round(Number(amount) || 0));
+
+    if (!parsedAmount) {
+      return { applied: false, message: 'No bonus spins granted' };
+    }
+
+    const data = getStoredEngagement() || {
+      lastLoginDate: getTodayDateString(),
+      currentStreak: 0,
+      longestStreak: 0,
+      totalLogins: 0,
+      spinsRemaining: 0,
+      lastSpinDate: null,
+      weeklySummaryShown: null,
+      claimedRewards: []
+    };
+
+    data.spinsRemaining = Math.max(0, Number(data.spinsRemaining) || 0) + parsedAmount;
+    saveEngagement(data);
+
+    return {
+      applied: true,
+      message: `${parsedAmount} extra ${parsedAmount === 1 ? 'spin' : 'spins'} added from ${source}!`
+    };
+  },
+
+  getRewardHistory: () => {
+    const data = getStoredEngagement();
+    if (!data || !Array.isArray(data.claimedRewards)) return [];
+    return [...data.claimedRewards].reverse();
   },
 
   getStreakMilestones: () => STREAK_MILESTONES,

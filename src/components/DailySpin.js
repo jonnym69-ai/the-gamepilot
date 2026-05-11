@@ -41,12 +41,19 @@ const DailySpin = ({ isOpen, onClose }) => {
     setResult(null);
 
     const spinResult = DailyEngagementService.spinWheel();
+    if (!spinResult.success || !spinResult.reward) {
+      setSpinning(false);
+      setResult(spinResult);
+      setStatus(DailyEngagementService.getStatus());
+      return;
+    }
 
-    const segmentAngle = 360 / 11;
+    const segmentAngle = 360 / DAILY_REWARDS.length;
     const targetIndex = DAILY_REWARDS.findIndex(r => r.id === spinResult.reward.id);
-    const targetRotation = 360 * 5 + (targetIndex * segmentAngle) + (Math.random() * segmentAngle * 0.8);
+    const targetOffset = (targetIndex * segmentAngle) + (Math.random() * segmentAngle * 0.65) + (segmentAngle * 0.175);
+    const targetRotation = 360 * 5 + targetOffset;
 
-    setRotation(targetRotation);
+    setRotation((currentRotation) => currentRotation + targetRotation);
 
     setTimeout(() => {
       setSpinning(false);
@@ -72,6 +79,9 @@ const DailySpin = ({ isOpen, onClose }) => {
           <div className="spin-streak">
             <Star size={18} className="streak-icon" />
             <span>{status.currentStreak} Day Streak</span>
+          </div>
+          <div className="spin-balance">
+            {status.spinsRemaining} {status.spinsRemaining === 1 ? 'spin' : 'spins'} available
           </div>
         </div>
 
@@ -100,8 +110,8 @@ const DailySpin = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {result && (
-          <div className="spin-result">
+        {result && result.reward && (
+          <div className={`spin-result ${result.reward.type === 'spin' ? 'bonus-spin-result' : ''}`}>
             <Trophy size={24} className="result-icon" />
             <span>You won: {result.reward.label} - {result.rewardMessage}</span>
           </div>
@@ -115,7 +125,7 @@ const DailySpin = ({ isOpen, onClose }) => {
           {spinning ? (
             <>Spinning...</>
           ) : status.canSpin ? (
-            <>Spin Now!</>
+            <>{status.spinsRemaining > 1 ? `Spin Again (${status.spinsRemaining} left)` : 'Spin Now!'}</>
           ) : (
             <>Come back tomorrow!</>
           )}

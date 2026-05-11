@@ -1,7 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Calendar, Trash2, Clock, Gamepad2, Trophy } from 'lucide-react';
 import { PlaytimeAutoLogger } from '../services/PlaytimeAutoLogger';
+import StorageService from '../services/StorageService';
 import './GameCalendar.css';
+
+const getPreferredTimeZone = () => {
+  return StorageService.getString('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
+};
+
+const formatDateKey = (date, timeZone = getPreferredTimeZone()) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+};
+
+const parseDateKeyToLocalDate = (dateKey) => {
+  if (typeof dateKey !== 'string') {
+    return null;
+  }
+
+  const parts = dateKey.split('-').map(Number);
+  if (parts.length !== 3 || parts.some((value) => Number.isNaN(value))) {
+    return null;
+  }
+
+  const [year, month, day] = parts;
+  return new Date(year, month - 1, day);
+};
 
 const GameCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -19,14 +51,9 @@ const GameCalendar = () => {
 
   useEffect(() => {
     try {
-      const savedEvents = localStorage.getItem('gameCalendarEvents');
-      if (savedEvents) {
-        const parsed = JSON.parse(savedEvents);
-        if (Array.isArray(parsed)) {
-          setEvents(parsed);
-        } else {
-          setEvents([]);
-        }
+      const savedEvents = StorageService.get('gameCalendarEvents', []);
+      if (savedEvents && Array.isArray(savedEvents)) {
+        setEvents(savedEvents);
       }
     } catch (error) {
       console.error('Error loading calendar events:', error);
@@ -38,7 +65,7 @@ const GameCalendar = () => {
     try {
       const safeEvents = Array.isArray(updatedEvents) ? updatedEvents : [];
       setEvents(safeEvents);
-      localStorage.setItem('gameCalendarEvents', JSON.stringify(safeEvents));
+      StorageService.set('gameCalendarEvents', safeEvents);
     } catch (error) {
       console.error('Error saving calendar events:', error);
     }
@@ -65,7 +92,7 @@ const GameCalendar = () => {
     }
     
     try {
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = formatDateKey(date);
       return events.filter(event => event && event.date === dateString);
     } catch (error) {
       console.error('Error getting events for date:', error);
@@ -86,12 +113,12 @@ const GameCalendar = () => {
     setSelectedDate(clickedDate);
     
     // Get stats for this date - try both timestamp and date fields
-    const dateStr = clickedDate.toISOString().split('T')[0];
+    const dateStr = formatDateKey(clickedDate);
     const localeDateStr = clickedDate.toLocaleDateString();
     const history = PlaytimeAutoLogger.getSessionHistory();
     
     const daySessions = history.filter(s => {
-      if (s.timestamp && s.timestamp.startsWith(dateStr)) return true;
+      if (s.timestamp && formatDateKey(new Date(s.timestamp)) === dateStr) return true;
       if (s.date === localeDateStr) return true;
       return false;
     });
@@ -129,7 +156,7 @@ const GameCalendar = () => {
 
     const event = {
       id: Date.now().toString(),
-      date: selectedDate.toISOString().split('T')[0],
+      date: formatDateKey(selectedDate),
       ...newEvent
     };
 
@@ -185,10 +212,14 @@ const GameCalendar = () => {
   };
 
   const getUpcomingEvents = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateKey(new Date());
     return events
       .filter(event => event.date >= today)
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .sort((a, b) => {
+        const leftDate = parseDateKeyToLocalDate(a.date);
+        const rightDate = parseDateKeyToLocalDate(b.date);
+        return (leftDate?.getTime() || 0) - (rightDate?.getTime() || 0);
+      })
       .slice(0, 5);
   };
 
@@ -243,7 +274,7 @@ const GameCalendar = () => {
                 <div className="event-details">
                   <div className="event-title">{event.title}</div>
                   <div className="event-date">
-                    {new Date(event.date).toLocaleDateString('en-US', { 
+                    {(parseDateKeyToLocalDate(event.date) || new Date(event.date)).toLocaleDateString('en-US', { 
                       month: 'short', 
                       day: 'numeric',
                       year: 'numeric'

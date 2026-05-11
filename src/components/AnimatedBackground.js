@@ -1,12 +1,22 @@
 import React, { useMemo } from 'react';
 import moodThemes from '../themes/moodThemes.json';
 import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
+import StorageService from '../services/StorageService';
 import './AnimatedBackground.css';
 
 const DEFAULT_PARTICLES = 80;
+const MAX_PARTICLES = 48;
+const MAX_WAVE_BUBBLES = 24;
+const MAX_MATRIX_COLUMNS = 56;
+const MAX_RETRO_BLOCKS = 24;
+
+const seededValue = (index, salt = 0) => {
+  const x = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
 
 const AnimatedBackground = ({ themeId }) => {
-  const animationsEnabled = localStorage.getItem('animationsEnabled') !== 'false';
+  const animationsEnabled = StorageService.getString('animationsEnabled') !== 'false';
 
   const animationConfig = useMemo(() => {
     if (!themeId) return null;
@@ -28,13 +38,13 @@ const AnimatedBackground = ({ themeId }) => {
   }, [themeId]);
 
   const renderWaveBubbles = () => {
-    const baseCount = Math.min(animationConfig.particleCount, 120);
-    const count = Math.max(30, Math.round(baseCount * (animationConfig.intensity || 0.6)));
+    const baseCount = Math.min(animationConfig.particleCount, MAX_WAVE_BUBBLES);
+    const count = Math.max(8, Math.round(baseCount * (animationConfig.intensity || 0.6)));
     return Array.from({ length: count }).map((_, index) => {
-      const delay = Math.random() * 6;
-      const duration = 6 + Math.random() * 6;
-      const left = Math.random() * 100;
-      const size = 4 + Math.random() * 6;
+      const delay = seededValue(index, 1) * 6;
+      const duration = 6 + seededValue(index, 2) * 6;
+      const left = seededValue(index, 3) * 100;
+      const size = 4 + seededValue(index, 4) * 6;
       return (
         <span
           key={`wave-bubble-${index}`}
@@ -57,12 +67,12 @@ const AnimatedBackground = ({ themeId }) => {
   }
 
   const renderParticles = (className) => {
-    const count = Math.min(animationConfig.particleCount, 200);
+    const count = Math.min(animationConfig.particleCount, MAX_PARTICLES);
     return Array.from({ length: count }).map((_, index) => {
       const delay = (index % 10) * 0.35;
       const duration = 4 + (index % 5);
-      const left = Math.random() * 100;
-      const size = 4 + Math.random() * 4;
+      const left = seededValue(index, 5) * 100;
+      const size = 4 + seededValue(index, 6) * 4;
       return (
         <span
           key={`${className}-${index}`}
@@ -80,10 +90,10 @@ const AnimatedBackground = ({ themeId }) => {
   };
 
   const renderMatrixCode = () => {
-    const columns = Math.min(animationConfig.particleCount, 120);
+    const columns = Math.min(animationConfig.particleCount, MAX_MATRIX_COLUMNS);
     return Array.from({ length: columns }).map((_, index) => {
-      const delay = Math.random() * 5;
-      const duration = 4 + Math.random() * 4;
+      const delay = seededValue(index, 7) * 5;
+      const duration = 4 + seededValue(index, 8) * 4;
       const left = (index / columns) * 100;
       return (
         <span
@@ -100,12 +110,12 @@ const AnimatedBackground = ({ themeId }) => {
   };
 
   const renderRetroBlocks = () => {
-    const blocks = Math.min(animationConfig.particleCount, 60);
+    const blocks = Math.min(animationConfig.particleCount, MAX_RETRO_BLOCKS);
     return Array.from({ length: blocks }).map((_, index) => {
-      const delay = Math.random() * 6;
-      const duration = 6 + Math.random() * 6;
-      const size = 40 + Math.random() * 20;
-      const top = Math.random() * 100;
+      const delay = seededValue(index, 9) * 6;
+      const duration = 6 + seededValue(index, 10) * 6;
+      const size = 40 + seededValue(index, 11) * 20;
+      const top = seededValue(index, 12) * 100;
       return (
         <span
           key={`retro-${index}`}

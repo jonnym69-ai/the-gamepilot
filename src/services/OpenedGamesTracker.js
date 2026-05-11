@@ -1,12 +1,13 @@
 // OpenedGamesTracker.js - Tracks which games have been opened/launched
+import StorageService from './StorageService';
+
 export class OpenedGamesTracker {
   static STORAGE_KEY = 'openedGames';
 
   // Get all opened games
   static getOpenedGames() {
     try {
-      const opened = localStorage.getItem(this.STORAGE_KEY);
-      return opened ? JSON.parse(opened) : {};
+      return StorageService.get(this.STORAGE_KEY, {});
     } catch (error) {
       console.error('Error reading opened games:', error);
       return {};
@@ -28,7 +29,7 @@ export class OpenedGamesTracker {
           openedAt: Date.now(),
           appid: game.appid
         };
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(opened));
+        StorageService.set(this.STORAGE_KEY, opened);
       }
     } catch (error) {
       console.error('Error marking game as opened:', error);
@@ -55,7 +56,7 @@ export class OpenedGamesTracker {
   // Clear all opened games (for testing)
   static clearAll() {
     try {
-      localStorage.removeItem(this.STORAGE_KEY);
+      StorageService.remove(this.STORAGE_KEY);
     } catch (error) {
       console.error('Error clearing opened games:', error);
     }

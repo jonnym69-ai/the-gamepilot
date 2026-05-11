@@ -3,6 +3,8 @@ import { RollingAchievementsTracker } from './services/RollingAchievementsTracke
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { QuestHistoryService } from './services/QuestHistoryService';
 import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
+import { getDateKey } from './services/DateKeyService';
+import StorageService from './services/StorageService';
 
 // Achievement rarity system
 export const ACHIEVEMENT_RARITY = {
@@ -533,9 +535,6 @@ const createThresholdMap = (definitions, allowedSlugs = null) => {
 const SESSION_ACHIEVEMENTS = ACHIEVEMENTS.time.filter(({ id }) => id.startsWith('session_'));
 const HOUR_ACHIEVEMENTS = ACHIEVEMENTS.time.filter(({ id }) => id.startsWith('hour_'));
 const PERIOD_KEYS = ['daily', 'weekly', 'monthly', 'yearly'];
-const TIME_ASSIGNMENTS_KEY = 'timeAchievementAssignments';
-const PATREON_XP_BOOST_KEY = 'patreonXpBoost';
-const LAUNCH_REWARD_STATS_KEY = 'launchRewardStats';
 const SUPPORT_TIER_MULTIPLIERS = Object.freeze({
   Bronze: 2,
   Silver: 3,
@@ -785,7 +784,6 @@ const ALL_ACHIEVEMENT_DEFINITIONS = Object.entries(ACHIEVEMENTS).flatMap(([categ
 
 export const TOTAL_ACHIEVEMENT_COUNT = ALL_ACHIEVEMENT_DEFINITIONS.length;
 
-const UNIQUE_GAME_STATS_KEY = 'uniqueGameStats';
 
 export const normalizeMood = (value) => {
   const slug = slugify(value);
@@ -828,14 +826,14 @@ export const AchievementStats = {
 // Achievement tracking functions
 export class AchievementTracker {
   static getUnlockedAchievements() {
-    return JSON.parse(localStorage.getItem('unlockedAchievements') || '[]');
+    return StorageService.get('unlockedAchievements', []);
   }
 
   static unlockAchievement(achievementId) {
     const unlocked = this.getUnlockedAchievements();
     if (!unlocked.includes(achievementId)) {
       unlocked.push(achievementId);
-      localStorage.setItem('unlockedAchievements', JSON.stringify(unlocked));
+      StorageService.set('unlockedAchievements', unlocked);
       
       // XP is calculated passively based on unlocked achievements, no need to add manually
       
@@ -932,10 +930,9 @@ export class AchievementTracker {
 
   static getPlatformStats() {
     try {
-      return JSON.parse(localStorage.getItem('platformStats') || '{}');
+      return StorageService.get('platformStats', {});
     } catch (error) {
-      console.log('Error parsing platformStats, resetting to defaults:', error);
-      localStorage.setItem('platformStats', '{}');
+      StorageService.set('platformStats', {});
       return {};
     }
   }
@@ -943,15 +940,14 @@ export class AchievementTracker {
   static trackPlatformUsage(platform) {
     const stats = this.getPlatformStats();
     stats[platform] = (stats[platform] || 0) + 1;
-    localStorage.setItem('platformStats', JSON.stringify(stats));
+    StorageService.set('platformStats', stats);
   }
 
   static getFeatureStats() {
     try {
-      return JSON.parse(localStorage.getItem('featureStats') || '{}');
+      return StorageService.get('featureStats', {});
     } catch (error) {
-      console.log('Error parsing featureStats, resetting to defaults:', error);
-      localStorage.setItem('featureStats', '{}');
+      StorageService.set('featureStats', {});
       return {};
     }
   }
@@ -959,12 +955,12 @@ export class AchievementTracker {
   static trackFeatureUsage(feature) {
     const stats = this.getFeatureStats();
     stats[feature] = (stats[feature] || 0) + 1;
-    localStorage.setItem('featureStats', JSON.stringify(stats));
+    StorageService.set('featureStats', stats);
   }
 
   static getUniqueGameStats() {
     try {
-      const stored = JSON.parse(localStorage.getItem(UNIQUE_GAME_STATS_KEY) || '{}');
+      const stored = StorageService.get('uniqueGameStats', {});
       if (!stored || typeof stored !== 'object') {
         return { games: {} };
       }
@@ -980,13 +976,25 @@ export class AchievementTracker {
 
   static getLaunchRewardStats() {
     try {
-      const stored = JSON.parse(localStorage.getItem(LAUNCH_REWARD_STATS_KEY) || '{}');
+      const stored = StorageService.get('launchRewardStats', {});
       const totalXP = Math.max(0, Math.round(Number(stored?.totalXP) || 0));
       const launches = Math.max(0, Math.round(Number(stored?.launches) || 0));
       return { totalXP, launches };
     } catch (error) {
       console.warn('Error reading launch reward stats, resetting to defaults:', error);
       return { totalXP: 0, launches: 0 };
+    }
+  }
+
+  static getBonusRewardStats() {
+    try {
+      const stored = StorageService.get('bonusRewardStats', {});
+      const totalXP = Math.max(0, Math.round(Number(stored?.totalXP) || 0));
+      const awards = Math.max(0, Math.round(Number(stored?.awards) || 0));
+      return { totalXP, awards };
+    } catch (error) {
+      console.warn('Error reading bonus reward stats, resetting to defaults:', error);
+      return { totalXP: 0, awards: 0 };
     }
   }
 
@@ -1000,7 +1008,33 @@ export class AchievementTracker {
       totalXP: stats.totalXP + rewardXP,
       launches: stats.launches + 1
     };
-    localStorage.setItem(LAUNCH_REWARD_STATS_KEY, JSON.stringify(updatedStats));
+    StorageService.set('launchRewardStats', updatedStats);
+    return updatedStats;
+  }
+
+  static grantXP(source = 'bonus_reward', xp = 0, metadata = {}) {
+    const rewardValue = Number(xp);
+    const rewardXP = Number.isFinite(rewardValue) && rewardValue > 0
+      ? Math.round(rewardValue)
+      : 0;
+
+    if (rewardXP <= 0) {
+      return this.getBonusRewardStats();
+    }
+
+    const stats = this.getBonusRewardStats();
+    const updatedStats = {
+      totalXP: stats.totalXP + rewardXP,
+      awards: stats.awards + 1,
+      lastAward: {
+        source,
+        xp: rewardXP,
+        awardedAt: new Date().toISOString(),
+        metadata
+      }
+    };
+
+    StorageService.set('bonusRewardStats', updatedStats);
     return updatedStats;
   }
 
@@ -1056,15 +1090,13 @@ export class AchievementTracker {
     }
 
     stats.games[identifier].sessions += 1;
-    localStorage.setItem(UNIQUE_GAME_STATS_KEY, JSON.stringify(stats));
+    StorageService.set('uniqueGameStats', stats);
   }
 
   static getStoredLibrary() {
     try {
-      const stored = JSON.parse(localStorage.getItem('gameLibrary') || '[]');
-      return Array.isArray(stored) ? stored : [];
+      return StorageService.get('library', []);
     } catch (error) {
-      console.error('Error reading game library:', error);
       return [];
     }
   }
@@ -1099,7 +1131,7 @@ export class AchievementTracker {
 
     switch (period) {
       case 'daily': {
-        const dayKey = currentDate.toISOString().split('T')[0];
+        const dayKey = getDateKey(currentDate);
         return resolvedLibrary.reduce((totalMinutes, game) => totalMinutes + Number(game?.playtime?.daily?.[dayKey] || 0), 0);
       }
       case 'weekly': {
@@ -1171,15 +1203,14 @@ export class AchievementTracker {
     const stats = this.getTimeStats();
     stats.total += minutes;
     stats.sessions += 1;
-    localStorage.setItem('timeStats', JSON.stringify(stats));
+    StorageService.set('timeStats', stats);
   }
 
   static getMoodStats() {
     try {
-      return JSON.parse(localStorage.getItem('moodStats') || '{}');
+      return StorageService.get('moodStats', {});
     } catch (error) {
-      console.log('Error parsing moodStats, resetting to defaults:', error);
-      localStorage.setItem('moodStats', '{}');
+      StorageService.set('moodStats', {});
       return {};
     }
   }
@@ -1193,7 +1224,7 @@ export class AchievementTracker {
     }
     
     stats[weekKey][mood] = (stats[weekKey][mood] || 0) + 1;
-    localStorage.setItem('moodStats', JSON.stringify(stats));
+    StorageService.set('moodStats', stats);
   }
 
   static getCurrentWeekKey() {
@@ -1205,8 +1236,7 @@ export class AchievementTracker {
 
   // Time period tracking for achievements
   static getCurrentDayKey() {
-    const now = new Date();
-    return now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    return getDateKey(new Date());
   }
 
   static getCurrentMonthKey() {
@@ -1236,19 +1266,16 @@ export class AchievementTracker {
 
   // Time-based achievement tracking
   static getTimeBasedAchievements(period) {
-    const key = `timeAchievements_${period}`;
     try {
-      return JSON.parse(localStorage.getItem(key) || '{}');
+      return StorageService.get(`timeAchievements_${period}`, {});
     } catch (error) {
-      console.log(`Error parsing ${period} achievements, resetting:`, error);
-      localStorage.setItem(key, '{}');
+      StorageService.set(`timeAchievements_${period}`, {});
       return {};
     }
   }
 
   static setTimeBasedAchievements(period, achievements) {
-    const key = `timeAchievements_${period}`;
-    localStorage.setItem(key, JSON.stringify(achievements));
+    StorageService.set(`timeAchievements_${period}`, achievements);
   }
 
   static getLastResetKey(period) {
@@ -1257,7 +1284,7 @@ export class AchievementTracker {
 
   static getTimeAssignmentState() {
     try {
-      const stored = JSON.parse(localStorage.getItem(TIME_ASSIGNMENTS_KEY) || '{}');
+      const stored = StorageService.get('timeAssignments', {});
       PERIOD_KEYS.forEach(period => {
         if (!stored[period] || typeof stored[period] !== 'object') {
           stored[period] = { key: null, ids: [] };
@@ -1276,11 +1303,7 @@ export class AchievementTracker {
   }
 
   static saveTimeAssignmentState(state) {
-    try {
-      localStorage.setItem(TIME_ASSIGNMENTS_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error('Failed to persist time assignment state:', error);
-    }
+    StorageService.set('timeAssignments', state);
   }
 
   static selectRandomAssignmentsForPeriod(period) {
@@ -1336,8 +1359,7 @@ export class AchievementTracker {
 
   static checkAndResetTimeBasedAchievements() {
     PERIOD_KEYS.forEach(period => {
-      const lastResetKey = this.getLastResetKey(period);
-      const lastReset = localStorage.getItem(lastResetKey);
+      const lastReset = StorageService.getString(`lastReset_${period}`);
       
       const currentKey = this.getPeriodCurrentKey(period);
       if (!currentKey) {
@@ -1348,8 +1370,7 @@ export class AchievementTracker {
       if (lastReset !== currentKey) {
         // Reset achievements for this period
         this.setTimeBasedAchievements(period, {});
-        localStorage.setItem(lastResetKey, currentKey);
-        console.log(`🔄 Reset ${period} achievements for period: ${currentKey}`);
+        StorageService.setString(`lastReset_${period}`, currentKey);
         this.rotatePeriodAssignments(period, currentKey);
       }
     });
@@ -1416,10 +1437,9 @@ export class AchievementTracker {
 
   static getGenreStats() {
     try {
-      return JSON.parse(localStorage.getItem('genreStats') || '{}');
+      return StorageService.get('genreStats', {});
     } catch (error) {
-      console.log('Error parsing genreStats, resetting to defaults:', error);
-      localStorage.setItem('genreStats', '{}');
+      StorageService.set('genreStats', {});
       return {};
     }
   }
@@ -1427,7 +1447,7 @@ export class AchievementTracker {
   static trackGenreUsage(genre) {
     const stats = this.getGenreStats();
     stats[genre] = (stats[genre] || 0) + 1;
-    localStorage.setItem('genreStats', JSON.stringify(stats));
+    StorageService.set('genreStats', stats);
   }
 
   static getGamingStats() {
@@ -1484,9 +1504,8 @@ export class AchievementTracker {
 
   static getRecentlyUnlocked() {
     try {
-      return JSON.parse(localStorage.getItem('recentlyUnlocked') || '[]');
+      return StorageService.get('recentlyUnlocked', []);
     } catch (error) {
-      console.log('Error parsing recentlyUnlocked:', error);
       return [];
     }
   }
@@ -1502,15 +1521,14 @@ export class AchievementTracker {
       });
       // Keep only last 10 recently unlocked
       if (recent.length > 10) recent.pop();
-      localStorage.setItem('recentlyUnlocked', JSON.stringify(recent));
+      StorageService.set('recentlyUnlocked', recent);
     }
   }
 
   static getAchievementUnlockHistory() {
     try {
-      return JSON.parse(localStorage.getItem('achievementUnlockHistory') || '[]');
+      return StorageService.get('achievementUnlockHistory', []);
     } catch (error) {
-      console.log('Error parsing achievementUnlockHistory:', error);
       return [];
     }
   }
@@ -1532,7 +1550,7 @@ export class AchievementTracker {
       unlockedAt: Date.now()
     });
 
-    localStorage.setItem('achievementUnlockHistory', JSON.stringify(history.slice(0, 500)));
+    StorageService.set('achievementUnlockHistory', history.slice(0, 500));
   }
 
   static getAchievementById(id) {
@@ -1874,7 +1892,7 @@ export class AchievementTracker {
 
   static getPatreonBoostProfile() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(PATREON_XP_BOOST_KEY) || '{}');
+      const parsed = StorageService.get('patreonXPBoost', {});
       const canonicalMeta = resolveStoredBoostMeta(parsed);
       const multiplier = Number(canonicalMeta?.multiplier ?? parsed.multiplier);
       const safeMultiplier = Number.isFinite(multiplier) && multiplier >= 1 ? multiplier : 1;
@@ -1951,7 +1969,7 @@ export class AchievementTracker {
       activatedAt: new Date().toISOString()
     };
 
-    localStorage.setItem(PATREON_XP_BOOST_KEY, JSON.stringify(profile));
+    StorageService.set('patreonXPBoost', profile);
 
     const multiplierLabel = formatXPBoostMultiplier(boostMeta.multiplier);
     return {
@@ -2018,11 +2036,11 @@ export class AchievementTracker {
       expiry: monthlyCodeMeta.expiry
     };
 
-    localStorage.setItem(PATREON_XP_BOOST_KEY, JSON.stringify(profile));
+    StorageService.set('patreonXPBoost', profile);
 
     // Mark this monthly code as redeemed
     redeemedMonthlyCodes.push(normalizedCode);
-    localStorage.setItem('redeemedMonthlyCodes', JSON.stringify(redeemedMonthlyCodes));
+    StorageService.set('redeemedMonthlyCodes', redeemedMonthlyCodes);
 
     const multiplierLabel = formatXPBoostMultiplier(monthlyCodeMeta.multiplier);
     return {
@@ -2038,9 +2056,8 @@ export class AchievementTracker {
 
   static getRedeemedMonthlyCodes() {
     try {
-      return JSON.parse(localStorage.getItem('redeemedMonthlyCodes') || '[]');
+      return StorageService.get('redeemedMonthlyCodes', []);
     } catch (error) {
-      console.warn('Failed to parse redeemed monthly codes:', error);
       return [];
     }
   }
@@ -2094,9 +2111,7 @@ export class AchievementTracker {
         expiry: null
       };
       
-      localStorage.setItem(PATREON_XP_BOOST_KEY, JSON.stringify(resetProfile));
-      
-      console.log(`Monthly XP boost expired on ${currentProfile.expiry}. Boost has been reset.`);
+      StorageService.set('patreonXPBoost', resetProfile);
       
       return resetProfile;
     }
@@ -2109,6 +2124,7 @@ export class AchievementTracker {
     const achievementPoints = this.getAchievementPoints();
     const timeStats = this.getTimeStats();
     const launchRewardStats = this.getLaunchRewardStats();
+    const bonusRewardStats = this.getBonusRewardStats();
 
     // Calculate XP from achievements
     const achievementXP = unlockedAchievements.reduce((total, achievementId) => {
@@ -2118,7 +2134,8 @@ export class AchievementTracker {
     // Calculate XP from playtime (1 XP per minute)
     const playtimeXP = timeStats.total;
     const launchXP = launchRewardStats.totalXP;
-    const baseXP = achievementXP + playtimeXP + launchXP;
+    const bonusRewardXP = bonusRewardStats.totalXP;
+    const baseXP = achievementXP + playtimeXP + launchXP + bonusRewardXP;
     
     // Check for monthly boost expiry before getting boost profile
     const boostProfile = this.checkMonthlyBoostExpiry();
@@ -2139,6 +2156,8 @@ export class AchievementTracker {
       achievementXP,
       playtimeXP,
       launchXP,
+      bonusRewardXP,
+      bonusRewardCount: bonusRewardStats.awards,
       launchCount: launchRewardStats.launches,
       baseXP,
       boostEligibleXP,
@@ -2336,11 +2355,11 @@ export class AchievementTracker {
 
     // Only recompute if library changed, not on every achievement check
     const currentLibraryHash = JSON.stringify(library).slice(0, 100);
-    const lastLibraryHash = localStorage.getItem('lastLibraryHash');
-    
+    const lastLibraryHash = StorageService.getString('lastLibraryHash');
+
     if (currentLibraryHash !== lastLibraryHash) {
       RollingAchievementsTracker.recomputeActivityFromHistory(library);
-      localStorage.setItem('lastLibraryHash', currentLibraryHash);
+      StorageService.setString('lastLibraryHash', currentLibraryHash);
     }
     
     PERIOD_KEYS.forEach(period => {

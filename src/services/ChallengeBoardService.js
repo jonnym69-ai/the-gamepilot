@@ -2,6 +2,7 @@ import { AchievementTracker } from '../AchievementSystem';
 import { resolveGameArtwork } from './GameArtworkService';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
 import { StatsAggregationService } from './StatsAggregationService';
+import StorageService from './StorageService';
 
 const PREFERENCES_KEY = 'retentionQuestPreferences';
 const CURATED_LIMIT = 4;
@@ -26,7 +27,7 @@ const PERIOD_CONFIG = Object.freeze({
 
 const readPreferences = () => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
+    const parsed = StorageService.get(PREFERENCES_KEY, {});
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch (error) {
     return {};
@@ -36,7 +37,7 @@ const readPreferences = () => {
 const savePreferences = (preferences) => {
   try {
     const safePreferences = preferences && typeof preferences === 'object' ? preferences : {};
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(safePreferences));
+    StorageService.set(PREFERENCES_KEY, safePreferences);
   } catch (error) {
     console.error('Failed to save challenge board preferences:', error);
   }

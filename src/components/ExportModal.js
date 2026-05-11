@@ -1,14 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Download, FileText, X, Grid, List, Image, Trophy, User, Home } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import './ExportModal.css';
 
 const ExportModal = ({ library, theme, isOpen, onClose }) => {
-  const [exportFormat, setExportFormat] = useState('html');
+  const [exportFormat, setExportFormat] = useState('png');
   const [layout, setLayout] = useState('grid-vertical');
   const [includeImages, setIncludeImages] = useState(true);
   const [includeTime, setIncludeTime] = useState(true);
   const [selectedPage, setSelectedPage] = useState('library');
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const formatTime = (minutes) => {
     if (!minutes || minutes === 0) return 'Never played';
@@ -86,93 +101,6 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
     `;
   };
 
-  const exportToHTML = () => {
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>GamePilot ${selectedPage.charAt(0).toUpperCase() + selectedPage.slice(1)} Export</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-              background: var(--bg-primary);
-              color: var(--text);
-              padding: 20px;
-              line-height: 1.6;
-            }
-            .export-header { text-align: center; margin-bottom: 30px; }
-            .export-header h1 { font-size: 2.5em; margin-bottom: 20px; }
-            .export-stats { 
-              display: flex; 
-              justify-content: center; 
-              gap: 30px; 
-              margin-bottom: 30px; 
-              flex-wrap: wrap;
-            }
-            .stat { 
-              text-align: center; 
-              padding: 15px; 
-              background: var(--card);
-              border-radius: 10px;
-              min-width: 120px;
-            }
-            .stat-number { display: block; font-size: 2em; font-weight: bold; }
-            .stat-label { display: block; opacity: 0.7; margin-top: 5px; }
-            .vertical-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-            .horizontal-layout { display: flex; flex-direction: column; gap: 15px; }
-            .export-game-card { 
-              background: var(--card);
-              border: 1px solid var(--border-color);
-              border-radius: 12px; 
-              padding: 15px; 
-              display: flex; 
-              gap: 15px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .game-image { 
-              width: 80px; 
-              height: 80px; 
-              border-radius: 8px; 
-              overflow: hidden; 
-              flex-shrink: 0;
-            }
-            .game-image img { width: 100%; height: 100%; object-fit: cover; }
-            .game-details { flex: 1; }
-            .game-details h3 { margin: 0 0 10px 0; font-size: 1.2em; }
-            .game-meta { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-            .platform-tag, .mood-tag, .genre-tag { 
-              padding: 4px 8px; 
-              border-radius: 12px; 
-              font-size: 0.8em;
-              background: var(--bg-secondary);
-            }
-            .game-time, .game-launches { 
-              display: flex; 
-              align-items: center; 
-              gap: 5px; 
-              font-size: 0.9em;
-              opacity: 0.8;
-            }
-            @media print { body { padding: 10px; } }
-          </style>
-        </head>
-        <body>
-          ${generateLibraryHTML(layout === 'vertical')}
-        </body>
-      </html>
-    `;
-
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `gamepilot-${selectedPage}-${layout}-${new Date().toISOString().split('T')[0]}.html`;
-    link.click();
-    URL.revokeObjectURL(url);
-    onClose();
-  };
-
   const exportToCSV = () => {
     const headers = ['Name', 'Platform', 'Time Played (minutes)', 'Launch Count', 'Genres', 'Mood', 'Last Played'];
     const csvContent = [
@@ -196,55 +124,6 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
     link.click();
     URL.revokeObjectURL(url);
     onClose();
-  };
-
-  const exportToJSON = () => {
-    try {
-      console.log('Exporting library with', library.length, 'games');
-      
-      if (!library || library.length === 0) {
-        console.warn('No games to export');
-        alert('No games in library to export');
-        return;
-      }
-
-      const exportData = library.map(game => ({
-        name: game.name,
-        platform: game.platform,
-        time_played_minutes: game.time_played || 0,
-        launch_count: game.launch_count || 0,
-        genres: game.genres || [],
-        mood: game.mood,
-        last_played: game.last_played || null,
-        icon_url: includeImages ? game.iconUrl : undefined
-      }));
-
-      console.log('Export data prepared:', exportData.length, 'items');
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `gamepilot-${selectedPage}-${new Date().toISOString().split('T')[0]}.json`;
-      
-      console.log('Triggering download:', link.download);
-      
-      // Try multiple methods to trigger the download
-      document.body.appendChild(link);
-      link.click();
-      
-      // Fallback method
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
-      console.log('Export completed successfully');
-      onClose();
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert(`Export failed: ${error.message}`);
-    }
   };
 
   const exportToImage = async (format) => {
@@ -294,17 +173,9 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
     console.log('Export button clicked, format:', exportFormat, 'page:', selectedPage);
     
     switch (exportFormat) {
-      case 'html':
-        console.log('Exporting as HTML');
-        exportToHTML();
-        break;
       case 'csv':
         console.log('Exporting as CSV');
         exportToCSV();
-        break;
-      case 'json':
-        console.log('Exporting as JSON');
-        exportToJSON();
         break;
       case 'png':
         console.log('Exporting as PNG');
@@ -315,16 +186,16 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
         exportToJPEG();
         break;
       default:
-        console.log('Defaulting to HTML export');
-        exportToHTML();
+        console.log('Defaulting to PNG export');
+        exportToPNG();
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="export-modal-overlay">
-      <div className="export-modal">
+    <div className="export-modal-overlay" onClick={onClose}>
+      <div className="export-modal" onClick={(e) => e.stopPropagation()}>
         <div className="export-modal-header">
           <h2>Export GamePilot Data</h2>
           <button className="close-button" onClick={onClose}>
@@ -450,13 +321,6 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
             </h3>
             <div className="format-options">
               <button 
-                className={`format-option ${exportFormat === 'html' ? 'active' : ''}`}
-                onClick={() => setExportFormat('html')}
-              >
-                <FileText size={16} />
-                HTML
-              </button>
-              <button 
                 className={`format-option ${exportFormat === 'png' ? 'active' : ''}`}
                 onClick={() => setExportFormat('png')}
               >
@@ -476,13 +340,6 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               >
                 <FileText size={16} />
                 CSV
-              </button>
-              <button 
-                className={`format-option ${exportFormat === 'json' ? 'active' : ''}`}
-                onClick={() => setExportFormat('json')}
-              >
-                <FileText size={16} />
-                JSON
               </button>
             </div>
           </div>

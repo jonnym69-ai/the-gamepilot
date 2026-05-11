@@ -1,0 +1,271 @@
+.startup-questionnaire-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  background: rgba(8, 12, 24, 0.84);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.startup-questionnaire-modal {
+  width: min(980px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(160deg, var(--card, #162032), rgba(12, 18, 30, 0.96));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+}
+
+.startup-questionnaire-modal.founder-enhanced {
+  border-color: rgba(250, 204, 21, 0.34);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.42), 0 0 36px rgba(250, 204, 21, 0.14);
+}
+
+.startup-questionnaire-header {
+  padding: 28px 28px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.startup-questionnaire-kicker,
+.startup-founder-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.startup-questionnaire-kicker {
+  background: rgba(255, 107, 53, 0.14);
+  color: #ff9a5a;
+}
+
+.startup-founder-pill {
+  margin-top: 14px;
+  background: rgba(250, 204, 21, 0.14);
+  color: #fde68a;
+}
+
+.startup-questionnaire-header h2 {
+  margin: 16px 0 10px;
+  color: var(--text, #fff);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.startup-questionnaire-header p {
+  margin: 0;
+  color: var(--text, #fff);
+  opacity: 0.82;
+  line-height: 1.65;
+}
+
+.startup-questionnaire-progress {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.startup-questionnaire-progress span {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.startup-questionnaire-progress span.active {
+  background: linear-gradient(135deg, #ff6b35, #ffb36b);
+}
+
+.startup-questionnaire-body {
+  padding: 26px 28px 10px;
+}
+
+.startup-questionnaire-step h3 {
+  margin: 0 0 8px;
+  color: var(--text, #fff);
+  font-size: 1.4rem;
+}
+
+.startup-questionnaire-step p {
+  margin: 0 0 22px;
+  color: var(--text, #fff);
+  opacity: 0.78;
+  line-height: 1.6;
+}
+
+.startup-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.startup-chip {
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text, #fff);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.startup-chip:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 107, 53, 0.42);
+}
+
+.startup-chip.selected {
+  border-color: #ffb36b;
+  background: linear-gradient(160deg, rgba(255, 107, 53, 0.28), rgba(255, 179, 107, 0.12));
+  box-shadow: 0 0 0 2px rgba(255, 154, 90, 0.28), 0 14px 28px rgba(255, 107, 53, 0.2);
+  transform: translateY(-2px) scale(1.01);
+}
+
+.startup-chip-title {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.startup-chip-subtitle {
+  display: block;
+  font-size: 0.88rem;
+  opacity: 0.76;
+  line-height: 1.45;
+}
+
+.startup-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.startup-choice-card {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text, #fff);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.startup-choice-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 107, 53, 0.42);
+}
+
+.startup-choice-card.selected {
+  border-color: #ffb36b;
+  background: linear-gradient(160deg, rgba(255, 107, 53, 0.3), rgba(255, 179, 107, 0.12));
+  box-shadow: 0 0 0 2px rgba(255, 154, 90, 0.28), 0 14px 28px rgba(255, 107, 53, 0.2);
+  transform: translateY(-2px) scale(1.01);
+}
+
+.startup-choice-card strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.startup-choice-card span {
+  display: block;
+  opacity: 0.76;
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.startup-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.startup-summary-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.startup-summary-card span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.68;
+}
+
+.startup-summary-card strong {
+  color: var(--text, #fff);
+  line-height: 1.4;
+}
+
+.startup-questionnaire-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 28px 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.startup-questionnaire-footer button {
+  min-width: 140px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.startup-questionnaire-footer .ghost {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.startup-questionnaire-footer .ghost:hover {
+  color: var(--text, #fff);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.startup-questionnaire-footer .primary {
+  background: linear-gradient(135deg, #ff6b35, #ff9a5a);
+  color: white;
+  border: none;
+}
+
+.startup-questionnaire-footer .secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text, #fff);
+}
+
+@media (max-width: 768px) {
+  .startup-questionnaire-overlay {
+    padding: 14px;
+  }
+
+  .startup-questionnaire-header,
+  .startup-questionnaire-body,
+  .startup-questionnaire-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .startup-questionnaire-footer {
+    flex-direction: column-reverse;
+  }
+
+  .startup-questionnaire-footer button {
+    width: 100%;
+  }
+}

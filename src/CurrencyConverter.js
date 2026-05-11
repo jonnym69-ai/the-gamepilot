@@ -1,3 +1,5 @@
+import StorageService from './services/StorageService';
+
 // Currency conversion rates (approximate, for display purposes)
 const EXCHANGE_RATES = {
   USD: 1,
@@ -59,24 +61,24 @@ export const parseSteamPrice = (priceString) => {
 
 // Get current currency from localStorage
 export const getCurrentCurrency = () => {
-  return localStorage.getItem('selectedCurrency') || 'USD';
+  return StorageService.getString('selectedCurrency', 'USD');
 };
 
 // Store purchase price for tracking
 export const storePurchasePrice = (appid, priceInUSD, currency) => {
-  const prices = JSON.parse(localStorage.getItem('gamePrices') || '{}');
+  const prices = StorageService.get('gamePrices', {});
   prices[appid] = {
     price: priceInUSD,
     currency: currency,
     timestamp: Date.now(),
     originalCurrency: currency
   };
-  localStorage.setItem('gamePrices', JSON.stringify(prices));
+  StorageService.set('gamePrices', prices);
 };
 
 // Get stored purchase price
 export const getStoredPrice = (appid) => {
-  const prices = JSON.parse(localStorage.getItem('gamePrices') || '{}');
+  const prices = StorageService.get('gamePrices', {});
   return prices[appid] || null;
 };
 

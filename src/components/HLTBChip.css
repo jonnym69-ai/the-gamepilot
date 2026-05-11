@@ -1,0 +1,35 @@
+.hltb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  background: rgba(99, 102, 241, 0.14);
+  color: #c4b5fd;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.hltb-chip svg { opacity: 0.85; }
+
+.hltb-chip--pending {
+  opacity: 0.6;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.hltb-chip--main { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; border-color: rgba(99, 102, 241, 0.32); }
+.hltb-chip--ext  { background: rgba(168, 85, 247, 0.16); color: #e9d5ff; border-color: rgba(168, 85, 247, 0.30); }
+.hltb-chip--comp { background: rgba(236, 72, 153, 0.16); color: #fbcfe8; border-color: rgba(236, 72, 153, 0.30); }
+
+.hltb-chip-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}

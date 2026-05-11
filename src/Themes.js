@@ -3,6 +3,7 @@ import NavBar from './NavBar';
 import { useTheme } from './ThemeContext';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
+import StorageService from './services/StorageService';
 import moodThemes from './themes/moodThemes.json';
 import './Home.css';
 
@@ -79,19 +80,18 @@ function Themes() {
   const {
     currentTheme,
     setTheme,
-    availableThemes,
-    isThemeUnlocked
+    availableThemes
   } = useTheme();
 
   const [autoSeasonal, setAutoSeasonal] = useState(() => {
-    return localStorage.getItem('autoSeasonalTheme') !== 'false';
+    return StorageService.getString('autoSeasonalTheme') !== 'false';
   });
 
   const currentSeason = useMemo(() => getCurrentSeason(), []);
   const seasonalThemeId = SEASONAL_THEMES[currentSeason];
 
   useEffect(() => {
-    localStorage.setItem('autoSeasonalTheme', autoSeasonal);
+    StorageService.setString('autoSeasonalTheme', autoSeasonal);
   }, [autoSeasonal]);
 
   const handleToggleAutoSeasonal = () => {
@@ -103,44 +103,44 @@ function Themes() {
 
   const rewardSummary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
   const themeTierProgression = useMemo(() => ProgressionUnlockService.getThemeTierProgression(), []);
-  const premiumThemes = useMemo(() => ProgressionUnlockService.getPremiumThemes(), []);
+  const unlockableThemes = useMemo(() => ProgressionUnlockService.getUnlockableThemes(), []);
   const seasonalChallenges = useMemo(() => SeasonalRewardService.getActiveChallenges(), []);
   const currentChallenge = seasonalChallenges.find(c => c.isActive);
 
   const themeCards = useMemo(() => {
-    const basicThemes = Object.values(availableThemes || {}).map((themeMeta) => ({
+    const coreThemes = Object.values(availableThemes || {})
+      .filter((themeMeta) => themeMeta.id === 'light' || themeMeta.id === 'dark')
+      .map((themeMeta) => ({
       id: themeMeta.id,
       name: themeMeta.name,
-      description: themeMeta.id === 'light' || themeMeta.id === 'dark'
-        ? 'Core theme available immediately.'
-        : 'Available from your unlocked theme collection.',
+      description: 'Core theme available immediately.',
       preview: moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.card
         ? `linear-gradient(135deg, ${moodThemes.find((entry) => entry.id === themeMeta.id).palette.primary}, ${moodThemes.find((entry) => entry.id === themeMeta.id).palette.accent})`
         : null,
       unlocked: true,
       requiredXP: 0,
-      isPremium: false
+      isCore: true
     }));
 
-    const premiumCards = premiumThemes.map((themeMeta) => ({
+    const unlockableThemeCards = unlockableThemes.map((themeMeta) => ({
       id: themeMeta.id,
       name: themeMeta.name,
-      description: themeMeta.description || 'Progression-unlocked premium theme.',
+      description: themeMeta.description || 'XP-gated theme unlock.',
       preview: themeMeta.preview || `linear-gradient(135deg, ${themeMeta.palette?.primary || '#ff6b35'}, ${themeMeta.palette?.accent || '#f093fb'})`,
-      unlocked: Boolean(themeMeta.unlocked || isThemeUnlocked(themeMeta.id)),
+      unlocked: Boolean(themeMeta.unlocked),
       requiredXP: themeMeta.requiredXP || 0,
-      isPremium: true
+      isCore: false
     }));
 
     const seen = new Set();
-    return [...basicThemes, ...premiumCards].filter((themeMeta) => {
+    return [...coreThemes, ...unlockableThemeCards].filter((themeMeta) => {
       if (seen.has(themeMeta.id)) {
         return false;
       }
       seen.add(themeMeta.id);
       return true;
     });
-  }, [availableThemes, premiumThemes, isThemeUnlocked]);
+  }, [availableThemes, unlockableThemes]);
 
   return (
     <div className="home-page" style={pageStyle}>
@@ -154,7 +154,7 @@ function Themes() {
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
           <span className="confidence-badge">Current: {currentTheme}</span>
-          <span className="match-score">Unlocked Themes: {rewardSummary?.unlockedCounts?.premiumThemes ?? 0}/{rewardSummary?.totalCounts?.premiumThemes ?? 0}</span>
+          <span className="match-score">Unlocked Themes: {rewardSummary?.unlockedCounts?.themes ?? 0}/{rewardSummary?.totalCounts?.themes ?? 0}</span>
         </div>
 
         {/* Seasonal Theme Toggle */}
@@ -243,12 +243,12 @@ function Themes() {
             return (
               <div key={themeMeta.id} style={cardStyle}>
                 <div style={previewStyle(themeMeta.preview)} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
                   <div>
                     <h3 style={{ margin: '0 0 6px 0' }}>{themeMeta.name}</h3>
                     <p style={{ margin: 0, opacity: 0.75, fontSize: '0.92rem' }}>{themeMeta.description}</p>
                   </div>
-                  {themeMeta.isPremium && <span className="confidence-badge">Premium</span>}
+                  {themeMeta.isCore && <span className="confidence-badge">Core</span>}
                 </div>
                 <p style={{ marginTop: '12px', marginBottom: '12px', fontSize: '0.85rem', opacity: 0.8 }}>
                   {themeMeta.unlocked ? 'Unlocked' : `Unlocks at ${themeMeta.requiredXP} XP`}
@@ -273,7 +273,7 @@ function Themes() {
           {themeTierProgression.map((tier) => (
             <div key={tier.id} style={cardStyle}>
               <h3 style={{ marginTop: 0, textTransform: 'capitalize' }}>{tier.tier} Tier</h3>
-              <p style={{ opacity: 0.8 }}>{tier.description || 'Unlocks more premium visual styles.'}</p>
+              <p style={{ opacity: 0.8 }}>{tier.description || 'Unlocks more XP-gated themes.'}</p>
               <p style={{ fontSize: '0.9rem', marginBottom: '8px' }}>
                 {tier.unlocked ? 'Unlocked' : `Requires ${tier.requiredXP} XP`}
               </p>

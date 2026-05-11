@@ -1,23 +1,30 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
-import { GamingIdentity } from './GamingIdentity';
 import { AchievementTracker } from './AchievementSystem';
-import { DataManager } from './DataManager';
+import CollapsibleSection from './components/CollapsibleSection';
+import StorageService from './services/StorageService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
-import { StatsAggregationService } from './services/StatsAggregationService';
-import NavBar from './NavBar';
 import { BackgroundScanner } from './BackgroundScanner';
+import { StatsAggregationService } from './services/StatsAggregationService';
+import { StartupPersonalizationService } from './services/StartupPersonalizationService';
+import NavBar from './NavBar';
+import { GamingIdentity } from './GamingIdentity';
+import { DataManager } from './DataManager';
 import LazyImage from './components/LazyImage';
 import GameCalendar from './components/GameCalendar';
-import CollapsibleSection from './components/CollapsibleSection';
 import EmptyState from './components/EmptyState';
 import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
+import PersonaEvolutionCard from './components/PersonaEvolutionCard';
+import { YearInReviewService } from './services/YearInReviewService';
+import CollectionsPanel from './components/CollectionsPanel';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
+import { GENRES, MOODS } from './constants/GenresMoods';
 
 const SUPPORT_TIER_WEIGHT = {
   Bronze: 1,
@@ -74,18 +81,26 @@ const buildRankedUsage = (sessions = [], valueSelector) => {
     }));
 };
 
-const readActiveSessions = () => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem('activeGameSessions') || '{}');
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  } catch (error) {
-    return {};
+const readActiveSessions = () => StorageService.get('activeGameSessions', {});
+
+const dispatchProfileUpdatedEvent = (detail = {}) => {
+  if (typeof window === 'undefined') {
+    return;
   }
+
+  window.dispatchEvent(new CustomEvent('gamepilot:profile-updated', {
+    detail
+  }));
 };
 
 const Profile = ({ theme, library = [] }) => {
+  const navigate = useNavigate();
   const { success, error } = useToast();
   const [tempUsername, setTempUsername] = useState('');
+  const personaEvolution = useMemo(
+    () => YearInReviewService.getLifetimePersonaEvolution(library),
+    [library]
+  );
   const [tempMessage, setTempMessage] = useState('Ready to find your perfect play?');
   const [gamingIdentity, setGamingIdentity] = useState(null);
   const [xpStats, setXpStats] = useState(null);
@@ -103,6 +118,9 @@ const Profile = ({ theme, library = [] }) => {
   const [timeFormat, setTimeFormat] = useState('24-hour');
   const [isSyncing, setIsSyncing] = useState(false);
   const [behaviorProfile, setBehaviorProfile] = useState(null);
+  const [startupPersonalization, setStartupPersonalization] = useState(() => StartupPersonalizationService.getProfile());
+  const [isEditingStartupPersonalization, setIsEditingStartupPersonalization] = useState(false);
+  const [startupDraft, setStartupDraft] = useState(() => StartupPersonalizationService.getProfile());
   const [sessionStats, setSessionStats] = useState(null);
   const [rewardCatalog, setRewardCatalog] = useState(() => ProgressionUnlockService.getProfileRewardCatalog());
   const [rewardSummary, setRewardSummary] = useState(() => ProgressionUnlockService.getRewardCatalogSummary());
@@ -213,10 +231,10 @@ const Profile = ({ theme, library = [] }) => {
 
   // Load completed games from localStorage
   useEffect(() => {
-    const savedCompletedGames = localStorage.getItem('completedGames');
-    if (savedCompletedGames) {
+    const savedCompletedGames = StorageService.get('completedGames', []);
+    if (savedCompletedGames?.length) {
       try {
-        const parsedCompletedGames = JSON.parse(savedCompletedGames);
+        const parsedCompletedGames = savedCompletedGames;
         setCompletedGames(Array.isArray(parsedCompletedGames) ? parsedCompletedGames : []);
       } catch (error) {
         setCompletedGames([]);
@@ -226,7 +244,7 @@ const Profile = ({ theme, library = [] }) => {
 
   // Save completed games to localStorage
   const saveCompletedGames = useCallback((newCompletedGames) => {
-    localStorage.setItem('completedGames', JSON.stringify(newCompletedGames));
+    StorageService.set('completedGames', newCompletedGames);
   }, []);
 
   // Add game to completed list
@@ -331,7 +349,9 @@ const Profile = ({ theme, library = [] }) => {
       if (!sessionStartValue) return null;
 
       const sessionStart = new Date(sessionStartValue);
-      const currentMinutes = Math.round((Date.now() - sessionStart.getTime()) / 60000);
+      const currentMinutes = sessionStart && !Number.isNaN(sessionStart.getTime())
+        ? Math.max(0, Math.floor((Date.now() - sessionStart.getTime()) / (1000 * 60)))
+        : 0;
       
       // Check if this is a launcher-based game that might be inaccurate
       const isLauncherBased = ['EA', 'Rockstar', 'Uplay'].includes(game.platform);
@@ -360,6 +380,49 @@ const Profile = ({ theme, library = [] }) => {
     return rewardCatalog?.titles?.find((title) => title.id === selectedId) || rewardCatalog?.titles?.[0] || null;
   }, [rewardCatalog]);
 
+  const founderAccentStyle = useMemo(() => {
+    if (!isFounder || !founderTier) {
+      return undefined;
+    }
+
+    const accentMap = {
+      Platinum: {
+        '--founder-accent': '#e5e7eb',
+        '--founder-glow': 'rgba(229, 231, 235, 0.28)',
+        '--founder-banner': 'linear-gradient(135deg, rgba(229, 231, 235, 0.28), rgba(148, 163, 184, 0.18))',
+        '--founder-border': 'rgba(229, 231, 235, 0.22)',
+        '--founder-border-strong': 'rgba(229, 231, 235, 0.34)',
+        '--founder-surface': 'rgba(229, 231, 235, 0.12)'
+      },
+      Gold: {
+        '--founder-accent': '#facc15',
+        '--founder-glow': 'rgba(250, 204, 21, 0.24)',
+        '--founder-banner': 'linear-gradient(135deg, rgba(250, 204, 21, 0.3), rgba(251, 146, 60, 0.18))',
+        '--founder-border': 'rgba(250, 204, 21, 0.2)',
+        '--founder-border-strong': 'rgba(250, 204, 21, 0.3)',
+        '--founder-surface': 'rgba(250, 204, 21, 0.14)'
+      },
+      Silver: {
+        '--founder-accent': '#cbd5e1',
+        '--founder-glow': 'rgba(203, 213, 225, 0.24)',
+        '--founder-banner': 'linear-gradient(135deg, rgba(203, 213, 225, 0.24), rgba(148, 163, 184, 0.16))',
+        '--founder-border': 'rgba(203, 213, 225, 0.2)',
+        '--founder-border-strong': 'rgba(203, 213, 225, 0.3)',
+        '--founder-surface': 'rgba(203, 213, 225, 0.12)'
+      },
+      Bronze: {
+        '--founder-accent': '#fb923c',
+        '--founder-glow': 'rgba(251, 146, 60, 0.22)',
+        '--founder-banner': 'linear-gradient(135deg, rgba(251, 146, 60, 0.26), rgba(180, 83, 9, 0.16))',
+        '--founder-border': 'rgba(251, 146, 60, 0.2)',
+        '--founder-border-strong': 'rgba(251, 146, 60, 0.3)',
+        '--founder-surface': 'rgba(251, 146, 60, 0.14)'
+      }
+    };
+
+    return accentMap[founderTier] || undefined;
+  }, [founderTier, isFounder]);
+
   const selectedLibraryVariant = useMemo(() => {
     const selectedId = rewardCatalog?.presentationCustomization?.selectedLibraryVariant;
     return rewardCatalog?.libraryVariants?.find((variant) => variant.id === selectedId) || rewardCatalog?.libraryVariants?.[0] || null;
@@ -380,6 +443,8 @@ const Profile = ({ theme, library = [] }) => {
     return rewardCatalog?.recommendationPacks?.find((pack) => pack.id === selectedId) || rewardCatalog?.recommendationPacks?.[0] || null;
   }, [rewardCatalog]);
 
+  const startupInfluence = UserBehaviorProfile.getStartupInfluenceSummary();
+
   const rewardTypeSummary = useMemo(() => {
     const progressionGroups = rewardSummary?.progressionGroups || {};
 
@@ -397,6 +462,7 @@ const Profile = ({ theme, library = [] }) => {
 
   const unlockedShowcaseSlotCount = rewardSummary?.showcaseSlotsUnlocked || 0;
   const upcomingUnlocks = rewardSummary?.upcomingUnlocks || [];
+  const roadmapUnlocks = rewardSummary?.nextUnlock ? upcomingUnlocks.slice(1) : upcomingUnlocks;
 
   const showcasedAchievements = useMemo(() => {
     const pointsMap = AchievementTracker.getAchievementPoints();
@@ -488,7 +554,7 @@ const Profile = ({ theme, library = [] }) => {
         
         alert(`Ended session for ${gameName}: ${sessionMinutes} minutes recorded`);
         delete sessions[gameName];
-        localStorage.setItem('activeGameSessions', JSON.stringify(sessions));
+        StorageService.set('activeGameSessions', sessions);
       }
     }
   };
@@ -497,6 +563,7 @@ const Profile = ({ theme, library = [] }) => {
   const mostPlayedGames = sessionStats?.mostPlayedGames || [];
 
   const getGreetingTime = (hour) => {
+    if (hour < 5) return '🌙 Late Night Gaming Session';
     if (hour < 12) return '🌅 Morning Gaming Session';
     if (hour < 17) return '☀️ Afternoon Gaming Session';
     if (hour < 21) return '🌆 Evening Gaming Session';
@@ -515,20 +582,12 @@ const Profile = ({ theme, library = [] }) => {
   ];
 
   useEffect(() => {
-    const savedUsername = localStorage.getItem('profileUsername') || '';
-    const savedProfilePic = localStorage.getItem('profilePic') || '';
-    const savedMessage = localStorage.getItem('welcomeMessage') || 'Ready to find your perfect play?';
-    const savedTimezone = localStorage.getItem('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const savedTimeFormat = localStorage.getItem('timeFormat') || '24-hour';
+    const savedUsername = StorageService.getString('profileUsername', '');
+    const savedProfilePic = StorageService.getString('profilePic', '');
+    const savedMessage = StorageService.getString('welcomeMessage', 'Ready to find your perfect play?');
+    const savedTimezone = StorageService.getString('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const savedTimeFormat = StorageService.getString('timeFormat', '24-hour');
     
-    console.log('[Profile] Loading saved data:', {
-      username: savedUsername,
-      hasProfilePic: !!savedProfilePic,
-      message: savedMessage,
-      timezone: savedTimezone,
-      timeFormat: savedTimeFormat
-    });
-
     setUsername(savedUsername);
     setProfilePic(savedProfilePic);
     setWelcomeMessage(savedMessage);
@@ -539,7 +598,7 @@ const Profile = ({ theme, library = [] }) => {
     
     let userFounders = [];
     try {
-      const parsedFounders = JSON.parse(localStorage.getItem('userFounders') || '[]');
+      const parsedFounders = StorageService.get('userFounders', []);
       userFounders = Array.isArray(parsedFounders) ? parsedFounders : [];
     } catch (err) {
       userFounders = [];
@@ -553,6 +612,8 @@ const Profile = ({ theme, library = [] }) => {
     
     const identity = GamingIdentity.getProfile();
     setGamingIdentity(identity);
+    setStartupPersonalization(StartupPersonalizationService.getProfile());
+    setStartupDraft(StartupPersonalizationService.getProfile());
 
     const xpData = AchievementTracker.getXPStats();
     setXpStats(xpData);
@@ -608,6 +669,19 @@ const Profile = ({ theme, library = [] }) => {
     return () => clearInterval(timer);
   }, [library, refreshRewardCatalog]);
 
+  useEffect(() => {
+    const handleStartupQuestionnaireCompleted = (event) => {
+      const nextProfile = event?.detail || StartupPersonalizationService.getProfile();
+      setStartupPersonalization(nextProfile);
+      setStartupDraft(nextProfile);
+      setIsEditingStartupPersonalization(false);
+      setGamingIdentity(GamingIdentity.getProfile());
+    };
+
+    window.addEventListener('gamepilot:startup-questionnaire-completed', handleStartupQuestionnaireCompleted);
+    return () => window.removeEventListener('gamepilot:startup-questionnaire-completed', handleStartupQuestionnaireCompleted);
+  }, []);
+
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -621,7 +695,8 @@ const Profile = ({ theme, library = [] }) => {
         const result = e.target.result;
         setProfilePic(result);
         if (!isEditing) {
-          localStorage.setItem('profilePic', result);
+          StorageService.setString('profilePic', result);
+          dispatchProfileUpdatedEvent({ profilePic: result });
           success('Profile picture updated!');
         }
       };
@@ -633,9 +708,14 @@ const Profile = ({ theme, library = [] }) => {
     if (tempUsername.trim()) {
       setUsername(tempUsername.trim());
       setWelcomeMessage(tempMessage);
-      localStorage.setItem('profileUsername', tempUsername.trim());
-      localStorage.setItem('profilePic', profilePic);
-      localStorage.setItem('welcomeMessage', tempMessage);
+      StorageService.setString('profileUsername', tempUsername.trim());
+      StorageService.setString('profilePic', profilePic);
+      StorageService.setString('welcomeMessage', tempMessage);
+      dispatchProfileUpdatedEvent({
+        username: tempUsername.trim(),
+        profilePic,
+        welcomeMessage: tempMessage
+      });
       success('Profile updated successfully!');
       setIsEditing(false);
     } else {
@@ -657,7 +737,8 @@ const Profile = ({ theme, library = [] }) => {
 
   const removeProfilePic = () => {
     setProfilePic('');
-    localStorage.removeItem('profilePic');
+    StorageService.remove('profilePic');
+    dispatchProfileUpdatedEvent({ profilePic: '' });
     success('Profile picture removed!');
   };
 
@@ -670,16 +751,47 @@ const Profile = ({ theme, library = [] }) => {
       setSelectedSection(prev => prev - 1);
       return true;
     } else if (action === 'confirm') {
-      // Trigger action based on selected section, e.g., open a modal or navigate
-      console.log('Controller confirm on section:', selectedSection);
       return true;
     }
     return false;
   }, [selectedSection]);
 
-  const getSectionClass = useCallback((index) => {
-    return `profile-section ${selectedSection === index ? 'selected' : ''}`;
-  }, [selectedSection]);
+  const getSectionClass = (index) => `profile-section profile-section-${index}`;
+
+  const handleRetunePersonalization = useCallback(() => {
+    navigate('/startup-questionnaire');
+  }, [navigate]);
+
+  const handleStartupDraftToggle = useCallback((field, value) => {
+    setStartupDraft((current) => {
+      const currentList = current[field] || [];
+      const nextList = currentList.includes(value)
+        ? currentList.filter((entry) => entry !== value)
+        : [...currentList, value];
+
+      return {
+        ...current,
+        [field]: nextList
+      };
+    });
+  }, []);
+
+  const handleSaveStartupPersonalization = useCallback(() => {
+    const nextProfile = StartupPersonalizationService.updateOnboardingProfile(startupDraft);
+    setStartupPersonalization(nextProfile);
+    setStartupDraft(nextProfile);
+    setGamingIdentity(GamingIdentity.getProfile());
+    setIsEditingStartupPersonalization(false);
+    window.dispatchEvent(new CustomEvent('gamepilot:startup-questionnaire-completed', {
+      detail: nextProfile
+    }));
+    success('Startup personalization updated.');
+  }, [startupDraft, success]);
+
+  const handleCancelStartupPersonalizationEdit = useCallback(() => {
+    setStartupDraft(startupPersonalization);
+    setIsEditingStartupPersonalization(false);
+  }, [startupPersonalization]);
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
@@ -720,8 +832,11 @@ const Profile = ({ theme, library = [] }) => {
           </div>
 
           <div
-            className="profile-card reward-profile-card"
-            style={selectedProfileBanner ? { '--profile-banner-preview': selectedProfileBanner.preview } : undefined}
+            className={`profile-card reward-profile-card ${isFounder && founderTier ? `founder-profile-card founder-profile-card-${founderTier.toLowerCase()}` : ''}`}
+            style={{
+              ...(selectedProfileBanner ? { '--profile-banner-preview': selectedProfileBanner.preview } : {}),
+              ...(founderAccentStyle || {})
+            }}
           >
           <div className="profile-picture-section">
             <div
@@ -762,15 +877,18 @@ const Profile = ({ theme, library = [] }) => {
 
           <div className="profile-info">
             <div
-              className="profile-identity-banner"
+              className={`profile-identity-banner ${isFounder && founderTier ? `founder-identity-banner founder-identity-banner-${founderTier.toLowerCase()}` : ''}`}
               style={selectedProfileBanner ? { background: selectedProfileBanner.preview } : undefined}
             >
               <div className="profile-identity-banner-copy">
-                <span className="profile-identity-label">Equipped Banner</span>
+                <span className="profile-identity-label">{isFounder ? 'Founder Identity Banner' : 'Equipped Banner'}</span>
                 <strong>{selectedProfileBanner?.name || 'Pilot Sunset'}</strong>
-                <p>{selectedProfileTitle?.name || 'Rookie Pilot'}</p>
+                <p>{isFounder && founderTier ? `${founderTier} Founder • ${selectedProfileTitle?.name || 'Rookie Pilot'}` : (selectedProfileTitle?.name || 'Rookie Pilot')}</p>
               </div>
               <div className="profile-identity-banner-meta">
+                {isFounder && founderTier && (
+                  <span>{founderTier} Founder Lounge</span>
+                )}
                 <span>{selectedProfileFrame?.name || 'Starter Halo'}</span>
                 <span>{unlockedShowcaseSlotCount} showcase slot{unlockedShowcaseSlotCount === 1 ? '' : 's'}</span>
               </div>
@@ -840,6 +958,7 @@ const Profile = ({ theme, library = [] }) => {
                   <p>"{welcomeMessage}"</p>
                 </div>
                 <div className="profile-equipped-meta">
+                  {isFounder && founderTier && <span>Founder Status: {founderTier} Lounge</span>}
                   <span>Frame: {selectedProfileFrame?.name || 'Starter Halo'}</span>
                   <span>Banner: {selectedProfileBanner?.name || 'Pilot Sunset'}</span>
                 </div>
@@ -930,6 +1049,125 @@ const Profile = ({ theme, library = [] }) => {
                   <p className="identity-description">{gamingIdentity.identity.description}</p>
                 </div>
               </div>
+              {isFounder && founderTier && (
+                <div className={`founder-plaque founder-plaque-${founderTier.toLowerCase()}`}>
+                  <div>
+                    <span className="trait-label">Founder Plaque</span>
+                    <strong>{founderTier} Founder Lounge Member</strong>
+                    <p className="identity-description">Your supporter identity now carries premium profile, recap, and export presentation throughout GamePilot.</p>
+                  </div>
+                  <span className="founder-plaque-badge">Founding Supporter</span>
+                </div>
+              )}
+              {startupPersonalization?.completed && (
+                <div className="startup-personalization-panel">
+                  <div className="startup-personalization-header">
+                    <div>
+                      <span className="trait-label">Startup Personalization</span>
+                      <strong>{startupPersonalization.playerVibe} • {startupPersonalization.personalizationStyle}</strong>
+                      <p className="identity-description">Your cold-start profile seeds recommendations and identity until real play behavior takes over.</p>
+                      <div className="startup-personalization-status">
+                        <span className={`startup-personalization-status-badge strength-${startupInfluence.shortLabel.toLowerCase().replace(/\s+/g, '-')}`}>{startupInfluence.label}</span>
+                        <p>{startupInfluence.description}</p>
+                      </div>
+                    </div>
+                    <div className="startup-personalization-actions">
+                      <button type="button" className="startup-personalization-button" onClick={() => setIsEditingStartupPersonalization((current) => !current)}>{isEditingStartupPersonalization ? 'Close editor' : 'Edit inline'}</button>
+                      <button type="button" className="startup-personalization-button" onClick={handleRetunePersonalization}>Retune</button>
+                    </div>
+                  </div>
+                  {isEditingStartupPersonalization && (
+                    <div className="startup-personalization-editor">
+                      <div className="startup-personalization-field">
+                        <span className="trait-label">Seeded Moods</span>
+                        <div className="startup-personalization-chip-grid">
+                          {MOODS.map((moodOption) => (
+                            <button
+                              key={moodOption}
+                              type="button"
+                              className={`startup-personalization-chip ${startupDraft.selectedMoods.includes(moodOption) ? 'selected' : ''}`}
+                              onClick={() => handleStartupDraftToggle('selectedMoods', moodOption)}
+                            >
+                              {moodOption}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="startup-personalization-field">
+                        <span className="trait-label">Favorite Genres</span>
+                        <div className="startup-personalization-chip-grid genre-grid">
+                          {GENRES.map((genreOption) => (
+                            <button
+                              key={genreOption}
+                              type="button"
+                              className={`startup-personalization-chip ${startupDraft.favoriteGenres.includes(genreOption) ? 'selected' : ''}`}
+                              onClick={() => handleStartupDraftToggle('favoriteGenres', genreOption)}
+                            >
+                              {genreOption}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="startup-personalization-editor-grid">
+                        <label className="startup-personalization-field">
+                          <span className="trait-label">Session Preference</span>
+                          <select
+                            className="profile-select startup-personalization-select"
+                            value={startupDraft.sessionPreference}
+                            onChange={(event) => setStartupDraft((current) => ({ ...current, sessionPreference: event.target.value }))}
+                          >
+                            {StartupPersonalizationService.getSessionOptions().map((option) => (
+                              <option key={option.id} value={option.id}>{option.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="startup-personalization-field">
+                          <span className="trait-label">Player Vibe</span>
+                          <select
+                            className="profile-select startup-personalization-select"
+                            value={startupDraft.playerVibe}
+                            onChange={(event) => setStartupDraft((current) => ({ ...current, playerVibe: event.target.value }))}
+                          >
+                            {StartupPersonalizationService.getPlayerVibes().map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="startup-personalization-field">
+                          <span className="trait-label">Personalization Style</span>
+                          <select
+                            className="profile-select startup-personalization-select"
+                            value={startupDraft.personalizationStyle}
+                            onChange={(event) => setStartupDraft((current) => ({ ...current, personalizationStyle: event.target.value }))}
+                          >
+                            {StartupPersonalizationService.getPersonalizationStyles().map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <div className="startup-personalization-editor-actions">
+                        <button type="button" className="startup-personalization-button" onClick={handleSaveStartupPersonalization}>Save tuning</button>
+                        <button type="button" className="startup-personalization-button" onClick={handleCancelStartupPersonalizationEdit}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="identity-stats startup-personalization-stats">
+                    <div className="identity-trait">
+                      <span className="trait-label">Seeded Moods</span>
+                      <span className="trait-value">{startupPersonalization.selectedMoods.join(', ') || 'Not set'}</span>
+                    </div>
+                    <div className="identity-trait">
+                      <span className="trait-label">Favorite Genres</span>
+                      <span className="trait-value">{startupPersonalization.favoriteGenres.join(', ') || 'Not set'}</span>
+                    </div>
+                    <div className="identity-trait">
+                      <span className="trait-label">Session Preference</span>
+                      <span className="trait-value">{startupPersonalization.sessionPreference}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="identity-stats">
                 <div className="identity-trait">
                   <span className="trait-label">Personality:</span>
@@ -947,6 +1185,17 @@ const Profile = ({ theme, library = [] }) => {
             </div>
           </CollapsibleSection>
         )}
+
+        {/* Persona Evolution Section */}
+        <CollapsibleSection
+          title="Identity Arc"
+          subtitle="How your taste has shifted across your tracked sessions."
+          badge={personaEvolution ? 'Lifetime' : 'Building...'}
+          icon={<TrendingUp size={18} />}
+          className={getSectionClass(1)}
+        >
+          <PersonaEvolutionCard evolution={personaEvolution} />
+        </CollapsibleSection>
 
         {/* XP & Level Section */}
         {xpStats && (
@@ -1019,7 +1268,7 @@ const Profile = ({ theme, library = [] }) => {
               <div className="reward-summary-card reward-type-card">
                 <span className="reward-summary-label">Theme Rewards</span>
                 <strong className="reward-summary-value">{rewardTypeSummary.themes.unlocked}/{rewardTypeSummary.themes.total}</strong>
-                <span className="reward-summary-caption">Premium themes unlocked by XP tier progression</span>
+                <span className="reward-summary-caption">Themes unlocked by XP tier progression</span>
               </div>
               <div className="reward-summary-card reward-type-card">
                 <span className="reward-summary-label">Audio Rewards</span>
@@ -1039,24 +1288,24 @@ const Profile = ({ theme, library = [] }) => {
             </div>
             <div className="reward-summary-grid">
               <div className="reward-summary-card">
-                <span className="reward-summary-label">Premium Themes</span>
-                <strong className="reward-summary-value">{rewardSummary.unlockedCounts.premiumThemes}/{rewardSummary.totalCounts.premiumThemes}</strong>
+                <span className="reward-summary-label">Themes</span>
+                <strong className="reward-summary-value">{rewardSummary.unlockedCounts.themes}/{rewardSummary.totalCounts.themes}</strong>
                 <span className="reward-summary-caption">Theme variants waiting across XP tiers</span>
               </div>
               <div className="reward-summary-card">
                 <span className="reward-summary-label">Music Packs</span>
                 <strong className="reward-summary-value">{rewardSummary.unlockedCounts.musicPacks}/{rewardSummary.totalCounts.musicPacks}</strong>
-                <span className="reward-summary-caption">Background tracks available in Settings</span>
+                <span className="reward-summary-caption">Background tracks configurable in Rewards</span>
               </div>
               <div className="reward-summary-card">
                 <span className="reward-summary-label">Atmosphere Packs</span>
                 <strong className="reward-summary-value">{rewardSummary.unlockedCounts.ambientPacks}/{rewardSummary.totalCounts.ambientPacks}</strong>
-                <span className="reward-summary-caption">Ambient loops for theme matching or manual selection</span>
+                <span className="reward-summary-caption">Ambient loops for mood and theme matching</span>
               </div>
               <div className="reward-summary-card">
                 <span className="reward-summary-label">Button Packs</span>
                 <strong className="reward-summary-value">{rewardSummary.unlockedCounts.buttonPacks}/{rewardSummary.totalCounts.buttonPacks}</strong>
-                <span className="reward-summary-caption">UI interaction sounds unlocked over time</span>
+                <span className="reward-summary-caption">UI interaction sounds unlocked over time in Rewards</span>
               </div>
               <div className="reward-summary-card">
                 <span className="reward-summary-label">Frames</span>
@@ -1104,6 +1353,11 @@ const Profile = ({ theme, library = [] }) => {
                   </div>
                   <div className="next-reward-requirement">{rewardSummary.nextUnlock.requiredXP.toLocaleString()} XP</div>
                 </div>
+                <div className="reward-path-meta-row">
+                  <span className="reward-path-pill">{rewardSummary.nextUnlock.category}</span>
+                  {rewardSummary.nextUnlock.unlockStep ? <span className="reward-path-pill accent">Step {rewardSummary.nextUnlock.unlockStep}</span> : null}
+                  <span className="reward-path-pill">{rewardSummary.unlockPathMode === 'sequenced' ? 'One-at-a-time path' : 'XP path'}</span>
+                </div>
                 <div className="xp-progress-bar">
                   <div
                     className="xp-progress-fill"
@@ -1116,18 +1370,34 @@ const Profile = ({ theme, library = [] }) => {
                 </div>
               </div>
             )}
-            {upcomingUnlocks.length > 0 && (
-              <div className="reward-summary-grid" style={{ marginTop: '20px' }}>
-                {upcomingUnlocks.map((unlock) => (
-                  <div key={`${unlock.category}-${unlock.id}`} className="reward-summary-card">
-                    <span className="reward-summary-label">{unlock.category}</span>
-                    <strong style={{ color: 'var(--text)', fontSize: '1.05rem', lineHeight: 1.35 }}>{unlock.name}</strong>
-                    <span className="reward-summary-caption">{unlock.requiredXP.toLocaleString()} XP • {unlock.remainingXP.toLocaleString()} XP remaining</span>
+            {roadmapUnlocks.length > 0 && (
+              <div className="reward-path-panel">
+                <div className="reward-path-panel-header">
+                  <div>
+                    <span className="reward-summary-label">Unlock Path</span>
+                    <h4>Coming up next</h4>
+                    <p>The rewards queued right after your current next unlock.</p>
+                  </div>
+                </div>
+                <div className="reward-path-list">
+                {roadmapUnlocks.map((unlock) => (
+                  <div key={`${unlock.category}-${unlock.id}`} className="reward-path-item">
+                    <div className="reward-path-step">{unlock.unlockStep || '•'}</div>
+                    <div className="reward-path-content">
+                      <div className="reward-path-item-header">
+                        <span className="reward-summary-label">{unlock.category}</span>
+                        <span className="reward-path-xp">{unlock.remainingXP.toLocaleString()} XP left</span>
+                      </div>
+                      <strong className="reward-path-name">{unlock.name}</strong>
+                      <span className="reward-path-description">{unlock.description}</span>
+                      <span className="reward-summary-caption">{unlock.requiredXP.toLocaleString()} XP unlock point</span>
+                    </div>
                   </div>
                 ))}
+                </div>
               </div>
             )}
-            </div>
+          </div>
           </CollapsibleSection>
         )}
 
@@ -1144,7 +1414,7 @@ const Profile = ({ theme, library = [] }) => {
             <div className="reward-customization-layout">
               <CollapsibleSection
                 title="Theme + Audio Rewards"
-                subtitle="Premium themes and individual audio packs unlocked across XP milestones."
+                subtitle="XP-gated themes and individual audio packs unlocked across progression milestones."
                 badge={`${rewardTypeSummary.themes.unlocked + rewardTypeSummary.audio.unlocked}/${rewardTypeSummary.themes.total + rewardTypeSummary.audio.total} unlocked`}
                 icon={<Star size={18} />}
                 className="profile-folder reward-folder"
@@ -1153,19 +1423,19 @@ const Profile = ({ theme, library = [] }) => {
                   <div className="reward-type-shell-header">
                     <span className="reward-type-shell-kicker">Theme + Audio Rewards</span>
                     <h4>Appearance and audio now have dedicated destinations</h4>
-                    <p>Use Themes for visual browsing and use Settings for toggles like music, ambient sound, and controller mode.</p>
+                    <p>Use Themes for visual browsing and use Rewards for unlockable audio packs and presentation customization.</p>
                   </div>
 
                   <div className="reward-summary-grid">
                     <div className="reward-summary-card">
-                      <span className="reward-summary-label">Premium Themes</span>
-                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.premiumThemes}/{rewardSummary.totalCounts.premiumThemes}</strong>
-                      <span className="reward-summary-caption">Unlocked through XP tier progression</span>
+                      <span className="reward-summary-label">Themes</span>
+                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.themes}/{rewardSummary.totalCounts.themes}</strong>
+                      <span className="reward-summary-caption">Theme variants waiting across XP tiers</span>
                     </div>
                     <div className="reward-summary-card">
                       <span className="reward-summary-label">Music Packs</span>
                       <strong className="reward-summary-value">{rewardSummary.unlockedCounts.musicPacks}/{rewardSummary.totalCounts.musicPacks}</strong>
-                      <span className="reward-summary-caption">Background tracks configurable in Settings</span>
+                      <span className="reward-summary-caption">Background tracks configurable in Rewards</span>
                     </div>
                     <div className="reward-summary-card">
                       <span className="reward-summary-label">Atmosphere Packs</span>
@@ -1203,16 +1473,7 @@ const Profile = ({ theme, library = [] }) => {
                           window.location.hash = '#/rewards';
                         }}
                       >
-                        Open Rewards
-                      </button>
-                      <button
-                        type="button"
-                        className="save-button"
-                        onClick={() => {
-                          window.location.hash = '#/settings';
-                        }}
-                      >
-                        Open Settings Audio Controls
+                        Open Rewards Customization
                       </button>
                     </div>
                   </div>
@@ -1477,7 +1738,7 @@ const Profile = ({ theme, library = [] }) => {
                         window.location.hash = '#/settings';
                       }}
                     >
-                      Open Settings
+                      Open Settings Preferences
                     </button>
                   </div>
                 </div>
@@ -1572,10 +1833,10 @@ const Profile = ({ theme, library = [] }) => {
           ) : (
             <div className="most-played-grid">
               {mostPlayedGames.map((game, index) => (
-                <div key={index} className="most-played-item" style={{display: 'flex', alignItems: 'center', gap: '15px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
+                <div key={index} className="most-played-item profile-most-played-row">
                   <div className="most-played-rank">#{index + 1}</div>
-                  <div className="most-played-game" style={{display: 'flex', alignItems: 'center', gap: '15px', flex: 1}}>
-                    <div className="game-card-image-wrapper" style={{ margin: '0', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                  <div className="most-played-game profile-most-played-game">
+                    <div className="profile-most-played-artwork">
                       {resolveGameArtwork(game, { surface: 'profile_icon' }) ? (
                         <LazyImage
                           src={resolveGameArtwork(game, { surface: 'profile_icon' })}
@@ -1585,14 +1846,15 @@ const Profile = ({ theme, library = [] }) => {
                           style={{ width: '48px', height: '48px', objectFit: 'cover' }}
                         />
                       ) : (
-                        <div className="game-placeholder" style={{ width: '48px', height: '48px', margin: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)' }}>
+                        <div className="most-played-placeholder profile-most-played-placeholder">
                           <span style={{ fontSize: '1.2rem' }}>🎮</span>
                         </div>
                       )}
                     </div>
-                    <div className="most-played-info"><h4>{game.name}</h4>
+                    <div className="most-played-info profile-most-played-info">
+                      <h4 className="most-played-name">{game.name}</h4>
                       <div className="most-played-stats">
-                        <span>{Math.floor(game.totalMinutes / 60)}h {game.totalMinutes % 60}m</span>
+                        <span className="most-played-time">{Math.floor(game.totalMinutes / 60)}h {game.totalMinutes % 60}m</span>
                       </div>
                     </div>
                   </div>
@@ -1677,6 +1939,34 @@ const Profile = ({ theme, library = [] }) => {
           </div>
         </CollapsibleSection>
 
+        {/* Collections Section */}
+        <CollapsibleSection
+          title="Collections"
+          subtitle="Complete themed sets of rewards for exclusive bonuses."
+          badge="Sets"
+          icon={<Trophy size={18} />}
+          className={getSectionClass(9)}
+          defaultOpen={false}
+        >
+          <div className="gaming-identity-card">
+            <CollectionsPanel 
+              unlockedData={{
+                frames: rewardCatalog?.frames?.filter(f => f.unlocked).map(f => f.id) || [],
+                banners: rewardCatalog?.banners?.filter(b => b.unlocked).map(b => b.id) || [],
+                titles: rewardCatalog?.titles?.filter(t => t.unlocked).map(t => t.id) || [],
+                ambientPacks: rewardCatalog?.ambientPacks?.filter(p => p.unlocked).map(p => p.id) || [],
+                musicPacks: rewardCatalog?.musicPacks?.filter(p => p.unlocked).map(p => p.id) || [],
+                buttonPacks: rewardCatalog?.buttonPacks?.filter(p => p.unlocked).map(p => p.id) || []
+              }}
+              totalXP={xpStats?.totalXP || 0}
+              onClaimBonus={(collectionId, bonusXP) => {
+                success(`Collection complete! Bonus: +${bonusXP.toLocaleString()} XP`);
+                refreshRewardCatalog();
+              }}
+            />
+          </div>
+        </CollapsibleSection>
+
         {/* Gaming Style Dashboard */}
         {behaviorProfile ? (
           <CollapsibleSection
@@ -1684,7 +1974,7 @@ const Profile = ({ theme, library = [] }) => {
             subtitle="A compact view of the behavior model learning from your sessions."
             badge={`${behaviorProfile.totalSelectionsTracked} sessions`}
             icon={<TrendingUp size={18} />}
-            className={getSectionClass(8)}
+            className={getSectionClass(10)}
           >
             <div className="gaming-identity-card">
               <h3>🎮 Your Gaming Style</h3>
@@ -1831,7 +2121,7 @@ const Profile = ({ theme, library = [] }) => {
             subtitle="A compact view of the behavior model learning from your sessions."
             badge="Calibrating"
             icon={<TrendingUp size={18} />}
-            className={getSectionClass(8)}
+            className={getSectionClass(10)}
           >
             <div className="gaming-identity-card">
               <h3>🎮 Your Gaming Style</h3>
@@ -1851,7 +2141,7 @@ const Profile = ({ theme, library = [] }) => {
           subtitle="Upcoming launches and saved event reminders."
           badge="Calendar"
           icon={<Clock size={18} />}
-          className={getSectionClass(9)}
+          className={getSectionClass(11)}
         >
           <GameCalendar />
         </CollapsibleSection>
@@ -1862,7 +2152,7 @@ const Profile = ({ theme, library = [] }) => {
           subtitle="Your gaming activity over the past year."
           badge="Stats"
           icon={<Clock size={18} />}
-          className={getSectionClass(10)}
+          className={getSectionClass(12)}
         >
           <PlaytimeHeatmap library={library} />
         </CollapsibleSection>
@@ -1873,7 +2163,7 @@ const Profile = ({ theme, library = [] }) => {
           subtitle="Backup, restore, manual sync, and local data controls."
           badge={isSyncing ? 'Syncing' : 'Local-first'}
           icon={<Download size={18} />}
-          className={getSectionClass(11)}
+          className={getSectionClass(12)}
         >
           <div className="gaming-identity-card">
             <h3>⚙️ Data & Sync Management</h3>

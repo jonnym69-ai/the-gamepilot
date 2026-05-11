@@ -1,6 +1,15 @@
+import StorageService from './StorageService';
+
 const EPIC_FEED_URL = 'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US';
+const EPIC_FREE_GAMES_URL = 'https://store.epicgames.com/free-games';
 const CACHE_KEY = 'freeGameRadarCache';
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
+const isMysteryGame = (element = {}) => {
+  const title = String(element.title || '').toLowerCase();
+  const slug = String(element.productSlug || '').toLowerCase();
+  return title.includes('mystery') || slug.includes('mystery');
+};
 
 const normalizeEpicGames = (elements = []) => {
   return elements
@@ -17,6 +26,7 @@ const normalizeEpicGames = (elements = []) => {
     .map((element) => {
       const offer = element?.promotions?.promotionalOffers?.[0]?.promotionalOffers?.[0] ||
         element?.promotions?.upcomingPromotionalOffers?.[0]?.promotionalOffers?.[0];
+      const mysteryGame = isMysteryGame(element);
 
       return {
         id: element.id,
@@ -24,9 +34,10 @@ const normalizeEpicGames = (elements = []) => {
         description: element.description,
         image: element.keyImages?.find((img) => img.type === 'DieselStoreFrontWide')?.url ||
           element.keyImages?.[0]?.url || '',
-        url: element.productSlug
+        url: !mysteryGame && element.productSlug
           ? `https://store.epicgames.com/p/${element.productSlug}`
-          : 'https://store.epicgames.com/free-games',
+          : EPIC_FREE_GAMES_URL,
+        isMysteryGame: mysteryGame,
         startDate: offer?.startDate,
         endDate: offer?.endDate,
         source: 'Epic',
@@ -47,7 +58,7 @@ const fetchEpicFreeGames = async () => {
 
 export const FreeGameRadar = {
   async getFreeGames({ forceRefresh = false } = {}) {
-    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    const cached = StorageService.get(CACHE_KEY, null);
     const now = Date.now();
 
     if (!forceRefresh && cached && now - cached.timestamp < CACHE_TTL) {
@@ -57,7 +68,7 @@ export const FreeGameRadar = {
     const epicGames = await fetchEpicFreeGames();
     const games = epicGames.sort((a, b) => new Date(a.endDate || 0) - new Date(b.endDate || 0));
 
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: now, games }));
+    StorageService.set(CACHE_KEY, { timestamp: now, games });
     return games;
   },
 };

@@ -78,6 +78,20 @@
   font-weight: 600;
 }
 
+.spin-balance {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  color: #a5f3fc;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .streak-icon {
   color: #fbbf24;
 }
@@ -189,6 +203,11 @@
 
 .result-icon {
   color: #fbbf24;
+}
+
+.spin-result.bonus-spin-result {
+  background: rgba(34, 211, 238, 0.16);
+  color: #a5f3fc;
 }
 
 .spin-button {

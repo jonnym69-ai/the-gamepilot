@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import StorageService from '../services/StorageService';
 
 const CacheContext = createContext();
 
@@ -12,7 +13,7 @@ export const useCache = () => {
 
 export const CacheProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [cacheEnabled, setCacheEnabled] = useState(localStorage.getItem('cacheEnabled') !== 'false');
+  const [cacheEnabled, setCacheEnabled] = useState(StorageService.getString('cacheEnabled', 'true') !== 'false');
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -36,14 +37,14 @@ export const CacheProvider = ({ children }) => {
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
     };
     
-    localStorage.setItem(`cache_${key}`, JSON.stringify(cacheEntry));
+    StorageService.set(`cache_${key}`, cacheEntry);
   };
 
   const getCachedData = (key) => {
     if (!cacheEnabled) return null;
     
     try {
-      const cached = localStorage.getItem(`cache_${key}`);
+      const cached = StorageService.getString(`cache_${key}`);
       if (!cached) return null;
       
       const cacheEntry = JSON.parse(cached);
@@ -51,7 +52,7 @@ export const CacheProvider = ({ children }) => {
       const expiresAt = new Date(cacheEntry.expiresAt);
       
       if (now > expiresAt) {
-        localStorage.removeItem(`cache_${key}`);
+        StorageService.remove(`cache_${key}`);
         return null;
       }
       
@@ -65,7 +66,7 @@ export const CacheProvider = ({ children }) => {
   const clearCache = () => {
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('cache_')) {
-        localStorage.removeItem(key);
+        StorageService.remove(key);
       }
     });
   };
@@ -74,7 +75,7 @@ export const CacheProvider = ({ children }) => {
     let size = 0;
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('cache_')) {
-        size += localStorage.getItem(key).length;
+        size += StorageService.getString(key)?.length || 0;
       }
     });
     return (size / 1024).toFixed(2) + ' KB';

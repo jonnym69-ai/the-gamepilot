@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Download, Share2, DollarSign, PieChart, TrendingUp, Copy, Image as ImageIcon } from 'lucide-react';
+import { X, Download, DollarSign, PieChart, TrendingUp, Copy, Image as ImageIcon } from 'lucide-react';
 import { LibraryValueService } from '../services/LibraryValueService';
 import './LibraryValueModal.css';
 

@@ -1,11 +1,13 @@
 // GameLaunchTracker.js - Tracks game launches, sessions, playtime, and statistics
+import StorageService from './StorageService';
+
 export class GameLaunchTracker {
   static STORAGE_KEY = 'gameLaunchData';
 
   // Get or initialize game launch data
   static getGameLaunchData(gameId) {
     try {
-      const allData = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+      const allData = StorageService.get(this.STORAGE_KEY, {});
       return allData[gameId] || this.getDefaultGameData();
     } catch (error) {
       console.error('Error reading game launch data:', error);
@@ -28,7 +30,7 @@ export class GameLaunchTracker {
   // Record a game launch
   static recordGameLaunch(gameId, gameName) {
     try {
-      const allData = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+      const allData = StorageService.get(this.STORAGE_KEY, {});
       const gameData = allData[gameId] || this.getDefaultGameData();
 
       // Update launch count
@@ -54,7 +56,7 @@ export class GameLaunchTracker {
 
       // Save data
       allData[gameId] = gameData;
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+      StorageService.set(this.STORAGE_KEY, allData);
 
       return session;
     } catch (error) {
@@ -66,7 +68,7 @@ export class GameLaunchTracker {
   // End a game session
   static endGameSession(gameId, durationMinutes) {
     try {
-      const allData = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+      const allData = StorageService.get(this.STORAGE_KEY, {});
       const gameData = allData[gameId];
 
       if (!gameData || gameData.sessions.length === 0) {
@@ -91,7 +93,7 @@ export class GameLaunchTracker {
 
       // Save data
       allData[gameId] = gameData;
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+      StorageService.set(this.STORAGE_KEY, allData);
     } catch (error) {
       console.error('Error ending game session:', error);
     }
@@ -115,7 +117,7 @@ export class GameLaunchTracker {
   // Get all games with launch data
   static getAllGameStats() {
     try {
-      const allData = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+      const allData = StorageService.get(this.STORAGE_KEY, {});
       const stats = {};
 
       Object.entries(allData).forEach(([gameId, gameData]) => {
@@ -170,7 +172,7 @@ export class GameLaunchTracker {
   // Clear all launch data
   static clearAll() {
     try {
-      localStorage.removeItem(this.STORAGE_KEY);
+      StorageService.remove(this.STORAGE_KEY);
     } catch (error) {
       console.error('Error clearing launch data:', error);
     }
@@ -179,9 +181,9 @@ export class GameLaunchTracker {
   // Clear data for a specific game
   static clearGameData(gameId) {
     try {
-      const allData = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+      const allData = StorageService.get(this.STORAGE_KEY, {});
       delete allData[gameId];
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+      StorageService.set(this.STORAGE_KEY, allData);
     } catch (error) {
       console.error('Error clearing game data:', error);
     }

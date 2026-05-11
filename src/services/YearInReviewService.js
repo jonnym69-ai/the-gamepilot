@@ -3,6 +3,7 @@ import { StatsAggregationService } from './StatsAggregationService';
 import { ProgressionUnlockService } from './ProgressionUnlockService';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { QuestHistoryService } from './QuestHistoryService';
+import { getDateKey } from './DateKeyService';
 
 const MONTH_LABELS = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 const SESSION_BUCKET_LABELS = Object.freeze({
@@ -99,6 +100,69 @@ const buildTopGames = (sessions = [], limit = 5) => {
     }))
     .sort((left, right) => right.totalPlaytime - left.totalPlaytime || right.sessions - left.sessions)
     .slice(0, limit);
+};
+
+const formatReviewDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+const buildDeepStats = (sessions = [], topGames = []) => {
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+  const longestSession = safeSessions.reduce((best, session) => {
+    if (!best || session.playtimeMinutes > best.playtimeMinutes) {
+      return session;
+    }
+    return best;
+  }, null);
+  const dayMap = new Map();
+  const weekendSessions = safeSessions.filter((session) => [0, 6].includes(session.timestamp.getDay()));
+  const lateNightSessions = safeSessions.filter((session) => {
+    const hour = session.timestamp.getHours();
+    return hour >= 22 || hour < 5;
+  });
+
+  safeSessions.forEach((session) => {
+    const dateKey = getDateKey(session.timestamp);
+    const current = dayMap.get(dateKey) || {
+      dateKey,
+      dateLabel: formatReviewDate(session.timestamp),
+      playtimeMinutes: 0,
+      sessions: 0
+    };
+    current.playtimeMinutes += session.playtimeMinutes;
+    current.sessions += 1;
+    dayMap.set(dateKey, current);
+  });
+
+  const busiestDay = Array.from(dayMap.values())
+    .sort((left, right) => right.playtimeMinutes - left.playtimeMinutes || right.sessions - left.sessions)[0] || null;
+  const topBySessions = [...topGames]
+    .sort((left, right) => right.sessions - left.sessions || right.totalPlaytime - left.totalPlaytime)[0] || null;
+
+  return {
+    longestSession: longestSession ? {
+      gameName: longestSession.gameName,
+      platform: longestSession.platform,
+      playtimeMinutes: longestSession.playtimeMinutes,
+      dateLabel: formatReviewDate(longestSession.timestamp)
+    } : null,
+    busiestDay,
+    topBySessions,
+    weekendSessions: weekendSessions.length,
+    weekendPlaytimeMinutes: weekendSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
+    lateNightSessions: lateNightSessions.length,
+    lateNightPlaytimeMinutes: lateNightSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
+    gamesWithMultipleSessions: topGames.filter((game) => game.sessions > 1).length
+  };
 };
 
 const getSessionStyleDescriptor = (bucket) => {
@@ -284,10 +348,11 @@ const buildDistributionSummary = (sessions = []) => {
   };
 };
 
-const buildSummaryCards = ({ year, summary, topGames, persona, distributions, achievements, progression }) => {
+const buildSummaryCards = ({ year, summary, topGames, persona, distributions, achievements, progression, deepStats }) => {
   const topGame = topGames[0] || null;
   const topPlatform = distributions.topPlatforms[0] || null;
   const topMood = distributions.topMoods[0] || null;
+  const longestSession = deepStats?.longestSession || null;
   const nextUnlock = progression.nextUnlock;
 
   return [
@@ -302,6 +367,12 @@ const buildSummaryCards = ({ year, summary, topGames, persona, distributions, ac
       title: 'Most Played',
       value: topGame?.name || 'No sessions yet',
       detail: topGame ? `${Math.round(topGame.totalPlaytime / 60)}h · ${topGame.sessions} sessions` : 'Launch and finish sessions to populate this card'
+    },
+    {
+      id: 'longest-session',
+      title: 'Longest Session',
+      value: longestSession?.gameName || 'No marathon yet',
+      detail: longestSession ? `${Math.round(longestSession.playtimeMinutes)} minutes${longestSession.dateLabel ? ` · ${longestSession.dateLabel}` : ''}` : 'Your biggest single sitting will appear here'
     },
     {
       id: 'persona',
@@ -355,6 +426,16 @@ export class YearInReviewService {
     return StatsAggregationService.getNormalizedSessionHistory(library);
   }
 
+  static getLifetimePersonaEvolution(library = []) {
+    try {
+      const sessions = StatsAggregationService.getNormalizedSessionHistory(library);
+      return buildPersonaEvolution(sessions);
+    } catch (error) {
+      console.warn('YearInReviewService.getLifetimePersonaEvolution failed', error);
+      return null;
+    }
+  }
+
   static getAvailableYears(library = []) {
     try {
       const years = Array.from(new Set(
@@ -377,7 +458,7 @@ export class YearInReviewService {
         playtimeMinutes: sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
         sessions: sessions.length,
         uniqueGames: new Set(sessions.map((session) => String(session.gameId || session.gameName))).size,
-        activeDays: new Set(sessions.map((session) => session.timestamp.toISOString().split('T')[0])).size,
+        activeDays: new Set(sessions.map((session) => getDateKey(session.timestamp))).size,
         avgSessionMinutes: sessions.length > 0 ? Math.round(sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0) / sessions.length) : 0,
         longestSessionMinutes: sessions.reduce((max, session) => Math.max(max, session.playtimeMinutes), 0),
         playtimeHours: Number((sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0) / 60).toFixed(1))
@@ -402,6 +483,7 @@ export class YearInReviewService {
       };
       const monthly = buildMonthlyBreakdown(sessions);
       const evolution = buildPersonaEvolution(sessions);
+      const deepStats = buildDeepStats(sessions, topGames);
 
       return {
         year: safeYear,
@@ -415,6 +497,7 @@ export class YearInReviewService {
         progression,
         monthly,
         evolution,
+        deepStats,
         summaryCards: buildSummaryCards({
           year: safeYear,
           summary,
@@ -422,7 +505,8 @@ export class YearInReviewService {
           persona,
           distributions,
           achievements,
-          progression
+          progression,
+          deepStats
         })
       };
     } catch (e) {
@@ -492,6 +576,7 @@ export class YearInReviewService {
         progression: fallbackProgression,
         monthly: fallbackMonthly,
         evolution: null,
+        deepStats: buildDeepStats([], []),
         summaryCards: buildSummaryCards({
           year: fallbackYear,
           summary: fallbackSummary,
@@ -499,7 +584,8 @@ export class YearInReviewService {
           persona: fallbackPersona,
           distributions: fallbackDistributions,
           achievements: fallbackAchievements,
-          progression: fallbackProgression
+          progression: fallbackProgression,
+          deepStats: buildDeepStats([], [])
         })
       };
     }
@@ -518,6 +604,7 @@ export class YearInReviewService {
         achievements: snapshot.achievements,
         progression: snapshot.progression,
         monthly: snapshot.monthly,
+        deepStats: snapshot.deepStats,
         topGames: snapshot.topGames,
         distributions: {
           topPlatforms: snapshot.distributions.topPlatforms,

@@ -1,5 +1,6 @@
 // HardwareDetector.js - Detects system hardware specifications using Electron IPC
 import { getElectronAPI } from './ElectronBridge';
+import StorageService from './StorageService';
 
 export class HardwareDetector {
   static normalizeStorage(storage) {
@@ -28,18 +29,13 @@ export class HardwareDetector {
   // Get complete system information from Electron main process
   static async getSystemInfo() {
     try {
-      console.log('[HardwareDetector] Starting hardware detection...');
-      
       const electronAPI = getElectronAPI();
       if (!electronAPI || typeof electronAPI.getSystemInfo !== 'function') {
-        console.warn('[HardwareDetector] electronAPI not available, using fallback data');
         return this.getDefaultSystemInfo();
       }
 
       // Get real hardware info from Electron main process via IPC
-      console.log('[HardwareDetector] Calling IPC get-system-info...');
       const rawInfo = await electronAPI.getSystemInfo();
-      console.log('[HardwareDetector] Received hardware info:', rawInfo);
       
       // Add tier and score calculations
       const systemInfo = {
@@ -63,14 +59,14 @@ export class HardwareDetector {
       };
 
       // Cache the result
-      localStorage.setItem('systemInfo', JSON.stringify(systemInfo));
+      StorageService.setString('systemInfo', JSON.stringify(systemInfo));
       
       return systemInfo;
     } catch (error) {
       console.error('Error detecting hardware:', error);
       
       // Try to return cached data
-      const cached = localStorage.getItem('systemInfo');
+      const cached = StorageService.getString('systemInfo');
       if (cached) {
         const parsed = JSON.parse(cached);
         return {
@@ -134,39 +130,31 @@ export class HardwareDetector {
   }
 
   // Get cached system info or detect if stale
-  static async getCachedSystemInfo() {
-    console.log('[HardwareDetector] getCachedSystemInfo called');
-    const cached = localStorage.getItem('systemInfo');
+  static async getCachedSystemInfo({ allowRefresh = false } = {}) {
+    const cached = StorageService.getString('systemInfo');
     if (cached) {
       const data = JSON.parse(cached);
-      console.log('[HardwareDetector] Found cached data:', data);
-      
+
       // Check if this is fallback data (Unknown CPU/GPU)
-      const isFallbackData = data.cpu?.brand === 'Unknown CPU' || 
-                             data.cpu?.manufacturer === 'Unknown' ||
-                             data.gpu?.model === 'Unknown GPU';
-      
-      // Check if RAM data is missing speed (old cache format)
+      const isFallbackData = data.cpu?.brand === 'Unknown CPU' ||
+        data.gpu?.brand === 'Unknown GPU';
       const hasOldRAMData = !data.ram?.speed || data.ram?.speed === 0;
-      
+
       if (isFallbackData || hasOldRAMData) {
-        console.log('[HardwareDetector] Cached data is outdated (fallback or missing RAM speed), forcing refresh');
-        localStorage.removeItem('systemInfo');
-        return await this.getSystemInfo();
+        StorageService.remove('systemInfo');
+        return allowRefresh ? await this.getSystemInfo() : this.getDefaultSystemInfo();
       }
-      
-      const hoursSinceUpdate = (Date.now() - data.lastUpdated) / (1000 * 60 * 60);
-      
+
+      const lastUpdate = data.lastUpdate || 0;
+      const hoursSinceUpdate = (Date.now() - lastUpdate) / (1000 * 60 * 60);
+
       // Refresh if older than 24 hours
       if (hoursSinceUpdate < 24) {
-        console.log('[HardwareDetector] Using cached data (age: ' + hoursSinceUpdate.toFixed(2) + ' hours)');
         return data;
       }
-      
-      console.log('[HardwareDetector] Cached data is stale, refreshing');
     }
     
-    return await this.getSystemInfo();
+    return allowRefresh ? await this.getSystemInfo() : this.getDefaultSystemInfo();
   }
 
   // CPU tier classification (1-5)

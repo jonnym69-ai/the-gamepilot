@@ -1,3 +1,5 @@
+import StorageService from './StorageService';
+
 const SEASONAL_REWARDS_KEY = 'seasonalRewards';
 const SEASONAL_CHALLENGES = {
   halloween: {
@@ -40,14 +42,14 @@ const SEASONAL_CHALLENGES = {
 
 const getStoredRewards = () => {
   try {
-    return JSON.parse(localStorage.getItem(SEASONAL_REWARDS_KEY) || '{}');
+    return StorageService.get(SEASONAL_REWARDS_KEY, {});
   } catch {
     return {};
   }
 };
 
 const saveStoredRewards = (data) => {
-  localStorage.setItem(SEASONAL_REWARDS_KEY, JSON.stringify(data));
+  StorageService.set(SEASONAL_REWARDS_KEY, data);
 };
 
 export const SeasonalRewardService = {

@@ -1,8 +1,13 @@
 const electron = require('electron');
 const { app, BrowserWindow, ipcMain, shell, dialog, Menu, protocol } = electron;
+const fs = require('fs');
 const path = require('path');
 const GameLauncher = require('./launchHandler');
 const si = require('systeminformation');
+
+ const APP_DISPLAY_NAME = 'GamePilot';
+ app.setName(APP_DISPLAY_NAME);
+ app.setPath('userData', path.join(app.getPath('appData'), APP_DISPLAY_NAME));
 
 // Make shell globally available
 global.shell = shell;
@@ -27,6 +32,94 @@ const KNOWN_LAUNCHER_PROCESS_NAMES = new Set([
   'gamingservices.exe',
   'xboxpcapp.exe'
 ]);
+const APP_PREFERENCES_FILE = 'preferences.json';
+
+const isStartupLaunchSupported = () => process.platform === 'win32';
+
+const getPreferencesFilePath = () => path.join(app.getPath('userData'), APP_PREFERENCES_FILE);
+
+const readAppPreferences = () => {
+  try {
+    const preferencesPath = getPreferencesFilePath();
+    if (!fs.existsSync(preferencesPath)) {
+      return {};
+    }
+
+    const rawPreferences = fs.readFileSync(preferencesPath, 'utf8');
+    const parsedPreferences = JSON.parse(rawPreferences);
+    return parsedPreferences && typeof parsedPreferences === 'object' ? parsedPreferences : {};
+  } catch (error) {
+    console.error('❌ Failed to read app preferences:', error);
+    return {};
+  }
+};
+
+const writeAppPreferences = (preferences = {}) => {
+  try {
+    const preferencesPath = getPreferencesFilePath();
+    fs.writeFileSync(preferencesPath, JSON.stringify(preferences, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to write app preferences:', error);
+    return false;
+  }
+};
+
+const getStartupLaunchPreference = () => Boolean(readAppPreferences().launchOnStartup);
+
+const applyStartupLaunchPreference = (enabled) => {
+  if (!isStartupLaunchSupported()) {
+    return {
+      success: false,
+      supported: false,
+      enabled: false
+    };
+  }
+
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: Boolean(enabled),
+      openAsHidden: false
+    });
+
+    const loginItemSettings = app.getLoginItemSettings();
+
+    return {
+      success: true,
+      supported: true,
+      enabled: Boolean(loginItemSettings.openAtLogin)
+    };
+  } catch (error) {
+    console.error('❌ Failed to apply startup launch preference:', error);
+    return {
+      success: false,
+      supported: true,
+      enabled: false,
+      message: error.message
+    };
+  }
+};
+
+const getStartupLaunchSettings = () => {
+  if (!isStartupLaunchSupported()) {
+    return {
+      supported: false,
+      enabled: false,
+      persisted: false,
+      isPackaged: app.isPackaged
+    };
+  }
+
+  const storedEnabled = getStartupLaunchPreference();
+  const loginItemSettings = app.getLoginItemSettings();
+
+  return {
+    supported: true,
+    enabled: Boolean(loginItemSettings.openAtLogin),
+    persisted: storedEnabled,
+    isPackaged: app.isPackaged
+  };
+};
 
 const normalizeMatcherValue = (value = '') => String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -241,15 +334,17 @@ const stopAllGameMonitors = () => {
   });
 };
 
-// Enable hot reloading in development
-try {
-  require('electron-reloader')(module, {
-    debug: true,
-    watchRenderer: true,
-    ignore: [/node_modules/, /build/]
-  });
-} catch (_) {
-  console.log('Electron reloader not available in production');
+// Enable hot reloading only for the explicit dev-server workflow.
+if (process.env.ELECTRON_ENABLE_RELOADER === 'true') {
+  try {
+    require('electron-reloader')(module, {
+      debug: false,
+      watchRenderer: false,
+      ignore: [/node_modules/, /build/, /dist/, /backups/, /gamepilot-source.*\.zip$/]
+    });
+  } catch (_) {
+    console.log('Electron reloader not available in production');
+  }
 }
 
 const collectSystemInfo = async () => {
@@ -408,8 +503,13 @@ ipcMain.handle('launch-game', async (_event, game) => {
   }
 });
 
-ipcMain.handle('scan-game-libraries', async () => {
+ipcMain.handle('scan-game-libraries', async (_event, options = {}) => {
   try {
+    if (!options || options.manual !== true) {
+      console.warn('[Electron] Ignoring non-manual library scan request');
+      return { games: [], debug: { skipped: true, reason: 'manual-scan-required' } };
+    }
+
     console.log('[Electron] Starting game library scan...');
     const { scanAllLibraries } = require('./nativeLibraryScanner');
     const games = scanAllLibraries();
@@ -429,6 +529,1137 @@ ipcMain.handle('scan-game-libraries', async () => {
 
 ipcMain.handle('get-scan-debug', async () => global.lastScanDebug || null);
 
+// ---------------------------------------------------------------------------
+// HowLongToBeat unofficial search bridge.
+// HLTB has no official API. As of 2025 their search moved to a two-step flow:
+//   1) GET /api/bleed/init?t=<timestamp>  → {token, hpKey, hpVal}
+//   2) POST /api/bleed  (headers x-auth-token, x-hp-key, x-hp-val)
+//                       (body includes the search payload + [hpKey]: hpVal)
+// All requests are server-side (Electron main) to avoid CORS, and every step
+// fails gracefully so the renderer can fall back to "unknown".
+//
+// We use electron.net (Chromium network stack) instead of Node https because
+// HLTB's CDN blocks raw Node TLS fingerprints with 403.
+// ---------------------------------------------------------------------------
+let cachedHltbBleed = { token: null, hpKey: null, hpVal: null, expires: 0 };
+
+const HLTB_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36';
+
+const httpsRequest = (url, body = null, headers = {}) => new Promise((resolve, reject) => {
+  let req;
+  try {
+    req = electron.net.request({ method: body ? 'POST' : 'GET', url });
+  } catch (err) {
+    return reject(err);
+  }
+
+  const chunks = [];
+  req.on('response', (res) => {
+    res.on('data', (chunk) => chunks.push(chunk));
+    res.on('end', () => {
+      const data = Buffer.concat(chunks).toString('utf8');
+      resolve({ status: res.statusCode, headers: res.headers, body: data });
+    });
+    res.on('error', (err) => reject(err));
+  });
+  req.on('error', (err) => reject(err));
+
+  const timer = setTimeout(() => {
+    try { req.abort(); } catch {}
+    reject(new Error('httpsRequest timeout'));
+  }, 8000);
+  req.on('close', () => clearTimeout(timer));
+
+  if (headers) {
+    Object.entries(headers).forEach(([k, v]) => req.setHeader(k, v));
+  }
+
+  if (body) req.write(body);
+  req.end();
+});
+
+// Step 1: fetch the rotating auth token + hpKey/hpVal pair from HLTB.
+const fetchHltbBleedInit = async () => {
+  const now = Date.now();
+  if (cachedHltbBleed.token && cachedHltbBleed.hpKey && cachedHltbBleed.hpVal && cachedHltbBleed.expires > now) {
+    return { token: cachedHltbBleed.token, hpKey: cachedHltbBleed.hpKey, hpVal: cachedHltbBleed.hpVal };
+  }
+
+  const init = await httpsRequest(
+    `https://howlongtobeat.com/api/bleed/init?t=${now}`,
+    null,
+    {
+      'User-Agent': HLTB_UA,
+      'Accept': 'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Referer': 'https://howlongtobeat.com/',
+      'Origin': 'https://howlongtobeat.com'
+    }
+  );
+  if (init.status !== 200) {
+    throw new Error(`HLTB bleed/init HTTP ${init.status}`);
+  }
+  let parsed;
+  try { parsed = JSON.parse(init.body); } catch { throw new Error('HLTB bleed/init parse failed'); }
+  if (!parsed || !parsed.token || !parsed.hpKey || !parsed.hpVal) {
+    throw new Error('HLTB bleed/init missing fields');
+  }
+  cachedHltbBleed = { token: parsed.token, hpKey: parsed.hpKey, hpVal: parsed.hpVal, expires: now + 60 * 60 * 1000 };
+  console.log(`[HLTB] bleed/init ok — hpKey=${parsed.hpKey}`);
+  return { token: parsed.token, hpKey: parsed.hpKey, hpVal: parsed.hpVal };
+};
+
+ipcMain.handle('hltb-search', async (_event, query) => {
+  if (!query || typeof query !== 'string') {
+    return { ok: false, error: 'invalid-query' };
+  }
+  console.log(`[HLTB main] search request: "${query}"`);
+  try {
+    const { token, hpKey, hpVal } = await fetchHltbBleedInit();
+    // Strip trademark symbols and punctuation from each term so HLTB's
+    // search engine isn't tripped up by trailing colons or ™ symbols.
+    const rawTerms = query.trim().split(/\s+/);
+    const cleanTerms = rawTerms.map((t) =>
+      t.replace(/[\u00ae\u2122\u00a9:;,.!?&\-–—]/g, '')
+    ).filter(Boolean);
+    const payloadBody = {
+      searchType: 'games',
+      searchTerms: cleanTerms.length ? cleanTerms : rawTerms,
+      searchPage: 1,
+      size: 20,
+      searchOptions: {
+        games: {
+          userId: 0, platform: '', sortCategory: 'popular',
+          rangeCategory: 'main', rangeTime: { min: null, max: null },
+          gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
+          rangeYear: { min: '', max: '' },
+          modifier: ''
+        },
+        users: { sortCategory: 'postcount' },
+        lists: { sortCategory: 'follows' },
+        filter: '', sort: 0, randomizer: 0
+      },
+      useCache: true,
+      [hpKey]: hpVal
+    };
+    const payload = JSON.stringify(payloadBody);
+    const res = await httpsRequest(
+      'https://howlongtobeat.com/api/bleed',
+      payload,
+      {
+        'User-Agent': HLTB_UA,
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Origin': 'https://howlongtobeat.com',
+        'Referer': 'https://howlongtobeat.com/',
+        'x-auth-token': token,
+        'x-hp-key': hpKey,
+        'x-hp-val': hpVal
+      }
+    );
+
+    if (res.status !== 200) {
+      // Invalidate cached bleed init so next call re-fetches.
+      cachedHltbBleed = { token: null, hpKey: null, hpVal: null, expires: 0 };
+      console.warn(`[HLTB] POST /api/bleed -> ${res.status}; body: ${res.body?.slice(0, 200)?.replace(/\s+/g, ' ')}`);
+      return { ok: false, error: `http-${res.status}` };
+    }
+    let parsed;
+    try { parsed = JSON.parse(res.body); } catch { return { ok: false, error: 'parse' }; }
+    const data = parsed && Array.isArray(parsed.data) ? parsed.data : [];
+    const results = data.map((g) => ({
+      id: g.game_id,
+      name: g.game_name,
+      alias: g.game_alias || '',
+      imageUrl: g.game_image ? `https://howlongtobeat.com/games/${g.game_image}` : null,
+      // HLTB delivers seconds.
+      mainSeconds: g.comp_main || 0,
+      mainExtraSeconds: g.comp_plus || 0,
+      completionistSeconds: g.comp_100 || 0,
+      allStylesSeconds: g.comp_all || 0,
+      releaseYear: g.release_world || null,
+      reviewScore: g.review_score || null
+    }));
+    console.log(`[HLTB] found ${results.length} result(s) for "${query}"`);
+    return { ok: true, results };
+  } catch (error) {
+    console.warn('[HLTB] search failed:', error.message);
+    return { ok: false, error: error.message || 'unknown' };
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PCGamingWiki MediaWiki bridge.
+// Public, anonymous, no API key required. We use opensearch to find a page
+// title from the user's game name, then `action=parse` (prop=wikitext) to pull
+// the page source. The renderer extracts save/config/controller bits locally.
+// ---------------------------------------------------------------------------
+const PCGW_HOST = 'www.pcgamingwiki.com';
+const PCGW_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 GamePilot/1.4 (+local-first librarian app)';
+
+const pcgwApiGet = async (params) => {
+  const qs = new URLSearchParams({ format: 'json', ...params }).toString();
+  const res = await httpsRequest(
+    `https://${PCGW_HOST}/w/api.php?${qs}`,
+    null,
+    {
+      'User-Agent': PCGW_UA,
+      'Accept': 'application/json'
+    }
+  );
+  if (res.status !== 200) throw new Error(`pcgw-http-${res.status}`);
+  return JSON.parse(res.body);
+};
+
+// Strip trademark symbols, edition suffixes, year/platform parentheticals so
+// PCGW's opensearch is more likely to land on the canonical page.
+const normalizePcgwTitle = (raw) => {
+  if (!raw) return '';
+  let t = String(raw)
+    .replace(/[\u00ae\u2122\u00a9]/g, '')
+    .replace(/\s*\((?:steam|epic|gog|origin|ea app|ubisoft|xbox|microsoft store|pc|windows|\d{4})\)\s*/gi, ' ')
+    .replace(/[:\-\u2013\u2014]\s*(?:game of the year(?:\s+edition)?|goty(?:\s+edition)?|definitive edition|complete edition|deluxe edition|gold edition|ultimate edition|enhanced edition|legendary edition|director'?s cut|anniversary edition|remastered(?:\s+edition)?|remaster|hd|hd remaster|standard edition|special edition)\s*$/gi, '')
+    .replace(/\s+remastered\s*$/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t;
+};
+
+const buildPageUrl = (pageTitle) =>
+  `https://${PCGW_HOST}/wiki/${encodeURIComponent(pageTitle.replace(/ /g, '_'))}`;
+
+// Resolve a page title via the Cargo Infobox_game table using a Steam AppID.
+// Returns the canonical page title or null.
+const pcgwResolveBySteamAppId = async (appid) => {
+  if (!appid) return null;
+  try {
+    const data = await pcgwApiGet({
+      action: 'cargoquery',
+      tables: 'Infobox_game',
+      fields: 'Infobox_game._pageName=PageName',
+      where: `Infobox_game.Steam_AppID HOLDS "${String(appid).replace(/"/g, '')}"`,
+      limit: '1'
+    });
+    const row = data?.cargoquery?.[0]?.title;
+    const page = row?.PageName || row?.pageName || row?.['Page Name'];
+    return page || null;
+  } catch (err) {
+    console.warn('[PCGW] cargo Steam_AppID lookup failed:', err.message);
+    return null;
+  }
+};
+
+// opensearch wrapper that returns { titles, urls }.
+const pcgwOpenSearch = async (query) => {
+  const search = await pcgwApiGet({
+    action: 'opensearch',
+    search: query,
+    limit: '5',
+    namespace: '0'
+  });
+  const titles = Array.isArray(search) && Array.isArray(search[1]) ? search[1] : [];
+  const urls = Array.isArray(search) && Array.isArray(search[3]) ? search[3] : [];
+  return { titles, urls };
+};
+
+const pcgwFetchWikitext = async (pageTitle) => {
+  const parse = await pcgwApiGet({
+    action: 'parse',
+    page: pageTitle,
+    prop: 'wikitext',
+    redirects: '1'
+  });
+  return parse?.parse?.wikitext?.['*'] || '';
+};
+
+ipcMain.handle('pcgw-lookup', async (_event, payload) => {
+  // Accept either a string (legacy) or { name, appid }.
+  const name = typeof payload === 'string' ? payload : payload?.name;
+  const appid = typeof payload === 'object' && payload ? payload.appid : null;
+  if (!name || typeof name !== 'string') {
+    return { ok: false, error: 'invalid-query' };
+  }
+
+  try {
+    // Tier 1: Steam AppID -> canonical page title via Cargo. Skips title noise.
+    if (appid) {
+      const direct = await pcgwResolveBySteamAppId(appid);
+      if (direct) {
+        const wikitext = await pcgwFetchWikitext(direct);
+        if (wikitext) {
+          return { ok: true, pageTitle: direct, pageUrl: buildPageUrl(direct), wikitext, matchedVia: 'steam-appid' };
+        }
+      }
+    }
+
+    // Tier 2: opensearch with normalized title.
+    // Tier 3: fall back to raw title if normalized produced nothing useful.
+    const normalized = normalizePcgwTitle(name);
+    const candidates = [];
+    if (normalized) candidates.push({ q: normalized, via: 'normalized' });
+    if (!normalized || normalized.toLowerCase() !== name.trim().toLowerCase()) {
+      candidates.push({ q: name.trim(), via: 'raw' });
+    }
+
+    let chosen = null;
+    let chosenVia = '';
+    let chosenUrl = '';
+    for (const cand of candidates) {
+      const { titles, urls } = await pcgwOpenSearch(cand.q);
+      if (titles.length === 0) continue;
+      const target = cand.q.toLowerCase();
+      let bestIdx = 0;
+      for (let i = 0; i < titles.length; i++) {
+        if (titles[i].toLowerCase() === target) { bestIdx = i; break; }
+      }
+      chosen = titles[bestIdx];
+      chosenUrl = urls[bestIdx] || buildPageUrl(chosen);
+      chosenVia = cand.via;
+      break;
+    }
+
+    if (!chosen) return { ok: false, error: 'no-page' };
+
+    const wikitext = await pcgwFetchWikitext(chosen);
+    if (!wikitext) {
+      return { ok: false, error: 'no-wikitext', pageTitle: chosen, pageUrl: chosenUrl };
+    }
+    return { ok: true, pageTitle: chosen, pageUrl: chosenUrl, wikitext, matchedVia: chosenVia };
+  } catch (error) {
+    console.warn('[PCGW] lookup failed:', error.message);
+    return { ok: false, error: error.message || 'unknown' };
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Steam public-data bridge (anonymous, no API key required).
+// Two endpoints power the "Steam Snapshot" panel in GameModal:
+//   - store.steampowered.com/appreviews/<appid>?json=1   (review summary)
+//   - api.steampowered.com/.../GetGlobalAchievementPercentagesForApp
+// Each call is fire-and-forget, fails gracefully, and the renderer caches the
+// merged snapshot for 7 days.
+// ---------------------------------------------------------------------------
+const steamHttpsGet = async (hostname, pathname) => {
+  const res = await httpsRequest(
+    `https://${hostname}${pathname}`,
+    null,
+    {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GamePilot/1.4',
+      'Accept': 'application/json'
+    }
+  );
+  if (res.status !== 200) throw new Error(`steam-http-${res.status}`);
+  return JSON.parse(res.body);
+};
+
+ipcMain.handle('steam-appreviews', async (_event, appid) => {
+  const id = String(appid || '').replace(/[^0-9]/g, '');
+  if (!id) return { ok: false, error: 'invalid-appid' };
+  try {
+    // num_per_page=0 keeps the response tiny — we only want query_summary.
+    const data = await steamHttpsGet(
+      'store.steampowered.com',
+      `/appreviews/${id}?json=1&num_per_page=0&purchase_type=all&language=all`
+    );
+    if (!data || data.success !== 1 || !data.query_summary) {
+      return { ok: false, error: 'no-summary' };
+    }
+    return { ok: true, summary: data.query_summary };
+  } catch (error) {
+    console.warn('[SteamSnapshot] appreviews failed:', error.message);
+    return { ok: false, error: error.message || 'unknown' };
+  }
+});
+
+ipcMain.handle('steam-global-achievements', async (_event, appid) => {
+  const id = String(appid || '').replace(/[^0-9]/g, '');
+  if (!id) return { ok: false, error: 'invalid-appid' };
+  try {
+    const data = await steamHttpsGet(
+      'api.steampowered.com',
+      `/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${id}&format=json`
+    );
+    const list = data?.achievementpercentages?.achievements;
+    if (!Array.isArray(list)) return { ok: false, error: 'no-data' };
+    // Normalise to a smaller shape; Steam returns {name, percent} already but
+    // percent is a float string in older payloads.
+    const achievements = list
+      .map((a) => ({ name: String(a.name || ''), percent: Number(a.percent) || 0 }))
+      .filter((a) => a.name);
+    return { ok: true, achievements };
+  } catch (error) {
+    console.warn('[SteamSnapshot] global-achievements failed:', error.message);
+    return { ok: false, error: error.message || 'unknown' };
+  }
+});
+
+ipcMain.handle('steam-personal-achievements-preflight', async (_event, payload = {}) => {
+  const apiKey = String(payload?.apiKey || '').trim().replace(/[^A-Fa-f0-9]/g, '');
+  const steamId = String(payload?.steamId || '').trim().replace(/[^0-9]/g, '');
+  const games = Array.isArray(payload?.games) ? payload.games : [];
+  if (!apiKey || apiKey.length < 20) return { ok: false, error: 'missing-api-key' };
+  if (!steamId || steamId.length < 16) return { ok: false, error: 'missing-steamid' };
+
+  const sampleGames = games
+    .map((game) => ({
+      appid: String(game?.appid || '').replace(/[^0-9]/g, ''),
+      name: String(game?.name || game?.title || '').trim()
+    }))
+    .filter((game) => game.appid)
+    .slice(0, 5);
+
+  try {
+    const playerData = await steamHttpsGet(
+      'api.steampowered.com',
+      `/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}&format=json`
+    );
+    const player = playerData?.response?.players?.[0];
+    if (!player) return { ok: false, error: 'steam-profile-not-found' };
+
+    const sampleResults = [];
+    for (const game of sampleGames) {
+      try {
+        const data = await steamHttpsGet(
+          'api.steampowered.com',
+          `/ISteamUserStats/GetPlayerAchievements/v0001/?key=${apiKey}&steamid=${steamId}&appid=${game.appid}&l=en&format=json`
+        );
+        const achievements = data?.playerstats?.achievements;
+        const list = Array.isArray(achievements) ? achievements : [];
+        const unlocked = list.filter((achievement) => Number(achievement?.achieved || 0) > 0).length;
+        sampleResults.push({
+          appid: game.appid,
+          name: game.name || `Steam App ${game.appid}`,
+          ok: true,
+          total: list.length,
+          unlocked,
+          locked: Math.max(0, list.length - unlocked),
+          sampleOnly: true
+        });
+      } catch (error) {
+        sampleResults.push({
+          appid: game.appid,
+          name: game.name || `Steam App ${game.appid}`,
+          ok: false,
+          error: error.message || 'achievement-preflight-failed',
+          sampleOnly: true
+        });
+      }
+    }
+
+    return {
+      ok: true,
+      personaName: player.personaname || 'Steam profile',
+      profileState: Number(player.profilestate || 0),
+      communityVisibilityState: Number(player.communityvisibilitystate || 0),
+      sampleCount: sampleResults.length,
+      results: sampleResults,
+      message: 'Preflight only. GamePilot did not import or merge Steam unlock data.'
+    };
+  } catch (error) {
+    console.warn('[SteamPersonalAchievements] preflight failed:', error.message);
+    return { ok: false, error: error.message || 'steam-personal-preflight-failed' };
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Steam News bridge (anonymous). Pulls recent announcements / patch notes
+// for a Steam appid via api.steampowered.com/ISteamNews/GetNewsForApp/v0002/.
+// Used by SteamNewsService on the renderer to render "Updated since you last
+// played" badges and the patch-notes list inside GameModal.
+// ---------------------------------------------------------------------------
+ipcMain.handle('steam-news', async (_event, payload) => {
+  const appid = String(payload?.appid || '').replace(/[^0-9]/g, '');
+  if (!appid) return { ok: false, error: 'invalid-appid' };
+  const count = Math.max(1, Math.min(20, Number(payload?.count) || 5));
+  const maxLen = 600; // keep the renderer cache light; we only show previews
+  try {
+    const data = await steamHttpsGet(
+      'api.steampowered.com',
+      `/ISteamNews/GetNewsForApp/v0002/?appid=${appid}&count=${count}&maxlength=${maxLen}&format=json`
+    );
+    const items = data?.appnews?.newsitems;
+    if (!Array.isArray(items)) return { ok: false, error: 'no-data' };
+    return { ok: true, items };
+  } catch (error) {
+    console.warn('[SteamNews] news failed:', error.message);
+    return { ok: false, error: error.message || 'unknown' };
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Disk Usage & Uninstall Coach
+//
+// disk-folder-size: recursively walks a directory and returns total bytes +
+// file count. Hard-bounded by depth (16), file count (250k), and elapsed time
+// (45s) so a corrupt junction loop or absurdly large folder can never hang
+// the renderer. Symbolic links / reparse points are skipped — we never follow
+// junctions, which on Windows are how Steam/Epic share library folders and
+// could otherwise double-count or loop forever.
+//
+// start-uninstall: dispatches the right *official* uninstall handoff per
+// platform. GamePilot NEVER deletes files itself. The launcher's own
+// uninstaller does the work. If we can't identify the platform, we fall back
+// to opening Programs & Features (appwiz.cpl) and the install folder so the
+// user can decide.
+// ---------------------------------------------------------------------------
+const { exec: childExec } = require('child_process');
+
+const MAX_DISK_WALK_DEPTH = 16;
+const MAX_DISK_WALK_FILES = 250_000;
+const MAX_DISK_WALK_MS = 45_000;
+const MAX_SAVE_BACKUP_DEPTH = 32;
+const MAX_SAVE_BACKUP_FILES = 100_000;
+const MAX_SAVE_BACKUP_MS = 120_000;
+
+async function walkFolderSize(rootPath) {
+  const startedAt = Date.now();
+  let bytes = 0;
+  let files = 0;
+  let dirs = 0;
+  let truncated = false;
+  const seenInodes = new Set(); // Defence against hardlink double-counting on NTFS
+
+  const visit = async (dir, depth) => {
+    if (truncated) return;
+    if (depth > MAX_DISK_WALK_DEPTH) { truncated = true; return; }
+    if (Date.now() - startedAt > MAX_DISK_WALK_MS) { truncated = true; return; }
+    if (files > MAX_DISK_WALK_FILES) { truncated = true; return; }
+
+    let entries;
+    try {
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    } catch {
+      return; // permission denied / vanished folder — silently skip
+    }
+    dirs += 1;
+
+    for (const entry of entries) {
+      if (truncated) return;
+      // Skip symlinks/junctions: prevents loops and avoids counting
+      // cross-library shared content twice.
+      if (entry.isSymbolicLink && entry.isSymbolicLink()) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await visit(full, depth + 1);
+      } else if (entry.isFile()) {
+        try {
+          const stat = await fs.promises.lstat(full);
+          if (stat.isSymbolicLink()) continue;
+          // Hardlink dedupe: only count first occurrence.
+          if (stat.nlink && stat.nlink > 1) {
+            const key = `${stat.dev}:${stat.ino}`;
+            if (seenInodes.has(key)) continue;
+            seenInodes.add(key);
+          }
+          bytes += stat.size;
+          files += 1;
+        } catch {
+          // file vanished or no access — skip
+        }
+      }
+    }
+  };
+
+  await visit(rootPath, 0);
+  return { bytes, files, dirs, truncated, durationMs: Date.now() - startedAt };
+}
+
+const resolveSaveLocationPath = (rawPath, game = {}) => {
+  let value = String(rawPath || '').trim();
+  if (!value) return { resolvedPath: '', unresolvedTokens: [] };
+
+  const envMap = {
+    USERPROFILE: process.env.USERPROFILE || app.getPath('home'),
+    APPDATA: process.env.APPDATA || path.join(app.getPath('home'), 'AppData', 'Roaming'),
+    LOCALAPPDATA: process.env.LOCALAPPDATA || path.join(app.getPath('home'), 'AppData', 'Local'),
+    PROGRAMDATA: process.env.PROGRAMDATA || 'C:\\ProgramData',
+    PUBLIC: process.env.PUBLIC || 'C:\\Users\\Public',
+    DOCUMENTS: app.getPath('documents'),
+    SAVEDGAMES: path.join(app.getPath('home'), 'Saved Games')
+  };
+
+  Object.entries(envMap).forEach(([token, replacement]) => {
+    value = value.replace(new RegExp(`%${token}%`, 'gi'), replacement);
+  });
+
+  value = value
+    .replace(/<user-profile>/gi, envMap.USERPROFILE)
+    .replace(/<userprofile>/gi, envMap.USERPROFILE)
+    .replace(/<documents>/gi, envMap.DOCUMENTS)
+    .replace(/<saved-games>/gi, envMap.SAVEDGAMES)
+    .replace(/<savedgames>/gi, envMap.SAVEDGAMES)
+    .replace(/<path-to-game>/gi, game.installDir || game.path || '')
+    .replace(/<game-folder>/gi, game.installDir || game.path || '')
+    .replace(/^~(?=\\|\/)/, envMap.USERPROFILE)
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+
+  const unresolvedTokens = Array.from(new Set(value.match(/<[^>]+>/g) || []));
+  return {
+    resolvedPath: path.normalize(value),
+    unresolvedTokens
+  };
+};
+
+const getSaveLocationStatus = async (candidate = {}, game = {}) => {
+  const rawPath = candidate.path || candidate.rawPath || '';
+  const resolved = resolveSaveLocationPath(rawPath, game);
+  const base = {
+    ...candidate,
+    rawPath,
+    resolvedPath: resolved.resolvedPath,
+    unresolvedTokens: resolved.unresolvedTokens,
+    exists: false,
+    isDirectory: false,
+    isFile: false,
+    canOpen: false,
+    bytes: 0,
+    files: 0,
+    dirs: 0,
+    truncated: false
+  };
+
+  if (!resolved.resolvedPath || resolved.unresolvedTokens.length > 0) {
+    return { ...base, error: resolved.unresolvedTokens.length > 0 ? 'unresolved-tokens' : 'invalid-path' };
+  }
+
+  try {
+    const stat = await fs.promises.stat(resolved.resolvedPath);
+    if (stat.isDirectory()) {
+      const size = await walkFolderSize(resolved.resolvedPath);
+      return { ...base, exists: true, isDirectory: true, canOpen: true, ...size };
+    }
+    if (stat.isFile()) {
+      return { ...base, exists: true, isFile: true, canOpen: true, bytes: stat.size, files: 1 };
+    }
+    return { ...base, exists: true, canOpen: true };
+  } catch (err) {
+    return { ...base, error: 'not-found' };
+  }
+};
+
+ipcMain.handle('save-location-status', async (_event, payload = {}) => {
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+  const game = payload?.game || {};
+  try {
+    const locations = [];
+    for (const candidate of candidates.slice(0, 10)) {
+      locations.push(await getSaveLocationStatus(candidate, game));
+    }
+    return { ok: true, locations };
+  } catch (err) {
+    return { ok: false, error: err.message || 'save-location-status-failed', locations: [] };
+  }
+});
+
+ipcMain.handle('open-save-location', async (_event, payload = {}) => {
+  const rawPath = payload?.path || payload?.rawPath || '';
+  const game = payload?.game || {};
+  const resolved = resolveSaveLocationPath(rawPath, game);
+  if (!resolved.resolvedPath || resolved.unresolvedTokens.length > 0) {
+    return { ok: false, error: 'unresolved-path', resolvedPath: resolved.resolvedPath, unresolvedTokens: resolved.unresolvedTokens };
+  }
+  try {
+    const result = await shell.openPath(resolved.resolvedPath);
+    return result ? { ok: false, error: result, resolvedPath: resolved.resolvedPath } : { ok: true, resolvedPath: resolved.resolvedPath };
+  } catch (err) {
+    return { ok: false, error: err.message || 'open-save-location-failed', resolvedPath: resolved.resolvedPath };
+  }
+});
+
+const sanitizeBackupSegment = (value, fallback = 'backup') => {
+  const cleaned = String(value || '')
+    .replace(/[<>:"/\\|?*]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
+  return cleaned || fallback;
+};
+
+const copySavePath = async (sourcePath, destinationPath, summary, depth = 0, startedAt = Date.now()) => {
+  if (summary.truncated) return;
+  if (depth > MAX_SAVE_BACKUP_DEPTH) { summary.truncated = true; return; }
+  if (Date.now() - startedAt > MAX_SAVE_BACKUP_MS) { summary.truncated = true; return; }
+  if (summary.files >= MAX_SAVE_BACKUP_FILES) { summary.truncated = true; return; }
+
+  const stat = await fs.promises.lstat(sourcePath);
+  if (stat.isSymbolicLink()) return;
+
+  if (stat.isDirectory()) {
+    await fs.promises.mkdir(destinationPath, { recursive: true });
+    summary.dirs += 1;
+    const entries = await fs.promises.readdir(sourcePath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (summary.truncated) return;
+      if (entry.isSymbolicLink && entry.isSymbolicLink()) continue;
+      await copySavePath(
+        path.join(sourcePath, entry.name),
+        path.join(destinationPath, entry.name),
+        summary,
+        depth + 1,
+        startedAt
+      );
+    }
+    return;
+  }
+
+  if (stat.isFile()) {
+    await fs.promises.mkdir(path.dirname(destinationPath), { recursive: true });
+    await fs.promises.copyFile(sourcePath, destinationPath, fs.constants.COPYFILE_EXCL);
+    summary.files += 1;
+    summary.bytes += stat.size;
+  }
+};
+
+ipcMain.handle('choose-save-backup-destination', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: 'Choose GamePilot save backup folder',
+      properties: ['openDirectory', 'createDirectory']
+    });
+    if (result.canceled || !result.filePaths?.[0]) {
+      return { ok: false, canceled: true };
+    }
+    return { ok: true, path: result.filePaths[0] };
+  } catch (err) {
+    return { ok: false, error: err.message || 'choose-destination-failed' };
+  }
+});
+
+ipcMain.handle('create-save-backup', async (_event, payload = {}) => {
+  const game = payload?.game || {};
+  const destinationRoot = String(payload?.destinationRoot || '').trim();
+  const requestedLocations = Array.isArray(payload?.locations) ? payload.locations : [];
+  if (!destinationRoot) return { ok: false, error: 'missing-destination' };
+  if (requestedLocations.length === 0) return { ok: false, error: 'missing-locations' };
+
+  try {
+    const destinationStat = await fs.promises.stat(destinationRoot);
+    if (!destinationStat.isDirectory()) return { ok: false, error: 'destination-not-folder' };
+
+    const validLocations = [];
+    for (const location of requestedLocations.slice(0, 10)) {
+      const status = await getSaveLocationStatus({ ...location, path: location.resolvedPath || location.rawPath || location.path }, game);
+      if (status.exists && status.canOpen && status.resolvedPath) {
+        validLocations.push(status);
+      }
+    }
+
+    if (validLocations.length === 0) {
+      return { ok: false, error: 'no-existing-locations' };
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const gameName = sanitizeBackupSegment(game.name || game.title || 'Unknown Game', 'Unknown Game');
+    const backupRoot = path.join(destinationRoot, 'GamePilot Save Backups', `${gameName} - ${timestamp}`);
+    const normalizedBackupRoot = path.normalize(backupRoot).toLowerCase();
+    const unsafeSource = validLocations.find((location) => {
+      const sourcePath = path.normalize(location.resolvedPath).toLowerCase();
+      return normalizedBackupRoot === sourcePath || normalizedBackupRoot.startsWith(`${sourcePath}${path.sep}`);
+    });
+    if (unsafeSource) {
+      return { ok: false, error: 'destination-inside-source', sourcePath: unsafeSource.resolvedPath };
+    }
+    await fs.promises.mkdir(backupRoot, { recursive: true });
+
+    const copiedLocations = [];
+    const totals = { bytes: 0, files: 0, dirs: 0, truncated: false };
+
+    for (const [index, location] of validLocations.entries()) {
+      const folderName = `${index + 1} - ${sanitizeBackupSegment(location.type || location.label || 'location')}`;
+      const destinationPath = path.join(backupRoot, folderName);
+      const summary = { bytes: 0, files: 0, dirs: 0, truncated: false };
+      await copySavePath(location.resolvedPath, destinationPath, summary);
+      totals.bytes += summary.bytes;
+      totals.files += summary.files;
+      totals.dirs += summary.dirs;
+      totals.truncated = totals.truncated || summary.truncated;
+      copiedLocations.push({
+        label: location.label || location.type || 'Location',
+        type: location.type || 'unknown',
+        source: location.source || 'pcgamingwiki',
+        rawPath: location.rawPath || location.path || '',
+        resolvedPath: location.resolvedPath,
+        backupPath: destinationPath,
+        relativeBackupPath: folderName,
+        ...summary
+      });
+    }
+
+    const manifest = {
+      version: 1,
+      kind: 'gamepilot-save-backup',
+      createdAt: Date.now(),
+      game: {
+        name: game.name || game.title || 'Unknown Game',
+        appid: game.appid || game.steam_appid || game.appId || null,
+        platform: game.platform || null
+      },
+      restoreSupported: false,
+      locations: copiedLocations,
+      totals
+    };
+    const manifestPath = path.join(backupRoot, 'manifest.json');
+    await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+    return { ok: true, backupPath: backupRoot, manifestPath, manifest };
+  } catch (err) {
+    return { ok: false, error: err.message || 'create-save-backup-failed' };
+  }
+});
+
+const getBackupPathSummary = async (targetPath) => {
+  const base = {
+    path: targetPath,
+    exists: false,
+    isDirectory: false,
+    isFile: false,
+    bytes: 0,
+    files: 0,
+    dirs: 0,
+    truncated: false
+  };
+
+  try {
+    const stat = await fs.promises.stat(targetPath);
+    if (stat.isDirectory()) {
+      const size = await walkFolderSize(targetPath);
+      return { ...base, exists: true, isDirectory: true, ...size };
+    }
+    if (stat.isFile()) {
+      return { ...base, exists: true, isFile: true, bytes: stat.size, files: 1 };
+    }
+    return { ...base, exists: true };
+  } catch (err) {
+    return { ...base, error: 'not-found' };
+  }
+};
+
+const isPathInside = (childPath, parentPath) => {
+  const normalizedChild = path.resolve(childPath || '');
+  const normalizedParent = path.resolve(parentPath || '');
+  const relative = path.relative(normalizedParent, normalizedChild);
+  return Boolean(relative) && !relative.startsWith('..') && !path.isAbsolute(relative);
+};
+
+const copyRestorePath = async (sourcePath, destinationPath, summary, depth = 0, startedAt = Date.now()) => {
+  if (summary.truncated) return;
+  if (depth > MAX_SAVE_BACKUP_DEPTH) { summary.truncated = true; return; }
+  if (Date.now() - startedAt > MAX_SAVE_BACKUP_MS) { summary.truncated = true; return; }
+  if (summary.files >= MAX_SAVE_BACKUP_FILES) { summary.truncated = true; return; }
+
+  const stat = await fs.promises.lstat(sourcePath);
+  if (stat.isSymbolicLink()) return;
+
+  if (stat.isDirectory()) {
+    await fs.promises.mkdir(destinationPath, { recursive: true });
+    summary.dirs += 1;
+    const entries = await fs.promises.readdir(sourcePath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (summary.truncated) return;
+      if (entry.isSymbolicLink && entry.isSymbolicLink()) continue;
+      await copyRestorePath(
+        path.join(sourcePath, entry.name),
+        path.join(destinationPath, entry.name),
+        summary,
+        depth + 1,
+        startedAt
+      );
+    }
+    return;
+  }
+
+  if (stat.isFile()) {
+    await fs.promises.mkdir(path.dirname(destinationPath), { recursive: true });
+    await fs.promises.copyFile(sourcePath, destinationPath);
+    summary.files += 1;
+    summary.bytes += stat.size;
+  }
+};
+
+ipcMain.handle('preview-save-restore', async (_event, payload = {}) => {
+  const manifestPath = String(payload?.manifestPath || '').trim();
+  const game = payload?.game || {};
+  if (!manifestPath) return { ok: false, error: 'missing-manifest' };
+
+  try {
+    const rawManifest = await fs.promises.readFile(manifestPath, 'utf8');
+    const manifest = JSON.parse(rawManifest);
+    if (manifest?.kind !== 'gamepilot-save-backup' || !Array.isArray(manifest.locations)) {
+      return { ok: false, error: 'invalid-manifest' };
+    }
+
+    const comparisons = [];
+    for (const location of manifest.locations.slice(0, 10)) {
+      const backupSummary = await getBackupPathSummary(location.backupPath);
+      const liveSummary = await getSaveLocationStatus({
+        label: location.label,
+        type: location.type,
+        source: location.source,
+        path: location.resolvedPath
+      }, game);
+
+      comparisons.push({
+        label: location.label || location.type || 'Location',
+        type: location.type || 'unknown',
+        backupPath: location.backupPath || '',
+        targetPath: location.resolvedPath || '',
+        backupExists: backupSummary.exists,
+        targetExists: liveSummary.exists,
+        backupBytes: backupSummary.bytes,
+        backupFiles: backupSummary.files,
+        targetBytes: liveSummary.bytes,
+        targetFiles: liveSummary.files,
+        wouldOverwrite: Boolean(liveSummary.exists),
+        backupTruncated: Boolean(backupSummary.truncated),
+        targetTruncated: Boolean(liveSummary.truncated),
+        safeToRestore: false
+      });
+    }
+
+    return {
+      ok: true,
+      restoreSupported: false,
+      manifestPath,
+      backupPath: path.dirname(manifestPath),
+      manifest,
+      comparisons,
+      message: 'Restore preflight only. GamePilot did not copy or overwrite any live save files.'
+    };
+  } catch (err) {
+    return { ok: false, error: err.message || 'preview-save-restore-failed' };
+  }
+});
+
+ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
+  const manifestPath = String(payload?.manifestPath || '').trim();
+  const game = payload?.game || {};
+  const confirmation = String(payload?.confirmation || '').trim();
+  const expectedConfirmation = String(game.name || game.title || '').trim();
+  if (!manifestPath) return { ok: false, error: 'missing-manifest' };
+  if (!expectedConfirmation || confirmation !== expectedConfirmation) return { ok: false, error: 'confirmation-mismatch' };
+
+  try {
+    const rawManifest = await fs.promises.readFile(manifestPath, 'utf8');
+    const manifest = JSON.parse(rawManifest);
+    if (manifest?.kind !== 'gamepilot-save-backup' || !Array.isArray(manifest.locations)) {
+      return { ok: false, error: 'invalid-manifest' };
+    }
+
+    const manifestRoot = path.dirname(manifestPath);
+    const manifestRootStat = await fs.promises.stat(manifestRoot);
+    if (!manifestRootStat.isDirectory()) return { ok: false, error: 'invalid-manifest-root' };
+
+    const restoredLocations = [];
+    const totals = { bytes: 0, files: 0, dirs: 0, truncated: false };
+    const startedAt = Date.now();
+
+    for (const location of manifest.locations.slice(0, 10)) {
+      const backupPath = path.resolve(location.backupPath || path.join(manifestRoot, location.relativeBackupPath || ''));
+      const targetPath = path.resolve(location.resolvedPath || '');
+      if (!backupPath || !targetPath) return { ok: false, error: 'invalid-restore-location' };
+      if (!isPathInside(backupPath, manifestRoot)) return { ok: false, error: 'backup-outside-manifest-root', backupPath };
+      if (isPathInside(targetPath, manifestRoot) || targetPath === manifestRoot) return { ok: false, error: 'target-inside-backup-root', targetPath };
+
+      const backupSummary = await getBackupPathSummary(backupPath);
+      if (!backupSummary.exists) return { ok: false, error: 'missing-backup-location', backupPath };
+
+      const summary = { bytes: 0, files: 0, dirs: 0, truncated: false };
+      await copyRestorePath(backupPath, targetPath, summary, 0, startedAt);
+      totals.bytes += summary.bytes;
+      totals.files += summary.files;
+      totals.dirs += summary.dirs;
+      totals.truncated = totals.truncated || summary.truncated;
+      restoredLocations.push({
+        label: location.label || location.type || 'Location',
+        type: location.type || 'unknown',
+        backupPath,
+        targetPath,
+        ...summary
+      });
+    }
+
+    const receipt = {
+      version: 1,
+      kind: 'gamepilot-save-restore-receipt',
+      restoredAt: Date.now(),
+      sourceManifestPath: manifestPath,
+      game: manifest.game || {
+        name: game.name || game.title || 'Unknown Game',
+        appid: game.appid || game.steam_appid || game.appId || null,
+        platform: game.platform || null
+      },
+      locations: restoredLocations,
+      totals
+    };
+    const receiptPath = path.join(manifestRoot, `restore-receipt-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+    await fs.promises.writeFile(receiptPath, JSON.stringify(receipt, null, 2), 'utf8');
+
+    return {
+      ok: true,
+      manifestPath,
+      backupPath: manifestRoot,
+      receiptPath,
+      receipt,
+      message: `Restored ${totals.files} file${totals.files === 1 ? '' : 's'} without deleting unknown live files.`
+    };
+  } catch (err) {
+    return { ok: false, error: err.message || 'restore-save-backup-failed' };
+  }
+});
+
+ipcMain.handle('disk-folder-size', async (_event, payload) => {
+  const target = String(payload?.path || '').trim();
+  if (!target) return { ok: false, error: 'invalid-path' };
+  try {
+    const stat = await fs.promises.stat(target);
+    if (!stat.isDirectory()) {
+      // For a single executable just return its file size.
+      return { ok: true, bytes: stat.size, files: 1, dirs: 0, truncated: false, durationMs: 0 };
+    }
+  } catch (err) {
+    return { ok: false, error: 'not-found' };
+  }
+  try {
+    const result = await walkFolderSize(target);
+    return { ok: true, ...result };
+  } catch (err) {
+    return { ok: false, error: err.message || 'walk-failed' };
+  }
+});
+
+// Build the safest possible uninstall plan per platform. We always prefer
+// the launcher's own deeplink because it leaves cloud saves, registry, and
+// per-launcher metadata in a clean state. Programs & Features is the
+// universal fallback for anything we can't identify.
+function buildUninstallPlan(game) {
+  const platform = String(game?.platform || '').toLowerCase();
+  const appid = String(game?.appid || '').trim();
+  const launchId = String(game?.launchId || '').trim();
+  const installDir = String(game?.installDir || '').trim();
+
+  if (platform === 'steam' && appid) {
+    return {
+      method: 'deeplink',
+      url: `steam://uninstall/${appid}`,
+      label: 'Steam',
+      message: 'Steam will open its built-in uninstall confirmation. Cloud saves and Steam Workshop subscriptions are preserved.'
+    };
+  }
+  if ((platform === 'epic' || platform === 'epic games') && launchId) {
+    return {
+      method: 'deeplink',
+      url: `com.epicgames.launcher://apps/${launchId}?action=uninstall`,
+      label: 'Epic Games Launcher',
+      message: 'Epic Games Launcher will open the uninstall confirmation. Cloud saves are preserved on your Epic account.'
+    };
+  }
+  if (platform === 'gog' || platform === 'gog galaxy') {
+    if (appid) {
+      return {
+        method: 'deeplink',
+        url: `goggalaxy://openGameView/${appid}`,
+        label: 'GOG Galaxy',
+        message: 'GOG Galaxy will open this game. Use the “⋮ → Manage Installation → Uninstall” option to remove it cleanly.'
+      };
+    }
+  }
+  if (platform === 'ea' || platform === 'origin') {
+    return {
+      method: 'cmd',
+      cmd: 'appwiz.cpl',
+      label: 'EA / Programs & Features',
+      message: 'EA App handles uninstalls through Windows Programs & Features. The list will open — find the title and select Uninstall.'
+    };
+  }
+  if (platform === 'ubisoft' || platform === 'uplay' || platform === 'ubisoft connect') {
+    return {
+      method: 'cmd',
+      cmd: 'appwiz.cpl',
+      label: 'Ubisoft / Programs & Features',
+      message: 'Open Ubisoft Connect → Library → Game → ⋮ → Uninstall, or remove it from Programs & Features.'
+    };
+  }
+  if (platform === 'battle.net' || platform === 'blizzard') {
+    return {
+      method: 'cmd',
+      cmd: 'appwiz.cpl',
+      label: 'Battle.net / Programs & Features',
+      message: 'Use Battle.net → Game → ⚙ Settings (cog) → Uninstall, or remove via Programs & Features.'
+    };
+  }
+  if (platform === 'xbox' || platform === 'microsoft store' || platform === 'microsoft') {
+    return {
+      method: 'deeplink',
+      url: 'ms-settings:appsfeatures',
+      label: 'Apps & Features',
+      message: 'Windows opens Apps & Features. Locate the game and choose Uninstall — the Xbox app does not own the package directly.'
+    };
+  }
+  if (platform === 'rockstar' || platform === 'rockstar games') {
+    return {
+      method: 'cmd',
+      cmd: 'appwiz.cpl',
+      label: 'Rockstar / Programs & Features',
+      message: 'Rockstar Games Launcher uninstalls go through Programs & Features.'
+    };
+  }
+  if (platform === 'curseforge' && installDir) {
+    return {
+      method: 'open-folder',
+      target: installDir,
+      label: 'CurseForge instance folder',
+      message: 'CurseForge instances are uninstalled inside CurseForge itself (… → Delete Profile). Opening the folder lets you verify what’s on disk first.'
+    };
+  }
+  if (installDir) {
+    return {
+      method: 'manual',
+      target: installDir,
+      cmd: 'appwiz.cpl',
+      label: 'Manual',
+      message: 'GamePilot will open both Programs & Features and the install folder so you can choose how to remove it. GamePilot never deletes files itself.'
+    };
+  }
+  return {
+    method: 'cmd',
+    cmd: 'appwiz.cpl',
+    label: 'Programs & Features',
+    message: 'GamePilot couldn’t identify a launcher-specific uninstall path. Programs & Features will open so you can find and remove the title.'
+  };
+}
+
+ipcMain.handle('build-uninstall-plan', async (_event, game) => {
+  try {
+    return { ok: true, plan: buildUninstallPlan(game) };
+  } catch (err) {
+    return { ok: false, error: err.message || 'plan-failed' };
+  }
+});
+
+ipcMain.handle('start-uninstall', async (_event, payload) => {
+  const game = payload?.game || payload;
+  const plan = buildUninstallPlan(game);
+  try {
+    if (plan.method === 'deeplink') {
+      await shell.openExternal(plan.url);
+    } else if (plan.method === 'cmd') {
+      childExec(plan.cmd);
+    } else if (plan.method === 'open-folder') {
+      await shell.openPath(plan.target);
+    } else if (plan.method === 'manual') {
+      // Belt and braces: open both — user picks whichever path actually works.
+      childExec(plan.cmd);
+      if (plan.target) await shell.openPath(plan.target);
+    }
+    return { ok: true, plan };
+  } catch (err) {
+    console.warn('[Uninstall] dispatch failed:', err.message);
+    return { ok: false, error: err.message || 'dispatch-failed', plan };
+  }
+});
+
 ipcMain.handle('open-external-url', async (_event, url) => {
   try {
     await shell.openExternal(url);
@@ -437,6 +1668,45 @@ ipcMain.handle('open-external-url', async (_event, url) => {
     console.error('❌ Failed to open external URL:', error);
     return false;
   }
+});
+
+ipcMain.handle('get-startup-launch-settings', async () => getStartupLaunchSettings());
+
+ipcMain.handle('set-startup-launch-enabled', async (_event, enabled) => {
+  if (!isStartupLaunchSupported()) {
+    return {
+      success: false,
+      supported: false,
+      enabled: false,
+      persisted: false,
+      isPackaged: app.isPackaged
+    };
+  }
+
+  const nextEnabled = Boolean(enabled);
+  const applyResult = applyStartupLaunchPreference(nextEnabled);
+  if (!applyResult.success) {
+    return {
+      ...applyResult,
+      persisted: getStartupLaunchPreference(),
+      isPackaged: app.isPackaged
+    };
+  }
+
+  const preferences = readAppPreferences();
+  const writeSucceeded = writeAppPreferences({
+    ...preferences,
+    launchOnStartup: applyResult.enabled
+  });
+
+  return {
+    success: writeSucceeded,
+    supported: true,
+    enabled: applyResult.enabled,
+    persisted: applyResult.enabled,
+    isPackaged: app.isPackaged,
+    message: writeSucceeded ? null : 'Unable to persist startup preference'
+  };
 });
 
 ipcMain.handle('start-game-monitor', async (event, payload = {}) => {
@@ -510,6 +1780,7 @@ ipcMain.handle('stop-game-monitor', async (event, payload = {}) => {
 
 app.whenReady().then(() => {
   console.log('🚀 App ready, creating window...');
+  applyStartupLaunchPreference(getStartupLaunchPreference());
   
   // Register app:// protocol for local file access
   protocol.registerFileProtocol('app', (request, callback) => {
@@ -551,6 +1822,12 @@ function createWindow() {
         ? 'http://localhost:3000'
         : `file://${path.join(__dirname, './build/index.html')}`
     );
+
+    mainWindow.webContents.on('console-message', (_event, _level, message) => {
+      if (typeof message === 'string' && message.includes('[PERF]')) {
+        console.log(message);
+      }
+    });
 
     mainWindow.on('ready-to-show', () => {
       console.log('🎯 Window ready to show');

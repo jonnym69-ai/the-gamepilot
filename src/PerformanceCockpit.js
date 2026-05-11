@@ -123,6 +123,11 @@ function PerformanceCockpit({
       PersonaPerformanceInsights.setSystemInfo(enrichedInfo);
       setSystemInfo(enrichedInfo);
 
+      // Ensure the lazy-loaded requirements DB is in memory before analyzing
+      // the library; otherwise every game would fall through to the estimate
+      // path and the Performance page would show inaccurate data.
+      await GameRequirements.ensureDatabaseLoaded().catch(() => { /* fall back to estimates */ });
+
       const result = BottleneckAnalyzer.analyzeLibrary(
         normalizedLibrary,
         enrichedInfo,

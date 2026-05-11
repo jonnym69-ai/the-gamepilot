@@ -1,9 +1,6 @@
-import React, { useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useCallback } from 'react';
 
 const KeyboardShortcuts = ({ children, shortcuts }) => {
-  const navigate = useNavigate();
-
   const handleKeyDown = useCallback((event) => {
     // Check if user is typing in an input field
     const isInputFocused = event.target.tagName === 'INPUT' || 

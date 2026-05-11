@@ -6,10 +6,11 @@
   border: 2px solid #60a5fa;
   border-radius: 16px;
   padding: 20px;
-  width: 320px;
+  width: min(360px, calc(100vw - 40px));
   z-index: 1000;
   box-shadow: 0 0 40px rgba(96, 165, 250, 0.3);
   animation: slideUp 0.5s ease;
+  word-break: break-word;
 }
 
 .weekly-summary-toast.exiting {
@@ -58,6 +59,7 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+  padding-right: 28px;
 }
 
 .header-icon {
@@ -78,15 +80,17 @@
 
 .stat-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 10px;
   background: rgba(31, 41, 55, 0.5);
   border-radius: 8px;
+  flex-wrap: wrap;
 }
 
 .stat-icon {
   color: #60a5fa;
+  flex-shrink: 0;
 }
 
 .stat-icon.top-game {
@@ -97,12 +101,16 @@
   color: #9ca3af;
   font-size: 13px;
   flex: 1;
+  min-width: 84px;
 }
 
 .stat-value {
   color: #fff;
   font-weight: 600;
   font-size: 13px;
+  flex: 1 1 120px;
+  min-width: 0;
+  text-align: right;
 }
 
 .stat-change {
@@ -110,6 +118,7 @@
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 4px;
+  margin-left: auto;
 }
 
 .stat-change.up {
@@ -140,4 +149,29 @@
   text-align: center;
   color: #6b7280;
   font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 768px) {
+  .weekly-summary-toast {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+    padding: 18px;
+  }
+
+  .stat-row {
+    gap: 8px;
+  }
+
+  .stat-value {
+    text-align: left;
+    flex-basis: 100%;
+    padding-left: 28px;
+  }
+
+  .stat-change {
+    margin-left: 28px;
+  }
 }

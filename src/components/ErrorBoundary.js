@@ -1,4 +1,5 @@
 import React from 'react';
+import StorageService from '../services/StorageService';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -37,14 +38,14 @@ class ErrorBoundary extends React.Component {
         url: window.location.href
       };
       
-      const existingLogs = JSON.parse(localStorage.getItem('errorLogs') || '[]');
+      const existingLogs = StorageService.get('errorLogs', []);
       existingLogs.push(errorLog);
       
       if (existingLogs.length > 10) {
         existingLogs.splice(0, existingLogs.length - 10);
       }
       
-      localStorage.setItem('errorLogs', JSON.stringify(existingLogs));
+      StorageService.set('errorLogs', existingLogs);
     } catch (logError) {
       console.error('Failed to log error to localStorage:', logError);
     }

@@ -3,6 +3,8 @@
  * Identifies games that are worth finishing based on time invested, progress, etc.
  */
 
+import StorageService from './StorageService';
+
 class BacklogFinisherService {
   /**
    * Analyzes a game to determine if it's a good candidate for finishing
@@ -28,7 +30,7 @@ class BacklogFinisherService {
 
     // Check if game is already completed
     try {
-      const completedGames = JSON.parse(localStorage.getItem('completedGames') || '[]');
+      const completedGames = StorageService.get('completedGames', []);
       if (completedGames.some(cg => cg.name === game.name)) {
         return { 
           isCandidate: false, 

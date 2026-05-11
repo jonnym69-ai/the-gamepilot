@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import NavBar from './NavBar';
 import { ExternalLink, Plus, Trash2, RotateCcw } from 'lucide-react';
+import StorageService from './services/StorageService';
 
 const FAVICON_BASE = 'https://www.google.com/s2/favicons?domain=';
 
@@ -41,14 +42,9 @@ function GamingLinks({ theme = 'dark' }) {
   // Load links from localStorage on component mount
   useEffect(() => {
     try {
-      const savedLinks = localStorage.getItem('gamingLinks');
-      if (savedLinks) {
-        const parsed = JSON.parse(savedLinks);
-        if (Array.isArray(parsed)) {
-          setLinks(parsed);
-        } else {
-          setLinks(defaultLinks);
-        }
+      const savedLinks = StorageService.get('gamingLinks', []);
+      if (savedLinks && Array.isArray(savedLinks)) {
+        setLinks(savedLinks);
       } else {
         // If no saved links, use defaults
         setLinks(defaultLinks);
@@ -63,7 +59,7 @@ function GamingLinks({ theme = 'dark' }) {
   useEffect(() => {
     if (links.length > 0) {
       try {
-        localStorage.setItem('gamingLinks', JSON.stringify(links));
+        StorageService.set('gamingLinks', links);
       } catch (error) {
         console.error('Error saving gaming links:', error);
       }

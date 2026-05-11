@@ -18,6 +18,40 @@
   font-size: 16px;
 }
 
+.heatmap-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.heatmap-range {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+}
+
+.heatmap-range-btn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.heatmap-range-btn:hover { color: #e5e7eb; }
+.heatmap-range-btn.is-active {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #052e1c;
+}
+
 .heatmap-legend {
   display: flex;
   align-items: center;
@@ -39,43 +73,87 @@
 
 .heatmap-container {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+  padding-bottom: 4px;
+  align-items: flex-start;
+  /* Default: fit to width. If the grid would be too tight we allow horizontal scroll on 12m only. */
+}
+
+.heatmap-container.range-12m {
   overflow-x: auto;
-  padding-bottom: 8px;
 }
 
 .heatmap-days {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-top: 0;
+  padding-top: 16px; /* space for month labels row */
+  flex-shrink: 0;
 }
 
 .heatmap-days span {
-  height: 12px;
+  height: 100%;
+  min-height: 10px;
   font-size: 10px;
   color: #6b7280;
-  line-height: 12px;
+  line-height: 1;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+}
+
+.heatmap-days .heatmap-month-spacer { flex: 0 0 14px; min-height: 0; }
+
+.heatmap-grid-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heatmap-months {
+  display: grid;
+  grid-auto-flow: column;
+  height: 14px;
+  position: relative;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.heatmap-month-label {
+  grid-row: 1;
+  white-space: nowrap;
+  line-height: 14px;
 }
 
 .heatmap-grid {
-  display: flex;
+  display: grid;
   gap: 2px;
+  width: 100%;
+}
+
+.heatmap-container.range-12m .heatmap-grid {
+  /* Enforce a readable minimum cell size when scrolling horizontally. */
+  grid-template-columns: repeat(var(--week-count, 53), 11px) !important;
 }
 
 .heatmap-week {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .heatmap-cell {
-  width: 12px;
-  height: 12px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 2px;
   cursor: pointer;
   transition: transform 0.1s;
 }
+
+.heatmap-container.range-12m .heatmap-cell { width: 11px; height: 11px; aspect-ratio: auto; }
 
 .heatmap-cell:hover {
   transform: scale(1.2);

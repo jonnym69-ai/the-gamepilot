@@ -1,5 +1,6 @@
 // SteamPriceService.js - Fetches accurate game prices from Steam API
 import { formatPrice, getCurrentCurrency } from '../CurrencyConverter';
+import StorageService from './StorageService';
 
 export class SteamPriceService {
   static STEAM_API_URL = 'https://steamcommunity.com/api/ISteamApps/GetAppDetails/v1';
@@ -9,7 +10,7 @@ export class SteamPriceService {
   // Get cached prices
   static getCache() {
     try {
-      const cached = localStorage.getItem(this.CACHE_KEY);
+      const cached = StorageService.getString(this.CACHE_KEY);
       if (!cached) return {};
       
       const data = JSON.parse(cached);
@@ -22,7 +23,7 @@ export class SteamPriceService {
         }
       });
       
-      localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
+      StorageService.set(this.CACHE_KEY, data);
       return data;
     } catch (error) {
       console.error('Error reading price cache:', error);
@@ -38,7 +39,7 @@ export class SteamPriceService {
         ...priceData,
         timestamp: Date.now()
       };
-      localStorage.setItem(this.CACHE_KEY, JSON.stringify(cache));
+      StorageService.set(this.CACHE_KEY, cache);
     } catch (error) {
       console.error('Error saving to price cache:', error);
     }
@@ -176,7 +177,7 @@ export class SteamPriceService {
   // Clear cache
   static clearCache() {
     try {
-      localStorage.removeItem(this.CACHE_KEY);
+      StorageService.remove(this.CACHE_KEY);
     } catch (error) {
       console.error('Error clearing price cache:', error);
     }

@@ -1,3 +1,5 @@
+import StorageService from './StorageService';
+
 const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 const KONAMI_KEY = 'konamiActivated';
 const SECRET_ACHIEVEMENTS_KEY = 'secretAchievements';
@@ -28,12 +30,12 @@ export const EasterEggService = {
   },
 
   activateKonami: () => {
-    const alreadyActivated = localStorage.getItem(KONAMI_KEY) === 'true';
+    const alreadyActivated = StorageService.getString(KONAMI_KEY) === 'true';
     if (alreadyActivated) {
       return { type: 'already', message: 'You already unlocked the Konami secret!' };
     }
 
-    localStorage.setItem(KONAMI_KEY, 'true');
+    StorageService.setString(KONAMI_KEY, 'true');
     
     const unlocked = this.unlockSecretAchievement('konami_code');
     
@@ -60,12 +62,12 @@ export const EasterEggService = {
   },
 
   checkSpeedrunAchievement: (launchCount, timeWindowMs = 5 * 60 * 1000) => {
-    const launches = JSON.parse(localStorage.getItem('recentLaunches') || '[]');
+    const launches = StorageService.get('recentLaunches', []);
     const now = Date.now();
-    
+
     const recentLaunches = launches.filter(l => now - l.time < timeWindowMs);
     recentLaunches.push({ time: now });
-    localStorage.setItem('recentLaunches', JSON.stringify(recentLaunches));
+    StorageService.set('recentLaunches', recentLaunches);
 
     if (recentLaunches.length >= 5) {
       return this.unlockSecretAchievement('speedrunner');
@@ -74,7 +76,7 @@ export const EasterEggService = {
   },
 
   checkLoyaltyAchievement: () => {
-    const engagement = JSON.parse(localStorage.getItem('dailyEngagement') || '{}');
+    const engagement = StorageService.get('dailyEngagement', {});
     if (engagement.currentStreak >= 7) {
       return this.unlockSecretAchievement('loyal');
     }
@@ -89,29 +91,29 @@ export const EasterEggService = {
   },
 
   unlockSecretAchievement: (achievementId) => {
-    const stored = JSON.parse(localStorage.getItem(SECRET_ACHIEVEMENTS_KEY) || '[]');
+    const stored = StorageService.get(SECRET_ACHIEVEMENTS_KEY, []);
     if (stored.includes(achievementId)) return null;
 
     stored.push(achievementId);
-    localStorage.setItem(SECRET_ACHIEVEMENTS_KEY, JSON.stringify(stored));
+    StorageService.set(SECRET_ACHIEVEMENTS_KEY, stored);
 
     return SECRET_ACHIEVEMENTS.find(a => a.id === achievementId);
   },
 
   getSecretAchievements: () => {
-    const unlocked = JSON.parse(localStorage.getItem(SECRET_ACHIEVEMENTS_KEY) || '[]');
+    const unlocked = StorageService.get(SECRET_ACHIEVEMENTS_KEY, []);
     return SECRET_ACHIEVEMENTS.map(a => ({
       ...a,
       unlocked: unlocked.includes(a.id)
     }));
   },
 
-  isKonamiActivated: () => localStorage.getItem(KONAMI_KEY) === 'true',
+  isKonamiActivated: () => StorageService.getString(KONAMI_KEY) === 'true',
 
   resetSecrets: () => {
-    localStorage.removeItem(KONAMI_KEY);
-    localStorage.removeItem(SECRET_ACHIEVEMENTS_KEY);
-    localStorage.removeItem('recentLaunches');
+    StorageService.remove(KONAMI_KEY);
+    StorageService.remove(SECRET_ACHIEVEMENTS_KEY);
+    StorageService.remove('recentLaunches');
   }
 };
 

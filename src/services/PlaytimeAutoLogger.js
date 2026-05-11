@@ -6,6 +6,9 @@
 
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
+import StorageService from './StorageService';
+
+const MAX_ACTIVE_SESSION_AGE_MS = 18 * 60 * 60 * 1000;
 
 const getSessionStartTime = (sessionEntry) => {
   if (!sessionEntry) {
@@ -72,9 +75,8 @@ export class PlaytimeAutoLogger {
       paused: false
     };
 
-    localStorage.setItem(this.ACTIVE_SESSIONS_KEY, JSON.stringify(sessions));
-    console.log(`[PlaytimeAutoLogger] Session started: ${gameName}`);
-    
+    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+
     // Trigger stats refresh event
     window.dispatchEvent(new CustomEvent('gameSessionStarted', { detail: { gameName } }));
     
@@ -90,7 +92,6 @@ export class PlaytimeAutoLogger {
     const normalizedMetadata = metadata && typeof metadata === 'object' ? metadata : {};
 
     if (!session) {
-      console.warn(`[PlaytimeAutoLogger] No active session for ${gameName}`);
       return null;
     }
 
@@ -123,10 +124,8 @@ export class PlaytimeAutoLogger {
     }
 
     delete sessions[gameName];
-    localStorage.setItem(this.ACTIVE_SESSIONS_KEY, JSON.stringify(sessions));
-    
-    console.log(`[PlaytimeAutoLogger] Session ended: ${gameName} (${playtimeMinutes} minutes)`);
-    
+    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+
     // Trigger stats refresh event
     window.dispatchEvent(new CustomEvent('gameSessionEnded', { detail: { gameName, playtimeMinutes } }));
     
@@ -151,15 +150,13 @@ export class PlaytimeAutoLogger {
     const session = sessions[gameName];
 
     if (!session) {
-      console.warn(`[PlaytimeAutoLogger] No active session for ${gameName}`);
       return null;
     }
 
     session.paused = true;
     session.pausedAt = new Date().toISOString();
-    localStorage.setItem(this.ACTIVE_SESSIONS_KEY, JSON.stringify(sessions));
-    
-    console.log(`[PlaytimeAutoLogger] Session paused: ${gameName}`);
+    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+
     return session;
   }
 
@@ -171,7 +168,6 @@ export class PlaytimeAutoLogger {
     const session = sessions[gameName];
 
     if (!session) {
-      console.warn(`[PlaytimeAutoLogger] No active session for ${gameName}`);
       return null;
     }
 
@@ -188,9 +184,8 @@ export class PlaytimeAutoLogger {
 
     session.paused = false;
     delete session.pausedAt;
-    localStorage.setItem(this.ACTIVE_SESSIONS_KEY, JSON.stringify(sessions));
-    
-    console.log(`[PlaytimeAutoLogger] Session resumed: ${gameName}`);
+    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+
     return session;
   }
 
@@ -198,7 +193,7 @@ export class PlaytimeAutoLogger {
    * Get all active sessions
    */
   static getActiveSessions() {
-    const stored = localStorage.getItem(this.ACTIVE_SESSIONS_KEY);
+    const stored = StorageService.getString(this.ACTIVE_SESSIONS_KEY);
     try {
       const parsedSessions = stored ? JSON.parse(stored) : {};
       if (!isPlainObject(parsedSessions)) {
@@ -215,9 +210,31 @@ export class PlaytimeAutoLogger {
         return normalizedSessions;
       }, {});
     } catch (e) {
-      console.error('Failed to parse active sessions:', e);
       return {};
     }
+  }
+
+  static pruneStaleActiveSessions(maxAgeMs = MAX_ACTIVE_SESSION_AGE_MS) {
+    const sessions = this.getActiveSessions();
+    const now = Date.now();
+    const nextSessions = {};
+    let prunedCount = 0;
+
+    Object.entries(sessions).forEach(([gameName, session]) => {
+      const startedAt = new Date(session.startTime).getTime();
+      if (!startedAt || Number.isNaN(startedAt) || now - startedAt > maxAgeMs) {
+        prunedCount += 1;
+        return;
+      }
+
+      nextSessions[gameName] = session;
+    });
+
+    if (prunedCount > 0) {
+      StorageService.set(this.ACTIVE_SESSIONS_KEY, nextSessions);
+    }
+
+    return nextSessions;
   }
 
   /**
@@ -257,19 +274,18 @@ export class PlaytimeAutoLogger {
       history.shift();
     }
 
-    localStorage.setItem(this.SESSION_HISTORY_KEY, JSON.stringify(history));
+    StorageService.set(this.SESSION_HISTORY_KEY, history);
   }
 
   /**
    * Get session history
    */
   static getSessionHistory() {
-    const stored = localStorage.getItem(this.SESSION_HISTORY_KEY);
+    const stored = StorageService.getString(this.SESSION_HISTORY_KEY);
     try {
       const parsedHistory = stored ? JSON.parse(stored) : [];
       return Array.isArray(parsedHistory) ? parsedHistory : [];
     } catch (e) {
-      console.error('Failed to parse session history:', e);
       return [];
     }
   }
@@ -280,30 +296,21 @@ export class PlaytimeAutoLogger {
   static updateGamePlaytime(gameName, playtimeMinutes, library = null) {
     if (!library) {
       // Try to get library from localStorage if not provided
-      const storedLibrary = localStorage.getItem('gameLibrary');
-      if (storedLibrary) {
-        try {
-          const parsedLibrary = JSON.parse(storedLibrary);
-          library = Array.isArray(parsedLibrary) ? parsedLibrary : null;
-        } catch (e) {
-          console.error('Failed to parse library:', e);
-          return false;
-        }
+      const storedLibrary = StorageService.get('library', []);
+      if (storedLibrary?.length) {
+        library = storedLibrary;
       } else {
-        console.warn('[PlaytimeAutoLogger] No library provided to update playtime');
         return false;
       }
     }
 
     if (!Array.isArray(library)) {
-      console.warn('[PlaytimeAutoLogger] Library payload is not an array, skipping playtime update');
       return false;
     }
 
     // Find and update game
     const game = library.find(g => g.name === gameName);
     if (!game) {
-      console.warn(`[PlaytimeAutoLogger] Game not found in library: ${gameName}`);
       return false;
     }
 
@@ -313,9 +320,8 @@ export class PlaytimeAutoLogger {
     game.launch_count = (game.launch_count || 0) + 1;
 
     // Save updated library
-    localStorage.setItem('gameLibrary', JSON.stringify(library));
-    
-    console.log(`[PlaytimeAutoLogger] Updated ${gameName}: +${playtimeMinutes} minutes (total: ${game.time_played})`);
+    StorageService.set('library', library);
+
     return true;
   }
 
@@ -423,8 +429,6 @@ export class PlaytimeAutoLogger {
         UserBehaviorProfile.trackSelection(game.mood, game.genres?.[0], null, game.appid);
       }
     });
-
-    console.log('[PlaytimeAutoLogger] Synced sessions with behavior profile');
   }
 
   /**
@@ -445,7 +449,6 @@ export class PlaytimeAutoLogger {
     });
 
     UserBehaviorProfile.saveProfile();
-    console.log('[PlaytimeAutoLogger] Synced completion status with behavior profile');
   }
 
   /**
@@ -477,16 +480,13 @@ export class PlaytimeAutoLogger {
         }
       }
     }
-
-    console.log(`[PlaytimeAutoLogger] Auto-synced behavior data for ${gameName}`);
   }
 
   /**
-   * Clear all session data (for testing or reset)
+   * Clear all session and history data
    */
   static clearAllData() {
-    localStorage.removeItem(this.ACTIVE_SESSIONS_KEY);
-    localStorage.removeItem(this.SESSION_HISTORY_KEY);
-    console.log('[PlaytimeAutoLogger] Cleared all session data');
+    StorageService.remove(this.ACTIVE_SESSIONS_KEY);
+    StorageService.remove(this.SESSION_HISTORY_KEY);
   }
 }

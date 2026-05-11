@@ -1,12 +1,41 @@
 import React, { useState, useRef } from 'react';
-import { Download, X, Image, Palette } from 'lucide-react';
+import { Crown, Download, X, Image, Palette } from 'lucide-react';
+import { AchievementTracker } from '../AchievementSystem';
+import StorageService from '../services/StorageService';
 import './cinematicExport.css';
+
+const SUPPORT_TIER_WEIGHT = {
+  Bronze: 1,
+  Silver: 2,
+  Gold: 3,
+  Platinum: 4
+};
+
+const resolveHighestSupportTier = (tiers = []) => {
+  return tiers
+    .filter((tier) => typeof tier === 'string')
+    .sort((left, right) => (SUPPORT_TIER_WEIGHT[right] || 0) - (SUPPORT_TIER_WEIGHT[left] || 0))[0] || null;
+};
 
 const CinematicExport = ({ library, theme, isOpen, onClose }) => {
   const canvasRef = useRef(null);
   const [cardFormat, setCardFormat] = useState('vertical');
   const [isGenerating, setIsGenerating] = useState(false);
   const [backgroundStyle, setBackgroundStyle] = useState('blurred');
+  const founderProfile = (() => {
+    const savedUsername = StorageService.getString('profileUsername', '');
+    const userFounders = StorageService.get('userFounders', []);
+
+    const localFounder = userFounders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
+    const boostTier = AchievementTracker.getPatreonBoostProfile().tier || null;
+    const tier = resolveHighestSupportTier([localFounder?.tier, boostTier]);
+
+    return {
+      name: savedUsername || 'Pilot',
+      tier,
+      isFounder: Boolean(tier)
+    };
+  })();
 
   // Get theme colors
   const getThemeColors = () => {
@@ -19,7 +48,14 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
       background: style.getPropertyValue('--card')?.trim() || '#1b2838',
       text: style.getPropertyValue('--text')?.trim() || '#ffffff',
       textMuted: style.getPropertyValue('--text-muted')?.trim() || '#8892b0',
-      border: style.getPropertyValue('--border-color')?.trim() || '#2a3f5f'
+      border: style.getPropertyValue('--border-color')?.trim() || '#2a3f5f',
+      founderAccent: founderProfile.tier === 'Platinum'
+        ? '#e5e7eb'
+        : founderProfile.tier === 'Gold'
+          ? '#facc15'
+          : founderProfile.tier === 'Silver'
+            ? '#cbd5e1'
+            : '#fb923c'
     };
   };
 
@@ -180,6 +216,20 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
     ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = colors.textMuted;
     ctx.fillText('Your Ultimate Game Library', centerX, height - 40);
+
+    if (founderProfile.isFounder) {
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = colors.founderAccent;
+      ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(`${founderProfile.tier} Founder Edition`, centerX, height - 132);
+      ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = colors.text;
+      ctx.fillText(`${founderProfile.name} • Founding Supporter`, centerX, height - 102);
+
+      ctx.strokeStyle = colors.founderAccent;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(40, 40, width - 80, height - 80);
+    }
   };
 
   // Export as image
@@ -206,7 +256,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
 
   return (
     <div className="cinematic-export-overlay">
-      <div className="cinematic-export-modal">
+      <div className={`cinematic-export-modal ${founderProfile.isFounder ? `cinematic-export-modal-founder cinematic-export-modal-founder-${founderProfile.tier.toLowerCase()}` : ''}`}>
         <div className="cinematic-export-header">
           <h2>
             <Image size={24} />
@@ -218,6 +268,12 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
         </div>
 
         <div className="cinematic-export-content">
+          {founderProfile.isFounder && (
+            <div className={`cinematic-founder-banner cinematic-founder-banner-${founderProfile.tier.toLowerCase()}`}>
+              <Crown size={18} />
+              <span>{founderProfile.tier} Founder Edition enabled for {founderProfile.name}</span>
+            </div>
+          )}
           {/* Format Selection */}
           <div className="export-section">
             <h3>

@@ -2,6 +2,12 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/library', search: '', hash: '', state: null }),
+  Link: ({ children, ...rest }) => <a {...rest}>{children}</a>
+}), { virtual: true });
+
 jest.mock('./NavBar', () => () => <nav data-testid="nav-bar" />);
 
 jest.mock('./ThemeContext', () => {

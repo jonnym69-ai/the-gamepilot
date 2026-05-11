@@ -1,7 +1,9 @@
 .slot-machine-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(7, 10, 18, 0.78);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,72 +17,214 @@
 }
 
 .slot-machine-container {
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(180deg, rgba(18, 24, 38, 0.98) 0%, rgba(13, 18, 30, 0.98) 100%);
   border-radius: 24px;
-  padding: 24px;
+  padding: 28px;
+  position: relative;
   box-shadow: 
-    0 0 60px rgba(233, 69, 96, 0.3),
-    0 0 100px rgba(233, 69, 96, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border: 3px solid #e94560;
-  min-width: 320px;
-  max-width: 90vw;
+    0 30px 80px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: min(760px, 92vw);
+  overflow: hidden;
+}
+
+.slot-machine-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%);
+  pointer-events: none;
 }
 
 .slot-machine-header {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .slot-title {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+  letter-spacing: -0.02em;
+  display: block;
+}
+
+.slot-subtitle {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.95rem;
 }
 
 .slot-machine-window {
-  background: #0a0a15;
-  border-radius: 16px;
-  padding: 16px;
-  border: 2px solid #333;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.slot-reel {
+.slot-hero-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 188px;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.slot-hero-card.spinning {
+  border-color: rgba(112, 176, 255, 0.38);
+  box-shadow: 0 0 0 1px rgba(112, 176, 255, 0.12), 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.slot-hero-card.settled {
+  border-color: rgba(123, 214, 153, 0.34);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.slot-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.slot-status-pill {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(112, 176, 255, 0.14);
+  color: #b7d3ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.slot-preview-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.slot-preview-strip.spinning .slot-preview-item {
+  animation: preview-pulse 0.55s ease infinite;
+}
+
+.slot-preview-strip.spinning .slot-preview-item:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.slot-preview-strip.spinning .slot-preview-item:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+@keyframes preview-pulse {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-2px);
+    opacity: 1;
+  }
+}
+
+.slot-preview-item {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  opacity: 0.72;
+  transition: all 0.2s ease;
 }
 
-.slot-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  transition: all 0.15s ease;
+.slot-preview-item--focus {
+  opacity: 1;
+  border-color: rgba(112, 176, 255, 0.32);
+  background: rgba(112, 176, 255, 0.08);
 }
 
-.slot-item--center {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.3), rgba(233, 69, 96, 0.1));
-  border: 1px solid rgba(233, 69, 96, 0.5);
-  transform: scale(1.02);
+.winner-celebration {
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.winner-celebration::before,
+.winner-celebration::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+}
+
+.winner-celebration.active::before {
+  animation: celebration-ring 0.8s ease-out forwards;
+  border: 2px solid rgba(123, 214, 153, 0.7);
+}
+
+.winner-celebration.active::after {
+  animation: celebration-ring 0.8s ease-out 0.15s forwards;
+  border: 2px solid rgba(112, 176, 255, 0.48);
+}
+
+@keyframes celebration-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
 }
 
 .slot-game-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #e94560, #533483);
+  width: 100%;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #30507a, #1c2940);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+.slot-game-icon--hero {
+  width: 220px;
+  height: 156px;
+}
+
+.slot-hero-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 3rem;
+  font-weight: 800;
+  background: radial-gradient(circle at top, rgba(112, 176, 255, 0.22), rgba(20, 30, 48, 0.9));
+  letter-spacing: 0.04em;
+}
+
+.slot-game-icon--preview {
+  height: 76px;
 }
 
 .slot-game-icon img {
@@ -90,40 +234,50 @@
 }
 
 .slot-game-emoji {
-  font-size: 1.5rem;
+  font-size: 2rem;
 }
 
 .slot-game-name {
   color: #fff;
+  font-weight: 700;
+  font-size: 0.98rem;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+  min-height: 2.65em;
+}
+
+.slot-game-name--hero {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  min-height: 0;
+}
+
+.slot-game-platform {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.slot-preview-name {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.82rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  line-height: 1.3;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.slot-machine-divider {
-  display: flex;
-  align-items: center;
-  margin: 12px 0;
-}
-
-.divider-line {
-  flex: 1;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #e94560, transparent);
-}
-
-.divider-arrow {
-  padding: 0 16px;
-  font-size: 1.5rem;
-  color: #e94560;
-  animation: arrow-bounce 0.5s ease infinite alternate;
-}
-
-@keyframes arrow-bounce {
-  from { transform: translateY(0); }
-  to { transform: translateY(4px); }
 }
 
 .slot-machine-footer {
@@ -136,6 +290,21 @@
   gap: 4px;
 }
 
+.slot-lights.spinning .slot-light--on {
+  animation: light-blink-fast 0.2s ease infinite;
+}
+
+@keyframes light-blink-fast {
+  0%, 100% { 
+    opacity: 0.3;
+    box-shadow: 0 0 5px #70b0ff;
+  }
+  50% { 
+    opacity: 1;
+    box-shadow: 0 0 14px #70b0ff, 0 0 28px rgba(112, 176, 255, 0.5);
+  }
+}
+
 .slot-light {
   width: 12px;
   height: 12px;
@@ -144,8 +313,8 @@
 }
 
 .slot-light--on {
-  background: #e94560;
-  box-shadow: 0 0 10px #e94560;
+  background: #70b0ff;
+  box-shadow: 0 0 10px #70b0ff;
   animation: light-blink 0.5s ease infinite alternate;
 }
 
@@ -164,9 +333,10 @@
 }
 
 .spin-dots {
-  color: #e94560;
-  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.35rem;
   font-weight: bold;
+  letter-spacing: 0.25em;
 }
 
 .spin-dots span {
@@ -184,4 +354,42 @@
 @keyframes dot-blink {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .slot-machine-container {
+    width: min(94vw, 520px);
+    padding: 18px;
+  }
+
+  .slot-hero-card {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .slot-game-icon--hero {
+    width: 100%;
+    height: 160px;
+  }
+
+  .slot-preview-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .slot-preview-item:last-child {
+    display: none;
+  }
+
+  .slot-title {
+    font-size: 1.2rem;
+  }
+
+  .slot-subtitle {
+    font-size: 0.88rem;
+  }
+
+  .slot-game-name--hero {
+    font-size: 1.25rem;
+  }
 }

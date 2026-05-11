@@ -12,6 +12,55 @@ class GameLauncher {
     this.shell = require('electron').shell;
   }
 
+  normalizePlatform(platform) {
+    const normalizedPlatform = String(platform || '').trim();
+    if (!normalizedPlatform) {
+      return 'Unknown';
+    }
+
+    const lowerPlatform = normalizedPlatform.toLowerCase();
+    const compactPlatform = lowerPlatform.replace(/[^a-z0-9]+/g, '');
+
+    if (lowerPlatform === 'origin' || lowerPlatform === 'ea app' || compactPlatform === 'eaapp') return 'EA';
+    if (lowerPlatform === 'uplay' || lowerPlatform === 'ubisoft connect' || compactPlatform === 'ubisoftconnect') return 'Ubisoft';
+    if (lowerPlatform === 'battlenet' || compactPlatform === 'battlenet') return 'Battle.net';
+    if (lowerPlatform === 'riot games' || compactPlatform === 'riotgames' || compactPlatform === 'riotclient') return 'Riot';
+    if (lowerPlatform === 'battlestate games' || compactPlatform === 'battlestategames') return 'BSG';
+    if (compactPlatform === 'curseforge' || compactPlatform === 'curseforgeapp' || compactPlatform === 'overwolfcurseforge') return 'CurseForge';
+    if (lowerPlatform === 'playstation brand') return 'PlayStation';
+    if (compactPlatform === 'amazon' || compactPlatform === 'amazonapp' || compactPlatform === 'amazongames') return 'Amazon';
+    if (compactPlatform === 'itch' || compactPlatform === 'itchio' || lowerPlatform === 'itch.io') return 'Itch.io';
+
+    return normalizedPlatform;
+  }
+
+  extractRiotLaunchArgs(game = {}) {
+    const executableCommand = typeof game.executable === 'string' ? game.executable.trim() : '';
+    const launchProductMatch = executableCommand.match(/--launch-product=([^\s"]+)/i);
+    const launchPatchlineMatch = executableCommand.match(/--launch-patchline=([^\s"]+)/i);
+
+    const args = [];
+    const launchProduct = launchProductMatch?.[1] || game.launchId || '';
+    const launchPatchline = launchPatchlineMatch?.[1] || 'live';
+
+    if (launchProduct) {
+      args.push(`--launch-product=${launchProduct}`);
+      args.push(`--launch-patchline=${launchPatchline}`);
+    }
+
+    return args;
+  }
+
+  getRiotClientCandidates(game = {}) {
+    return [
+      game.installDir ? path.join(game.installDir, '..', 'Riot Client', 'RiotClientServices.exe') : null,
+      game.installDir ? path.join(game.installDir, 'Riot Client', 'RiotClientServices.exe') : null,
+      path.join(process.env.LOCALAPPDATA || '', 'Riot Games', 'Riot Client', 'RiotClientServices.exe'),
+      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Riot Games', 'Riot Client', 'RiotClientServices.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Riot Games', 'Riot Client', 'RiotClientServices.exe')
+    ].filter(Boolean);
+  }
+
   // Helper to query Windows Registry
   queryRegistry(key, value = null) {
     try {
@@ -142,10 +191,11 @@ class GameLauncher {
 
   // Main launch method
   async launchGame(game) {
-    console.log(`🚀 Launching ${game.name} (${game.platform})`);
+    const normalizedPlatform = this.normalizePlatform(game?.platform);
+    console.log(`🚀 Launching ${game.name} (${normalizedPlatform})`);
     
     try {
-      switch (game.platform) {
+      switch (normalizedPlatform) {
         case 'Steam':
           return this.launchSteam(game);
           
@@ -174,7 +224,19 @@ class GameLauncher {
 
         case 'BSG':
           return this.launchBSG(game);
-          
+        
+        case 'Riot':
+          return this.launchRiot(game);
+        
+        case 'CurseForge':
+          return this.launchCurseForge(game);
+
+        case 'Amazon':
+          return this.launchAmazon(game);
+
+        case 'Itch.io':
+          return this.launchItch(game);
+
         default:
           return { success: false, message: `Unsupported platform: ${game.platform}` };
       }
@@ -301,12 +363,58 @@ class GameLauncher {
   // GOG launch
   async launchGOG(game) {
     console.log('🌌 GOG game data:', game);
+
+    const executablePath = typeof game.executablePath === 'string' ? game.executablePath.trim() : '';
+    if (executablePath && fs.existsSync(executablePath)) {
+      console.log('🌌 Launching GOG game executable directly:', executablePath);
+      return new Promise((resolve) => {
+        exec(`start "" "${executablePath}"`, { shell: true }, (error) => {
+          if (error) {
+            console.error('❌ Direct GOG executable launch failed:', error);
+            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+          } else {
+            resolve({ success: true, message: `Launched ${game.name}` });
+          }
+        });
+      });
+    }
     
     if (game.launchId) {
       const gogUrl = `goggalaxy://openGame/${game.launchId}`;
       console.log('🌌 GOG URL:', gogUrl);
       await this.shell.openExternal(gogUrl);
       return { success: true, message: `Launched ${game.name}` };
+    }
+
+    if (game.appid) {
+      const gogUrl = `goggalaxy://openGameById/${game.appid}`;
+      console.log('🌌 GOG AppID URL:', gogUrl);
+      await this.shell.openExternal(gogUrl);
+      return { success: true, message: `Launched ${game.name}` };
+    }
+
+    const localAppData = process.env.LOCALAPPDATA || '';
+    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+    const galaxyCandidates = [
+      path.join(localAppData, 'GOG.com', 'Galaxy', 'GalaxyClient.exe'),
+      path.join(programFiles, 'GOG Galaxy', 'GalaxyClient.exe'),
+      path.join(programFilesX86, 'GOG Galaxy', 'GalaxyClient.exe')
+    ].filter(Boolean);
+
+    const galaxyClientPath = galaxyCandidates.find((candidate) => fs.existsSync(candidate));
+    if (galaxyClientPath) {
+      console.log('🌌 Opening GOG Galaxy client directly:', galaxyClientPath);
+      return new Promise((resolve) => {
+        exec(`start "" "${galaxyClientPath}"`, { shell: true }, (error) => {
+          if (error) {
+            console.error('❌ GOG Galaxy client launch failed:', error);
+            resolve({ success: false, message: `Failed to open GOG Galaxy: ${error.message}` });
+          } else {
+            resolve({ success: true, message: 'GOG Galaxy opened - please launch game manually' });
+          }
+        });
+      });
     }
     
     // Fallback
@@ -340,20 +448,39 @@ class GameLauncher {
     return { success: true, message: 'Origin opened - please launch game manually' };
   }
 
-  // Uplay launch
+  // Uplay / Ubisoft Connect launch
   async launchUplay(game) {
-    console.log('🔷 Uplay game data:', game);
-    
-    if (game.launchId) {
-      const uplayUrl = `uplay://launch/${game.launchId}/0`;
-      console.log('🔷 Uplay URL:', uplayUrl);
-      await this.shell.openExternal(uplayUrl);
-      return { success: true, message: `Launched ${game.name}` };
+    console.log('🔷 Ubisoft game data:', game);
+
+    // Prefer the scanned executable. Ubisoft launch IDs discovered from folder names
+    // are not stable Ubisoft product IDs and can route Windows to the Store.
+    if (game.executablePath && fs.existsSync(game.executablePath)) {
+      console.log('🔷 Launching Ubisoft executable:', game.executablePath);
+      const { spawn } = require('child_process');
+      const child = spawn(game.executablePath, { detached: true, stdio: 'ignore' });
+      child.unref();
+      return { success: true, message: `Launched ${game.name} (direct)` };
     }
-    
-    // Fallback
-    await this.shell.openExternal('uplay://');
-    return { success: true, message: 'Uplay opened - please launch game manually' };
+
+    // Final fallback: open Ubisoft Connect client
+    const connectPaths = [
+      path.join(process.env.LOCALAPPDATA || '', 'Ubisoft Connect', 'UbisoftConnect.exe'),
+      path.join(process.env.LOCALAPPDATA || '', 'Ubisoft Game Launcher', 'Uplay.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || '', 'Ubisoft/Ubisoft Connect/UbisoftConnect.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || '', 'Ubisoft/Ubisoft Game Launcher/Uplay.exe')
+    ];
+
+    for (const connectPath of connectPaths) {
+      if (fs.existsSync(connectPath)) {
+        console.log('🔷 Opening Ubisoft Connect client:', connectPath);
+        const { spawn } = require('child_process');
+        const child = spawn(connectPath, { detached: true, stdio: 'ignore' });
+        child.unref();
+        return { success: true, message: 'Ubisoft Connect opened — please launch game manually' };
+      }
+    }
+
+    return { success: false, message: 'Ubisoft Connect executable not found for launch' };
   }
 
   async launchBSG(game) {
@@ -414,6 +541,171 @@ class GameLauncher {
     }
 
     return { success: false, message: 'BSG Launcher not found - please install Escape from Tarkov' };
+  }
+
+  async launchRiot(game) {
+    console.log('👊 Riot game data:', game);
+
+    const riotClientCandidates = this.getRiotClientCandidates(game);
+    const riotLaunchArgs = this.extractRiotLaunchArgs(game);
+    const riotClientPath = riotClientCandidates.find((candidate) => candidate && fs.existsSync(candidate));
+
+    if (riotClientPath) {
+      console.log('👊 Launching Riot client:', riotClientPath, 'Args:', riotLaunchArgs);
+      return new Promise((resolve) => {
+        const riotCommand = `start "" "${riotClientPath}"${riotLaunchArgs.length ? ` ${riotLaunchArgs.join(' ')}` : ''}`;
+        exec(riotCommand, { shell: true }, (error) => {
+          if (error) {
+            console.error('❌ Riot client launch failed:', error);
+            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            return;
+          }
+
+          resolve({
+            success: true,
+            message: riotLaunchArgs.length > 0 ? `Launched ${game.name}` : 'Riot Client opened - please launch the game manually'
+          });
+        });
+      });
+    }
+
+    if (game.executablePath && fs.existsSync(game.executablePath)) {
+      console.log('👊 Launching Riot executable path:', game.executablePath);
+      return new Promise((resolve) => {
+        const executableCommand = `start "" "${game.executablePath}"${riotLaunchArgs.length ? ` ${riotLaunchArgs.join(' ')}` : ''}`;
+        exec(executableCommand, { shell: true }, (error) => {
+          if (error) {
+            console.error('❌ Riot executable launch failed:', error);
+            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            return;
+          }
+
+          resolve({ success: true, message: `Launched ${game.name}` });
+        });
+      });
+    }
+
+    if (game.executable) {
+      console.log('👊 Falling back to raw Riot command:', game.executable);
+      return new Promise((resolve) => {
+        exec(game.executable, { shell: true }, (error) => {
+          if (error) {
+            console.error('❌ Riot raw command fallback failed:', error);
+            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            return;
+          }
+
+          resolve({ success: true, message: `Launched ${game.name}` });
+        });
+      });
+    }
+
+    return { success: false, message: 'Riot Client not found for launch' };
+  }
+
+  async launchCurseForge(game) {
+    console.log('⛏️ CurseForge game data:', game);
+
+    if (typeof game.executable === 'string' && game.executable.startsWith('curseforge://')) {
+      console.log('⛏️ Opening CurseForge protocol:', game.executable);
+      await this.shell.openExternal(game.executable);
+      return { success: true, message: `Launched ${game.name}` };
+    }
+
+    if (game.launchId) {
+      const launchUrl = `curseforge://launch/${game.launchId}`;
+      console.log('⛏️ Opening CurseForge launch URL:', launchUrl);
+      await this.shell.openExternal(launchUrl);
+      return { success: true, message: `Launched ${game.name}` };
+    }
+
+    if (game.executablePath && fs.existsSync(game.executablePath)) {
+      console.log('⛏️ Launching CurseForge executable path:', game.executablePath);
+      exec(`start "" "${game.executablePath}"`, { shell: true }, () => {});
+      return { success: true, message: `Launched ${game.name}` };
+    }
+
+    const curseForgeCandidates = [
+      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'CurseForge', 'CurseForge.exe'),
+      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Overwolf', 'CurseForge', 'CurseForge.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Overwolf', 'CurseForge', 'CurseForge.exe')
+    ];
+
+    const curseForgePath = curseForgeCandidates.find((candidate) => candidate && fs.existsSync(candidate));
+    if (curseForgePath) {
+      console.log('⛏️ Opening CurseForge client:', curseForgePath);
+      exec(`start "" "${curseForgePath}"`, { shell: true }, () => {});
+      return { success: true, message: 'CurseForge opened - please launch the instance manually' };
+    }
+
+    return { success: false, message: 'CurseForge launcher not found for launch' };
+  }
+
+  async launchAmazon(game) {
+    console.log('📦 Amazon game data:', game);
+
+    if (game.executablePath && fs.existsSync(game.executablePath)) {
+      console.log('📦 Launching Amazon game executable directly:', game.executablePath);
+      return new Promise((resolve) => {
+        exec(`start "" "${game.executablePath}"`, { shell: true }, (error) => {
+          if (error) {
+            console.error('❌ Direct Amazon executable launch failed:', error);
+            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+          } else {
+            resolve({ success: true, message: `Launched ${game.name}` });
+          }
+        });
+      });
+    }
+
+    const amazonAppCandidates = [
+      path.join(process.env.LOCALAPPDATA || '', 'Amazon Games', 'App', 'Amazon Games.exe'),
+      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Amazon Games', 'Amazon Games.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Amazon Games', 'Amazon Games.exe')
+    ];
+
+    const amazonAppPath = amazonAppCandidates.find((candidate) => candidate && fs.existsSync(candidate));
+    if (amazonAppPath) {
+      console.log('📦 Opening Amazon Games app:', amazonAppPath);
+      exec(`start "" "${amazonAppPath}"`, { shell: true }, () => {});
+      return { success: true, message: 'Amazon Games opened - please launch the game manually' };
+    }
+
+    return { success: false, message: 'Amazon Games app not found for launch' };
+  }
+
+  async launchItch(game) {
+    console.log('🎲 Itch.io game data:', game);
+
+    if (game.executablePath && fs.existsSync(game.executablePath)) {
+      console.log('🎲 Launching itch.io game executable directly:', game.executablePath);
+      return new Promise((resolve) => {
+        exec(`start "" "${game.executablePath}"`, { shell: true }, (error) => {
+          if (error) {
+            console.error('❌ Direct itch.io executable launch failed:', error);
+            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+          } else {
+            resolve({ success: true, message: `Launched ${game.name}` });
+          }
+        });
+      });
+    }
+
+    const itchAppCandidates = [
+      path.join(process.env.LOCALAPPDATA || '', 'itch', 'itch.exe'),
+      path.join(process.env.LOCALAPPDATA || '', 'itch.io', 'itch.exe'),
+      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'itch', 'itch.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'itch', 'itch.exe')
+    ];
+
+    const itchAppPath = itchAppCandidates.find((candidate) => candidate && fs.existsSync(candidate));
+    if (itchAppPath) {
+      console.log('🎲 Opening itch.io app:', itchAppPath);
+      exec(`start "" "${itchAppPath}"`, { shell: true }, () => {});
+      return { success: true, message: 'itch.io opened - please launch the game manually' };
+    }
+
+    return { success: false, message: 'itch.io app not found for launch' };
   }
 }
 

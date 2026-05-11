@@ -9,7 +9,8 @@ jest.mock('./LibraryDataService', () => ({
 jest.mock('./LibraryScannerService', () => ({
   LibraryScannerService: {
     isElectronRuntime: jest.fn(),
-    scanAllLibraries: jest.fn()
+    scanAllLibraries: jest.fn(),
+    getLastScanDebug: jest.fn()
   }
 }));
 
@@ -48,15 +49,20 @@ describe('LibraryScanCoordinatorService', () => {
     const mergedLibrary = [{ name: 'Existing Game' }, { name: 'Steam Game' }];
     mergeLibraryUpdates.mockReturnValue(mergedLibrary);
 
+    const scanReport = { summary: { totalScanned: 1 }, platformStatus: {}, platformCounts: {} };
+    LibraryScannerService.getLastScanDebug.mockReturnValue(scanReport);
+
     const result = await LibraryScanCoordinatorService.scanAndMergeLibrary({
       currentLibrary,
       assignMoodToGame
     });
 
     expect(mergeLibraryUpdates).toHaveBeenCalledWith(currentLibrary, [{ name: 'Steam Game', platform: 'Steam' }]);
+    expect(LibraryScannerService.getLastScanDebug).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
       allGames: [{ name: 'Steam Game', platform: 'Steam' }],
-      mergedLibrary
+      mergedLibrary,
+      scanReport
     });
   });
 });

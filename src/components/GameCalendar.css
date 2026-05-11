@@ -269,7 +269,7 @@
 
 .modal-overlay {
   position: fixed !important;
-  top: 0 !important;
+  top: var(--app-navbar-offset) !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
@@ -286,7 +286,7 @@
   border-radius: 12px;
   max-width: 500px;
   width: 100%;
-  max-height: 90vh;
+  max-height: calc(100vh - var(--app-navbar-offset) - 40px);
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }

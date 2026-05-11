@@ -1,7 +1,7 @@
 .level-up-toast {
   position: fixed;
-  top: 80px;
-  right: 20px;
+  top: 96px;
+  right: 24px;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border: 2px solid #fbbf24;
   border-radius: 16px;
@@ -10,6 +10,7 @@
   box-shadow: 0 0 40px rgba(251, 191, 36, 0.4);
   animation: slideIn 0.5s ease;
   overflow: hidden;
+  width: min(380px, calc(100vw - 48px));
 }
 
 .level-up-toast.exiting {
@@ -44,6 +45,7 @@
   gap: 16px;
   position: relative;
   z-index: 1;
+  min-width: 0;
 }
 
 .toast-icon {
@@ -73,7 +75,9 @@
 }
 
 .toast-text {
-  text-align: center;
+  text-align: left;
+  min-width: 0;
+  flex: 1;
 }
 
 .toast-text h4 {
@@ -81,6 +85,7 @@
   color: #fbbf24;
   font-size: 14px;
   letter-spacing: 2px;
+  line-height: 1.2;
 }
 
 .level-number {
@@ -88,6 +93,7 @@
   font-weight: 800;
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1;
   margin: 4px 0;
@@ -97,12 +103,15 @@
   margin: 0;
   color: #9ca3af;
   font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .trophy-icon {
   color: #fbbf24;
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
 }
 
 .confetti-container {
@@ -132,5 +141,33 @@
   100% {
     transform: translateY(200px) rotate(720deg);
     opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .level-up-toast {
+    top: 84px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    padding: 18px 18px;
+  }
+
+  .toast-content {
+    gap: 12px;
+  }
+
+  .toast-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .level-number {
+    font-size: 40px;
+  }
+
+  .trophy-icon {
+    width: 32px;
+    height: 32px;
   }
 }

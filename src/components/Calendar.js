@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Gamepad2, Target, PartyPopper, StickyNote, X, Edit2, Trash2 } from 'lucide-react';
+import { getDateKey } from '../services/DateKeyService';
+import StorageService from '../services/StorageService';
 import './Calendar.css';
 
 const Calendar = ({ theme }) => {
@@ -12,11 +14,11 @@ const Calendar = ({ theme }) => {
 
   // Load events and notes from localStorage on mount
   useEffect(() => {
-    const savedEvents = localStorage.getItem('gamingCalendarEvents');
-    const savedNotes = localStorage.getItem('gamingCalendarNotes');
+    const savedEvents = StorageService.get('gamingCalendarEvents', []);
+    const savedNotes = StorageService.getString('gamingCalendarNotes', '');
     
     if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
+      setEvents(savedEvents);
     }
     
     if (savedNotes) {
@@ -27,13 +29,13 @@ const Calendar = ({ theme }) => {
   // Save events to localStorage whenever they change
   useEffect(() => {
     if (events.length > 0) {
-      localStorage.setItem('gamingCalendarEvents', JSON.stringify(events));
+      StorageService.set('gamingCalendarEvents', events);
     }
   }, [events]);
 
   // Save notes to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('gamingCalendarNotes', notes);
+    StorageService.setString('gamingCalendarNotes', notes);
   }, [notes]);
 
   // Event types with colors and icons
@@ -100,7 +102,7 @@ const Calendar = ({ theme }) => {
   // Get events for a specific date
   const getEventsForDate = (date) => {
     if (!date) return [];
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getDateKey(date);
     return events.filter(event => event.date === dateStr);
   };
 
@@ -304,7 +306,7 @@ const EventModal = ({ theme, onClose, onSave, eventTypes, editingEvent, selected
   const [formData, setFormData] = useState({
     title: editingEvent?.title || '',
     type: editingEvent?.type || 'release',
-    date: editingEvent?.date || (selectedDate ? selectedDate.toISOString().split('T')[0] : ''),
+    date: editingEvent?.date || (selectedDate ? getDateKey(selectedDate) : ''),
     description: editingEvent?.description || ''
   });
 

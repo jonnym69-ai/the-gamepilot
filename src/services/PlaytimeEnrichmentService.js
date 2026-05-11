@@ -1,4 +1,5 @@
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
+import { getDateKey } from './DateKeyService';
 
 /**
  * Service to enrich game library with playtime data from session history
@@ -35,7 +36,7 @@ export class PlaytimeEnrichmentService {
       let total = 0;
 
       gameSessions.forEach(session => {
-        const sessionDate = session.date || new Date(session.startTime).toISOString().split('T')[0];
+        const sessionDate = session.date || getDateKey(session.startTime);
         const minutes = session.playtimeMinutes || session.duration || 0;
         
         if (minutes > 0) {
@@ -100,7 +101,7 @@ export class PlaytimeEnrichmentService {
     const datesWithActivity = new Set();
 
     history.forEach(session => {
-      const sessionDate = session.date || new Date(session.startTime).toISOString().split('T')[0];
+      const sessionDate = session.date || getDateKey(session.startTime);
       if (sessionDate >= startDate && sessionDate <= endDate) {
         datesWithActivity.add(sessionDate);
       }

@@ -1,4 +1,6 @@
 // FeatureTracker.js - Tracks feature usage and user preferences
+import StorageService from './StorageService';
+
 export class FeatureTracker {
   static STORAGE_KEY = 'featureTracking';
 
@@ -13,7 +15,7 @@ export class FeatureTracker {
   // Get all tracking data
   static getTrackingData() {
     try {
-      const data = localStorage.getItem(this.STORAGE_KEY);
+      const data = StorageService.getString(this.STORAGE_KEY);
       return data ? JSON.parse(data) : this.getDefaultData();
     } catch (error) {
       console.error('Error reading feature tracking:', error);
@@ -48,7 +50,7 @@ export class FeatureTracker {
       const data = this.getTrackingData();
       data.features[feature] = (data.features[feature] || 0) + 1;
       data.lastUpdated = Date.now();
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      StorageService.setString(this.STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Error tracking feature usage:', error);
     }
@@ -62,7 +64,7 @@ export class FeatureTracker {
       const data = this.getTrackingData();
       data.moods[mood] = (data.moods[mood] || 0) + 1;
       data.lastUpdated = Date.now();
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      StorageService.setString(this.STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Error tracking mood:', error);
     }
@@ -76,7 +78,7 @@ export class FeatureTracker {
       const data = this.getTrackingData();
       data.genres[genre] = (data.genres[genre] || 0) + 1;
       data.lastUpdated = Date.now();
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      StorageService.setString(this.STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Error tracking genre:', error);
     }
@@ -102,7 +104,7 @@ export class FeatureTracker {
       
       data.mostPlayedGames[gameKey].playCount += 1;
       data.lastUpdated = Date.now();
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      StorageService.setString(this.STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Error tracking game play:', error);
     }
@@ -119,7 +121,7 @@ export class FeatureTracker {
       if (data.mostPlayedGames[gameKey]) {
         data.mostPlayedGames[gameKey].totalPlaytime += minutes;
         data.lastUpdated = Date.now();
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+        StorageService.setString(this.STORAGE_KEY, JSON.stringify(data));
       }
     } catch (error) {
       console.error('Error updating game playtime:', error);
@@ -184,7 +186,7 @@ export class FeatureTracker {
   // Clear all tracking data
   static clearAll() {
     try {
-      localStorage.removeItem(this.STORAGE_KEY);
+      StorageService.remove(this.STORAGE_KEY);
     } catch (error) {
       console.error('Error clearing tracking data:', error);
     }

@@ -12,13 +12,20 @@ const normalizePlatformName = (platform) => {
   }
 
   const lowerPlatform = normalizedPlatform.toLowerCase();
+  const compactPlatform = lowerPlatform.replace(/[^a-z0-9]+/g, '');
   if (lowerPlatform === 'origin') return 'EA';
   if (lowerPlatform === 'ea app') return 'EA';
   if (lowerPlatform === 'uplay') return 'Ubisoft';
   if (lowerPlatform === 'ubisoft connect') return 'Ubisoft';
   if (lowerPlatform === 'battlenet') return 'Battle.net';
   if (lowerPlatform === 'riot games') return 'Riot';
+  if (compactPlatform === 'riotgames') return 'Riot';
+  if (compactPlatform === 'riotclient') return 'Riot';
   if (lowerPlatform === 'battlestate games') return 'BSG';
+  if (compactPlatform === 'battlestategames') return 'BSG';
+  if (compactPlatform === 'curseforge') return 'CurseForge';
+  if (compactPlatform === 'curseforgeapp') return 'CurseForge';
+  if (compactPlatform === 'overwolfcurseforge') return 'CurseForge';
   if (lowerPlatform === 'playstation brand') return 'PlayStation';
   return normalizedPlatform;
 };
@@ -61,6 +68,67 @@ const mergePlaytimeBucket = (existingBucket = {}, incomingBucket = {}) => ({
   ...(incomingBucket || {})
 });
 
+/**
+ * Canonical key for cross-launcher deduplication.
+ *
+ * Conservative: only strips trademark/registered/copyright symbols and
+ * non-alphanumeric characters, then lowercases. Does NOT strip edition
+ * suffixes ("GOTY", "Definitive Edition", etc.) because those usually
+ * mark genuinely different SKUs the user purchased separately. Better
+ * to under-merge than to incorrectly fuse two distinct purchases.
+ *
+ * Returns null when the resulting key would be empty so the caller can
+ * fall back to exact-name matching for edge cases (e.g. names made
+ * entirely of punctuation).
+ */
+const getCanonicalGameKey = (game) => {
+  const rawName = typeof game?.name === 'string' ? game.name : '';
+  const stripped = rawName
+    .replace(/[\u2122\u00ae\u00a9]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+  return stripped.length > 0 ? stripped : null;
+};
+
+/**
+ * Returns the launch sources for a game. Backfills from legacy
+ * `platform` + `appid` fields when `launchSources` is absent so older
+ * library data continues to work without a migration step.
+ */
+const getLaunchSources = (game) => {
+  if (Array.isArray(game?.launchSources) && game.launchSources.length > 0) {
+    return game.launchSources
+      .filter((source) => source && typeof source === 'object' && source.platform)
+      .map((source) => ({
+        platform: normalizePlatformName(source.platform),
+        appid: source.appid || null
+      }));
+  }
+
+  if (game?.platform) {
+    return [{
+      platform: normalizePlatformName(game.platform),
+      appid: game.appid || null
+    }];
+  }
+
+  return [];
+};
+
+const mergeLaunchSources = (existingSources = [], incomingSources = []) => {
+  const seen = new Map();
+  [...existingSources, ...incomingSources].forEach((source) => {
+    if (!source || !source.platform) {
+      return;
+    }
+    const key = `${source.platform}::${source.appid || ''}`;
+    if (!seen.has(key)) {
+      seen.set(key, { platform: source.platform, appid: source.appid || null });
+    }
+  });
+  return Array.from(seen.values());
+};
+
 const normalizeGameLibraryEntry = (game) => {
   if (!game || typeof game !== 'object') {
     return null;
@@ -75,6 +143,7 @@ const normalizeGameLibraryEntry = (game) => {
     ...game,
     platform: normalizePlatformName(game?.platform),
     brandPlatform: normalizeBrandPlatformName(game?.brandPlatform, game?.platform, game),
+    launchSources: getLaunchSources(game),
     time_played: resolvedTimePlayed,
     launch_count: normalizeTrackedNumber(game?.launch_count),
     last_played: normalizeLastPlayedValue(game?.last_played),
@@ -122,9 +191,22 @@ const mergeTrackedGameData = (existingGame, incomingGame) => {
     ? Math.max(incomingLastPlayed, existingLastPlayed)
     : incomingLastPlayed ?? existingLastPlayed;
 
+  // Preserve the EXISTING entry's primary platform/appid so user-facing
+  // launch behaviour is unchanged when a re-scan finds the same game on
+  // a new launcher. The new launcher is recorded as an additional source
+  // via mergeLaunchSources below; the user can promote it later via the
+  // launch-source picker UI.
+  const mergedLaunchSources = mergeLaunchSources(
+    normalizedExistingGame.launchSources,
+    normalizedIncomingGame.launchSources
+  );
+
   return normalizeGameLibraryEntry({
     ...normalizedExistingGame,
     ...normalizedIncomingGame,
+    platform: normalizedExistingGame.platform || normalizedIncomingGame.platform,
+    appid: normalizedExistingGame.appid || normalizedIncomingGame.appid,
+    launchSources: mergedLaunchSources,
     time_played: resolvedTimePlayed,
     launch_count: resolvedLaunchCount,
     last_played: resolvedLastPlayed,
@@ -140,6 +222,26 @@ const mergeTrackedGameData = (existingGame, incomingGame) => {
   });
 };
 
+const findExistingEntryIndex = (mergedLibrary, normalizedGame) => {
+  const incomingKey = getCanonicalGameKey(normalizedGame);
+
+  // Primary path: canonical-key match (handles cross-launcher dedup,
+  // trademark differences, casing/whitespace variants).
+  if (incomingKey) {
+    const indexByKey = mergedLibrary.findIndex(
+      (game) => getCanonicalGameKey(game) === incomingKey
+    );
+    if (indexByKey >= 0) {
+      return indexByKey;
+    }
+  }
+
+  // Fallback for pathological names (all-punctuation, etc.) where the
+  // canonical key is null. Use raw-name equality so we never collapse
+  // two such entries by accident.
+  return mergedLibrary.findIndex((game) => game?.name === normalizedGame.name);
+};
+
 const mergeLibraryUpdates = (currentLibrary, newGames) => {
   if (!currentLibrary || !Array.isArray(currentLibrary)) {
     return normalizeLibraryData(newGames);
@@ -153,7 +255,7 @@ const mergeLibraryUpdates = (currentLibrary, newGames) => {
       return;
     }
 
-    const existingIndex = merged.findIndex((game) => game.name === normalizedGame.name);
+    const existingIndex = findExistingEntryIndex(merged, normalizedGame);
     if (existingIndex >= 0) {
       merged[existingIndex] = mergeTrackedGameData(merged[existingIndex], normalizedGame);
     } else {
@@ -170,5 +272,7 @@ export {
   normalizeGameLibraryEntry,
   normalizeLibraryData,
   normalizeLastPlayedValue,
-  normalizeTrackedNumber
+  normalizeTrackedNumber,
+  getCanonicalGameKey,
+  getLaunchSources
 };

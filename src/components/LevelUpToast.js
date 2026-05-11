@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Star, Trophy, Sparkles } from 'lucide-react';
+import { Trophy, Sparkles } from 'lucide-react';
 import './LevelUpToast.css';
 
 const LevelUpToast = ({ show, level, xpTotal, onClose }) => {

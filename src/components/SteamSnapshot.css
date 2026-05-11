@@ -1,0 +1,145 @@
+.steam-snapshot {
+  background: linear-gradient(160deg, rgba(59, 130, 246, 0.07), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.steam-snapshot-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #93c5fd;
+}
+.steam-snapshot-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary, #e2e8f0);
+}
+.steam-snapshot-source {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.steam-snapshot-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary, #94a3b8);
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px dashed rgba(148, 163, 184, 0.22);
+  margin-top: 12px;
+}
+.steam-snapshot-spin { animation: ss-spin 1s linear infinite; }
+@keyframes ss-spin { to { transform: rotate(360deg); } }
+
+.steam-snapshot-empty p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.5;
+}
+.steam-snapshot-enable {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+}
+.steam-snapshot-enable:hover { filter: brightness(1.08); }
+
+.steam-snapshot-reviews {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.steam-snapshot-reviews.tone-good { border-color: rgba(16, 185, 129, 0.4); }
+.steam-snapshot-reviews.tone-good strong:first-child { color: #6ee7b7; }
+.steam-snapshot-reviews.tone-ok strong:first-child { color: #93c5fd; }
+.steam-snapshot-reviews.tone-meh strong:first-child { color: #fde68a; }
+.steam-snapshot-reviews.tone-bad { border-color: rgba(239, 68, 68, 0.4); }
+.steam-snapshot-reviews.tone-bad strong:first-child { color: #fca5a5; }
+
+.steam-snapshot-reviews-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.steam-snapshot-reviews-line strong { font-size: 13px; }
+.steam-snapshot-pct {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 600;
+}
+
+.steam-snapshot-reviews-meta {
+  font-size: 11.5px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.steam-snapshot-divider {
+  margin: 0 6px;
+  opacity: 0.6;
+}
+
+.steam-snapshot-achievements {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  font-size: 12.5px;
+  color: var(--text-primary, #e2e8f0);
+}
+.steam-snapshot-achievements > svg { margin-top: 2px; color: #fbbf24; flex-shrink: 0; }
+.steam-snapshot-ach-line strong { color: #fbbf24; }
+.steam-snapshot-ach-meta {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--text-secondary, #94a3b8);
+}
+.steam-snapshot-ach-meta strong { color: #fca5a5; }
+
+.steam-snapshot-links {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.steam-snapshot-links button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.steam-snapshot-links button:hover {
+  color: #e2e8f0;
+  border-color: rgba(147, 197, 253, 0.5);
+}

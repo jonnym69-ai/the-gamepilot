@@ -1,4 +1,6 @@
 // OfflineManager.js - Manages offline/online state and data synchronization
+import StorageService from './services/StorageService';
+
 export class OfflineManager {
   static isOnline = navigator.onLine;
   static listeners = new Set();
@@ -89,15 +91,16 @@ export class OfflineManager {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const storedPrices = JSON.parse(localStorage.getItem('gamePrices') || '{}');
-      storedPrices[appid] = {
+            const storedPrices = StorageService.get('gamePrices') || '{}';
+      const storedPricesJson = JSON.parse(storedPrices);
+      storedPricesJson[appid] = {
         price: priceData.final_formatted,
         priceNumeric: priceData.final / 100,
         lastUpdate: new Date().toISOString()
       };
-      localStorage.setItem('gamePrices', JSON.stringify(storedPrices));
+      StorageService.set('gamePrices', JSON.stringify(storedPricesJson));
 
-      return { success: true, data: storedPrices[appid] };
+      return { success: true, data: storedPricesJson[appid] };
     } catch (error) {
       return { success: false, error: error.message };
     }

@@ -1,4 +1,6 @@
 // DataExportService.js - Export and backup library, achievements, and game data
+import StorageService from './StorageService';
+
 export class DataExportService {
   // Export library as JSON
   static exportLibraryAsJSON(library, filename = null) {
@@ -64,7 +66,7 @@ export class DataExportService {
   // Export achievements as JSON
   static exportAchievementsAsJSON(filename = null) {
     try {
-      const unlockedAchievements = JSON.parse(localStorage.getItem('unlockedAchievements') || '[]');
+      const unlockedAchievements = StorageService.get('unlockedAchievements', []);
       
       const exportData = {
         exportDate: new Date().toISOString(),
@@ -84,10 +86,10 @@ export class DataExportService {
   // Export all data (library + achievements + game launch data)
   static exportAllDataAsJSON(library, filename = null) {
     try {
-      const unlockedAchievements = JSON.parse(localStorage.getItem('unlockedAchievements') || '[]');
-      const gameLaunchData = JSON.parse(localStorage.getItem('gameLaunchData') || '{}');
-      const featureTracking = JSON.parse(localStorage.getItem('featureTracking') || '{}');
-      const rollingAchievements = JSON.parse(localStorage.getItem('rollingAchievements') || '{}');
+      const unlockedAchievements = StorageService.get('unlockedAchievements', []);
+      const gameLaunchData = StorageService.get('gameLaunchData', {});
+      const featureTracking = StorageService.get('featureTracking', {});
+      const rollingAchievements = StorageService.get('rollingAchievements', {});
 
       const exportData = {
         exportDate: new Date().toISOString(),
@@ -142,7 +144,7 @@ export class DataExportService {
         try {
           const data = JSON.parse(e.target.result);
           const achievements = data.achievements || [];
-          localStorage.setItem('unlockedAchievements', JSON.stringify(achievements));
+          StorageService.set('unlockedAchievements', achievements);
           resolve(achievements);
         } catch (error) {
           reject(new Error('Invalid JSON file format'));
@@ -165,22 +167,22 @@ export class DataExportService {
           
           // Import achievements
           if (data.achievements && data.achievements.achievements) {
-            localStorage.setItem('unlockedAchievements', JSON.stringify(data.achievements.achievements));
+            StorageService.set('unlockedAchievements', data.achievements.achievements);
           }
 
           // Import game launch data
           if (data.gameLaunchData) {
-            localStorage.setItem('gameLaunchData', JSON.stringify(data.gameLaunchData));
+            StorageService.set('gameLaunchData', data.gameLaunchData);
           }
 
           // Import feature tracking
           if (data.featureTracking) {
-            localStorage.setItem('featureTracking', JSON.stringify(data.featureTracking));
+            StorageService.set('featureTracking', data.featureTracking);
           }
 
           // Import rolling achievements
           if (data.rollingAchievements) {
-            localStorage.setItem('rollingAchievements', JSON.stringify(data.rollingAchievements));
+            StorageService.set('rollingAchievements', data.rollingAchievements);
           }
 
           const games = data.library && data.library.games ? data.library.games : [];
@@ -211,8 +213,8 @@ export class DataExportService {
   // Get backup summary
   static getBackupSummary(library) {
     try {
-      const unlockedAchievements = JSON.parse(localStorage.getItem('unlockedAchievements') || '[]');
-      const gameLaunchData = JSON.parse(localStorage.getItem('gameLaunchData') || '{}');
+      const unlockedAchievements = StorageService.get('unlockedAchievements', []);
+      const gameLaunchData = StorageService.get('gameLaunchData', {});
       const totalPlaytime = Object.values(gameLaunchData).reduce((sum, game) => sum + (game.totalPlaytime || 0), 0);
 
       return {

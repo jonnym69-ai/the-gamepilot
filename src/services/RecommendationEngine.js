@@ -1,9 +1,12 @@
 // RecommendationEngine.js - Provides game recommendations based on mood, genre, and time
 import { GenreMoodMapper } from './GenreMoodMapper';
+import { StartupPersonalizationService } from './StartupPersonalizationService';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import { RecommendationExplainer } from './RecommendationExplainer';
+import { getActiveRecommendationWeights } from './RecommendationWeights';
 import { mapGameGenresToValid, getMoodScoresForGame } from '../constants/GenresMoods';
+import StorageService from './StorageService';
 
 const PERFECT_PLAY_TIME_FILTERS = Object.freeze({
   quick: {
@@ -53,10 +56,14 @@ export class RecommendationEngine {
    * Higher score = better recommendation
    */
   static scoreGameByBehavior(game, mood, genre, timeAvailable = null) {
-    let score = 50; // Base score
+    const w = getActiveRecommendationWeights();
+    let score = w.base;
 
     const estimatedSessionMinutes = PersonaPerformanceInsights.estimateSessionMinutes(game);
     const profile = UserBehaviorProfile.getProfile();
+    const startupSeed = StartupPersonalizationService.getSeededRecommendationContext();
+    const startupInfluence = UserBehaviorProfile.getStartupInfluenceSummary();
+    const normalizedGenres = mapGameGenresToValid(game?.genres);
 
     // Check if profile has meaningful data
     const hasProfileData = profile && (
@@ -65,46 +72,75 @@ export class RecommendationEngine {
       (profile.playstylePatterns && profile.playstylePatterns.avgSessionLength > 0)
     );
 
-    // Mood completion rate bonus (0-30 points)
+    // Mood completion rate bonus
     if (mood && hasProfileData) {
       const moodRate = UserBehaviorProfile.getMoodCompletionRate(mood);
-      if (moodRate > 70) {
-        score += 30; // High success with this mood
-      } else if (moodRate > 50) {
-        score += 20;
+      if (moodRate > w.moodHighRateThreshold) {
+        score += w.moodHighRateBonus;
+      } else if (moodRate > w.moodMediumRateThreshold) {
+        score += w.moodMediumRateBonus;
       } else if (moodRate > 0) {
-        score += 10;
+        score += w.moodLowRateBonus;
       }
     }
 
-    // Genre completion rate bonus (0-20 points)
+    // Genre completion rate bonus
     if (genre && hasProfileData) {
       const genreRate = UserBehaviorProfile.getGenreCompletionRate(genre);
-      if (genreRate > 70) {
-        score += 20; // High success with this genre
-      } else if (genreRate > 50) {
-        score += 12;
+      if (genreRate > w.genreHighRateThreshold) {
+        score += w.genreHighRateBonus;
+      } else if (genreRate > w.genreMediumRateThreshold) {
+        score += w.genreMediumRateBonus;
       } else if (genreRate > 0) {
-        score += 6;
+        score += w.genreLowRateBonus;
       }
     }
 
-    // Session length match bonus (0-15 points)
+    // Session length match bonus
     if (hasProfileData) {
       const avgSession = profile.playstylePatterns.avgSessionLength;
       if (avgSession > 0 && estimatedSessionMinutes) {
-        const diff = Math.abs(estimatedSessionMinutes - avgSession) / 15;
+        const diff = Math.abs(estimatedSessionMinutes - avgSession) / w.sessionMatchDiffDivisor;
         if (diff < 1) {
-          score += 15; // Perfect session length match
+          score += w.sessionPerfectMatchBonus;
         } else if (diff < 2) {
-          score += 10;
+          score += w.sessionCloseMatchBonus;
         } else if (diff < 3) {
-          score += 5;
+          score += w.sessionNearMatchBonus;
         }
       }
     }
 
-    // Persona alignment bonus (0-35 points)
+    if (startupSeed) {
+      const seedMultiplier = startupInfluence?.active ? startupInfluence.seedWeight : 1;
+
+      if (mood && Array.isArray(startupSeed.moods) && startupSeed.moods.includes(mood)) {
+        const seedMoodBonus = hasProfileData ? w.seedMoodMatchWithProfile : w.seedMoodMatchWithoutProfile;
+        score += Math.round(seedMoodBonus * seedMultiplier);
+      }
+
+      if (genre && Array.isArray(startupSeed.genres) && startupSeed.genres.includes(genre)) {
+        const seedGenreBonus = hasProfileData ? w.seedGenreMatchWithProfile : w.seedGenreMatchWithoutProfile;
+        score += Math.round(seedGenreBonus * seedMultiplier);
+      }
+
+      if (Array.isArray(startupSeed.genres) && startupSeed.genres.some((seedGenre) => normalizedGenres.includes(seedGenre))) {
+        const seedOverlapBonus = hasProfileData ? w.seedGenreOverlapWithProfile : w.seedGenreOverlapWithoutProfile;
+        score += Math.round(seedOverlapBonus * seedMultiplier);
+      }
+
+      const preferredMinutes = this.getAvailableMinutes(startupSeed.sessionPreference);
+      if (!hasProfileData && preferredMinutes && estimatedSessionMinutes) {
+        const seedDiff = Math.abs(preferredMinutes - estimatedSessionMinutes);
+        if (seedDiff <= w.seedSessionCloseMaxDiffMin) {
+          score += Math.round(w.seedSessionCloseBonus * seedMultiplier);
+        } else if (seedDiff <= w.seedSessionNearMaxDiffMin) {
+          score += Math.round(w.seedSessionNearBonus * seedMultiplier);
+        }
+      }
+    }
+
+    // Persona alignment bonus
     if (hasProfileData) {
       const personaAlignment = UserBehaviorProfile.getPersonaAlignmentScore({
         mood,
@@ -112,60 +148,60 @@ export class RecommendationEngine {
         sessionMinutes: estimatedSessionMinutes
       });
       if (personaAlignment > 0) {
-        score += Math.round(personaAlignment * 0.35);
+        score += Math.round(personaAlignment * w.personaAlignmentMultiplier);
       }
     }
 
-    // Hardware readiness bonus/penalty (±25 points)
+    // Hardware readiness bonus/penalty
     const compatibility = PersonaPerformanceInsights.getCompatibility(game);
     if (compatibility) {
       score += PersonaPerformanceInsights.getHardwareScoreBonus(compatibility);
       if (!compatibility.canRun || compatibility.settingsLevel === 'cannot_run') {
-        score -= 35; // Hard fail if machine cannot run it
+        score -= w.hardwareCannotRunPenalty;
       }
     }
 
-    // Unplayed games bonus (0-10 points) - encourage discovery
+    // Unplayed games bonus - encourage discovery
     if (!game.time_played || game.time_played === 0) {
-      score += 10;
+      score += w.unplayedBonus;
     }
 
-    // Recently played penalty (-15 points) - avoid repetition
+    // Recently played penalty - avoid repetition
     if (game.last_played) {
       const lastPlayedTimestamp = getLastPlayedTimestamp(game.last_played);
       const daysSincePlay = lastPlayedTimestamp > 0
         ? (Date.now() - lastPlayedTimestamp) / (1000 * 60 * 60 * 24)
         : Infinity;
       if (daysSincePlay < 7) {
-        score -= 15; // Penalize recently played
+        score -= w.recentlyPlayedWeekPenalty;
       } else if (daysSincePlay < 14) {
-        score -= 8;
+        score -= w.recentlyPlayedFortnightPenalty;
       }
     }
 
-    // Time availability match (0-10 points)
+    // Time availability match
     if (timeAvailable && estimatedSessionMinutes) {
       if (estimatedSessionMinutes <= timeAvailable) {
-        score += 10;
-      } else if (estimatedSessionMinutes <= timeAvailable * 1.5) {
-        score += 5;
+        score += w.timeAvailabilityFitBonus;
+      } else if (estimatedSessionMinutes <= timeAvailable * w.timeAvailabilityAlmostFitMultiplier) {
+        score += w.timeAvailabilityAlmostFitBonus;
       }
     }
 
-    // Replay Intent Multiplier
+    // Replay Intent
     if (game.replayIntent) {
       switch (game.replayIntent) {
         case 'active':
-          score += 25; // Currently playing -> highly recommend
+          score += w.replayIntentActiveBonus;
           break;
         case 'soon':
-          score += 15; // Planning to play soon
+          score += w.replayIntentSoonBonus;
           break;
         case 'endless':
-          score += 5; // Endless games are always decent fallbacks
+          score += w.replayIntentEndlessBonus;
           break;
         case 'finished':
-          score -= 20; // Finished games usually aren't played again immediately
+          score -= w.replayIntentFinishedPenalty;
           break;
         case 'none':
         default:
@@ -173,7 +209,7 @@ export class RecommendationEngine {
       }
     }
 
-    return Math.max(0, Math.min(100, score)); // Clamp 0-100
+    return Math.max(w.scoreMin, Math.min(w.scoreMax, score));
   }
 
   static normalizeTimeConstraint(timeConstraint) {
@@ -291,12 +327,14 @@ export class RecommendationEngine {
     }
 
     const resolvedGenre = genre || this.getPrimaryGenre(game);
+    const isExploration = !!game?._isExplorationPick;
 
     return {
       game,
       mood: mood || game?.mood || null,
       genre: resolvedGenre,
       estimatedSessionMinutes: PersonaPerformanceInsights.estimateSessionMinutes(game) || null,
+      isExploration,
       explanation: RecommendationExplainer.getDetailedExplanation(
         game,
         mood,
@@ -364,7 +402,7 @@ export class RecommendationEngine {
     }
 
     try {
-      const parsed = JSON.parse(localStorage.getItem('recentlyRecommended') || '[]');
+      const parsed = StorageService.get('recentlyRecommended', []);
       const validRecent = Array.isArray(parsed)
         ? parsed.filter((entry) => entry?.name && now - Number(entry.timestamp || 0) < RECENTLY_RECOMMENDED_TTL_MS)
         : [];
@@ -384,7 +422,7 @@ export class RecommendationEngine {
         name: game.name,
         timestamp: now
       }));
-      localStorage.setItem('recentlyRecommended', JSON.stringify([...validRecent, ...newRecent]));
+      StorageService.set('recentlyRecommended', [...validRecent, ...newRecent]);
     } catch (error) {
       console.warn('RecommendationEngine: failed to persist recent recommendations', error);
     }
@@ -484,6 +522,86 @@ export class RecommendationEngine {
     return finalRecommendations.slice(0, count);
   }
 
+  /**
+   * Replace the LAST slot of a multi-pick recommendation with a game from a
+   * genre the user barely touches (or has never played).  This is the
+   * "exploration slot" — a small, predictable surprise that breaks filter
+   * bubbles without randomising the whole result set.
+   *
+   * Only activates when:
+   *   - explorationSlotEnabled weight is truthy
+   *   - the caller asked for >= explorationMinPicks results
+   *   - the result list is already full enough to have a last slot
+   *
+   * Returns a new array (does not mutate the input).
+   */
+  static injectExplorationPick(finalRecommendations, library, validRecent, mood, availableMinutes, count) {
+    const w = getActiveRecommendationWeights();
+    if (!w.explorationSlotEnabled || count < w.explorationMinPicks || finalRecommendations.length < w.explorationMinPicks) {
+      return finalRecommendations;
+    }
+
+    // Build per-genre familiarity from library playtime
+    const genreMinutes = {};
+    let maxMinutes = 0;
+    library.forEach((game) => {
+      const minutes = Number(game?.time_played) || 0;
+      if (!minutes) return;
+      mapGameGenresToValid(game?.genres).forEach((genre) => {
+        genreMinutes[genre] = (genreMinutes[genre] || 0) + minutes;
+        if (genreMinutes[genre] > maxMinutes) maxMinutes = genreMinutes[genre];
+      });
+    });
+
+    const seenNames = new Set(finalRecommendations.map((g) => g?.name).filter(Boolean));
+    const recentNames = new Set(validRecent.map((e) => e?.name).filter(Boolean));
+
+    const candidates = library
+      .filter((game) => {
+        if (!game || seenNames.has(game.name) || recentNames.has(game.name)) return false;
+        if (w.explorationRequireRunnable) {
+          const compat = PersonaPerformanceInsights.getCompatibility(game);
+          if (compat && compat.canRun === false) return false;
+        }
+        return true;
+      })
+      .map((game) => {
+        const genres = mapGameGenresToValid(game?.genres);
+        // Use the LEAST-familiar genre on the game — a multi-genre title with
+        // one rare angle (e.g. "Action + Puzzle" for a heavy-Action user)
+        // should still surface as exploration on its Puzzle side.
+        let novelGenre = genres[0] || null;
+        let minFamiliarity = 1;
+        if (maxMinutes > 0) {
+          genres.forEach((g) => {
+            const fam = (genreMinutes[g] || 0) / maxMinutes;
+            if (fam < minFamiliarity) {
+              minFamiliarity = fam;
+              novelGenre = g;
+            }
+          });
+        } else {
+          minFamiliarity = 0;
+        }
+        const novelty = (1 - minFamiliarity) * w.explorationGenreNoveltyWeight;
+        const unplayed = (!game?.time_played || game.time_played === 0) ? w.explorationUnplayedBonus : 0;
+        const base = this.scoreGameByBehavior(game, mood, novelGenre, availableMinutes);
+        const score = base + novelty + unplayed;
+        return { game, score, novelGenre, familiarity: minFamiliarity };
+      })
+      .sort((left, right) => right.score - left.score);
+
+    if (candidates.length === 0) {
+      return finalRecommendations;
+    }
+
+    const result = finalRecommendations.slice();
+    // Shallow-clone so we never mutate the library entry; tag with a flag
+    // that buildRecommendationEntry promotes to entry.isExploration for UI.
+    result[count - 1] = { ...candidates[0].game, _isExplorationPick: true };
+    return result;
+  }
+
   static getPerfectPlayRecommendations(library, mood = null, selectedGenre = null, timeConstraint = null, count = 3) {
     if (!Array.isArray(library) || library.length === 0) {
       return [];
@@ -567,7 +685,7 @@ export class RecommendationEngine {
       ));
     }
 
-    const finalRecommendations = this.finalizeRecommendations(
+    let finalRecommendations = this.finalizeRecommendations(
       library,
       recommendations,
       count,
@@ -575,6 +693,14 @@ export class RecommendationEngine {
       mood,
       selectedGenre,
       availableMinutes
+    );
+    finalRecommendations = this.injectExplorationPick(
+      finalRecommendations,
+      library,
+      validRecent,
+      mood,
+      availableMinutes,
+      count
     );
     this.persistRecentRecommendations(finalRecommendations, validRecent, now);
     return finalRecommendations;

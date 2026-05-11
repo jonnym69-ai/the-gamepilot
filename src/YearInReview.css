@@ -82,6 +82,31 @@
   padding: 32px 20px 64px;
 }
 
+.year-review-shell-founder {
+  --year-review-founder-accent: #fb923c;
+  --year-review-founder-glow: rgba(251, 146, 60, 0.18);
+}
+
+.year-review-shell-founder-bronze {
+  --year-review-founder-accent: #fb923c;
+  --year-review-founder-glow: rgba(251, 146, 60, 0.18);
+}
+
+.year-review-shell-founder-silver {
+  --year-review-founder-accent: #cbd5e1;
+  --year-review-founder-glow: rgba(203, 213, 225, 0.18);
+}
+
+.year-review-shell-founder-gold {
+  --year-review-founder-accent: #facc15;
+  --year-review-founder-glow: rgba(250, 204, 21, 0.2);
+}
+
+.year-review-shell-founder-platinum {
+  --year-review-founder-accent: #e5e7eb;
+  --year-review-founder-glow: rgba(229, 231, 235, 0.18);
+}
+
 .year-review-hero {
   display: flex;
   justify-content: space-between;
@@ -180,6 +205,22 @@
   cursor: wait;
 }
 
+.year-review-founder-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.42);
+  border: 1px solid var(--year-review-founder-accent, rgba(255, 255, 255, 0.18));
+  color: var(--year-review-founder-accent, #fb923c);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .year-review-status {
   display: inline-flex;
   align-items: center;
@@ -197,6 +238,20 @@
   flex-direction: column;
   gap: 22px;
   padding: 0;
+}
+
+.year-review-export-surface-founder {
+  position: relative;
+}
+
+.year-review-export-surface-founder::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 28px;
+  border: 1px solid var(--year-review-founder-accent, rgba(255,255,255,0.16));
+  box-shadow: 0 0 36px var(--year-review-founder-glow, rgba(251, 146, 60, 0.12));
+  pointer-events: none;
 }
 
 .year-review-summary-grid {
@@ -298,6 +353,51 @@
   display: block;
   margin-top: 4px;
   font-size: 1.2rem;
+}
+
+.year-review-deep-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.year-review-deep-stat-card {
+  padding: 20px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--card-bg), var(--input-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+}
+
+.year-review-deep-stat-featured {
+  grid-column: span 2;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-color) 22%, var(--card-bg)), var(--input-bg));
+}
+
+.year-review-deep-stat-card span {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--text-color);
+  opacity: 0.74;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.year-review-deep-stat-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--header-text, var(--text-color));
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.year-review-deep-stat-card p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.8;
+  font-size: 0.95rem;
 }
 
 .year-review-main-grid {
@@ -596,6 +696,10 @@
   .mix-columns {
     grid-template-columns: 1fr;
   }
+
+  .year-review-deep-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -621,8 +725,13 @@
   .year-review-main-grid,
   .identity-grid,
   .achievement-summary-strip,
-  .progression-headline {
+  .progression-headline,
+  .year-review-deep-stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .year-review-deep-stat-featured {
+    grid-column: auto;
   }
 
   .top-game-row,
@@ -645,6 +754,22 @@
 .year-review-summary-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.32);
+}
+
+.year-review-export-surface-founder .year-review-summary-card,
+.year-review-export-surface-founder .year-review-mini-card,
+.year-review-export-surface-founder .year-review-panel {
+  border-color: var(--year-review-founder-accent, var(--card-border));
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.2), 0 0 24px var(--year-review-founder-glow, rgba(251, 146, 60, 0.08));
+}
+
+.year-review-export-surface-founder .summary-card-title,
+.year-review-export-surface-founder .year-review-mini-card span,
+.year-review-export-surface-founder .identity-grid span,
+.year-review-export-surface-founder .achievement-summary-strip span,
+.year-review-export-surface-founder .mix-columns > div > span {
+  color: var(--year-review-founder-accent, var(--text-color));
+  opacity: 0.9;
 }
 
 .year-review-actions button {

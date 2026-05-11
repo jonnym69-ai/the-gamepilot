@@ -1,0 +1,86 @@
+.experience-mode-banner {
+  position: relative;
+  margin: 14px 20px 0;
+  padding: 14px 44px 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.12), rgba(255, 107, 53, 0.04));
+  border: 1px solid rgba(255, 107, 53, 0.35);
+  border-radius: 12px;
+  color: var(--text-primary, #fff);
+}
+
+.experience-mode-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.experience-mode-copy strong {
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.experience-mode-copy span {
+  font-size: 12.5px;
+  opacity: 0.78;
+}
+
+.experience-mode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.experience-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.experience-mode-btn:hover {
+  background: rgba(255, 107, 53, 0.18);
+  border-color: rgba(255, 107, 53, 0.6);
+}
+
+.experience-mode-link {
+  font-size: 12px;
+  color: var(--text-primary, #fff);
+  opacity: 0.7;
+  padding: 6px 6px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.experience-mode-link:hover { opacity: 1; }
+
+.experience-mode-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+.experience-mode-close:hover { opacity: 1; background: rgba(255,255,255,0.06); }
+
+body.compact-mode .experience-mode-banner {
+  padding: 10px 40px 10px 14px;
+  margin: 10px 16px 0;
+}

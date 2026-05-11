@@ -1,11 +1,12 @@
 // GamingEventCalendar.js - Manages gaming events and calendar functionality
+import StorageService from './StorageService';
 export class GamingEventCalendar {
   static STORAGE_KEY = 'gamingEvents';
 
   // Get or initialize gaming events
   static getEvents() {
     try {
-      return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+      return StorageService.get(this.STORAGE_KEY, {});
     } catch (error) {
       console.error('Error reading gaming events:', error);
       return {};
@@ -33,7 +34,7 @@ export class GamingEventCalendar {
       };
 
       events[dateStr].push(event);
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(events));
+      StorageService.set(this.STORAGE_KEY, events);
       return event;
     } catch (error) {
       console.error('Error adding gaming event:', error);
@@ -85,7 +86,7 @@ export class GamingEventCalendar {
         const eventIndex = events[dateStr].findIndex(e => e.id === eventId);
         if (eventIndex !== -1) {
           events[dateStr][eventIndex] = { ...events[dateStr][eventIndex], ...updates };
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(events));
+          StorageService.set(this.STORAGE_KEY, events);
           return events[dateStr][eventIndex];
         }
       }
@@ -107,7 +108,7 @@ export class GamingEventCalendar {
         if (events[dateStr].length === 0) {
           delete events[dateStr];
         }
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(events));
+        StorageService.set(this.STORAGE_KEY, events);
         return true;
       }
       return false;
@@ -172,7 +173,7 @@ export class GamingEventCalendar {
   // Clear all events
   static clearAll() {
     try {
-      localStorage.removeItem(this.STORAGE_KEY);
+      StorageService.remove(this.STORAGE_KEY);
       return true;
     } catch (error) {
       console.error('Error clearing gaming events:', error);

@@ -1,11 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
-import { Award, Calendar, Clock, Download, FileText, Gamepad2, Image, Target, TrendingUp, Trophy } from 'lucide-react';
+import { Award, Calendar, Clock, Crown, Download, Gamepad2, Image, Target, TrendingUp, Trophy } from 'lucide-react';
 import NavBar from './NavBar';
-import { DataExportService } from './services/DataExportService';
+import { AchievementTracker } from './AchievementSystem';
 import { YearInReviewService } from './services/YearInReviewService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
+import StorageService from './services/StorageService';
+import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
 import './YearInReview.css';
+
+const SUPPORT_TIER_WEIGHT = {
+  Bronze: 1,
+  Silver: 2,
+  Gold: 3,
+  Platinum: 4
+};
+
+const resolveHighestSupportTier = (tiers = []) => {
+  return tiers
+    .filter((tier) => typeof tier === 'string')
+    .sort((left, right) => (SUPPORT_TIER_WEIGHT[right] || 0) - (SUPPORT_TIER_WEIGHT[left] || 0))[0] || null;
+};
 
 const formatPlaytime = (minutes) => {
   const safeMinutes = Math.max(0, Math.round(Number(minutes) || 0));
@@ -42,11 +57,13 @@ const SkeletonCard = () => (
 
 function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, endSession, getPlaytimeStats, getMostPlayedGames }) {
   const exportRef = useRef(null);
+  const shareCardRef = useRef(null);
   const noticeTimeoutRef = useRef(null);
   const availableYears = useMemo(() => YearInReviewService.getAvailableYears(library || []), [library]);
   const [selectedYear, setSelectedYear] = useState(() => availableYears[0] || new Date().getFullYear());
   const [statusMessage, setStatusMessage] = useState('');
   const [isExportingImage, setIsExportingImage] = useState(false);
+  const [isExportingShare, setIsExportingShare] = useState(false);
   const isLoading = false;
 
   useEffect(() => {
@@ -74,6 +91,21 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     [library, selectedYear]
   );
 
+  const founderProfile = useMemo(() => {
+    const savedUsername = StorageService.getString('profileUsername', '');
+    const userFounders = StorageService.get('userFounders', []);
+
+    const localFounder = userFounders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
+    const boostTier = AchievementTracker.getPatreonBoostProfile().tier || null;
+    const tier = resolveHighestSupportTier([localFounder?.tier, boostTier]);
+
+    return {
+      name: savedUsername || 'Pilot',
+      tier,
+      isFounder: Boolean(tier)
+    };
+  }, []);
+
   const maxMonthlyHours = useMemo(() => {
     const values = Object.values(snapshot.monthly?.playtimeHours || {});
     return Math.max(1, ...values);
@@ -81,18 +113,6 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
 
   const standoutMonth = useMemo(() => Object.entries(snapshot.monthly?.playtimeHours || {})
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0] || null, [snapshot.monthly]);
-
-  const handleExportJson = useCallback(() => {
-    try {
-      const payload = YearInReviewService.buildExportPayload(library || getEmptyLibraryFallback(), selectedYear);
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      DataExportService.downloadFile(blob, `gamepilot-year-in-review-${selectedYear}.json`);
-      showStatus(`Year in Review JSON exported for ${selectedYear}.`);
-    } catch (error) {
-      console.error('Failed to export Year in Review JSON:', error);
-      showStatus('Could not export Year in Review JSON.');
-    }
-  }, [library, selectedYear, showStatus]);
 
   const handleExportImage = useCallback(async () => {
     if (!exportRef.current) {
@@ -112,7 +132,14 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
       if (!blob) {
         throw new Error('Canvas export returned an empty blob.');
       }
-      DataExportService.downloadFile(blob, `gamepilot-year-in-review-${selectedYear}.png`);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `gamepilot-year-in-review-${selectedYear}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       showStatus(`Year in Review image exported for ${selectedYear}.`);
     } catch (error) {
       console.error('Failed to export Year in Review image:', error);
@@ -122,10 +149,48 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     }
   }, [selectedYear, showStatus]);
 
+  const handleExportShareCard = useCallback(async () => {
+    if (!shareCardRef.current) {
+      showStatus('Share card not ready yet.');
+      return;
+    }
+    setIsExportingShare(true);
+    try {
+      const canvas = await html2canvas(shareCardRef.current, {
+        width: SHARE_CARD_SIZE_PX,
+        height: SHARE_CARD_SIZE_PX,
+        windowWidth: SHARE_CARD_SIZE_PX,
+        windowHeight: SHARE_CARD_SIZE_PX,
+        scale: 1,
+        useCORS: true,
+        backgroundColor: '#0d1224',
+        logging: false
+      });
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) {
+        throw new Error('Share card export returned an empty blob.');
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `gamepilot-share-${selectedYear}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showStatus(`Share card saved for ${selectedYear}.`);
+    } catch (error) {
+      console.error('Failed to export share card:', error);
+      showStatus('Could not export share card.');
+    } finally {
+      setIsExportingShare(false);
+    }
+  }, [selectedYear, showStatus]);
+
   return (
     <div className="year-review-page">
       <NavBar />
-      <div className="year-review-shell">
+      <div className={`year-review-shell ${founderProfile.isFounder ? `year-review-shell-founder year-review-shell-founder-${founderProfile.tier.toLowerCase()}` : ''}`}>
         <header className="year-review-hero">
           <div className="year-review-hero-copy">
             <span className="year-review-kicker">Local recap</span>
@@ -134,6 +199,12 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
               Revisit your top games, session rhythms, achievement moments, and progression milestones for the year.
               Everything on this page is generated from your local GamePilot data.
             </p>
+            {founderProfile.isFounder && (
+              <div className={`year-review-founder-stamp year-review-founder-stamp-${founderProfile.tier.toLowerCase()}`}>
+                <Crown size={16} />
+                <span>{founderProfile.tier} Founder Edition · {founderProfile.name}</span>
+              </div>
+            )}
           </div>
           <div className="year-review-controls">
             <label className="year-review-year-picker">
@@ -145,13 +216,18 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
               </select>
             </label>
             <div className="year-review-actions">
-              <button type="button" onClick={handleExportImage} disabled={isExportingImage}>
+              <button
+                type="button"
+                onClick={handleExportShareCard}
+                disabled={isExportingShare || !snapshot?.hasData}
+                title="Save a 1080x1080 image perfect for sharing"
+              >
                 <Image size={16} />
-                <span>{isExportingImage ? 'Exporting...' : 'Export PNG'}</span>
+                <span>{isExportingShare ? 'Saving...' : 'Save share image'}</span>
               </button>
-              <button type="button" onClick={handleExportJson}>
-                <FileText size={16} />
-                <span>Export JSON</span>
+              <button type="button" onClick={handleExportImage} disabled={isExportingImage}>
+                <Download size={16} />
+                <span>{isExportingImage ? 'Exporting...' : 'Export full recap'}</span>
               </button>
             </div>
           </div>
@@ -164,7 +240,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
           </div>
         )}
 
-        <div ref={exportRef} className="year-review-export-surface">
+        <div ref={exportRef} className={`year-review-export-surface ${founderProfile.isFounder ? `year-review-export-surface-founder year-review-export-surface-founder-${founderProfile.tier.toLowerCase()}` : ''}`}>
           <section className="year-review-summary-grid">
             {isLoading ? (
               <>
@@ -222,6 +298,51 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                     <span>Avg session</span>
                     <strong>{formatPlaytime(snapshot.summary.avgSessionMinutes)}</strong>
                   </div>
+                </article>
+              </section>
+
+              <section className="year-review-deep-stats-grid">
+                <article className="year-review-deep-stat-card year-review-deep-stat-featured">
+                  <span>Longest session</span>
+                  <strong>{snapshot.deepStats?.longestSession?.gameName || '—'}</strong>
+                  <p>
+                    {snapshot.deepStats?.longestSession
+                      ? `${formatPlaytime(snapshot.deepStats.longestSession.playtimeMinutes)} on ${snapshot.deepStats.longestSession.dateLabel || 'your biggest play day'}`
+                      : 'Finish a tracked session to reveal your biggest single sitting.'}
+                  </p>
+                </article>
+                <article className="year-review-deep-stat-card">
+                  <span>Busiest day</span>
+                  <strong>{snapshot.deepStats?.busiestDay?.dateLabel || '—'}</strong>
+                  <p>
+                    {snapshot.deepStats?.busiestDay
+                      ? `${formatPlaytime(snapshot.deepStats.busiestDay.playtimeMinutes)} across ${snapshot.deepStats.busiestDay.sessions} sessions`
+                      : 'Your most active day will appear here.'}
+                  </p>
+                </article>
+                <article className="year-review-deep-stat-card">
+                  <span>Most returned to</span>
+                  <strong>{snapshot.deepStats?.topBySessions?.name || '—'}</strong>
+                  <p>
+                    {snapshot.deepStats?.topBySessions
+                      ? `${snapshot.deepStats.topBySessions.sessions} sessions · ${formatPlaytime(snapshot.deepStats.topBySessions.totalPlaytime)}`
+                      : 'The game you kept coming back to will appear here.'}
+                  </p>
+                </article>
+                <article className="year-review-deep-stat-card">
+                  <span>Late-night runs</span>
+                  <strong>{snapshot.deepStats?.lateNightSessions || 0}</strong>
+                  <p>{formatPlaytime(snapshot.deepStats?.lateNightPlaytimeMinutes || 0)} played after-hours.</p>
+                </article>
+                <article className="year-review-deep-stat-card">
+                  <span>Weekend play</span>
+                  <strong>{snapshot.deepStats?.weekendSessions || 0}</strong>
+                  <p>{formatPlaytime(snapshot.deepStats?.weekendPlaytimeMinutes || 0)} logged on weekends.</p>
+                </article>
+                <article className="year-review-deep-stat-card">
+                  <span>Repeat games</span>
+                  <strong>{snapshot.deepStats?.gamesWithMultipleSessions || 0}</strong>
+                  <p>Games with more than one session this year.</p>
                 </article>
               </section>
 
@@ -421,6 +542,27 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
               </section>
             </>
           )}
+        </div>
+
+        {/* Offscreen share card — rasterised on demand by handleExportShareCard.
+            Kept in the DOM (not display:none) so html2canvas can read its layout. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: -99999,
+            pointerEvents: 'none',
+            opacity: 0
+          }}
+        >
+          <div ref={shareCardRef}>
+            <YearInReviewShareCard
+              snapshot={snapshot}
+              year={selectedYear}
+              username={founderProfile.name}
+            />
+          </div>
         </div>
       </div>
     </div>

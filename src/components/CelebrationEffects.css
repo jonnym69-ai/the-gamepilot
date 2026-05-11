@@ -1,0 +1,587 @@
+/* ============================================
+   CELEBRATION EFFECTS STYLES
+   ============================================ */
+
+/* Celebration Overlay Container */
+.celebration-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Confetti Pieces */
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+}
+
+.confetti-piece.circle {
+  border-radius: 50%;
+}
+
+.confetti-piece.square {
+  border-radius: 2px;
+}
+
+.confetti-piece.triangle {
+  width: 0;
+  height: 0;
+  background-color: transparent !important;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 12px solid currentColor;
+}
+
+.confetti-piece.active {
+  animation: confetti-fall 3s ease-out forwards;
+  opacity: 1;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(25vh) rotate(180deg) scale(0.9);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(50vh) rotate(360deg) scale(0.8);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translateY(75vh) rotate(540deg) scale(0.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* Sparkles */
+.sparkle {
+  position: absolute;
+  opacity: 0;
+  font-size: 20px;
+  animation: sparkle-twinkle 1.5s ease-in-out forwards;
+}
+
+.sparkle.active {
+  animation: sparkle-twinkle 1.5s ease-in-out forwards;
+}
+
+@keyframes sparkle-twinkle {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.2) rotate(45deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1) rotate(90deg);
+    opacity: 0.8;
+  }
+  75% {
+    transform: scale(1.3) rotate(135deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* XP Gain Flash */
+.xp-gain-flash {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.xp-gain-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 40px;
+  background: linear-gradient(135deg, #f5b700, #ff8c42);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(245, 183, 0, 0.5);
+  animation: xp-flash-in 0.3s ease-out, xp-flash-out 0.3s ease-in 1.2s forwards;
+}
+
+.xp-plus {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+}
+
+.xp-amount {
+  font-size: 3rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.xp-label {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@keyframes xp-flash-in {
+  0% {
+    transform: scale(0) translateY(20px);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) translateY(-5px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes xp-flash-out {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8) translateY(-30px);
+    opacity: 0;
+  }
+}
+
+/* Unlock Celebration */
+.unlock-celebration {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.unlock-card {
+  position: relative;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 48px;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.95), rgba(240, 147, 251, 0.95));
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(255, 255, 255, 0.2);
+  animation: unlock-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.unlock-card.displaying {
+  animation: unlock-settle 0.3s ease-out forwards;
+}
+
+@keyframes unlock-pop {
+  0% {
+    transform: scale(0) rotate(-10deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes unlock-settle {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.unlock-icon {
+  font-size: 4rem;
+  animation: icon-bounce 1s ease-in-out infinite;
+}
+
+@keyframes icon-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.1);
+  }
+}
+
+.unlock-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.unlock-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.unlock-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.unlock-bonus {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f5b700;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+
+/* Shimmer effect for progress bars */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Pulse glow animation */
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+  }
+}
+
+/* Progress bar animated fill */
+.progress-bar-animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-animated .progress-fill {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-bar-animated::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: progress-shine 2s ease-in-out infinite;
+}
+
+@keyframes progress-shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Streak milestone animation */
+.streak-milestone {
+  animation: streak-pulse 0.6s ease-out;
+}
+
+@keyframes streak-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+    filter: brightness(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Collection complete flash */
+.collection-complete-flash {
+  animation: complete-flash 1s ease-out;
+}
+
+@keyframes complete-flash {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  25% {
+    filter: brightness(2);
+  }
+  50% {
+    filter: brightness(1.5);
+  }
+  75% {
+    filter: brightness(2);
+  }
+}
+
+/* Animated Progress Bar */
+.animated-progress-container {
+  width: 100%;
+  position: relative;
+}
+
+.animated-progress-track {
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.animated-progress-fill {
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.animated-progress-fill.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: progress-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animated-progress-text {
+  position: absolute;
+  right: 0;
+  top: -20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Segmented Progress */
+.segmented-progress {
+  display: flex;
+  width: 100%;
+}
+
+.segment {
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+}
+
+.segment.completed {
+  opacity: 1;
+}
+
+.segment.active {
+  opacity: 1;
+}
+
+.segment-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: segment-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes segment-pulse {
+  0%, 100% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+}
+
+/* Circular Progress */
+.circular-progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circular-progress-text {
+  position: absolute;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* XP Progress Container */
+.xp-progress-container {
+  width: 100%;
+}
+
+.xp-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.xp-level-badge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f5b700;
+}
+
+.xp-remaining {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Streak Progress */
+.streak-progress {
+  width: 100%;
+}
+
+.streak-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.streak-fire {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.streak-next {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Complete state animation */
+.animated-progress-container.complete .animated-progress-fill {
+  animation: complete-pulse 0.6s ease-out;
+}
+
+@keyframes complete-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.5);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .unlock-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px 32px;
+    gap: 16px;
+  }
+
+  .unlock-text {
+    align-items: center;
+  }
+
+  .unlock-name {
+    font-size: 1.5rem;
+  }
+
+  .xp-gain-content {
+    padding: 16px 24px;
+  }
+
+  .xp-amount {
+    font-size: 2rem;
+  }
+
+  .confetti-piece {
+    width: 8px;
+    height: 8px;
+  }
+}

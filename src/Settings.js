@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Settings as SettingsIcon, Palette, Bell, Database, Download, Upload, Trash2, Save, AlertCircle, Heart, Music2, Waves, Keyboard, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Waves, Keyboard, Sparkles, Eye } from 'lucide-react';
+import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
 import NavBar from './NavBar';
@@ -8,6 +9,15 @@ import { audioManager } from './services/AudioManager';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import CollapsibleSection from './components/CollapsibleSection';
+import { isElectronRuntime, waitForElectronAPI } from './services/ElectronBridge';
+import StorageService from './services/StorageService';
+import HowLongToBeatService from './services/HowLongToBeatService';
+import PCGamingWikiService from './services/PCGamingWikiService';
+import SteamPublicService from './services/SteamPublicService';
+import SteamNewsService from './services/SteamNewsService';
+import DiskUsageService from './services/DiskUsageService';
+import WishlistService from './services/WishlistService';
+import BuyRecommendationService from './services/BuyRecommendationService';
 import './Settings.css';
 
 function Settings() {
@@ -18,12 +28,22 @@ function Settings() {
   const [autoTheme, setAutoTheme] = useState(false);
   const [themeMode, setThemeMode] = useState('custom'); // 'light', 'dark', or 'custom'
   const [cacheEnabled, setCacheEnabled] = useState(true);
+  const [hltbEnabled, setHltbEnabled] = useState(() => HowLongToBeatService.isEnabled());
+  const [pcgwEnabled, setPcgwEnabled] = useState(() => PCGamingWikiService.isEnabled());
+  const [steamSnapshotEnabled, setSteamSnapshotEnabled] = useState(() => SteamPublicService.isEnabled());
+  const [steamNewsEnabled, setSteamNewsEnabled] = useState(() => SteamNewsService.isEnabled());
+  const [diskUsageEnabled, setDiskUsageEnabled] = useState(() => DiskUsageService.isEnabled());
+  const [wishlistEnabled, setWishlistEnabled] = useState(() => WishlistService.isEnabled());
+  const [buyRecommendationsEnabled, setBuyRecommendationsEnabled] = useState(() => BuyRecommendationService.isEnabled());
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [achievementNotifications, setAchievementNotifications] = useState(true);
   const [gameLaunchNotifications, setGameLaunchNotifications] = useState(true);
   const [dailySummaryNotifications, setDailySummaryNotifications] = useState(false);
   const [scanCompleteNotifications, setScanCompleteNotifications] = useState(true);
   const [backupReminders, setBackupReminders] = useState(false);
+  const [launchOnStartup, setLaunchOnStartup] = useState(false);
+  const [startupLaunchSupported, setStartupLaunchSupported] = useState(false);
+  const [startupLaunchLoading, setStartupLaunchLoading] = useState(false);
   const [patreonCode, setPatreonCode] = useState('');
   const [activationResult, setActivationResult] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
@@ -32,38 +52,16 @@ function Settings() {
   const [customBgImage, setCustomBgImage] = useState('');
   const [customBgOverlay, setCustomBgOverlay] = useState(30);
   const [customBgPreview, setCustomBgPreview] = useState('');
-  const [ambientEnabledSetting, setAmbientEnabledSetting] = useState(() => audioManager.getSettings().ambientEnabled);
-  const [ambientSoundPack, setAmbientSoundPack] = useState(() => audioManager.getSettings().ambientSoundPack);
-  const [ambientVolume, setAmbientVolume] = useState(() => audioManager.getSettings().ambientVolume);
-  const [sfxEnabledSetting, setSfxEnabledSetting] = useState(() => audioManager.getSettings().sfxEnabled);
-  const [buttonSoundPack, setButtonSoundPack] = useState(() => audioManager.getSettings().buttonSoundPack);
-  const [sfxVolume, setSfxVolume] = useState(() => audioManager.getSettings().sfxVolume);
-  const [buttonSampleSelection, setButtonSampleSelection] = useState(() => audioManager.getButtonSampleSelection());
-  const [musicEnabled, setMusicEnabled] = useState(() => audioManager.getSettings().musicEnabled);
-  const [musicPack, setMusicPack] = useState(() => audioManager.getSettings().musicPack);
-  const [musicVolume, setMusicVolume] = useState(() => audioManager.getSettings().musicVolume);
-  const [ambientUnlocked, setAmbientUnlocked] = useState(() => audioManager.isAmbientUnlocked());
-  const [musicUnlocked, setMusicUnlocked] = useState(() => audioManager.isMusicUnlocked());
-  const [ambientRequirement, setAmbientRequirement] = useState(() => ProgressionUnlockService.getAmbientRequirement());
-  const [musicRequirement, setMusicRequirement] = useState(() => ProgressionUnlockService.getMusicRequirement());
   const [ambientPackOptions, setAmbientPackOptions] = useState(() => audioManager.getAmbientPacks());
   const [musicPackOptions, setMusicPackOptions] = useState(() => audioManager.getMusicPacks());
   const [buttonPackOptions, setButtonPackOptions] = useState(() => audioManager.getButtonPacks());
-  const [rewardPresentationCustomization, setRewardPresentationCustomization] = useState(() => ProgressionUnlockService.getRewardPresentationCustomization());
   const [libraryPresentationOptions, setLibraryPresentationOptions] = useState(() => ProgressionUnlockService.getLibraryPresentationVariants());
   const [homeLayoutOptions, setHomeLayoutOptions] = useState(() => ProgressionUnlockService.getHomeLayoutVariants());
   const [recommendationPackOptions, setRecommendationPackOptions] = useState(() => ProgressionUnlockService.getRecommendationPacks());
-  const [rewardCatalogSummary, setRewardCatalogSummary] = useState(() => ProgressionUnlockService.getRewardCatalogSummary());
   const [shortcutSettings, setShortcutSettings] = useState(() => KeyboardShortcuts.getSettings());
   const [shortcutEntries, setShortcutEntries] = useState(() => KeyboardShortcuts.getShortcutList());
-  const [recommendationStyle, setRecommendationStyle] = useState(() => localStorage.getItem('gamepilot_recommendation_style') || 'balanced');
+  const [recommendationStyle, setRecommendationStyle] = useState(() => StorageService.getString('recommendationStyle', 'balanced'));
   const { success, error: toastError } = useToast();
-  const currentAmbientPackMeta = ambientPackOptions.find((pack) => pack.id === ambientSoundPack) || null;
-  const currentMusicPackMeta = musicPackOptions.find((pack) => pack.id === musicPack) || null;
-  const currentButtonPackMeta = buttonPackOptions.find((pack) => pack.id === buttonSoundPack);
-  const currentButtonPack = currentButtonPackMeta || buttonPackOptions[0];
-  const isSampleButtonPack = currentButtonPack?.type === 'sample';
-  const currentSampleSelection = buttonSampleSelection[buttonSoundPack] || null;
   const ambientPackProgress = useMemo(() => {
     const nextUnlock = ambientPackOptions
       .filter((pack) => !pack.unlocked)
@@ -106,45 +104,17 @@ function Settings() {
       .filter(Boolean)
       .sort((left, right) => left.requiredXP - right.requiredXP || left.label.localeCompare(right.label))[0] || null;
   }, [ambientPackProgress, buttonPackProgress, musicPackProgress]);
-  const sampleEntries = useMemo(() => (
-    isSampleButtonPack && currentButtonPackMeta?.unlocked
-      ? audioManager.getSamplesForPack(buttonSoundPack)
-      : []
-  ), [buttonSoundPack, isSampleButtonPack, currentButtonPackMeta]);
-  const selectedLibraryPresentation = useMemo(() => {
-    const selectedId = rewardPresentationCustomization?.selectedLibraryVariant;
-    return libraryPresentationOptions.find((variant) => variant.id === selectedId) || libraryPresentationOptions[0] || null;
-  }, [libraryPresentationOptions, rewardPresentationCustomization]);
-  const selectedHomeLayout = useMemo(() => {
-    const selectedId = rewardPresentationCustomization?.selectedHomeLayout;
-    return homeLayoutOptions.find((layout) => layout.id === selectedId) || homeLayoutOptions[0] || null;
-  }, [homeLayoutOptions, rewardPresentationCustomization]);
-  const selectedRecommendationPack = useMemo(() => {
-    const selectedId = rewardPresentationCustomization?.selectedRecommendationPack;
-    return recommendationPackOptions.find((pack) => pack.id === selectedId) || recommendationPackOptions[0] || null;
-  }, [recommendationPackOptions, rewardPresentationCustomization]);
   const presentationRewardCounts = useMemo(() => ({
     unlocked: libraryPresentationOptions.filter((reward) => reward.unlocked).length
       + homeLayoutOptions.filter((reward) => reward.unlocked).length
       + recommendationPackOptions.filter((reward) => reward.unlocked).length,
     total: libraryPresentationOptions.length + homeLayoutOptions.length + recommendationPackOptions.length
   }), [homeLayoutOptions, libraryPresentationOptions, recommendationPackOptions]);
-  const nextPresentationUnlock = useMemo(() => {
-    return [
-      ...libraryPresentationOptions.map((reward) => ({ ...reward, category: 'Library Variant' })),
-      ...homeLayoutOptions.map((reward) => ({ ...reward, category: 'Home Layout' })),
-      ...recommendationPackOptions.map((reward) => ({ ...reward, category: 'Recommendation Pack' }))
-    ]
-      .filter((reward) => !reward.unlocked)
-      .sort((left, right) => left.requiredXP - right.requiredXP || left.name.localeCompare(right.name))[0] || null;
-  }, [homeLayoutOptions, libraryPresentationOptions, recommendationPackOptions]);
 
   const refreshRewardPresentation = useCallback(() => {
-    setRewardPresentationCustomization(ProgressionUnlockService.getRewardPresentationCustomization());
     setLibraryPresentationOptions(ProgressionUnlockService.getLibraryPresentationVariants());
     setHomeLayoutOptions(ProgressionUnlockService.getHomeLayoutVariants());
     setRecommendationPackOptions(ProgressionUnlockService.getRecommendationPacks());
-    setRewardCatalogSummary(ProgressionUnlockService.getRewardCatalogSummary());
   }, []);
 
   const refreshShortcutSettings = useCallback(() => {
@@ -153,50 +123,77 @@ function Settings() {
   }, []);
 
   const refreshAudioLocks = useCallback(() => {
-    const settings = audioManager.getSettings();
-    setAmbientEnabledSetting(settings.ambientEnabled);
-    setAmbientSoundPack(settings.ambientSoundPack);
-    setAmbientVolume(settings.ambientVolume);
-    setSfxEnabledSetting(settings.sfxEnabled);
-    setButtonSoundPack(settings.buttonSoundPack);
-    setSfxVolume(settings.sfxVolume);
-    setButtonSampleSelection(audioManager.getButtonSampleSelection());
-    setMusicEnabled(settings.musicEnabled);
-    setMusicPack(settings.musicPack);
-    setMusicVolume(settings.musicVolume);
-    setAmbientUnlocked(audioManager.isAmbientUnlocked());
-    setMusicUnlocked(audioManager.isMusicUnlocked());
-    setAmbientRequirement(ProgressionUnlockService.getAmbientRequirement());
-    setMusicRequirement(ProgressionUnlockService.getMusicRequirement());
     setAmbientPackOptions(audioManager.getAmbientPacks());
     setMusicPackOptions(audioManager.getMusicPacks());
     setButtonPackOptions(audioManager.getButtonPacks());
   }, []);
 
   useEffect(() => {
-    setDateFormat(localStorage.getItem('dateFormat') || 'DD/MM/YYYY');
-    setTimeFormat(localStorage.getItem('timeFormat') || '24-hour');
-    setTimezone(localStorage.getItem('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone);
-    setAutoTheme(localStorage.getItem('autoTheme') === 'true');
-    setThemeMode(localStorage.getItem('themeMode') || 'custom');
-    setCacheEnabled(localStorage.getItem('cacheEnabled') !== 'false');
-    
+    setDateFormat(StorageService.getString('dateFormat', 'DD/MM/YYYY'));
+    setTimeFormat(StorageService.getString('timeFormat', '24-hour'));
+    setTimezone(StorageService.getString('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone));
+    setAutoTheme(StorageService.getString('autoTheme') === 'true');
+    setThemeMode(StorageService.getString('themeMode', 'custom'));
+    setCacheEnabled(StorageService.getString('cacheEnabled', 'true') !== 'false');
+
     // Load notification settings
-    setNotificationsEnabled(localStorage.getItem('notificationsEnabled') !== 'false');
-    setAchievementNotifications(localStorage.getItem('achievementNotifications') !== 'false');
-    setGameLaunchNotifications(localStorage.getItem('gameLaunchNotifications') !== 'false');
-    setDailySummaryNotifications(localStorage.getItem('dailySummaryNotifications') === 'true');
-    setScanCompleteNotifications(localStorage.getItem('scanCompleteNotifications') !== 'false');
-    setBackupReminders(localStorage.getItem('backupReminders') === 'true');
-    setSelectedCurrency(localStorage.getItem('selectedCurrency') || 'USD');
-    
+    setNotificationsEnabled(StorageService.getString('notificationsEnabled', 'true') !== 'false');
+    setAchievementNotifications(StorageService.getString('achievementNotifications', 'true') !== 'false');
+    setGameLaunchNotifications(StorageService.getString('gameLaunchNotifications', 'true') !== 'false');
+    setDailySummaryNotifications(StorageService.getString('dailySummaryNotifications') === 'true');
+    setScanCompleteNotifications(StorageService.getString('scanCompleteNotifications', 'true') !== 'false');
+    setBackupReminders(StorageService.getString('backupReminders') === 'true');
+    setSelectedCurrency(StorageService.getString('selectedCurrency', 'USD'));
+
     // Load custom background settings
-    setCustomBgImage(localStorage.getItem('customBgImage') || '');
-    setCustomBgOverlay(parseInt(localStorage.getItem('customBgOverlay') || '30'));
+    setCustomBgImage(StorageService.getString('customBgImage', ''));
+    setCustomBgOverlay(parseInt(StorageService.getString('customBgOverlay', '30')));
     refreshAudioLocks();
     refreshRewardPresentation();
     refreshShortcutSettings();
   }, [refreshAudioLocks, refreshRewardPresentation, refreshShortcutSettings]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadStartupLaunchSettings = async () => {
+      if (!isElectronRuntime()) {
+        if (active) {
+          setStartupLaunchSupported(false);
+          setLaunchOnStartup(false);
+        }
+        return;
+      }
+
+      setStartupLaunchLoading(true);
+      try {
+        const electronAPI = await waitForElectronAPI();
+        const settings = await electronAPI?.getStartupLaunchSettings?.();
+
+        if (!active) {
+          return;
+        }
+
+        setStartupLaunchSupported(Boolean(settings?.supported));
+        setLaunchOnStartup(Boolean(settings?.enabled));
+      } catch (_error) {
+        if (active) {
+          setStartupLaunchSupported(false);
+          setLaunchOnStartup(false);
+        }
+      } finally {
+        if (active) {
+          setStartupLaunchLoading(false);
+        }
+      }
+    };
+
+    loadStartupLaunchSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleShortcutToggle = (enabled) => {
     KeyboardShortcuts.setEnabled(enabled);
@@ -221,72 +218,28 @@ function Settings() {
     success('Shortcut reset to default.');
   };
 
-  const handleAmbientToggle = (enabled) => {
-    audioManager.setAmbientEnabled(enabled);
-    setAmbientEnabledSetting(audioManager.getSettings().ambientEnabled);
-  };
+  const handleStartupLaunchToggle = async (enabled) => {
+    if (!startupLaunchSupported) {
+      return;
+    }
 
-  const handleAmbientPackChange = (packId) => {
-    audioManager.setAmbientPack(packId);
-    setAmbientSoundPack(audioManager.getSettings().ambientSoundPack);
-  };
+    setStartupLaunchLoading(true);
+    try {
+      const electronAPI = await waitForElectronAPI();
+      const result = await electronAPI?.setStartupLaunchEnabled?.(enabled);
 
-  const handleAmbientVolumeChange = (value) => {
-    setAmbientVolume(value);
-    audioManager.setAmbientVolume(value);
-  };
+      if (!result?.success) {
+        toastError(result?.message || 'Unable to update Windows startup setting.');
+        return;
+      }
 
-  const handlePreviewAmbient = () => {
-    if (ambientSoundPack === 'dynamic' || !currentAmbientPackMeta?.unlocked) return;
-    audioManager.previewAmbient(ambientSoundPack);
-  };
-
-  const handleSfxToggle = (enabled) => {
-    setSfxEnabledSetting(enabled);
-    audioManager.setSfxEnabled(enabled);
-  };
-
-  const handleButtonPackChange = (pack) => {
-    audioManager.setButtonPack(pack);
-    setButtonSoundPack(audioManager.getSettings().buttonSoundPack);
-  };
-
-  const handleMusicToggle = (enabled) => {
-    if (!musicUnlocked) return;
-    audioManager.setMusicEnabled(enabled);
-    setMusicEnabled(audioManager.getSettings().musicEnabled);
-  };
-
-  const handleMusicPackChange = (packId) => {
-    audioManager.setMusicPack(packId);
-    setMusicPack(audioManager.getSettings().musicPack);
-  };
-
-  const handleMusicVolumeChange = (value) => {
-    if (!musicUnlocked) return;
-    setMusicVolume(value);
-    audioManager.setMusicVolume(value);
-  };
-
-  const handlePreviewMusic = () => {
-    if (!musicEnabled || !musicUnlocked || !currentMusicPackMeta?.unlocked) return;
-    audioManager.previewMusicPack(musicPack);
-  };
-
-  const handlePreviewButtonSample = (file) => {
-    if (!sfxEnabledSetting || !currentButtonPackMeta?.unlocked) return;
-    audioManager.previewButtonSample(buttonSoundPack, file);
-  };
-
-  const handleSelectButtonSample = (file) => {
-    if (!sfxEnabledSetting || !currentButtonPackMeta?.unlocked) return;
-    audioManager.setButtonSampleSelection(buttonSoundPack, file);
-    setButtonSampleSelection(audioManager.getButtonSampleSelection());
-  };
-
-  const handleSfxVolumeChange = (value) => {
-    setSfxVolume(value);
-    audioManager.setSfxVolume(value);
+      setLaunchOnStartup(Boolean(result.enabled));
+      success(`Launch on Windows startup ${result.enabled ? 'enabled' : 'disabled'}.`);
+    } catch (_error) {
+      toastError('Unable to update Windows startup setting.');
+    } finally {
+      setStartupLaunchLoading(false);
+    }
   };
 
   const handleThemeModeChange = (newMode) => {
@@ -299,26 +252,26 @@ function Settings() {
     }
     // For 'custom', keep the current theme
     
-    localStorage.setItem('themeMode', newMode);
+    StorageService.setString('themeMode', newMode);
     success(`Theme mode changed to ${newMode}`);
   };
 
   const saveSettings = () => {
-    localStorage.setItem('dateFormat', dateFormat);
-    localStorage.setItem('timeFormat', timeFormat);
-    localStorage.setItem('timezone', timezone);
-    localStorage.setItem('autoTheme', autoTheme);
-    localStorage.setItem('cacheEnabled', cacheEnabled);
-    localStorage.setItem('gamepilot-theme', currentTheme); // Save theme
-    localStorage.setItem('selectedCurrency', selectedCurrency);
-    
+    StorageService.setString('dateFormat', dateFormat);
+    StorageService.setString('timeFormat', timeFormat);
+    StorageService.setString('timezone', timezone);
+    StorageService.setString('autoTheme', autoTheme);
+    StorageService.setString('cacheEnabled', cacheEnabled);
+    StorageService.setString('theme', currentTheme); // Save theme
+    StorageService.setString('selectedCurrency', selectedCurrency);
+
     // Save notification settings
-    localStorage.setItem('notificationsEnabled', notificationsEnabled);
-    localStorage.setItem('achievementNotifications', achievementNotifications);
-    localStorage.setItem('gameLaunchNotifications', gameLaunchNotifications);
-    localStorage.setItem('dailySummaryNotifications', dailySummaryNotifications);
-    localStorage.setItem('scanCompleteNotifications', scanCompleteNotifications);
-    localStorage.setItem('backupReminders', backupReminders);
+    StorageService.setString('notificationsEnabled', notificationsEnabled);
+    StorageService.setString('achievementNotifications', achievementNotifications);
+    StorageService.setString('gameLaunchNotifications', gameLaunchNotifications);
+    StorageService.setString('dailySummaryNotifications', dailySummaryNotifications);
+    StorageService.setString('scanCompleteNotifications', scanCompleteNotifications);
+    StorageService.setString('backupReminders', backupReminders);
     
     // Track settings changes for achievements
     AchievementTracker.trackFeatureUsage('settings');
@@ -327,8 +280,8 @@ function Settings() {
   };
 
   const clearCache = () => {
-    localStorage.removeItem('libraryCache');
-    localStorage.removeItem('lastSync');
+    StorageService.remove('libraryCache');
+    StorageService.remove('lastSync');
     success('Cache cleared successfully!');
   };
 
@@ -367,8 +320,8 @@ function Settings() {
       return;
     }
 
-    localStorage.setItem('customBgImage', customBgImage);
-    localStorage.setItem('customBgOverlay', customBgOverlay.toString());
+    StorageService.setString('customBgImage', customBgImage);
+    StorageService.setString('customBgOverlay', customBgOverlay.toString());
     
     // Apply custom theme
     setTheme('custom');
@@ -380,8 +333,8 @@ function Settings() {
     setCustomBgImage('');
     setCustomBgPreview('');
     setCustomBgOverlay(30);
-    localStorage.removeItem('customBgImage');
-    localStorage.removeItem('customBgOverlay');
+    StorageService.remove('customBgImage');
+    StorageService.remove('customBgOverlay');
     success('Custom background cleared!');
   };
 
@@ -407,66 +360,6 @@ function Settings() {
     }
   };
 
-  const exportSettings = () => {
-    const settings = {
-      dateFormat,
-      timeFormat,
-      timezone,
-      theme: currentTheme,
-      autoTheme,
-      notificationsEnabled,
-      achievementNotifications,
-      gameLaunchNotifications,
-      dailySummaryNotifications,
-      scanCompleteNotifications,
-      backupReminders,
-      cacheEnabled,
-      rewardPresentationCustomization,
-      exportDate: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `gamepilot-settings-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    success('Settings exported!');
-  };
-
-  const importSettings = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const settings = JSON.parse(e.target.result);
-        if (settings.dateFormat) setDateFormat(settings.dateFormat);
-        if (settings.timeFormat) setTimeFormat(settings.timeFormat);
-        if (settings.timezone) setTimezone(settings.timezone);
-        if (settings.theme) setTheme(settings.theme);
-        if (settings.autoTheme !== undefined) setAutoTheme(settings.autoTheme);
-        if (settings.notificationsEnabled !== undefined) setNotificationsEnabled(settings.notificationsEnabled);
-        if (settings.achievementNotifications !== undefined) setAchievementNotifications(settings.achievementNotifications);
-        if (settings.gameLaunchNotifications !== undefined) setGameLaunchNotifications(settings.gameLaunchNotifications);
-        if (settings.dailySummaryNotifications !== undefined) setDailySummaryNotifications(settings.dailySummaryNotifications);
-        if (settings.scanCompleteNotifications !== undefined) setScanCompleteNotifications(settings.scanCompleteNotifications);
-        if (settings.backupReminders !== undefined) setBackupReminders(settings.backupReminders);
-        if (settings.cacheEnabled !== undefined) setCacheEnabled(settings.cacheEnabled);
-        if (settings.rewardPresentationCustomization && typeof settings.rewardPresentationCustomization === 'object') {
-          ProgressionUnlockService.updateRewardPresentationCustomization(settings.rewardPresentationCustomization);
-          refreshRewardPresentation();
-        }
-        success('Settings imported successfully!');
-      } catch (err) {
-        toastError('Invalid settings file!');
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const resetSettings = () => {
     const confirmReset = window.confirm('Are you sure you want to reset all settings to defaults?');
     if (confirmReset) {
@@ -481,6 +374,10 @@ function Settings() {
       setDailySummaryNotifications(false);
       setScanCompleteNotifications(true);
       setBackupReminders(false);
+      if (startupLaunchSupported) {
+        setLaunchOnStartup(false);
+        handleStartupLaunchToggle(false);
+      }
       setCacheEnabled(true);
       success('Settings reset to defaults!');
     }
@@ -641,7 +538,7 @@ function Settings() {
                               position: 'relative'
                             }}
                           >
-                            {availableThemes[previewTheme]?.isPremium && !isThemeUnlocked(previewTheme) && (
+                            {availableThemes[previewTheme]?.isUnlockable && !isThemeUnlocked(previewTheme) && (
                               <div className="theme-wheel-lock-overlay">
                                 <Heart size={20} />
                                 <div className="theme-wheel-lock-text">Locked</div>
@@ -657,7 +554,7 @@ function Settings() {
                           <div className="theme-wheel-index">
                             {Object.keys(availableThemes).length} themes available in your collection
                           </div>
-                          <div className="theme-wheel-premium-badge" style={{ color: 'var(--text-primary)' }}>
+                          <div className="theme-wheel-access-badge" style={{ color: 'var(--text-primary)' }}>
                             <Palette size={12} />
                             Browse and switch themes from the dedicated Themes page
                           </div>
@@ -702,13 +599,14 @@ function Settings() {
                 </div>
               </CollapsibleSection>
 
-              {/* Reward Presentation Section */}
+              {/* Reward Presentation Section - Summary Only */}
               <CollapsibleSection
                 title="Reward Presentation"
-                subtitle="Equip XP-unlocked Home layouts, Library variants, and recommendation pack cosmetics."
+                subtitle="Manage presentation rewards on the dedicated Rewards page."
                 badge={`${presentationRewardCounts.unlocked}/${presentationRewardCounts.total} unlocked`}
                 icon={<Palette size={18} />}
                 className="settings-folder"
+                defaultOpen={false}
               >
                 <div className="settings-section">
                   <div className="section-header">
@@ -716,52 +614,18 @@ function Settings() {
                     <h2>Reward Presentation</h2>
                   </div>
                   <div className="presentation-reward-panel">
-                    <div className="presentation-reward-summary">
-                      <div className="presentation-reward-stat">
-                        <span className="presentation-reward-stat-label">Reward XP</span>
-                        <strong>{Number(rewardCatalogSummary?.xp || 0).toLocaleString()} XP</strong>
-                        <span className="presentation-reward-stat-caption">Local-only unlocks still shape how Home and Library feel as you level up.</span>
-                      </div>
-                      <div className="presentation-reward-stat">
-                        <span className="presentation-reward-stat-label">Equipped Home Layout</span>
-                        <strong>{selectedHomeLayout?.name || 'Mission Control'}</strong>
-                        <span className="presentation-reward-stat-caption">Recommendation cards currently use the {selectedRecommendationPack?.name || 'Classic Glow'} pack.</span>
-                      </div>
-                      <div className="presentation-reward-stat">
-                        <span className="presentation-reward-stat-label">Equipped Library Variant</span>
-                        <strong>{selectedLibraryPresentation?.name || 'Classic Shelf'}</strong>
-                        <span className="presentation-reward-stat-caption">Rewards now have a dedicated page for full browsing.</span>
-                      </div>
-                    </div>
-
-                    {nextPresentationUnlock && (
-                      <div className="presentation-next-unlock">
-                        <div>
-                          <span className="presentation-reward-stat-label">Next Presentation Unlock</span>
-                          <strong>{nextPresentationUnlock.name}</strong>
-                          <p>{`${nextPresentationUnlock.category} unlocks at ${Number(nextPresentationUnlock.requiredXP || 0).toLocaleString()} XP.`}</p>
-                        </div>
-                        <span className="presentation-next-unlock-badge">
-                          {Math.max(0, Number(nextPresentationUnlock.requiredXP || 0) - Number(rewardCatalogSummary?.xp || 0)).toLocaleString()} XP left
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="setting-item">
-                      <label>Full Reward Management</label>
-                      <p className="setting-description">
-                        Use the Rewards page to browse locked and unlocked presentation rewards in one place, while Settings stays focused on app configuration.
-                      </p>
-                      <button
-                        type="button"
-                        className="save-btn"
-                        onClick={() => {
-                          window.location.hash = '#/rewards';
-                        }}
-                      >
-                        Open Rewards Page
-                      </button>
-                    </div>
+                    <p className="setting-description" style={{ marginBottom: '15px' }}>
+                      All presentation rewards (Home layouts, Library variants, Recommendation packs, Card styles, and Logo animations) are now managed on the dedicated Rewards page.
+                    </p>
+                    <button
+                      type="button"
+                      className="save-btn"
+                      onClick={() => {
+                        window.location.hash = '#/rewards';
+                      }}
+                    >
+                      Open Rewards Page
+                    </button>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -789,7 +653,7 @@ function Settings() {
                         value={recommendationStyle} 
                         onChange={(e) => {
                           setRecommendationStyle(e.target.value);
-                          localStorage.setItem('gamepilot_recommendation_style', e.target.value);
+                          StorageService.setString('recommendationStyle', e.target.value);
                         }}
                         className="settings-select"
                         style={{ marginTop: '8px' }}
@@ -930,10 +794,22 @@ function Settings() {
 
             {/* Right Column - Other Settings */}
             <div className="settings-column">
+              {/* Interface Customization */}
+              <CollapsibleSection
+                title="Interface"
+                subtitle="Hide elements like the streak, trim the Home page, set compact mode, and pick an accent."
+                badge="Customization"
+                icon={<Eye size={18} />}
+                className="settings-folder"
+                defaultOpen
+              >
+                <InterfaceSettings />
+              </CollapsibleSection>
+
               {/* Atmosphere + UI Audio Section */}
               <CollapsibleSection
                 title="Ambient Atmosphere + UI Audio"
-                subtitle="Per-pack XP audio progression, previews, and sound mix controls."
+                subtitle="Audio progression snapshot and a shortcut to the dedicated Rewards page."
                 badge={`${ambientPackProgress.unlockedCount + musicPackProgress.unlockedCount + buttonPackProgress.unlockedCount} unlocked`}
                 icon={<Waves size={18} />}
                 className="settings-folder"
@@ -956,7 +832,7 @@ function Settings() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Heart size={18} />
                         <div>
-                          Audio rewards now unlock one pack at a time through XP, so you always have another soundscape or click set to chase.
+                          Unlockable audio packs now live on the dedicated Rewards page so all XP-gated customization sits in one place.
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
@@ -978,311 +854,17 @@ function Settings() {
                           {`Next audio unlock: ${nextAudioUnlock.label} (${nextAudioUnlock.category}) at ${Number(nextAudioUnlock.requiredXP || 0).toLocaleString()} XP.`}
                         </div>
                       )}
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Ambient Atmosphere</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={ambientEnabledSetting}
-                          onChange={(e) => handleAmbientToggle(e.target.checked)}
-                          id="ambient-enabled"
-                          disabled={!ambientUnlocked}
-                        />
-                        <label htmlFor="ambient-enabled" className="toggle-slider"></label>
-                      </div>
-                      <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
-                        {ambientUnlocked
-                          ? `${ambientRequirement.unlockedCount}/${ambientRequirement.totalCount} atmosphere packs unlocked.`
-                          : `First atmosphere pack unlocks at ${Number(ambientRequirement.requiredXP || 0).toLocaleString()} XP (${Number(ambientRequirement.currentXP || 0).toLocaleString()} XP earned).`}
-                      </p>
-                      {ambientPackProgress.nextUnlock && ambientUnlocked && (
-                        <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
-                          {`Next atmosphere pack: ${ambientPackProgress.nextUnlock.label} at ${Number(ambientPackProgress.nextUnlock.requiredXP || 0).toLocaleString()} XP.`}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Atmosphere Pack</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <select
-                            value={ambientSoundPack}
-                            onChange={(e) => handleAmbientPackChange(e.target.value)}
-                            className="settings-select"
-                            disabled={!ambientEnabledSetting || !ambientUnlocked}
-                          >
-                            <option value="dynamic">Match Theme (Dynamic)</option>
-                            {ambientPackOptions.map((pack) => (
-                              <option key={pack.id} value={pack.id} disabled={!pack.unlocked}>
-                                {`${pack.label} — ${Number(pack.requiredXP || 0).toLocaleString()} XP${pack.unlocked ? '' : ' (Locked)'}`}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            className="data-button"
-                            style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                            disabled={!ambientEnabledSetting || ambientSoundPack === 'dynamic' || !currentAmbientPackMeta?.unlocked}
-                            onClick={handlePreviewAmbient}
-                            data-sfx="none"
-                          >
-                            <Waves size={16} />
-                            Preview
-                          </button>
-                        </div>
-                        {ambientSoundPack !== 'dynamic' && (
-                          <p style={{ fontSize: '12px', opacity: 0.7 }}>
-                            {currentAmbientPackMeta?.description || 'Custom atmosphere selection.'}
-                          </p>
-                        )}
-                        {ambientSoundPack === 'dynamic' && (
-                          <p style={{ fontSize: '12px', opacity: 0.7 }}>
-                            Dynamic mode auto-selects the best loop for whatever theme is active.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Ambient Volume: {Math.round(ambientVolume * 100)}%</label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={ambientVolume}
-                        onChange={(e) => handleAmbientVolumeChange(parseFloat(e.target.value))}
-                        disabled={!ambientEnabledSetting || !ambientUnlocked}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-
-                    <hr style={{ borderColor: 'var(--border-primary)', opacity: 0.3 }} />
-
-                    <div className="setting-item">
-                      <label>Button Click SFX</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={sfxEnabledSetting}
-                          onChange={(e) => handleSfxToggle(e.target.checked)}
-                          id="sfx-enabled"
-                        />
-                        <label htmlFor="sfx-enabled" className="toggle-slider"></label>
-                      </div>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Background Music</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={musicEnabled}
-                          onChange={(e) => handleMusicToggle(e.target.checked)}
-                          id="music-enabled"
-                          disabled={!musicUnlocked}
-                        />
-                        <label htmlFor="music-enabled" className="toggle-slider"></label>
-                      </div>
-                      <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
-                        {musicUnlocked
-                          ? `${musicRequirement.unlockedCount}/${musicRequirement.totalCount} music packs unlocked.`
-                          : `First music pack unlocks at ${Number(musicRequirement.requiredXP || 0).toLocaleString()} XP (${Number(musicRequirement.currentXP || 0).toLocaleString()} XP earned).`}
-                      </p>
-                      {musicPackProgress.nextUnlock && musicUnlocked && (
-                        <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
-                          {`Next music pack: ${musicPackProgress.nextUnlock.label} at ${Number(musicPackProgress.nextUnlock.requiredXP || 0).toLocaleString()} XP.`}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Music Pack</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <select
-                            value={musicPack}
-                            onChange={(e) => handleMusicPackChange(e.target.value)}
-                            className="settings-select"
-                            disabled={!musicEnabled || !musicUnlocked}
-                          >
-                            {musicPackOptions.map((pack) => (
-                              <option key={pack.id} value={pack.id} disabled={!pack.unlocked}>
-                                {`${pack.label} — ${Number(pack.requiredXP || 0).toLocaleString()} XP${pack.unlocked ? '' : ' (Locked)'}`}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            className="data-button"
-                            style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                            disabled={!musicEnabled || !currentMusicPackMeta?.unlocked}
-                            onClick={handlePreviewMusic}
-                            data-sfx="none"
-                          >
-                            <Music2 size={16} />
-                            Preview
-                          </button>
-                        </div>
-                        <p style={{ fontSize: '12px', opacity: 0.7 }}>
-                          {currentMusicPackMeta?.description || 'XP-unlocked background music for browsing GamePilot.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Music Volume: {Math.round(musicVolume * 100)}%</label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={musicVolume}
-                        onChange={(e) => handleMusicVolumeChange(parseFloat(e.target.value))}
-                        disabled={!musicEnabled || !musicUnlocked}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Button Sound Pack</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <select
-                          value={buttonSoundPack}
-                          onChange={(e) => handleButtonPackChange(e.target.value)}
-                          className="settings-select"
-                          disabled={!sfxEnabledSetting}
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="save-btn"
+                          onClick={() => {
+                            window.location.hash = '#/rewards';
+                          }}
                         >
-                          {buttonPackOptions.map((pack) => (
-                            <option
-                              key={pack.id}
-                              value={pack.id}
-                              disabled={!pack.unlocked}
-                            >
-                              {pack.label} {pack.type === 'synth' ? '(Synth)' : '(Sample)'}
-                              {` — ${Number(pack.requiredXP || 0).toLocaleString()} XP${pack.unlocked ? '' : ' (Locked)'}`}
-                            </option>
-                          ))}
-                        </select>
-                        <p style={{ fontSize: '12px', opacity: 0.7 }}>
-                          {currentButtonPackMeta?.description || 'Choose from curated sample packs or synth-based clicks.'}
-                        </p>
-                        {(!currentButtonPackMeta?.unlocked) && (
-                          <p style={{ fontSize: '12px', opacity: 0.7, color: 'var(--accent-primary)' }}>
-                            {`Unlocks at ${Number(currentButtonPackMeta?.requiredXP || 0).toLocaleString()} XP (${Number(currentButtonPackMeta?.currentXP || 0).toLocaleString()} XP earned).`}
-                          </p>
-                        )}
-                        {buttonPackProgress.nextUnlock && currentButtonPackMeta?.unlocked && (
-                          <p style={{ fontSize: '12px', opacity: 0.7 }}>
-                            {`Next button pack: ${buttonPackProgress.nextUnlock.label} at ${Number(buttonPackProgress.nextUnlock.requiredXP || 0).toLocaleString()} XP.`}
-                          </p>
-                        )}
-                        {isSampleButtonPack && currentButtonPackMeta?.unlocked && sampleEntries.length > 0 && (
-                          <div
-                            className="sample-selector"
-                            style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '10px',
-                              padding: '12px',
-                              border: '1px solid var(--border-primary)',
-                              borderRadius: '8px',
-                              background: 'var(--bg-secondary)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                              <div>
-                                <strong>Individual Samples</strong>
-                                <p style={{ fontSize: '12px', opacity: 0.75, marginTop: '2px' }}>
-                                  Pin a favorite click or fall back to rotating through the pack.
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleSelectButtonSample(null)}
-                                disabled={!sfxEnabledSetting || !currentButtonPackMeta?.unlocked || !currentSampleSelection}
-                                className="data-button"
-                                style={{
-                                  padding: '8px 12px',
-                                  opacity: !currentSampleSelection ? 0.6 : 1,
-                                  cursor: !currentSampleSelection ? 'not-allowed' : 'pointer'
-                                }}
-                              >
-                                Use pack rotation
-                              </button>
-                            </div>
-
-                            <div style={{ display: 'grid', gap: '8px', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                              {sampleEntries.map((sample) => {
-                                const isSelected = currentSampleSelection === sample.file;
-                                return (
-                                  <div
-                                    key={sample.file}
-                                    style={{
-                                      border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
-                                      borderRadius: '8px',
-                                      padding: '10px',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: '6px',
-                                      background: isSelected ? 'rgba(255, 255, 255, 0.04)' : 'transparent'
-                                    }}
-                                  >
-                                    <div style={{ fontWeight: 600 }}>{sample.label}</div>
-                                    <div style={{ fontSize: '11px', opacity: 0.65, wordBreak: 'break-all' }}>{sample.file}</div>
-                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => handlePreviewButtonSample(sample.file)}
-                                        disabled={!sfxEnabledSetting || !currentButtonPackMeta?.unlocked}
-                                        className="data-button"
-                                        style={{ flex: 1, minWidth: '100px', display: 'flex', justifyContent: 'center', gap: '6px' }}
-                                      >
-                                        Preview
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleSelectButtonSample(sample.file)}
-                                        disabled={!sfxEnabledSetting || !currentButtonPackMeta?.unlocked || isSelected}
-                                        className="data-button"
-                                        style={{
-                                          flex: 1,
-                                          minWidth: '120px',
-                                          background: isSelected ? 'var(--accent-primary)' : 'var(--button-primary-bg)',
-                                          color: 'var(--button-primary-text)',
-                                          opacity: isSelected ? 0.85 : 1
-                                        }}
-                                      >
-                                        {isSelected ? 'Selected' : 'Use this sample'}
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
+                          Open Rewards Audio Controls
+                        </button>
                       </div>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>SFX Volume: {Math.round(sfxVolume * 100)}%</label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={sfxVolume}
-                        onChange={(e) => handleSfxVolumeChange(parseFloat(e.target.value))}
-                        disabled={!sfxEnabledSetting}
-                        style={{ width: '100%' }}
-                      />
-                      <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Music2 size={14} /> Crisp UI clicks paired with ambient loops.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -1400,6 +982,174 @@ function Settings() {
                       <label htmlFor="cache" className="toggle-slider"></label>
                     </div>
                   </div>
+
+                  <div className="setting-item">
+                    <label>HowLongToBeat lookups</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={hltbEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setHltbEnabled(next);
+                          HowLongToBeatService.setEnabled(next);
+                          success(`HowLongToBeat lookups ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="hltb-enabled"
+                      />
+                      <label htmlFor="hltb-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      On by default. Sends each game's title (and only the title) directly to <code>howlongtobeat.com</code> to fetch story-length estimates that power Session Fit and the time chips on Library cards. No GamePilot server is involved — the lookup is anonymous and results are cached on your device for 14 days. Turn this off any time to stop all future requests immediately.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>PCGamingWiki lookups (Librarian's Notes)</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={pcgwEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setPcgwEnabled(next);
+                          PCGamingWikiService.setEnabled(next);
+                          success(`PCGamingWiki lookups ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="pcgw-enabled"
+                      />
+                      <label htmlFor="pcgw-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      On by default. When you open a game, GamePilot queries the public <code>pcgamingwiki.com</code> MediaWiki API for save-file paths, configuration locations, and controller-support info. Anonymous, no GamePilot server involved, results cached locally for 30 days.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Steam Snapshot (reviews + achievement rarity)</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={steamSnapshotEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setSteamSnapshotEnabled(next);
+                          SteamPublicService.setEnabled(next);
+                          success(`Steam Snapshot ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="steam-snapshot-enabled"
+                      />
+                      <label htmlFor="steam-snapshot-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      On by default. For Steam games, GamePilot queries the public <code>store.steampowered.com</code> review summary and the global achievement-rarity endpoint to surface "Very Positive · 94% of 12k reviews" and "Rarest achievement: only 0.4% of players have it." Anonymous, no API key, no GamePilot server, cached locally for 7 days.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Patch &amp; News Radar (Steam News)</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={steamNewsEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setSteamNewsEnabled(next);
+                          SteamNewsService.setEnabled(next);
+                          success(`Patch & News Radar ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="steam-news-enabled"
+                      />
+                      <label htmlFor="steam-news-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      On by default. For Steam games, GamePilot queries the public <code>api.steampowered.com</code> news feed to surface a "Patch / News" badge on Library cards when something has been posted since you last played, plus a recent-posts list inside the Game modal. Anonymous, no API key, no GamePilot server, cached locally for 6 hours.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Disk Usage &amp; Storage Manager</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={diskUsageEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setDiskUsageEnabled(next);
+                          DiskUsageService.setEnabled(next);
+                          success(`Disk Usage scanning ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="disk-usage-enabled"
+                      />
+                      <label htmlFor="disk-usage-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      On by default. GamePilot walks each game's install folder locally to measure disk usage and powers the Storage Manager page + size chips on Library cards. Everything stays on-device — no data leaves your machine. Folder walks are throttled and bounded so they cannot hang the app.
+                  </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Wishlist & Price Alerts</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={wishlistEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setWishlistEnabled(next);
+                          WishlistService.setEnabled(next);
+                          success(`Wishlist ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="wishlist-enabled"
+                      />
+                      <label htmlFor="wishlist-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      On by default. Track games you want and get price-drop alerts via IsThereAnyDeal. Prices are cached locally for 24 hours. No user data leaves your device.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Buy Recommendations</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={buyRecommendationsEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setBuyRecommendationsEnabled(next);
+                          BuyRecommendationService.setEnabled(next);
+                          success(`Buy Recommendations ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="buy-recommendations-enabled"
+                      />
+                      <label htmlFor="buy-recommendations-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      Off by default. Ranks your local Wishlist using owned-library taste signals and cached price context. This first scaffold does not call external catalog APIs, open stores, purchase anything, or send your play history anywhere.
+                    </p>
+                  </div>
+
+                  {startupLaunchSupported && (
+                    <div className="setting-item">
+                      <div>
+                        <label>Launch GamePilot when Windows starts</label>
+                        <p className="setting-description" style={{ margin: '6px 0 0' }}>
+                          Opens GamePilot automatically after you sign in to Windows.
+                        </p>
+                      </div>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={launchOnStartup}
+                          disabled={startupLaunchLoading}
+                          onChange={(e) => handleStartupLaunchToggle(e.target.checked)}
+                          id="launch-on-startup"
+                        />
+                        <label htmlFor="launch-on-startup" className="toggle-slider"></label>
+                      </div>
+                    </div>
+                  )}
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1486,8 +1236,8 @@ function Settings() {
               {/* Data Management Section */}
               <CollapsibleSection
                 title="Data Management"
-                subtitle="Clear, export, import, and reset your local settings data."
-                badge="Local backup"
+                subtitle="Clear cache or reset local settings. Full backups live in Export & Share."
+                badge="Local tools"
                 icon={<Database size={18} />}
                 className="settings-folder"
               >
@@ -1502,15 +1252,6 @@ function Settings() {
                       <Trash2 size={16} />
                       Clear Cache
                     </button>
-                    <button onClick={exportSettings} className="data-button export">
-                      <Download size={16} />
-                      Export Settings
-                    </button>
-                    <label className="data-button import">
-                      <Upload size={16} />
-                      Import Settings
-                      <input type="file" accept=".json" onChange={importSettings} style={{ display: 'none' }} />
-                    </label>
                     <button onClick={resetSettings} className="data-button reset">
                       <AlertCircle size={16} />
                       Reset All

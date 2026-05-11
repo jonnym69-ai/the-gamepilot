@@ -1,12 +1,50 @@
 // GameRequirements.js - Game requirements compatibility checking
+//
+// The 220KB GameRequirementsDatabase is lazy-loaded so it doesn't bloat the
+// initial bundle. Until it loads, checkGameCompatibility falls through to the
+// hardware-score-based estimate path (which is the same fallback used for
+// games not in the DB), so callers always get a usable result.
 
 import { HardwareScoring } from './HardwareScoring';
-import { GAME_DATABASE } from './GameRequirementsDatabase';
 
 export class GameRequirements {
-  
-  static gameDatabase = GAME_DATABASE;
+
+  static gameDatabase = {};
   static normalizedNameIndex = null;
+  static isDatabaseLoaded = false;
+  static _databasePromise = null;
+
+  /**
+   * Lazy-load the requirements DB. Returns a cached promise so concurrent
+   * callers share a single network/disk hit.
+   */
+  static ensureDatabaseLoaded() {
+    if (this.isDatabaseLoaded) {
+      return Promise.resolve(this.gameDatabase);
+    }
+    if (!this._databasePromise) {
+      this._databasePromise = import('./GameRequirementsDatabase')
+        .then((mod) => {
+          this.gameDatabase = mod.GAME_DATABASE || {};
+          this.normalizedNameIndex = null; // rebuilt on next lookup
+          this.isDatabaseLoaded = true;
+          return this.gameDatabase;
+        })
+        .catch((err) => {
+          console.error('[GameRequirements] Failed to load requirements DB:', err);
+          this._databasePromise = null; // allow retry on next call
+          throw err;
+        });
+    }
+    return this._databasePromise;
+  }
+
+  /**
+   * Fire-and-forget prefetch. Safe to call from page mounts to warm the cache.
+   */
+  static prefetchDatabase() {
+    this.ensureDatabaseLoaded().catch(() => { /* swallow; logged above */ });
+  }
 
   static normalizeLookupValue(value = '') {
     const safeValue = value != null ? String(value) : '';
@@ -93,6 +131,12 @@ export class GameRequirements {
   }
   
   static checkGameCompatibility(gameId, systemInfo) {
+    // Kick off lazy DB load on first sync use. Until it resolves, the call
+    // below will just hit the empty database and fall through to the
+    // hardware-score estimate path (the same path used for unknown games).
+    if (!this.isDatabaseLoaded) {
+      this.prefetchDatabase();
+    }
     const resolvedGame = this.resolveGameRequirements(gameId);
     const requirements = resolvedGame?.requirements;
     const displayName = gameId && typeof gameId === 'object'

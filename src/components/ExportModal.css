@@ -2,7 +2,7 @@
 
 .export-modal-overlay {
   position: fixed !important;
-  top: 0 !important;
+  top: var(--app-navbar-offset) !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
@@ -11,6 +11,7 @@
   align-items: center !important;
   justify-content: center !important;
   z-index: 9999 !important;
+  padding: 20px;
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
 }
@@ -22,7 +23,7 @@
   padding: 0;
   width: 90%;
   max-width: 800px;
-  max-height: 90vh;
+  max-height: calc(100vh - var(--app-navbar-offset) - 40px);
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease-out;
@@ -198,7 +199,7 @@
 @media (max-width: 768px) {
   .export-modal {
     width: 95%;
-    max-height: 95vh;
+    max-height: calc(100vh - var(--app-navbar-offset) - 24px);
   }
   
   .export-modal-header,
@@ -439,7 +440,7 @@
 @media (max-width: 768px) {
   .export-modal {
     width: 95vw;
-    max-height: 90vh;
+    max-height: calc(100vh - var(--app-navbar-offset) - 24px);
   }
   
   .modal-content {

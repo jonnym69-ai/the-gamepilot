@@ -89,7 +89,7 @@ const AppRoutes = ({
             setFilterPlatform={setFilterPlatform}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            scanLocalLibrary={scanLocalLibrary}
+            onScan={scanLocalLibrary}
             onLaunchGame={handleLaunchGame}
             activeSessions={activeSessions}
             endSession={endSession}
@@ -98,7 +98,7 @@ const AppRoutes = ({
         )}
       />
       <Route path="/stats" element={renderWithBoundary(<Stats library={library} theme={theme} />)} />
-      <Route path="/achievements" element={renderWithBoundary(<Achievements theme={theme} />)} />
+      <Route path="/achievements" element={renderWithBoundary(<Achievements library={library} theme={theme} />)} />
       <Route path="/gaming-links" element={renderWithBoundary(<GamingLinks theme={theme} />)} />
       <Route path="/donate" element={renderWithBoundary(<Donate theme={theme} />)} />
       <Route path="/settings" element={renderWithBoundary(<Settings theme={theme} setTheme={setTheme} />)} />

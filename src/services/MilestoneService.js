@@ -4,6 +4,7 @@
  */
 
 import { ProgressionUnlockService } from './ProgressionUnlockService';
+import StorageService from './StorageService';
 
 const MILESTONE_STORAGE_KEY = 'gamepilot_milestones';
 const PRESTIGE_STORAGE_KEY = 'gamepilot_prestige';
@@ -31,7 +32,7 @@ class MilestoneService {
    */
   static getMilestoneData() {
     try {
-      const stored = localStorage.getItem(MILESTONE_STORAGE_KEY);
+      const stored = StorageService.getString(MILESTONE_STORAGE_KEY);
       return stored ? JSON.parse(stored) : { achieved: [], lastCheckXP: 0 };
     } catch (error) {
       console.error('Error reading milestone data:', error);
@@ -44,7 +45,7 @@ class MilestoneService {
    */
   static saveMilestoneData(data) {
     try {
-      localStorage.setItem(MILESTONE_STORAGE_KEY, JSON.stringify(data));
+      StorageService.setString(MILESTONE_STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Error saving milestone data:', error);
     }
@@ -55,7 +56,7 @@ class MilestoneService {
    */
   static getPrestigeData() {
     try {
-      const stored = localStorage.getItem(PRESTIGE_STORAGE_KEY);
+      const stored = StorageService.getString(PRESTIGE_STORAGE_KEY);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -85,7 +86,7 @@ class MilestoneService {
    */
   static savePrestigeData(data) {
     try {
-      localStorage.setItem(PRESTIGE_STORAGE_KEY, JSON.stringify(data));
+      StorageService.setString(PRESTIGE_STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Error saving prestige data:', error);
     }
@@ -359,8 +360,8 @@ class MilestoneService {
    * Reset all milestone and prestige data (for testing)
    */
   static resetAllData() {
-    localStorage.removeItem(MILESTONE_STORAGE_KEY);
-    localStorage.removeItem(PRESTIGE_STORAGE_KEY);
+    StorageService.remove(MILESTONE_STORAGE_KEY);
+    StorageService.remove(PRESTIGE_STORAGE_KEY);
   }
 }
 

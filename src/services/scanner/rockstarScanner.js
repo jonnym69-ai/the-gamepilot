@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const {
+  runCommand,
   safeReadDir,
   isLikelyNonGameFolder,
-  isProtectedSystemPath,
   findBestExecutablePath,
   findExecutableDeep,
   collectNestedGameDirectories,
@@ -66,13 +66,125 @@ const isSystemPath = (filePath) => {
   return SYSTEM_FOLDER_PATTERNS.some(pattern => normalized.includes(pattern));
 };
 
+const ROCKSTAR_BLOCKED_PATH_PATTERNS = [
+  '\\windows',
+  '\\perflogs',
+  '\\$recycle.bin',
+  '\\system volume information'
+];
+
+const isBlockedRockstarPath = (filePath) => {
+  const normalized = String(filePath || '').replace(/\//g, '\\').trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+
+  return ROCKSTAR_BLOCKED_PATH_PATTERNS.some((pattern) => (
+    normalized === pattern.slice(1)
+    || normalized.endsWith(pattern)
+    || normalized.includes(`${pattern}\\`)
+  ));
+};
+
+const ROCKSTAR_REGISTRY_ROOTS = [
+  'HKLM\\SOFTWARE\\WOW6432Node\\Rockstar Games',
+  'HKLM\\SOFTWARE\\Rockstar Games'
+];
+
+const ROCKSTAR_REGISTRY_SKIP_TOKENS = [
+  'launcher',
+  'social club'
+];
+
+const parseRegistryInstallEntries = (registryRoot, valueName) => {
+  const output = runCommand(`reg query "${registryRoot}" /s /v ${valueName}`);
+  if (!output || !output.includes('HKEY_')) {
+    return [];
+  }
+
+  const entries = [];
+  let currentKey = '';
+  output.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (trimmed.startsWith('HKEY_')) {
+      currentKey = trimmed;
+      return;
+    }
+
+    const match = trimmed.match(new RegExp(`^${valueName}\\s+REG_\\w+\\s+(.+)$`, 'i'));
+    if (match && currentKey) {
+      entries.push({
+        registryKey: currentKey,
+        installDir: match[1].trim()
+      });
+    }
+  });
+
+  return entries;
+};
+
+const getRockstarRegistryGames = () => {
+  const registryGames = [];
+  const seenInstallDirs = new Set();
+
+  ROCKSTAR_REGISTRY_ROOTS.forEach((registryRoot) => {
+    parseRegistryInstallEntries(registryRoot, 'InstallFolder').forEach(({ registryKey, installDir }) => {
+      const gameName = registryKey.split('\\').pop() || '';
+      const normalizedGameName = gameName.toLowerCase();
+
+      if (!gameName || ROCKSTAR_REGISTRY_SKIP_TOKENS.some((token) => normalizedGameName.includes(token))) {
+        return;
+      }
+
+      if (!installDir || !fs.existsSync(installDir) || isBlockedRockstarPath(installDir)) {
+        return;
+      }
+
+      const installDirKey = installDir.toLowerCase();
+      if (seenInstallDirs.has(installDirKey)) {
+        return;
+      }
+
+      let executablePath = findBestExecutablePath(installDir, gameName);
+      if (!executablePath) {
+        executablePath = findExecutableDeep(installDir, 4);
+      }
+
+      if (!executablePath || isBlockedRockstarPath(executablePath)) {
+        return;
+      }
+
+      seenInstallDirs.add(installDirKey);
+      registryGames.push({
+        name: gameName.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
+        platform: 'Rockstar',
+        genres: getGameGenres(gameName).length > 0 ? getGameGenres(gameName) : ['Story-driven'],
+        iconUrl: '',
+        icon: '',
+        executable: executablePath,
+        executablePath,
+        installDir,
+        launchId: gameName,
+        ...createTrackedDefaults()
+      });
+    });
+  });
+
+  return registryGames;
+};
+
 const scanRockstarLibrary = () => {
   const rockstarPaths = getRockstarInstallPaths();
-  const rockstarGames = [];
+  const rockstarGames = getRockstarRegistryGames();
+  const seenInstallDirs = new Set(rockstarGames.map((game) => game.installDir.toLowerCase()));
 
   rockstarPaths.forEach((rockstarPath) => {
     if (!fs.existsSync(rockstarPath)) return;
-    if (isProtectedSystemPath(rockstarPath) || isSystemPath(rockstarPath)) return;
+    if (isBlockedRockstarPath(rockstarPath)) return;
 
     const rockstarContents = safeReadDir(rockstarPath);
     rockstarContents.forEach((folder) => {
@@ -82,8 +194,9 @@ const scanRockstarLibrary = () => {
 
       const gamePath = path.join(rockstarPath, folder);
       try {
-        if (isProtectedSystemPath(gamePath)) return;
+        if (isBlockedRockstarPath(gamePath)) return;
         if (!fs.statSync(gamePath).isDirectory()) return;
+        if (seenInstallDirs.has(gamePath.toLowerCase())) return;
 
         let executablePath = findBestExecutablePath(gamePath, folder);
         if (!executablePath) {
@@ -96,7 +209,8 @@ const scanRockstarLibrary = () => {
         if (!executablePath) {
           executablePath = findExecutableDeep(gamePath, 3);
         }
-        if (executablePath && !isProtectedSystemPath(executablePath) && !isSystemPath(executablePath)) {
+        if (executablePath && !isBlockedRockstarPath(executablePath)) {
+          seenInstallDirs.add(gamePath.toLowerCase());
           rockstarGames.push({
             name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
             platform: 'Rockstar',

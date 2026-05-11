@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import NavBar from './NavBar';
-import SurpriseSlotMachine from './components/SurpriseSlotMachine';
 import { AchievementTracker } from './AchievementSystem';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
+import CollapsibleSection from './components/CollapsibleSection';
+import { Library, SlidersHorizontal } from 'lucide-react';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { RetentionQuestService } from './services/RetentionQuestService';
@@ -12,10 +13,18 @@ import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
 import './Home.css';
 import './LibraryValue.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
+import WishlistSection from './components/WishlistSection';
 import {
   HomeGuidedContent,
   HomeSection,
   HomeToolsContent,
+  LibraryTodaySection,
+  MomentumSection,
+  TuneYourNextPickSection,
+  PerfectPlayResultSection,
+  RecommendationResultsSection,
+  SurpriseGameResultSection,
+  RediscoverResultSection,
 } from './components/HomeDashboardSections';
 
 const GETTING_STARTED_PREFERENCE_KEY = 'gettingStartedPreferences';
@@ -165,30 +174,30 @@ const formatLastPlayed = (lastPlayedTimestamp) => {
   return `${Math.floor(diffDays / 30)}mo ago`;
 };
 
-function Home({ 
-  onScan, 
-  setMood = () => {}, 
-  setTime = () => {}, 
-  setSelectedGenre = () => {}, 
-  mood = '', 
-  time = '', 
-  selectedGenre = '', 
-  onLaunchGame, 
-  lastPlayedGame, 
-  loading, 
-  library, 
+function Home({
+  mode = 'home',
+  onScan,
+  setMood = () => {},
+  setTime = () => {},
+  setSelectedGenre = () => {},
+  mood = '',
+  time = '',
+  selectedGenre = '',
+  onLaunchGame,
+  lastPlayedGame,
+  loading,
+  library,
   theme = 'dark',
   activeSessions = {},
   endSession = () => {}
 }) {
+  const isDashboard = mode === 'dashboard';
   const [username, setUsername] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('Ready to find your perfect play?');
   const [profilePic, setProfilePic] = useState('');
   const [perfectPlayResult, setPerfectPlayResult] = useState(null);
   const [surpriseGameResult, setSurpriseGameResult] = useState(null);
   const [rediscoverGameResult, setRediscoverGameResult] = useState(null);
-  const [showSlotMachine, setShowSlotMachine] = useState(false);
-  const [slotMachineGames, setSlotMachineGames] = useState([]);
   const [showGettingStarted, setShowGettingStarted] = useState(() => {
     const preferences = readGettingStartedPreferences();
     return !preferences.hasSeen && !preferences.hidden;
@@ -260,9 +269,9 @@ function Home({
   }, [library]);
 
   useEffect(() => {
-    const savedUsername = localStorage.getItem('profileUsername') || '';
-    const savedMessage = localStorage.getItem('welcomeMessage') || 'Ready to find your perfect play?';
-    const savedProfilePic = localStorage.getItem('profilePic') || '';
+    const savedUsername = localStorage.getItem('gamepilot-profileUsername') || localStorage.getItem('profileUsername') || '';
+    const savedMessage = localStorage.getItem('gamepilot-welcomeMessage') || localStorage.getItem('welcomeMessage') || 'Ready to find your perfect play?';
+    const savedProfilePic = localStorage.getItem('gamepilot-profilePic') || localStorage.getItem('profilePic') || '';
     setUsername(savedUsername);
     setWelcomeMessage(savedMessage);
     setProfilePic(savedProfilePic);
@@ -397,10 +406,7 @@ function Home({
       time || null
     );
 
-    if (result?.games?.length > 0) {
-      setSlotMachineGames(result.games.slice(0, 10));
-      setShowSlotMachine(true);
-    } else if (result?.primaryGame) {
+    if (result?.primaryGame) {
       setSurpriseGameResult(result);
       trackRecommendationResult(result);
     } else {
@@ -745,19 +751,22 @@ function Home({
       getHomeShelfGameKey(continuePlayingGame)
     ].filter(Boolean));
 
-    return library
-      .filter((game) => {
-        const gameKey = getHomeShelfGameKey(game);
-        return gameKey && !excludedKeys.has(gameKey) && (game.time_played || 0) > 0;
-      })
+    const candidates = library.filter((game) => {
+      const gameKey = getHomeShelfGameKey(game);
+      return gameKey && !excludedKeys.has(gameKey);
+    });
+
+    // Prefer games with some playtime, sorted by least recently played first
+    const withPlaytime = candidates.filter((g) => (g.time_played || 0) > 0);
+    const pool = withPlaytime.length > 0 ? withPlaytime : candidates;
+
+    return pool
       .sort((left, right) => {
         const leftLastPlayed = left.last_played ? new Date(left.last_played).getTime() : 0;
         const rightLastPlayed = right.last_played ? new Date(right.last_played).getTime() : 0;
-
         if (leftLastPlayed !== rightLastPlayed) {
           return leftLastPlayed - rightLastPlayed;
         }
-
         return (right.time_played || 0) - (left.time_played || 0);
       })[0] || null;
   }, [continuePlayingGame, getHomeShelfGameKey, library, tonightPickGame]);
@@ -771,12 +780,26 @@ function Home({
       getHomeShelfGameKey(rediscoverShelfGame)
     ].filter(Boolean));
 
-    return [...featuredGames, ...recentGames]
+    const fromFeatured = [...featuredGames, ...recentGames]
       .find((game) => {
         const gameKey = getHomeShelfGameKey(game);
         return gameKey && !excludedKeys.has(gameKey);
+      });
+
+    if (fromFeatured) {
+      return fromFeatured;
+    }
+
+    // Fall back to any library game not already used
+    if (Array.isArray(library) && library.length > 0) {
+      return library.find((game) => {
+        const gameKey = getHomeShelfGameKey(game);
+        return gameKey && !excludedKeys.has(gameKey);
       }) || null;
-  }, [continuePlayingGame, featuredGames, getHomeShelfGameKey, recentGames, rediscoverShelfGame, tonightPickGame]);
+    }
+
+    return null;
+  }, [continuePlayingGame, featuredGames, getHomeShelfGameKey, library, recentGames, rediscoverShelfGame, tonightPickGame]);
   const favoriteShelfGame = topRatedGames[0] || favoriteShelfFallback || null;
   const favoriteShelfArtwork = favoriteShelfGame ? resolveGameArtwork(favoriteShelfGame, { surface: 'recommendation_card' }) : null;
   const favoriteShelfPlaceholder = favoriteShelfGame ? getGameArtworkPlaceholder({ game: favoriteShelfGame, surface: 'recommendation_card' }) : null;
@@ -907,6 +930,8 @@ function Home({
       { name: 'GOG', icon: '🌌', games: libraryList.filter((game) => game.platform === 'GOG').length },
       { name: 'Riot Games', icon: '👊', games: libraryList.filter((game) => game.platform === 'Riot').length },
       { name: 'Battlestate Games', icon: '🔫', games: libraryList.filter((game) => game.platform === 'BSG').length },
+      { name: 'Amazon Games', icon: '📦', games: libraryList.filter((game) => game.platform === 'Amazon').length },
+      { name: 'Itch.io', icon: '🎲', games: libraryList.filter((game) => game.platform === 'Itch.io').length },
       { name: 'PlayStation', icon: '🎮', games: libraryList.filter((game) => game.brandPlatform === 'PlayStation' || game.platform === 'PlayStation').length }
     ];
 
@@ -1017,100 +1042,239 @@ function Home({
         </div>
       </div>
 
-      <HomeGuidedContent
-        libraryCount={library?.length || 0}
-        homeShelfCards={homeShelfCards}
-        weeklyQuestSummary={weeklyQuestSummary}
-        weeklyPlayDays={weeklyPlayDays}
-        weeklyPlaytimeHours={weeklyPlaytimeHours}
-        recentLibraryActivity={recentLibraryActivity}
-        tonightPickGame={tonightPickGame}
-        tonightPickEntry={tonightPickEntry}
-        tonightPickArtwork={tonightPickArtwork}
-        tonightPickPlaceholder={tonightPickPlaceholder}
-        continuePlayingGame={continuePlayingGame}
-        continuePlayingEntry={continuePlayingEntry}
-        continuePlayingArtwork={continuePlayingArtwork}
-        continuePlayingPlaceholder={continuePlayingPlaceholder}
-        rediscoverShelfGame={rediscoverShelfGame}
-        rediscoverShelfEntry={rediscoverShelfEntry}
-        rediscoverShelfArtwork={rediscoverShelfArtwork}
-        rediscoverShelfPlaceholder={rediscoverShelfPlaceholder}
-        favoriteShelfGame={favoriteShelfGame}
-        favoriteShelfArtwork={favoriteShelfArtwork}
-        favoriteShelfPlaceholder={favoriteShelfPlaceholder}
-        platformIcons={platformIcons}
-        onLaunchTonightPick={launchTonightPick}
-        onLaunchContinuePlaying={launchContinuePlaying}
-        onLaunchRediscover={launchRediscoverShelf}
-        onLaunchFavorite={launchFavoriteShelf}
-        formatLastPlayed={formatLastPlayed}
-        formatPlaytime={formatPlaytime}
-        libraryStoryItems={libraryStoryItems}
-        shouldShowLegacyContinueSection={shouldShowLegacyContinueSection}
-        continuePlayingMessage={continuePlayingResult?.message}
-        continuePlayingEndSessionButton={renderEndSessionButton(continuePlayingGame?.name)}
-        weeklyQuest={weeklyQuest}
-        gamePilotPickEntries={gamePilotPickEntries}
-        gamePilotPicksResult={gamePilotPicksResult}
-        getGameCardClass={getGameCardClass}
-        resolveGameArtwork={resolveGameArtwork}
-        getGameArtworkPlaceholder={getGameArtworkPlaceholder}
-        onLaunchGame={onLaunchGame}
-        trackRecommendationLaunch={trackRecommendationLaunch}
-        renderEndSessionButton={renderEndSessionButton}
-        handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
-      />
+      {isDashboard ? (
+        <>
+          <CollapsibleSection
+            title="Library Today"
+            subtitle="Guided shelves, picks, and your weekly story."
+            badge={`${library?.length || 0} games`}
+            icon={<Library size={18} />}
+            className="home-guided-section"
+            defaultOpen
+          >
+            <HomeGuidedContent
+              libraryCount={library?.length || 0}
+              homeShelfCards={homeShelfCards}
+              weeklyQuestSummary={weeklyQuestSummary}
+              weeklyPlayDays={weeklyPlayDays}
+              weeklyPlaytimeHours={weeklyPlaytimeHours}
+              recentLibraryActivity={recentLibraryActivity}
+              tonightPickGame={tonightPickGame}
+              tonightPickEntry={tonightPickEntry}
+              tonightPickArtwork={tonightPickArtwork}
+              tonightPickPlaceholder={tonightPickPlaceholder}
+              continuePlayingGame={continuePlayingGame}
+              continuePlayingEntry={continuePlayingEntry}
+              continuePlayingArtwork={continuePlayingArtwork}
+              continuePlayingPlaceholder={continuePlayingPlaceholder}
+              rediscoverShelfGame={rediscoverShelfGame}
+              rediscoverShelfEntry={rediscoverShelfEntry}
+              rediscoverShelfArtwork={rediscoverShelfArtwork}
+              rediscoverShelfPlaceholder={rediscoverShelfPlaceholder}
+              favoriteShelfGame={favoriteShelfGame}
+              favoriteShelfArtwork={favoriteShelfArtwork}
+              favoriteShelfPlaceholder={favoriteShelfPlaceholder}
+              platformIcons={platformIcons}
+              onLaunchTonightPick={launchTonightPick}
+              onLaunchContinuePlaying={launchContinuePlaying}
+              onLaunchRediscover={launchRediscoverShelf}
+              onLaunchFavorite={launchFavoriteShelf}
+              formatLastPlayed={formatLastPlayed}
+              formatPlaytime={formatPlaytime}
+              libraryStoryItems={libraryStoryItems}
+              shouldShowLegacyContinueSection={shouldShowLegacyContinueSection}
+              continuePlayingMessage={continuePlayingResult?.message}
+              continuePlayingEndSessionButton={renderEndSessionButton(continuePlayingGame?.name)}
+              weeklyQuest={weeklyQuest}
+              gamePilotPickEntries={gamePilotPickEntries}
+              gamePilotPicksResult={gamePilotPicksResult}
+              getGameCardClass={getGameCardClass}
+              resolveGameArtwork={resolveGameArtwork}
+              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+              onLaunchGame={onLaunchGame}
+              trackRecommendationLaunch={trackRecommendationLaunch}
+              renderEndSessionButton={renderEndSessionButton}
+              handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
+            />
+          </CollapsibleSection>
 
-      <HomeSection
-        className="home-tools-section"
-        eyebrow="Shape The Shelf"
-        title="Refine what GamePilot shows you"
-        copy="When you want more control, use these tools to steer by mood, energy, genre, and session length."
-        compact
-      >
-        <HomeToolsContent
-          libraryCount={library?.length || 0}
-          mood={mood}
-          selectedGenre={selectedGenre}
-          time={time}
-          availableMoods={availableMoods}
-          availableGenres={availableGenres}
-          onSelectVibe={handleMoodSelection}
-          onMoodChange={handleMoodSelection}
-          onGenreChange={handleGenreSelection}
-          onTimeChange={setTime}
-          onFindGamesForMood={handlePerfectPlaySearch}
-          onFindPerfectPlay={handlePerfectPlaySearch}
-          onSurpriseMe={handleSurpriseSearch}
-          onRediscover={handleRediscoverSearch}
-          perfectPlayResult={perfectPlayResult}
-          perfectPlayEntries={perfectPlayEntries}
-          surpriseGameResult={surpriseGameResult}
-          surpriseGame={surpriseGame}
-          surpriseEntry={surpriseEntry}
-          surpriseGameArtwork={surpriseGameArtwork}
-          surpriseGamePlaceholder={surpriseGamePlaceholder}
-          rediscoverGameResult={rediscoverGameResult}
-          rediscoverEntries={rediscoverEntries}
-          topRatedGames={topRatedGames}
-          shouldShowLegacyTopRatedSection={shouldShowLegacyTopRatedSection}
-          getGameCardClass={getGameCardClass}
-          resolveGameArtwork={resolveGameArtwork}
-          getGameArtworkPlaceholder={getGameArtworkPlaceholder}
-          platformColors={platformColors}
-          platformIcons={platformIcons}
-          formatPlaytime={formatPlaytime}
-          handleTrackedLaunch={handleTrackedLaunch}
-          renderEndSessionButton={renderEndSessionButton}
-          renderRecommendationFeedback={renderRecommendationFeedback}
-          onClearPerfectPlay={clearPerfectPlayResult}
-          onClearSurprise={clearSurpriseResult}
-          onCloseRediscover={closeRediscoverResult}
-          onLaunchGame={onLaunchGame}
-          onOpenGettingStarted={openGettingStartedGuide}
-        />
-      </HomeSection>
+          <CollapsibleSection
+            title="Tools & Recommendations"
+            subtitle="Mood filters, Perfect Play, Surprise Me, and Rediscover."
+            icon={<SlidersHorizontal size={18} />}
+            className="home-tools-section"
+          >
+            <HomeToolsContent
+              libraryCount={library?.length || 0}
+              mood={mood}
+              selectedGenre={selectedGenre}
+              time={time}
+              availableMoods={availableMoods}
+              availableGenres={availableGenres}
+              onSelectVibe={handleMoodSelection}
+              onMoodChange={handleMoodSelection}
+              onGenreChange={handleGenreSelection}
+              onTimeChange={setTime}
+              onFindGamesForMood={handlePerfectPlaySearch}
+              onFindPerfectPlay={handlePerfectPlaySearch}
+              onSurpriseMe={handleSurpriseSearch}
+              onRediscover={handleRediscoverSearch}
+              perfectPlayResult={perfectPlayResult}
+              perfectPlayEntries={perfectPlayEntries}
+              surpriseGameResult={surpriseGameResult}
+              surpriseGame={surpriseGame}
+              surpriseEntry={surpriseEntry}
+              surpriseGameArtwork={surpriseGameArtwork}
+              surpriseGamePlaceholder={surpriseGamePlaceholder}
+              rediscoverGameResult={rediscoverGameResult}
+              rediscoverEntries={rediscoverEntries}
+              topRatedGames={topRatedGames}
+              shouldShowLegacyTopRatedSection={shouldShowLegacyTopRatedSection}
+              getGameCardClass={getGameCardClass}
+              resolveGameArtwork={resolveGameArtwork}
+              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+              platformColors={platformColors}
+              platformIcons={platformIcons}
+              formatPlaytime={formatPlaytime}
+              handleTrackedLaunch={handleTrackedLaunch}
+              renderEndSessionButton={renderEndSessionButton}
+              renderRecommendationFeedback={renderRecommendationFeedback}
+              onClearPerfectPlay={clearPerfectPlayResult}
+              onClearSurprise={clearSurpriseResult}
+              onCloseRediscover={closeRediscoverResult}
+              onLaunchGame={onLaunchGame}
+              onOpenGettingStarted={openGettingStartedGuide}
+            />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Wishlist"
+            subtitle="Games you're tracking for a good deal."
+            icon={<Library size={18} />}
+            className="home-wishlist-section"
+            defaultOpen={false}
+          >
+            <WishlistSection library={library} platformIcons={platformIcons} onLaunchGame={onLaunchGame} />
+          </CollapsibleSection>
+        </>
+      ) : (
+        <>
+          <HomeSection
+            eyebrow="Your Library"
+            title="Library Today"
+            copy="Start with a few thoughtful shelves instead of a blank choice."
+          >
+            <LibraryTodaySection
+              homeShelfCards={homeShelfCards}
+              weeklyQuestSummary={weeklyQuestSummary}
+              weeklyPlayDays={weeklyPlayDays}
+              weeklyPlaytimeHours={weeklyPlaytimeHours}
+              recentLibraryActivity={recentLibraryActivity}
+              tonightPickGame={tonightPickGame}
+              tonightPickEntry={tonightPickEntry}
+              tonightPickArtwork={tonightPickArtwork}
+              tonightPickPlaceholder={tonightPickPlaceholder}
+              continuePlayingGame={continuePlayingGame}
+              continuePlayingEntry={continuePlayingEntry}
+              continuePlayingArtwork={continuePlayingArtwork}
+              continuePlayingPlaceholder={continuePlayingPlaceholder}
+              rediscoverShelfGame={rediscoverShelfGame}
+              rediscoverShelfEntry={rediscoverShelfEntry}
+              rediscoverShelfArtwork={rediscoverShelfArtwork}
+              rediscoverShelfPlaceholder={rediscoverShelfPlaceholder}
+              favoriteShelfGame={favoriteShelfGame}
+              favoriteShelfArtwork={favoriteShelfArtwork}
+              favoriteShelfPlaceholder={favoriteShelfPlaceholder}
+              platformIcons={platformIcons}
+              onLaunchTonightPick={launchTonightPick}
+              onLaunchContinuePlaying={launchContinuePlaying}
+              onLaunchRediscover={launchRediscoverShelf}
+              onLaunchFavorite={launchFavoriteShelf}
+              formatLastPlayed={formatLastPlayed}
+              formatPlaytime={formatPlaytime}
+            />
+          </HomeSection>
+
+          <HomeSection
+            className="home-tools-section"
+            eyebrow="Find Your Next Game"
+            title="Perfect Play"
+            copy="Match mood, genre, and session length to find the right game right now."
+            compact
+          >
+            <TuneYourNextPickSection
+              mood={mood}
+              selectedGenre={selectedGenre}
+              time={time}
+              availableMoods={availableMoods}
+              availableGenres={availableGenres}
+              onMoodChange={handleMoodSelection}
+              onGenreChange={handleGenreSelection}
+              onTimeChange={setTime}
+              onFindPerfectPlay={handlePerfectPlaySearch}
+              onSurpriseMe={handleSurpriseSearch}
+              onRediscover={handleRediscoverSearch}
+            />
+            <RecommendationResultsSection hasResults={perfectPlayResult || surpriseGameResult || rediscoverGameResult}>
+              <PerfectPlayResultSection
+                result={perfectPlayResult}
+                entries={perfectPlayEntries}
+                getGameCardClass={getGameCardClass}
+                resolveGameArtwork={resolveGameArtwork}
+                getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+                platformIcons={platformIcons}
+                formatPlaytime={formatPlaytime}
+                handleTrackedLaunch={handleTrackedLaunch}
+                renderEndSessionButton={renderEndSessionButton}
+                renderRecommendationFeedback={renderRecommendationFeedback}
+                onClear={clearPerfectPlayResult}
+              />
+              <SurpriseGameResultSection
+                result={surpriseGameResult}
+                game={surpriseGame}
+                entry={surpriseEntry}
+                artwork={surpriseGameArtwork}
+                placeholder={surpriseGamePlaceholder}
+                platformIcons={platformIcons}
+                formatPlaytime={formatPlaytime}
+                handleTrackedLaunch={handleTrackedLaunch}
+                renderEndSessionButton={renderEndSessionButton}
+                renderRecommendationFeedback={renderRecommendationFeedback}
+                onClear={clearSurpriseResult}
+              />
+              <RediscoverResultSection
+                result={rediscoverGameResult}
+                entries={rediscoverEntries}
+                getGameCardClass={getGameCardClass}
+                resolveGameArtwork={resolveGameArtwork}
+                getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+                platformIcons={platformIcons}
+                formatPlaytime={formatPlaytime}
+                handleTrackedLaunch={handleTrackedLaunch}
+                renderEndSessionButton={renderEndSessionButton}
+                renderRecommendationFeedback={renderRecommendationFeedback}
+                onClose={closeRediscoverResult}
+              />
+            </RecommendationResultsSection>
+          </HomeSection>
+
+          <MomentumSection
+            weeklyQuest={weeklyQuest}
+            gamePilotPickEntries={gamePilotPickEntries}
+            gamePilotPicksResult={gamePilotPicksResult}
+            getGameCardClass={getGameCardClass}
+            resolveGameArtwork={resolveGameArtwork}
+            getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+            platformIcons={platformIcons}
+            formatLastPlayed={formatLastPlayed}
+            formatPlaytime={formatPlaytime}
+            onLaunchGame={onLaunchGame}
+            trackRecommendationLaunch={trackRecommendationLaunch}
+            renderEndSessionButton={renderEndSessionButton}
+            handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
+          />
+        </>
+      )}
 
       <GettingStartedModal 
         isOpen={showGettingStarted} 
@@ -1161,21 +1325,6 @@ function Home({
         </div>
       </footer>
 
-      {showSlotMachine && (
-        <SurpriseSlotMachine
-          games={slotMachineGames}
-          onComplete={(selectedGame) => {
-            setShowSlotMachine(false);
-            const result = {
-              primaryGame: selectedGame,
-              games: slotMachineGames,
-              message: 'A wildcard pick to shake up your rotation!'
-            };
-            setSurpriseGameResult(result);
-            trackRecommendationResult(result);
-          }}
-        />
-      )}
     </div>
   );
 }

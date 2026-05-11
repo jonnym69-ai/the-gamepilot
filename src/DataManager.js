@@ -1,4 +1,7 @@
 // DataManager.js - Utilities for exporting and importing user data
+// Date formatting helpers were previously used for UI timestamps but are no longer needed here. Removed to clean ESLint warnings.
+import StorageService from './services/StorageService';
+
 const BACKUP_VERSION = '2.0';
 
 const JSON_STORAGE_DEFAULTS = Object.freeze({
@@ -122,7 +125,7 @@ const isValidForDefault = (value, fallback) => {
 
 const readJSONStorage = (key, fallback) => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+    const parsed = StorageService.get(key, null);
     return isValidForDefault(parsed, fallback) ? parsed : cloneDefaultValue(fallback);
   } catch (error) {
     return cloneDefaultValue(fallback);
@@ -213,7 +216,7 @@ export class DataManager {
 
       const stringData = {};
       STRING_STORAGE_KEYS.forEach((key) => {
-        const value = localStorage.getItem(key);
+        const value = StorageService.getString(key);
         if (value !== null) {
           stringData[key] = value;
         }
@@ -287,13 +290,13 @@ export class DataManager {
           return;
         }
 
-        localStorage.setItem(key, JSON.stringify(value));
+        StorageService.set(key, value);
         importedCount += 1;
       });
 
       const legacyAchievements = getLegacyAchievements(data);
       if (!Object.prototype.hasOwnProperty.call(data, 'unlockedAchievements') && Array.isArray(legacyAchievements)) {
-        localStorage.setItem('unlockedAchievements', JSON.stringify(legacyAchievements));
+        StorageService.set('unlockedAchievements', legacyAchievements);
         importedCount += 1;
       }
 
@@ -304,7 +307,7 @@ export class DataManager {
 
         const value = data[key];
         if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-          localStorage.setItem(key, String(value));
+          StorageService.setString(key, String(value));
           importedCount += 1;
         }
       });
@@ -371,7 +374,7 @@ export class DataManager {
       ]));
 
       keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
+        StorageService.remove(key);
       });
 
       return { success: true, message: 'All user data cleared successfully' };

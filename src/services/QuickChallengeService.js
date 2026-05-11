@@ -1,3 +1,6 @@
+import { getDateKey } from './DateKeyService';
+import StorageService from './StorageService';
+
 const CHALLENGE_STORAGE_KEY = 'quickChallenges';
 const LAUNCH_REWARD_STATS_KEY = 'launchRewardStats';
 
@@ -51,7 +54,7 @@ const DEFAULT_CHALLENGES = [
 
 const getStoredChallenges = () => {
   try {
-    const stored = localStorage.getItem(CHALLENGE_STORAGE_KEY);
+    const stored = StorageService.getString(CHALLENGE_STORAGE_KEY);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -60,20 +63,20 @@ const getStoredChallenges = () => {
 
 const saveChallenges = (data) => {
   try {
-    localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(data));
+    StorageService.setString(CHALLENGE_STORAGE_KEY, JSON.stringify(data));
   } catch (e) {
     console.error('[QuickChallenge] Failed to save:', e);
   }
 };
 
-const getTodayDateString = () => new Date().toISOString().split('T')[0];
+const getTodayDateString = () => getDateKey(new Date());
 
 const getWeekStartString = () => {
   const now = new Date();
-  const dayOfWeek = now.getDay();
-  const diff = now.getDate() - dayOfWeek;
-  const weekStart = new Date(now.setDate(diff));
-  return weekStart.toISOString().split('T')[0];
+  const weekStart = new Date(now);
+  const dayOfWeek = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() - dayOfWeek);
+  return getDateKey(weekStart);
 };
 
 export const QuickChallengeService = {
@@ -163,12 +166,12 @@ export const QuickChallengeService = {
     if (challenge) {
       const xpToAdd = challenge.xpReward;
       try {
-        const stored = JSON.parse(localStorage.getItem(LAUNCH_REWARD_STATS_KEY) || '{}');
+        const stored = StorageService.get(LAUNCH_REWARD_STATS_KEY, {});
         const currentXP = Math.max(0, Math.round(Number(stored?.totalXP) || 0));
-        localStorage.setItem(LAUNCH_REWARD_STATS_KEY, JSON.stringify({
+        StorageService.set(LAUNCH_REWARD_STATS_KEY, {
           totalXP: currentXP + xpToAdd,
           launches: stored?.launches || 0
-        }));
+        });
       } catch (e) {
         console.error('[QuickChallenge] Failed to add XP:', e);
       }

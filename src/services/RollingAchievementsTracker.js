@@ -1,5 +1,7 @@
 // RollingAchievementsTracker.js - Tracks daily, weekly, monthly, yearly achievements
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
+import { getDateKey } from './DateKeyService';
+import StorageService from './StorageService';
 
 const PERIOD_CONFIG = {
   daily: {
@@ -196,9 +198,7 @@ export class RollingAchievementsTracker {
   static STORAGE_KEY = 'rollingAchievements';
 
   static getDayKey(referenceDate = new Date()) {
-    const date = new Date(referenceDate);
-    date.setHours(0, 0, 0, 0);
-    return date.toISOString().split('T')[0];
+    return getDateKey(referenceDate);
   }
 
   static getMonthKey(referenceDate = new Date()) {
@@ -213,7 +213,7 @@ export class RollingAchievementsTracker {
   // Get or initialize rolling achievements data
   static getTrackingData() {
     try {
-      const data = localStorage.getItem(this.STORAGE_KEY);
+      const data = StorageService.getString(this.STORAGE_KEY);
       if (!data) return this.getDefaultData();
 
       const parsed = JSON.parse(data);
@@ -583,7 +583,7 @@ export class RollingAchievementsTracker {
       yearly: serializePeriod(data.yearly),
       streaks: data.streaks
     };
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(serialized));
+    StorageService.setString(this.STORAGE_KEY, JSON.stringify(serialized));
   }
 
   // Increment session count
@@ -808,7 +808,7 @@ export class RollingAchievementsTracker {
       this.ensureCurrentPeriods(data, now);
 
       if (!library) {
-        const storedLibrary = localStorage.getItem('gameLibrary');
+        const storedLibrary = StorageService.getString('gameLibrary');
         if (storedLibrary) {
           try {
             library = JSON.parse(storedLibrary);

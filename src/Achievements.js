@@ -4,6 +4,8 @@ import { Trophy, Star, Target, Clock, Gamepad2, Award, Zap, Crown, Medal, Flame,
 import { ACHIEVEMENTS, AchievementTracker } from './AchievementSystem';
 import { RollingAchievementsTracker } from './services/RollingAchievementsTracker';
 import NavBar from './NavBar';
+import StorageService from './services/StorageService';
+import SteamAchievementAggregationService from './services/SteamAchievementAggregationService';
 import './Achievements.css';
 import './FounderAchievement.css';
 
@@ -27,13 +29,16 @@ const getSessionStartTimestamp = (sessionEntry) => {
   return Number.isNaN(parsedStartTime) ? null : parsedStartTime;
 };
 
-function Achievements({ theme }) {
+function Achievements({ theme, library = [] }) {
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const [allAchievements, setAllAchievements] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [recentlyUnlocked, setRecentlyUnlocked] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [steamAggregation, setSteamAggregation] = useState(() => SteamAchievementAggregationService.getCachedSnapshot());
+  const [steamAggregationLoading, setSteamAggregationLoading] = useState(false);
+  const [steamAggregationEnabled, setSteamAggregationEnabled] = useState(() => SteamAchievementAggregationService.isEnabled());
 
   // Statistics dashboard state
   const [totalPoints, setTotalPoints] = useState(0);
@@ -94,6 +99,22 @@ function Achievements({ theme }) {
       return `${(current / 60).toFixed(1)}h / ${(target / 60).toFixed(1)}h`;
     }
     return `${current} / ${target}`;
+  };
+
+  const formatSteamPercent = (value) => {
+    if (value === null || value === undefined) return '—';
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) return '—';
+    return `${numeric.toFixed(numeric < 10 ? 2 : 1)}%`;
+  };
+
+  const openSteamAchievements = (url) => {
+    if (!url) return;
+    if (window.electronAPI?.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   // Progress hints for locked achievements
@@ -350,10 +371,10 @@ function Achievements({ theme }) {
     // Load previously notified achievements
     try {
       // Notified achievements are tracked in localStorage only
-      JSON.parse(localStorage.getItem('notifiedAchievements') || '[]');
+      StorageService.get('notifiedAchievements', []);
     } catch (error) {
       console.error('Error loading notified achievements:', error);
-      localStorage.setItem('notifiedAchievements', JSON.stringify([]));
+      StorageService.set('notifiedAchievements', []);
     }
     
     // Ensure rolling period assignments are current, then unlock achievements
@@ -367,7 +388,7 @@ function Achievements({ theme }) {
       const recent = AchievementTracker.getRecentlyUnlocked();
       if (recent && recent.length > 0) {
         // Get current notified achievements from localStorage to avoid stale state
-        const savedNotified = JSON.parse(localStorage.getItem('notifiedAchievements') || '[]');
+        const savedNotified = StorageService.get('notifiedAchievements', []);
         const notifiedSet = new Set(savedNotified);
         
         // Find the first achievement that hasn't been notified about yet
@@ -378,7 +399,7 @@ function Achievements({ theme }) {
           
           // Mark this achievement as notified
           const updatedNotified = [...savedNotified, newAchievement.id];
-          localStorage.setItem('notifiedAchievements', JSON.stringify(updatedNotified));
+          StorageService.set('notifiedAchievements', updatedNotified);
           
           // Auto-hide notification after 5 seconds
           setTimeout(() => {
@@ -399,6 +420,20 @@ function Achievements({ theme }) {
     
     return () => clearInterval(interval);
   }, []); // Empty dependency array - only run once on mount
+
+  useEffect(() => {
+    setSteamAggregation(SteamAchievementAggregationService.getCachedSnapshot(library));
+  }, [library]);
+
+  const refreshSteamAggregation = async () => {
+    setSteamAggregationLoading(true);
+    try {
+      const snapshot = await SteamAchievementAggregationService.refreshSnapshot(library);
+      setSteamAggregation(snapshot);
+    } finally {
+      setSteamAggregationLoading(false);
+    }
+  };
 
   // Calculate statistics when achievements change
   useEffect(() => {
@@ -1207,7 +1242,7 @@ function Achievements({ theme }) {
     let adjustedTotalPlayTime = stats.totalPlayTime;
     if (achievement.category === 'time') {
       try {
-        const activeSessions = JSON.parse(localStorage.getItem('activeGameSessions') || '{}');
+        const activeSessions = StorageService.get('activeGameSessions', {});
         const currentTime = Date.now();
         
         for (const sessionData of Object.values(activeSessions)) {
@@ -1543,6 +1578,13 @@ function Achievements({ theme }) {
     }
   };
 
+  const closeToUnlocking = allAchievements
+    .filter((achievement) => !unlockedAchievements.includes(achievement.id))
+    .map((achievement) => ({ achievement, progress: getAchievementProgress(achievement) }))
+    .filter(({ progress }) => progress > 0 && progress < 100)
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, 6);
+
   const filteredAchievements = selectedCategory === 'all' 
     ? allAchievements 
     : allAchievements.filter(a => a.category === selectedCategory);
@@ -1629,6 +1671,78 @@ function Achievements({ theme }) {
               </div>
             </div>
           </div>
+
+          <div className="steam-achievement-aggregation">
+            <div className="steam-achievement-aggregation-header">
+              <div>
+                <h3>Steam public rarity preview</h3>
+                <p>Anonymous global achievement data for owned Steam games. This does not read your Steam account or personal unlocks.</p>
+              </div>
+              <div className="steam-achievement-actions">
+                {!steamAggregationEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      SteamAchievementAggregationService.setEnabled(true);
+                      setSteamAggregationEnabled(true);
+                    }}
+                  >
+                    Enable Steam public data
+                  </button>
+                )}
+                <button type="button" onClick={refreshSteamAggregation} disabled={!steamAggregationEnabled || steamAggregationLoading}>
+                  {steamAggregationLoading ? 'Refreshing…' : 'Refresh preview'}
+                </button>
+              </div>
+            </div>
+            <div className="steam-achievement-summary-grid">
+              <div>
+                <span>Steam games</span>
+                <strong>{steamAggregation.steamGameCount || 0}</strong>
+              </div>
+              <div>
+                <span>With cached rarity</span>
+                <strong>{steamAggregation.gamesWithAchievements || 0}</strong>
+              </div>
+              <div>
+                <span>Known achievements</span>
+                <strong>{steamAggregation.totalAchievements || 0}</strong>
+              </div>
+              <div>
+                <span>Avg unlock rate</span>
+                <strong>{formatSteamPercent(steamAggregation.averageUnlockRate || 0)}</strong>
+              </div>
+            </div>
+            {steamAggregation.rarest ? (
+              <div className="steam-achievement-rarest-card">
+                <span>Rarest known achievement source</span>
+                <strong>{steamAggregation.rarest.gameName}</strong>
+                <p>Only {formatSteamPercent(steamAggregation.rarest.percent)} of Steam players have its rarest public achievement.</p>
+                {steamAggregation.rarest.achievementsUrl && (
+                  <button type="button" onClick={() => openSteamAchievements(steamAggregation.rarest.achievementsUrl)}>
+                    Open Steam achievements
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="steam-achievement-empty">
+                {steamAggregation.steamGameCount > 0
+                  ? 'No cached Steam achievement rarity yet. Refresh the preview to fetch a small local batch.'
+                  : 'No owned Steam games are currently available for aggregation.'}
+              </div>
+            )}
+            {steamAggregation.rows?.length > 0 && (
+              <div className="steam-achievement-row-list">
+                {steamAggregation.rows.slice(0, 5).map((row) => (
+                  <div key={row.appid} className="steam-achievement-row">
+                    <strong>{row.gameName}</strong>
+                    <span>{row.achievementTotal} achievements • avg {formatSteamPercent(row.averagePercent)} unlocked globally</span>
+                    <em>Rarest: {formatSteamPercent(row.rarestPercent)}</em>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           
           {/* Recent Unlocks Showcase */}
           {recentUnlocks.length > 0 && (
@@ -1650,6 +1764,30 @@ function Achievements({ theme }) {
             </div>
           )}
         </div>
+
+        {closeToUnlocking.length > 0 && (
+          <div className="close-to-unlocking-section">
+            <div className="close-to-unlocking-header">
+              <h2>🎯 Close to Unlocking</h2>
+              <p>The achievements your recent play has pushed closest to the finish line.</p>
+            </div>
+            <div className="close-to-unlocking-grid">
+              {closeToUnlocking.map(({ achievement, progress }) => (
+                <div key={achievement.id} className="close-to-unlocking-card">
+                  <div className="close-to-unlocking-icon">{achievement.icon}</div>
+                  <div className="close-to-unlocking-body">
+                    <div className="close-to-unlocking-name">{achievement.name}</div>
+                    <div className="close-to-unlocking-desc">{achievement.desc}</div>
+                    <div className="progress-bar close-to-unlocking-bar">
+                      <div className="progress-fill" style={{ width: `${progress}%` }} />
+                      <span className="progress-text">{Math.round(progress)}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="category-tabs">
           {categories.map(category => (
@@ -1790,6 +1928,12 @@ function Achievements({ theme }) {
               <div className="notification-text">
                 <strong>Achievement Unlocked!</strong>
                 <p>{recentlyUnlocked.name}</p>
+                <div className="notification-meta">
+                  <span className="notification-rarity" style={{ color: getRarityColor(recentlyUnlocked.rarity) }}>
+                    {recentlyUnlocked.rarity || 'Unlocked'}
+                  </span>
+                  <span className="notification-points">+{getRewardPoints(recentlyUnlocked.id)} pts</span>
+                </div>
               </div>
             </div>
           </div>

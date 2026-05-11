@@ -1,5 +1,150 @@
 /* GamePilot - Professional Grey & Orange Theme */
 
+:root {
+  --app-navbar-offset: 88px;
+}
+
+/* === Dropdown item Lucide icons === */
+.dropdown-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.dropdown-item-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* === Compact mode === */
+body.compact-mode {
+  --app-navbar-offset: 64px;
+}
+body.compact-mode .navbar {
+  padding: 0.45rem 1rem !important;
+  min-height: 44px !important;
+}
+body.compact-mode .navbar a,
+body.compact-mode .navbar .nav-link,
+body.compact-mode .dropdown-toggle {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}
+body.compact-mode .home-hero {
+  padding: 24px 16px 20px !important;
+}
+body.compact-mode .home-reward-pill {
+  padding: 8px 12px !important;
+}
+body.compact-mode .card,
+body.compact-mode .settings-section,
+body.compact-mode .game-card {
+  padding: 12px !important;
+}
+body.compact-mode h1 { font-size: 1.6rem !important; }
+body.compact-mode h2 { font-size: 1.25rem !important; }
+
+/* === Reduced motion === */
+body.reduced-motion *,
+body.reduced-motion *::before,
+body.reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.05s !important;
+  scroll-behavior: auto !important;
+}
+body.reduced-motion .spin-nav-button.has-spin { animation: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.05s !important;
+  }
+}
+
+/* === Ornament level: plain | balanced | full === */
+/* Plain: drop decorative pseudo-elements, force clean fonts everywhere */
+body.ornament-plain .card::before,
+body.ornament-plain .card::after,
+body.ornament-plain .modal::before,
+body.ornament-plain .modal::after,
+body.ornament-plain .game-card::before,
+body.ornament-plain .game-card::after,
+body.ornament-plain .stat-card::before,
+body.ornament-plain .stat-card::after,
+body.ornament-plain .settings-section::before,
+body.ornament-plain .settings-section::after,
+body.ornament-plain .profile-card::before,
+body.ornament-plain .profile-card::after,
+body.ornament-plain .achievement-counters-grid .counter-card::before,
+body.ornament-plain .achievement-counters-grid .counter-card::after {
+  content: none !important;
+  display: none !important;
+}
+body.ornament-plain,
+body.ornament-plain *,
+body.ornament-plain h1,
+body.ornament-plain h2,
+body.ornament-plain h3,
+body.ornament-plain p,
+body.ornament-plain span,
+body.ornament-plain button,
+body.ornament-plain a {
+  font-family: 'Inter', 'Poppins', system-ui, -apple-system, Segoe UI, sans-serif !important;
+}
+body.ornament-plain .card,
+body.ornament-plain .modal,
+body.ornament-plain .game-card,
+body.ornament-plain .stat-card,
+body.ornament-plain .settings-section,
+body.ornament-plain .profile-card {
+  border-radius: 12px !important;
+  border-width: 1px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+  background-image: none !important;
+}
+
+/* Balanced: keep colors/gradients, drop heavy animations + decorative fonts */
+body.ornament-balanced .card::before,
+body.ornament-balanced .modal::before,
+body.ornament-balanced .game-card::before,
+body.ornament-balanced .stat-card::before,
+body.ornament-balanced .card::after,
+body.ornament-balanced .modal::after,
+body.ornament-balanced .game-card::after,
+body.ornament-balanced .stat-card::after {
+  animation: none !important;
+}
+body.ornament-balanced,
+body.ornament-balanced * {
+  font-family: 'Inter', 'Poppins', system-ui, sans-serif !important;
+}
+
+/* === Home section visibility toggles === */
+body.hide-home-reward-strip .home-reward-strip { display: none !important; }
+body.hide-home-checkin-pill .home-checkin-panel { display: none !important; }
+body.hide-home-hero-summary .home-hero-summary { display: none !important; }
+body.hide-home-retention-quests .retention-section { display: none !important; }
+body.hide-home-launcher-summary .launcher-status,
+body.hide-home-launcher-summary .launcher-grid,
+body.hide-home-launcher-summary .launcher-status-header { display: none !important; }
+body.hide-home-daily-missions [class*="engagement-pulse"] .daily-mission-card,
+body.hide-home-daily-missions .daily-mission-card { display: none !important; }
+body.hide-home-backlog-rescue .backlog-rescue-card,
+body.hide-home-backlog-rescue [class*="backlog-rescue"] { display: none !important; }
+body.hide-home-shelves .home-shelf-card { display: none !important; }
+body.hide-home-themed-page-titles .page-title::before,
+body.hide-themed-page-titles .page-title::before { content: none !important; }
+
+/* === User accent override === */
+body.has-user-accent {
+  --accent-primary: var(--user-accent) !important;
+  --accent-color: var(--user-accent) !important;
+  --text-accent: var(--user-accent) !important;
+  --link-primary: var(--user-accent) !important;
+  --button-primary-bg: var(--user-accent) !important;
+  --nav-active: var(--user-accent) !important;
+}
+
 /* Basic body styling */
 body {
   background: var(--bg-primary);
@@ -12,6 +157,23 @@ body {
   line-height: 1.5;
   margin: 0;
   padding: 0;
+}
+
+body.big-screen-mode :is(a[href], button, input, select, textarea, [role="button"], [tabindex]):focus-visible,
+body.big-screen-mode :is(a[href], button, input, select, textarea, [role="button"], [tabindex]):focus {
+  outline: 4px solid var(--accent-primary, #ff8c42) !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 0 8px rgba(255, 140, 66, 0.2), 0 0 28px rgba(255, 140, 66, 0.38) !important;
+  transform: translateY(-1px);
+  z-index: 20;
+}
+
+body.big-screen-mode :is(input, select, textarea):focus {
+  transform: none;
+}
+
+body.big-screen-mode .controller-focus-scope {
+  scroll-margin: 120px;
 }
 
 .App {
@@ -62,20 +224,21 @@ body {
   gap: 8px !important;
   padding: 10px 18px !important;
   border: 1px solid transparent !important;
-  border-radius: 6px !important;
+  border-radius: 10px !important;
   background: transparent !important;
   color: var(--nav-text) !important;
   font-weight: 500 !important;
   cursor: pointer !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
   font-size: 14px !important;
 }
 
 .dropdown-toggle:hover {
   background-color: var(--nav-hover) !important;
   color: var(--nav-text) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Desktop-optimized dropdown positioning */
@@ -160,20 +323,23 @@ body {
   text-decoration: none !important;
   font-weight: 500 !important;
   padding: 10px 18px !important;
-  border-radius: 6px !important;
-  transition: all 0.3s ease !important;
+  border-radius: 10px !important;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
   border: 1px solid transparent !important;
   display: inline-block !important;
   white-space: nowrap !important;
   background: transparent !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
 .navbar a:hover,
 .navbar .nav-link:hover {
   background-color: var(--nav-hover) !important;
   color: var(--nav-text) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .navbar a.active,
@@ -181,6 +347,74 @@ body {
   background-color: var(--nav-active) !important;
   color: #ffffff !important;
   border-color: var(--nav-active) !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+.navbar a.active::after,
+.navbar .nav-link.active::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 4px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 18px !important;
+  height: 3px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 2px !important;
+}
+
+.nav-search-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 12px;
+  margin-right: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.55);
+  color: var(--text-color, #e5e7eb);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.nav-search-pill:hover {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.55);
+  transform: translateY(-1px);
+}
+
+.nav-search-pill:focus-visible {
+  outline: 2px solid rgba(168, 85, 247, 0.85);
+  outline-offset: 2px;
+}
+
+.nav-search-pill-label {
+  opacity: 0.9;
+}
+
+.nav-search-pill-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (max-width: 720px) {
+  .nav-search-pill-label { display: none; }
+  .nav-search-pill { padding: 6px 8px; }
 }
 
 .spin-nav-button {
@@ -783,7 +1017,7 @@ a:hover {
   background: linear-gradient(135deg, rgba(255, 140, 66, 0.05), rgba(233, 30, 99, 0.05));
   position: relative;
   transition: all 1s ease;
-  font-family: 'Comic Sans MS', cursive;
+  font-family: 'Inter', 'Poppins', system-ui, sans-serif;
 }
 
 .sunset .card::after,
@@ -2286,8 +2520,13 @@ a:hover {
   margin: 0 0 12px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.free-game-body .free-game-mystery-note {
+  color: #ffb347;
 }
 
 .free-game-meta {

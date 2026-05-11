@@ -5,6 +5,7 @@
 
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
+import { StartupPersonalizationService } from './StartupPersonalizationService';
 
 export class RecommendationExplainer {
   /**
@@ -14,6 +15,8 @@ export class RecommendationExplainer {
     const reasons = [];
     const profile = UserBehaviorProfile.getProfile();
     const personaSnapshot = UserBehaviorProfile.getPersonaSnapshot();
+    const startupSeed = StartupPersonalizationService.getSeededRecommendationContext();
+    const startupInfluence = UserBehaviorProfile.getStartupInfluenceSummary();
     const compatibility = PersonaPerformanceInsights.getCompatibility(game);
     const normalizedTimeAvailable = UserBehaviorProfile.normalizeTimeAvailable(timeAvailable);
 
@@ -26,6 +29,13 @@ export class RecommendationExplainer {
     if (personaReason) {
       reasons.push(personaReason);
     }
+
+    const startupReason = this.getStartupSeedReasoning(game, mood, genre, startupSeed, normalizedTimeAvailable, startupInfluence);
+    if (startupReason) {
+      reasons.push(startupReason);
+    }
+
+    reasons.push(...this.getLocalSignalReasoning(game, recommendationType));
 
     // Hardware readiness reasoning
     const hardwareReason = PersonaPerformanceInsights.describeCompatibility(compatibility);
@@ -47,17 +57,24 @@ export class RecommendationExplainer {
       case 'continue-playing':
         reasons.push(this.getContinuePlayingReasoning(game, profile));
         break;
+      case 'favorite-anchor':
+        reasons.push(this.getFavoriteAnchorReasoning(game));
+        break;
       default:
         break;
     }
 
+    const uniqueReasons = [...new Set(reasons.filter(Boolean))];
+
     return {
       game: game.name,
       recommendationType,
-      reasons: reasons.filter(Boolean),
+      reasons: uniqueReasons,
       confidence: this.calculateConfidence(game, mood, genre, profile, compatibility, personaSnapshot),
       matchScore: this.calculateMatchScore(game, mood, genre, profile, compatibility, personaSnapshot),
       personaIdentity: personaSnapshot?.personaIdentity || null,
+      startupSeed,
+      startupInfluence,
       hardwareSummary: compatibility ? {
         settingsLevel: compatibility.settingsLevel,
         fps: compatibility.estimatedFPS,
@@ -83,6 +100,82 @@ export class RecommendationExplainer {
     }
 
     return `${personaIdentity.label}: ${personaIdentity.description}`;
+  }
+
+  static getStartupSeedReasoning(game, mood, genre, startupSeed, timeAvailable, startupInfluence) {
+    if (!startupSeed || !startupInfluence?.active) {
+      return null;
+    }
+
+    const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+    const startupMoods = Array.isArray(startupSeed.moods) ? startupSeed.moods : [];
+    const startupGenres = Array.isArray(startupSeed.genres) ? startupSeed.genres : [];
+    const estimatedSessionMinutes = PersonaPerformanceInsights.estimateSessionMinutes(game);
+    const reasons = [];
+
+    if (mood && startupMoods.includes(mood)) {
+      reasons.push(`${mood} was part of your startup tuning`);
+    }
+
+    if (genre && startupGenres.includes(genre)) {
+      reasons.push(`${genre} was one of your first-picked genres`);
+    }
+
+    const overlappingGenre = startupGenres.find((seedGenre) => gameGenres.includes(seedGenre));
+    if (!genre && overlappingGenre) {
+      reasons.push(`Matches your onboarding taste for ${overlappingGenre}`);
+    }
+
+    const seededSessionMinutes = UserBehaviorProfile.normalizeTimeAvailable(startupSeed.sessionPreference);
+    if (seededSessionMinutes && estimatedSessionMinutes) {
+      const diff = Math.abs(seededSessionMinutes - estimatedSessionMinutes);
+      if (diff <= 30) {
+        reasons.push(`Lands close to your ${this.formatDuration(seededSessionMinutes)} startup session preference`);
+      }
+    } else if (timeAvailable && startupSeed.sessionPreference === timeAvailable) {
+      reasons.push(`Aligned with your startup session preference`);
+    }
+
+    if (startupSeed.playerVibe) {
+      reasons.push(`Fits your ${startupSeed.playerVibe.toLowerCase()} profile`);
+    }
+
+    return reasons.length > 0
+      ? `${startupInfluence.shortLabel} startup seed: ${reasons.slice(0, 2).join(' • ')}`
+      : null;
+  }
+
+  static getLocalSignalReasoning(game, recommendationType) {
+    const reasons = [];
+    const playtimeMinutes = Number(game?.time_played || 0);
+    const launchCount = Number(game?.launch_count || game?.launchCount || 0);
+    const userRating = Number(game?.userRating || 0);
+    const lastPlayedTime = game?.last_played ? new Date(game.last_played).getTime() : 0;
+
+    if (userRating > 0) {
+      reasons.push(`You rated this ${userRating}/10, so it stays close to your taste profile`);
+    }
+
+    if (playtimeMinutes > 0) {
+      reasons.push(`Your local history already has ${this.formatDuration(playtimeMinutes)} logged here`);
+    } else if (recommendationType === 'perfect-play' || recommendationType === 'surprise-me') {
+      reasons.push('Unplayed in your local history, so it adds discovery without repeating recent sessions');
+    }
+
+    if (launchCount > 1) {
+      reasons.push(`You have launched it ${launchCount} times, which makes it a proven library signal`);
+    }
+
+    if (Number.isFinite(lastPlayedTime) && lastPlayedTime > 0) {
+      const daysSince = Math.max(0, Math.floor((Date.now() - lastPlayedTime) / (1000 * 60 * 60 * 24)));
+      if (daysSince <= 7) {
+        reasons.push('Recently active in your library, so it is easy to resume');
+      } else if (daysSince >= 30) {
+        reasons.push(`Last played ${daysSince} days ago, making it a strong rediscovery candidate`);
+      }
+    }
+
+    return reasons.slice(0, 3);
   }
 
   /**
@@ -199,6 +292,19 @@ export class RecommendationExplainer {
     }
 
     return reasons.join(' • ');
+  }
+
+  static getFavoriteAnchorReasoning(game) {
+    const rating = Number(game?.userRating || 0);
+    if (rating > 0) {
+      return `Kept close because your own ${rating}/10 rating is one of the clearest local taste signals`;
+    }
+
+    if (game?.time_played > 0) {
+      return `Kept close because your local play history shows this is already part of your identity`;
+    }
+
+    return 'Kept close as a personal anchor pick from your library shelf';
   }
 
   /**

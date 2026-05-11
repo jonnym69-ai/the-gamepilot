@@ -1,11 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const {
+  runCommand,
   safeReadDir,
   safeReadJson,
   addUniquePath,
   isLikelyNonGameFolder,
-  isProtectedSystemPath,
   findBestExecutablePath,
   findExecutableDeep,
   createTrackedDefaults,
@@ -40,8 +40,13 @@ const getEAInstallPaths = () => {
   const explicitInstallRoots = [];
 
   getActiveDrives().forEach((drive) => {
+    paths.push(`${drive}:\\ProgramData\\Origin\\LocalContent`);
     paths.push(`${drive}:\\ProgramData\\Origin`);
+    paths.push(`${drive}:\\ProgramData\\EA Desktop\\InstallData`);
     paths.push(`${drive}:\\ProgramData\\EA Desktop`);
+    paths.push(`${drive}:\\ProgramData\\Electronic Arts\\EA Desktop\\InstallData`);
+    paths.push(`${drive}:\\ProgramData\\Electronic Arts\\EA Desktop`);
+    paths.push(`${drive}:\\Users\\Public\\Documents\\EA Games`);
     paths.push(`${drive}:\\Program Files\\Origin Games`);
     paths.push(`${drive}:\\Program Files (x86)\\Origin Games`);
     paths.push(`${drive}:\\Program Files\\EA Games`);
@@ -80,24 +85,46 @@ const isExcludedFromEA = (value) => {
   return EA_EXCLUDED_TITLE_TOKENS.some((token) => normalized.includes(token));
 };
 
-const KNOWN_EA_EXECUTABLES = {
-  'FIFA 20': 'FIFA20.exe',
-  'FIFA 21': 'FIFA21.exe',
-  'FIFA 22': 'FIFA22.exe',
-  'FIFA 23': 'FIFA23.exe',
-  'Skate': 'Skate.exe',
-  'Battlefield 1': 'BF1.exe',
-  'Battlefield 4': 'BF4.exe',
-  'Battlefield V': 'BFV.exe',
-  'Battlefield 2042': 'BF2042.exe',
-  'Apex Legends': 'r5apex.exe',
-  'The Sims 4': 'Game/bin/TS4.exe',
-  'NHL 20': 'nhl20.exe',
-  'NHL 21': 'nhl21.exe',
-  'Madden NFL 20': 'madden20.exe',
-  'Madden NFL 21': 'madden21.exe',
-  'Star Wars Jedi: Fallen Order': 'StarWarsJediFallenOrder.exe',
-  'Medal of Honor Above and Beyond': 'mohaab.exe'
+const EA_FOREIGN_LIBRARY_PATH_TOKENS = [
+  '\\steamapps\\common\\',
+  '\\epic games\\',
+  '\\gog galaxy\\games\\',
+  '\\gog games\\',
+  '\\ubisoft\\',
+  '\\ubisoft game launcher\\',
+  '\\ubisoft connect\\',
+  '\\battle.net\\',
+  '\\riot games\\',
+  '\\xboxgames\\'
+];
+
+const EA_TOOL_EXECUTABLE_TOKENS = [
+  'worldbuilder',
+  'editor',
+  'dedicatedserver',
+  'server',
+  'config',
+  'settings',
+  'benchmark',
+  'tool'
+];
+
+const isLikelyForeignLauncherPath = (filePath) => {
+  const normalized = String(filePath || '').replace(/\//g, '\\').trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  return EA_FOREIGN_LIBRARY_PATH_TOKENS.some((token) => normalized.includes(token));
+};
+
+const isLikelyToolExecutable = (filePath) => {
+  const fileName = path.basename(String(filePath || '')).toLowerCase().replace(/\.exe$/, '');
+  if (!fileName) {
+    return true;
+  }
+
+  return EA_TOOL_EXECUTABLE_TOKENS.some((token) => fileName === token || fileName.includes(token));
 };
 
 const EA_SYSTEM_FOLDER_PATTERNS = [
@@ -111,14 +138,232 @@ const isEASystemPath = (filePath) => {
   return EA_SYSTEM_FOLDER_PATTERNS.some(pattern => normalized.includes(pattern));
 };
 
+const EA_BLOCKED_PATH_PATTERNS = [
+  '\\windows',
+  '\\perflogs',
+  '\\$recycle.bin',
+  '\\system volume information'
+];
+
+const isBlockedEAPath = (filePath) => {
+  const normalized = String(filePath || '').replace(/\//g, '\\').trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+
+  return EA_BLOCKED_PATH_PATTERNS.some((pattern) => (
+    normalized === pattern.slice(1)
+    || normalized.endsWith(pattern)
+    || normalized.includes(`${pattern}\\`)
+  ));
+};
+
+const isValidEAInstallDirectory = (installDir) => {
+  if (!installDir || !fs.existsSync(installDir) || isBlockedEAPath(installDir) || isExcludedFromEA(installDir)) {
+    return false;
+  }
+
+  try {
+    return fs.statSync(installDir).isDirectory();
+  } catch (error) {
+    return false;
+  }
+};
+
+const normalizeEADisplayName = (value) => String(value || '')
+  .replace(/_/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const getEAInstallDataRoots = () => {
+  const roots = [];
+  getActiveDrives().forEach((drive) => {
+    addUniquePath(roots, `${drive}:\\ProgramData\\EA Desktop\\InstallData`);
+    addUniquePath(roots, `${drive}:\\ProgramData\\Electronic Arts\\EA Desktop\\InstallData`);
+    addUniquePath(roots, `${drive}:\\ProgramData\\Origin\\LocalContent`);
+  });
+  return roots;
+};
+
+const getEACandidateInstallFolders = (displayName) => {
+  const candidates = [];
+  const folderName = normalizeEADisplayName(displayName);
+  if (!folderName) {
+    return candidates;
+  }
+
+  getActiveDrives().forEach((drive) => {
+    addUniquePath(candidates, `${drive}:\\${folderName}`);
+    addUniquePath(candidates, `${drive}:\\EA Games\\${folderName}`);
+    addUniquePath(candidates, `${drive}:\\Games\\EA\\${folderName}`);
+    addUniquePath(candidates, `${drive}:\\Games\\EA Games\\${folderName}`);
+    addUniquePath(candidates, `${drive}:\\Electronic Arts\\${folderName}`);
+    addUniquePath(candidates, `${drive}:\\Games\\Electronic Arts\\${folderName}`);
+    addUniquePath(candidates, `${drive}:\\Program Files\\EA Games\\${folderName}`);
+    addUniquePath(candidates, `${drive}:\\Program Files (x86)\\EA Games\\${folderName}`);
+  });
+
+  return candidates;
+};
+
+const resolveEAInstallDataFolder = (displayName) => {
+  const folderName = normalizeEADisplayName(displayName);
+  if (!folderName || isLikelyNonGameFolder(folderName) || isExcludedFromEA(folderName)) {
+    return null;
+  }
+
+  for (const candidateInstallDir of getEACandidateInstallFolders(folderName)) {
+    if (!isValidEAInstallDirectory(candidateInstallDir) || isLikelyForeignLauncherPath(candidateInstallDir)) {
+      continue;
+    }
+
+    const executablePath = findBestExecutablePath(candidateInstallDir, folderName) || findExecutableDeep(candidateInstallDir, 2);
+    if (!executablePath || isBlockedEAPath(executablePath) || isExcludedFromEA(executablePath) || isLikelyToolExecutable(executablePath)) {
+      continue;
+    }
+
+    return {
+      displayName: folderName,
+      executablePath,
+      installDir: candidateInstallDir,
+      titleId: folderName
+    };
+  }
+
+  return null;
+};
+
+const EA_REGISTRY_ROOTS = [
+  'HKLM\\SOFTWARE\\WOW6432Node\\Electronic Arts\\Electronic Arts',
+  'HKLM\\SOFTWARE\\Electronic Arts\\Electronic Arts',
+  'HKLM\\SOFTWARE\\WOW6432Node\\Electronic Arts',
+  'HKLM\\SOFTWARE\\Electronic Arts'
+];
+
+const EA_REGISTRY_SKIP_TOKENS = [
+  'ea desktop',
+  'ea core',
+  'eadm',
+  'origin',
+  'electronic arts'
+];
+
+const parseRegistryInstallEntries = (registryRoot, valueName) => {
+  const output = runCommand(`reg query "${registryRoot}" /s /v ${valueName}`);
+  if (!output || !output.includes('HKEY_')) {
+    return [];
+  }
+
+  const entries = [];
+  let currentKey = '';
+  output.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (trimmed.startsWith('HKEY_')) {
+      currentKey = trimmed;
+      return;
+    }
+
+    const match = trimmed.match(new RegExp(`^${valueName}\\s+REG_\\w+\\s+(.+)$`, 'i'));
+    if (match && currentKey) {
+      entries.push({
+        registryKey: currentKey,
+        installDir: match[1].trim()
+      });
+    }
+  });
+
+  return entries;
+};
+
+const getEARegistryGames = () => {
+  const registryGames = [];
+  const seenInstallDirs = new Set();
+
+  EA_REGISTRY_ROOTS.forEach((registryRoot) => {
+    parseRegistryInstallEntries(registryRoot, 'InstallPath').forEach(({ registryKey, installDir }) => {
+      const gameName = registryKey.split('\\').pop() || '';
+      const normalizedGameName = gameName.toLowerCase();
+
+      if (!gameName || EA_REGISTRY_SKIP_TOKENS.some((token) => normalizedGameName === token || normalizedGameName.includes(`${token}\\`))) {
+        return;
+      }
+
+      if (!isValidEAInstallDirectory(installDir) || isLikelyForeignLauncherPath(installDir) || isExcludedFromEA(gameName)) {
+        return;
+      }
+
+      const installDirKey = installDir.toLowerCase();
+      if (seenInstallDirs.has(installDirKey)) {
+        return;
+      }
+
+      let executablePath = findBestExecutablePath(installDir, gameName);
+      if (!executablePath) {
+        executablePath = findExecutableDeep(installDir, 4);
+      }
+
+      if (!executablePath || isBlockedEAPath(executablePath) || isExcludedFromEA(executablePath) || isLikelyToolExecutable(executablePath)) {
+        return;
+      }
+
+      seenInstallDirs.add(installDirKey);
+      registryGames.push({
+        name: normalizeEADisplayName(gameName),
+        platform: 'EA',
+        genres: getGameGenres(gameName) ?? ['Story-driven'],
+        executable: executablePath,
+        executablePath,
+        installDir,
+        launchId: gameName,
+        ...createTrackedDefaults()
+      });
+    });
+  });
+
+  return registryGames;
+};
+
+const createEAGame = ({ displayName, executablePath, installDir, titleId }) => ({
+  name: normalizeEADisplayName(displayName),
+  platform: 'EA',
+  genres: getGameGenres(displayName) ?? ['Story-driven'],
+  executable: executablePath,
+  executablePath,
+  installDir,
+  launchId: titleId,
+  ...createTrackedDefaults()
+});
+
 const scanEALibrary = () => {
   const paths = getEAInstallPaths();
   const eaGames = [];
   const foundGames = new Set();
+  const seenInstallDirs = new Set();
+
+  const addGame = (candidate) => {
+    const displayName = normalizeEADisplayName(candidate.displayName);
+    const installDir = candidate.installDir;
+    const executablePath = candidate.executablePath;
+    const titleId = candidate.titleId || displayName;
+
+    if (!displayName || isExcludedFromEA(displayName) || isExcludedFromEA(titleId)) return false;
+    if (!isValidEAInstallDirectory(installDir) || isLikelyForeignLauncherPath(installDir) || seenInstallDirs.has(installDir.toLowerCase())) return false;
+    if (!executablePath || isBlockedEAPath(executablePath) || isExcludedFromEA(executablePath) || isLikelyToolExecutable(executablePath)) return false;
+    if (foundGames.has(displayName.toLowerCase())) return false;
+
+    foundGames.add(displayName.toLowerCase());
+    seenInstallDirs.add(installDir.toLowerCase());
+    eaGames.push(createEAGame({ displayName, executablePath, installDir, titleId }));
+    return true;
+  };
 
   paths.forEach((eaPath) => {
     if (!fs.existsSync(eaPath)) return;
-    if (isProtectedSystemPath(eaPath) || isEASystemPath(eaPath) || isExcludedFromEA(eaPath)) return;
+    if (isBlockedEAPath(eaPath) || isExcludedFromEA(eaPath)) return;
 
     safeReadDir(eaPath).forEach((folder) => {
       if (isLikelyNonGameFolder(folder)) return;
@@ -126,26 +371,19 @@ const scanEALibrary = () => {
       if (isExcludedFromEA(folder)) return;
       const installDataPath = path.join(eaPath, folder);
       if (!fs.existsSync(installDataPath)) return;
-      if (isProtectedSystemPath(installDataPath)) return;
+      if (isBlockedEAPath(installDataPath)) return;
+      if (seenInstallDirs.has(installDataPath.toLowerCase())) return;
       
       const isDir = fs.statSync(installDataPath).isDirectory();
       if (!isDir) return;
 
       const directExe = findBestExecutablePath(installDataPath, folder);
-      if (directExe && !isEASystemPath(directExe) && !isExcludedFromEA(directExe)) {
-        const displayName = folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
-        if (isExcludedFromEA(displayName)) return;
-        if (foundGames.has(displayName.toLowerCase())) return;
-        foundGames.add(displayName.toLowerCase());
-        eaGames.push({
-          name: displayName,
-          platform: 'EA',
-          genres: getGameGenres(displayName) ?? ['Story-driven'],
-          executable: directExe,
+      if (directExe && !isBlockedEAPath(directExe) && !isExcludedFromEA(directExe)) {
+        addGame({
+          displayName: folder,
           executablePath: directExe,
           installDir: installDataPath,
-          launchId: folder,
-          ...createTrackedDefaults()
+          titleId: folder
         });
         return;
       }
@@ -159,27 +397,37 @@ const scanEALibrary = () => {
       const realInstallDir = manifest.installDir;
       const displayName = manifest.displayName || manifest.productName || folder;
       const titleId = manifest.productId || manifest.titleId || folder;
-      if (isProtectedSystemPath(realInstallDir) || isExcludedFromEA(realInstallDir) || isExcludedFromEA(displayName) || isExcludedFromEA(titleId)) return;
-      let resolvedExe = findBestExecutablePath(realInstallDir, path.basename(realInstallDir));
+      if (!isValidEAInstallDirectory(realInstallDir)) return;
+      let resolvedExe = findBestExecutablePath(realInstallDir, displayName) || findBestExecutablePath(realInstallDir, path.basename(realInstallDir));
       if (!resolvedExe) {
         resolvedExe = findExecutableDeep(realInstallDir, 3);
         if (!resolvedExe) return;
       }
       
-      if (isEASystemPath(resolvedExe) || isExcludedFromEA(resolvedExe)) return;
-      if (foundGames.has(displayName.toLowerCase())) return;
-      foundGames.add(displayName.toLowerCase());
-
-      eaGames.push({
-        name: displayName,
-        platform: 'EA',
-        genres: getGameGenres(displayName) ?? ['Story-driven'],
-        executable: resolvedExe,
+      addGame({
+        displayName,
         executablePath: resolvedExe,
         installDir: realInstallDir,
-        launchId: titleId,
-        ...createTrackedDefaults()
+        titleId
       });
+    });
+  });
+
+  getEAInstallDataRoots().forEach((installDataRoot) => {
+    safeReadDir(installDataRoot).forEach((folder) => {
+      const resolvedGame = resolveEAInstallDataFolder(folder);
+      if (resolvedGame) {
+        addGame(resolvedGame);
+      }
+    });
+  });
+
+  getEARegistryGames().forEach((game) => {
+    addGame({
+      displayName: game.name,
+      executablePath: game.executablePath || game.executable,
+      installDir: game.installDir,
+      titleId: game.launchId || game.name
     });
   });
 

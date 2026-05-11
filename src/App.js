@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-route
 import './App.css';
 import Home from './Home';
 import Library from './Library';
+import StorageManager from './StorageManager';
 import Stats from './Stats';
 import Achievements from './Achievements';
 import GamingLinks from './GamingLinks';
@@ -12,6 +13,8 @@ import Profile from './Profile';
 import YearInReview from './YearInReview';
 import ChallengeBoard from './ChallengeBoard';
 import PerformanceCockpit from './PerformanceCockpit';
+import LibraryIntelligence from './LibraryIntelligence';
+import StartupQuestionnaire from './components/StartupQuestionnaire';
 import Themes from './Themes';
 import Rewards from './Rewards';
  import ExportHub from './ExportHub';
@@ -23,14 +26,17 @@ import ControllerSupport from './components/ControllerSupport';
 import { GameLaunchCoordinatorService } from './services/GameLaunchCoordinatorService';
 import { LibraryScanCoordinatorService } from './services/LibraryScanCoordinatorService';
 import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
-import { ToastProvider, useToast } from './components/Toast';
+import { PlaytimeEnrichmentService } from './services/PlaytimeEnrichmentService';
+import { ToastProvider } from './components/Toast';
 import LevelUpToast from './components/LevelUpToast';
 import WeeklySummaryToast from './components/WeeklySummaryToast';
 import { DailyEngagementService } from './services/DailyEngagementService';
-import { QuickChallengeService } from './services/QuickChallengeService';
 import { AchievementTracker } from './AchievementSystem';
 import { EasterEggService } from './services/EasterEggService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
+import { GameCurationService } from './services/GameCurationService';
+import CommandPalette from './components/CommandPalette';
+import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 
 const FAVORITES_STORAGE_KEY = 'favorites';
 
@@ -110,6 +116,7 @@ const getMostRecentlyPlayedGame = (libraryData = []) => (
 const CONTROLLER_NAV_ROUTES = [
   '/',
   '/library',
+  '/library-intelligence',
   '/stats',
   '/achievements',
   '/year-in-review',
@@ -242,14 +249,16 @@ function AppContent() {
 
   // Initialize keyboard shortcuts
   useEffect(() => {
-    KeyboardShortcuts.registerAction('focus_search', 'Ctrl+K', () => {
+    const focusSearchInput = () => {
       // Focus search input if we're on the library page
-      const searchInput = document.querySelector('input[placeholder*="search"], input[placeholder*="Search"]');
+      const searchInput = document.querySelector('input[placeholder*="search" i], input[placeholder*="Search" i]');
       if (searchInput) {
         searchInput.focus();
         searchInput.select();
       }
-    }, 'Focus search');
+    };
+
+    KeyboardShortcuts.registerAction('focus_search', 'Ctrl+K', focusSearchInput, 'Focus search');
 
     KeyboardShortcuts.registerAction('go_library', 'Ctrl+L', () => {
       window.location.hash = '#/library';
@@ -301,7 +310,7 @@ function AppContent() {
     const handleKeyDown = (e) => {
       const result = EasterEggService.handleKeyPress(e.key);
       if (result?.type === 'activated') {
-        console.log(`[EasterEgg] ${result.message}`);
+        // Easter egg activated
       }
     };
 
@@ -384,7 +393,7 @@ function AppContent() {
     const savedTheme = localStorage.getItem('gamepilot-theme');
     if (savedTheme && !VALID_THEME_IDS.has(savedTheme)) {
       localStorage.removeItem('gamepilot-theme');
-      console.log(`Cleared invalid cached theme: ${savedTheme}`);
+      // Cleared invalid cached theme
     }
 
     const themeClass = resolveThemeClassName(theme);
@@ -396,7 +405,7 @@ function AppContent() {
 
     // Only update if the class has actually changed
     if (document.body.className !== newBodyClass) {
-      console.log(`🎨 Applying theme: ${theme} -> ${themeClass} (body class: ${newBodyClass})`);
+      // Theme applied
       document.body.className = newBodyClass;
       localStorage.setItem('gamepilot-theme', themeClass);
     }
@@ -424,7 +433,9 @@ function AppContent() {
         return;
       }
 
-      const normalizedLibrary = normalizeLibraryData(parsedLibrary);
+      const enrichedLibrary = PlaytimeEnrichmentService.enrichLibraryWithPlaytime(parsedLibrary);
+      const curatedLibrary = GameCurationService.enrichLibrary(enrichedLibrary);
+      const normalizedLibrary = normalizeLibraryData(curatedLibrary);
       setLibrary(normalizedLibrary);
 
       const mostRecentlyPlayedGame = getMostRecentlyPlayedGame(normalizedLibrary);
@@ -537,107 +548,58 @@ function AppContent() {
 
   const getFallbackLibrary = useCallback(() => {
     // Attempt to load previously saved library from localStorage
-    console.log('Attempting to load fallback library data from localStorage...');
     const savedLibrary = localStorage.getItem('gameLibrary');
     if (savedLibrary) {
       try {
         const parsedLibrary = JSON.parse(savedLibrary);
         if (Array.isArray(parsedLibrary) && parsedLibrary.length > 0) {
-          console.log('✅ Loaded saved library with', parsedLibrary.length, 'games.');
           return parsedLibrary;
         }
       } catch (e) {
         console.error('Failed to parse saved library:', e);
       }
     }
-    console.log('❌ No valid saved library found, returning empty array.');
     return [];
   }, []);
 
   const scanLocalLibrary = useCallback(async () => {
     setLoading(true);
-    console.log(' Starting local library scan...');
-    
+
     try {
-      // Check if Electron APIs are available
       const electronAvailable = typeof window.electronAPI !== 'undefined';
       if (!electronAvailable) {
-        console.error('⚠️ Electron APIs not available, scanning may fail. Please restart the app.');
-        // Load fallback library if available
         const fallbackLibrary = getFallbackLibrary();
         if (fallbackLibrary.length > 0) {
-          console.log('✅ Fallback library loaded with', fallbackLibrary.length, 'games.');
           setLibrary(fallbackLibrary);
           saveLibrary(fallbackLibrary);
           return;
-        } else {
-          console.log('❌ No fallback library available, proceeding with scan attempt.');
         }
       }
-      
-      // Phase A: Unify scan orchestration
-      // We now strictly rely on the LibraryScanCoordinatorService
-      // which safely handles IPC to the native main-process scanner.
-      // Renderer-side fallback scanners have been removed.
-      
-      console.log('Initiating library scan with current library size:', library.length);
-      const { allGames = [], mergedLibrary = [], scanReport = null } = await LibraryScanCoordinatorService.scanAndMergeLibrary({
+
+      const { allGames = [], mergedLibrary = [] } = await LibraryScanCoordinatorService.scanAndMergeLibrary({
         currentLibrary: library,
-        assignMoodToGame
+        assignMoodToGame,
+        manual: true
       });
 
-      if (scanReport) {
-        console.log('📋 Scan Report:', scanReport);
-      } else {
-        console.log('📋 No scan report returned, check for errors in main process.');
-      }
-
-      // Fallback for production if no games are detected
       if (allGames.length === 0) {
-        console.log('⚠️ No games detected, attempting fallback scan...');
-        // Check if we're in production mode
-        const isProduction = process.env.NODE_ENV === 'production';
-        if (isProduction) {
-          console.log('⚠️ Production mode detected, using fallback data if available.');
-          // Use a fallback library if available or mock data for testing
-          const fallbackLibrary = getFallbackLibrary();
-          if (fallbackLibrary.length > 0) {
-            console.log('✅ Fallback library loaded with', fallbackLibrary.length, 'games.');
-            setLibrary(fallbackLibrary);
-            saveLibrary(fallbackLibrary);
-            return;
-          } else {
-            console.log('❌ No fallback library available.');
-          }
+        const fallbackLibrary = getFallbackLibrary();
+        if (fallbackLibrary.length > 0) {
+          const enrichedFallback = PlaytimeEnrichmentService.enrichLibraryWithPlaytime(fallbackLibrary);
+          const curatedFallback = GameCurationService.enrichLibrary(enrichedFallback);
+          setLibrary(curatedFallback);
+          saveLibrary(curatedFallback);
+          return;
         }
       }
 
-      const platformCounts = allGames.reduce((acc, g) => {
-        const key = g.platform || 'Unknown';
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
-      console.log('📊 Platform counts this scan:', platformCounts);
+      const enrichedMerged = PlaytimeEnrichmentService.enrichLibraryWithPlaytime(mergedLibrary);
+      // Record newly discovered games for Recently Added tracking
+      enrichedMerged.forEach((game) => GameCurationService.recordGameSeen(game.name));
+      const curatedMerged = GameCurationService.enrichLibrary(enrichedMerged);
+      setLibrary(curatedMerged);
+      saveLibrary(curatedMerged);
 
-      const existingKeys = new Set((library || []).map(g => `${g.platform || 'Unknown'}::${g.name || ''}::${g.appid || ''}`));
-      const newlyDiscovered = allGames.filter(g => !existingKeys.has(`${g.platform || 'Unknown'}::${g.name || ''}::${g.appid || ''}`));
-      const sampleNew = newlyDiscovered.slice(0, 25).map(g => `${g.platform || 'Unknown'}: ${g.name || 'Unknown'}`);
-      console.log(`🆕 New games detected this scan: ${newlyDiscovered.length}`);
-      if (sampleNew.length > 0) {
-        console.log('🆕 Sample new titles:', sampleNew);
-        if (newlyDiscovered.length > sampleNew.length) {
-          console.log(`…and ${newlyDiscovered.length - sampleNew.length} more`);
-        }
-      } else {
-        console.log('🆕 No new games detected, total games scanned:', allGames.length);
-      }
-
-      setLibrary(mergedLibrary);
-      saveLibrary(mergedLibrary);
-
-      console.log(' Scan complete: Scanned', allGames.length, 'games across platforms');
-      console.log(' Total library size:', mergedLibrary.length);
-      
     } catch (err) {
       console.error(' Error during scan:', err);
       console.error(' Detailed error stack:', err.stack);
@@ -725,15 +687,12 @@ function AppContent() {
   }, [handleEndSession]);
 
   const handleLaunchGame = useCallback(async (game) => {
-    console.log('🎮 Launching game:', game.name, 'Platform:', game.platform);
-    
     try {
-      // Check if Electron APIs are available
       const electronAvailable = typeof window.electronAPI !== 'undefined';
       if (!electronAvailable) {
         throw new Error('Electron APIs not available - please restart the app');
       }
-      
+
       const result = await GameLaunchCoordinatorService.launchGame({
         game,
         library,
@@ -748,28 +707,36 @@ function AppContent() {
           handleEndSession(gameName);
         }
       });
-      
+
       if (!result.success) {
         console.error(' Game launch failed:', result.message);
         alert(result.message);
       } else {
-        console.log(' Game launched successfully:', result.result?.message || 'Launched');
         setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
-        
-        // Track seasonal reward progress
+
         const seasonalReward = SeasonalRewardService.trackGamePlay(game);
         if (seasonalReward) {
-          console.log(' Seasonal theme unlocked:', seasonalReward.name);
+          // Seasonal reward unlocked
         }
       }
-      
-      console.log(' Launch request submitted for:', game.name);
       
     } catch (error) {
       console.error('Launch error:', error);
       alert(`Failed to launch ${game.name}: ${error.message}`);
     }
   }, [handleEndSession, library, saveLibrary]);
+
+  // Listen for launch requests from CommandPalette / QuickLaunchHotbar
+  useEffect(() => {
+    const onLaunchRequest = (e) => {
+      const game = e?.detail;
+      if (game) {
+        handleLaunchGame(game);
+      }
+    };
+    window.addEventListener('gamepilot:launch-game', onLaunchRequest);
+    return () => window.removeEventListener('gamepilot:launch-game', onLaunchRequest);
+  }, [handleLaunchGame]);
 
   const handleUpdateRating = useCallback((gameName, userRating, replayIntent) => {
     const updatedLibrary = normalizeLibraryData((library || []).map((game) => {
@@ -817,9 +784,42 @@ function AppContent() {
     saveLibrary(updatedLibrary);
   }, [library, saveLibrary]);
 
+  // --- Curation handlers ---
+  const handleUpdateCollections = useCallback((gameName, collectionIds) => {
+    GameCurationService.setGameCollections(gameName, collectionIds);
+    setLibrary((prev) => prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
+  }, []);
+
+  const handleToggleHidden = useCallback((gameName) => {
+    const isHidden = GameCurationService.toggleHiddenGame(gameName);
+    setLibrary((prev) => prev.map((g) => (g.name === gameName ? { ...g, isHidden } : g)));
+  }, []);
+
+  const handleUpdateCompletion = useCallback((gameName, status, note) => {
+    GameCurationService.setGameCompletion(gameName, status, note);
+    setLibrary((prev) => prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
+  }, []);
+
+  const handleUpdateNotes = useCallback((gameName, text) => {
+    GameCurationService.setGameNotes(gameName, text);
+    setLibrary((prev) => prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
+  }, []);
+
+  const handleUpdateCoverArt = useCallback((gameName, url) => {
+    GameCurationService.setCoverArtOverride(gameName, url);
+    setLibrary((prev) => prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
+  }, []);
+
+  const handleAddSessionNote = useCallback((gameName, text) => {
+    GameCurationService.addSessionNote(gameName, text);
+    setLibrary((prev) => prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
+  }, []);
+
   return (
     <div className="App-container">
       <ControllerSupport />
+      <CommandPalette />
+      <QuickLaunchHotbar library={library} />
       <LevelUpToast 
         show={showLevelUp} 
         level={currentLevel} 
@@ -833,7 +833,9 @@ function AppContent() {
       />
       <Routes>
         <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
-        <Route path="/library" element={<Library library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} loading={loading} />} />
+        <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
+        <Route path="/library" element={<Library library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} onUpdateCollections={handleUpdateCollections} onToggleHidden={handleToggleHidden} onUpdateCompletion={handleUpdateCompletion} onUpdateNotes={handleUpdateNotes} onUpdateCoverArt={handleUpdateCoverArt} onAddSessionNote={handleAddSessionNote} loading={loading} />} />
+        <Route path="/storage" element={<StorageManager library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/stats" element={<Stats library={library} />} />
         <Route path="/achievements" element={<Achievements library={library} />} />
         <Route path="/themes" element={<Themes />} />
@@ -845,9 +847,11 @@ function AppContent() {
         <Route path="/profile" element={<Profile library={library} />} />
         <Route path="/year-in-review" element={<YearInReview library={library} />} />
         <Route path="/exports" element={<ExportHub library={library} theme={theme} />} />
+        <Route path="/library-intelligence" element={<LibraryIntelligence library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/challenge-board" element={<ChallengeBoard library={library} />} />
         <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />
         <Route path="/performance" element={<PerformanceCockpit library={library} />} />
+        <Route path="/startup-questionnaire" element={<StartupQuestionnaire isOpen founderTier={false} onComplete={() => {}} onSkip={() => {}} />} />
       </Routes>
     </div>
   );

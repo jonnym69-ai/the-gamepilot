@@ -1,3 +1,5 @@
+import StorageService from './StorageService';
+
 const QUEST_HISTORY_KEY = 'questCompletionHistory';
 
 const normalizeTimestamp = (value) => {
@@ -17,7 +19,7 @@ const sortNewestFirst = (left, right) => Number(right?.completedAt || 0) - Numbe
 export class QuestHistoryService {
   static getQuestCompletionHistory() {
     try {
-      const stored = JSON.parse(localStorage.getItem(QUEST_HISTORY_KEY) || '[]');
+      const stored = StorageService.get(QUEST_HISTORY_KEY, []);
       return Array.isArray(stored) ? stored : [];
     } catch (error) {
       console.error('QuestHistoryService: Failed to read quest history', error);
@@ -28,7 +30,7 @@ export class QuestHistoryService {
   static saveQuestCompletionHistory(history = []) {
     try {
       const safeHistory = Array.isArray(history) ? history : [];
-      localStorage.setItem(QUEST_HISTORY_KEY, JSON.stringify(safeHistory.slice(0, 1000)));
+      StorageService.set(QUEST_HISTORY_KEY, safeHistory.slice(0, 1000));
     } catch (error) {
       console.error('QuestHistoryService: Failed to save quest history', error);
     }

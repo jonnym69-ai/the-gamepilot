@@ -4,6 +4,8 @@
  * All data stored locally in localStorage
  */
 
+import StorageService from './StorageService';
+
 const MOOD_PERSONA_IDENTITIES = {
   Relaxed: {
     label: 'Chill Voyager',
@@ -53,7 +55,7 @@ export class UserBehaviorProfile {
    * Initialize or get user behavior profile
    */
   static getProfile() {
-    const stored = localStorage.getItem(this.STORAGE_KEY);
+    const stored = StorageService.getString(this.STORAGE_KEY);
     if (stored) {
       try {
         return this.hydrateProfile(JSON.parse(stored));
@@ -564,7 +566,7 @@ export class UserBehaviorProfile {
     const profile = this.getProfile();
     const entries = Object.entries(profile.playstylePatterns.preferredSessionLengths || {});
     if (entries.length === 0) {
-      return { bucket: null, count: 0 };
+      return { bucket: profile.onboardingSeed?.sessionPreference || null, count: 0 };
     }
     const [bucket, count] = entries.sort((a, b) => b[1] - a[1])[0];
     return { bucket, count };
@@ -580,23 +582,30 @@ export class UserBehaviorProfile {
     const topGenre = this.getTopGenres(1)[0] || null;
     const sessionPref = this.getPreferredSessionBucket();
     const peakHour = this.getPeakPlayHours(1)[0] || null;
+    const onboardingSeed = profile.onboardingSeed || null;
+    const seedMood = onboardingSeed?.selectedMoods?.[0] || null;
+    const seedGenre = onboardingSeed?.favoriteGenres?.[0] || null;
     const overallCompletionRate = profile.selectionHistory.length > 0
       ? Math.round((profile.completionStats.totalCompleted / profile.selectionHistory.length) * 100)
       : 0;
-    const personaIdentity = this.buildPersonaIdentity(topMoods);
+    const personaIdentity = this.buildPersonaIdentity(topMoods.length > 0 ? topMoods : (seedMood ? [{ mood: seedMood, completionRate: 0, count: 1 }] : []));
 
     const personaTags = [];
     if (personaIdentity) {
       personaTags.push(personaIdentity.label);
     }
-    if (topMood) {
-      personaTags.push(`${topMood.mood} seeker`);
+    if (topMood || seedMood) {
+      personaTags.push(`${(topMood?.mood || seedMood)} seeker`);
     }
-    if (topGenre) {
-      personaTags.push(`${topGenre.genre} specialist`);
+    if (topGenre || seedGenre) {
+      personaTags.push(`${(topGenre?.genre || seedGenre)} specialist`);
     }
     if (sessionPref.bucket) {
       const bucketLabel = {
+        quick: 'Sprint Sessions',
+        medium: 'Focused Runs',
+        long: 'Extended Flights',
+        weekend: 'Marathon Missions',
         '0-30': 'Sprint Sessions',
         '30-60': 'Focused Runs',
         '60-120': 'Extended Flights',
@@ -606,9 +615,9 @@ export class UserBehaviorProfile {
     }
 
     return {
-      dominantMood: topMood?.mood || null,
+      dominantMood: topMood?.mood || seedMood || null,
       dominantMoodCompletion: topMood?.completionRate || 0,
-      dominantGenre: topGenre?.genre || null,
+      dominantGenre: topGenre?.genre || seedGenre || null,
       dominantGenreCompletion: topGenre?.completionRate || 0,
       preferredSessionBucket: sessionPref.bucket,
       avgSessionLength: Math.round(profile.playstylePatterns.avgSessionLength) || 0,
@@ -616,7 +625,76 @@ export class UserBehaviorProfile {
       peakPlayHour: peakHour ? peakHour.hour : null,
       overallCompletionRate,
       personaTags,
-      personaIdentity
+      personaIdentity,
+      onboardingSeed
+    };
+  }
+
+  static getStartupInfluenceSummary() {
+    const profile = this.getProfile();
+    const onboardingSeed = profile.onboardingSeed || null;
+
+    if (!onboardingSeed) {
+      return {
+        active: false,
+        seedWeight: 0,
+        liveSignalScore: 1,
+        liveSignalCount: 0,
+        label: 'Inactive',
+        shortLabel: 'Inactive',
+        description: 'Startup tuning is not currently contributing to recommendations.'
+      };
+    }
+
+    const selectionHistory = Array.isArray(profile.selectionHistory) ? profile.selectionHistory : [];
+    const liveSelectionCount = selectionHistory.length;
+    const launchedCount = selectionHistory.filter((entry) => entry?.launchedGameId).length;
+    const feedbackCount = selectionHistory.filter((entry) => typeof entry?.recommendationHelpful === 'boolean').length;
+    const completedCount = Number(profile?.completionStats?.totalCompleted || 0);
+    const liveSignalCount = liveSelectionCount + launchedCount + feedbackCount + completedCount;
+
+    const liveSignalScore = Math.min(
+      1,
+      (Math.min(liveSelectionCount, 12) / 12) * 0.5
+      + (Math.min(launchedCount, 8) / 8) * 0.2
+      + (Math.min(feedbackCount, 6) / 6) * 0.1
+      + (Math.min(completedCount, 6) / 6) * 0.2
+    );
+
+    const seedWeight = Math.max(0.08, Number((1 - liveSignalScore).toFixed(2)));
+
+    if (seedWeight >= 0.67) {
+      return {
+        active: true,
+        seedWeight,
+        liveSignalScore,
+        liveSignalCount,
+        label: 'Startup tuning: strong',
+        shortLabel: 'Strong',
+        description: 'Your onboarding profile is still doing most of the recommendation steering while GamePilot learns from live play.'
+      };
+    }
+
+    if (seedWeight >= 0.34) {
+      return {
+        active: true,
+        seedWeight,
+        liveSignalScore,
+        liveSignalCount,
+        label: 'Startup tuning: blending with live behavior',
+        shortLabel: 'Blending',
+        description: 'Your onboarding profile still contributes, but real play history is now sharing the wheel.'
+      };
+    }
+
+    return {
+      active: true,
+      seedWeight,
+      liveSignalScore,
+      liveSignalCount,
+      label: 'Startup tuning: mostly replaced by real play history',
+      shortLabel: 'Mostly replaced',
+      description: 'Your onboarding seed is now a light fallback because GamePilot has enough live behavior data to lead recommendations.'
     };
   }
 
@@ -771,6 +849,7 @@ export class UserBehaviorProfile {
    * Helper: Get time of day description
    */
   static getTimeOfDay(hour) {
+    if (hour < 5) return 'Late Night';
     if (hour < 12) return 'Morning';
     if (hour < 17) return 'Afternoon';
     if (hour < 21) return 'Evening';
@@ -782,7 +861,7 @@ export class UserBehaviorProfile {
    */
   static saveProfile(profile) {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(profile));
+      StorageService.setString(this.STORAGE_KEY, JSON.stringify(profile));
     } catch (e) {
       console.error('Failed to save behavior profile:', e);
     }
@@ -792,7 +871,7 @@ export class UserBehaviorProfile {
    * Clear profile (for testing or reset)
    */
   static clearProfile() {
-    localStorage.removeItem(this.STORAGE_KEY);
+    StorageService.remove(this.STORAGE_KEY);
   }
 
   /**

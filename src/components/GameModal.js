@@ -1,25 +1,51 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Share2 } from 'lucide-react';
+import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Share2, Trash2 } from 'lucide-react';
+import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
 import { GameRequirements } from '../services/GameRequirements';
 import { openExternalUrl } from '../services/ElectronBridge';
 import { HardwareDetector } from '../services/HardwareDetector';
 import { LocalShareService } from '../services/LocalShareService';
+import { GameCurationService } from '../services/GameCurationService';
+import LibrariansNotes from './LibrariansNotes';
+import SaveBackupPanel from './SaveBackupPanel';
+import SteamSnapshot from './SteamSnapshot';
+import PatchNewsPanel from './PatchNewsPanel';
+import UninstallModal from './UninstallModal';
 import './GameModal.css';
 
 const REPLAY_INTENT_OPTIONS = ['none', 'soon', 'active', 'finished', 'endless'];
 
-const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavorite = false, onUpdatePrice, onUpdateRating }) => {
+const RATING_PRESETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+const getRatingLabel = (value) => {
+  if (!value) return 'Not rated yet';
+  if (value >= 9) return 'All-time favourite';
+  if (value >= 8) return 'Excellent';
+  if (value >= 7) return 'Great';
+  if (value >= 6) return 'Good';
+  if (value >= 5) return 'Mixed';
+  if (value >= 3) return 'Not for me';
+  return 'Avoid';
+};
+
+const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavorite = false, onUpdatePrice, onUpdateRating, onUpdateCollections, onToggleHidden, onUpdateCompletion, onUpdateNotes, onUpdateCoverArt, onAddSessionNote }) => {
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [screenshots, setScreenshots] = useState([]);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
   const [systemInfo, setSystemInfo] = useState(null);
+  const [showUninstall, setShowUninstall] = useState(false);
   const [compatibility, setCompatibility] = useState(null);
-  const [isCompleted, setIsCompleted] = useState(false);
   const [rating, setRating] = useState(game?.userRating || 0);
   const [replayIntent, setReplayIntent] = useState(game?.replayIntent || 'none');
+  const [saveState, setSaveState] = useState('idle');
   const [selectedControlIndex, setSelectedControlIndex] = useState(0);
+  const [collections] = useState(() => GameCurationService.getCollections());
+  const [selectedCollections, setSelectedCollections] = useState(game?.userCollections || []);
+  const [completionStatus, setCompletionStatus] = useState(game?.completionStatus || 'not-started');
+  const [coverArtUrl, setCoverArtUrl] = useState(game?.coverArtOverride || '');
+  const [sessionNoteText, setSessionNoteText] = useState('');
   const fetchedGameId = React.useRef(null);
 
   // Sync state when game prop changes
@@ -27,32 +53,41 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     if (game) {
       setRating(game.userRating || 0);
       setReplayIntent(game.replayIntent || 'none');
+      setSelectedCollections(game.userCollections || []);
+      setCompletionStatus(game.completionStatus || 'not-started');
+      setCoverArtUrl(game.coverArtOverride || '');
+      setSaveState('idle');
       setSelectedControlIndex(0);
     }
   }, [game]);
 
   const handleRatingChange = useCallback((newRating) => {
     setRating(newRating);
+    setSaveState('dirty');
   }, []);
 
-  const handleRatingSave = useCallback((finalRating) => {
+  const handleRatingSave = useCallback((finalRating = rating, finalReplayIntent = replayIntent) => {
     if (onUpdateRating) {
-      onUpdateRating(game.name, finalRating, replayIntent);
+      onUpdateRating(game.name, finalRating, finalReplayIntent);
     }
-  }, [game, onUpdateRating, replayIntent]);
+    setSaveState('saved');
+  }, [game, onUpdateRating, rating, replayIntent]);
 
   const handleReplayIntentChange = useCallback((newIntent) => {
     setReplayIntent(newIntent);
-    if (onUpdateRating) {
-      onUpdateRating(game.name, rating, newIntent);
-    }
-  }, [game, onUpdateRating, rating]);
+    setSaveState('dirty');
+  }, []);
+
+  const hasUnsavedRatingChanges = useMemo(() => (
+    Number(game?.userRating || 0) !== Number(rating || 0)
+    || (game?.replayIntent || 'none') !== replayIntent
+  ), [game?.replayIntent, game?.userRating, rating, replayIntent]);
 
   // Get system info on component mount
   useEffect(() => {
     const getSystemInfo = async () => {
       try {
-        const info = await HardwareDetector.getSystemInfo();
+        const info = await HardwareDetector.getCachedSystemInfo();
         setSystemInfo(info);
       } catch (error) {
         console.error('Failed to get system info:', error);
@@ -61,28 +96,36 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     getSystemInfo();
   }, []);
 
-  // Load completion status from localStorage
-  useEffect(() => {
-    if (game) {
-      const completedGames = JSON.parse(localStorage.getItem('completedGames') || '[]');
-      const completed = completedGames.some(cg => cg.name === game.name);
-      setIsCompleted(completed);
-    }
-  }, [game]);
+  // Completion status already synced from game prop in the sync effect below
+
 
   // Calculate compatibility when systemInfo or game changes
   useEffect(() => {
-    if (systemInfo && game) {
-      try {
-        const compatData = GameRequirements.checkGameCompatibility(game, systemInfo);
-        setCompatibility(compatData);
-      } catch (error) {
-        console.error('Failed to calculate compatibility:', error);
-      }
-      return;
+    if (!systemInfo || !game) {
+      setCompatibility(null);
+      return undefined;
     }
 
-    setCompatibility(null);
+    let cancelled = false;
+    // Render an immediate (possibly estimate-based) result, then refine once the
+    // lazy-loaded requirements DB is in memory.
+    try {
+      setCompatibility(GameRequirements.checkGameCompatibility(game, systemInfo));
+    } catch (error) {
+      console.error('Failed to calculate compatibility:', error);
+    }
+    GameRequirements.ensureDatabaseLoaded()
+      .then(() => {
+        if (cancelled) return;
+        try {
+          setCompatibility(GameRequirements.checkGameCompatibility(game, systemInfo));
+        } catch (error) {
+          console.error('Failed to refine compatibility after DB load:', error);
+        }
+      })
+      .catch(() => { /* keep the estimate */ });
+
+    return () => { cancelled = true; };
   }, [systemInfo, game]);
 
   useEffect(() => {
@@ -106,28 +149,31 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     }
   }, [game]);
 
-  const toggleCompletion = useCallback(() => {
-    if (!game) return;
-    
-    const completedGames = JSON.parse(localStorage.getItem('completedGames') || '[]');
-    const gameIndex = completedGames.findIndex(cg => cg.name === game.name);
-    
-    if (gameIndex > -1) {
-      // Remove from completed
-      completedGames.splice(gameIndex, 1);
-      setIsCompleted(false);
-    } else {
-      // Add to completed
-      completedGames.push({
-        name: game.name,
-        appid: game.appid,
-        completedDate: new Date().toISOString()
-      });
-      setIsCompleted(true);
-    }
-    
-    localStorage.setItem('completedGames', JSON.stringify(completedGames));
-  }, [game]);
+  const handleCompletionChange = useCallback((status) => {
+    if (!game || !onUpdateCompletion) return;
+    setCompletionStatus(status);
+    onUpdateCompletion(game.name, status);
+  }, [game, onUpdateCompletion]);
+
+  const handleCollectionToggle = useCallback((collectionId) => {
+    if (!game || !onUpdateCollections) return;
+    const next = selectedCollections.includes(collectionId)
+      ? selectedCollections.filter((id) => id !== collectionId)
+      : [...selectedCollections, collectionId];
+    setSelectedCollections(next);
+    onUpdateCollections(game.name, next);
+  }, [game, onUpdateCollections, selectedCollections]);
+
+  const handleCoverArtSave = useCallback(() => {
+    if (!game || !onUpdateCoverArt) return;
+    onUpdateCoverArt(game.name, coverArtUrl);
+  }, [game, onUpdateCoverArt, coverArtUrl]);
+
+  const handleAddSessionNoteLocal = useCallback(() => {
+    if (!game || !onAddSessionNote || !sessionNoteText.trim()) return;
+    onAddSessionNote(game.name, sessionNoteText.trim());
+    setSessionNoteText('');
+  }, [game, onAddSessionNote, sessionNoteText]);
 
   const fetchGameDetails = useCallback(async () => {
     if (!game?.appid || fetchedGameId.current === game.appid) return;
@@ -203,6 +249,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     'completion',
     'rating',
     'replay',
+    'saveRating',
     ...(game?.appid ? ['store'] : []),
     ...(typeof onToggleFavorite === 'function' ? ['favorite'] : []),
     'share'
@@ -249,14 +296,12 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
         if (action === 'left') {
           const nextRating = Math.max(0, Number((rating - 0.5).toFixed(1)));
           handleRatingChange(nextRating);
-          handleRatingSave(nextRating);
           return;
         }
 
         if (action === 'right') {
           const nextRating = Math.min(10, Number((rating + 0.5).toFixed(1)));
           handleRatingChange(nextRating);
-          handleRatingSave(nextRating);
           return;
         }
       }
@@ -285,7 +330,10 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
           onClose();
           break;
         case 'completion':
-          toggleCompletion();
+          handleCompletionChange(completionStatus === 'completed' ? 'not-started' : 'completed');
+          break;
+        case 'saveRating':
+          handleRatingSave();
           break;
         case 'store':
           handleOpenStore();
@@ -306,7 +354,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
 
     window.addEventListener('controllerInput', handleModalControllerInput);
     return () => window.removeEventListener('controllerInput', handleModalControllerInput);
-  }, [favoriteKey, game, handleLaunchGame, handleOpenStore, handleRatingChange, handleRatingSave, handleReplayIntentChange, isOpen, modalControls, onClose, onToggleFavorite, rating, replayIntent, selectedControlIndex, toggleCompletion]);
+  }, [favoriteKey, game, handleLaunchGame, handleOpenStore, handleRatingChange, handleRatingSave, handleReplayIntentChange, isOpen, modalControls, onClose, onToggleFavorite, rating, replayIntent, selectedControlIndex, handleCompletionChange, completionStatus]);
 
   if (!isOpen || !game) {
     return <div style={{ display: 'none' }} aria-hidden="true" />;
@@ -326,6 +374,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   };
 
   return (
+    <>
     <div className="game-modal-overlay" onClick={onClose}>
       <div className="game-modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="game-modal-header">
@@ -464,28 +513,43 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                     <div className="info-item rating-control">
                       <Star size={16} />
                       <span className="info-label">Your Rating</span>
-                      <div className="rating-slider-container" style={{ outline: modalControls[selectedControlIndex] === 'rating' ? '2px solid var(--accent, #ff6b35)' : 'none', borderRadius: '8px' }}>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="10" 
-                          step="0.5" 
-                          value={rating} 
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleRatingChange(parseFloat(e.target.value));
-                          }}
-                          onMouseUp={(e) => {
-                            e.stopPropagation();
-                            handleRatingSave(parseFloat(e.target.value));
-                          }}
-                          onTouchEnd={(e) => {
-                            e.stopPropagation();
-                            handleRatingSave(parseFloat(e.target.value));
-                          }}
-                          className="rating-slider"
-                        />
-                        <span className="rating-value">{rating.toFixed(1)}/10</span>
+                      <div className="rating-editor" style={{ outline: modalControls[selectedControlIndex] === 'rating' ? '2px solid var(--accent, #ff6b35)' : 'none' }}>
+                        <div className="rating-editor-header">
+                          <div>
+                            <strong className="rating-value">{rating ? rating.toFixed(1) : '—'}/10</strong>
+                            <span className="rating-label">{getRatingLabel(rating)}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="rating-clear-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRatingChange(0);
+                            }}
+                            disabled={!rating}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                        <div className="rating-preset-grid" role="group" aria-label="Choose rating out of 10">
+                          {RATING_PRESETS.map((score) => (
+                            <button
+                              key={score}
+                              type="button"
+                              className={`rating-preset ${Math.round(rating) === score && rating > 0 ? 'active' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRatingChange(score);
+                              }}
+                              aria-pressed={Math.round(rating) === score && rating > 0}
+                            >
+                              {score}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className={`rating-save-status ${hasUnsavedRatingChanges ? 'dirty' : saveState === 'saved' ? 'saved' : ''}`}>
+                        {hasUnsavedRatingChanges ? 'Unsaved changes' : saveState === 'saved' ? 'Saved' : 'Saved to library'}
                       </div>
                     </div>
                     <div className="info-item intent-control">
@@ -542,15 +606,94 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                   </div>
                 </div>
 
+                <SteamSnapshot game={game} />
+
+                <PatchNewsPanel game={game} />
+
+                <LibrariansNotes game={game} />
+
+                <SaveBackupPanel game={game} />
+
+                <div className="game-info-panel">
+                  <h3>Collections</h3>
+                  <div className="collection-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {collections.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleCollectionToggle(c.id)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          border: '1px solid ' + (selectedCollections.includes(c.id) ? c.color : 'var(--border)'),
+                          background: selectedCollections.includes(c.id) ? c.color + '33' : 'transparent',
+                          color: 'var(--text)',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        {selectedCollections.includes(c.id) ? '✓ ' : ''}{c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="game-info-panel">
                   <h3>Completion Status</h3>
-                  <button 
-                    onClick={toggleCompletion}
-                    className={`completion-toggle ${isCompleted ? 'completed' : ''}`}
-                    style={{ outline: modalControls[selectedControlIndex] === 'completion' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
+                  <select
+                    value={completionStatus}
+                    onChange={(e) => handleCompletionChange(e.target.value)}
+                    className="filter-select"
+                    style={{ width: '100%' }}
                   >
-                    {isCompleted ? '✓ Completed' : '○ Mark as Completed'}
-                  </button>
+                    {GameCurationService.COMPLETION_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s === 'not-started' && '○ Not Started'}
+                        {s === 'playing' && '▶ Playing'}
+                        {s === 'beaten' && '⚡ Beaten'}
+                        {s === 'completed' && '✓ Completed'}
+                        {s === '100%' && '★ 100%'}
+                        {s === 'abandoned' && '✕ Abandoned'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="game-info-panel">
+                  <h3>Cover Art Override</h3>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="Paste image URL..."
+                      value={coverArtUrl}
+                      onChange={(e) => setCoverArtUrl(e.target.value)}
+                      style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                    />
+                    <button onClick={handleCoverArtSave} className="export-button" style={{ padding: '6px 12px' }}>Save</button>
+                  </div>
+                </div>
+
+                <div className="game-info-panel">
+                  <h3>Session Notes</h3>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="Quick note about this session..."
+                      value={sessionNoteText}
+                      onChange={(e) => setSessionNoteText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddSessionNoteLocal(); }}
+                      style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                    />
+                    <button onClick={handleAddSessionNoteLocal} className="export-button" style={{ padding: '6px 12px' }}>Add</button>
+                  </div>
+                  {game?.sessionNotes && game.sessionNotes.length > 0 && (
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: '120px', overflowY: 'auto' }}>
+                      {game.sessionNotes.map((note) => (
+                        <li key={note.timestamp} style={{ padding: '4px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          {new Date(note.timestamp).toLocaleDateString()} — {note.text}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 {gameDetails?.price_overview && (
@@ -654,15 +797,26 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
         </div>
 
         <div className="game-modal-footer">
+          <button
+            className={`save-rating-button ${hasUnsavedRatingChanges ? 'dirty' : 'saved'}`}
+            onClick={() => handleRatingSave()}
+            disabled={!hasUnsavedRatingChanges}
+            style={{ outline: modalControls[selectedControlIndex] === 'saveRating' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
+          >
+            <Star size={16} />
+            {hasUnsavedRatingChanges ? 'Save Rating' : 'Rating Saved'}
+          </button>
           {(typeof onLaunch === 'function' || game.appid) && (
-            <button 
-              className="launch-button"
-              onClick={handleLaunchGame}
-              style={{ outline: modalControls[selectedControlIndex] === 'launch' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
-            >
-              <Play size={16} />
-              Launch Game
-            </button>
+            <LaunchSourceMenu
+              game={game}
+              onLaunch={(launchTarget) => {
+                if (typeof onLaunch === 'function') {
+                  onLaunch(launchTarget);
+                }
+              }}
+              isFocused={modalControls[selectedControlIndex] === 'launch'}
+              primaryLabel="Launch Game"
+            />
           )}
           
           {game.appid && (
@@ -699,9 +853,26 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             <Share2 size={16} />
             Share Game
           </button>
+
+          <button
+            className="uninstall-modal-button"
+            onClick={() => setShowUninstall(true)}
+            title="Open safe uninstall hand-off"
+          >
+            <Trash2 size={16} />
+            Uninstall…
+          </button>
         </div>
       </div>
     </div>
+
+      <UninstallModal
+        isOpen={showUninstall}
+        game={game}
+        onClose={() => setShowUninstall(false)}
+        onCompleted={() => setShowUninstall(false)}
+      />
+    </>
   );
 };
 

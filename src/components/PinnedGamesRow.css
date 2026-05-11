@@ -1,0 +1,106 @@
+.pinned-games-row {
+  margin: 12px 20px 8px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.pinned-games-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+  margin-bottom: 10px;
+}
+
+.pinned-games-count {
+  background: rgba(255, 107, 53, 0.18);
+  color: var(--accent-primary, #ff8a4c);
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+}
+
+.pinned-games-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.pinned-games-list::-webkit-scrollbar { height: 6px; }
+.pinned-games-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+
+.pinned-game-card {
+  position: relative;
+  flex-shrink: 0;
+  width: 130px;
+}
+
+.pinned-game-art {
+  width: 130px;
+  height: 75px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.07);
+  background-size: cover;
+  background-position: center;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.pinned-game-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.pinned-game-art:hover .pinned-game-overlay { opacity: 1; }
+
+.pinned-game-name {
+  margin-top: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+.pinned-game-unpin {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.pinned-game-card:hover .pinned-game-unpin { opacity: 1; }
+
+body.compact-mode .pinned-game-art { width: 100px; height: 58px; }
+body.compact-mode .pinned-game-card { width: 100px; }

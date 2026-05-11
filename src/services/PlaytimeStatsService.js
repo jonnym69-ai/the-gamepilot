@@ -1,3 +1,5 @@
+import { getDateKey } from './DateKeyService';
+
 export class PlaytimeStatsService {
   static getPlaytimeStats(games, period = 'total') {
     if (!games || !Array.isArray(games)) {
@@ -19,7 +21,7 @@ export class PlaytimeStatsService {
         if (period === 'total') {
           gameMinutes = playtime.total || 0;
         } else if (period === 'today') {
-          const today = new Date().toISOString().split('T')[0];
+          const today = getDateKey(new Date());
           gameMinutes = playtime.daily?.[today] || 0;
         } else if (period === 'thisWeek') {
           const currentDate = new Date();

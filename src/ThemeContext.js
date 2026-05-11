@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import moodThemes from './themes/moodThemes.json';
 import { AchievementTracker } from './AchievementSystem';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import StorageService from './services/StorageService';
 
 // Helper function to determine if text should be white or based on theme color
 const getContrastColor = (bgColor) => {
@@ -261,7 +262,7 @@ export { ThemeContext };
 export const ThemeProvider = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState(() => {
     // Load saved theme from localStorage
-    const savedTheme = localStorage.getItem('gamepilot-theme');
+    const savedTheme = StorageService.getString('theme');
     
     // Get all available themes
     const allThemes = {
@@ -277,7 +278,7 @@ export const ThemeProvider = ({ children }) => {
     // Validate saved theme
     if (savedTheme && allThemes[savedTheme]) {
       const savedMoodTheme = moodThemes.find((theme) => theme.id === savedTheme);
-      if (savedMoodTheme?.isPremium && !ProgressionUnlockService.isThemeUnlocked(savedTheme)) {
+      if (savedMoodTheme && !ProgressionUnlockService.isThemeUnlocked(savedTheme)) {
         console.warn(`Saved theme '${savedTheme}' is now locked by progression, falling back to dark.`);
         return 'dark';
       }
@@ -292,6 +293,7 @@ export const ThemeProvider = ({ children }) => {
   });
 
   const [bigScreenMode, setBigScreenMode] = useState(false);
+  const [compactMode, setCompactMode] = useState(() => StorageService.getString('compactMode') === 'true');
 
   // Validate Patreon code and apply XP boost (no direct content unlocks)
   const validatePatreonCode = (code) => {
@@ -314,59 +316,39 @@ export const ThemeProvider = ({ children }) => {
   const selectThemesWithCredits = () => {
     return {
       success: false,
-      message: 'Theme credits have been retired. Premium themes now unlock through XP progression.'
+      message: 'Theme credits have been retired. Themes now unlock through XP progression.'
     };
   };
 
-  // Get premium themes with current progression requirement snapshots
-  const getAvailablePremiumThemes = () => {
-    return moodThemes
-      .filter((theme) => theme.isPremium)
-      .map((theme) => {
-      const unlockMeta = ProgressionUnlockService.getThemeRequirement(theme.id);
-      return {
-        id: theme.id,
-        name: theme.name,
-        tier: theme.requiredTier || 'basic',
-        description: theme.description || '',
-        unlocked: unlockMeta.unlocked,
-        requiredXP: unlockMeta.requiredXP,
-        currentXP: unlockMeta.currentXP,
-        progressPercent: unlockMeta.progressPercent
-      };
-      });
+  // Get XP-gated themes with current progression requirement snapshots
+  const getAvailableUnlockableThemes = () => {
+    return ProgressionUnlockService.getUnlockableThemes().map((theme) => ({
+      id: theme.id,
+      name: theme.name,
+      tier: theme.requiredTier || 'basic',
+      description: theme.description || '',
+      unlocked: theme.unlocked,
+      requiredXP: theme.requiredXP,
+      currentXP: theme.currentXP,
+      progressPercent: theme.progressPercent
+    }));
   };
 
   // Check if theme is unlocked
   const isThemeUnlocked = (themeId) => {
-    const theme = moodThemes.find((t) => t.id === themeId);
-    if (!theme || !theme.isPremium) {
-      return true; // Free themes are always unlocked
-    }
     return ProgressionUnlockService.isThemeUnlocked(themeId);
   };
 
-  // Get currently unlocked premium theme ids
+  // Get currently unlocked theme ids
   const getUnlockedThemes = () => {
     return moodThemes
-      .filter((theme) => theme.isPremium && ProgressionUnlockService.isThemeUnlocked(theme.id))
+      .filter((theme) => ProgressionUnlockService.isThemeUnlocked(theme.id))
       .map((theme) => theme.id);
   };
 
-  // Get premium themes by tier
-  const getPremiumThemesByTier = (tier) => {
-    return moodThemes
-      .filter((theme) => theme.isPremium && theme.requiredTier === tier)
-      .map((theme) => {
-        const unlockMeta = ProgressionUnlockService.getThemeRequirement(theme.id);
-        return {
-          ...theme,
-          unlocked: unlockMeta.unlocked,
-          requiredXP: unlockMeta.requiredXP,
-          currentXP: unlockMeta.currentXP,
-          progressPercent: unlockMeta.progressPercent
-        };
-      });
+  // Get unlockable themes by tier
+  const getUnlockableThemesByTier = (tier) => {
+    return ProgressionUnlockService.getUnlockableThemes().filter((theme) => theme.requiredTier === tier);
   };
 
   // Get all available themes (filtered by unlock status)
@@ -382,7 +364,7 @@ export const ThemeProvider = ({ children }) => {
       themes[theme.id] = { 
         name: theme.name, 
         id: theme.id, 
-        isPremium: theme.isPremium || false,
+        isUnlockable: unlockMeta.requiredXP > 0,
         requiredTier: theme.requiredTier || null,
         requiredXP: unlockMeta.requiredXP,
         unlocked: unlockMeta.unlocked,
@@ -432,8 +414,8 @@ export const ThemeProvider = ({ children }) => {
 
       // Handle custom background image for custom theme
       if (currentTheme === 'custom') {
-        const customBgImage = localStorage.getItem('customBgImage');
-        const customBgOverlay = localStorage.getItem('customBgOverlay') || '30';
+        const customBgImage = StorageService.getString('customBgImage');
+        const customBgOverlay = StorageService.getString('customBgOverlay', '30');
         
         if (customBgImage) {
           // Apply custom background with overlay
@@ -456,10 +438,18 @@ export const ThemeProvider = ({ children }) => {
   }, [bigScreenMode]);
 
   useEffect(() => {
+    if (compactMode) {
+      document.body.classList.add('compact-mode');
+    } else {
+      document.body.classList.remove('compact-mode');
+    }
+  }, [compactMode]);
+
+  useEffect(() => {
     const activeTheme = moodThemes.find((theme) => theme.id === currentTheme);
-    if (activeTheme?.isPremium && !ProgressionUnlockService.isThemeUnlocked(currentTheme)) {
+    if (activeTheme && !ProgressionUnlockService.isThemeUnlocked(currentTheme)) {
       setCurrentTheme('dark');
-      localStorage.setItem('gamepilot-theme', 'dark');
+      StorageService.setString('theme', 'dark');
     }
   }, [currentTheme]);
 
@@ -473,24 +463,32 @@ export const ThemeProvider = ({ children }) => {
     setBigScreenMode(prev => !prev);
   };
 
+  const toggleCompactMode = () => {
+    setCompactMode(prev => {
+      const next = !prev;
+      StorageService.setString('compactMode', String(next));
+      return next;
+    });
+  };
+
   const value = {
     currentTheme,
     setTheme: (themeId) => {
       const allThemes = getAvailableThemes();
       if (allThemes[themeId]) {
         const selectedTheme = moodThemes.find((theme) => theme.id === themeId);
-        if (selectedTheme?.isPremium && !ProgressionUnlockService.isThemeUnlocked(themeId)) {
+        if (selectedTheme && !ProgressionUnlockService.isThemeUnlocked(themeId)) {
           console.warn(`Theme '${themeId}' is locked by progression requirements.`);
           return false;
         }
         setCurrentTheme(themeId);
-        localStorage.setItem('gamepilot-theme', themeId);
+        StorageService.setString('theme', themeId);
         return true;
       } else {
         console.warn(`Theme '${themeId}' is not available. Available themes:`, Object.keys(allThemes));
         // Fall back to dark theme if invalid theme is requested
         setCurrentTheme('dark');
-        localStorage.setItem('gamepilot-theme', 'dark');
+        StorageService.setString('theme', 'dark');
         return false;
       }
     },
@@ -501,13 +499,15 @@ export const ThemeProvider = ({ children }) => {
     getFounderTier: () => AchievementTracker.getPatreonBoostProfile().tier || null,
     validatePatreonCode,
     selectThemesWithCredits,
-    getAvailablePremiumThemes,
+    getAvailableUnlockableThemes,
     isThemeUnlocked,
     getUnlockedThemes,
-    getPremiumThemesByTier,
+    getUnlockableThemesByTier,
     getAvailableThemes,
     bigScreenMode,
-    toggleBigScreenMode
+    toggleBigScreenMode,
+    compactMode,
+    toggleCompactMode
   };
 
   return (

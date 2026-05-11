@@ -1,5 +1,6 @@
 import { HardwareDetector } from './HardwareDetector';
 import { GameRequirements } from './GameRequirements';
+import StorageService from './StorageService';
 
 class PersonaPerformanceInsights {
   static compatibilityCache = new Map();
@@ -39,11 +40,7 @@ class PersonaPerformanceInsights {
   static getSystemInfo() {
     let stored = null;
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        stored = window.localStorage.getItem('systemInfo');
-      } else if (typeof localStorage !== 'undefined') {
-        stored = localStorage.getItem('systemInfo');
-      }
+      stored = StorageService.getString('systemInfo');
     } catch (error) {
       console.warn('PersonaPerformanceInsights: unable to read cached system info', error);
     }
@@ -164,11 +161,13 @@ class PersonaPerformanceInsights {
       return null;
     }
 
-    const settingsLabel = GameRequirements.getSettingsLabel(compatibility.settingsLevel);
+    const settingsLabel = GameRequirements.getSettingsLabel(compatibility.settingsLevel) || {};
+    const emoji = settingsLabel.emoji || '🎮';
+    const text = settingsLabel.text || compatibility.settingsLevel || 'Unknown';
     const fps = compatibility.estimatedFPS || 'Unknown FPS';
     const bottleneck = compatibility.bottlenecks && compatibility.bottlenecks[0];
 
-    let reason = `${settingsLabel.emoji} Runs at ${settingsLabel.text} settings (≈${fps} FPS)`;
+    let reason = `${emoji} Runs at ${text} settings (≈${fps} FPS)`;
     if (bottleneck) {
       reason += ` • ${bottleneck.component} is the limiting factor`;
     }

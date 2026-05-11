@@ -1,19 +1,27 @@
 import React, { useState, useMemo, useContext, useEffect, useCallback, useRef } from 'react';
 import { Search, Download, Grid, List, Clock, Heart, Trash2, Sparkles, Dices } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import NavBar from './NavBar';
+import PinnedGamesRow from './components/PinnedGamesRow';
 import GameModal from './components/GameModal';
 import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
 import EmptyLibraryState from './components/EmptyLibraryState';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
+import HLTBChip from './components/HLTBChip';
+import PatchNewsBadge from './components/PatchNewsBadge';
+import DiskSizeChip from './components/DiskSizeChip';
+import SteamNewsService from './services/SteamNewsService';
+import DiskUsageService from './services/DiskUsageService';
 import { useToast } from './components/Toast';
 import { MOODS } from './constants/GenresMoods';
+import StorageService from './services/StorageService';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import { GameCurationService } from './services/GameCurationService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { formatPrice } from './CurrencyConverter';
 import './Library.css';
@@ -62,14 +70,10 @@ const getGameValue = (game) => {
     }
   }
 
-  try {
-    const storedPrices = JSON.parse(localStorage.getItem('gamePrices') || '{}');
-    const storedPrice = storedPrices?.[game.appid];
-    if (typeof storedPrice?.priceNumeric === 'number' && Number.isFinite(storedPrice.priceNumeric)) {
-      return storedPrice.priceNumeric;
-    }
-  } catch (error) {
-    console.error('Failed to read stored game prices:', error);
+  const storedPrices = StorageService.get('gamePrices', {});
+  const storedPrice = storedPrices?.[game.appid];
+  if (typeof storedPrice?.priceNumeric === 'number' && Number.isFinite(storedPrice.priceNumeric)) {
+    return storedPrice.priceNumeric;
   }
 
   return 0;
@@ -190,6 +194,8 @@ function Library({
   onLaunchGame = NOOP, 
   onScan = NOOP,
   onScanLibrary = NOOP,
+  scanLocalLibrary = NOOP,
+  loading = false,
   activeSessions = {},
   sortBy = 'name',
   setSortBy = NOOP,
@@ -206,21 +212,28 @@ function Library({
   onRemoveGames = NOOP,
   onUpdatePrice = NOOP,
   onUpdateRating = NOOP,
+  onUpdateCollections = NOOP,
+  onToggleHidden = NOOP,
+  onUpdateCompletion = NOOP,
+  onUpdateNotes = NOOP,
+  onUpdateCoverArt = NOOP,
+  onAddSessionNote = NOOP,
   searchQuery = '',
   setSearchQuery = NOOP,
   endSession = NOOP,
   currency = 'USD'
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentTheme } = useContext(ThemeContext);
   const { success } = useToast();
-  const scanLibraryHandler = onScanLibrary || onScan;
+  const scanLibraryHandler = onScanLibrary || onScan || scanLocalLibrary;
   const [viewMode, setViewMode] = useState('grid');
   const [selectedGame, setSelectedGame] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(() => {
     try {
-      const storedFavorites = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]');
+      const storedFavorites = StorageService.get(FAVORITES_STORAGE_KEY, []);
       return Array.isArray(storedFavorites) ? storedFavorites : [];
     } catch (error) {
       console.error('Failed to load favorites:', error);
@@ -246,14 +259,61 @@ function Library({
   const [localFilterGenre, setLocalFilterGenre] = useState(filterGenre);
   const [localFilterPlatform, setLocalFilterPlatform] = useState(filterPlatform);
   const [localFilterMaxTime, setLocalFilterMaxTime] = useState(filterMaxTime);
+  const [localFilterReplayIntent, setLocalFilterReplayIntent] = useState('');
+  const [localFilterCollection, setLocalFilterCollection] = useState('');
+  const [localFilterCompletion, setLocalFilterCompletion] = useState('');
+  const [showHidden, setShowHidden] = useState(false);
+  const [collections] = useState(() => GameCurationService.getCollections());
+
+  // Deep-link support: ?filter=never-played activates the never-played
+  // playtime filter on mount. Used by the Home backlog insight card so a
+  // single click takes the user straight to a filtered library view.
+  useEffect(() => {
+    const search = (location?.search || '').replace(/^\?/, '');
+    if (!search) return;
+    const params = new URLSearchParams(search);
+    if (params.get('filter') === 'never-played') {
+      setLocalFilterMaxTime('0');
+      if (typeof setFilterMaxTime === 'function') {
+        setFilterMaxTime('0');
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location?.search]);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [selectedGameIndex, setSelectedGameIndex] = useState(-1);
   const [librarianPick, setLibrarianPick] = useState(null);
+  const [isLuckyAnimating, setIsLuckyAnimating] = useState(false);
+  const [luckyPreviewName, setLuckyPreviewName] = useState('');
   const libraryContainerRef = useRef(null);
+  const luckyAnimationTimeoutRef = useRef(null);
+  const luckyPreviewIntervalRef = useRef(null);
+
+  const handleScanLibrary = useCallback(async () => {
+    if (loading) {
+      return;
+    }
+    try {
+      await scanLibraryHandler();
+    } catch (scanError) {
+      console.error('Library scan failed from Library page:', scanError);
+    }
+  }, [loading, scanLibraryHandler]);
 
   useEffect(() => {
     setLocalSortBy(sortBy);
   }, [sortBy]);
+
+  useEffect(() => {
+    return () => {
+      if (luckyAnimationTimeoutRef.current) {
+        clearTimeout(luckyAnimationTimeoutRef.current);
+      }
+      if (luckyPreviewIntervalRef.current) {
+        clearInterval(luckyPreviewIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setLocalFilterMood(filterMood);
@@ -361,6 +421,10 @@ function Library({
     setFilterGenre('');
     setLocalFilterMaxTime('');
     setFilterMaxTime('');
+    setLocalFilterReplayIntent('');
+    setLocalFilterCollection('');
+    setLocalFilterCompletion('');
+    setShowHidden(false);
     setCurrentPage(0);
     setSelectedGameIndex(0);
   };
@@ -393,6 +457,24 @@ function Library({
     setSelectedGameIndex(0);
   };
 
+  const handleReplayIntentFilterChange = (value) => {
+    setLocalFilterReplayIntent(value);
+    setCurrentPage(0);
+    setSelectedGameIndex(0);
+  };
+
+  const handleCollectionFilterChange = (value) => {
+    setLocalFilterCollection(value);
+    setCurrentPage(0);
+    setSelectedGameIndex(0);
+  };
+
+  const handleCompletionFilterChange = (value) => {
+    setLocalFilterCompletion(value);
+    setCurrentPage(0);
+    setSelectedGameIndex(0);
+  };
+
   const handleToggleFavorite = useCallback((favoriteKey) => {
     if (!favoriteKey) {
       return;
@@ -404,7 +486,7 @@ function Library({
         : [...previousFavorites, favoriteKey];
 
       try {
-        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
+        StorageService.set(FAVORITES_STORAGE_KEY, nextFavorites);
       } catch (error) {
         console.error('Failed to persist favorites:', error);
       }
@@ -414,6 +496,13 @@ function Library({
 
     onToggleFavorite(favoriteKey);
   }, [onToggleFavorite]);
+
+  const handleToggleHiddenGame = useCallback((gameName) => {
+    if (typeof onToggleHidden === 'function') {
+      onToggleHidden(gameName);
+    }
+  }, [onToggleHidden]);
+  void handleToggleHiddenGame;
 
   const openGameModal = useCallback((game) => {
     setSelectedGame(game);
@@ -441,21 +530,30 @@ function Library({
       const matchesMaxTime = maxTimeFilter === null
         ? true
         : maxTimeFilter === 0
-          ? gamePlaytime === 0
-          : gamePlaytime > 0 && gamePlaytime <= maxTimeFilter;
+        ? gamePlaytime === 0
+        : gamePlaytime > 0 && gamePlaytime <= maxTimeFilter;
+      const matchesReplayIntent = !localFilterReplayIntent || (game.replayIntent || 'none') === localFilterReplayIntent;
       const matchesMinPlaytime = !minPlaytime || gamePlaytime >= parseInt(minPlaytime);
       const matchesMaxPlaytime = !maxPlaytime || gamePlaytime <= parseInt(maxPlaytime);
-      
-      let matchesCompletion = true;
+
+      // Collection filter
+      const matchesCollection = !localFilterCollection || (game.userCollections || []).includes(localFilterCollection);
+      // Completion status filter
+      const matchesCompletionStatus = !localFilterCompletion || (game.completionStatus || 'not-started') === localFilterCompletion;
+      // Hidden filter
+      const matchesHidden = showHidden ? true : !(game.isHidden || false);
+
+      let matchesLegacyCompletion = true;
       if (completionFilter) {
-        const completedGames = JSON.parse(localStorage.getItem('completedGames') || '[]');
+        const completedGames = StorageService.get('completedGames', []);
         const isCompleted = completedGames.some(cg => cg.name === game.name);
-        if (completionFilter === 'completed') matchesCompletion = isCompleted;
-        else if (completionFilter === 'not-completed') matchesCompletion = !isCompleted;
+        if (completionFilter === 'completed') matchesLegacyCompletion = isCompleted;
+        else if (completionFilter === 'not-completed') matchesLegacyCompletion = !isCompleted;
       }
-      
-      return matchesSearch && matchesMood && matchesGenre && matchesPlatform && 
-             matchesMaxTime && matchesMinPlaytime && matchesMaxPlaytime && matchesCompletion;
+
+      return matchesSearch && matchesMood && matchesGenre && matchesPlatform &&
+             matchesMaxTime && matchesReplayIntent && matchesMinPlaytime && matchesMaxPlaytime &&
+             matchesCollection && matchesCompletionStatus && matchesHidden && matchesLegacyCompletion;
     });
 
     filtered.sort((a, b) => {
@@ -464,6 +562,7 @@ function Library({
         case 'least-played': return (a.time_played || 0) - (b.time_played || 0);
         case 'genre': return (a.genres?.[0] || '').localeCompare(b.genres?.[0] || '');
         case 'recent': return getLastPlayedSortValue(b.last_played) - getLastPlayedSortValue(a.last_played);
+        case 'recently-added': return (b.dateAdded || 0) - (a.dateAdded || 0);
         case 'last-played': 
           const aLP = getLastPlayedSortValue(a.last_played);
           const bLP = getLastPlayedSortValue(b.last_played);
@@ -487,17 +586,40 @@ function Library({
     });
 
     return filtered;
-  }, [library, localSearchQuery, localFilterMood, localFilterGenre, localFilterPlatform, localFilterMaxTime, localSortBy, favorites, completionFilter, minPlaytime, maxPlaytime]);
+  }, [library, localSearchQuery, localFilterMood, localFilterGenre, localFilterPlatform, localFilterMaxTime, localFilterReplayIntent, localFilterCollection, localFilterCompletion, showHidden, localSortBy, favorites, completionFilter, minPlaytime, maxPlaytime]);
 
   const displayedGames = useMemo(() => {
     const startIndex = currentPage * itemsPerPage;
     return filteredAndSortedGames.slice(startIndex, startIndex + itemsPerPage);
   }, [currentPage, filteredAndSortedGames, itemsPerPage]);
 
+  // Steam News warmup — pulls recent posts so PatchNewsBadge can render the
+  // "updated since you last played" pill on cards without an extra round-trip
+  // when the user opens GameModal. Steam-only games; non-Steam are skipped
+  // inside the service.
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage));
-    setCurrentPage((prev) => Math.min(prev, totalPages - 1));
-  }, [filteredAndSortedGames.length, itemsPerPage]);
+    if (!Array.isArray(displayedGames) || displayedGames.length === 0) return undefined;
+    if (!SteamNewsService.isEnabled()) return undefined;
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      if (cancelled) return;
+      SteamNewsService.warmup(displayedGames, { concurrency: 2, delayMs: 400 });
+    }, 900);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [displayedGames]);
+
+  // Disk Usage warmup — quietly measures install folder sizes in the background
+  // so DiskSizeChip renders cached data on Library cards without blocking.
+  useEffect(() => {
+    if (!Array.isArray(displayedGames) || displayedGames.length === 0) return undefined;
+    if (!DiskUsageService.isEnabled()) return undefined;
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      if (cancelled) return;
+      DiskUsageService.warmup(displayedGames);
+    }, 1200);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [displayedGames]);
 
   const getVisibleGameCount = useCallback(() => {
     return displayedGames.length;
@@ -576,14 +698,14 @@ function Library({
 
   const bulkMarkCompleted = () => {
     if (selectedGames.size === 0) return;
-    const completedGames = JSON.parse(localStorage.getItem('completedGames') || '[]');
+    const completedGames = StorageService.get('completedGames', []);
     selectedGames.forEach(gameId => {
       const game = displayedGames.find(g => (g.appid || g.name) === gameId);
       if (game && !completedGames.some(cg => cg.name === game.name)) {
         completedGames.push({ name: game.name, completedAt: new Date().toISOString(), playTime: game.time_played || 0 });
       }
     });
-    localStorage.setItem('completedGames', JSON.stringify(completedGames));
+    StorageService.set('completedGames', completedGames);
     success(`Marked ${selectedGames.size} games as completed!`);
     setSelectedGames(new Set());
   };
@@ -604,6 +726,15 @@ function Library({
   // Librarian: Pick For Me - Smart recommendation from filtered games
   const handlePickForMe = () => {
     if (filteredAndSortedGames.length === 0) return;
+
+    setIsLuckyAnimating(false);
+    setLuckyPreviewName('');
+    if (luckyAnimationTimeoutRef.current) {
+      clearTimeout(luckyAnimationTimeoutRef.current);
+    }
+    if (luckyPreviewIntervalRef.current) {
+      clearInterval(luckyPreviewIntervalRef.current);
+    }
     
     const scoredGames = filteredAndSortedGames.map(game => {
       let score = Math.random() * 20;
@@ -631,14 +762,46 @@ function Library({
   // Librarian: Feeling Lucky - Random with personality
   const handleFeelingLucky = () => {
     if (filteredAndSortedGames.length === 0) return;
+
+    if (luckyAnimationTimeoutRef.current) {
+      clearTimeout(luckyAnimationTimeoutRef.current);
+    }
+    if (luckyPreviewIntervalRef.current) {
+      clearInterval(luckyPreviewIntervalRef.current);
+    }
+
+    setLibrarianPick(null);
+    setIsLuckyAnimating(true);
     
     const randomIndex = Math.floor(Math.random() * filteredAndSortedGames.length);
     const game = filteredAndSortedGames[randomIndex];
-    
-    setLibrarianPick({
-      game,
-      method: 'random'
-    });
+
+    const previewPool = filteredAndSortedGames
+      .filter((candidate) => candidate?.name)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(6, filteredAndSortedGames.length));
+
+    let previewIndex = 0;
+    setLuckyPreviewName(previewPool[0]?.name || game.name);
+
+    luckyPreviewIntervalRef.current = setInterval(() => {
+      previewIndex = (previewIndex + 1) % Math.max(previewPool.length, 1);
+      setLuckyPreviewName(previewPool[previewIndex]?.name || game.name);
+    }, 140);
+
+    luckyAnimationTimeoutRef.current = setTimeout(() => {
+      if (luckyPreviewIntervalRef.current) {
+        clearInterval(luckyPreviewIntervalRef.current);
+        luckyPreviewIntervalRef.current = null;
+      }
+
+      setIsLuckyAnimating(false);
+      setLuckyPreviewName('');
+      setLibrarianPick({
+        game,
+        method: 'random'
+      });
+    }, 1200);
   };
 
   const handleControllerInput = useCallback((action) => {
@@ -731,6 +894,7 @@ function Library({
   ) || libraryPresentationRewards[0] || null;
   const libraryPresentationId = selectedLibraryPresentation?.id || 'classic_shelf';
   const libraryPresentationPreset = LIBRARY_PRESENTATION_PRESETS[libraryPresentationId] || LIBRARY_PRESENTATION_PRESETS.classic_shelf;
+  const libraryCardStyle = rewardPresentationCustomization?.selectedCardStyle || 'standard';
 
   const libraryRootStyle = {
     '--library-presentation-accent': libraryPresentationPreset.accent,
@@ -744,22 +908,46 @@ function Library({
   };
 
   const getGameCardClass = useCallback((game, index) => {
-    return `game-card fade-in ${selectedGameIndex === index ? 'selected' : ''}`;
+    const baseClass = viewMode === 'grid' ? 'game-card' : 'game-list-item';
+    return `${baseClass} fade-in ${selectedGameIndex === index ? 'controller-selected' : ''}`;
+  }, [selectedGameIndex, viewMode]);
+
+  // Scroll selected game into view when navigating with controller
+  useEffect(() => {
+    if (selectedGameIndex < 0 || !libraryContainerRef.current) {
+      return;
+    }
+
+    const container = libraryContainerRef.current;
+    const selectedElement = container.children[selectedGameIndex];
+
+    if (selectedElement) {
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = selectedElement.getBoundingClientRect();
+
+      const isAboveViewport = elementRect.top < containerRect.top;
+      const isBelowViewport = elementRect.bottom > containerRect.bottom;
+
+      if (isAboveViewport || isBelowViewport) {
+        selectedElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    }
   }, [selectedGameIndex]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage));
   const playedGameCount = library.filter((game) => (game.time_played || 0) > 0).length;
-  const totalPlaytimeMinutes = library.reduce((sum, game) => sum + (game.time_played || 0), 0);
-  const activeFilterCount = [
-    localSearchQuery,
-    localFilterPlatform,
-    localFilterMood,
-    localFilterGenre,
-    localFilterMaxTime
-  ].filter(Boolean).length;
+  const totalPlaytimeMinutes = library.reduce((sum, game) => sum + (Number(game?.time_played) || 0), 0);
+  const selectedModalGame = selectedGame
+    ? library.find((game) => getFavoriteGameKey(game) === getFavoriteGameKey(selectedGame) || game.name === selectedGame.name) || selectedGame
+    : null;
+  const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCollection, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0);
 
   return (
-    <div className={`App ${theme} library-page library-presentation-${libraryPresentationId}`} style={libraryRootStyle}>
+    <div className={`App ${theme} library-page library-presentation-${libraryPresentationId} library-card-style-${libraryCardStyle}`} style={libraryRootStyle}>
       <NavBar />
       
       <div className="library-header">
@@ -792,38 +980,54 @@ function Library({
       </div>
 
       {/* Librarian Pick Display */}
-      {librarianPick && (
-        <div className={`librarian-pick-banner ${librarianPick.method === 'smart' ? 'smart' : 'random'}`}>
+      {(isLuckyAnimating || librarianPick) && (
+        <div className={`librarian-pick-banner ${isLuckyAnimating ? 'random shuffling' : librarianPick.method === 'smart' ? 'smart' : 'random'}`}>
           <div className="librarian-pick-icon">
-            {librarianPick.method === 'smart' ? '✨' : '🎲'}
+            {isLuckyAnimating ? '🎰' : librarianPick.method === 'smart' ? '✨' : '🎲'}
           </div>
           <div className="librarian-pick-copy">
             <h3>
-              {librarianPick.method === 'smart' ? 'Your Librarian Recommends:' : 'Feeling Lucky?'}
+              {isLuckyAnimating
+                ? 'Shuffling your library...'
+                : librarianPick.method === 'smart'
+                  ? 'Your Librarian Recommends:'
+                  : 'Feeling Lucky?'}
             </h3>
             <p>
-              {librarianPick.method === 'smart' 
-                ? 'A quick filtered pick based on your current library patterns.' 
-                : 'Random selection from your library'}
+              {isLuckyAnimating
+                ? 'Pulling a wild card from your current filters.'
+                : librarianPick.method === 'smart'
+                  ? 'A quick filtered pick based on your current library patterns.'
+                  : 'Random selection from your library with a little extra drama.'}
             </p>
           </div>
           <div className="librarian-pick-actions">
-            <div className="librarian-pick-game-chip">
-              <span>{librarianPick.game.name}</span>
-              <button 
-                onClick={() => onLaunchGame(librarianPick.game)}
-                className="librarian-pick-play"
-              >
-                ▶ Play
-              </button>
+            <div className={`librarian-pick-game-chip${isLuckyAnimating ? ' is-animating' : ''}`}>
+              <span>{isLuckyAnimating ? luckyPreviewName || 'Rolling the dice...' : librarianPick.game.name}</span>
+              {!isLuckyAnimating && (
+                <button 
+                  onClick={() => onLaunchGame(librarianPick.game)}
+                  className="librarian-pick-play"
+                >
+                  ▶ Play
+                </button>
+              )}
             </div>
-            <button 
-              onClick={() => setLibrarianPick(null)}
-              className="librarian-pick-dismiss"
-              title="Dismiss"
-            >
-              ×
-            </button>
+            {!isLuckyAnimating && librarianPick.method === 'random' && (
+              <div className="librarian-pick-badges">
+                <span>Random Draw</span>
+                <span>{getDisplayPlatform(librarianPick.game)}</span>
+              </div>
+            )}
+            {!isLuckyAnimating && (
+              <button 
+                onClick={() => setLibrarianPick(null)}
+                className="librarian-pick-dismiss"
+                title="Dismiss"
+              >
+                ×
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -852,8 +1056,12 @@ function Library({
                 <div className="free-game-thumb" style={{ backgroundImage: `url(${game.image})` }} />
                 <div className="free-game-body">
                   <h4>{game.title}</h4>
+                  {game.isMysteryGame && (
+                    <p className="free-game-mystery-note">Epic has not revealed this free game yet.</p>
+                  )}
                   <div className="free-game-meta">
-                    <button onClick={() => window.open(game.url, '_blank')}>Claim</button>
+                    {game.isMysteryGame && <span>Upcoming reveal</span>}
+                    <button onClick={() => window.open(game.url, '_blank')}>{game.isMysteryGame ? 'View Radar' : 'Claim'}</button>
                   </div>
                 </div>
               </div>
@@ -874,8 +1082,8 @@ function Library({
           <button onClick={() => setIsCinematicExportOpen(true)} className="export-button">
             <Grid size={16} /> Cinematic Poster
           </button>
-          <button onClick={scanLibraryHandler} className="export-button">
-            🔄 Scan Library
+          <button onClick={handleScanLibrary} className="export-button" disabled={loading}>
+            {loading ? '⏳ Scanning Library...' : '🔄 Scan Library'}
           </button>
         </div>
         <div className="library-action-group library-action-group-accent">
@@ -890,10 +1098,10 @@ function Library({
           <button 
             onClick={handleFeelingLucky} 
             className="export-button export-button-lucky"
-            disabled={filteredAndSortedGames.length === 0}
+            disabled={filteredAndSortedGames.length === 0 || isLuckyAnimating}
             title="Random game from your library"
           >
-            <Dices size={16} /> Feeling Lucky
+            <Dices size={16} /> {isLuckyAnimating ? 'Drawing...' : 'Feeling Lucky'}
           </button>
           <button 
             onClick={toggleBulkMode} 
@@ -927,7 +1135,7 @@ function Library({
       </div>
 
       {library.length === 0 ? (
-        <EmptyLibraryState onScan={scanLibraryHandler} theme={theme} />
+        <EmptyLibraryState onScan={handleScanLibrary} theme={theme} />
       ) : (
         <>
 
@@ -980,6 +1188,8 @@ function Library({
             <option value="BSG">Battlestate Games</option>
             <option value="Riot">Riot Games</option>
             <option value="CurseForge">CurseForge</option>
+            <option value="Amazon">Amazon Games</option>
+            <option value="Itch.io">Itch.io</option>
             <option value="Manual">Manual Entry</option>
           </select>
         </div>
@@ -1014,6 +1224,48 @@ function Library({
             <option value="3000">Under 50 hours</option>
           </select>
         </div>
+        <div className="filter-group">
+          <label>Status</label>
+          <select value={localFilterReplayIntent} onChange={(e) => handleReplayIntentFilterChange(e.target.value)} className="filter-select">
+            <option value="">Any Status</option>
+            <option value="active">Currently Playing</option>
+            <option value="soon">Playing Soon</option>
+            <option value="finished">Finished</option>
+            <option value="endless">Endless / Ongoing</option>
+            <option value="none">Not Planned</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Collection</label>
+          <select value={localFilterCollection} onChange={(e) => handleCollectionFilterChange(e.target.value)} className="filter-select">
+            <option value="">All Collections</option>
+            {collections.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Completion</label>
+          <select value={localFilterCompletion} onChange={(e) => handleCompletionFilterChange(e.target.value)} className="filter-select">
+            <option value="">Any</option>
+            <option value="not-started">Not Started</option>
+            <option value="playing">Playing</option>
+            <option value="beaten">Beaten</option>
+            <option value="completed">Completed</option>
+            <option value="100%">100%</option>
+            <option value="abandoned">Abandoned</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Hidden</label>
+          <button
+            onClick={() => setShowHidden((s) => !s)}
+            className={`filter-toggle ${showHidden ? 'active' : ''}`}
+            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer' }}
+          >
+            {showHidden ? 'Showing Hidden' : 'Show Hidden'}
+          </button>
+        </div>
       </div>
 
       <div className="library-context-bar">
@@ -1034,6 +1286,8 @@ function Library({
           <strong>{showFreeGames ? 'Visible' : 'Hidden'}</strong>
         </div>
       </div>
+
+      <PinnedGamesRow library={library} favorites={favorites} onLaunchGame={onLaunchGame} />
 
       <div ref={libraryContainerRef} className={`library-${viewMode}`} style={viewMode === 'grid' ? {
         display: 'grid',
@@ -1141,6 +1395,9 @@ function Library({
               </div>
               <p className="playtime library-game-playtime">
                 <Clock size={12} /> {formatTimePlayed(game.time_played)}
+                <HLTBChip game={game} />
+                <PatchNewsBadge game={game} />
+                <DiskSizeChip game={game} />
               </p>
               {gameValue > 0 && (
                 <p className="library-game-value">
@@ -1150,6 +1407,17 @@ function Library({
               <div className="library-game-tags">
                 <span className="library-game-tag platform">
                   {getDisplayPlatform(game)}
+                  {Array.isArray(game.launchSources) && game.launchSources.length > 1 && (
+                    <span
+                      className="library-game-tag-multi-source"
+                      title={`Also available on ${game.launchSources
+                        .map((source) => source.platform)
+                        .filter((platform) => platform && platform !== getDisplayPlatform(game))
+                        .join(', ')}`}
+                    >
+                      +{game.launchSources.length - 1}
+                    </span>
+                  )}
                 </span>
                 {resolvedMood && (
                   <span className="library-game-tag mood">
@@ -1159,6 +1427,14 @@ function Library({
                 {Array.isArray(game.genres) && game.genres[0] && (
                   <span className="library-game-tag genre">
                     {game.genres[0]}
+                  </span>
+                )}
+                {game.replayIntent && game.replayIntent !== 'none' && (
+                  <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>
+                    {game.replayIntent === 'active' && '▶ Playing'}
+                    {game.replayIntent === 'soon' && '⏳ Soon'}
+                    {game.replayIntent === 'finished' && '✓ Done'}
+                    {game.replayIntent === 'endless' && '∞ Endless'}
                   </span>
                 )}
               </div>
@@ -1198,7 +1474,7 @@ function Library({
       )}
 
       {/* Modals */}
-      {isModalOpen && <GameModal game={selectedGame} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedGame))} />}
+      {isModalOpen && <GameModal game={selectedModalGame} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} />}
       {isExportModalOpen && <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} library={library} />}
       {isCinematicExportOpen && <CinematicExport isOpen={isCinematicExportOpen} onClose={() => setIsCinematicExportOpen(false)} library={library} />}
       <BackToTopButton />
