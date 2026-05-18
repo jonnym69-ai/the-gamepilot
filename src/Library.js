@@ -22,6 +22,8 @@ import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { GameCurationService } from './services/GameCurationService';
+import EmulatorLibraryService from './services/EmulatorLibraryService';
+import { mergeLibraryUpdates } from './services/LibraryDataService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { formatPrice } from './CurrencyConverter';
 import './Library.css';
@@ -30,6 +32,7 @@ const getFavoriteGameKey = (game) => game?.appid || game?.app_id || game?.steamA
 const NOOP = () => {};
 const CONTROLLER_NAV_ROUTES = ['/', '/library', '/stats', '/achievements', '/year-in-review', '/challenge-board', '/performance', '/gaming-links', '/profile', '/settings'];
 const FAVORITES_STORAGE_KEY = 'favorites';
+const RECENTLY_ADDED_WINDOW_DAYS = 14;
 
 const getResolvedMood = (game) => {
   if (!game || typeof game !== 'object') {
@@ -195,6 +198,7 @@ function Library({
   onScan = NOOP,
   onScanLibrary = NOOP,
   scanLocalLibrary = NOOP,
+  onLibraryUpdated = NOOP,
   loading = false,
   activeSessions = {},
   sortBy = 'name',
@@ -251,6 +255,17 @@ function Library({
   const [showFreeGames, setShowFreeGames] = useState(true);
   const [loadingFreeGames, setLoadingFreeGames] = useState(false);
   const [freeGameError, setFreeGameError] = useState(null);
+  const [emulatorProfiles, setEmulatorProfiles] = useState(() => EmulatorLibraryService.getProfiles());
+  const [showEmulatorManager, setShowEmulatorManager] = useState(false);
+  const [scanningEmulators, setScanningEmulators] = useState(false);
+  const [emulatorDraft, setEmulatorDraft] = useState(() => ({
+    name: '',
+    consolePlatform: '',
+    emulatorPath: '',
+    romFolder: '',
+    extensions: EmulatorLibraryService.getDefaultExtensions().join(', '),
+    launchTemplate: '"{emulator}" "{rom}"'
+  }));
   const [completionFilter] = useState('');
   const [minPlaytime] = useState('');
   const [maxPlaytime] = useState('');
@@ -293,12 +308,82 @@ function Library({
     if (loading) {
       return;
     }
+
     try {
       await scanLibraryHandler();
     } catch (scanError) {
       console.error('Library scan failed from Library page:', scanError);
     }
   }, [loading, scanLibraryHandler]);
+
+  const handleEmulatorDraftChange = useCallback((field, value) => {
+    setEmulatorDraft((previousDraft) => ({
+      ...previousDraft,
+      [field]: value
+    }));
+  }, []);
+
+  const chooseEmulatorExecutable = useCallback(async () => {
+    if (!window.electronAPI?.chooseEmulatorExecutable) {
+      return;
+    }
+
+    const selectedPath = await window.electronAPI.chooseEmulatorExecutable();
+    if (selectedPath) {
+      handleEmulatorDraftChange('emulatorPath', selectedPath);
+    }
+  }, [handleEmulatorDraftChange]);
+
+  const chooseRomFolder = useCallback(async () => {
+    if (!window.electronAPI?.chooseRomFolder) {
+      return;
+    }
+
+    const selectedPath = await window.electronAPI.chooseRomFolder();
+    if (selectedPath) {
+      handleEmulatorDraftChange('romFolder', selectedPath);
+    }
+  }, [handleEmulatorDraftChange]);
+
+  const addEmulatorProfile = useCallback(() => {
+    if (!emulatorDraft.name.trim() || !emulatorDraft.romFolder.trim()) {
+      return;
+    }
+
+    const savedProfile = EmulatorLibraryService.addProfile(emulatorDraft);
+    setEmulatorProfiles(EmulatorLibraryService.getProfiles());
+    setEmulatorDraft({
+      name: '',
+      consolePlatform: savedProfile.consolePlatform || '',
+      emulatorPath: savedProfile.emulatorPath || '',
+      romFolder: '',
+      extensions: EmulatorLibraryService.getDefaultExtensions().join(', '),
+      launchTemplate: savedProfile.launchTemplate || '"{emulator}" "{rom}"'
+    });
+  }, [emulatorDraft]);
+
+  const removeEmulatorProfile = useCallback((profileId) => {
+    EmulatorLibraryService.removeProfile(profileId);
+    setEmulatorProfiles(EmulatorLibraryService.getProfiles());
+  }, []);
+
+  const scanEmulatorProfiles = useCallback(async () => {
+    if (emulatorProfiles.length === 0 || scanningEmulators) {
+      return;
+    }
+
+    setScanningEmulators(true);
+    try {
+      const scannedGames = await EmulatorLibraryService.scanAllProfiles();
+      const mergedLibrary = mergeLibraryUpdates(library, scannedGames);
+      scannedGames.forEach((game) => GameCurationService.recordGameSeen(game.name));
+      onLibraryUpdated(GameCurationService.enrichLibrary(mergedLibrary));
+    } catch (error) {
+      console.error('Failed to scan emulator profiles:', error);
+    } finally {
+      setScanningEmulators(false);
+    }
+  }, [emulatorProfiles.length, library, onLibraryUpdated, scanningEmulators]);
 
   useEffect(() => {
     setLocalSortBy(sortBy);
@@ -944,6 +1029,14 @@ function Library({
   const selectedModalGame = selectedGame
     ? library.find((game) => getFavoriteGameKey(game) === getFavoriteGameKey(selectedGame) || game.name === selectedGame.name) || selectedGame
     : null;
+  const recentlyAddedCount = useMemo(() => (
+    library.filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS)).length
+  ), [library]);
+  const recentlyAddedShelfGames = useMemo(() => (
+    filteredAndSortedGames
+      .filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS))
+      .slice(0, 6)
+  ), [filteredAndSortedGames]);
   const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCollection, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0);
 
   return (
@@ -1134,6 +1227,81 @@ function Library({
         </div>
       </div>
 
+      <div className="emulator-library-panel">
+        <div className="emulator-library-header">
+          <div>
+            <h3>Emulator Library</h3>
+            <p>{emulatorProfiles.length} profile{emulatorProfiles.length === 1 ? '' : 's'} configured for ROM scanning.</p>
+          </div>
+          <div className="emulator-library-actions">
+            <button
+              type="button"
+              className="emulator-secondary-button"
+              onClick={() => setShowEmulatorManager((visible) => !visible)}
+            >
+              {showEmulatorManager ? 'Hide Manager' : 'Manage Emulators'}
+            </button>
+            <button
+              type="button"
+              className="emulator-primary-button"
+              onClick={scanEmulatorProfiles}
+              disabled={emulatorProfiles.length === 0 || scanningEmulators}
+            >
+              {scanningEmulators ? 'Scanning ROMs...' : 'Scan ROMs'}
+            </button>
+          </div>
+        </div>
+        {showEmulatorManager && (
+          <div className="emulator-manager-body">
+            <div className="emulator-profile-form">
+              <input
+                type="text"
+                value={emulatorDraft.name}
+                onChange={(event) => handleEmulatorDraftChange('name', event.target.value)}
+                placeholder="Profile name, e.g. Dolphin"
+              />
+              <input
+                type="text"
+                value={emulatorDraft.consolePlatform}
+                onChange={(event) => handleEmulatorDraftChange('consolePlatform', event.target.value)}
+                placeholder="Console, e.g. GameCube"
+              />
+              <button type="button" onClick={chooseEmulatorExecutable}>Choose Emulator</button>
+              <button type="button" onClick={chooseRomFolder}>Choose ROM Folder</button>
+              <input
+                type="text"
+                value={emulatorDraft.extensions}
+                onChange={(event) => handleEmulatorDraftChange('extensions', event.target.value)}
+                placeholder="Extensions: iso, chd, gba"
+              />
+              <input
+                type="text"
+                value={emulatorDraft.launchTemplate}
+                onChange={(event) => handleEmulatorDraftChange('launchTemplate', event.target.value)}
+                placeholder={'"{emulator}" "{rom}"'}
+              />
+              <button type="button" className="emulator-add-profile" onClick={addEmulatorProfile}>Add Profile</button>
+            </div>
+            {(emulatorDraft.emulatorPath || emulatorDraft.romFolder) && (
+              <div className="emulator-path-preview">
+                {emulatorDraft.emulatorPath && <span>Emulator: {emulatorDraft.emulatorPath}</span>}
+                {emulatorDraft.romFolder && <span>ROMs: {emulatorDraft.romFolder}</span>}
+              </div>
+            )}
+            {emulatorProfiles.length > 0 && (
+              <div className="emulator-profile-list">
+                {emulatorProfiles.map((profile) => (
+                  <div key={profile.id} className="emulator-profile-chip">
+                    <span>{profile.name} · {profile.consolePlatform}</span>
+                    <button type="button" onClick={() => removeEmulatorProfile(profile.id)}>Remove</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {library.length === 0 ? (
         <EmptyLibraryState onScan={handleScanLibrary} theme={theme} />
       ) : (
@@ -1149,7 +1317,7 @@ function Library({
           <label>Sort By</label>
           <select value={localSortBy} onChange={(e) => handleSortChange(e.target.value)} className="filter-select">
             <option value="name">Name</option>
-            <option value="recent">Recently Added</option>
+            <option value="recently-added">Recently Added</option>
             <option value="last-played">Last Played</option>
             <option value="most-played">Most Played</option>
             <option value="least-played">Least Played</option>
@@ -1273,6 +1441,10 @@ function Library({
           <span>Showing</span>
           <strong>{displayedGames.length} of {filteredAndSortedGames.length}</strong>
         </div>
+        <div className="library-context-pill library-context-pill-highlight">
+          <span>New in {RECENTLY_ADDED_WINDOW_DAYS} days</span>
+          <strong>{recentlyAddedCount}</strong>
+        </div>
         <div className="library-context-pill">
           <span>Filters</span>
           <strong>{activeFilterCount > 0 ? `${activeFilterCount} active` : 'None'}</strong>
@@ -1288,6 +1460,71 @@ function Library({
       </div>
 
       <PinnedGamesRow library={library} favorites={favorites} onLaunchGame={onLaunchGame} />
+
+      {recentlyAddedShelfGames.length > 0 && (
+        <section className="library-recent-section" aria-labelledby="library-recent-title">
+          <div className="library-recent-section-header">
+            <div>
+              <span className="library-recent-section-kicker">Fresh in your library</span>
+              <h2 id="library-recent-title" className="library-recent-section-title">Recently Added</h2>
+            </div>
+            <div className="library-recent-section-meta">
+              {recentlyAddedShelfGames.length} showing
+            </div>
+          </div>
+          <div className="library-recent-shelf">
+            {recentlyAddedShelfGames.map((game) => {
+              const favoriteKey = getFavoriteGameKey(game);
+              const isFavorite = favorites.includes(favoriteKey);
+              const resolvedMood = getResolvedMood(game);
+
+              return (
+                <article
+                  key={`recent-${game.appid || game.name}`}
+                  className="library-recent-shelf-card"
+                  onClick={() => openGameModal(game)}
+                >
+                  <div className="library-recent-shelf-image">
+                    <LazyImage
+                      src={resolveGameArtwork(game, { surface: 'library_card' })}
+                      alt={game.name}
+                      gameName={game.name}
+                      platform={getDisplayPlatform(game)}
+                      genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
+                      mood={game.mood}
+                      placeholder={getGameArtworkPlaceholder({ game, surface: 'library_card' })}
+                      style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                  <div className="library-recent-shelf-content">
+                    <div className="library-recent-shelf-title-row">
+                      <h3>{game.name}</h3>
+                      <span className="library-new-badge">New</span>
+                    </div>
+                    <p className="library-recent-shelf-subtitle">
+                      {getDisplayPlatform(game)}<span>•</span><span>{formatTimePlayed(game.time_played)}</span>
+                    </p>
+                    <div className="library-recent-shelf-tags">
+                      {resolvedMood && <span className="library-game-tag mood">{resolvedMood}</span>}
+                      {Array.isArray(game.genres) && game.genres[0] && <span className="library-game-tag genre">{game.genres[0]}</span>}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleToggleFavorite(favoriteKey);
+                    }}
+                    aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
+                    className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
+                  >
+                    <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div ref={libraryContainerRef} className={`library-${viewMode}`} style={viewMode === 'grid' ? {
         display: 'grid',
@@ -1305,11 +1542,12 @@ function Library({
           const isFavorite = favorites.includes(favoriteKey);
           const resolvedMood = getResolvedMood(game);
           const gameValue = getGameValue(game);
+          const isRecentlyAdded = GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS);
 
           return (
           <div 
             key={game.appid || game.name} 
-            className={getGameCardClass(game, index)}
+            className={`${getGameCardClass(game, index)}${isRecentlyAdded ? ' is-recently-added' : ''}`}
             onClick={() => bulkMode ? null : openGameModal(game)}
             style={viewMode === 'grid' ? {
               backgroundColor: 'var(--bg-card)',
@@ -1382,16 +1620,19 @@ function Library({
             <div className="game-info" style={{ flexGrow: 1 }}>
               <div className="library-game-title-row">
                 <h3 className="library-game-title">{game.name}</h3>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleFavorite(favoriteKey);
-                  }}
-                  aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
-                  className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
-                >
-                  <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-                </button>
+                <div className="library-game-title-actions">
+                  {isRecentlyAdded && <span className="library-new-badge">New</span>}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavorite(favoriteKey);
+                    }}
+                    aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
+                    className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
+                  >
+                    <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
               </div>
               <p className="playtime library-game-playtime">
                 <Clock size={12} /> {formatTimePlayed(game.time_played)}
