@@ -12,6 +12,7 @@ import BackToTopButton from './components/BackToTopButton';
 import HLTBChip from './components/HLTBChip';
 import PatchNewsBadge from './components/PatchNewsBadge';
 import DiskSizeChip from './components/DiskSizeChip';
+import InterfacePreferencesService from './services/InterfacePreferencesService';
 import SteamNewsService from './services/SteamNewsService';
 import DiskUsageService from './services/DiskUsageService';
 import { useToast } from './components/Toast';
@@ -33,6 +34,12 @@ const NOOP = () => {};
 const CONTROLLER_NAV_ROUTES = ['/', '/library', '/stats', '/achievements', '/year-in-review', '/challenge-board', '/performance', '/gaming-links', '/profile', '/settings'];
 const FAVORITES_STORAGE_KEY = 'favorites';
 const RECENTLY_ADDED_WINDOW_DAYS = 14;
+const LIBRARY_SHELF_CATEGORIES = Object.freeze([
+  { id: 'recent', label: 'Recently Added', kicker: 'Fresh in your library' },
+  { id: 'pinned', label: 'Pinned', kicker: 'Quick launch shelf' },
+  { id: 'favorites', label: 'Favourites', kicker: 'Your saved picks' },
+  { id: 'top-rated', label: 'Top Rated', kicker: 'Highest rated games' }
+]);
 
 const getResolvedMood = (game) => {
   if (!game || typeof game !== 'object') {
@@ -298,6 +305,7 @@ function Library({
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [selectedGameIndex, setSelectedGameIndex] = useState(-1);
   const [librarianPick, setLibrarianPick] = useState(null);
+  const [activeShelfCategoryIndex, setActiveShelfCategoryIndex] = useState(0);
   const [isLuckyAnimating, setIsLuckyAnimating] = useState(false);
   const [luckyPreviewName, setLuckyPreviewName] = useState('');
   const libraryContainerRef = useRef(null);
@@ -1037,6 +1045,41 @@ function Library({
       .filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS))
       .slice(0, 6)
   ), [filteredAndSortedGames]);
+  const pinnedShelfGames = useMemo(() => {
+    const pinnedIds = new Set((InterfacePreferencesService.getAll().pinnedGameIds || []).map(String));
+    return filteredAndSortedGames
+      .filter((game) => pinnedIds.has(String(getFavoriteGameKey(game))))
+      .slice(0, 6);
+  }, [filteredAndSortedGames]);
+  const favoriteShelfGames = useMemo(() => (
+    filteredAndSortedGames
+      .filter((game) => favorites.includes(getFavoriteGameKey(game)) || favorites.includes(game?.name) || favorites.includes(String(game?.appid)))
+      .slice(0, 6)
+  ), [filteredAndSortedGames, favorites]);
+  const topRatedShelfGames = useMemo(() => (
+    filteredAndSortedGames
+      .filter((game) => typeof game.userRating === 'number' && game.userRating > 0)
+      .sort((left, right) => {
+        const ratingDifference = right.userRating - left.userRating;
+        if (ratingDifference !== 0) return ratingDifference;
+        return (right.time_played || 0) - (left.time_played || 0);
+      })
+      .slice(0, 6)
+  ), [filteredAndSortedGames]);
+  const libraryShelfCategories = useMemo(() => LIBRARY_SHELF_CATEGORIES.map((category) => {
+    if (category.id === 'pinned') return { ...category, games: pinnedShelfGames };
+    if (category.id === 'favorites') return { ...category, games: favoriteShelfGames };
+    if (category.id === 'top-rated') return { ...category, games: topRatedShelfGames };
+    return { ...category, games: recentlyAddedShelfGames };
+  }), [favoriteShelfGames, pinnedShelfGames, recentlyAddedShelfGames, topRatedShelfGames]);
+  const activeShelfCategory = libraryShelfCategories[activeShelfCategoryIndex] || libraryShelfCategories[0];
+  const activeShelfGames = activeShelfCategory?.games || [];
+  const handleShelfCategoryChange = useCallback((direction) => {
+    setActiveShelfCategoryIndex((previousIndex) => {
+      const totalCategories = LIBRARY_SHELF_CATEGORIES.length;
+      return (previousIndex + direction + totalCategories) % totalCategories;
+    });
+  }, []);
   const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCollection, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0);
 
   return (
@@ -1461,26 +1504,46 @@ function Library({
 
       <PinnedGamesRow library={library} favorites={favorites} onLaunchGame={onLaunchGame} />
 
-      {recentlyAddedShelfGames.length > 0 && (
+      {activeShelfCategory && (
         <section className="library-recent-section" aria-labelledby="library-recent-title">
           <div className="library-recent-section-header">
             <div>
-              <span className="library-recent-section-kicker">Fresh in your library</span>
-              <h2 id="library-recent-title" className="library-recent-section-title">Recently Added</h2>
+              <span className="library-recent-section-kicker">{activeShelfCategory.kicker}</span>
+              <h2 id="library-recent-title" className="library-recent-section-title">{activeShelfCategory.label}</h2>
             </div>
-            <div className="library-recent-section-meta">
-              {recentlyAddedShelfGames.length} showing
+            <div className="library-shelf-carousel-controls">
+              <button type="button" onClick={() => handleShelfCategoryChange(-1)} aria-label="Show previous library shelf">‹</button>
+              <div className="library-recent-section-meta">
+                {activeShelfGames.length > 0 ? `${activeShelfGames.length} showing` : 'Nothing here yet'}
+              </div>
+              <button type="button" onClick={() => handleShelfCategoryChange(1)} aria-label="Show next library shelf">›</button>
             </div>
           </div>
-          <div className="library-recent-shelf">
-            {recentlyAddedShelfGames.map((game) => {
+          <div className="library-shelf-tabs" role="tablist" aria-label="Library shelf categories">
+            {libraryShelfCategories.map((category, categoryIndex) => (
+              <button
+                key={category.id}
+                type="button"
+                role="tab"
+                aria-selected={categoryIndex === activeShelfCategoryIndex}
+                className={categoryIndex === activeShelfCategoryIndex ? 'is-active' : ''}
+                onClick={() => setActiveShelfCategoryIndex(categoryIndex)}
+              >
+                {category.label}
+                <span>{category.games.length}</span>
+              </button>
+            ))}
+          </div>
+          {activeShelfGames.length > 0 ? (
+            <div className="library-recent-shelf">
+            {activeShelfGames.map((game) => {
               const favoriteKey = getFavoriteGameKey(game);
               const isFavorite = favorites.includes(favoriteKey);
               const resolvedMood = getResolvedMood(game);
 
               return (
                 <article
-                  key={`recent-${game.appid || game.name}`}
+                  key={`shelf-${activeShelfCategory.id}-${game.appid || game.name}`}
                   className="library-recent-shelf-card"
                   onClick={() => openGameModal(game)}
                 >
@@ -1499,7 +1562,8 @@ function Library({
                   <div className="library-recent-shelf-content">
                     <div className="library-recent-shelf-title-row">
                       <h3>{game.name}</h3>
-                      <span className="library-new-badge">New</span>
+                      {activeShelfCategory.id === 'recent' && <span className="library-new-badge">New</span>}
+                      {activeShelfCategory.id === 'top-rated' && <span className="library-new-badge">{game.userRating}/5</span>}
                     </div>
                     <p className="library-recent-shelf-subtitle">
                       {getDisplayPlatform(game)}<span>•</span><span>{formatTimePlayed(game.time_played)}</span>
@@ -1522,7 +1586,12 @@ function Library({
                 </article>
               );
             })}
-          </div>
+            </div>
+          ) : (
+            <div className="library-empty-shelf-message">
+              Add games to {activeShelfCategory.label.toLowerCase()} to fill this shelf.
+            </div>
+          )}
         </section>
       )}
 
