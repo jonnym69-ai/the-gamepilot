@@ -336,6 +336,148 @@ export class AdvancedAnalyticsService {
     };
   }
 
+  static getBacklogPriority(library = []) {
+    if (!Array.isArray(library) || library.length === 0) return null;
+
+    const favoriteGenres = this.getTopGenres(library, 5);
+    const favoriteMoods = this.getTopMoods(library, 5);
+    const completion = this.getCompletionAnalytics(library);
+    const avgCompletion = completion?.overall?.completionRate || 0;
+
+    const backlog = library.filter((g) => !isCompleted(g) && !isDropped(g));
+    const year = new Date().getFullYear();
+
+    const scored = backlog.map((game) => {
+      const price = getPrice(game);
+      const hours = getMinutesPlayed(game) / 60;
+      const genres = getGenres(game);
+      const mood = game.mood || game.assignedMood;
+      const releaseYear = getReleaseYear(game);
+      const genreBoost = genres.reduce((sum, genre) => {
+        return sum + (favoriteGenres.find((g) => g.name === genre)?.rank || 0);
+      }, 0);
+      const moodBoost = favoriteMoods.find((m) => m.name === mood)?.rank || 0;
+      const startedBoost = hours > 0 ? 20 : 0;
+      const recencyBoost = releaseYear && year - releaseYear < 3 ? 15 : 0;
+      const valueScore = Math.min(price * 3, 100);
+      const completionGap = avgCompletion > 0 ? avgCompletion / 100 : 0.5;
+
+      const score = valueScore + genreBoost * 8 + moodBoost * 6 + startedBoost + recencyBoost + completionGap * 25;
+      return {
+        name: game.name || 'Unknown',
+        platform: game.platform,
+        genres,
+        mood,
+        value: price,
+        hours: Math.round(hours * 10) / 10,
+        releaseYear,
+        score: Math.round(score)
+      };
+    });
+
+    return scored.sort((a, b) => b.score - a.score).slice(0, 10);
+  }
+
+  static getTopGenres(library = [], topCount = 5) {
+    const genres = {};
+    library.forEach((game) => {
+      const list = getGenres(game);
+      list.forEach((genre) => {
+        genres[genre] = (genres[genre] || 0) + getMinutesPlayed(game);
+      });
+    });
+    return Object.entries(genres)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, topCount)
+      .map(([name], index) => ({ name, rank: topCount - index }));
+  }
+
+  static getTopMoods(library = [], topCount = 5) {
+    const moods = {};
+    library.forEach((game) => {
+      const mood = game.mood || game.assignedMood;
+      if (!mood) return;
+      moods[mood] = (moods[mood] || 0) + getMinutesPlayed(game);
+    });
+    return Object.entries(moods)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, topCount)
+      .map(([name], index) => ({ name, rank: topCount - index }));
+  }
+
+  static getNextUpRecommendations(library = []) {
+    if (!Array.isArray(library) || library.length === 0) return null;
+    const priority = this.getBacklogPriority(library);
+    if (!priority || priority.length === 0) return null;
+    return priority.slice(0, 5).map((g) => ({ ...g, reason: this.buildNextUpReason(g) }));
+  }
+
+  static buildNextUpReason(game) {
+    const reasons = [];
+    if (game.hours > 0) reasons.push('already started');
+    if (game.value > 30) reasons.push('high value');
+    if (game.releaseYear && new Date().getFullYear() - game.releaseYear < 3) reasons.push('recent release');
+    if (reasons.length === 0) reasons.push('matches your taste');
+    return reasons.join(' + ');
+  }
+
+  static getSessionQuality(library = []) {
+    const sessions = StatsAggregationService.getNormalizedSessionHistory?.(library) || [];
+    if (sessions.length === 0) return null;
+
+    const sorted = [...sessions].sort((a, b) => a.timestamp - b.timestamp);
+    const durations = sorted.map((s) => s.playtimeMinutes || 0);
+    const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+    const longest = Math.max(...durations);
+
+    const dayCounts = {};
+    sorted.forEach((s) => {
+      const key = s.timestamp.toISOString().split('T')[0];
+      dayCounts[key] = (dayCounts[key] || 0) + 1;
+    });
+    const streaks = [];
+    let current = 0;
+    const sortedDays = Object.keys(dayCounts).sort();
+    sortedDays.forEach((day, index) => {
+      if (index === 0) {
+        current = 1;
+        return;
+      }
+      const prev = new Date(sortedDays[index - 1]);
+      const curr = new Date(day);
+      const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+      if (diff === 1) {
+        current += 1;
+      } else {
+        streaks.push(current);
+        current = 1;
+      }
+    });
+    streaks.push(current);
+    const bestStreak = Math.max(...streaks);
+
+    const weekdayHours = new Array(7).fill(0);
+    sorted.forEach((s) => {
+      weekdayHours[s.timestamp.getDay()] += (s.playtimeMinutes || 0) / 60;
+    });
+    const bestDayIndex = weekdayHours.indexOf(Math.max(...weekdayHours));
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const consistency = sortedDays.length > 1
+      ? (sortedDays.length / ((new Date(sortedDays[sortedDays.length - 1]) - new Date(sortedDays[0])) / (1000 * 60 * 60 * 24) + 1)) * 100
+      : 100;
+
+    return {
+      totalSessions: sessions.length,
+      averageSessionMinutes: Math.round(avg),
+      longestSessionMinutes: longest,
+      bestStreak,
+      bestDay: dayNames[bestDayIndex],
+      bestDayHours: Math.round(weekdayHours[bestDayIndex] * 10) / 10,
+      consistencyScore: Math.round(Math.min(consistency, 100))
+    };
+  }
+
   static getInsights(library = []) {
     if (!Array.isArray(library) || library.length === 0) return [];
 
@@ -345,6 +487,8 @@ export class AdvancedAnalyticsService {
     const backlog = this.getBacklogInvestments(library);
     const devPub = this.getDeveloperPublisherStats(library);
     const priceTiers = this.getPriceTierAnalysis(library);
+    const nextUp = this.getNextUpRecommendations(library);
+    const sessionQuality = this.getSessionQuality(library);
 
     if (valuePerHour?.bestValue?.[0]) {
       const best = valuePerHour.bestValue[0];
@@ -407,7 +551,26 @@ export class AdvancedAnalyticsService {
       });
     }
 
-    return insights.slice(0, 6);
+    if (nextUp?.[0]) {
+      const pick = nextUp[0];
+      insights.push({
+        type: 'tip',
+        icon: '🎲',
+        title: 'Next Up Recommendation',
+        text: `${pick.name} scores ${pick.score} — ${pick.reason}.`
+      });
+    }
+
+    if (sessionQuality?.bestStreak > 1) {
+      insights.push({
+        type: 'success',
+        icon: '🔥',
+        title: 'Best Streak',
+        text: `You played on ${sessionQuality.bestStreak} consecutive days at your best streak.`
+      });
+    }
+
+    return insights.slice(0, 8);
   }
 
   static getFullAdvancedAnalytics(library = []) {
@@ -419,6 +582,9 @@ export class AdvancedAnalyticsService {
       genreEvolution: this.getGenreEvolution(library),
       platformBreakdown: this.getPlatformValueBreakdown(library),
       backlogInvestments: this.getBacklogInvestments(library),
+      backlogPriority: this.getBacklogPriority(library),
+      nextUp: this.getNextUpRecommendations(library),
+      sessionQuality: this.getSessionQuality(library),
       insights: this.getInsights(library)
     };
   }

@@ -1,10 +1,12 @@
 import React, { useMemo, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import {
+  Activity,
   Brain,
   Building2,
   Clock,
   Crown,
+  Dice5,
   DollarSign,
   Gamepad2,
   Layers,
@@ -96,6 +98,9 @@ export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro 
     genreEvolution,
     platformBreakdown,
     backlogInvestments,
+    backlogPriority,
+    nextUp,
+    sessionQuality,
     insights
   } = analytics;
 
@@ -333,6 +338,69 @@ export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro 
             )}
           </SectionCard>
         </div>
+
+        {nextUp?.length > 0 && (
+          <SectionCard title="Next Up" icon={<Dice5 size={18} />}>
+            <div className="aad-nextup-list">
+              {nextUp.map((game, index) => (
+                <div key={game.name} className="aad-nextup-card">
+                  <div className="aad-nextup-rank">{index + 1}</div>
+                  <div className="aad-nextup-info">
+                    <strong>{game.name}</strong>
+                    <span>{game.reason}</span>
+                  </div>
+                  <div className="aad-nextup-meta">
+                    <span className="aad-highlight">{game.score} pts</span>
+                    <span className="aad-muted">{game.hours > 0 ? `${game.hours}h` : 'unplayed'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {sessionQuality && (
+          <SectionCard title="Session Quality" icon={<Activity size={18} />}>
+            <div className="aad-quality-grid">
+              <div className="aad-quality-card">
+                <strong>{sessionQuality.averageSessionMinutes}</strong>
+                <span>Avg minutes</span>
+              </div>
+              <div className="aad-quality-card">
+                <strong>{sessionQuality.longestSessionMinutes}</strong>
+                <span>Longest minutes</span>
+              </div>
+              <div className="aad-quality-card">
+                <strong>{sessionQuality.bestStreak}</strong>
+                <span>Best streak</span>
+              </div>
+              <div className="aad-quality-card">
+                <strong>{sessionQuality.consistencyScore}%</strong>
+                <span>Consistency</span>
+              </div>
+            </div>
+            <div className="aad-quality-day">
+              <span>Your strongest day is <strong>{sessionQuality.bestDay}</strong> with {sessionQuality.bestDayHours}h played.</span>
+            </div>
+          </SectionCard>
+        )}
+
+        {backlogPriority?.length > 0 && (
+          <SectionCard title="Backlog Priority" icon={<TrendingUp size={18} />}>
+            <div className="aad-ranked-list">
+              {backlogPriority.slice(0, 5).map((g) => (
+                <div key={g.name} className="aad-ranked-row">
+                  <div className="aad-ranked-info">
+                    <strong>{g.name}</strong>
+                    <span>{g.genres.slice(0, 2).join(', ')}</span>
+                  </div>
+                  <MiniBar value={g.score} max={200} />
+                  <span className="aad-highlight">{g.score}</span>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
 
         {genreEvolution?.datasets?.length > 0 && (
           <SectionCard title="Genre Evolution" icon={<PieChartIcon size={18} />}>
