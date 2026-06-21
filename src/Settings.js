@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, Unlock, SlidersHorizontal, Archive } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, Unlock, SlidersHorizontal, Archive, Sparkles as SparklesIcon } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
@@ -22,6 +22,7 @@ import { LibraryExportService } from './services/LibraryExportService';
 import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
 import BackupRestoreDashboard from './components/BackupRestoreDashboard';
+import DynamicBackdropStudio from './components/DynamicBackdropStudio';
 import './Settings.css';
 
 function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
@@ -1168,6 +1169,22 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                   defaultOpen={false}
                 >
                   <BackupRestoreDashboard
+                    isPro={EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')}
+                  />
+                </CollapsibleSection>
+              )}
+
+              {/* Dynamic Backdrop Studio — Pro / Power Tools exclusive */}
+              {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')) && (
+                <CollapsibleSection
+                  title="Dynamic Backdrop Studio"
+                  subtitle="Animated, color-reactive backgrounds from your last played cover art."
+                  badge="Pro"
+                  icon={<SparklesIcon size={18} />}
+                  className="settings-folder"
+                  defaultOpen={false}
+                >
+                  <DynamicBackdropStudio
                     isPro={EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')}
                   />
                 </CollapsibleSection>

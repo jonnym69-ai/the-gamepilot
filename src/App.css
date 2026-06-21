@@ -210,6 +210,38 @@ body.dynamic-cover-bg .profile-card {
   backdrop-filter: blur(8px) !important;
 }
 
+/* Pro: animated dynamic backdrop from cover art colors */
+body.dynamic-backdrop-active {
+  background: var(--dynamic-backdrop, var(--bg-primary, #0d1224));
+  background-size: var(--dynamic-backdrop-size, 100% 100%);
+  animation: dynamic-backdrop-flow var(--backdrop-animation-speed, 20s) ease-in-out infinite;
+  transition: background 0.5s ease;
+}
+
+body.dynamic-backdrop-active::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop-overlay, rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+  z-index: -1;
+}
+
+body.dynamic-backdrop-active::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes dynamic-backdrop-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 body.big-screen-mode :is(a[href], button, input, select, textarea, [role="button"], [tabindex]):focus-visible,
 body.big-screen-mode :is(a[href], button, input, select, textarea, [role="button"], [tabindex]):focus {
   outline: 4px solid var(--accent-primary, #ff8c42) !important;

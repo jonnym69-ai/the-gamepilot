@@ -56,6 +56,8 @@ import { HabitTrackerService } from './services/HabitTrackerService';
 import StorageService from './services/StorageService';
 import { assignMoodToGame as importedAssignMoodToGame } from './services/MoodAssignmentService';
 import { resolveGameArtwork } from './services/GameArtworkService';
+import DynamicBackdropService from './services/DynamicBackdropService';
+import EntitlementService from './services/EntitlementService';
 import CommandPalette from './components/CommandPalette';
 import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
@@ -688,6 +690,34 @@ function AppContent() {
       root.style.removeProperty('--dynamic-cover-image');
     }
   }, [dynamicCoverBg, lastPlayedGame]);
+
+  // Pro: animated dynamic backdrop extracted from the last played cover art.
+  useEffect(() => {
+    const isPro = EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro');
+    const settings = DynamicBackdropService.getSettings();
+    const root = document.documentElement;
+    if (!isPro || !settings.enabled || !lastPlayedGame) {
+      document.body.classList.remove('dynamic-backdrop-active');
+      root.style.removeProperty('--dynamic-backdrop');
+      return undefined;
+    }
+    let active = true;
+    const coverUrl = resolveGameArtwork(lastPlayedGame, { surface: 'wide' });
+    DynamicBackdropService.getPalette(coverUrl).then((palette) => {
+      if (!active || !palette) return;
+      const css = DynamicBackdropService.generateBackdropCSS(palette, settings);
+      if (!css) return;
+      Object.entries(css).forEach(([key, value]) => {
+        root.style.setProperty(key, value);
+      });
+      document.body.classList.add('dynamic-backdrop-active');
+    });
+    return () => {
+      active = false;
+      document.body.classList.remove('dynamic-backdrop-active');
+      root.style.removeProperty('--dynamic-backdrop');
+    };
+  }, [lastPlayedGame]);
   useEffect(() => {
     if (!window.electronAPI?.onSystemShutdown) return undefined;
     const unsubscribe = window.electronAPI.onSystemShutdown(() => {
