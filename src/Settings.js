@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, Unlock, SlidersHorizontal } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, Unlock, SlidersHorizontal, Archive } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
@@ -21,6 +21,7 @@ import TrialService from './services/TrialService';
 import { LibraryExportService } from './services/LibraryExportService';
 import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
+import BackupRestoreDashboard from './components/BackupRestoreDashboard';
 import './Settings.css';
 
 function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
@@ -1155,6 +1156,22 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                   </div>
                 </div>
               </CollapsibleSection>
+
+              {/* Backup & Restore — Pro / Power Tools exclusive */}
+              {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')) && (
+                <CollapsibleSection
+                  title="Backup & Restore"
+                  subtitle="Export and import your complete GamePilot data."
+                  badge="Pro"
+                  icon={<Archive size={18} />}
+                  className="settings-folder"
+                  defaultOpen={false}
+                >
+                  <BackupRestoreDashboard
+                    isPro={EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')}
+                  />
+                </CollapsibleSection>
+              )}
 
               {/* Patreon Supporter Section */}
               <CollapsibleSection
