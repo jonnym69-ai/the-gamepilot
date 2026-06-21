@@ -10,21 +10,21 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 72px 80px;
+  padding: 56px 64px;
   background: linear-gradient(160deg, #0d1224 0%, #1a2148 45%, #2a1845 100%);
   color: #f5f7ff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   overflow: hidden;
 }
 
-.yir-share-card::before {
-  content: '';
+.yir-share-card-glow {
   position: absolute;
   inset: 0;
   background:
     radial-gradient(circle at 20% 15%, rgba(245, 183, 0, 0.18), transparent 45%),
     radial-gradient(circle at 80% 85%, rgba(120, 80, 240, 0.22), transparent 50%);
   pointer-events: none;
+  z-index: 0;
 }
 
 .yir-share-card > * {
@@ -39,9 +39,9 @@
 }
 
 .yir-share-card-brand {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: 6px;
+  letter-spacing: 5px;
   background: linear-gradient(135deg, #f5b700, #ff9d2e);
   -webkit-background-clip: text;
   background-clip: text;
@@ -49,7 +49,7 @@
 }
 
 .yir-share-card-year {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: rgba(245, 247, 255, 0.85);
   letter-spacing: 2px;
@@ -58,11 +58,11 @@
 .yir-share-card-body {
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 22px;
 }
 
 .yir-share-card-eyebrow {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 500;
   color: rgba(245, 247, 255, 0.65);
   letter-spacing: 1.5px;
@@ -70,28 +70,28 @@
 }
 
 .yir-share-card-headline {
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .yir-share-card-stat {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .yir-share-card-stat strong {
-  font-size: 200px;
+  font-size: 132px;
   font-weight: 800;
   line-height: 0.95;
   background: linear-gradient(135deg, #ffffff 0%, #f5b700 90%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: -4px;
+  letter-spacing: -3px;
 }
 
 .yir-share-card-stat span {
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 600;
   color: rgba(245, 247, 255, 0.7);
   letter-spacing: 2px;
@@ -101,88 +101,180 @@
 .yir-share-card-persona {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 24px 28px;
+  gap: 4px;
+  padding: 18px 22px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  border-radius: 18px;
 }
 
 .yir-share-card-persona span {
-  font-size: 20px;
+  font-size: 16px;
   color: rgba(245, 247, 255, 0.65);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 
 .yir-share-card-persona strong {
-  font-size: 56px;
+  font-size: 40px;
   font-weight: 800;
   color: #ffffff;
   line-height: 1.1;
 }
 
+.yir-share-card-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(245, 247, 255, 0.5);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 .yir-share-card-strip {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 14px;
 }
 
 .yir-share-card-strip > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 18px 20px;
+  padding: 14px 16px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 14px;
 }
 
 .yir-share-card-strip strong {
-  font-size: 40px;
+  font-size: 32px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .yir-share-card-strip span {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 500;
   color: rgba(245, 247, 255, 0.6);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 
+.yir-share-card-top-games {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.yir-share-card-top-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.yir-share-top-game {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.yir-share-top-game-rank {
+  width: 28px;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(245, 247, 255, 0.55);
+  text-align: center;
+}
+
+.yir-share-top-game-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.yir-share-top-game-info strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.yir-share-top-game-info span {
+  font-size: 13px;
+  color: rgba(245, 247, 255, 0.55);
+}
+
+.yir-share-card-moments {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.yir-share-card-moments > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+}
+
+.yir-share-card-moments strong {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .yir-share-card-tags {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 14px;
 }
 
 .yir-share-card-tags > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.yir-share-card-tags span {
-  font-size: 16px;
-  color: rgba(245, 247, 255, 0.55);
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
 }
 
 .yir-share-card-tags strong {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: #ffffff;
 }
 
 .yir-share-card-footer {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  gap: 6px;
+  text-align: center;
+}
+
+.yir-share-card-cta {
+  font-size: 17px;
+  font-weight: 600;
+  color: #f5b700;
+  letter-spacing: 0.5px;
+}
+
+.yir-share-card-tagline {
+  font-size: 15px;
   font-weight: 500;
-  letter-spacing: 2px;
-  color: rgba(245, 247, 255, 0.55);
-  text-transform: uppercase;
+  color: rgba(245, 247, 255, 0.5);
+  letter-spacing: 1px;
 }

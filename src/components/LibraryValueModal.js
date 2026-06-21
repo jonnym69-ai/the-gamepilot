@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Download, DollarSign, PieChart, TrendingUp, Copy, Image as ImageIcon } from 'lucide-react';
 import { LibraryValueService } from '../services/LibraryValueService';
+import { LocalShareService } from '../services/LocalShareService';
 import './LibraryValueModal.css';
 
 const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => {
@@ -29,13 +30,15 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
     URL.revokeObjectURL(url);
   };
 
-  const handleShareText = () => {
+  const handleShareText = async () => {
     if (!libraryValue) return;
-    
-    const text = LibraryValueService.generateShareText(libraryValue, username);
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+
+    const text = LocalShareService.buildLibraryValueShareText(libraryValue, username);
+    const success = await LocalShareService.copyTextToClipboard(text);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const generateShareImage = () => {

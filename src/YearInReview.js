@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
-import { Award, BookOpen, Calendar, Clock, Download, Gamepad2, Image, Target, TrendingUp, Trophy } from 'lucide-react';
+import { Award, BookOpen, Calendar, Clock, Download, Gamepad2, Target, TrendingUp, Trophy } from 'lucide-react';
 import NavBar from './NavBar';
 import { YearInReviewService } from './services/YearInReviewService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import StorageService from './services/StorageService';
+import { LocalShareService } from './services/LocalShareService';
 import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
+import ShareMenu from './components/ShareMenu';
 import { formatPlaytime } from './utils/formatPlaytime';
 import './YearInReview.css';
 
@@ -106,6 +108,11 @@ const sanitizeExportClone = (sourceRoot, clonedDocument) => {
   clonedRoot.querySelectorAll('.year-review-export-surface-founder').forEach((node) => {
     node.style.boxShadow = `0 0 36px ${founderGlow}`;
   });
+
+  clonedRoot.querySelectorAll('.year-review-chapter').forEach((node) => {
+    node.style.opacity = '1';
+    node.style.animation = 'none';
+  });
 };
 
 const SkeletonCard = () => (
@@ -204,10 +211,17 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     }
   }, [selectedYear, showStatus]);
 
-  const handleExportShareCard = useCallback(async () => {
+  const handleCopyShareText = useCallback(async () => {
+    const text = LocalShareService.buildYearInReviewShareText(snapshot, selectedYear);
+    const success = await LocalShareService.copyTextToClipboard(text);
+    showStatus(success ? 'Share text copied to clipboard.' : 'Could not copy share text.');
+    return success;
+  }, [snapshot, selectedYear, showStatus]);
+
+  const generateShareCardBlob = useCallback(async () => {
     if (!shareCardRef.current) {
       showStatus('Share card not ready yet.');
-      return;
+      return null;
     }
     setIsExportingShare(true);
     try {
@@ -225,22 +239,57 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
       if (!blob) {
         throw new Error('Share card export returned an empty blob.');
       }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `gamepilot-share-${selectedYear}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showStatus(`Share card saved for ${selectedYear}.`);
+      return blob;
     } catch (error) {
-      console.error('Failed to export share card:', error);
-      showStatus('Could not export share card.');
+      console.error('Failed to generate share card:', error);
+      showStatus('Could not generate share card.');
+      return null;
     } finally {
       setIsExportingShare(false);
     }
-  }, [selectedYear, showStatus]);
+  }, [showStatus]);
+
+  const handleSaveShareCard = useCallback(async () => {
+    const blob = await generateShareCardBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gamepilot-share-${selectedYear}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showStatus(`Share card saved for ${selectedYear}.`);
+  }, [generateShareCardBlob, selectedYear, showStatus]);
+
+  const handleCopyShareCardImage = useCallback(async () => {
+    const blob = await generateShareCardBlob();
+    if (!blob) return false;
+    const result = await LocalShareService.copyImageToClipboard(blob, `gamepilot-share-${selectedYear}.png`);
+    showStatus(result.success ? 'Image copied to clipboard.' : result.message || 'Could not copy image.');
+    return result.success;
+  }, [generateShareCardBlob, selectedYear, showStatus]);
+
+  const handleShareToChannel = useCallback(async (channel) => {
+    const text = LocalShareService.buildYearInReviewShareText(snapshot, selectedYear);
+    const result = await LocalShareService.openShareIntent(channel, text);
+    showStatus(result.success ? `Opened ${result.label}.` : result.message || 'Could not open share.');
+  }, [snapshot, selectedYear, showStatus]);
+
+  const handleNativeShare = useCallback(async () => {
+    const blob = await generateShareCardBlob();
+    const { text, filename, title } = LocalShareService.buildSharePackage(snapshot, selectedYear);
+    const files = blob ? [new File([blob], filename, { type: 'image/png' })] : [];
+    const result = await LocalShareService.shareWithNativeShare({ title, text, files });
+    showStatus(result.success ? 'Shared successfully.' : result.message || 'Native share failed.');
+  }, [generateShareCardBlob, snapshot, selectedYear, showStatus]);
+
+  const handleDownloadShareText = useCallback(() => {
+    const text = LocalShareService.buildYearInReviewShareText(snapshot, selectedYear);
+    const success = LocalShareService.downloadShareText(text, `gamepilot-share-${selectedYear}.txt`);
+    showStatus(success ? 'Caption downloaded.' : 'Could not download caption.');
+  }, [snapshot, selectedYear, showStatus]);
 
   return (
     <div className="year-review-page">
@@ -265,15 +314,16 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
               </select>
             </label>
             <div className="year-review-actions">
-              <button
-                type="button"
-                onClick={handleExportShareCard}
-                disabled={isExportingShare || !snapshot?.hasData}
-                title="Save a 1080x1080 image perfect for sharing"
-              >
-                <Image size={16} />
-                <span>{isExportingShare ? 'Saving...' : 'Save share image'}</span>
-              </button>
+              <ShareMenu
+                onCopyText={handleCopyShareText}
+                onCopyImage={handleCopyShareCardImage}
+                onSaveImage={handleSaveShareCard}
+                onShareText={handleShareToChannel}
+                onDownloadText={handleDownloadShareText}
+                onNativeShare={handleNativeShare}
+                imageAvailable={snapshot?.hasData}
+                disabled={isExportingShare}
+              />
               <button type="button" onClick={handleExportImage} disabled={isExportingImage}>
                 <Download size={16} />
                 <span>{isExportingImage ? 'Exporting...' : 'Export full recap'}</span>

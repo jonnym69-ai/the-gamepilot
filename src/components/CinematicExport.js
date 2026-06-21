@@ -203,10 +203,11 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
     ctx.fillStyle = colors.textMuted;
     
     const totalMinutes = library.reduce((sum, game) => sum + (game.time_played || 0), 0);
+    const totalHours = Math.round(totalMinutes / 60);
     const gamesPlayed = library.filter(g => g.time_played > 0).length;
 
     ctx.fillText(`${gamesPlayed} Played`, centerX, centerY + 60);
-    ctx.fillText(`${totalMinutes} Hours`, centerX, centerY + 110);
+    ctx.fillText(`${totalHours} Hours`, centerX, centerY + 110);
 
     // GamePilot branding
     ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';

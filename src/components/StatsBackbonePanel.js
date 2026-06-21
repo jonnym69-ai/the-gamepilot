@@ -5,6 +5,9 @@ import { StatsAggregationService } from '../services/StatsAggregationService';
 import InterfacePreferencesService from '../services/InterfacePreferencesService';
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
 import { formatPlaytime as formatPlaytimeUnit } from '../utils/formatPlaytime';
+import { LocalShareService } from '../services/LocalShareService';
+import StorageService from '../services/StorageService';
+import ShareMenu from './ShareMenu';
 import '../styles/StatsBackbonePanel.css';
 
 const PLAYTIME_UNIT_OPTIONS = [
@@ -68,6 +71,29 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
   const [mostPlayedSource, setMostPlayedSource] = useState('imported');
   const periodOptions = useMemo(() => StatsAggregationService.getPeriodOptions(), []);
   const snapshot = dashboardData?.periods?.[selectedPeriod] || dashboardData?.periods?.all;
+  const pilotName = StorageService.getString('profileUsername', '') || 'Gamer';
+
+  const buildSteamHoursText = () => {
+    const importedPlaytime = dashboardData?.importedPlaytime || { totalMinutes: 0, gameCount: 0 };
+    return LocalShareService.buildSteamHoursShareText(importedPlaytime.totalMinutes, importedPlaytime.gameCount, pilotName);
+  };
+
+  const handleCopySteamHoursText = async () => {
+    const success = await LocalShareService.copyTextToClipboard(buildSteamHoursText());
+    return success;
+  };
+
+  const handleShareSteamHoursToChannel = async (channel) => {
+    await LocalShareService.openShareIntent(channel, buildSteamHoursText());
+  };
+
+  const handleDownloadSteamHoursText = () => {
+    LocalShareService.downloadShareText(buildSteamHoursText(), 'gamepilot-steam-hours.txt');
+  };
+
+  const handleNativeShareSteamHours = async () => {
+    await LocalShareService.shareWithNativeShare({ title: "My Steam Lifetime Hours", text: buildSteamHoursText() });
+  };
 
   const timelineData = useMemo(() => buildTimelineChart(snapshot?.timeline || {}), [snapshot]);
   const featureCards = useMemo(() => StatsAggregationService.getFeatureKeys()
@@ -156,6 +182,17 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
               <div className="stat-content">
                 <h3>{formatPlaytime(importedPlaytime.totalMinutes)}</h3>
                 <p>Steam Lifetime · {importedPlaytime.gameCount} game{importedPlaytime.gameCount !== 1 ? 's' : ''}</p>
+              </div>
+              <div className="stat-card-share">
+                <ShareMenu
+                  onCopyText={handleCopySteamHoursText}
+                  onShareText={handleShareSteamHoursToChannel}
+                  onDownloadText={handleDownloadSteamHoursText}
+                  onNativeShare={handleNativeShareSteamHours}
+                  onSaveImage={() => {}}
+                  onCopyImage={() => Promise.resolve(false)}
+                  imageAvailable={false}
+                />
               </div>
             </div>
           )}

@@ -311,6 +311,12 @@
   margin: 0;
 }
 
+.stat-card-share {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
 .habit-insights-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
