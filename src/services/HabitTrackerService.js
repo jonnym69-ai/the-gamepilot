@@ -4,10 +4,17 @@
  */
 
 import StorageService from './StorageService';
+import { AchievementTracker } from '../AchievementSystem';
 
 const HABIT_STORAGE_KEY = 'gamepilot_habits_v1';
 const GOALS_STORAGE_KEY = 'gamepilot_habit_goals_v1';
 const MOOD_LOG_KEY = 'gamepilot_mood_log_v1';
+const GOAL_COMPLETIONS_KEY = 'gamepilot_goal_completions_v1';
+
+const GOAL_XP_RATES = {
+  weekly: 10,
+  monthly: 15
+};
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -76,6 +83,46 @@ const loadMoodLog = () => {
 
 const saveMoodLog = (data) => {
   StorageService.setString(MOOD_LOG_KEY, JSON.stringify(data));
+};
+
+const loadGoalCompletions = () => {
+  try {
+    return JSON.parse(StorageService.getString(GOAL_COMPLETIONS_KEY)) || {};
+  } catch {
+    return {};
+  }
+};
+
+const saveGoalCompletions = (data) => {
+  StorageService.setString(GOAL_COMPLETIONS_KEY, JSON.stringify(data));
+};
+
+const getCurrentPeriodKey = (period) => (period === 'week' ? getISOWeek() : getMonthKey());
+
+const getGoalPeriodXpRate = (period) => {
+  if (period === 'week') return GOAL_XP_RATES.weekly;
+  if (period === 'month') return GOAL_XP_RATES.monthly;
+  return 10;
+};
+
+const getGoalXpReward = (goal) => {
+  const rate = getGoalPeriodXpRate(goal.period);
+  return Math.max(25, Math.round(goal.target * rate));
+};
+
+const dispatchGoalCompleted = (goal, xp) => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('gamepilot:goal-completed', {
+    detail: {
+      goalId: goal.id,
+      label: goal.label,
+      period: goal.period,
+      target: goal.target,
+      type: goal.type,
+      xp,
+      completedAt: new Date().toISOString()
+    }
+  }));
 };
 
 const GOAL_TYPE_LABELS = {
@@ -400,30 +447,85 @@ export const HabitTrackerService = {
     const weeklyStats = this.getWeeklyStats(0);
     const monthlyStats = this.getMonthlyStats(0);
     const habits = loadHabits();
+    const completions = loadGoalCompletions();
+    const newlyCompleted = [];
 
     const progress = { weekly: [], monthly: [] };
 
-    goals.weekly?.forEach((goal) => {
-      if (!goal.active) return;
+    const processGoal = (goal) => {
+      if (!goal.active) return null;
       const current = calculateGoalCurrent(goal, habits, weeklyStats, monthlyStats);
-      progress.weekly.push({
+      const completed = current >= goal.target;
+      const periodKey = getCurrentPeriodKey(goal.period);
+      const completionKey = `${goal.period}:${periodKey}:${goal.id}`;
+      const alreadyCompleted = Boolean(completions[completionKey]);
+      const xp = getGoalXpReward(goal);
+
+      if (completed && !alreadyCompleted) {
+        completions[completionKey] = {
+          completedAt: new Date().toISOString(),
+          xp,
+          target: goal.target,
+          label: goal.label
+        };
+        newlyCompleted.push({
+          ...goal,
+          xp,
+          completionKey,
+          current
+        });
+      }
+
+      return {
         ...goal,
         current,
         percent: Math.min(100, Math.round((current / goal.target) * 100)),
-        completed: current >= goal.target,
-      });
+        completed,
+        rewarded: alreadyCompleted,
+        xp: alreadyCompleted ? 0 : (completed ? xp : 0)
+      };
+    };
+
+    goals.weekly?.forEach((goal) => {
+      const result = processGoal(goal);
+      if (result) progress.weekly.push(result);
     });
 
     goals.monthly?.forEach((goal) => {
-      if (!goal.active) return;
-      const current = calculateGoalCurrent(goal, habits, weeklyStats, monthlyStats);
-      progress.monthly.push({
-        ...goal,
-        current,
-        percent: Math.min(100, Math.round((current / goal.target) * 100)),
-        completed: current >= goal.target,
-      });
+      const result = processGoal(goal);
+      if (result) progress.monthly.push(result);
     });
+
+    if (newlyCompleted.length > 0) {
+      saveGoalCompletions(completions);
+      newlyCompleted.forEach((goal) => {
+        if (typeof AchievementTracker?.grantXP === 'function') {
+          AchievementTracker.grantXP('goal_completion', goal.xp, {
+            goalId: goal.id,
+            label: goal.label,
+            period: goal.period,
+            target: goal.target,
+            type: goal.type
+          });
+        }
+        dispatchGoalCompleted(goal, goal.xp);
+      });
+
+      const stats = this.getGoalStats();
+      if (stats.totalCompleted >= 1) AchievementTracker.unlockAchievement('goal_first');
+      if (stats.totalCompleted >= 5) AchievementTracker.unlockAchievement('goal_5');
+      if (stats.totalCompleted >= 10) AchievementTracker.unlockAchievement('goal_10');
+      if (stats.totalCompleted >= 25) AchievementTracker.unlockAchievement('goal_25');
+      if (stats.totalCompleted >= 50) AchievementTracker.unlockAchievement('goal_50');
+      if (stats.monthlyCompleted >= 3) AchievementTracker.unlockAchievement('goal_monthly_3');
+      if (stats.weeklyCompleted >= 5) AchievementTracker.unlockAchievement('goal_weekly_5');
+
+      // Also feed into quest achievements for cross-system progression
+      if (stats.totalCompleted >= 1) AchievementTracker.unlockAchievement('quest_total_1');
+      if (stats.totalCompleted >= 10) AchievementTracker.unlockAchievement('quest_total_10');
+      if (stats.totalCompleted >= 25) AchievementTracker.unlockAchievement('quest_total_25');
+      if (stats.totalCompleted >= 50) AchievementTracker.unlockAchievement('quest_total_50');
+    }
 
     return progress;
   },
@@ -589,6 +691,56 @@ export const HabitTrackerService = {
     return [...progress.weekly, ...progress.monthly].filter((g) => g.completed);
   },
 
+  getGoalCompletionHistory(limit = 10) {
+    const completions = loadGoalCompletions();
+    return Object.entries(completions)
+      .map(([key, value]) => {
+        const [period, periodKey, goalId] = key.split(':');
+        return {
+          ...value,
+          period,
+          periodKey,
+          goalId
+        };
+      })
+      .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+      .slice(0, limit);
+  },
+
+  getGoalLifetimeXP() {
+    const completions = loadGoalCompletions();
+    return Object.values(completions).reduce((sum, c) => sum + (c.xp || 0), 0);
+  },
+
+  getGoalStats() {
+    const completions = loadGoalCompletions();
+    const entries = Object.entries(completions).map(([key, value]) => {
+      const [period, periodKey] = key.split(':');
+      return { ...value, period, periodKey };
+    });
+    const weekly = entries.filter((c) => c.period === 'week');
+    const monthly = entries.filter((c) => c.period === 'month');
+    return {
+      totalCompleted: entries.length,
+      totalXP: entries.reduce((sum, c) => sum + (c.xp || 0), 0),
+      weeklyCompleted: weekly.length,
+      monthlyCompleted: monthly.length,
+      currentPeriodCompleted: this.getCurrentPeriodCompletedCount()
+    };
+  },
+
+  getCurrentPeriodCompletedCount() {
+    const completions = loadGoalCompletions();
+    const currentWeek = getISOWeek();
+    const currentMonth = getMonthKey();
+    return Object.entries(completions).filter(([key]) => {
+      const [period, periodKey] = key.split(':');
+      if (period === 'week') return periodKey === currentWeek;
+      if (period === 'month') return periodKey === currentMonth;
+      return false;
+    }).length;
+  },
+
   getInsights() {
     const habits = loadHabits();
     const daily = habits.daily || {};
@@ -653,6 +805,7 @@ export const HabitTrackerService = {
     StorageService.removeItem(HABIT_STORAGE_KEY);
     StorageService.removeItem(GOALS_STORAGE_KEY);
     StorageService.removeItem(MOOD_LOG_KEY);
+    StorageService.removeItem(GOAL_COMPLETIONS_KEY);
   },
 };
 

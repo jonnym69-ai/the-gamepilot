@@ -186,6 +186,15 @@ export const ACHIEVEMENTS = {
     { id: 'quest_monthly_5', name: 'Monthly Momentum', desc: 'Complete 5 monthly quests', icon: '🗓️', rarity: 'EPIC' },
     { id: 'quest_yearly_3', name: 'Yearly Legend', desc: 'Complete 3 yearly quests', icon: '🏆', rarity: 'LEGENDARY' }
   ],
+  goals: [
+    { id: 'goal_first', name: 'Goal Getter', desc: 'Complete your first habit goal', icon: '🎯', rarity: 'COMMON' },
+    { id: 'goal_5', name: 'Goal Setter', desc: 'Complete 5 habit goals', icon: '📈', rarity: 'COMMON' },
+    { id: 'goal_10', name: 'Goal Crusher', desc: 'Complete 10 habit goals', icon: '💪', rarity: 'RARE' },
+    { id: 'goal_25', name: 'Goal Machine', desc: 'Complete 25 habit goals', icon: '🤖', rarity: 'EPIC' },
+    { id: 'goal_50', name: 'Goal Legend', desc: 'Complete 50 habit goals', icon: '🏆', rarity: 'LEGENDARY' },
+    { id: 'goal_monthly_3', name: 'Monthly Focus', desc: 'Complete 3 monthly goals', icon: '🗓️', rarity: 'RARE' },
+    { id: 'goal_weekly_5', name: 'Weekly Warrior', desc: 'Complete 5 weekly goals in a row', icon: '🔥', rarity: 'RARE' }
+  ],
   uniqueGames: [
     { id: 'unique_game_1', name: 'Fresh Start', desc: 'Play 1 unique game', icon: '🎯', rarity: 'COMMON' },
     { id: 'unique_game_3', name: 'New Experiences', desc: 'Play 3 unique games', icon: '🆕', rarity: 'COMMON' },

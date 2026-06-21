@@ -2,9 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Flame, Target, TrendingUp, Calendar, Clock, Gamepad2, Award,
   ChevronLeft, ChevronRight, Plus, Trash2, Edit3, CheckCircle2,
-  Lightbulb
+  Lightbulb, Star, Trophy
 } from 'lucide-react';
 import { HabitTrackerService } from './services/HabitTrackerService';
+import { useToast } from './components/Toast';
+import { CelebrationOverlay } from './components/CelebrationEffects';
 import NavBar from './NavBar';
 import './Habits.css';
 
@@ -47,10 +49,13 @@ const ProgressRing = ({ percent, size = 48, stroke = 5, color = '#8ab4f8' }) => 
 };
 
 const Habits = ({ library = [] }) => {
+  const { success } = useToast();
   const [weeklyStats, setWeeklyStats] = useState(HabitTrackerService.getWeeklyStats(0));
   const [monthlyStats, setMonthlyStats] = useState(HabitTrackerService.getMonthlyStats(0));
   const [streaks] = useState(HabitTrackerService.getStreaks());
   const [goalProgress, setGoalProgress] = useState(HabitTrackerService.getGoalProgress());
+  const [goalStats, setGoalStats] = useState(HabitTrackerService.getGoalStats());
+  const [recentCompletions, setRecentCompletions] = useState(HabitTrackerService.getGoalCompletionHistory(5));
   const [insights] = useState(HabitTrackerService.getInsights());
   const [moodLog] = useState(HabitTrackerService.getMoodLog(10));
   const [weekOffset, setWeekOffset] = useState(0);
@@ -59,6 +64,7 @@ const Habits = ({ library = [] }) => {
   const [showCreate, setShowCreate] = useState(false);
   const [editingGoalId, setEditingGoalId] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+  const [celebration, setCelebration] = useState(null);
   const labelInputRef = useRef(null);
 
   // Form state
@@ -87,8 +93,24 @@ const Habits = ({ library = [] }) => {
     }
   }, [showCreate]);
 
+  useEffect(() => {
+    const handleGoalCompleted = (event) => {
+      const { label, xp, period } = event.detail || {};
+      setGoalProgress(HabitTrackerService.getGoalProgress());
+      setGoalStats(HabitTrackerService.getGoalStats());
+      setRecentCompletions(HabitTrackerService.getGoalCompletionHistory(5));
+      setCelebration({ label, xp, period });
+      success(`Goal complete: ${label || 'Goal'} +${xp || 0} XP!`, { duration: 5000 });
+    };
+
+    window.addEventListener('gamepilot:goal-completed', handleGoalCompleted);
+    return () => window.removeEventListener('gamepilot:goal-completed', handleGoalCompleted);
+  }, [success]);
+
   const refreshGoals = () => {
     setGoalProgress(HabitTrackerService.getGoalProgress());
+    setGoalStats(HabitTrackerService.getGoalStats());
+    setRecentCompletions(HabitTrackerService.getGoalCompletionHistory(5));
     setSuggestions(HabitTrackerService.getGoalSuggestions(library));
   };
 
@@ -209,6 +231,31 @@ const Habits = ({ library = [] }) => {
           {streaks.lastPlayed && (
             <div className="habits-streak-last">Last played: {streaks.lastPlayed}</div>
           )}
+        </div>
+
+        {/* Goal Rewards Summary */}
+        <div className="habits-rewards-card">
+          <div className="habits-reward-stat">
+            <Trophy size={24} className="habits-reward-icon" />
+            <div>
+              <div className="habits-reward-number">{goalStats.totalCompleted}</div>
+              <div className="habits-reward-label">Goals Completed</div>
+            </div>
+          </div>
+          <div className="habits-reward-stat">
+            <Star size={24} className="habits-reward-icon" />
+            <div>
+              <div className="habits-reward-number">{goalStats.totalXP.toLocaleString()}</div>
+              <div className="habits-reward-label">Goal XP Earned</div>
+            </div>
+          </div>
+          <div className="habits-reward-stat">
+            <Award size={24} className="habits-reward-icon" />
+            <div>
+              <div className="habits-reward-number">{goalStats.currentPeriodCompleted}</div>
+              <div className="habits-reward-label">This Period</div>
+            </div>
+          </div>
         </div>
 
         {/* Weekly Stats */}
@@ -417,6 +464,9 @@ const Habits = ({ library = [] }) => {
                         <span className="habits-goal-label">{goal.label}</span>
                         <span className="habits-goal-period">{goal.period}</span>
                       </div>
+                      <div className="habits-goal-xp">
+                        <Star size={12} /> +{goal.xp} XP
+                      </div>
                       {editingGoals && (
                         <div className="habits-goal-actions">
                           <button onClick={() => handleDeleteGoal(goal.id)} className="habits-goal-action-btn" title="Delete"><Trash2 size={14} /></button>
@@ -461,6 +511,27 @@ const Habits = ({ library = [] }) => {
           </div>
         )}
 
+        {/* Recent Goal Completions */}
+        {recentCompletions.length > 0 && (
+          <div className="habits-section">
+            <h2><Trophy size={18} /> Recent Goal Rewards</h2>
+            <div className="habits-completion-list">
+              {recentCompletions.map((entry, i) => (
+                <div key={i} className="habits-completion-entry">
+                  <div className="habits-completion-icon">
+                    <Star size={16} />
+                  </div>
+                  <div className="habits-completion-info">
+                    <div className="habits-completion-label">{entry.label}</div>
+                    <div className="habits-completion-meta">{entry.period} goal</div>
+                  </div>
+                  <div className="habits-completion-xp">+{entry.xp} XP</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Mood Log */}
         {moodLog.length > 0 && (
           <div className="habits-section">
@@ -479,6 +550,15 @@ const Habits = ({ library = [] }) => {
           </div>
         )}
       </div>
+
+      {celebration && (
+        <CelebrationOverlay
+          type="mixed"
+          intensity="medium"
+          duration={2500}
+          onComplete={() => setCelebration(null)}
+        />
+      )}
     </div>
   );
 };

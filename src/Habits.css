@@ -502,3 +502,110 @@
   font-size: 11px;
   font-weight: 500;
 }
+
+.habits-rewards-card {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.habits-reward-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg, #1e2127);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.habits-reward-icon {
+  color: #f5b700;
+  flex-shrink: 0;
+}
+
+.habits-reward-number {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.habits-reward-label {
+  font-size: 12px;
+  color: var(--text-secondary, #9aa0a6);
+  margin-top: 4px;
+}
+
+.habits-goal-xp {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 183, 0, 0.15);
+  color: #f5b700;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.habits-completion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.habits-completion-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-secondary, #2a2d35);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.habits-completion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(245, 183, 0, 0.15);
+  color: #f5b700;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.habits-completion-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.habits-completion-label {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habits-completion-meta {
+  font-size: 12px;
+  color: var(--text-secondary, #9aa0a6);
+  text-transform: capitalize;
+}
+
+.habits-completion-xp {
+  color: #f5b700;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .habits-rewards-card {
+    grid-template-columns: 1fr;
+  }
+}
