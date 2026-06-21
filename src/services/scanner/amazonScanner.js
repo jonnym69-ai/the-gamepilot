@@ -16,7 +16,7 @@ try {
   getGameGenres = require('../../GameGenreDatabase.js').getGameGenres;
 } catch (error) {
   getGameGenres = (gameName) => {
-    if (!gameName) return ['Story-driven'];
+    if (!gameName) return [];
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
@@ -30,7 +30,7 @@ try {
     if (name.includes('platformer') || name.includes('mario') || name.includes('sonic')) return ['Platformer'];
     if (name.includes('horror') || name.includes('outlast') || name.includes('amnesia')) return ['Horror'];
     if (name.includes('indie') || name.includes('stardew') || name.includes('hollow')) return ['Indie'];
-    return ['Story-driven'];
+    return [];
   };
 }
 
@@ -190,7 +190,7 @@ const scanAmazonLibrary = () => {
       games.push({
         name: displayName,
         platform: 'Amazon',
-        genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
+        genres: detectedGenres.length > 0 ? detectedGenres : [],
         iconUrl: '',
         icon: '',
         executable: executablePath || null,

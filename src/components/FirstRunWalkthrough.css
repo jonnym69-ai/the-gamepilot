@@ -1,0 +1,222 @@
+.walkthrough-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.68);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.walkthrough-modal {
+  position: relative;
+  width: min(720px, 100%);
+  overflow: hidden;
+  padding: 34px;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: linear-gradient(145deg, var(--modal-bg), var(--card-bg));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+  color: var(--text-primary);
+}
+
+.walkthrough-progress-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.walkthrough-progress-track span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-color), var(--button-primary-bg));
+  transition: width 0.25s ease;
+}
+
+.walkthrough-skip {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.walkthrough-icon-wrap {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--button-primary-bg), var(--accent-color));
+  color: var(--button-primary-text);
+  box-shadow: 0 16px 40px rgba(255, 107, 53, 0.28);
+}
+
+.walkthrough-eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent-color);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.walkthrough-modal h2 {
+  max-width: 620px;
+  margin: 0 0 14px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.08;
+  color: var(--text-primary);
+}
+
+.walkthrough-body {
+  max-width: 620px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.walkthrough-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.walkthrough-highlights span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.walkthrough-support-card {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px dashed var(--border-color);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.walkthrough-support-card div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--accent-color);
+}
+
+.walkthrough-support-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.walkthrough-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.walkthrough-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.walkthrough-dots button {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.walkthrough-dots button.active {
+  width: 28px;
+  background: var(--accent-color);
+}
+
+.walkthrough-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 520px;
+}
+
+.walkthrough-primary,
+.walkthrough-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.walkthrough-primary {
+  border: none;
+  background: linear-gradient(135deg, var(--button-primary-bg), var(--accent-color));
+  color: var(--button-primary-text);
+}
+
+.walkthrough-secondary {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .walkthrough-overlay {
+    align-items: stretch;
+    padding: 14px;
+  }
+
+  .walkthrough-modal {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 28px 20px;
+  }
+
+  .walkthrough-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .walkthrough-actions {
+    justify-content: stretch;
+  }
+
+  .walkthrough-actions button {
+    flex: 1 1 auto;
+  }
+}

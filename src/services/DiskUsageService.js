@@ -124,6 +124,27 @@ class DiskUsageService {
     return promise;
   }
 
+  // Prune stale or error entries so the next scan will remeasure.
+  static clearStaleErrors() {
+    try {
+      const cache = readCache();
+      let changed = false;
+      const next = {};
+      for (const [key, entry] of Object.entries(cache)) {
+        if (!entry?.ok && entry?.fetchedAt) {
+          changed = true;
+          continue; // drop error entries
+        }
+        if (entry?.ok && !isFresh(entry)) {
+          changed = true;
+          continue; // drop expired success entries too
+        }
+        next[key] = entry;
+      }
+      if (changed) writeCache(next);
+    } catch { /* swallow */ }
+  }
+
   // Best-effort bulk warmup — sequential by design because parallel disk
   // walks fight each other for I/O on a single drive and slow everything
   // down. Yields to the event loop between games.

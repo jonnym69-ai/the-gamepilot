@@ -299,16 +299,24 @@
   color: var(--text-color);
   cursor: pointer;
   font-weight: 700;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
 }
 
-.challenge-pin-button:hover,
-.lineup-add-row button:hover,
-.lineup-suggestion-row button:hover,
-.lineup-game-actions button:hover {
+.challenge-pin-button:hover:not(:disabled),
+.lineup-add-row button:hover:not(:disabled),
+.lineup-suggestion-row button:hover:not(:disabled),
+.lineup-game-actions button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 12px 22px rgba(0, 0, 0, 0.22);
   border-color: var(--accent-color);
+}
+
+.challenge-pin-button:focus-visible,
+.lineup-add-row button:focus-visible,
+.lineup-suggestion-row button:focus-visible,
+.lineup-game-actions button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .challenge-pin-button.pinned {
@@ -492,6 +500,18 @@
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px dashed var(--card-border);
+  animation: empty-state-enter 0.5s ease both;
+}
+
+@keyframes empty-state-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (max-width: 1180px) {
@@ -554,7 +574,7 @@
 
 /* Hover States */
 .challenge-period-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
 }
 
 .challenge-period-card:hover {
@@ -563,7 +583,7 @@
 }
 
 .lineup-game-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
 }
 
 .lineup-game-card:hover {
@@ -572,16 +592,8 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-.lineup-game-actions button {
-  transition: all 0.2s ease;
-}
-
 .lineup-game-actions button:hover:not(:disabled) {
   transform: scale(1.05);
-}
-
-.lineup-suggestion-row button {
-  transition: all 0.2s ease;
 }
 
 .lineup-suggestion-row button:hover:not(:disabled) {
@@ -590,7 +602,7 @@
 }
 
 .challenge-quest-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
 }
 
 .challenge-quest-card:hover {
@@ -599,7 +611,7 @@
 }
 
 .challenge-quest-card.pinned {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
 }
 
 .challenge-quest-card.pinned:hover {

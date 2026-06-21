@@ -17,6 +17,9 @@
 /releases
 /build-backup-*
 
+# one-off dev/codemod scripts (not part of the app)
+/fix-*.js
+
 # misc
 .DS_Store
 .env

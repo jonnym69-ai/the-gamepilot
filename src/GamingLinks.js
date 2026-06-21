@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import NavBar from './NavBar';
 import { ExternalLink, Plus, Trash2, RotateCcw } from 'lucide-react';
 import StorageService from './services/StorageService';
+import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import './GamingLinks.css';
 
 const FAVICON_BASE = 'https://www.google.com/s2/favicons?domain=';
 
@@ -24,16 +26,59 @@ const CATEGORY_COLORS = {
   Other: '#6b7280'
 };
 
+const getEquippedLayout = () => {
+  try {
+    const customization = ProgressionUnlockService.getRewardPresentationCustomization();
+    const selectedId = customization?.selectedGamingLinksLayout || 'classic_grid';
+    const layout = ProgressionUnlockService.getGamingLinksLayouts().find((l) => l.id === selectedId && l.unlocked);
+    return layout || ProgressionUnlockService.getGamingLinksLayouts().find((l) => l.unlocked) || null;
+  } catch {
+    return null;
+  }
+};
+
+const getEquippedFeature = () => {
+  try {
+    const customization = ProgressionUnlockService.getRewardPresentationCustomization();
+    const selectedId = customization?.selectedGamingLinksFeatures || 'basic_hover';
+    const feature = ProgressionUnlockService.getGamingLinksFeatures().find((item) => item.id === selectedId && item.unlocked);
+    return feature || ProgressionUnlockService.getGamingLinksFeatures().find((item) => item.unlocked) || null;
+  } catch {
+    return null;
+  }
+};
+
 function GamingLinks({ theme = 'dark' }) {
+  const [equippedLayout, setEquippedLayout] = useState(() => getEquippedLayout());
+  const [equippedFeature, setEquippedFeature] = useState(() => getEquippedFeature());
+
+  useEffect(() => {
+    const handler = () => {
+      setEquippedLayout(getEquippedLayout());
+      setEquippedFeature(getEquippedFeature());
+    };
+    window.addEventListener('gamepilot:reward-presentation-updated', handler);
+    return () => window.removeEventListener('gamepilot:reward-presentation-updated', handler);
+  }, []);
+
+  const layoutId = equippedLayout?.layout || 'grid';
+  const boxId = equippedLayout?.box || 'rounded';
+  const featureId = equippedFeature?.id || 'basic_hover';
+  const pageClassName = `gaming-links-page gl-layout-${layoutId} gl-box-${boxId} gl-feature-${featureId}`;
   const defaultLinks = useMemo(() => [
     { id: 1, name: 'Steam', url: 'https://store.steampowered.com', category: 'Store' },
     { id: 2, name: 'Epic Games', url: 'https://store.epicgames.com', category: 'Store' },
     { id: 3, name: 'GOG', url: 'https://www.gog.com', category: 'Store' },
-    { id: 4, name: 'itch.io', url: 'https://itch.io', category: 'Indie' },
-    { id: 5, name: 'Discord', url: 'https://discord.com', category: 'Community' },
-    { id: 6, name: 'Reddit', url: 'https://www.reddit.com/r/gaming', category: 'Community' },
-    { id: 7, name: 'Twitch', url: 'https://www.twitch.tv', category: 'Streaming' },
-    { id: 8, name: 'YouTube', url: 'https://www.youtube.com', category: 'Streaming' }
+    { id: 4, name: 'itch.io', url: 'https://itch.io', category: 'Store' },
+    { id: 5, name: 'SteamDB', url: 'https://steamdb.info', category: 'Tools' },
+    { id: 6, name: 'IsThereAnyDeal', url: 'https://isthereanydeal.com', category: 'Store' },
+    { id: 7, name: 'HowLongToBeat', url: 'https://howlongtobeat.com', category: 'Tools' },
+    { id: 8, name: 'PCGamingWiki', url: 'https://www.pcgamingwiki.com', category: 'Tools' },
+    { id: 9, name: 'ProtonDB', url: 'https://www.protondb.com', category: 'Tools' },
+    { id: 10, name: 'Discord', url: 'https://discord.com', category: 'Community' },
+    { id: 11, name: 'Reddit', url: 'https://www.reddit.com/r/gaming', category: 'Community' },
+    { id: 12, name: 'Twitch', url: 'https://www.twitch.tv', category: 'Streaming' },
+    { id: 13, name: 'YouTube', url: 'https://www.youtube.com', category: 'Streaming' }
   ], []);
 
   const [links, setLinks] = useState([]);
@@ -85,7 +130,7 @@ function GamingLinks({ theme = 'dark' }) {
 
   const removeLink = (id) => {
     if (id != null && Number.isFinite(id)) {
-      setLinks(links.filter(link => link && link.id === id));
+      setLinks(links.filter(link => link && link.id !== id));
     }
   };
 
@@ -103,68 +148,36 @@ function GamingLinks({ theme = 'dark' }) {
   }, [links]);
 
   return (
-    <div style={{ backgroundColor: 'var(--primary)', color: 'var(--text)', minHeight: '100vh' }}>
+    <div className={`${pageClassName} gl-page`}>
       <NavBar />
-      <div style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>Gaming Links</h1>
-          <p style={{ margin: 0, color: 'var(--text)', opacity: 0.7, fontSize: '15px' }}>
-            Your personal collection of gaming sites and resources
-          </p>
+      <div className="gl-container">
+        <div className="gl-page-header">
+          <h1>Gaming Links</h1>
+          <p>Your personal collection of gaming sites and resources</p>
         </div>
 
         {/* Add new link form */}
-        <div style={{ 
-          backgroundColor: 'var(--card)', 
-          padding: '24px', 
-          borderRadius: '12px', 
-          marginBottom: '32px',
-          border: '1px solid var(--border)'
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Add New Link</h3>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div className="gl-form-card">
+          <h3>Add New Link</h3>
+          <div className="gl-form-row">
             <input
               type="text"
               placeholder="Link name"
               value={newLink.name}
               onChange={(e) => setNewLink({ ...newLink, name: e.target.value })}
-              style={{ 
-                flex: '1 1 180px',
-                padding: '12px 16px', 
-                borderRadius: '8px', 
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--input)',
-                color: 'var(--text)',
-                fontSize: '14px'
-              }}
+              className="gl-form-input name"
             />
             <input
               type="url"
               placeholder="https://example.com"
               value={newLink.url}
               onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-              style={{ 
-                flex: '2 1 280px',
-                padding: '12px 16px', 
-                borderRadius: '8px', 
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--input)',
-                color: 'var(--text)',
-                fontSize: '14px'
-              }}
+              className="gl-form-input url"
             />
             <select
               value={newLink.category}
               onChange={(e) => setNewLink({ ...newLink, category: e.target.value })}
-              style={{ 
-                padding: '12px 16px', 
-                borderRadius: '8px', 
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--input)',
-                color: 'var(--text)',
-                fontSize: '14px',
-                minWidth: '140px'
-              }}
+              className="gl-form-select"
             >
               <option value="Store">Store</option>
               <option value="Community">Community</option>
@@ -177,19 +190,7 @@ function GamingLinks({ theme = 'dark' }) {
           <button
             onClick={addLink}
             disabled={!newLink.name || !newLink.url}
-            style={{
-              backgroundColor: newLink.name && newLink.url ? 'var(--button-primary-bg)' : 'var(--border)',
-              color: '#ffffff',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: newLink.name && newLink.url ? 'pointer' : 'not-allowed',
-              fontWeight: '600',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
+            className="gl-form-btn"
           >
             <Plus size={18} /> Add Link
           </button>
@@ -197,93 +198,37 @@ function GamingLinks({ theme = 'dark' }) {
 
         {/* Links by category */}
         {Object.entries(groupedLinks).map(([category, categoryLinks]) => (
-          <div key={category} style={{ marginBottom: '32px' }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              marginBottom: '16px',
-              paddingBottom: '12px',
-              borderBottom: '1px solid var(--border)'
-            }}>
-              <span style={{ 
-                backgroundColor: CATEGORY_COLORS[category] || CATEGORY_COLORS.Other,
-                padding: '4px 12px',
-                borderRadius: '20px',
-                fontSize: '12px',
-                fontWeight: '600',
-                color: '#fff'
-              }}>
+          <div key={category} className="gl-category">
+            <div className="gl-category-header">
+              <span
+                className="gl-category-badge"
+                style={{ backgroundColor: CATEGORY_COLORS[category] || CATEGORY_COLORS.Other }}
+              >
                 {category}
               </span>
-              <span style={{ color: 'var(--text)', opacity: 0.5, fontSize: '13px' }}>
+              <span className="gl-category-count">
                 {categoryLinks.length} link{categoryLinks.length !== 1 ? 's' : ''}
               </span>
             </div>
             
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-              gap: '16px' 
-            }}>
-              {categoryLinks.map(link => (
+            <div className="gl-link-grid">
+              {categoryLinks.map((link, linkIdx) => (
                 <a
                   key={link.id}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    backgroundColor: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px',
-                    padding: '16px 20px',
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                    transition: 'all 0.2s ease',
-                    position: 'relative'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.borderColor = 'var(--button-primary-bg)';
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
+                  className={`gl-link-card${layoutId === 'hero' && linkIdx === 0 ? ' gl-hero' : ''}`}
                 >
-                  <img 
-                    src={getFaviconUrl(link.url)} 
+                  <img
+                    src={getFaviconUrl(link.url)}
                     alt=""
                     onError={(e) => { e.target.style.display = 'none'; }}
-                    style={{ 
-                      width: '32px', 
-                      height: '32px', 
-                      borderRadius: '8px',
-                      objectFit: 'cover',
-                      backgroundColor: '#fff'
-                    }}
+                    className="gl-link-favicon"
                   />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ 
-                      color: 'var(--text)', 
-                      fontWeight: '600', 
-                      fontSize: '15px',
-                      marginBottom: '4px'
-                    }}>
-                      {link.name}
-                    </div>
-                    <div style={{ 
-                      color: 'var(--text)', 
-                      opacity: 0.5, 
-                      fontSize: '12px',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}>
+                  <div className="gl-link-body">
+                    <div className="gl-link-name">{link.name}</div>
+                    <div className="gl-link-domain">
                       {link.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                     </div>
                   </div>
@@ -293,30 +238,11 @@ function GamingLinks({ theme = 'dark' }) {
                       e.stopPropagation();
                       removeLink(link.id);
                     }}
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      color: 'var(--text)',
-                      opacity: 0.3,
-                      cursor: 'pointer',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
-                      e.currentTarget.style.opacity = '1';
-                      e.currentTarget.style.color = '#dc3545';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.opacity = '0.3';
-                      e.currentTarget.style.color = 'var(--text)';
-                    }}
+                    className="gl-link-delete"
                   >
                     <Trash2 size={16} />
                   </button>
-                  <ExternalLink size={14} style={{ color: 'var(--text)', opacity: 0.3 }} />
+                  <ExternalLink size={14} className="gl-link-external-icon" />
                 </a>
               ))}
             </div>
@@ -324,40 +250,13 @@ function GamingLinks({ theme = 'dark' }) {
         ))}
 
         {/* Control buttons */}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap' }}>
-          <button
-            onClick={restoreDefaults}
-            style={{
-              backgroundColor: 'var(--card)',
-              color: 'var(--text)',
-              border: '1px solid var(--border)',
-              padding: '12px 20px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
+        <div className="gl-controls">
+          <button onClick={restoreDefaults} className="gl-btn-secondary">
             <RotateCcw size={16} /> Restore Defaults
           </button>
 
           {links.length > 0 && (
-            <button
-              onClick={() => setLinks([])}
-              style={{
-                backgroundColor: 'transparent',
-                color: '#dc3545',
-                border: '1px solid #dc3545',
-                padding: '12px 20px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '14px'
-              }}
-            >
+            <button onClick={() => setLinks([])} className="gl-btn-danger">
               Clear All Links
             </button>
           )}

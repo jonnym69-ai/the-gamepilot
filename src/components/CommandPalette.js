@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Home, Library as LibraryIcon, BarChart3, Trophy, User, Settings as SettingsIcon, Palette, Gift, Target, Zap, Package, Link2, Heart, Eye, Scale } from 'lucide-react';
+import { Search, Home, Library as LibraryIcon, BarChart3, User, Settings as SettingsIcon, Palette, Gift, Eye, Scale, Calendar, Link2, Heart, Wand2, Trophy, Download, Target, HardDrive, Gauge } from 'lucide-react';
 import StorageService from '../services/StorageService';
 import InterfacePreferencesService from '../services/InterfacePreferencesService';
 import { getLaunchSources } from '../services/LibraryDataService';
@@ -16,14 +16,17 @@ const NAV_COMMANDS = [
   { id: 'nav-profile', label: 'Go to Profile', icon: User, path: '/profile', keywords: 'profile identity' },
   { id: 'nav-settings', label: 'Go to Settings', icon: SettingsIcon, path: '/settings', keywords: 'settings preferences config' },
   { id: 'nav-themes', label: 'Go to Themes', icon: Palette, path: '/themes', keywords: 'themes appearance' },
+  { id: 'nav-theme-builder', label: 'Go to Theme Builder', icon: Wand2, path: '/theme-builder', keywords: 'theme builder custom colors effects' },
   { id: 'nav-rewards', label: 'Go to Rewards', icon: Gift, path: '/rewards', keywords: 'rewards unlocks' },
-  { id: 'nav-achievements', label: 'Go to Achievements', icon: Trophy, path: '/achievements', keywords: 'achievements trophies' },
-  { id: 'nav-challenges', label: 'Go to Challenge Board', icon: Target, path: '/challenge-board', keywords: 'challenges quests' },
-  { id: 'nav-performance', label: 'Go to Performance', icon: Zap, path: '/performance', keywords: 'performance cockpit' },
-  { id: 'nav-exports', label: 'Go to Export & Share', icon: Package, path: '/exports', keywords: 'export backup import share' },
-  { id: 'nav-links', label: 'Go to Gaming Links', icon: Link2, path: '/gaming-links', keywords: 'links resources' },
+  { id: 'nav-habits', label: 'Go to Habits', icon: Calendar, path: '/habits', keywords: 'habits goals tracker' },
+  { id: 'nav-achievements', label: 'Go to Achievements', icon: Trophy, path: '/achievements', keywords: 'achievements trophies assignments' },
+  { id: 'nav-challenge-board', label: 'Go to Challenge Board', icon: Target, path: '/challenge-board', keywords: 'challenges quests board' },
   { id: 'nav-year', label: 'Go to Year in Review', icon: BarChart3, path: '/year-in-review', keywords: 'year review recap' },
-  { id: 'nav-donate', label: 'Go to Founders / Donate', icon: Heart, path: '/donate', keywords: 'donate patreon founder support' }
+  { id: 'nav-gaming-links', label: 'Go to Gaming Links', icon: Link2, path: '/gaming-links', keywords: 'gaming links bookmarks sites' },
+  { id: 'nav-export-hub', label: 'Go to Export Hub', icon: Download, path: '/export-hub', keywords: 'export backup data' },
+  { id: 'nav-storage-manager', label: 'Go to Library Reclaimer', icon: HardDrive, path: '/storage-manager', keywords: 'storage disk space uninstall reclaim cold games' },
+  { id: 'nav-performance-cockpit', label: 'Go to Performance Cockpit', icon: Gauge, path: '/performance-cockpit', keywords: 'performance hardware compatibility fps' },
+  { id: 'nav-donate', label: 'Go to Founder Lounge', icon: Heart, path: '/donate', keywords: 'donate patreon founder support unlock' }
 ];
 
 const ACTION_COMMANDS = [

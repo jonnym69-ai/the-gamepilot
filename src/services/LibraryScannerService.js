@@ -14,20 +14,31 @@ const createTrackedDefaults = () => ({
   }
 });
 
+const sanitizeScannedGameName = (value) => String(value || '')
+  .replace(/Ôäó/g, '™')
+  .replace(/┬«/g, '®')
+  .replace(/┬®/g, '©')
+  .replace(/ÔÇÖ/g, '’')
+  .replace(/ÔÇ£|ÔÇØ/g, '"')
+  .replace(/ÔÇô|ÔÇö/g, '-')
+  .replace(/\s+/g, ' ')
+  .trim();
+
 const enrichScannedGame = (game, assignMoodToGame) => {
   if (!game || typeof game !== 'object') {
     return null;
   }
 
-  const gameName = game.name || 'Unknown Game';
+  const gameName = sanitizeScannedGameName(game.name) || 'Unknown Game';
   const detectedGenres = getGameGenres(gameName);
-  const selectedGenres = detectedGenres.length > 0 ? detectedGenres : ['Story-driven'];
+  const selectedGenres = detectedGenres.length > 0 ? detectedGenres : [];
 
   return {
     ...createTrackedDefaults(),
     ...game,
+    name: gameName,
     genres: selectedGenres,
-    mood: assignMoodToGame(gameName, selectedGenres) || 'Relaxed'
+    mood: assignMoodToGame(gameName, selectedGenres) || null
   };
 };
 

@@ -1,4 +1,5 @@
 import { getBrandPlatform } from './PlatformBranding';
+import { getMoodForGame, isValidMood } from '../constants/GenresMoods';
 
 const normalizeTrackedNumber = (value) => {
   const parsedValue = Number(value);
@@ -26,6 +27,9 @@ const normalizePlatformName = (platform) => {
   if (compactPlatform === 'curseforge') return 'CurseForge';
   if (compactPlatform === 'curseforgeapp') return 'CurseForge';
   if (compactPlatform === 'overwolfcurseforge') return 'CurseForge';
+  if (compactPlatform === 'emulated') return 'Emulated';
+  if (compactPlatform === 'emulator') return 'Emulated';
+  if (compactPlatform === 'emulation') return 'Emulated';
   if (lowerPlatform === 'playstation brand') return 'PlayStation';
   return normalizedPlatform;
 };
@@ -139,11 +143,16 @@ const normalizeGameLibraryEntry = (game) => {
     normalizeTrackedNumber(game?.playtime?.total)
   );
 
+  // Always re-derive mood from genres to ensure canonical scoring is applied.
+  // This guarantees the weighted genre→mood system is the single source of truth.
+  const derivedMood = getMoodForGame(game?.genres || []) || (isValidMood(game?.mood) ? game.mood : null);
+
   return {
     ...game,
     platform: normalizePlatformName(game?.platform),
     brandPlatform: normalizeBrandPlatformName(game?.brandPlatform, game?.platform, game),
     launchSources: getLaunchSources(game),
+    mood: derivedMood,
     time_played: resolvedTimePlayed,
     launch_count: normalizeTrackedNumber(game?.launch_count),
     last_played: normalizeLastPlayedValue(game?.last_played),

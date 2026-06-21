@@ -1,16 +1,6 @@
 import moodThemes from '../themes/moodThemes.json';
 import { AchievementTracker } from '../AchievementSystem';
 import StorageService from './StorageService';
-import {
-  ALL_BUTTON_PACKS,
-  AMBIENT_PACK_LIBRARY,
-  AMBIENT_PACK_OPTIONS,
-  BUTTON_SFX_LIBRARY,
-  BUTTON_SYNTH_PRESETS,
-  MUSIC_PACK_LIBRARY,
-  MUSIC_PACK_OPTIONS,
-  SAMPLE_BUTTON_PACKS
-} from './AudioRewardCatalog';
 
 const tuneProgressionRequirement = (requiredXP) => {
   if (requiredXP <= 0) return 0;
@@ -36,52 +26,14 @@ const THEME_TIER_XP_REQUIREMENTS = Object.freeze({
   basic: 0,
   plus: tuneProgressionRequirement(1000),
   gold: tuneProgressionRequirement(3600),
-  platinum: tuneProgressionRequirement(8200)
+  platinum: tuneProgressionRequirement(8200),
+  diamond: tuneProgressionRequirement(15000)
 });
 
 const CORE_THEME_IDS = Object.freeze(new Set(['dark', 'light']));
 
-const isThemeXPUnlockedContent = (theme) => Boolean(theme) && !CORE_THEME_IDS.has(theme.id);
+const isThemeXPUnlockedContent = (theme) => Boolean(theme) && !CORE_THEME_IDS.has(theme.id) && theme.patreonExclusive !== true;
 
-const MUSIC_PACK_UNLOCKS = Object.freeze(MUSIC_PACK_OPTIONS.map((id) => ({
-  id,
-  name: MUSIC_PACK_LIBRARY[id].label,
-  ...MUSIC_PACK_LIBRARY[id],
-  rewardType: 'audio'
-})));
-
-const AMBIENT_PACK_UNLOCKS = Object.freeze(AMBIENT_PACK_OPTIONS.map((id) => ({
-  id,
-  name: AMBIENT_PACK_LIBRARY[id].label,
-  ...AMBIENT_PACK_LIBRARY[id],
-  rewardType: 'audio'
-})));
-
-const BUTTON_PACK_UNLOCKS = Object.freeze(ALL_BUTTON_PACKS.map((id) => {
-  if (SAMPLE_BUTTON_PACKS.includes(id)) {
-    return {
-      id,
-      name: BUTTON_SFX_LIBRARY[id].label,
-      ...BUTTON_SFX_LIBRARY[id],
-      packType: 'sample',
-      rewardType: 'audio'
-    };
-  }
-
-  return {
-    id,
-    name: BUTTON_SYNTH_PRESETS[id].label,
-    ...BUTTON_SYNTH_PRESETS[id],
-    packType: 'synth',
-    rewardType: 'audio'
-  };
-}));
-
-const AUDIO_UNLOCK_XP_REQUIREMENTS = Object.freeze({
-  music: Math.min(...MUSIC_PACK_UNLOCKS.map((reward) => reward.requiredXP)),
-  ambient: Math.min(...AMBIENT_PACK_UNLOCKS.map((reward) => reward.requiredXP)),
-  buttonSfx: Math.min(...BUTTON_PACK_UNLOCKS.map((reward) => reward.requiredXP))
-});
 
 const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
   {
@@ -139,6 +91,15 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     requiredXP: 8200,
     accentColor: '#e5e7eb',
     shadowColor: 'rgba(229, 231, 235, 0.4)'
+  },
+  {
+    id: 'diamond_prism',
+    name: 'Diamond Prism',
+    description: 'Refracted prismatic frame. Prestige tier — for the dedicated few.',
+    requiredXP: 12000,
+    accentColor: '#a5f3fc',
+    shadowColor: 'rgba(165, 243, 252, 0.45)',
+    prestige: true
   }
 ]);
 
@@ -269,6 +230,14 @@ const PROFILE_BANNER_UNLOCKS = tuneRewardCollection([
     description: 'Infinite possibilities for explorers.',
     requiredXP: 7800,
     preview: 'linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(59, 130, 246, 0.35), rgba(15, 23, 42, 0.4))'
+  },
+  {
+    id: 'diamond_aurora',
+    name: 'Diamond Aurora',
+    description: 'Iridescent prestige banner reserved for Diamond-tier pilots.',
+    requiredXP: 13500,
+    preview: 'linear-gradient(135deg, rgba(165, 243, 252, 0.6), rgba(196, 181, 253, 0.45), rgba(252, 165, 165, 0.35))',
+    prestige: true
   }
 ]);
 
@@ -332,6 +301,13 @@ const PROFILE_TITLE_UNLOCKS = tuneRewardCollection([
     name: 'GamePilot Veteran',
     description: 'Has seen every update, unlocked every reward.',
     requiredXP: 9000
+  },
+  {
+    id: 'diamond_pilot',
+    name: 'Diamond Pilot',
+    description: 'Prestige title for those who fly above the rest.',
+    requiredXP: 15000,
+    prestige: true
   }
 ]);
 
@@ -455,7 +431,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     id: 'neon_glow',
     name: 'Neon Glow',
     description: 'Glowing neon borders that pulse with energy.',
-    requiredXP: 0,
+    requiredXP: 1200,
     rewardType: 'cosmetic',
     accentColor: '#3dd9ff',
     features: ['neon-border', 'pulse-animation']
@@ -472,7 +448,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     id: 'gradient_cards',
     name: 'Gradient Cards',
     description: 'Beautiful gradient backgrounds for link containers.',
-    requiredXP: 0,
+    requiredXP: 2200,
     rewardType: 'cosmetic',
     features: ['gradient-background', 'glass-effect']
   },
@@ -480,7 +456,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     id: 'particle_effects',
     name: 'Particle Effects',
     description: 'Subtle floating particles around link containers.',
-    requiredXP: 0,
+    requiredXP: 4200,
     rewardType: 'cosmetic',
     features: ['particle-animation']
   },
@@ -488,7 +464,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     id: '3d_transforms',
     name: '3D Transforms',
     description: '3D flip and rotate effects on hover.',
-    requiredXP: 0,
+    requiredXP: 5600,
     rewardType: 'cosmetic',
     features: ['3d-transform', 'perspective']
   },
@@ -496,7 +472,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     id: 'glass_panels',
     name: 'Glass Panels',
     description: 'Frosted glass cards with soft blur and edge lighting.',
-    requiredXP: 0,
+    requiredXP: 3000,
     rewardType: 'cosmetic',
     features: ['glassmorphism', 'backdrop-blur', 'edge-lighting']
   },
@@ -504,7 +480,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     id: 'status_badges',
     name: 'Status Badges',
     description: 'Adds compact badges for quick category and priority scanning.',
-    requiredXP: 0,
+    requiredXP: 1800,
     rewardType: 'cosmetic',
     features: ['status-badges', 'priority-chips']
   },
@@ -512,9 +488,75 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     id: 'spotlight_rows',
     name: 'Spotlight Rows',
     description: 'Hero row styling for featured links and seasonal picks.',
-    requiredXP: 0,
+    requiredXP: 6800,
     rewardType: 'cosmetic',
     features: ['featured-row', 'hero-highlight', 'seasonal-accent']
+  }
+]);
+
+// XP-gated layout + box-style rewards for the Gaming Links page.
+// Different from the always-available cosmetic features above — these change
+// the actual page structure (grid vs list vs hero, box shape, etc.).
+const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
+  {
+    id: 'classic_grid',
+    name: 'Classic Grid',
+    description: 'The default 3-column grid you start with.',
+    requiredXP: 0,
+    rewardType: 'cosmetic',
+    layout: 'grid',
+    box: 'rounded',
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))'
+  },
+  {
+    id: 'compact_list',
+    name: 'Compact List',
+    description: 'Single-column dense list — see more links at a glance.',
+    requiredXP: 750,
+    rewardType: 'cosmetic',
+    layout: 'list',
+    box: 'pill',
+    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.18), rgba(34, 40, 104, 0.32))'
+  },
+  {
+    id: 'showcase_hero',
+    name: 'Showcase Hero',
+    description: 'First link in each category becomes a featured hero card.',
+    requiredXP: 1800,
+    rewardType: 'cosmetic',
+    layout: 'hero',
+    box: 'rounded',
+    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.2), rgba(255, 107, 53, 0.26))'
+  },
+  {
+    id: 'magazine_mosaic',
+    name: 'Magazine Mosaic',
+    description: 'Asymmetric mosaic with mixed card sizes for a magazine look.',
+    requiredXP: 3400,
+    rewardType: 'cosmetic',
+    layout: 'mosaic',
+    box: 'sharp',
+    preview: 'linear-gradient(135deg, rgba(240, 147, 251, 0.22), rgba(155, 92, 255, 0.24))'
+  },
+  {
+    id: 'hex_grid',
+    name: 'Hex Grid',
+    description: 'Hexagonal tiles arranged in a honeycomb. Pure flex.',
+    requiredXP: 5800,
+    rewardType: 'cosmetic',
+    layout: 'hex',
+    box: 'hex',
+    preview: 'linear-gradient(135deg, rgba(125, 220, 132, 0.22), rgba(15, 118, 110, 0.32))'
+  },
+  {
+    id: 'arcade_cabinet',
+    name: 'Arcade Cabinet',
+    description: 'Retro arcade marquee style with glowing CRT borders.',
+    requiredXP: 7600,
+    rewardType: 'cosmetic',
+    layout: 'arcade',
+    box: 'arcade',
+    preview: 'linear-gradient(135deg, rgba(255, 0, 128, 0.22), rgba(0, 212, 255, 0.22))'
   }
 ]);
 
@@ -535,7 +577,8 @@ const PRESENTATION_REWARD_COLLECTIONS = Object.freeze({
   libraryVariants: LIBRARY_PRESENTATION_UNLOCKS,
   homeLayouts: HOME_LAYOUT_UNLOCKS,
   recommendationPacks: RECOMMENDATION_PACK_UNLOCKS,
-  gamingLinks: GAMING_LINKS_UNLOCKS
+  gamingLinks: GAMING_LINKS_UNLOCKS,
+  gamingLinksLayouts: GAMING_LINKS_LAYOUT_UNLOCKS
 });
 
 const FALLBACK_THEME_TIER = 'basic';
@@ -550,10 +593,6 @@ const toProgressPercent = (current, required) => {
   return Math.max(0, Math.min(100, Math.round((current / required) * 100)));
 };
 
-const mapRewardRequirements = (collection = []) => collection.reduce((acc, reward) => {
-  acc[reward.id] = reward.requiredXP;
-  return acc;
-}, {});
 
 const readProfileCustomization = () => {
   try {
@@ -581,8 +620,6 @@ const readPresentationCustomization = () => {
   }
 };
 
-const getLockedRewards = (collection = []) => collection.filter((reward) => !reward.unlocked);
-
 const getUnlockedRewardCount = (collection = []) => collection.filter((reward) => reward.unlocked).length;
 
 const getRewardDisplayName = (reward) => reward?.name || reward?.label || '';
@@ -603,16 +640,9 @@ const PROGRESSION_SEQUENCE_ORDER = Object.freeze({
   'Showcase Slot': 12,
   'Card Style': 13,
   'Logo Animation': 14,
-  'Gaming Links': 15
+  'Gaming Links': 15,
+  'Gaming Links Layout': 16
 });
-
-const buildUpcomingUnlocks = (collection = [], currentXP, limit = 1) => getLockedRewards(collection)
-  .sort((left, right) => left.requiredXP - right.requiredXP || getRewardDisplayName(left).localeCompare(getRewardDisplayName(right)))
-  .slice(0, limit)
-  .map((reward) => ({
-    ...reward,
-    remainingXP: Math.max(0, reward.requiredXP - currentXP)
-  }));
 
 const buildSequencedUnlockTrack = (rewards = [], currentXP = 0, limit = 8) => rewards
   .filter((reward) => !reward.unlocked)
@@ -628,7 +658,10 @@ const buildSequencedUnlockTrack = (rewards = [], currentXP = 0, limit = 8) => re
   .map((reward, index) => ({
     ...reward,
     unlockStep: index + 1,
-    remainingXP: Math.max(0, reward.requiredXP - currentXP)
+    remainingXP: Math.max(0, reward.requiredXP - currentXP),
+    displayRemainingXP: Math.max(0, reward.requiredXP - currentXP),
+    displayRequiredXP: reward.requiredXP,
+    isNearlyUnlocked: Math.max(0, reward.requiredXP - currentXP) <= 25
   }));
 
 const buildGlobalRewardPool = () => {
@@ -665,13 +698,8 @@ const buildGlobalRewardPool = () => {
     ...LIBRARY_PRESENTATION_UNLOCKS.map((reward) => ({ trackKey: `Library Variant:${reward.id}`, category: 'Library Variant', ...reward })),
     ...HOME_LAYOUT_UNLOCKS.map((reward) => ({ trackKey: `Home Layout:${reward.id}`, category: 'Home Layout', ...reward })),
     ...RECOMMENDATION_PACK_UNLOCKS.map((reward) => ({ trackKey: `Recommendation Pack:${reward.id}`, category: 'Recommendation Pack', ...reward })),
-    ...MUSIC_PACK_UNLOCKS.map((reward) => ({ trackKey: `Music Pack:${reward.id}`, category: 'Music Pack', ...reward })),
-    ...AMBIENT_PACK_UNLOCKS.map((reward) => ({ trackKey: `Atmosphere Pack:${reward.id}`, category: 'Atmosphere Pack', ...reward })),
-    ...BUTTON_PACK_UNLOCKS.map((reward) => ({
-      trackKey: `${reward.packType === 'synth' ? 'Button Synth' : 'Button SFX'}:${reward.id}`,
-      category: reward.packType === 'synth' ? 'Button Synth' : 'Button SFX',
-      ...reward
-    }))
+    ...GAMING_LINKS_UNLOCKS.map((reward) => ({ trackKey: `Gaming Links:${reward.id}`, category: 'Gaming Links', ...reward })),
+    ...GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) => ({ trackKey: `Gaming Links Layout:${reward.id}`, category: 'Gaming Links Layout', ...reward })),
   ].map((reward) => ({
     ...reward,
     baseRequiredXP: reward.requiredXP
@@ -730,39 +758,12 @@ const getUnlockedRewardIdFromMeta = (collection = [], selectedId) => {
   return unlockedRewards[unlockedRewards.length - 1]?.id || collection[0]?.id || '';
 };
 
-const getUnlockedRewardId = (collection, selectedId, currentXP) => {
-  const matchingReward = collection.find((reward) => reward.id === selectedId && currentXP >= reward.requiredXP);
-  if (matchingReward) {
-    return matchingReward.id;
-  }
-
-  const unlockedRewards = collection.filter((reward) => currentXP >= reward.requiredXP);
-  return unlockedRewards[unlockedRewards.length - 1]?.id || collection[0]?.id || '';
-};
-
 const sanitizeShowcasedAchievements = (achievementIds, slotCount, unlockedAchievements) => {
   const uniqueIds = Array.isArray(achievementIds)
     ? Array.from(new Set(achievementIds.filter((id) => typeof id === 'string' && unlockedAchievements.has(id))))
     : [];
   return uniqueIds.slice(0, slotCount);
 };
-
-export const PROGRESSION_UNLOCK_REQUIREMENTS = Object.freeze({
-  themeTiers: THEME_TIER_XP_REQUIREMENTS,
-  audio: AUDIO_UNLOCK_XP_REQUIREMENTS,
-  musicPacks: mapRewardRequirements(MUSIC_PACK_UNLOCKS),
-  ambientPacks: mapRewardRequirements(AMBIENT_PACK_UNLOCKS),
-  buttonPacks: mapRewardRequirements(BUTTON_PACK_UNLOCKS),
-  profileFrames: mapRewardRequirements(PROFILE_FRAME_UNLOCKS),
-  profileBanners: mapRewardRequirements(PROFILE_BANNER_UNLOCKS),
-  profileTitles: mapRewardRequirements(PROFILE_TITLE_UNLOCKS),
-  showcaseSlots: SHOWCASE_SLOT_XP_REQUIREMENTS,
-  cardStyles: mapRewardRequirements(CARD_STYLE_UNLOCKS),
-  logoAnimations: mapRewardRequirements(LOGO_ANIMATION_UNLOCKS),
-  libraryPresentationVariants: mapRewardRequirements(LIBRARY_PRESENTATION_UNLOCKS),
-  homeLayoutVariants: mapRewardRequirements(HOME_LAYOUT_UNLOCKS),
-  recommendationPacks: mapRewardRequirements(RECOMMENDATION_PACK_UNLOCKS)
-});
 
 export class ProgressionUnlockService {
   static getTotalXP() {
@@ -854,71 +855,6 @@ export class ProgressionUnlockService {
     }));
   }
 
-  static getMusicRequirement() {
-    const currentXP = this.getTotalXP();
-    const requiredXP = AUDIO_UNLOCK_XP_REQUIREMENTS.music;
-    const musicPacks = this.getMusicPacks();
-    return {
-      unlocked: musicPacks.some((pack) => pack.unlocked),
-      requiredXP,
-      currentXP,
-      progressPercent: toProgressPercent(currentXP, requiredXP),
-      unlockedCount: getUnlockedRewardCount(musicPacks),
-      totalCount: musicPacks.length,
-      nextUnlock: buildUpcomingUnlocks(musicPacks, currentXP)[0] || null
-    };
-  }
-
-  static isMusicUnlocked() {
-    return this.getMusicPacks().some((pack) => pack.unlocked);
-  }
-
-  static getAmbientRequirement() {
-    const currentXP = this.getTotalXP();
-    const requiredXP = AUDIO_UNLOCK_XP_REQUIREMENTS.ambient;
-    const ambientPacks = this.getAmbientPacks();
-    return {
-      unlocked: ambientPacks.some((pack) => pack.unlocked),
-      requiredXP,
-      currentXP,
-      progressPercent: toProgressPercent(currentXP, requiredXP),
-      unlockedCount: getUnlockedRewardCount(ambientPacks),
-      totalCount: ambientPacks.length,
-      nextUnlock: buildUpcomingUnlocks(ambientPacks, currentXP)[0] || null
-    };
-  }
-
-  static isAmbientUnlocked() {
-    return this.getAmbientPacks().some((pack) => pack.unlocked);
-  }
-
-  static getMusicPacks() {
-    const currentXP = this.getTotalXP();
-    return MUSIC_PACK_UNLOCKS.map((reward) => buildSequentialRewardMeta('Music Pack', reward, currentXP));
-  }
-
-  static getAmbientPacks() {
-    const currentXP = this.getTotalXP();
-    return AMBIENT_PACK_UNLOCKS.map((reward) => buildSequentialRewardMeta('Atmosphere Pack', reward, currentXP));
-  }
-
-  static getButtonPacks() {
-    const currentXP = this.getTotalXP();
-    return BUTTON_PACK_UNLOCKS.map((reward) => buildSequentialRewardMeta(reward.packType === 'synth' ? 'Button Synth' : 'Button SFX', reward, currentXP));
-  }
-
-  static getButtonPackRequirement(packId) {
-    return this.getButtonPacks().find((pack) => pack.id === packId) || this.getButtonPacks()[0] || {
-      unlocked: false,
-      requiredXP: 0,
-      currentXP: this.getTotalXP(),
-      progressPercent: 0
-    };
-  }
-
-  static isButtonPackUnlocked(packId) {
-    return this.getButtonPackRequirement(packId).unlocked;
-  }
 
   static getProfileFrames() {
     const currentXP = this.getTotalXP();
@@ -1085,11 +1021,13 @@ export class ProgressionUnlockService {
   }
 
   static getGamingLinksFeatures() {
-    return GAMING_LINKS_UNLOCKS.map((reward) => ({
-      ...reward,
-      unlocked: true,
-      progressPercent: 100
-    }));
+    const currentXP = this.getTotalXP();
+    return GAMING_LINKS_UNLOCKS.map((reward) => buildSequentialRewardMeta('Gaming Links', reward, currentXP));
+  }
+
+  static getGamingLinksLayouts() {
+    const currentXP = this.getTotalXP();
+    return GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) => buildSequentialRewardMeta('Gaming Links Layout', reward, currentXP));
   }
 
   static getRewardPresentationCustomization() {
@@ -1099,6 +1037,7 @@ export class ProgressionUnlockService {
     const libraryVariants = this.getLibraryPresentationVariants();
     const homeLayouts = this.getHomeLayoutVariants();
     const recommendationPacks = this.getRecommendationPacks();
+    const gamingLinksLayouts = this.getGamingLinksLayouts();
 
     const sanitizedCustomization = {
       selectedCardStyle: getUnlockedRewardIdFromMeta(cardStyles, storedCustomization.selectedCardStyle),
@@ -1106,11 +1045,8 @@ export class ProgressionUnlockService {
       selectedLibraryVariant: getUnlockedRewardIdFromMeta(libraryVariants, storedCustomization.selectedLibraryVariant),
       selectedHomeLayout: getUnlockedRewardIdFromMeta(homeLayouts, storedCustomization.selectedHomeLayout),
       selectedRecommendationPack: getUnlockedRewardIdFromMeta(recommendationPacks, storedCustomization.selectedRecommendationPack),
-      selectedGamingLinksFeatures: getUnlockedRewardId(
-        GAMING_LINKS_UNLOCKS,
-        storedCustomization.selectedGamingLinksFeatures,
-        Number.POSITIVE_INFINITY
-      )
+      selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(this.getGamingLinksFeatures(), storedCustomization.selectedGamingLinksFeatures),
+      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, storedCustomization.selectedGamingLinksLayout)
     };
 
     const hasStoredCustomization = Object.keys(storedCustomization).length > 0;
@@ -1132,6 +1068,7 @@ export class ProgressionUnlockService {
     const libraryVariants = this.getLibraryPresentationVariants();
     const homeLayouts = this.getHomeLayoutVariants();
     const recommendationPacks = this.getRecommendationPacks();
+    const gamingLinksLayouts = this.getGamingLinksLayouts();
 
     const sanitizedCustomization = {
       selectedCardStyle: getUnlockedRewardIdFromMeta(cardStyles, mergedCustomization.selectedCardStyle),
@@ -1139,11 +1076,8 @@ export class ProgressionUnlockService {
       selectedLibraryVariant: getUnlockedRewardIdFromMeta(libraryVariants, mergedCustomization.selectedLibraryVariant),
       selectedHomeLayout: getUnlockedRewardIdFromMeta(homeLayouts, mergedCustomization.selectedHomeLayout),
       selectedRecommendationPack: getUnlockedRewardIdFromMeta(recommendationPacks, mergedCustomization.selectedRecommendationPack),
-      selectedGamingLinksFeatures: getUnlockedRewardId(
-        GAMING_LINKS_UNLOCKS,
-        mergedCustomization.selectedGamingLinksFeatures,
-        Number.POSITIVE_INFINITY
-      )
+      selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(this.getGamingLinksFeatures(), mergedCustomization.selectedGamingLinksFeatures),
+      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, mergedCustomization.selectedGamingLinksLayout)
     };
 
     StorageService.set(PRESENTATION_CUSTOMIZATION_STORAGE_KEY, sanitizedCustomization);
@@ -1236,11 +1170,30 @@ export class ProgressionUnlockService {
     if (!feature) {
       return { success: false, message: 'Gaming Links feature not found.' };
     }
+    if (!feature.unlocked) {
+      return { success: false, message: `${feature.name} unlocks at ${feature.requiredXP.toLocaleString()} XP.` };
+    }
 
     return {
       success: true,
       message: `${feature.name} enabled for Gaming Links.`,
       customization: this.updateRewardPresentationCustomization({ selectedGamingLinksFeatures: featureId })
+    };
+  }
+
+  static selectGamingLinksLayout(layoutId) {
+    const layout = this.getGamingLinksLayouts().find((reward) => reward.id === layoutId);
+    if (!layout) {
+      return { success: false, message: 'Gaming Links layout not found.' };
+    }
+    if (!layout.unlocked) {
+      return { success: false, message: `${layout.name} unlocks at ${layout.requiredXP.toLocaleString()} XP.` };
+    }
+
+    return {
+      success: true,
+      message: `${layout.name} equipped for Gaming Links.`,
+      customization: this.updateRewardPresentationCustomization({ selectedGamingLinksLayout: layoutId })
     };
   }
 
@@ -1250,9 +1203,6 @@ export class ProgressionUnlockService {
       level: this.getLevel(),
       themes: this.getThemes(),
       themeTiers: this.getThemeTierProgression(),
-      musicPacks: this.getMusicPacks(),
-      ambientPacks: this.getAmbientPacks(),
-      buttonPacks: this.getButtonPacks(),
       frames: this.getProfileFrames(),
       banners: this.getProfileBanners(),
       titles: this.getProfileTitles(),
@@ -1262,6 +1212,7 @@ export class ProgressionUnlockService {
       homeLayouts: this.getHomeLayoutVariants(),
       recommendationPacks: this.getRecommendationPacks(),
       gamingLinks: this.getGamingLinksFeatures(),
+      gamingLinksLayouts: this.getGamingLinksLayouts(),
       presentationCustomization: this.getRewardPresentationCustomization()
     };
   }
@@ -1269,9 +1220,6 @@ export class ProgressionUnlockService {
   static getRewardCatalogSummary() {
     const currentXP = this.getTotalXP();
     const themes = this.getUnlockableThemes();
-    const musicPacks = this.getMusicPacks();
-    const ambientPacks = this.getAmbientPacks();
-    const buttonPacks = this.getButtonPacks();
     const frames = this.getProfileFrames();
     const banners = this.getProfileBanners();
     const titles = this.getProfileTitles();
@@ -1280,11 +1228,9 @@ export class ProgressionUnlockService {
     const homeLayouts = this.getHomeLayoutVariants();
     const recommendationPacks = this.getRecommendationPacks();
     const gamingLinks = this.getGamingLinksFeatures();
+    const gamingLinksLayouts = this.getGamingLinksLayouts();
     const rewardPool = [
       ...themes.map((reward) => ({ ...reward, category: 'Theme' })),
-      ...musicPacks.map((reward) => ({ ...reward, category: 'Music Pack' })),
-      ...ambientPacks.map((reward) => ({ ...reward, category: 'Atmosphere Pack' })),
-      ...buttonPacks.map((reward) => ({ ...reward, category: reward.packType === 'synth' ? 'Button Synth' : 'Button SFX' })),
       ...frames.map((reward) => ({ ...reward, category: 'Frame' })),
       ...banners.map((reward) => ({ ...reward, category: 'Banner' })),
       ...titles.map((reward) => ({ ...reward, category: 'Title' })),
@@ -1292,6 +1238,7 @@ export class ProgressionUnlockService {
       ...homeLayouts.map((reward) => ({ ...reward, category: 'Home Layout' })),
       ...recommendationPacks.map((reward) => ({ ...reward, category: 'Recommendation Pack' })),
       ...gamingLinks.map((reward) => ({ ...reward, category: 'Gaming Links' })),
+      ...gamingLinksLayouts.map((reward) => ({ ...reward, category: 'Gaming Links Layout' })),
       ...showcaseSlots.map((slot) => ({
         id: slot.id,
         name: `Showcase Slot ${slot.slotNumber}`,
@@ -1312,29 +1259,25 @@ export class ProgressionUnlockService {
       level: this.getLevel(),
       unlockedCounts: {
         themes: themes.filter((reward) => reward.unlocked).length,
-        musicPacks: musicPacks.filter((reward) => reward.unlocked).length,
-        ambientPacks: ambientPacks.filter((reward) => reward.unlocked).length,
-        buttonPacks: buttonPacks.filter((reward) => reward.unlocked).length,
         frames: frames.filter((reward) => reward.unlocked).length,
         banners: banners.filter((reward) => reward.unlocked).length,
         titles: titles.filter((reward) => reward.unlocked).length,
         libraryVariants: libraryVariants.filter((reward) => reward.unlocked).length,
         homeLayouts: homeLayouts.filter((reward) => reward.unlocked).length,
         recommendationPacks: recommendationPacks.filter((reward) => reward.unlocked).length,
-        gamingLinks: gamingLinks.filter((reward) => reward.unlocked).length
+        gamingLinks: gamingLinks.filter((reward) => reward.unlocked).length,
+        gamingLinksLayouts: gamingLinksLayouts.filter((reward) => reward.unlocked).length
       },
       totalCounts: {
         themes: themes.length,
-        musicPacks: musicPacks.length,
-        ambientPacks: ambientPacks.length,
-        buttonPacks: buttonPacks.length,
         frames: frames.length,
         banners: banners.length,
         titles: titles.length,
         libraryVariants: libraryVariants.length,
         homeLayouts: homeLayouts.length,
         recommendationPacks: recommendationPacks.length,
-        gamingLinks: gamingLinks.length
+        gamingLinks: gamingLinks.length,
+        gamingLinksLayouts: gamingLinksLayouts.length
       },
       progressionGroups: {
         themes: {
@@ -1342,12 +1285,12 @@ export class ProgressionUnlockService {
           total: themes.length
         },
         audio: {
-          unlocked: getUnlockedRewardCount(musicPacks) + getUnlockedRewardCount(ambientPacks) + getUnlockedRewardCount(buttonPacks),
-          total: musicPacks.length + ambientPacks.length + buttonPacks.length
+          unlocked: 0,
+          total: 0
         },
         cosmetics: {
-          unlocked: getUnlockedRewardCount(frames) + getUnlockedRewardCount(banners) + getUnlockedRewardCount(titles) + getUnlockedRewardCount(recommendationPacks) + getUnlockedRewardCount(gamingLinks),
-          total: frames.length + banners.length + titles.length + recommendationPacks.length + gamingLinks.length
+          unlocked: getUnlockedRewardCount(frames) + getUnlockedRewardCount(banners) + getUnlockedRewardCount(titles) + getUnlockedRewardCount(recommendationPacks) + getUnlockedRewardCount(gamingLinks) + getUnlockedRewardCount(gamingLinksLayouts),
+          total: frames.length + banners.length + titles.length + recommendationPacks.length + gamingLinks.length + gamingLinksLayouts.length
         },
         utility: {
           unlocked: showcaseSlots.filter((slot) => slot.unlocked).length + getUnlockedRewardCount(libraryVariants) + getUnlockedRewardCount(homeLayouts),
@@ -1361,7 +1304,10 @@ export class ProgressionUnlockService {
       nextUnlock: nextUnlock
         ? {
             ...nextUnlock,
-            remainingXP: Math.max(0, nextUnlock.requiredXP - currentXP)
+            remainingXP: Math.max(0, nextUnlock.requiredXP - currentXP),
+            displayRemainingXP: Math.max(0, nextUnlock.requiredXP - currentXP),
+            displayRequiredXP: nextUnlock.requiredXP,
+            isNearlyUnlocked: Math.max(0, nextUnlock.requiredXP - currentXP) <= 25
           }
         : null
     };
@@ -1375,13 +1321,6 @@ export class ProgressionUnlockService {
       level: this.getLevel(),
       themeTiers: this.getThemeTierProgression(),
       themes: this.getUnlockableThemes(),
-      audio: {
-        music: this.getMusicRequirement(),
-        musicPacks: this.getMusicPacks(),
-        ambient: this.getAmbientRequirement(),
-        ambientPacks: this.getAmbientPacks(),
-        buttonPacks: this.getButtonPacks()
-      },
       profile: {
         collections: Object.keys(PROFILE_REWARD_COLLECTIONS),
         frames: this.getProfileFrames(),
@@ -1397,6 +1336,7 @@ export class ProgressionUnlockService {
         homeLayouts: this.getHomeLayoutVariants(),
         recommendationPacks: this.getRecommendationPacks(),
         gamingLinks: this.getGamingLinksFeatures(),
+        gamingLinksLayouts: this.getGamingLinksLayouts(),
         customization: this.getRewardPresentationCustomization()
       },
       summary,

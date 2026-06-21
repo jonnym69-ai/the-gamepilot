@@ -170,23 +170,17 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
   const exportToJPEG = () => exportToImage('JPEG');
 
   const handleExport = () => {
-    console.log('Export button clicked, format:', exportFormat, 'page:', selectedPage);
-    
     switch (exportFormat) {
       case 'csv':
-        console.log('Exporting as CSV');
         exportToCSV();
         break;
       case 'png':
-        console.log('Exporting as PNG');
         exportToPNG();
         break;
       case 'jpeg':
-        console.log('Exporting as JPEG');
         exportToJPEG();
         break;
       default:
-        console.log('Defaulting to PNG export');
         exportToPNG();
     }
   };
@@ -224,13 +218,6 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               >
                 <Trophy size={16} />
                 Stats
-              </button>
-              <button 
-                className={`page-option ${selectedPage === 'achievements' ? 'active' : ''}`}
-                onClick={() => setSelectedPage('achievements')}
-              >
-                <Trophy size={16} />
-                Achievements
               </button>
               <button 
                 className={`page-option ${selectedPage === 'profile' ? 'active' : ''}`}

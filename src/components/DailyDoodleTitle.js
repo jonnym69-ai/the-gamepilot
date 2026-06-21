@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
+import { GamingIdentity } from '../GamingIdentity';
 import StorageService from '../services/StorageService';
 import './DailyDoodleTitle.css';
 
-const TITLE_TEXT = 'GamePilot';
+const DEFAULT_WORDMARK = 'GamePilot';
 const LOGO_SRC = `${process.env.PUBLIC_URL}/gamepilotlogo.png`;
 
 const DOODLE_LIBRARY = [
@@ -243,6 +244,26 @@ const THEME_TRANSITION_MAP = {
   custom: 'zoom-pop'
 };
 
+// Returns true when a CSS colour string is perceptually light
+const isColorLight = (colorStr) => {
+  if (!colorStr) return false;
+  // Parse the first hex or rgb value from a gradient/solid string
+  const hex = colorStr.match(/#([a-f\d]{6}|[a-f\d]{3})/i)?.[1];
+  if (hex) {
+    const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    // Perceived luminance (WCAG)
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 155;
+  }
+  const rgb = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (rgb) {
+    return (0.299 * +rgb[1] + 0.587 * +rgb[2] + 0.114 * +rgb[3]) > 155;
+  }
+  return false;
+};
+
 const getDayOfYear = () => {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
@@ -257,9 +278,17 @@ const getBaseIndex = (doodleId) => {
 
 const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => {
   const normalizedTheme = themeId ? themeId.toLowerCase() : null;
+  const [doodleStyle, setDoodleStyle] = useState(
+    () => StorageService.getString('doodleStyleOverride') || 'auto'
+  );
   const [daySignature, setDaySignature] = useState(getDayOfYear());
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
   const [selectedLogoAnimation, setSelectedLogoAnimation] = useState(() => ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway');
+  const [profileCustomization, setProfileCustomization] = useState(() => ProgressionUnlockService.getProfileCustomization());
+  const [doodleWordmark, setDoodleWordmark] = useState(
+    () => StorageService.getString('doodleWordmark', DEFAULT_WORDMARK)
+  );
+  const [identity, setIdentity] = useState(() => GamingIdentity.getProfile());
   const doodleEnabled = StorageService.getString('enableDailyDoodle') !== 'false';
   const preferredTimeZone = StorageService.getString('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const resolvedLogoAnimation = selectedLogoAnimation || 'synthwave-runway';
@@ -280,6 +309,10 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   }, []);
 
   useEffect(() => {
+    const handleDoodleWordmarkUpdated = () => {
+      setDoodleWordmark(StorageService.getString('doodleWordmark', DEFAULT_WORDMARK));
+    };
+
     const handleRewardPresentationUpdated = (event) => {
       const nextAnimation = event?.detail?.selectedLogoAnimation;
       if (nextAnimation) {
@@ -290,8 +323,25 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       setSelectedLogoAnimation(ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway');
     };
 
+    const handleProfileUpdated = () => {
+      setProfileCustomization(ProgressionUnlockService.getProfileCustomization());
+      setIdentity(GamingIdentity.getProfile());
+    };
+
+    const handleDoodleStyleUpdated = () => {
+      setDoodleStyle(StorageService.getString('doodleStyleOverride') || 'auto');
+    };
+
     window.addEventListener('gamepilot:reward-presentation-updated', handleRewardPresentationUpdated);
-    return () => window.removeEventListener('gamepilot:reward-presentation-updated', handleRewardPresentationUpdated);
+    window.addEventListener('gamepilot:profile-updated', handleProfileUpdated);
+    window.addEventListener('gamepilot:doodle-style-updated', handleDoodleStyleUpdated);
+    window.addEventListener('gamepilot:doodle-wordmark-updated', handleDoodleWordmarkUpdated);
+    return () => {
+      window.removeEventListener('gamepilot:reward-presentation-updated', handleRewardPresentationUpdated);
+      window.removeEventListener('gamepilot:profile-updated', handleProfileUpdated);
+      window.removeEventListener('gamepilot:doodle-style-updated', handleDoodleStyleUpdated);
+      window.removeEventListener('gamepilot:doodle-wordmark-updated', handleDoodleWordmarkUpdated);
+    };
   }, []);
 
   const doodle = useMemo(() => {
@@ -307,6 +357,16 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
 
     return DOODLE_LIBRARY[dayIndex];
   }, [daySignature, normalizedTheme]);
+
+  // Final light-bg decision now that we have the resolved doodle
+  const isLight = useMemo(() => {
+    if (doodleStyle === 'dark') return false;
+    if (doodleStyle === 'light') return true;
+    const banners = ProgressionUnlockService.getProfileBanners();
+    const banner = banners.find((b) => b.id === profileCustomization.selectedBanner);
+    if (banner?.preview) return isColorLight(banner.preview);
+    return isColorLight(doodle.background);
+  }, [doodle, doodleStyle, profileCustomization.selectedBanner]);
 
   const transitionVariant = useMemo(() => {
     if (normalizedTheme) {
@@ -363,9 +423,10 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     return parts.find((part) => part.type === 'timeZoneName')?.value || preferredTimeZone;
   }, [currentDateTime, preferredTimeZone]);
 
+  const wordmark = doodleWordmark || DEFAULT_WORDMARK;
   const letters = useMemo(() => {
     const palette = doodle.letterPalette;
-    return TITLE_TEXT.split('').map((char, index) => {
+    return wordmark.split('').map((char, index) => {
       const style = palette[index % palette.length];
       return (
         <span
@@ -381,9 +442,45 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
         </span>
       );
     });
-  }, [doodle]);
+  }, [doodle, wordmark]);
 
-  const greeting = username ? `Welcome back, ${username}!` : 'Welcome to GamePilot';
+  // Reward-derived styling
+  const rewardShellStyles = useMemo(() => {
+    const frames = ProgressionUnlockService.getProfileFrames();
+    const banners = ProgressionUnlockService.getProfileBanners();
+    const frame = frames.find((f) => f.id === profileCustomization.selectedFrame);
+    const banner = banners.find((b) => b.id === profileCustomization.selectedBanner);
+
+    return {
+      frameBorder: frame?.accentColor ? `1px solid ${frame.accentColor}` : undefined,
+      frameShadow: frame?.shadowColor ? `0 20px 45px ${frame.shadowColor}` : undefined,
+      bannerBackground: banner?.preview || undefined
+    };
+  }, [profileCustomization.selectedFrame, profileCustomization.selectedBanner]);
+
+  const equippedTitle = useMemo(() => {
+    const titles = ProgressionUnlockService.getProfileTitles();
+    return titles.find((t) => t.id === profileCustomization.selectedTitle);
+  }, [profileCustomization.selectedTitle]);
+
+  // Gaming identity greeting / tagline
+  const identityGreeting = useMemo(() => {
+    if (!username) return 'Welcome to GamePilot';
+    const sig = identity?.identity?.signature || identity?.signature;
+    if (sig) return sig;
+    const desc = identity?.identity?.description;
+    if (desc) return desc;
+    return `Welcome back, ${username}!`;
+  }, [username, identity]);
+
+  const identityTagline = useMemo(() => {
+    if (welcomeMessage) return welcomeMessage;
+    const desc = identity?.identity?.description;
+    if (desc && desc !== identityGreeting) return desc;
+    return null;
+  }, [welcomeMessage, identity, identityGreeting]);
+
+  const greeting = username ? identityGreeting : 'Welcome to GamePilot';
   const avatarSrc = profilePic || LOGO_SRC;
   const avatarAlt = profilePic ? `${username || 'Player'} avatar` : 'GamePilot logo';
 
@@ -412,12 +509,12 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDoodleClick(); }}
     >
       <div
-        className={`doodle-shell pattern-${doodle.pattern}`}
+        className={`doodle-shell pattern-${doodle.pattern}${isLight ? ' doodle-shell--light' : ''}`}
         style={{
           fontFamily: doodle.fontFamily,
-          background: doodle.background,
-          border: doodle.border,
-          boxShadow: doodle.shadow
+          background: rewardShellStyles.bannerBackground || doodle.background,
+          border: rewardShellStyles.frameBorder || doodle.border,
+          boxShadow: rewardShellStyles.frameShadow || doodle.shadow
         }}
       >
         <div className="doodle-orbit" />
@@ -432,15 +529,22 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
           <img src={avatarSrc} alt={avatarAlt} loading="lazy" />
         </div>
         <div className="doodle-accent">{doodle.accent}</div>
-        <div className="doodle-wordmark">
-          {letters}
+        <div className="doodle-left">
+          <div className="doodle-wordmark">
+            {letters}
+          </div>
+          {equippedTitle?.name && (
+            <div className="doodle-title-badge" style={{ '--title-accent': equippedTitle.accentColor || 'var(--accent)' }}>
+              {equippedTitle.name}
+            </div>
+          )}
         </div>
-        <div className="doodle-meta" style={doodle.metaStyle}>
+        <div className="doodle-meta" style={{ ...doodle.metaStyle, '--identity-accent': equippedTitle?.accentColor || 'var(--accent)', ...(isLight ? { color: 'rgba(30,20,10,0.85)', textShadow: '0 1px 3px rgba(255,255,255,0.5)' } : {}) }}>
           <span className="doodle-meta-label">{doodle.name} — {dayLabel}</span>
           <span className="doodle-meta-datetime">{timeLabel} <span className="doodle-meta-timezone">{timeZoneLabel}</span></span>
           <span className="doodle-meta-greeting">{greeting}</span>
-          {welcomeMessage && (
-            <span className="doodle-meta-tagline">{welcomeMessage}</span>
+          {identityTagline && (
+            <span className="doodle-meta-tagline">{identityTagline}</span>
           )}
         </div>
       </div>

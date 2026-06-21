@@ -7,7 +7,8 @@ const {
   isLikelyNonGameFolder,
   createTrackedDefaults,
   addGameIfUnique,
-  getActiveDrives
+  getActiveDrives,
+  getSteamPlaytimeMap
 } = require('./scannerUtils');
 
 let getGameGenres;
@@ -15,7 +16,7 @@ try {
   getGameGenres = require('../../GameGenreDatabase.js').getGameGenres;
 } catch (error) {
   getGameGenres = (gameName) => {
-    if (!gameName) return ['Story-driven'];
+    if (!gameName) return [];
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
@@ -29,7 +30,7 @@ try {
     if (name.includes('platformer') || name.includes('mario') || name.includes('sonic')) return ['Platformer'];
     if (name.includes('horror') || name.includes('outlast') || name.includes('amnesia')) return ['Horror'];
     if (name.includes('indie') || name.includes('stardew') || name.includes('hollow')) return ['Indie'];
-    return ['Story-driven'];
+    return [];
   };
 }
 
@@ -91,6 +92,7 @@ const getSteamInstallPaths = () => {
 const scanSteamLibrary = () => {
   const games = [];
   const steamPaths = getSteamInstallPaths();
+  const playtimeMap = getSteamPlaytimeMap(steamPaths);
 
   steamPaths.forEach((steamPath) => {
     if (!fs.existsSync(steamPath)) return;
@@ -128,17 +130,27 @@ const scanSteamLibrary = () => {
         const detectedGenres = getGameGenres(gameName);
         const gamePath = path.join(steamPath, 'common', gameName);
 
+        const tracked = createTrackedDefaults();
+        const playtime = playtimeMap[appId];
+        if (playtime) {
+          tracked.time_played = playtime.minutes;
+          tracked.playtime.total = playtime.minutes;
+          tracked.last_played = playtime.lastPlayedMs;
+          tracked.importedPlaytimeMinutes = playtime.minutes;
+          tracked.playtimeSource = 'steam';
+        }
+
         addGameIfUnique(games, {
           name: gameName,
           platform: 'Steam',
           appid: appId,
-          genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
+          genres: detectedGenres.length > 0 ? detectedGenres : [],
           iconUrl: `https://steamcdn-a.akamaihd.net/steam/apps/${appId}/header.jpg`,
           icon: '',
           executablePath: gamePath,
           installDir: gamePath,
           launchId: appId,
-          ...createTrackedDefaults()
+          ...tracked
         });
       } catch (error) {
         console.error('[Scanner] Error parsing ACF file:', acfFile, error.message);

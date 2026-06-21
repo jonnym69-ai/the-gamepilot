@@ -1,6 +1,6 @@
 {
   "name": "gamepilot",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "A local-first PC gaming library manager and launcher.",
   "private": true,
   "main": "electron.js",
@@ -98,7 +98,7 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "public/gamepilotlogo.png"
+      "icon": "public/gamepilot.ico.ico"
     },
     "linux": {
       "target": "AppImage",

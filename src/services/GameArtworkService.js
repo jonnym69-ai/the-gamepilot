@@ -2,7 +2,7 @@ import { PLATFORM_COLORS, PLATFORM_ICONS } from '../constants/PlatformConstants'
 
 const STEAM_VARIANTS = Object.freeze({
   library_card: 'capsule_231x87.jpg',
-  recommendation_card: 'capsule_184x69.jpg',
+  recommendation_card: 'capsule_616x353.jpg',
   profile_icon: 'capsule_184x69.jpg',
   hero: 'header.jpg',
   wide: 'capsule_616x353.jpg'
@@ -10,7 +10,7 @@ const STEAM_VARIANTS = Object.freeze({
 
 const SURFACE_DIMENSIONS = Object.freeze({
   library_card: { width: 231, height: 87 },
-  recommendation_card: { width: 184, height: 69 },
+  recommendation_card: { width: 616, height: 353 },
   profile_icon: { width: 64, height: 64 },
   hero: { width: 616, height: 353 },
   wide: { width: 616, height: 353 }

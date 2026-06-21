@@ -6,9 +6,53 @@
 
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
+import { processSessionEnd } from './GamingIdentityEnhancements';
+import { getMoodForGame, mapGameGenresToValid } from '../constants/GenresMoods';
 import StorageService from './StorageService';
 
 const MAX_ACTIVE_SESSION_AGE_MS = 18 * 60 * 60 * 1000;
+const MAX_EMULATOR_SESSION_MINUTES = 240;
+
+const isEmulatorSession = (session = {}, metadata = {}) => {
+  const combinedMetadata = {
+    ...(session?.metadata && typeof session.metadata === 'object' ? session.metadata : {}),
+    ...(metadata && typeof metadata === 'object' ? metadata : {})
+  };
+
+  return combinedMetadata.launchType === 'emulator'
+    || combinedMetadata.source === 'emulator'
+    || Boolean(combinedMetadata.romPath)
+    || combinedMetadata.platform === 'Emulated';
+};
+
+const getEffectivePlaytimeMinutes = (session, metadata, startTime, endTime) => {
+  const elapsedMinutes = Math.max(0, Math.round((endTime - startTime) / (1000 * 60)));
+
+  if (!isEmulatorSession(session, metadata)) {
+    return {
+      playtimeMinutes: elapsedMinutes,
+      adjusted: false,
+      adjustmentReason: null,
+      actualElapsedMinutes: elapsedMinutes
+    };
+  }
+
+  if (elapsedMinutes <= MAX_EMULATOR_SESSION_MINUTES) {
+    return {
+      playtimeMinutes: elapsedMinutes,
+      adjusted: false,
+      adjustmentReason: null,
+      actualElapsedMinutes: elapsedMinutes
+    };
+  }
+
+  return {
+    playtimeMinutes: MAX_EMULATOR_SESSION_MINUTES,
+    adjusted: true,
+    adjustmentReason: 'stale_emulator_session_capped',
+    actualElapsedMinutes: elapsedMinutes
+  };
+};
 
 const getSessionStartTime = (sessionEntry) => {
   if (!sessionEntry) {
@@ -97,13 +141,21 @@ export class PlaytimeAutoLogger {
 
     const startTime = new Date(session.startTime);
     const endTime = new Date();
-    const playtimeMinutes = Math.round((endTime - startTime) / (1000 * 60));
+    const {
+      playtimeMinutes,
+      adjusted,
+      adjustmentReason,
+      actualElapsedMinutes
+    } = getEffectivePlaytimeMinutes(session, normalizedMetadata, startTime, endTime);
 
     // Only log if session was at least 1 minute
     if (playtimeMinutes >= 1) {
       const combinedMetadata = {
         startTime: session.startTime,
         endTime: endTime.toISOString(),
+        actualElapsedMinutes,
+        sessionAdjusted: adjusted,
+        sessionAdjustmentReason: adjustmentReason,
         ...(session.metadata || {}),
         ...normalizedMetadata
       };
@@ -121,6 +173,44 @@ export class PlaytimeAutoLogger {
       if (trackedGameId) {
         RollingAchievementsTracker.trackGamePlayed(trackedGameId, primaryGenre, combinedMetadata.mood || null);
       }
+
+      // Feed UserBehaviorProfile so the recommendation engine learns from every session
+      try {
+        const rawGenresForProfile = sessionGenres.length > 0
+          ? sessionGenres
+          : (combinedMetadata.gameGenres || []);
+        const normalizedGenresForProfile = mapGameGenresToValid(rawGenresForProfile);
+        const sessionMoodForProfile = combinedMetadata.mood
+          || getMoodForGame(normalizedGenresForProfile);
+        UserBehaviorProfile.trackPassiveSession(gameName, playtimeMinutes, {
+          mood: sessionMoodForProfile,
+          genres: normalizedGenresForProfile,
+          gameId: trackedGameId
+        });
+      } catch (behaviorErr) {
+        console.warn('UserBehaviorProfile passive tracking skipped:', behaviorErr);
+      }
+
+      // Process identity enhancements (streaks, milestones, timeline, seasonal)
+      try {
+        const history = this.getSessionHistory();
+        const totalPlayTime = history.reduce((sum, s) => sum + s.playtimeMinutes, 0);
+        const totalSessions = history.length;
+        const platformCounts = {};
+        history.forEach(s => {
+          const platform = s.metadata?.platform || s.platform || 'Unknown';
+          platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+        });
+        const stats = {
+          totalPlayTime,
+          totalSessions,
+          favoriteGenre: primaryGenre,
+          platformDiversity: Object.keys(platformCounts).length
+        };
+        processSessionEnd(gameName, playtimeMinutes, stats);
+      } catch (e) {
+        console.log('Identity enhancement processing skipped:', e);
+      }
     }
 
     delete sessions[gameName];
@@ -136,6 +226,9 @@ export class PlaytimeAutoLogger {
       startTime: session.startTime,
       endTime: endTime.toISOString(),
       metadata: {
+        actualElapsedMinutes,
+        sessionAdjusted: adjusted,
+        sessionAdjustmentReason: adjustmentReason,
         ...(session.metadata || {}),
         ...normalizedMetadata
       }
@@ -212,6 +305,20 @@ export class PlaytimeAutoLogger {
     } catch (e) {
       return {};
     }
+  }
+
+  /**
+   * End all active sessions (used on system shutdown or startup recovery).
+   * Returns an array of session-end results.
+   */
+  static endAllSessions() {
+    const sessions = this.getActiveSessions();
+    const results = [];
+    Object.keys(sessions).forEach((gameName) => {
+      const result = this.endSession(gameName);
+      if (result) results.push(result);
+    });
+    return results;
   }
 
   static pruneStaleActiveSessions(maxAgeMs = MAX_ACTIVE_SESSION_AGE_MS) {
@@ -413,8 +520,18 @@ export class PlaytimeAutoLogger {
    */
   static syncWithBehaviorProfile(library = null) {
     const history = this.getSessionHistory();
+    const profile = UserBehaviorProfile.getProfile();
+    const lastSync = profile.lastSyncedSessionTimestamp || null;
+
+    let newLastSync = lastSync;
 
     history.forEach(session => {
+      const sessionStart = session.startTime || session.timestamp;
+      // Skip already-synced sessions
+      if (lastSync && sessionStart && new Date(sessionStart).getTime() <= new Date(lastSync).getTime()) {
+        return;
+      }
+
       // Find game in library to get mood/genre
       let game = null;
       if (library) {
@@ -428,7 +545,18 @@ export class PlaytimeAutoLogger {
       if (game) {
         UserBehaviorProfile.trackSelection(game.mood, game.genres?.[0], null, game.appid);
       }
+
+      if (sessionStart && (!newLastSync || new Date(sessionStart).getTime() > new Date(newLastSync).getTime())) {
+        newLastSync = sessionStart;
+      }
     });
+
+    if (newLastSync && newLastSync !== lastSync) {
+      // Re-read profile after trackSessionLength/trackSelection calls (they save internally)
+      const freshProfile = UserBehaviorProfile.getProfile();
+      freshProfile.lastSyncedSessionTimestamp = newLastSync;
+      UserBehaviorProfile.saveProfile(freshProfile);
+    }
   }
 
   /**
@@ -437,18 +565,18 @@ export class PlaytimeAutoLogger {
   static syncCompletionStatus(completedGames = []) {
     if (!completedGames || completedGames.length === 0) return;
 
+    const profile = UserBehaviorProfile.getProfile();
+    if (!profile.completionStats.completedGameIds) {
+      profile.completionStats.completedGameIds = [];
+    }
+
     completedGames.forEach(gameId => {
-      // Mark game as completed in behavior profile
-      const profile = UserBehaviorProfile.getProfile();
-      if (!profile.completionStats.completedGameIds) {
-        profile.completionStats.completedGameIds = [];
-      }
       if (!profile.completionStats.completedGameIds.includes(gameId)) {
         profile.completionStats.completedGameIds.push(gameId);
       }
     });
 
-    UserBehaviorProfile.saveProfile();
+    UserBehaviorProfile.saveProfile(profile);
   }
 
   /**
@@ -458,27 +586,43 @@ export class PlaytimeAutoLogger {
     // Sync the individual session
     const history = this.getSessionHistory();
     const lastSession = history[history.length - 1];
-    
-    if (lastSession && lastSession.gameName === gameName) {
-      const game = library?.find(g => g.name === gameName);
-      
-      // Track session in behavior profile
-      UserBehaviorProfile.trackSessionLength(lastSession.playtimeMinutes);
-      
-      if (game) {
-        UserBehaviorProfile.trackSelection(game.mood, game.genres?.[0], null, game.appid);
-        
-        // If game is completed, track that too
-        if (completedGames?.includes(game.appid || game.name)) {
-          UserBehaviorProfile.trackCompletion(
-            game.name,
-            game.mood,
-            game.genres?.[0],
-            lastSession.playtimeMinutes,
-            game.appid || game.name
-          );
-        }
+
+    if (!lastSession || lastSession.gameName !== gameName) return;
+
+    const sessionStart = lastSession.startTime || lastSession.timestamp;
+    const profile = UserBehaviorProfile.getProfile();
+    const lastSync = profile.lastSyncedSessionTimestamp || null;
+
+    // Skip if this session was already synced
+    if (lastSync && sessionStart && new Date(sessionStart).getTime() <= new Date(lastSync).getTime()) {
+      return;
+    }
+
+    const game = library?.find(g => g.name === gameName);
+
+    // Track session in behavior profile
+    UserBehaviorProfile.trackSessionLength(lastSession.playtimeMinutes);
+
+    if (game) {
+      UserBehaviorProfile.trackSelection(game.mood, game.genres?.[0], null, game.appid);
+
+      // If game is completed, track that too
+      if (completedGames?.includes(game.appid || game.name)) {
+        UserBehaviorProfile.trackCompletion(
+          game.name,
+          game.mood,
+          game.genres?.[0],
+          lastSession.playtimeMinutes,
+          game.appid || game.name
+        );
       }
+    }
+
+    if (sessionStart) {
+      // Re-read profile after trackSessionLength/trackSelection calls (they save internally)
+      const freshProfile = UserBehaviorProfile.getProfile();
+      freshProfile.lastSyncedSessionTimestamp = sessionStart;
+      UserBehaviorProfile.saveProfile(freshProfile);
     }
   }
 

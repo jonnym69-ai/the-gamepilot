@@ -60,6 +60,12 @@ export const DEFAULT_RECOMMENDATION_WEIGHTS = Object.freeze({
   // Persona alignment (0-100 contribution multiplied)
   personaAlignmentMultiplier: 0.35,
 
+  // Gaming Identity direct bonuses
+  identityFavoriteMoodBonus: 15,
+  identityFavoriteGenreBonus: 15,
+  identityPlaystyleMatchBonus: 10,
+  identityArchetypeMatchBonus: 12,
+
   // Hardware compatibility
   hardwareCannotRunPenalty: 35,
 
@@ -78,6 +84,17 @@ export const DEFAULT_RECOMMENDATION_WEIGHTS = Object.freeze({
   replayIntentSoonBonus: 15,
   replayIntentEndlessBonus: 5,
   replayIntentFinishedPenalty: 20,
+
+  // Explicit feedback (thumbs up/down on specific games)
+  likedGameBonus: 20,
+  dislikedGamePenalty: 40,
+
+  // Local 0-10 ratings
+  highRatedGameBonus: 18,
+  lowRatedGamePenalty: 25,
+  wouldReplayBonus: 12,
+  wouldReplayPenalty: 8,
+  ratingPreferenceMultiplier: 0.25,
 
   // Output clamp
   scoreMin: 0,
@@ -156,9 +173,12 @@ let _cachedWeights = null;
 
 export function getActiveRecommendationWeights() {
   const mode = StorageService.get('experienceMode', null);
-  if (mode !== _cachedMode) {
-    _cachedMode = mode;
-    _cachedWeights = getRecommendationWeights(mode);
+  const custom = StorageService.get('customRecommendationWeights', null);
+  const cacheKey = `${mode || 'null'}|${custom ? JSON.stringify(custom) : 'null'}`;
+  if (cacheKey !== _cachedMode) {
+    _cachedMode = cacheKey;
+    const base = getRecommendationWeights(mode);
+    _cachedWeights = custom && typeof custom === 'object' ? { ...base, ...custom } : base;
   }
   return _cachedWeights;
 }

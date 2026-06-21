@@ -1,9 +1,9 @@
 import { getDateKey } from './DateKeyService';
 import StorageService from './StorageService';
 import { QuestRerollService } from './QuestRerollService';
+import { AchievementTracker } from '../AchievementSystem';
 
 const ENGAGEMENT_KEY = 'dailyEngagement';
-const LAUNCH_REWARD_KEY = 'launchRewardStats';
 const EVENT_BONUSES_KEY = 'dailyEventBonuses';
 
 const isChristmasDay = (date = new Date()) => date.getMonth() === 11 && date.getDate() === 25;
@@ -13,9 +13,7 @@ const getStoredEventBonuses = () => StorageService.get(EVENT_BONUSES_KEY, {});
 const saveStoredEventBonuses = (data) => StorageService.set(EVENT_BONUSES_KEY, data);
 
 const grantXP = (amount) => {
-  const stored = StorageService.get(LAUNCH_REWARD_KEY, { totalXP: 0, launches: 0 });
-  stored.totalXP = (stored.totalXP || 0) + amount;
-  StorageService.set(LAUNCH_REWARD_KEY, stored);
+  AchievementTracker.grantXP('daily_engagement', amount, { source: 'daily_engagement' });
 };
 
 const applyDuplicateCosmeticReward = (reward) => {

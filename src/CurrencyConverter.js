@@ -64,6 +64,19 @@ export const getCurrentCurrency = () => {
   return StorageService.getString('selectedCurrency', 'USD');
 };
 
+// Get currency symbol
+export const getCurrencySymbol = (currency = getCurrentCurrency()) => {
+  return CURRENCY_SYMBOLS[currency] || '$';
+};
+
+// Convert local currency amount to USD
+export const convertToUSD = (amountInLocal, currency = getCurrentCurrency()) => {
+  if (!amountInLocal || isNaN(amountInLocal)) return 0;
+  const rate = EXCHANGE_RATES[currency] || 1;
+  if (rate === 0) return 0;
+  return Math.round(amountInLocal / rate);
+};
+
 // Store purchase price for tracking
 export const storePurchasePrice = (appid, priceInUSD, currency) => {
   const prices = StorageService.get('gamePrices', {});

@@ -10,10 +10,13 @@ import {
   TrendingUp,
   User,
   Zap,
+  Disc3,
+  ThermometerSnowflake,
+  FolderArchive,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LazyImage from "./components/LazyImage";
-import { formatPrice, getCurrentCurrency } from "./CurrencyConverter";
+import { formatPrice, getCurrentCurrency, getCurrencySymbol, convertToUSD } from "./CurrencyConverter";
 import NavBar from "./NavBar";
 import "./PerformanceCockpit.css";
 import { BottleneckAnalyzer } from "./services/BottleneckAnalyzer";
@@ -22,6 +25,8 @@ import { HardwareDetector } from "./services/HardwareDetector";
 import { HardwareScoring } from "./services/HardwareScoring";
 import { PersonaPerformanceInsights } from "./services/PersonaPerformanceInsights";
 import { UserBehaviorProfile } from "./services/UserBehaviorProfile";
+import { StorageDriveMapper } from "./services/StorageDriveMapper";
+import DiskUsageService, { formatBytes } from "./services/DiskUsageService";
 
 const getFallbackSystemInfo = () => ({
   cpu: { model: "Unknown CPU", brand: "Unknown CPU", cores: 0, speed: 0 },
@@ -40,6 +45,7 @@ const getFallbackAnalysis = (totalGames = 0) => ({
     totalGames,
     analyzedGames: 0,
     canRunMinimum: 0,
+    canRunMedium: 0,
     canRunRecommended: 0,
     canRunUltra: 0,
     cannotRun: 0,
@@ -83,6 +89,9 @@ function PerformanceCockpit({
   const [error, setError] = useState(null);
   const [personaProfile, setPersonaProfile] = useState(null);
   const [personaSynergy, setPersonaSynergy] = useState([]);
+  const [budget, setBudget] = useState('');
+  const [budgetRec, setBudgetRec] = useState(null);
+  const [activeCurrency, setActiveCurrency] = useState(getCurrentCurrency());
 
   const analyzeSystem = useCallback(async () => {
     try {
@@ -211,6 +220,9 @@ function PerformanceCockpit({
       ) {
         analyzeSystem();
       }
+      if (event && event.key === "selectedCurrency") {
+        setActiveCurrency(getCurrentCurrency());
+      }
     };
 
     const handleFocus = () => {
@@ -253,6 +265,26 @@ function PerformanceCockpit({
     return "#4caf50";
   };
 
+  const handleBudgetChange = (value) => {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num <= 0) {
+      setBudget('');
+      setBudgetRec(null);
+      return;
+    }
+    setBudget(num);
+    if (analysis && systemInfo) {
+      const usdBudget = convertToUSD(num, activeCurrency);
+      const rec = BottleneckAnalyzer.getBudgetRecommendation(
+        usdBudget,
+        analysis.bottlenecks,
+        systemInfo,
+        analysis.stats
+      );
+      setBudgetRec(rec);
+    }
+  };
+
   const convertCostString = (costString) => {
     if (typeof costString !== "string") {
       return "$0";
@@ -264,7 +296,7 @@ function PerformanceCockpit({
 
     const minCost = parseInt(match[1]);
     const maxCost = parseInt(match[2]);
-    const currency = getCurrentCurrency();
+    const currency = activeCurrency;
 
     const minConverted = formatPrice(minCost, currency);
     const maxConverted = formatPrice(maxCost, currency);
@@ -375,6 +407,86 @@ function PerformanceCockpit({
     "60-120": "Extended Flights",
     "120+": "Marathon Missions",
   };
+
+  // System drive capacity analytics (from HardwareDetector / si.fsSize)
+  const driveCapacities = useMemo(() => {
+    const logicalDrives = systemInfo?.logicalDrives || [];
+    const driveTypeMap = systemInfo?.driveTypeMap || {};
+    return logicalDrives.map((ld) => {
+      const mount = ld.mount?.toUpperCase() || '';
+      const typeInfo = driveTypeMap[mount];
+      const totalGB = ld.sizeGB || 0;
+      const usedGB = ld.usedGB || 0;
+      const freeGB = ld.freeGB || 0;
+      const usePercent = totalGB > 0 ? Math.round((usedGB / totalGB) * 100) : 0;
+      const isNVMe = typeInfo?.isNVMe || false;
+      const isSSD = typeInfo?.isSSD || false;
+      return {
+        name: typeInfo?.name || typeInfo?.model || mount,
+        mount,
+        typeLabel: isNVMe ? 'NVMe' : isSSD ? 'SSD' : 'HDD',
+        isNVMe,
+        isSSD,
+        totalGB,
+        usedGB,
+        freeGB,
+        usePercent
+      };
+    });
+  }, [systemInfo?.logicalDrives, systemInfo?.driveTypeMap]);
+
+  // Storage Cockpit library analytics
+  const storageAnalytics = useMemo(() => {
+    const installed = (library || []).filter((g) => g && g.installDir);
+    let totalBytes = 0;
+    let nvmeBytes = 0;
+    let ssdBytes = 0;
+    let hddBytes = 0;
+    let nvmeGames = 0;
+    let ssdGames = 0;
+    let hddGames = 0;
+    let fastDriveColdBytes = 0;
+    let fastDriveColdCount = 0;
+    let hasSizeData = false;
+
+    for (const game of installed) {
+      const bytes = DiskUsageService.getCachedBytes(game) || 0;
+      if (bytes > 0) {
+        totalBytes += bytes;
+        hasSizeData = true;
+      }
+      const driveInfo = StorageDriveMapper.resolve(game);
+      if (driveInfo.drive) {
+        if (driveInfo.drive.isNVMe) { nvmeBytes += bytes; nvmeGames += 1; }
+        else if (driveInfo.drive.isSSD) { ssdBytes += bytes; ssdGames += 1; }
+        else { hddBytes += bytes; hddGames += 1; }
+
+        // Cold on fast drives (60+ days or never played)
+        const isFast = driveInfo.drive.isNVMe || driveInfo.drive.isSSD;
+        if (isFast && bytes > 0) {
+          const lp = game.last_played;
+          const isCold = !lp || (() => {
+            const ms = new Date(lp).getTime();
+            return Number.isFinite(ms) && ms > 0 && (Date.now() - ms) / 86400000 >= 60;
+          })();
+          if (isCold) {
+            fastDriveColdBytes += bytes;
+            fastDriveColdCount += 1;
+          }
+        }
+      }
+    }
+
+    return {
+      totalGames: installed.length,
+      measuredGames: nvmeGames + ssdGames + hddGames,
+      hasSizeData,
+      totalBytes,
+      nvmeBytes, ssdBytes, hddBytes,
+      nvmeGames, ssdGames, hddGames,
+      fastDriveColdBytes, fastDriveColdCount
+    };
+  }, [library]);
 
   const formatSessionBucket = (bucket) => {
     if (!bucket) return "Flexible sessions";
@@ -543,6 +655,17 @@ function PerformanceCockpit({
                     {analysis.stats.canRunRecommended}
                   </span>
                   <span className="stat-label">High Settings</span>
+                </div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-icon" style={{ background: "#8ab4f8" }}>
+                  <Zap size={24} />
+                </div>
+                <div className="stat-info">
+                  <span className="stat-value">
+                    {analysis.stats.canRunMedium}
+                  </span>
+                  <span className="stat-label">Medium Settings</span>
                 </div>
               </div>
               <div className="stat-item">
@@ -861,12 +984,180 @@ function PerformanceCockpit({
           </div>
         </div>
 
+        {/* Storage Cockpit */}
+        <div className="storage-cockpit-section">
+          <h2>
+            <FolderArchive size={24} /> Storage Cockpit
+          </h2>
+          <p className="storage-cockpit-subtitle">
+            Drive capacities and library space breakdown
+          </p>
+
+          {/* Drive capacity bars */}
+          {driveCapacities.length > 0 && (
+            <div className="storage-cockpit-drives">
+              {driveCapacities.map((drive, idx) => (
+                <div key={idx} className="storage-cockpit-drive-bar">
+                  <div className="storage-cockpit-drive-bar-header">
+                    <span className={`drive-type-tag ${drive.isNVMe ? 'nvme' : drive.isSSD ? 'ssd' : 'hdd'}`}>
+                      {drive.typeLabel}
+                    </span>
+                    <span className="drive-letter">{drive.mount}</span>
+                    <span className="drive-name" title={drive.name}>{drive.name}</span>
+                    <span className="drive-free">
+                      {drive.freeGB} GB free / {drive.totalGB} GB
+                    </span>
+                  </div>
+                  <div className="storage-cockpit-drive-bar-track">
+                    <div
+                      className="storage-cockpit-drive-bar-fill"
+                      style={{ width: `${Math.min(drive.usePercent, 100)}%` }}
+                    />
+                  </div>
+                  <div className="storage-cockpit-drive-bar-meta">
+                    <span>{drive.usePercent}% used</span>
+                    <span>{drive.usedGB} GB used</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Library breakdown */}
+          {library && library.length > 0 && (
+            <>
+              <h3 className="storage-cockpit-library-heading">Library Breakdown</h3>
+              <div className="storage-cockpit-grid">
+                <div className="storage-cockpit-card total">
+                  <div className="storage-cockpit-card-header">
+                    <HardDrive size={20} />
+                    <span>Library Total</span>
+                  </div>
+                  <strong>
+                    {storageAnalytics.hasSizeData
+                      ? formatBytes(storageAnalytics.totalBytes)
+                      : '—'}
+                  </strong>
+                  <em>
+                    {storageAnalytics.measuredGames} of {storageAnalytics.totalGames} games measured
+                    {!storageAnalytics.hasSizeData && ' · run Library Reclaimer scan'}
+                  </em>
+                </div>
+
+                <div className="storage-cockpit-card nvme">
+                  <div className="storage-cockpit-card-header">
+                    <Zap size={20} />
+                    <span>NVMe</span>
+                  </div>
+                  <strong>
+                    {storageAnalytics.hasSizeData
+                      ? formatBytes(storageAnalytics.nvmeBytes)
+                      : '—'}
+                  </strong>
+                  <em>{storageAnalytics.nvmeGames} games</em>
+                </div>
+
+                <div className="storage-cockpit-card ssd">
+                  <div className="storage-cockpit-card-header">
+                    <Disc3 size={20} />
+                    <span>SSD</span>
+                  </div>
+                  <strong>
+                    {storageAnalytics.hasSizeData
+                      ? formatBytes(storageAnalytics.ssdBytes)
+                      : '—'}
+                  </strong>
+                  <em>{storageAnalytics.ssdGames} games</em>
+                </div>
+
+                <div className="storage-cockpit-card hdd">
+                  <div className="storage-cockpit-card-header">
+                    <HardDrive size={20} />
+                    <span>HDD</span>
+                  </div>
+                  <strong>
+                    {storageAnalytics.hasSizeData
+                      ? formatBytes(storageAnalytics.hddBytes)
+                      : '—'}
+                  </strong>
+                  <em>{storageAnalytics.hddGames} games</em>
+                </div>
+
+                <div className="storage-cockpit-card cold">
+                  <div className="storage-cockpit-card-header">
+                    <ThermometerSnowflake size={20} />
+                    <span>Cold on Fast Drives</span>
+                  </div>
+                  <strong>
+                    {storageAnalytics.hasSizeData
+                      ? formatBytes(storageAnalytics.fastDriveColdBytes)
+                      : '—'}
+                  </strong>
+                  <em>{storageAnalytics.fastDriveColdCount} games unplayed 60+ days</em>
+                </div>
+              </div>
+
+              {storageAnalytics.fastDriveColdBytes > 0 && storageAnalytics.hasSizeData && (
+                <div className="storage-cockpit-insight">
+                  <AlertTriangle size={18} />
+                  <p>
+                    You have <strong>{formatBytes(storageAnalytics.fastDriveColdBytes)}</strong> of cold storage sitting on fast drives (NVMe/SSD).
+                    These games haven't been played in 60+ days — consider moving them to free up premium space for active titles.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         {/* Upgrade Recommendations */}
         {analysis.recommendations.length > 0 && (
           <div className="recommendations-section">
             <h2>
               <AlertTriangle size={24} /> Upgrade Recommendations
             </h2>
+
+            {/* Budget-based upgrade picker */}
+            <div className="budget-upgrade-card">
+              <h3>💰 Set Your Upgrade Budget</h3>
+              <p className="budget-copy">
+                Enter how much you're willing to spend and we'll tell you the best component to upgrade.
+              </p>
+              <div className="budget-input-row">
+                <span className="budget-prefix">{getCurrencySymbol(activeCurrency)}</span>
+                <input
+                  type="number"
+                  value={budget || ''}
+                  onChange={(e) => handleBudgetChange(e.target.value)}
+                  placeholder="e.g. 500"
+                  className="budget-input"
+                />
+                <button
+                  className="budget-btn"
+                  onClick={() => handleBudgetChange(budget)}
+                >
+                  Find Best Upgrade
+                </button>
+              </div>
+              {budgetRec && (
+                <div className={`budget-result ${budgetRec.withinBudget ? 'in-budget' : 'over-budget'}`}>
+                  <div className="budget-result-header">
+                    <span className="budget-result-component">{budgetRec.component.toUpperCase()}</span>
+                    <span className="budget-result-cost">{convertCostString(budgetRec.estimatedCost)}</span>
+                  </div>
+                  <p className="budget-result-suggestion">{budgetRec.suggestion}</p>
+                  <div className="budget-result-meta">
+                    {budgetRec.fpsGain && (
+                      <span className="budget-result-gain">{budgetRec.fpsGain}</span>
+                    )}
+                    <span className="budget-result-games">
+                      Impacts {budgetRec.gamesAffected} game{budgetRec.gamesAffected !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="recommendations-grid">
               {analysis.recommendations.map((rec, index) => (
                 <div key={index} className="recommendation-card">

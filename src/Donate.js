@@ -1,10 +1,12 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Heart, Coffee, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle, Key, Sparkles, Shield, Palette, Image as ImageIcon, Layers3, LockKeyhole, FileText } from 'lucide-react';
+import { Heart, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle, Key, Sparkles, Shield, Palette, Image as ImageIcon, Layers3, LockKeyhole, FileText } from 'lucide-react';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
+import PatreonTiersPanel from './components/PatreonTiersPanel';
 import { openExternalUrl } from './services/ElectronBridge';
 import StorageService from './services/StorageService';
+import EntitlementService from './services/EntitlementService';
 import './Donate.css';
 
 const TIER_LABEL_MAP = {
@@ -15,6 +17,7 @@ const TIER_LABEL_MAP = {
 };
 
 const LEGACY_PATREON_CODES = {
+  'GP100': { tier: 'Platinum', contribution: 'First 100 Founder' },
   'GP4001': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
   'GP4002': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
   'GP4003': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
@@ -43,6 +46,15 @@ function Donate({ theme }) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
   const [validationSuccess, setValidationSuccess] = useState(false);
+  const [storeCode, setStoreCode] = useState('');
+  const [storeMessage, setStoreMessage] = useState('');
+  const [storeSuccess, setStoreSuccess] = useState(false);
+  const [storeCatalog, setStoreCatalog] = useState(() => EntitlementService.getCatalog());
+
+  // Unified code redemption
+  const [unifiedCode, setUnifiedCode] = useState('');
+  const [unifiedMessage, setUnifiedMessage] = useState('');
+  const [unifiedSuccess, setUnifiedSuccess] = useState(false);
   const codeFormRef = useRef(null);
 
   const canonicalPatreonCodes = useMemo(() => {
@@ -71,12 +83,6 @@ function Donate({ theme }) {
       url: 'https://www.patreon.com/15465959/join',
       description: 'Become a patron',
       icon: <Heart size={24} />
-    },
-    {
-      name: 'Buy Me a Coffee',
-      url: 'https://buymeacoffee.com/GamepilotDev',
-      description: 'Buy me a coffee',
-      icon: <Coffee size={24} />
     },
     {
       name: 'YouTube',
@@ -195,22 +201,22 @@ function Donate({ theme }) {
   const tierPerks = [
     {
       tier: 'Bronze',
-      summary: 'Bronze support activates a 2x XP multiplier and adds your name to the Founders Wall.',
+      summary: 'Bronze support: a 2x XP boost to speed up free progression, plus your name on the Founders Wall as a thank you.',
       checkoutUrl: tierCheckoutLinks.Bronze
     },
     {
       tier: 'Silver',
-      summary: 'Silver support upgrades your progression to a 3x XP multiplier with Silver founder recognition.',
+      summary: 'Silver support: a 3x XP boost to speed up free progression, plus Silver founder recognition and bonus themes.',
       checkoutUrl: tierCheckoutLinks.Silver
     },
     {
       tier: 'Gold',
-      summary: 'Gold support grants a 4x XP multiplier and Gold founder recognition across the app.',
+      summary: 'Gold support: a 4x XP boost to speed up free progression, plus Gold founder recognition and premium export styling.',
       checkoutUrl: tierCheckoutLinks.Gold
     },
     {
       tier: 'Platinum',
-      summary: 'Platinum support maxes out progression at 5x XP and highlights you as a Platinum founder.',
+      summary: 'Platinum support: the maximum 5x XP boost to speed up free progression, plus Platinum founder recognition and the full cosmetic pack.',
       checkoutUrl: tierCheckoutLinks.Platinum
     }
   ];
@@ -311,6 +317,94 @@ function Donate({ theme }) {
     } catch (error) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
+  };
+
+  const redeemStoreUnlock = () => {
+    const result = EntitlementService.redeemCode(storeCode);
+    setStoreMessage(result.message);
+    setStoreSuccess(result.success);
+
+    if (result.success) {
+      setStoreCode('');
+      setStoreCatalog(EntitlementService.getCatalog());
+    }
+  };
+
+  const redeemUnifiedCode = () => {
+    const code = unifiedCode.trim().toUpperCase();
+    if (!code) {
+      setUnifiedMessage('Please enter a code');
+      setUnifiedSuccess(false);
+      return;
+    }
+
+    setIsValidating(true);
+    setUnifiedMessage('');
+
+    setTimeout(() => {
+      // 1. Try store unlock codes first
+      const storeResult = EntitlementService.redeemCode(code);
+      if (storeResult.success) {
+        setUnifiedMessage(storeResult.message);
+        setUnifiedSuccess(true);
+        setUnifiedCode('');
+        setStoreCatalog(EntitlementService.getCatalog());
+        setIsValidating(false);
+        return;
+      }
+
+      // 2. Try Patreon / founder codes
+      const codeData = validPatreonCodes[code];
+      if (codeData) {
+        const existingFounders = StorageService.get('userFounders', []);
+        const codeAlreadyUsed = existingFounders.some(founder => founder.code === code);
+
+        if (codeAlreadyUsed) {
+          setUnifiedMessage('This code has already been used!');
+          setUnifiedSuccess(false);
+        } else {
+          const boostMeta = AchievementTracker.validatePatreonBoostCode(code);
+          let boostMessage = '';
+          if (boostMeta) {
+            const boostResult = AchievementTracker.activatePatreonXPBoost(code);
+            if (boostResult.success) {
+              boostMessage = ` XP boost ${boostResult.multiplierLabel || `${boostResult.multiplier}x`} activated.`;
+            } else {
+              boostMessage = ` ${boostResult.message}`;
+            }
+          } else {
+            boostMessage = ' Legacy founder code redeemed for Hall of Fame recognition.';
+          }
+
+          // Add user as founder
+          const newFounder = {
+            name: founderName.trim() || 'Anonymous',
+            tier: codeData.tier,
+            date: new Date().toISOString().split('T')[0],
+            contribution: codeData.contribution,
+            code
+          };
+          existingFounders.push(newFounder);
+          StorageService.set('userFounders', existingFounders);
+
+          setUnifiedMessage(`Welcome to the founders club! You've been added as a ${codeData.tier} founder.${boostMessage}`);
+          setUnifiedSuccess(true);
+          setUnifiedCode('');
+          setFounderName('');
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+        setIsValidating(false);
+        return;
+      }
+
+      // 3. Nothing matched
+      setUnifiedMessage('Invalid code. Please check your code and try again.');
+      setUnifiedSuccess(false);
+      setIsValidating(false);
+    }, 800);
   };
 
   // Function to validate Patreon code and add founder
@@ -571,8 +665,160 @@ function Donate({ theme }) {
           </section>
         </CollapsibleSection>
 
-        {/* Become a Founder Section */}
+        {/* Unified Code Redemption */}
         <div ref={codeFormRef}>
+          <CollapsibleSection
+            title="Redeem a Code"
+            subtitle="Enter any GamePilot code — store unlock, Patreon tier, or founder code — and we'll handle the rest."
+            badge="One box"
+            icon={<Key size={18} />}
+            className="donate-folder"
+          >
+            <div className="become-founder-section">
+              <h2><Key size={24} /> Redeem Any Code</h2>
+              <p className="founder-signup-intro">
+                One field for every code type. Paste your unlock code, Patreon tier code, or founder code here and GamePilot will sort it out automatically.
+              </p>
+
+              <div className="unified-code-form">
+                <div className="code-input-group">
+                  <label htmlFor="unified-code">Your Code</label>
+                  <div className="code-input-wrapper">
+                    <input
+                      id="unified-code"
+                      type="text"
+                      value={unifiedCode}
+                      onChange={(e) => {
+                        setUnifiedCode(e.target.value.toUpperCase());
+                        setUnifiedMessage('');
+                        setUnifiedSuccess(false);
+                      }}
+                      placeholder="Paste your unlock or founder code"
+                      className="code-input"
+                      maxLength={40}
+                    />
+                    <button
+                      onClick={redeemUnifiedCode}
+                      disabled={!unifiedCode.trim() || isValidating}
+                      className="validate-button"
+                    >
+                      {isValidating ? 'Checking...' : 'Redeem Code'}
+                    </button>
+                  </div>
+                </div>
+
+                {unifiedMessage && (
+                  <div className={`validation-message ${unifiedSuccess ? 'success' : 'error'} unified-result`}>
+                    {unifiedSuccess ? <Check size={16} /> : <AlertCircle size={16} />}
+                    <span>{unifiedMessage}</span>
+                  </div>
+                )}
+
+                <div className="unified-code-hints">
+                  <span><Key size={12} /> Store codes unlock product packs</span>
+                  <span><Star size={12} /> Founder codes activate supporter perks</span>
+                </div>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="One-Off Store Unlocks"
+            subtitle="Redeem permanent GamePilot unlocks bought through Patreon shop products or supporter drops."
+            badge={storeCatalog.filter((product) => product.unlocked).length ? `${storeCatalog.filter((product) => product.unlocked).length} unlocked` : 'Store codes'}
+            icon={<Sparkles size={18} />}
+            className="donate-folder"
+          >
+            <div className="become-founder-section">
+              <h2><Sparkles size={24} /> Permanent Unlocks</h2>
+              <p className="founder-signup-intro">
+                One-off unlocks are separate from monthly XP boosts. Buy once, redeem once, and keep the feature pack permanently on this device.
+              </p>
+
+              <div className="store-unlock-grid">
+                {storeCatalog.map((product) => {
+                  const entitlement = product.unlocked ? EntitlementService.getEntitlements()[product.id] : null;
+                  const hasPro = EntitlementService.hasEntitlement('gamepilot_pro');
+                  const includedInPro = product.id !== 'gamepilot_pro' && hasPro;
+                  return (
+                    <div key={product.id} className={`store-unlock-card ${product.unlocked ? 'unlocked' : ''}`}>
+                      <div className="store-unlock-meta">
+                        <span className="store-unlock-type">{product.type}</span>
+                        {product.unlocked && (
+                          <span className="store-unlock-owned"><Check size={14} /> Owned</span>
+                        )}
+                        {!product.unlocked && includedInPro && (
+                          <span className="store-unlock-included"><Check size={14} /> In Pro</span>
+                        )}
+                      </div>
+                      <h3>{product.name}</h3>
+                      <p>{product.description}</p>
+                      {!product.unlocked && !includedInPro && (
+                        <div className="store-unlock-price">
+                          <span className="price-gbp">£{product.priceGBP}</span>
+                          <span className="price-usd">${product.priceUSD}</span>
+                          {product.id !== 'gamepilot_pro' && (
+                            <span className="price-bundle-note">or Pro bundle</span>
+                          )}
+                        </div>
+                      )}
+                      {entitlement?.unlockedAt && (
+                        <span className="store-unlock-date">
+                          Unlocked {new Date(entitlement.unlockedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="code-entry-form store-code-form">
+                <div className="code-input-group">
+                  <label htmlFor="store-code">One-Off Unlock Code</label>
+                  <div className="code-input-wrapper">
+                    <input
+                      id="store-code"
+                      type="text"
+                      value={storeCode}
+                      onChange={(e) => {
+                        setStoreCode(e.target.value.toUpperCase());
+                        setStoreMessage('');
+                        setStoreSuccess(false);
+                      }}
+                      placeholder="Enter your unlock code"
+                      className="code-input"
+                      maxLength={40}
+                    />
+                    <button
+                      onClick={redeemStoreUnlock}
+                      disabled={!storeCode.trim()}
+                      className="validate-button"
+                    >
+                      Redeem Unlock
+                    </button>
+                  </div>
+                </div>
+
+                {storeMessage && (
+                  <div className={`validation-message ${storeSuccess ? 'success' : 'error'}`}>
+                    {storeSuccess ? <Check size={16} /> : <AlertCircle size={16} />}
+                    <span>{storeMessage}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Patreon Monthly Tiers"
+            subtitle="Support ongoing development with a monthly subscription and unlock rotating exclusive perks."
+            badge="Monthly"
+            icon={<Heart size={18} />}
+            className="donate-folder patreon-tiers-folder"
+          >
+            <PatreonTiersPanel />
+          </CollapsibleSection>
+
           <CollapsibleSection
             title="Unlock Your Founder Lounge"
             subtitle="Redeem your founder code to activate your supporter tier, founder recognition, and any included XP multiplier."
@@ -609,8 +855,12 @@ function Donate({ theme }) {
                       id="patreon-code"
                       type="text"
                       value={patreonCode}
-                      onChange={(e) => setPatreonCode(e.target.value.toUpperCase())}
-                      placeholder="THEME8_2026"
+                      onChange={(e) => {
+                        setPatreonCode(e.target.value.toUpperCase());
+                        setValidationMessage('');
+                        setValidationSuccess(false);
+                      }}
+                      placeholder="Enter your Patreon code"
                       className="code-input"
                       disabled={isValidating}
                       maxLength={30}
@@ -635,7 +885,7 @@ function Donate({ theme }) {
                 <div className="code-info">
                   <h4>How to get your code:</h4>
                   <ol>
-                    <li>Subscribe to our <a href="https://patreon.com/GamePilot" target="_blank" rel="noopener noreferrer">Patreon</a></li>
+                    <li>Subscribe to our <a href="https://www.patreon.com/cw/GamePilot" target="_blank" rel="noopener noreferrer">Patreon</a></li>
                     <li>Check your welcome email/message for your unique founder code</li>
                     <li>Enter your display name and code above</li>
                     <li>Click "Validate Code" to unlock your Founder Lounge access and activate XP boosts (if included)</li>

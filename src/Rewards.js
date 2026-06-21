@@ -2,8 +2,10 @@ import React, { useState, useMemo, useCallback } from 'react';
 import NavBar from './NavBar';
 import { useToast } from './components/Toast';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
-import { audioManager } from './services/AudioManager';
-import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Waves, Music2 } from 'lucide-react';
+import { PersonaService } from './services/PersonaService';
+import { SpecialEventsService } from './services/SpecialEventsService';
+import EntitlementService from './services/EntitlementService';
+import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper, ShoppingBag } from 'lucide-react';
 import './Rewards.css';
 
 // Sample game card for preview
@@ -38,185 +40,6 @@ const SampleGameCard = ({ style, isActive }) => (
         <span>Unlocks at {style.requiredXP?.toLocaleString()} XP</span>
       </div>
     )}
-  </div>
-);
-
-const AudioRewardsPanel = ({
-  ambientEnabled,
-  ambientSoundPack,
-  ambientVolume,
-  musicEnabled,
-  musicPack,
-  musicVolume,
-  sfxEnabled,
-  sfxVolume,
-  buttonSoundPack,
-  currentAmbientPackMeta,
-  currentMusicPackMeta,
-  currentButtonPackMeta,
-  ambientUnlocked,
-  musicUnlocked,
-  ambientRequirement,
-  musicRequirement,
-  ambientPackOptions,
-  musicPackOptions,
-  buttonPackOptions,
-  ambientPackProgress,
-  musicPackProgress,
-  buttonPackProgress,
-  nextAudioUnlock,
-  isSampleButtonPack,
-  sampleEntries,
-  currentSampleSelection,
-  onToggleAmbient,
-  onChangeAmbientPack,
-  onChangeAmbientVolume,
-  onPreviewAmbient,
-  onToggleSfx,
-  onChangeButtonPack,
-  onChangeSfxVolume,
-  onPreviewButtonSample,
-  onSelectButtonSample,
-  onToggleMusic,
-  onChangeMusicPack,
-  onChangeMusicVolume,
-  onPreviewMusic
-}) => (
-  <div className="rewards-panel">
-    <div className="rewards-panel-header">
-      <h2>Audio Rewards</h2>
-      <p>Equip your unlocked atmosphere, music, and button sound packs here.</p>
-    </div>
-
-    <div className="rewards-info-box" style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-      <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.85 }}>
-        {nextAudioUnlock
-          ? `Next audio unlock: ${nextAudioUnlock.label} (${nextAudioUnlock.category}) at ${Number(nextAudioUnlock.requiredXP || 0).toLocaleString()} XP.`
-          : 'All current audio rewards are unlocked.'}
-      </p>
-    </div>
-
-    <div className="rewards-list" style={{ gap: '16px', display: 'flex', flexDirection: 'column' }}>
-      <div className="rewards-list-item" style={{ alignItems: 'stretch', cursor: 'default' }}>
-        <div className="rewards-list-icon"><Waves size={20} /></div>
-        <div className="rewards-list-info" style={{ width: '100%' }}>
-          <h3>Ambient Atmosphere</h3>
-          <p>{ambientUnlocked
-            ? `${ambientRequirement.unlockedCount}/${ambientRequirement.totalCount} atmosphere packs unlocked.`
-            : `First atmosphere pack unlocks at ${Number(ambientRequirement.requiredXP || 0).toLocaleString()} XP.`}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" checked={ambientEnabled} onChange={(e) => onToggleAmbient(e.target.checked)} disabled={!ambientUnlocked} />
-              <span>Enable ambient atmosphere</span>
-            </label>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <select value={ambientSoundPack} onChange={(e) => onChangeAmbientPack(e.target.value)} disabled={!ambientEnabled || !ambientUnlocked} className="settings-select">
-                <option value="dynamic">Match Theme (Dynamic)</option>
-                {ambientPackOptions.map((pack) => (
-                  <option key={pack.id} value={pack.id} disabled={!pack.unlocked}>
-                    {`${pack.label} — ${Number(pack.requiredXP || 0).toLocaleString()} XP${pack.unlocked ? '' : ' (Locked)'}`}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="data-button" disabled={!ambientEnabled || ambientSoundPack === 'dynamic' || !currentAmbientPackMeta?.unlocked} onClick={onPreviewAmbient}>
-                Preview
-              </button>
-            </div>
-            <p style={{ margin: 0, opacity: 0.7 }}>{ambientSoundPack === 'dynamic' ? 'Dynamic mode follows your current theme.' : (currentAmbientPackMeta?.description || 'Custom atmosphere selection.')}</p>
-            {ambientPackProgress.nextUnlock && ambientUnlocked && (
-              <p style={{ margin: 0, opacity: 0.7 }}>{`Next atmosphere pack: ${ambientPackProgress.nextUnlock.label} at ${Number(ambientPackProgress.nextUnlock.requiredXP || 0).toLocaleString()} XP.`}</p>
-            )}
-            <label>Ambient Volume: {Math.round(ambientVolume * 100)}%</label>
-            <input type="range" min="0" max="1" step="0.05" value={ambientVolume} onChange={(e) => onChangeAmbientVolume(parseFloat(e.target.value))} disabled={!ambientEnabled || !ambientUnlocked} />
-          </div>
-        </div>
-      </div>
-
-      <div className="rewards-list-item" style={{ alignItems: 'stretch', cursor: 'default' }}>
-        <div className="rewards-list-icon"><Music2 size={20} /></div>
-        <div className="rewards-list-info" style={{ width: '100%' }}>
-          <h3>Background Music</h3>
-          <p>{musicUnlocked
-            ? `${musicRequirement.unlockedCount}/${musicRequirement.totalCount} music packs unlocked.`
-            : `First music pack unlocks at ${Number(musicRequirement.requiredXP || 0).toLocaleString()} XP.`}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" checked={musicEnabled} onChange={(e) => onToggleMusic(e.target.checked)} disabled={!musicUnlocked} />
-              <span>Enable background music</span>
-            </label>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <select value={musicPack} onChange={(e) => onChangeMusicPack(e.target.value)} disabled={!musicEnabled || !musicUnlocked} className="settings-select">
-                {musicPackOptions.map((pack) => (
-                  <option key={pack.id} value={pack.id} disabled={!pack.unlocked}>
-                    {`${pack.label} — ${Number(pack.requiredXP || 0).toLocaleString()} XP${pack.unlocked ? '' : ' (Locked)'}`}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="data-button" disabled={!musicEnabled || !currentMusicPackMeta?.unlocked} onClick={onPreviewMusic}>
-                Preview
-              </button>
-            </div>
-            <p style={{ margin: 0, opacity: 0.7 }}>{currentMusicPackMeta?.description || 'XP-unlocked background music for browsing GamePilot.'}</p>
-            {musicPackProgress.nextUnlock && musicUnlocked && (
-              <p style={{ margin: 0, opacity: 0.7 }}>{`Next music pack: ${musicPackProgress.nextUnlock.label} at ${Number(musicPackProgress.nextUnlock.requiredXP || 0).toLocaleString()} XP.`}</p>
-            )}
-            <label>Music Volume: {Math.round(musicVolume * 100)}%</label>
-            <input type="range" min="0" max="1" step="0.05" value={musicVolume} onChange={(e) => onChangeMusicVolume(parseFloat(e.target.value))} disabled={!musicEnabled || !musicUnlocked} />
-          </div>
-        </div>
-      </div>
-
-      <div className="rewards-list-item" style={{ alignItems: 'stretch', cursor: 'default' }}>
-        <div className="rewards-list-icon"><PlayCircle size={20} /></div>
-        <div className="rewards-list-info" style={{ width: '100%' }}>
-          <h3>Button Sound Packs</h3>
-          <p>{buttonPackProgress.unlockedCount}/{buttonPackProgress.totalCount} button packs unlocked.</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" checked={sfxEnabled} onChange={(e) => onToggleSfx(e.target.checked)} />
-              <span>Enable UI button sounds</span>
-            </label>
-            <select value={buttonSoundPack} onChange={(e) => onChangeButtonPack(e.target.value)} disabled={!sfxEnabled} className="settings-select">
-              {buttonPackOptions.map((pack) => (
-                <option key={pack.id} value={pack.id} disabled={!pack.unlocked}>
-                  {pack.label} {pack.type === 'synth' ? '(Synth)' : '(Sample)'}{` — ${Number(pack.requiredXP || 0).toLocaleString()} XP${pack.unlocked ? '' : ' (Locked)'}`}
-                </option>
-              ))}
-            </select>
-            <p style={{ margin: 0, opacity: 0.7 }}>{currentButtonPackMeta?.description || 'Choose from curated sample packs or synth-based clicks.'}</p>
-            {!currentButtonPackMeta?.unlocked && (
-              <p style={{ margin: 0, opacity: 0.7 }}>{`Unlocks at ${Number(currentButtonPackMeta?.requiredXP || 0).toLocaleString()} XP (${Number(currentButtonPackMeta?.currentXP || 0).toLocaleString()} XP earned).`}</p>
-            )}
-            {buttonPackProgress.nextUnlock && currentButtonPackMeta?.unlocked && (
-              <p style={{ margin: 0, opacity: 0.7 }}>{`Next button pack: ${buttonPackProgress.nextUnlock.label} at ${Number(buttonPackProgress.nextUnlock.requiredXP || 0).toLocaleString()} XP.`}</p>
-            )}
-            {isSampleButtonPack && currentButtonPackMeta?.unlocked && sampleEntries.length > 0 && (
-              <div style={{ display: 'grid', gap: '8px', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                {sampleEntries.map((sample) => {
-                  const isSelected = currentSampleSelection === sample.file;
-                  return (
-                    <div key={sample.file} style={{ border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-primary)'}`, borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div style={{ fontWeight: 600 }}>{sample.label}</div>
-                      <div style={{ fontSize: '11px', opacity: 0.65, wordBreak: 'break-all' }}>{sample.file}</div>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        <button type="button" onClick={() => onPreviewButtonSample(sample.file)} disabled={!sfxEnabled || !currentButtonPackMeta?.unlocked} className="data-button" style={{ flex: 1 }}>
-                          Preview
-                        </button>
-                        <button type="button" onClick={() => onSelectButtonSample(sample.file)} disabled={!sfxEnabled || !currentButtonPackMeta?.unlocked || isSelected} className="data-button" style={{ flex: 1 }}>
-                          {isSelected ? 'Selected' : 'Use this sample'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <label>SFX Volume: {Math.round(sfxVolume * 100)}%</label>
-            <input type="range" min="0" max="1" step="0.05" value={sfxVolume} onChange={(e) => onChangeSfxVolume(parseFloat(e.target.value))} disabled={!sfxEnabled} />
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 );
 
@@ -407,6 +230,425 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
   </div>
 );
 
+const UNLOCK_BENEFITS = {
+  gamepilot_pro: 'Unlocks everything: Theme Builder, Layout Pack, Widget Pack, Power Tools, and Premium Themes.',
+  advanced_theme_builder: 'Access the Advanced Theme Builder with extra polish options and future builder upgrades.',
+  layout_pack: 'Unlock premium layout and presentation packs for the Library and dashboard.',
+  widget_pack: 'Unlocks weekly retention quests and GamePilot Picks widgets on the Home dashboard.',
+  power_tools: 'Unlocks Bulk Mode + Library Analytics + Recommendation Engine Tuner with tunable weights for power users.',
+  premium_theme_pack: 'Unlocks premium theme drops and exclusive colour palettes.',
+};
+
+// Premium Unlocks Panel — discover one-off store purchases
+const PremiumUnlocksPanel = ({ catalog, onNavigate }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Premium Unlocks</h2>
+      <p>Permanent one-off upgrades that support GamePilot development.</p>
+    </div>
+    <div className="rewards-card-grid">
+      {catalog.map((product) => (
+        <div
+          key={product.id}
+          className={`rewards-card-item ${product.unlocked ? 'unlocked' : 'locked'}`}
+        >
+          <div
+            className="reward-library-preview"
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '30px 20px',
+              textAlign: 'center',
+              borderRadius: '12px',
+              border: product.unlocked ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+              background: product.unlocked
+                ? 'linear-gradient(135deg, rgba(0,210,211,0.12), rgba(0,180,148,0.08))'
+                : 'var(--bg-secondary)'
+            }}
+          >
+            <ShoppingBag size={22} style={{ opacity: 0.7, marginBottom: '8px' }} />
+            <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{product.name}</div>
+            <div style={{ fontSize: '0.8rem', opacity: 0.75, lineHeight: 1.3 }}>{product.description}</div>
+            <div style={{ fontSize: '0.75rem', opacity: 0.9, marginTop: '8px', padding: '6px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)' }}>
+              {UNLOCK_BENEFITS[product.id] || 'Permanent unlock.'}
+            </div>
+            {product.unlocked ? (
+              <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                Owned
+              </div>
+            ) : (
+              <div className="reward-locked-overlay" style={{ opacity: 0.55 }}>
+                <div className="reward-lock-icon">🔒</div>
+              </div>
+            )}
+          </div>
+          {!product.unlocked && (
+            <button
+              className="action-button primary"
+              style={{ marginTop: '10px', width: '100%', padding: '8px', fontSize: '13px' }}
+              onClick={onNavigate}
+            >
+              Open Founder Lounge
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Gaming Links Layout Panel - earnable layouts/box styles for Gaming Links page
+const GamingLinksLayoutPanel = ({ layouts, selectedId, onSelect }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Gaming Links Layouts</h2>
+      <p>Unlock new layouts and box shapes for your Gaming Links page.</p>
+    </div>
+    <div className="rewards-card-grid">
+      {layouts.map((layout) => (
+        <div
+          key={layout.id}
+          className={`rewards-card-item ${selectedId === layout.id ? 'active' : ''} ${!layout.unlocked ? 'locked' : ''}`}
+          onClick={() => layout.unlocked && onSelect(layout.id)}
+        >
+          <div
+            className="reward-library-preview"
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '30px 20px',
+              textAlign: 'center',
+              borderRadius: '12px',
+              border: selectedId === layout.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+              background: layout.preview
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Link2 size={18} />
+              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{layout.name}</span>
+            </div>
+            <div className="reward-library-grid">
+              <div className="reward-library-card" />
+              <div className="reward-library-card" />
+              <div className="reward-library-card" />
+              <div className="reward-library-card" />
+            </div>
+            {selectedId === layout.id && (
+              <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                <Check size={14} />
+              </div>
+            )}
+            {!layout.unlocked && (
+              <div className="reward-locked-overlay">
+                <div className="reward-lock-icon">🔒</div>
+                <span>Unlocks at {layout.requiredXP?.toLocaleString()} XP</span>
+              </div>
+            )}
+          </div>
+          <div className="rewards-card-info">
+            <h3>{layout.name}</h3>
+            <p>{layout.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const GamingLinksFeaturesPanel = ({ features, selectedId, onSelect }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Gaming Links Rewards</h2>
+      <p>Base and premium visual upgrades for your Gaming Links cards.</p>
+    </div>
+    <div className="rewards-card-grid">
+      {features.map((feature) => (
+        <div
+          key={feature.id}
+          className={`rewards-card-item ${selectedId === feature.id ? 'active' : ''} ${!feature.unlocked ? 'locked' : ''}`}
+          onClick={() => feature.unlocked && onSelect(feature.id)}
+        >
+          <div
+            className="reward-animation-preview"
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '28px 20px',
+              textAlign: 'center',
+              borderRadius: feature.id === '3d_transforms' ? '18px' : '12px',
+              border: selectedId === feature.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+              background: feature.accentColor
+                ? `linear-gradient(135deg, ${feature.accentColor}33, rgba(15, 23, 42, 0.42))`
+                : 'linear-gradient(135deg, rgba(255, 107, 53, 0.16), rgba(15, 23, 42, 0.34))',
+              boxShadow: feature.id === 'neon_glow' ? `0 0 22px ${feature.accentColor || '#3dd9ff'}55` : undefined,
+              transform: feature.id === '3d_transforms' ? 'perspective(600px) rotateX(4deg) rotateY(-5deg)' : undefined
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+              <Link2 size={24} />
+            </div>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px' }}>{feature.name}</div>
+            <div className="reward-recommendation-tags" style={{ justifyContent: 'center' }}>
+              {(feature.features || []).slice(0, 3).map((tag) => (
+                <span key={tag}>{tag.replaceAll('-', ' ')}</span>
+              ))}
+            </div>
+            {selectedId === feature.id && (
+              <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                <Check size={14} />
+              </div>
+            )}
+            {!feature.unlocked && (
+              <div className="reward-locked-overlay">
+                <div className="reward-lock-icon">🔒</div>
+                <span>Unlocks at {feature.requiredXP?.toLocaleString()} XP</span>
+              </div>
+            )}
+          </div>
+          <div className="rewards-card-info">
+            <h3>{feature.name}</h3>
+            <p>{feature.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Special Events Panel - upcoming/active time-based reward events
+const EVENT_ICON_MAP = {
+  birthday: Cake,
+  christmas: Snowflake,
+  halloween: Ghost,
+  winter: Snowflake,
+  summer: Sun,
+  spring: Flower2,
+  anniversary: PartyPopper
+};
+
+const EVENT_ACCENT_MAP = {
+  birthday: '#f472b6',
+  christmas: '#dc2626',
+  halloween: '#ea580c',
+  winter: '#3b82f6',
+  summer: '#facc15',
+  spring: '#22c55e',
+  anniversary: '#8b5cf6'
+};
+
+const formatDaysUntil = (event) => {
+  if (event.active) return 'ACTIVE TODAY';
+  if (event.daysUntil === null || event.daysUntil === undefined) return 'Not configured';
+  if (event.daysUntil === 0) return 'Today';
+  if (event.daysUntil === 1) return 'Tomorrow';
+  if (event.daysUntil < 7) return `In ${event.daysUntil} days`;
+  if (event.daysUntil < 30) return `In ${Math.round(event.daysUntil / 7)} week${Math.round(event.daysUntil / 7) === 1 ? '' : 's'}`;
+  if (event.daysUntil < 60) return `In about a month`;
+  return `In ${Math.round(event.daysUntil / 30)} months`;
+};
+
+const SpecialEventsPanel = ({ events }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Special Events</h2>
+      <p>Time-based reward events: birthday, holidays, seasonal challenges. Active events grant XP automatically when you check in.</p>
+    </div>
+    <div className="rewards-card-grid">
+      {events.map((event) => {
+        const Icon = EVENT_ICON_MAP[event.icon] || Calendar;
+        const accent = EVENT_ACCENT_MAP[event.icon] || '#94a3b8';
+        return (
+          <div
+            key={event.id}
+            className={`rewards-card-item ${event.active ? 'active' : ''}`}
+            style={{ cursor: 'default' }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                overflow: 'hidden',
+                padding: '24px 20px',
+                borderRadius: '12px',
+                border: event.active ? `2px solid ${accent}` : '1px solid var(--border-color)',
+                background: event.active
+                  ? `linear-gradient(135deg, ${accent}33, ${accent}1a)`
+                  : `linear-gradient(135deg, ${accent}1a, transparent)`,
+                minHeight: '160px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: `${accent}33`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Icon size={20} style={{ color: accent }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{event.name}</div>
+                  <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{event.category}</div>
+                </div>
+              </div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 10px',
+                borderRadius: '999px',
+                background: event.active ? `${accent}` : 'rgba(255,255,255,0.08)',
+                color: event.active ? '#fff' : 'var(--text-secondary)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                alignSelf: 'flex-start'
+              }}>
+                {formatDaysUntil(event)}
+              </div>
+              <div style={{ fontSize: '0.85rem', opacity: 0.85, lineHeight: 1.4 }}>
+                {event.description}
+              </div>
+              <div style={{
+                marginTop: 'auto',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.78rem'
+              }}>
+                <span style={{ fontWeight: 700, color: accent }}>+{event.xpReward.toLocaleString()} XP</span>
+                {event.bonus && (
+                  <span style={{ opacity: 0.7, textAlign: 'right' }}>{event.bonus}</span>
+                )}
+              </div>
+              {event.challenge && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '0.72rem', opacity: 0.7 }}>
+                    Theme challenge: {event.challenge.plays}/{event.challenge.required} games
+                    {event.challenge.unlocked ? ' — unlocked!' : ''}
+                  </div>
+                  <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${event.challenge.progressPercent}%`,
+                      height: '100%',
+                      background: event.challenge.unlocked ? '#22c55e' : accent
+                    }} />
+                  </div>
+                </div>
+              )}
+              {event.actionHint && (
+                <div style={{ fontSize: '0.72rem', opacity: 0.6, fontStyle: 'italic' }}>
+                  {event.actionHint}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+// Pilot Personas Panel - one-click bundles that equip multiple cosmetics together
+const PilotPersonasPanel = ({ personas, onApply }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Pilot Personas</h2>
+      <p>One-click identity presets. Equips a coherent theme + frame + banner + title + recommendation pack + gaming links layout. Locked parts are skipped.</p>
+    </div>
+    <div className="rewards-card-grid">
+      {personas.map((persona) => (
+        <div
+          key={persona.id}
+          className={`rewards-card-item ${persona.fullyUnlocked ? '' : 'persona-partial'}`}
+        >
+          <div
+            style={{
+              position: 'relative',
+              overflow: 'hidden',
+              padding: '24px 20px',
+              borderRadius: '12px',
+              border: '1px solid var(--border-color)',
+              background: persona.preview,
+              minHeight: '140px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={18} style={{ color: persona.accentColor }} />
+              <span style={{ fontWeight: 700, fontSize: '1rem', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+                {persona.name}
+              </span>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              fontSize: '0.78rem',
+              color: 'rgba(255,255,255,0.85)',
+              textShadow: '0 1px 3px rgba(0,0,0,0.5)'
+            }}>
+              <span>{persona.unlockedParts}/{persona.totalParts} parts unlocked</span>
+              {persona.fullyUnlocked && (
+                <span style={{
+                  background: 'rgba(34, 197, 94, 0.85)',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  fontSize: '0.7rem',
+                  fontWeight: 600
+                }}>
+                  COMPLETE
+                </span>
+              )}
+            </div>
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: '4px',
+              background: 'rgba(0,0,0,0.25)'
+            }}>
+              <div style={{
+                width: `${persona.progressPercent}%`,
+                height: '100%',
+                background: `linear-gradient(90deg, ${persona.accentColor}, ${persona.secondaryColor})`,
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+          </div>
+          <div className="rewards-card-info">
+            <h3>{persona.name}</h3>
+            <p>{persona.description}</p>
+            <button
+              type="button"
+              className="action-button primary"
+              style={{ marginTop: '10px', width: '100%' }}
+              onClick={() => onApply(persona.id)}
+              disabled={persona.unlockedParts === 0}
+            >
+              {persona.unlockedParts === 0
+                ? 'Locked — keep playing!'
+                : persona.fullyUnlocked
+                  ? 'Equip Persona'
+                  : `Equip ${persona.unlockedParts} part${persona.unlockedParts === 1 ? '' : 's'}`}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 // Recommendation Pack Panel
 const RecommendationPackPanel = ({ packs, selectedId, onSelect }) => (
   <div className="rewards-panel">
@@ -479,56 +721,16 @@ function Rewards() {
   const [libraryVariants, setLibraryVariants] = useState(() => ProgressionUnlockService.getLibraryPresentationVariants());
   const [homeLayouts, setHomeLayouts] = useState(() => ProgressionUnlockService.getHomeLayoutVariants());
   const [recommendationPacks, setRecommendationPacks] = useState(() => ProgressionUnlockService.getRecommendationPacks());
+  const [gamingLinksFeatures, setGamingLinksFeatures] = useState(() => ProgressionUnlockService.getGamingLinksFeatures());
+  const [gamingLinksLayouts, setGamingLinksLayouts] = useState(() => ProgressionUnlockService.getGamingLinksLayouts());
+  const [premiumCatalog, setPremiumCatalog] = useState(() => EntitlementService.getCatalog());
+  const [personas, setPersonas] = useState(() => PersonaService.getPersonas());
+  const [specialEvents, setSpecialEvents] = useState(() => SpecialEventsService.getUpcomingEvents());
   const [presentationCustomization, setPresentationCustomization] = useState(() => ProgressionUnlockService.getRewardPresentationCustomization());
-  const [ambientEnabled, setAmbientEnabled] = useState(() => audioManager.getSettings().ambientEnabled);
-  const [ambientSoundPack, setAmbientSoundPack] = useState(() => audioManager.getSettings().ambientSoundPack);
-  const [ambientVolume, setAmbientVolume] = useState(() => audioManager.getSettings().ambientVolume);
-  const [sfxEnabled, setSfxEnabled] = useState(() => audioManager.getSettings().sfxEnabled);
-  const [buttonSoundPack, setButtonSoundPack] = useState(() => audioManager.getSettings().buttonSoundPack);
-  const [buttonSampleSelection, setButtonSampleSelection] = useState(() => audioManager.getButtonSampleSelection());
-  const [sfxVolume, setSfxVolume] = useState(() => audioManager.getSettings().sfxVolume);
-  const [musicEnabled, setMusicEnabled] = useState(() => audioManager.getSettings().musicEnabled);
-  const [musicPack, setMusicPack] = useState(() => audioManager.getSettings().musicPack);
-  const [musicVolume, setMusicVolume] = useState(() => audioManager.getSettings().musicVolume);
-  const [ambientUnlocked, setAmbientUnlocked] = useState(() => audioManager.isAmbientUnlocked());
-  const [musicUnlocked, setMusicUnlocked] = useState(() => audioManager.isMusicUnlocked());
-  const [ambientRequirement, setAmbientRequirement] = useState(() => ProgressionUnlockService.getAmbientRequirement());
-  const [musicRequirement, setMusicRequirement] = useState(() => ProgressionUnlockService.getMusicRequirement());
-  const [ambientPackOptions, setAmbientPackOptions] = useState(() => audioManager.getAmbientPacks());
-  const [musicPackOptions, setMusicPackOptions] = useState(() => audioManager.getMusicPacks());
-  const [buttonPackOptions, setButtonPackOptions] = useState(() => audioManager.getButtonPacks());
-  
+
   const summary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
   const nextUnlockPath = summary?.upcomingUnlocks || [];
   const roadmapUnlocks = summary?.nextUnlock ? nextUnlockPath.slice(1) : nextUnlockPath;
-  const currentAmbientPackMeta = ambientPackOptions.find((pack) => pack.id === ambientSoundPack) || null;
-  const currentMusicPackMeta = musicPackOptions.find((pack) => pack.id === musicPack) || null;
-  const currentButtonPackMeta = buttonPackOptions.find((pack) => pack.id === buttonSoundPack) || null;
-  const isSampleButtonPack = currentButtonPackMeta?.type === 'sample';
-  const currentSampleSelection = buttonSampleSelection[buttonSoundPack] || null;
-  const sampleEntries = useMemo(() => (
-    isSampleButtonPack && currentButtonPackMeta?.unlocked ? audioManager.getSamplesForPack(buttonSoundPack) : []
-  ), [buttonSoundPack, currentButtonPackMeta, isSampleButtonPack]);
-  const ambientPackProgress = useMemo(() => ({
-    unlockedCount: ambientPackOptions.filter((pack) => pack.unlocked).length,
-    totalCount: ambientPackOptions.length,
-    nextUnlock: ambientPackOptions.filter((pack) => !pack.unlocked).sort((a, b) => a.requiredXP - b.requiredXP || a.label.localeCompare(b.label))[0] || null
-  }), [ambientPackOptions]);
-  const musicPackProgress = useMemo(() => ({
-    unlockedCount: musicPackOptions.filter((pack) => pack.unlocked).length,
-    totalCount: musicPackOptions.length,
-    nextUnlock: musicPackOptions.filter((pack) => !pack.unlocked).sort((a, b) => a.requiredXP - b.requiredXP || a.label.localeCompare(b.label))[0] || null
-  }), [musicPackOptions]);
-  const buttonPackProgress = useMemo(() => ({
-    unlockedCount: buttonPackOptions.filter((pack) => pack.unlocked).length,
-    totalCount: buttonPackOptions.length,
-    nextUnlock: buttonPackOptions.filter((pack) => !pack.unlocked).sort((a, b) => a.requiredXP - b.requiredXP || a.label.localeCompare(b.label))[0] || null
-  }), [buttonPackOptions]);
-  const nextAudioUnlock = useMemo(() => ([
-    ambientPackProgress.nextUnlock ? { ...ambientPackProgress.nextUnlock, category: 'Atmosphere Pack' } : null,
-    musicPackProgress.nextUnlock ? { ...musicPackProgress.nextUnlock, category: 'Music Pack' } : null,
-    buttonPackProgress.nextUnlock ? { ...buttonPackProgress.nextUnlock, category: buttonPackProgress.nextUnlock.type === 'synth' ? 'Button Synth' : 'Button SFX' } : null
-  ].filter(Boolean).sort((a, b) => a.requiredXP - b.requiredXP || a.label.localeCompare(b.label))[0] || null), [ambientPackProgress, musicPackProgress, buttonPackProgress]);
   const resolvedSelectedCardStyle = useMemo(() => {
     const selectedStyle = cardStyles.find((style) => style.id === presentationCustomization?.selectedCardStyle && style.unlocked);
     if (selectedStyle) {
@@ -553,29 +755,13 @@ function Rewards() {
     setLibraryVariants(ProgressionUnlockService.getLibraryPresentationVariants());
     setHomeLayouts(ProgressionUnlockService.getHomeLayoutVariants());
     setRecommendationPacks(ProgressionUnlockService.getRecommendationPacks());
+    setGamingLinksFeatures(ProgressionUnlockService.getGamingLinksFeatures());
+    setGamingLinksLayouts(ProgressionUnlockService.getGamingLinksLayouts());
+    setPremiumCatalog(EntitlementService.getCatalog());
+    setPersonas(PersonaService.getPersonas());
+    setSpecialEvents(SpecialEventsService.getUpcomingEvents());
     setPresentationCustomization(ProgressionUnlockService.getRewardPresentationCustomization());
   }, []);
-  const refreshAudioRewards = useCallback(() => {
-    const settings = audioManager.getSettings();
-    setAmbientEnabled(settings.ambientEnabled);
-    setAmbientSoundPack(settings.ambientSoundPack);
-    setAmbientVolume(settings.ambientVolume);
-    setSfxEnabled(settings.sfxEnabled);
-    setButtonSoundPack(settings.buttonSoundPack);
-    setButtonSampleSelection(audioManager.getButtonSampleSelection());
-    setSfxVolume(settings.sfxVolume);
-    setMusicEnabled(settings.musicEnabled);
-    setMusicPack(settings.musicPack);
-    setMusicVolume(settings.musicVolume);
-    setAmbientUnlocked(audioManager.isAmbientUnlocked());
-    setMusicUnlocked(audioManager.isMusicUnlocked());
-    setAmbientRequirement(ProgressionUnlockService.getAmbientRequirement());
-    setMusicRequirement(ProgressionUnlockService.getMusicRequirement());
-    setAmbientPackOptions(audioManager.getAmbientPacks());
-    setMusicPackOptions(audioManager.getMusicPacks());
-    setButtonPackOptions(audioManager.getButtonPacks());
-  }, []);
-  
   // Get dynamic counts
   const sectionCounts = useMemo(() => {
     const availableAnims = logoAnimations.filter((a) => a.unlocked).length;
@@ -596,10 +782,29 @@ function Rewards() {
         current: recommendationPacks.filter(p => p.unlocked).length, 
         total: recommendationPacks.length 
       },
-      audioRewards: { current: ambientPackProgress.unlockedCount + musicPackProgress.unlockedCount + buttonPackProgress.unlockedCount, total: ambientPackProgress.totalCount + musicPackProgress.totalCount + buttonPackProgress.totalCount },
-      logoAnimation: { current: availableAnims, total: logoAnimations.length }
+      gamingLinksFeatures: {
+        current: gamingLinksFeatures.filter(f => f.unlocked).length,
+        total: gamingLinksFeatures.length
+      },
+      gamingLinksLayouts: {
+        current: gamingLinksLayouts.filter(l => l.unlocked).length,
+        total: gamingLinksLayouts.length
+      },
+      personas: {
+        current: personas.filter(p => p.fullyUnlocked).length,
+        total: personas.length
+      },
+      specialEvents: {
+        current: specialEvents.filter(e => e.active).length,
+        total: specialEvents.length
+      },
+      logoAnimation: { current: availableAnims, total: logoAnimations.length },
+      premiumUnlocks: {
+        current: premiumCatalog.filter((p) => p.unlocked).length,
+        total: premiumCatalog.length
+      }
     };
-  }, [ambientPackProgress, buttonPackProgress, cardStyles, homeLayouts, libraryVariants, logoAnimations, musicPackProgress, recommendationPacks]);
+  }, [cardStyles, gamingLinksFeatures, gamingLinksLayouts, homeLayouts, libraryVariants, logoAnimations, personas, recommendationPacks, specialEvents, premiumCatalog]);
 
   const handleSelectAnimation = useCallback((id) => {
     const result = ProgressionUnlockService.selectLogoAnimation(id);
@@ -631,58 +836,6 @@ function Rewards() {
     }
   }, [success, toastError, refreshPresentationRewards]);
 
-  const handleAmbientToggle = useCallback((enabled) => {
-    audioManager.setAmbientEnabled(enabled);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handleAmbientPackChange = useCallback((packId) => {
-    audioManager.setAmbientPack(packId);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handleAmbientVolumeChange = useCallback((value) => {
-    audioManager.setAmbientVolume(value);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handlePreviewAmbient = useCallback(() => {
-    if (ambientSoundPack === 'dynamic' || !currentAmbientPackMeta?.unlocked) return;
-    audioManager.previewAmbient(ambientSoundPack);
-  }, [ambientSoundPack, currentAmbientPackMeta]);
-  const handleSfxToggle = useCallback((enabled) => {
-    audioManager.setSfxEnabled(enabled);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handleButtonPackChange = useCallback((packId) => {
-    audioManager.setButtonPack(packId);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handleSfxVolumeChange = useCallback((value) => {
-    audioManager.setSfxVolume(value);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handlePreviewButtonSample = useCallback((file) => {
-    audioManager.previewButtonSample(buttonSoundPack, file);
-  }, [buttonSoundPack]);
-  const handleSelectButtonSample = useCallback((file) => {
-    audioManager.setButtonSampleSelection(buttonSoundPack, file);
-    refreshAudioRewards();
-  }, [buttonSoundPack, refreshAudioRewards]);
-  const handleMusicToggle = useCallback((enabled) => {
-    audioManager.setMusicEnabled(enabled);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handleMusicPackChange = useCallback((packId) => {
-    audioManager.setMusicPack(packId);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handleMusicVolumeChange = useCallback((value) => {
-    audioManager.setMusicVolume(value);
-    refreshAudioRewards();
-  }, [refreshAudioRewards]);
-  const handlePreviewMusic = useCallback(() => {
-    if (!currentMusicPackMeta?.unlocked) return;
-    audioManager.previewMusicPack(musicPack);
-  }, [currentMusicPackMeta, musicPack]);
-
   const handleSelectHomeLayout = useCallback((layoutId) => {
     const result = ProgressionUnlockService.selectHomeLayoutVariant(layoutId);
     if (result.success) {
@@ -695,6 +848,36 @@ function Rewards() {
 
   const handleSelectRecommendationPack = useCallback((packId) => {
     const result = ProgressionUnlockService.selectRecommendationPack(packId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
+  const handleSelectGamingLinksFeature = useCallback((featureId) => {
+    const result = ProgressionUnlockService.selectGamingLinksFeatures(featureId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
+  const handleSelectGamingLinksLayout = useCallback((layoutId) => {
+    const result = ProgressionUnlockService.selectGamingLinksLayout(layoutId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
+  const handleApplyPersona = useCallback((personaId) => {
+    const result = PersonaService.applyPersona(personaId);
     if (result.success) {
       success(result.message);
       refreshPresentationRewards();
@@ -725,50 +908,26 @@ function Rewards() {
           selectedId={presentationCustomization?.selectedRecommendationPack}
           onSelect={handleSelectRecommendationPack}
         />;
-      case 'audioRewards':
-        return <AudioRewardsPanel
-          ambientEnabled={ambientEnabled}
-          ambientSoundPack={ambientSoundPack}
-          ambientVolume={ambientVolume}
-          musicEnabled={musicEnabled}
-          musicPack={musicPack}
-          musicVolume={musicVolume}
-          sfxEnabled={sfxEnabled}
-          sfxVolume={sfxVolume}
-          buttonSoundPack={buttonSoundPack}
-          currentAmbientPackMeta={currentAmbientPackMeta}
-          currentMusicPackMeta={currentMusicPackMeta}
-          currentButtonPackMeta={currentButtonPackMeta}
-          ambientUnlocked={ambientUnlocked}
-          musicUnlocked={musicUnlocked}
-          ambientRequirement={ambientRequirement}
-          musicRequirement={musicRequirement}
-          ambientPackOptions={ambientPackOptions}
-          musicPackOptions={musicPackOptions}
-          buttonPackOptions={buttonPackOptions}
-          ambientPackProgress={ambientPackProgress}
-          musicPackProgress={musicPackProgress}
-          buttonPackProgress={buttonPackProgress}
-          nextAudioUnlock={nextAudioUnlock}
-          isSampleButtonPack={isSampleButtonPack}
-          sampleEntries={sampleEntries}
-          currentSampleSelection={currentSampleSelection}
-          onToggleAmbient={handleAmbientToggle}
-          onChangeAmbientPack={handleAmbientPackChange}
-          onChangeAmbientVolume={handleAmbientVolumeChange}
-          onPreviewAmbient={handlePreviewAmbient}
-          onToggleSfx={handleSfxToggle}
-          onChangeButtonPack={handleButtonPackChange}
-          onChangeSfxVolume={handleSfxVolumeChange}
-          onPreviewButtonSample={handlePreviewButtonSample}
-          onSelectButtonSample={handleSelectButtonSample}
-          onToggleMusic={handleMusicToggle}
-          onChangeMusicPack={handleMusicPackChange}
-          onChangeMusicVolume={handleMusicVolumeChange}
-          onPreviewMusic={handlePreviewMusic}
+      case 'gamingLinksFeatures':
+        return <GamingLinksFeaturesPanel
+          features={gamingLinksFeatures}
+          selectedId={presentationCustomization?.selectedGamingLinksFeatures}
+          onSelect={handleSelectGamingLinksFeature}
         />;
+      case 'gamingLinksLayouts':
+        return <GamingLinksLayoutPanel
+          layouts={gamingLinksLayouts}
+          selectedId={presentationCustomization?.selectedGamingLinksLayout}
+          onSelect={handleSelectGamingLinksLayout}
+        />;
+      case 'personas':
+        return <PilotPersonasPanel personas={personas} onApply={handleApplyPersona} />;
+      case 'specialEvents':
+        return <SpecialEventsPanel events={specialEvents} />;
       case 'logoAnimation':
         return <LogoAnimationPanel animations={logoAnimations} selectedAnimation={resolvedSelectedAnimation} onSelect={handleSelectAnimation} />;
+      case 'premiumUnlocks':
+        return <PremiumUnlocksPanel catalog={premiumCatalog} onNavigate={() => window.location.hash = '#/donate'} />;
       default:
         return <CardStylesPanel styles={cardStyles} selectedCardStyle={resolvedSelectedCardStyle} onSelect={handleSelectCardStyle} />;
     }
@@ -830,12 +989,16 @@ function Rewards() {
           {/* Left Sidebar */}
           <div className="rewards-sidebar">
             {[
+              { id: 'personas', label: 'Pilot Personas', icon: Sparkles },
+              { id: 'specialEvents', label: 'Special Events', icon: Calendar },
               { id: 'cardStyles', label: 'Card Styles', icon: Gamepad2 },
               { id: 'libraryView', label: 'Library View', icon: Library },
               { id: 'homeLayout', label: 'Home Layout', icon: LayoutGrid },
               { id: 'recommendationStyle', label: 'Recommendation Style', icon: Zap },
-              { id: 'audioRewards', label: 'Audio Rewards', icon: Waves },
-              { id: 'logoAnimation', label: 'Logo Animation', icon: PlayCircle }
+              { id: 'gamingLinksFeatures', label: 'Gaming Links Rewards', icon: Link2 },
+              { id: 'gamingLinksLayouts', label: 'Gaming Links Layouts', icon: LayoutGrid },
+              { id: 'logoAnimation', label: 'Logo Animation', icon: PlayCircle },
+              { id: 'premiumUnlocks', label: 'Premium Unlocks', icon: ShoppingBag }
             ].map((section) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;

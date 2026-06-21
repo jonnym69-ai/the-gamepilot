@@ -1,0 +1,186 @@
+.power-stats-deep-dive {
+  padding: 16px;
+  color: var(--text-primary, #fff);
+}
+
+.psd-section {
+  margin-bottom: 18px;
+}
+
+.psd-section:last-child {
+  margin-bottom: 0;
+}
+
+.psd-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+}
+
+/* Insights */
+.psd-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.psd-insight-card {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-card, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+  font-size: 0.85rem;
+}
+
+.psd-insight-card.tip {
+  border-color: rgba(125, 220, 132, 0.3);
+  background: rgba(125, 220, 132, 0.06);
+}
+
+.psd-insight-card.warning {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.psd-insight-card.opportunity {
+  border-color: rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.psd-insight-text {
+  line-height: 1.4;
+}
+
+/* Diversity */
+.psd-diversity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.psd-diversity-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-card, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+}
+
+.psd-diversity-metric span:first-child {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.psd-diversity-metric strong {
+  font-size: 1.1rem;
+}
+
+.psd-mini-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.psd-mini-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Play Patterns */
+.psd-pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.psd-pattern-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-card, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+}
+
+.psd-pattern-stat span {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.psd-pattern-stat strong {
+  font-size: 0.95rem;
+}
+
+/* Backlog */
+.psd-backlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.psd-backlog-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg-card, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+  font-size: 0.82rem;
+}
+
+.psd-backlog-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.psd-backlog-pct {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.psd-backlog-remaining {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+/* Genre Performance */
+.psd-genre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.psd-genre-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-card, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+}
+
+.psd-genre-card strong {
+  font-size: 0.9rem;
+}
+
+.psd-genre-card span {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}

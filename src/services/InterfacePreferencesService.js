@@ -36,7 +36,11 @@ const DEFAULTS = Object.freeze({
   pinnedGameIds: [],
   // Quick-launch hotbar
   showQuickLaunchHotbar: true,
-  quickLaunchCollapsed: false
+  quickLaunchCollapsed: false,
+  // Big-screen / TV / 10-foot UI mode
+  bigScreenMode: false,
+  // Playtime display unit: 'auto' | 'hours' | 'days'
+  playtimeUnit: 'auto'
 });
 
 // Values applied to fresh installs as a calmer default ("Balanced" experience).
@@ -110,6 +114,7 @@ const applyBodyClasses = (prefs) => {
   const body = document.body;
   body.classList.toggle('compact-mode', !!prefs.compactMode);
   body.classList.toggle('reduced-motion', !!prefs.reducedMotion);
+  body.classList.toggle('big-screen-mode', !!prefs.bigScreenMode);
   Object.entries(SECTION_CLASS_MAP).forEach(([key, cls]) => {
     body.classList.toggle(cls, prefs[key] === false);
   });
@@ -223,6 +228,33 @@ const InterfacePreferencesService = {
     if (typeof listener !== 'function') return () => {};
     listeners.add(listener);
     return () => listeners.delete(listener);
+  },
+
+  isPinned(gameKey) {
+    const ids = (cache.pinnedGameIds || []).map(String);
+    return ids.includes(String(gameKey));
+  },
+
+  pinGame(gameKey) {
+    const key = String(gameKey);
+    const ids = (cache.pinnedGameIds || []).map(String);
+    if (!ids.includes(key)) {
+      this.set('pinnedGameIds', [...ids, key]);
+    }
+  },
+
+  unpinGame(gameKey) {
+    const key = String(gameKey);
+    const ids = (cache.pinnedGameIds || []).map(String);
+    this.set('pinnedGameIds', ids.filter((id) => id !== key));
+  },
+
+  togglePin(gameKey) {
+    if (this.isPinned(gameKey)) {
+      this.unpinGame(gameKey);
+    } else {
+      this.pinGame(gameKey);
+    }
   }
 };
 

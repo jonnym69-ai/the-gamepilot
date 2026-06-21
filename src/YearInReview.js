@@ -1,44 +1,111 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
-import { Award, Calendar, Clock, Crown, Download, Gamepad2, Image, Target, TrendingUp, Trophy } from 'lucide-react';
+import { Award, BookOpen, Calendar, Clock, Download, Gamepad2, Image, Target, TrendingUp, Trophy } from 'lucide-react';
 import NavBar from './NavBar';
-import { AchievementTracker } from './AchievementSystem';
 import { YearInReviewService } from './services/YearInReviewService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import StorageService from './services/StorageService';
 import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
+import { formatPlaytime } from './utils/formatPlaytime';
 import './YearInReview.css';
 
-const SUPPORT_TIER_WEIGHT = {
-  Bronze: 1,
-  Silver: 2,
-  Gold: 3,
-  Platinum: 4
-};
+const COLOR_FUNCTION_PATTERN = /\b(color\(|color-mix\()/i;
 
-const resolveHighestSupportTier = (tiers = []) => {
-  return tiers
-    .filter((tier) => typeof tier === 'string')
-    .sort((left, right) => (SUPPORT_TIER_WEIGHT[right] || 0) - (SUPPORT_TIER_WEIGHT[left] || 0))[0] || null;
-};
-
-const formatPlaytime = (minutes) => {
-  const safeMinutes = Math.max(0, Math.round(Number(minutes) || 0));
-  if (safeMinutes < 60) {
-    return `${safeMinutes}m`;
+const normalizeCssColor = (value, fallback = '#0f172a') => {
+  if (!value || typeof value !== 'string') {
+    return fallback;
   }
-  const hours = safeMinutes / 60;
-  return `${Number.isInteger(hours) ? hours : hours.toFixed(1).replace(/\.0$/, '')}h`;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return fallback;
+  }
+
+  context.fillStyle = fallback;
+
+  try {
+    context.fillStyle = value;
+    return context.fillStyle || fallback;
+  } catch (error) {
+    return fallback;
+  }
 };
 
-const formatStamp = (value) => {
-  if (!value) {
-    return 'Just now';
+const sanitizeExportClone = (sourceRoot, clonedDocument) => {
+  if (!sourceRoot || !clonedDocument) {
+    return;
   }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? 'Just now'
-    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+  const clonedRoot = clonedDocument.querySelector('.year-review-export-surface');
+  if (!clonedRoot) {
+    return;
+  }
+
+  const rootStyles = getComputedStyle(document.documentElement);
+  const accentColor = normalizeCssColor(rootStyles.getPropertyValue('--accent-color').trim(), '#7c3aed');
+  const cardBackground = normalizeCssColor(rootStyles.getPropertyValue('--card-bg').trim(), '#111827');
+  const inputBackground = normalizeCssColor(rootStyles.getPropertyValue('--input-bg').trim(), '#1f2937');
+  const borderColor = normalizeCssColor(rootStyles.getPropertyValue('--card-border').trim(), 'rgba(255, 255, 255, 0.16)');
+  const textColor = normalizeCssColor(rootStyles.getPropertyValue('--text-color').trim(), '#f8fafc');
+  const founderGlow = normalizeCssColor(rootStyles.getPropertyValue('--year-review-founder-glow').trim(), 'rgba(251, 146, 60, 0.12)');
+
+  const sourceElements = sourceRoot.querySelectorAll('*');
+  const clonedElements = clonedRoot.querySelectorAll('*');
+
+  clonedRoot.style.background = normalizeCssColor(getComputedStyle(document.body).backgroundColor, '#0f172a');
+  clonedRoot.style.color = textColor;
+
+  clonedRoot.querySelectorAll('.year-review-kicker').forEach((node) => {
+    node.style.background = 'rgba(124, 58, 237, 0.16)';
+    node.style.color = accentColor;
+  });
+
+  clonedRoot.querySelectorAll('.year-review-deep-stat-featured').forEach((node) => {
+    node.style.background = `linear-gradient(135deg, ${accentColor}, ${inputBackground})`;
+    node.style.borderColor = borderColor;
+  });
+
+  sourceElements.forEach((sourceElement, index) => {
+    const clonedElement = clonedElements[index];
+    if (!clonedElement) {
+      return;
+    }
+
+    const computed = getComputedStyle(sourceElement);
+    const backgroundImage = computed.backgroundImage || '';
+    const backgroundColor = computed.backgroundColor || '';
+    const color = computed.color || '';
+    const borderTopColor = computed.borderTopColor || '';
+    const boxShadow = computed.boxShadow || '';
+
+    if (COLOR_FUNCTION_PATTERN.test(backgroundImage)) {
+      clonedElement.style.backgroundImage = 'none';
+      clonedElement.style.backgroundColor = normalizeCssColor(backgroundColor, cardBackground);
+    }
+
+    if (COLOR_FUNCTION_PATTERN.test(backgroundColor)) {
+      clonedElement.style.backgroundColor = normalizeCssColor(backgroundColor, cardBackground);
+    }
+
+    if (COLOR_FUNCTION_PATTERN.test(color)) {
+      clonedElement.style.color = normalizeCssColor(color, textColor);
+    }
+
+    if (COLOR_FUNCTION_PATTERN.test(borderTopColor)) {
+      clonedElement.style.borderColor = normalizeCssColor(borderTopColor, borderColor);
+    }
+
+    if (COLOR_FUNCTION_PATTERN.test(boxShadow)) {
+      clonedElement.style.boxShadow = `0 18px 35px rgba(0, 0, 0, 0.22)`;
+    }
+  });
+
+  clonedRoot.querySelectorAll('.year-review-export-surface-founder').forEach((node) => {
+    node.style.boxShadow = `0 0 36px ${founderGlow}`;
+  });
 };
 
 const SkeletonCard = () => (
@@ -91,20 +158,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     [library, selectedYear]
   );
 
-  const founderProfile = useMemo(() => {
-    const savedUsername = StorageService.getString('profileUsername', '');
-    const userFounders = StorageService.get('userFounders', []);
-
-    const localFounder = userFounders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
-    const boostTier = AchievementTracker.getPatreonBoostProfile().tier || null;
-    const tier = resolveHighestSupportTier([localFounder?.tier, boostTier]);
-
-    return {
-      name: savedUsername || 'Pilot',
-      tier,
-      isFounder: Boolean(tier)
-    };
-  }, []);
+  const pilotName = useMemo(() => StorageService.getString('profileUsername', '') || 'Pilot', []);
 
   const maxMonthlyHours = useMemo(() => {
     const values = Object.values(snapshot.monthly?.playtimeHours || {});
@@ -126,7 +180,8 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
         scale: 2,
         useCORS: true,
         backgroundColor: getComputedStyle(document.body).backgroundColor || '#0f172a',
-        logging: false
+        logging: false,
+        onclone: (clonedDocument) => sanitizeExportClone(exportRef.current, clonedDocument)
       });
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!blob) {
@@ -190,21 +245,15 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
   return (
     <div className="year-review-page">
       <NavBar />
-      <div className={`year-review-shell ${founderProfile.isFounder ? `year-review-shell-founder year-review-shell-founder-${founderProfile.tier.toLowerCase()}` : ''}`}>
+      <div className="year-review-shell">
         <header className="year-review-hero">
           <div className="year-review-hero-copy">
             <span className="year-review-kicker">Local recap</span>
             <h1>Year in Review</h1>
             <p>
-              Revisit your top games, session rhythms, achievement moments, and progression milestones for the year.
+              Revisit your top games, session rhythms, and play habits for the year.
               Everything on this page is generated from your local GamePilot data.
             </p>
-            {founderProfile.isFounder && (
-              <div className={`year-review-founder-stamp year-review-founder-stamp-${founderProfile.tier.toLowerCase()}`}>
-                <Crown size={16} />
-                <span>{founderProfile.tier} Founder Edition · {founderProfile.name}</span>
-              </div>
-            )}
           </div>
           <div className="year-review-controls">
             <label className="year-review-year-picker">
@@ -240,7 +289,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
           </div>
         )}
 
-        <div ref={exportRef} className={`year-review-export-surface ${founderProfile.isFounder ? `year-review-export-surface-founder year-review-export-surface-founder-${founderProfile.tier.toLowerCase()}` : ''}`}>
+        <div ref={exportRef} className="year-review-export-surface">
           <section className="year-review-summary-grid">
             {isLoading ? (
               <>
@@ -270,6 +319,48 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
             </section>
           ) : (
             <>
+              {snapshot.seasonalStory && (
+                <section className="year-review-story-section">
+                  <div className="year-review-story-header">
+                    <BookOpen size={20} />
+                    <h2>The Story of Your Year</h2>
+                  </div>
+                  <p className="year-review-story-arc">{snapshot.seasonalStory.arc}</p>
+                  <div className="year-review-story-chapters">
+                    {snapshot.seasonalStory.chapters.map((chapter, index) => (
+                      <article
+                        key={chapter.season}
+                        className={`year-review-chapter${chapter.hasData ? '' : ' year-review-chapter--empty'}`}
+                      >
+                        <div className="chapter-season-label">
+                          <span>{chapter.season}</span>
+                          {chapter.monthRange && <small>{chapter.monthRange}</small>}
+                        </div>
+                        <h3>{chapter.headline}</h3>
+                        <p>{chapter.body}</p>
+                        {chapter.hasData && chapter.stats && (
+                          <div className="chapter-stats">
+                            <span>{chapter.stats.playtimeHours}h</span>
+                            <span>{chapter.stats.sessions} sessions</span>
+                            {chapter.stats.topGame && (
+                              <span className="chapter-top-game">{chapter.stats.topGame.name}</span>
+                            )}
+                          </div>
+                        )}
+                        {chapter.pivot && (
+                          <div className="chapter-pivot">
+                            <span>{chapter.pivot.text}</span>
+                          </div>
+                        )}
+                        {index < snapshot.seasonalStory.chapters.length - 1 && chapter.hasData && snapshot.seasonalStory.chapters[index + 1]?.hasData && (
+                          <div className="chapter-connector" />
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               <section className="year-review-highlights-row">
                 <article className="year-review-mini-card">
                   <Clock size={18} />
@@ -288,15 +379,15 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                 <article className="year-review-mini-card">
                   <Calendar size={18} />
                   <div>
-                    <span>Active days</span>
+                    <span>Session days</span>
                     <strong>{snapshot.summary.activeDays}</strong>
                   </div>
                 </article>
                 <article className="year-review-mini-card">
-                  <Target size={18} />
+                  <Calendar size={18} />
                   <div>
-                    <span>Avg session</span>
-                    <strong>{formatPlaytime(snapshot.summary.avgSessionMinutes)}</strong>
+                    <span>Daily visits</span>
+                    <strong>{snapshot.engagement.totalLogins}</strong>
                   </div>
                 </article>
               </section>
@@ -321,11 +412,11 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                   </p>
                 </article>
                 <article className="year-review-deep-stat-card">
-                  <span>Most returned to</span>
+                  <span>Most launches this year</span>
                   <strong>{snapshot.deepStats?.topBySessions?.name || '—'}</strong>
                   <p>
                     {snapshot.deepStats?.topBySessions
-                      ? `${snapshot.deepStats.topBySessions.sessions} sessions · ${formatPlaytime(snapshot.deepStats.topBySessions.totalPlaytime)}`
+                      ? `You launched this ${snapshot.deepStats.topBySessions.sessions} time${snapshot.deepStats.topBySessions.sessions !== 1 ? 's' : ''} this year · ${formatPlaytime(snapshot.deepStats.topBySessions.totalPlaytime)} total`
                       : 'The game you kept coming back to will appear here.'}
                   </p>
                 </article>
@@ -414,49 +505,6 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                   </div>
                 </article>
 
-                <article className="year-review-panel year-review-achievements-panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h2><Trophy size={20} /> Achievement Moments</h2>
-                      <p>
-                        {snapshot.achievements.historyAvailable
-                          ? `${snapshot.achievements.trackedUnlocksThisYear} tracked unlocks landed this year.`
-                          : 'Recent unlock highlights will fill in as achievement history accumulates.'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="achievement-summary-strip">
-                    <div>
-                      <span>Tracked this year</span>
-                      <strong>{snapshot.achievements.trackedUnlocksThisYear}</strong>
-                    </div>
-                    <div>
-                      <span>Total unlocked</span>
-                      <strong>{snapshot.achievements.totalUnlocked}</strong>
-                    </div>
-                    <div>
-                      <span>Quests completed</span>
-                      <strong>{snapshot.achievements.questsCompletedThisYear}</strong>
-                    </div>
-                  </div>
-                  <div className="achievement-highlight-list">
-                    {snapshot.achievements.highlights.length > 0 ? snapshot.achievements.highlights.map((entry) => (
-                      <div key={`${entry.id}-${entry.unlockedAt}`} className="achievement-highlight-row">
-                        <div className="achievement-highlight-icon">{entry.icon || '🏆'}</div>
-                        <div className="achievement-highlight-copy">
-                          <strong>{entry.name}</strong>
-                          <span>{entry.rarity || 'Milestone'} · {entry.xp ? `${entry.xp} XP` : 'Achievement unlocked'}</span>
-                        </div>
-                        <small>{formatStamp(entry.unlockedAt)}</small>
-                      </div>
-                    )) : (
-                      <div className="achievement-highlight-empty">
-                        Complete more tracked milestones to build out your unlock timeline.
-                      </div>
-                    )}
-                  </div>
-                </article>
-
                 <article className="year-review-panel year-review-breakdown-panel">
                   <div className="panel-heading">
                     <div>
@@ -505,25 +553,25 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                   <div className="panel-heading">
                     <div>
                       <h2><Target size={20} /> Progression Snapshot</h2>
-                      <p>Current unlock momentum connected to your play history.</p>
+                      <p>Your current level and category completion based on your local progression data.</p>
                     </div>
                   </div>
                   <div className="progression-headline">
                     <div>
                       <span>Current level</span>
-                      <strong>Level {snapshot.progression.level}</strong>
+                      <strong>Level {snapshot.progression?.level ?? 1}</strong>
                     </div>
                     <div>
                       <span>Total XP</span>
-                      <strong>{snapshot.progression.xp.toLocaleString()}</strong>
+                      <strong>{(snapshot.progression?.xp ?? 0).toLocaleString()}</strong>
                     </div>
                     <div>
-                      <span>Next unlock</span>
-                      <strong>{snapshot.progression.nextUnlock?.name || 'All caught up'}</strong>
+                      <span>Best streak</span>
+                      <strong>{snapshot.engagement?.longestStreak ?? 0}</strong>
                     </div>
                   </div>
                   <div className="progression-groups">
-                    {snapshot.progression.progressionGroups.map((group) => {
+                    {(snapshot.progression?.progressionGroups || []).map((group) => {
                       const percent = group.total > 0 ? Math.min((group.unlocked / group.total) * 100, 100) : 0;
                       return (
                         <div key={group.key} className="progression-group-row">
@@ -537,6 +585,44 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         </div>
                       );
                     })}
+                  </div>
+                </article>
+
+                <article className="year-review-panel year-review-progression-panel">
+                  <div className="panel-heading">
+                    <div>
+                      <h2><Calendar size={20} /> Daily Engagement</h2>
+                      <p>Check-in streaks and visit cadence tracked by your daily login flow.</p>
+                    </div>
+                  </div>
+                  <div className="progression-headline">
+                    <div>
+                      <span>Current streak</span>
+                      <strong>{snapshot.engagement.currentStreak}</strong>
+                    </div>
+                    <div>
+                      <span>Best streak</span>
+                      <strong>{snapshot.engagement.longestStreak}</strong>
+                    </div>
+                    <div>
+                      <span>Total visits</span>
+                      <strong>{snapshot.engagement.totalLogins}</strong>
+                    </div>
+                  </div>
+                  <div className="mix-columns">
+                    <div>
+                      <span>Recap note</span>
+                      <ul>
+                        <li>
+                          <strong>Session days</strong>
+                          <span>Days where you completed tracked play sessions this year.</span>
+                        </li>
+                        <li>
+                          <strong>Daily visits</strong>
+                          <span>Total check-ins recorded by the daily engagement system.</span>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </article>
               </section>
@@ -560,7 +646,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
             <YearInReviewShareCard
               snapshot={snapshot}
               year={selectedYear}
-              username={founderProfile.name}
+              username={pilotName}
             />
           </div>
         </div>

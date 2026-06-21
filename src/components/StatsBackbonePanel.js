@@ -1,8 +1,17 @@
-import React, { useMemo } from 'react';
-import { Clock, TrendingUp, Calendar, Zap, Gamepad2, Star } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Clock, TrendingUp, Calendar, Zap, Gamepad2, Star, Download } from 'lucide-react';
 import { PieChart, BarChart } from './StatsCharts';
 import { StatsAggregationService } from '../services/StatsAggregationService';
+import InterfacePreferencesService from '../services/InterfacePreferencesService';
+import useInterfacePreferences from '../hooks/useInterfacePreferences';
+import { formatPlaytime as formatPlaytimeUnit } from '../utils/formatPlaytime';
 import '../styles/StatsBackbonePanel.css';
+
+const PLAYTIME_UNIT_OPTIONS = [
+  { key: 'auto', label: 'Auto' },
+  { key: 'hours', label: 'Hours' },
+  { key: 'days', label: 'Days' }
+];
 
 const FEATURE_METADATA = Object.freeze({
   perfectPlay: { icon: '✨', label: 'Perfect Play' },
@@ -15,36 +24,10 @@ const FEATURE_METADATA = Object.freeze({
 const getTopEntry = (distribution = {}) => Object.entries(distribution)
   .sort((left, right) => right[1] - left[1])[0] || [null, 0];
 
-const formatPlaytime = (minutes = 0) => {
-  const safeMinutes = Math.max(0, Math.round(Number(minutes) || 0));
-  const hours = Math.floor(safeMinutes / 60);
-  const remainder = safeMinutes % 60;
-
-  if (hours > 0 && remainder > 0) {
-    return `${hours}h ${remainder}m`;
-  }
-  if (hours > 0) {
-    return `${hours}h`;
-  }
-  return `${remainder}m`;
-};
 
 const formatSessionTimestamp = (timestamp) => {
   if (!timestamp) {
     return 'Unknown time';
-  }
-
-  return new Date(timestamp).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  });
-};
-
-const formatQuestTimestamp = (timestamp) => {
-  if (!timestamp) {
-    return 'Just now';
   }
 
   return new Date(timestamp).toLocaleString(undefined, {
@@ -79,6 +62,10 @@ const getTimelineTitle = (periodKey) => {
 };
 
 function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
+  const prefs = useInterfacePreferences();
+  const playtimeUnit = prefs.playtimeUnit || 'auto';
+  const formatPlaytime = (minutes) => formatPlaytimeUnit(minutes, playtimeUnit);
+  const [mostPlayedSource, setMostPlayedSource] = useState('imported');
   const periodOptions = useMemo(() => StatsAggregationService.getPeriodOptions(), []);
   const snapshot = dashboardData?.periods?.[selectedPeriod] || dashboardData?.periods?.all;
 
@@ -96,17 +83,20 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
   }
 
   const totalSessionsRecorded = dashboardData?.totalSessionsRecorded || 0;
+  const importedPlaytime = dashboardData?.importedPlaytime || { totalMinutes: 0, gameCount: 0 };
   const topPlatform = getTopEntry(snapshot.platformCounts);
   const topMood = getTopEntry(snapshot.moodCounts);
   const topGenre = getTopEntry(snapshot.genreCounts);
-  const topGames = snapshot.topGames || [];
+  const trackedTopGames = snapshot.topGames || [];
+  const importedTopGames = [...(importedPlaytime.games || [])]
+    .sort((left, right) => (right.minutes || 0) - (left.minutes || 0))
+    .slice(0, 10);
+  const canShowImportedTop = selectedPeriod === 'all' && importedTopGames.length > 0;
+  const showImportedTop = canShowImportedTop && mostPlayedSource === 'imported';
   const recentSessions = snapshot.recentSessions || [];
-  const recentQuests = snapshot.questUsage?.recent || [];
-  const recentUnlocks = snapshot.achievementUsage?.recent || [];
   const hasSessionData = snapshot.sessions > 0;
   const favoriteFeatureKey = snapshot.featureUsage?.favoriteFeature;
   const favoriteFeature = favoriteFeatureKey ? FEATURE_METADATA[favoriteFeatureKey]?.label || favoriteFeatureKey : null;
-  const questCounts = snapshot.questUsage?.periodCounts || { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
 
   return (
     <>
@@ -118,17 +108,32 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
               {snapshot.rangeLabel} · {totalSessionsRecorded} completed sessions tracked locally
             </p>
           </div>
-          <div className="stats-period-selector" role="tablist" aria-label="Stats period selector">
-            {periodOptions.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={`stats-period-button ${selectedPeriod === option.key ? 'active' : ''}`}
-                onClick={() => onSelectPeriod(option.key)}
-              >
-                {option.label}
-              </button>
-            ))}
+          <div className="stats-header-controls">
+            <div className="stats-unit-selector" role="group" aria-label="Playtime unit">
+              {PLAYTIME_UNIT_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`stats-unit-button ${playtimeUnit === option.key ? 'active' : ''}`}
+                  onClick={() => InterfacePreferencesService.set('playtimeUnit', option.key)}
+                  title={`Show playtime in ${option.label.toLowerCase()}`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="stats-period-selector" role="tablist" aria-label="Stats period selector">
+              {periodOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`stats-period-button ${selectedPeriod === option.key ? 'active' : ''}`}
+                  onClick={() => onSelectPeriod(option.key)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -139,9 +144,21 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
             </div>
             <div className="stat-content">
               <h3>{formatPlaytime(snapshot.playtimeMinutes)}</h3>
-              <p>Total Playtime</p>
+              <p>Tracked by GamePilot</p>
             </div>
           </div>
+
+          {selectedPeriod === 'all' && importedPlaytime.totalMinutes > 0 && (
+            <div className="stat-card activity-card imported-playtime-card">
+              <div className="stat-icon">
+                <Download size={32} />
+              </div>
+              <div className="stat-content">
+                <h3>{formatPlaytime(importedPlaytime.totalMinutes)}</h3>
+                <p>Steam Lifetime · {importedPlaytime.gameCount} game{importedPlaytime.gameCount !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          )}
 
           <div className="stat-card activity-card">
             <div className="stat-icon">
@@ -192,27 +209,13 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
               <p>Current Streak · Best {snapshot.streak?.best || 0}</p>
             </div>
           </div>
-
-          <div className="stat-card activity-card">
-            <div className="stat-icon">
-              <Star size={32} />
-            </div>
-            <div className="stat-content">
-              <h3>{snapshot.questUsage?.totalCompleted || 0}</h3>
-              <p>Quests Completed</p>
-            </div>
-          </div>
-
-          <div className="stat-card activity-card">
-            <div className="stat-icon">
-              <TrendingUp size={32} />
-            </div>
-            <div className="stat-content">
-              <h3>{snapshot.achievementUsage?.totalUnlocked || 0}</h3>
-              <p>Achievement Unlocks</p>
-            </div>
-          </div>
         </div>
+
+        {selectedPeriod === 'all' && importedPlaytime.totalMinutes > 0 && (
+          <p className="stats-source-explainer">
+            <strong>Tracked by GamePilot</strong> is the time recorded since you installed GamePilot. <strong>Steam Lifetime</strong> is your all-time total imported from Steam.
+          </p>
+        )}
       </div>
 
       <div className="stats-section">
@@ -301,85 +304,82 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
         </div>
       )}
 
-      <div className="stats-section">
-        <div className="stats-section-header">
-          <div>
-            <h2><Star size={24} /> Quest Momentum</h2>
-            <p className="section-subtitle">
-              {snapshot.questUsage?.totalCompleted || 0} rotating quests completed in {snapshot.label.toLowerCase()}.
-            </p>
-          </div>
-        </div>
-
-        <div className="analytics-row">
-          <div className="analytics-card">
-            <h3>🌅 Daily</h3>
-            <div className="top-category">
-              <div className="category-name">{questCounts.daily}</div>
-              <div className="category-count">daily quests completed</div>
-            </div>
-          </div>
-
-          <div className="analytics-card">
-            <h3>📅 Weekly</h3>
-            <div className="top-category">
-              <div className="category-name">{questCounts.weekly}</div>
-              <div className="category-count">weekly quests completed</div>
-            </div>
-          </div>
-
-          <div className="analytics-card">
-            <h3>📆 Monthly</h3>
-            <div className="top-category">
-              <div className="category-name">{questCounts.monthly}</div>
-              <div className="category-count">monthly quests completed</div>
-            </div>
-          </div>
-
-          <div className="analytics-card">
-            <h3>🎊 Yearly</h3>
-            <div className="top-category">
-              <div className="category-name">{questCounts.yearly}</div>
-              <div className="category-count">yearly quests completed</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {topGames.length > 0 && (
+      {(trackedTopGames.length > 0 || canShowImportedTop) && (
         <div className="stats-section">
           <div className="stats-section-header">
             <div>
               <h2><Gamepad2 size={24} /> Most Played Games</h2>
-              <p className="section-subtitle">Leaders for {snapshot.rangeLabel} ranked by total playtime.</p>
+              <p className="section-subtitle">
+                {showImportedTop
+                  ? 'Lifetime leaders from your imported Steam playtime.'
+                  : `Leaders for ${snapshot.rangeLabel} ranked by playtime tracked in GamePilot.`}
+              </p>
             </div>
+            {canShowImportedTop && (
+              <div className="stats-source-selector" role="group" aria-label="Most played source">
+                <button
+                  type="button"
+                  className={`stats-source-button ${mostPlayedSource === 'tracked' ? 'active' : ''}`}
+                  onClick={() => setMostPlayedSource('tracked')}
+                >
+                  GamePilot
+                </button>
+                <button
+                  type="button"
+                  className={`stats-source-button ${mostPlayedSource === 'imported' ? 'active' : ''}`}
+                  onClick={() => setMostPlayedSource('imported')}
+                >
+                  Steam
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="most-played-list">
-            {topGames.map((game, index) => (
-              <div key={game.id} className="most-played-item">
-                <div className="rank-badge">{index + 1}</div>
-                <div className="game-info">
-                  <h4>{game.name}</h4>
-                  <p>{game.platform} · Last played {formatSessionTimestamp(game.lastPlayed)}</p>
-                </div>
-                <div className="game-stats">
-                  <div className="stat">
-                    <span className="stat-label">Sessions:</span>
-                    <span className="stat-value">{game.sessions}</span>
+          {showImportedTop ? (
+            <div className="most-played-list">
+              {importedTopGames.map((game, index) => (
+                <div key={game.gameId || game.gameName} className="most-played-item">
+                  <div className="rank-badge">{index + 1}</div>
+                  <div className="game-info">
+                    <h4>{game.gameName}</h4>
+                    <p>{game.platform} · <span className="source-tag source-tag-steam">Steam lifetime</span></p>
                   </div>
-                  <div className="stat">
-                    <span className="stat-label">Playtime:</span>
-                    <span className="stat-value">{formatPlaytime(game.totalPlaytime)}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Avg:</span>
-                    <span className="stat-value">{formatPlaytime(game.avgSessionMinutes)}</span>
+                  <div className="game-stats">
+                    <div className="stat">
+                      <span className="stat-label">Playtime:</span>
+                      <span className="stat-value">{formatPlaytime(game.minutes)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="most-played-list">
+              {trackedTopGames.map((game, index) => (
+                <div key={game.id} className="most-played-item">
+                  <div className="rank-badge">{index + 1}</div>
+                  <div className="game-info">
+                    <h4>{game.name}</h4>
+                    <p>{game.platform} · <span className="source-tag source-tag-tracked">GamePilot</span> · Last played {formatSessionTimestamp(game.lastPlayed)}</p>
+                  </div>
+                  <div className="game-stats">
+                    <div className="stat">
+                      <span className="stat-label">Sessions:</span>
+                      <span className="stat-value">{game.sessions}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-label">Playtime:</span>
+                      <span className="stat-value">{formatPlaytime(game.totalPlaytime)}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-label">Avg:</span>
+                      <span className="stat-value">{formatPlaytime(game.avgSessionMinutes)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -417,65 +417,6 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
         </div>
       )}
 
-      {recentQuests.length > 0 && (
-        <div className="stats-section">
-          <div className="stats-section-header">
-            <div>
-              <h2>🏁 Recent Quest Completions</h2>
-              <p className="section-subtitle">Latest rotating challenges completed in this selected window.</p>
-            </div>
-          </div>
-
-          <div className="recent-sessions-list">
-            {recentQuests.map((quest, index) => (
-              <div key={`${quest.achievementId}-${quest.completedAt}-${index}`} className="recent-session-item">
-                <div className="recent-session-main">
-                  <h4>{quest.icon || '🏆'} {quest.name}</h4>
-                  <p>{quest.period} quest · {formatQuestTimestamp(quest.completedAt)}</p>
-                </div>
-                <div className="recent-session-tags">
-                  {quest.rarity && (
-                    <span className="recent-session-tag">{quest.rarity}</span>
-                  )}
-                  {quest.metric && (
-                    <span className="recent-session-tag">{quest.metric}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {recentUnlocks.length > 0 && (
-        <div className="stats-section">
-          <div className="stats-section-header">
-            <div>
-              <h2>🏆 Recent Achievement Unlocks</h2>
-              <p className="section-subtitle">Latest unlocks recorded in this selected window.</p>
-            </div>
-          </div>
-
-          <div className="recent-sessions-list">
-            {recentUnlocks.map((achievement, index) => (
-              <div key={`${achievement.id}-${achievement.unlockedAt}-${index}`} className="recent-session-item">
-                <div className="recent-session-main">
-                  <h4>{achievement.icon || '🏆'} {achievement.name}</h4>
-                  <p>{formatQuestTimestamp(achievement.unlockedAt)}</p>
-                </div>
-                <div className="recent-session-tags">
-                  {achievement.rarity && (
-                    <span className="recent-session-tag">{achievement.rarity}</span>
-                  )}
-                  {Number.isFinite(achievement.xp) && (
-                    <span className="recent-session-tag">{achievement.xp} XP</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }

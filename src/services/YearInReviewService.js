@@ -1,9 +1,8 @@
-import { AchievementTracker } from '../AchievementSystem';
 import { StatsAggregationService } from './StatsAggregationService';
-import { ProgressionUnlockService } from './ProgressionUnlockService';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
-import { QuestHistoryService } from './QuestHistoryService';
+import { DailyEngagementService } from './DailyEngagementService';
 import { getDateKey } from './DateKeyService';
+import { ProgressionUnlockService } from './ProgressionUnlockService';
 
 const MONTH_LABELS = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 const SESSION_BUCKET_LABELS = Object.freeze({
@@ -12,13 +11,6 @@ const SESSION_BUCKET_LABELS = Object.freeze({
   '60-120': 'Extended Flights',
   '120+': 'Marathon Missions'
 });
-const PROGRESSION_GROUP_LABELS = Object.freeze({
-  themes: 'Themes',
-  audio: 'Audio',
-  cosmetics: 'Cosmetics',
-  utility: 'Utility'
-});
-
 const incrementCounter = (counter, key, amount = 1) => {
   const normalizedKey = typeof key === 'string' ? key.trim() : '';
   if (!normalizedKey) {
@@ -307,23 +299,220 @@ const buildPersonaEvolution = (sessions = []) => {
   };
 };
 
-const buildAchievementSummary = (selectedYear) => {
-  const history = AchievementTracker.getAchievementUnlockHistory()
-    .filter((entry) => new Date(entry?.unlockedAt || 0).getFullYear() === selectedYear)
-    .sort((left, right) => Number(right?.unlockedAt || 0) - Number(left?.unlockedAt || 0));
-  const fallbackHighlights = AchievementTracker.getRecentlyUnlocked()
-    .filter((entry) => new Date(entry?.unlockedAt || 0).getFullYear() === selectedYear)
-    .sort((left, right) => Number(right?.unlockedAt || 0) - Number(left?.unlockedAt || 0));
-  const questSummary = QuestHistoryService.getQuestCompletionSummaryForYear(selectedYear);
+const SEASON_MONTHS = Object.freeze({
+  Winter: [11, 0, 1],   // Dec, Jan, Feb
+  Spring: [2, 3, 4],    // Mar, Apr, May
+  Summer: [5, 6, 7],   // Jun, Jul, Aug
+  Autumn: [8, 9, 10]    // Sep, Oct, Nov
+});
+
+const SEASON_ORDER = Object.freeze(['Winter', 'Spring', 'Summer', 'Autumn']);
+
+const getSeasonForMonth = (monthIndex) => {
+  for (const [season, months] of Object.entries(SEASON_MONTHS)) {
+    if (months.includes(monthIndex)) return season;
+  }
+  return null;
+};
+
+const buildSeasonalChapter = (season, seasonSessions, prevSeason) => {
+  if (!seasonSessions || seasonSessions.length === 0) {
+    return {
+      season,
+      hasData: false,
+      headline: `${season} was quiet.`,
+      body: 'No tracked sessions this season. Sometimes life gets in the way of the sticks.',
+      stats: null,
+      pivot: null
+    };
+  }
+
+  const totalMinutes = seasonSessions.reduce((sum, s) => sum + s.playtimeMinutes, 0);
+  const uniqueGames = new Set(seasonSessions.map(s => String(s.gameId || s.gameName))).size;
+  const persona = buildPersonaFromSessions(seasonSessions);
+  const longest = seasonSessions.reduce((best, s) =>
+    (!best || s.playtimeMinutes > best.playtimeMinutes) ? s : best, null);
+
+  // Find dominant game by playtime
+  const gameMap = new Map();
+  seasonSessions.forEach((s) => {
+    const key = String(s.gameId || s.gameName);
+    const existing = gameMap.get(key) || { name: s.gameName, minutes: 0, sessions: 0 };
+    existing.minutes += s.playtimeMinutes;
+    existing.sessions += 1;
+    gameMap.set(key, existing);
+  });
+  const topGame = Array.from(gameMap.values()).sort((a, b) => b.minutes - a.minutes)[0] || null;
+
+  // Detect pivot from previous season
+  let pivot = null;
+  if (prevSeason?.persona) {
+    if (prevSeason.persona.dominantMood && persona.dominantMood && prevSeason.persona.dominantMood !== persona.dominantMood) {
+      pivot = {
+        type: 'mood',
+        from: prevSeason.persona.dominantMood,
+        to: persona.dominantMood,
+        text: `A shift in tone — you moved from ${prevSeason.persona.dominantMood.toLowerCase()} into ${persona.dominantMood.toLowerCase()}.`
+      };
+    } else if (prevSeason.persona.dominantGenre && persona.dominantGenre && prevSeason.persona.dominantGenre !== persona.dominantGenre) {
+      pivot = {
+        type: 'genre',
+        from: prevSeason.persona.dominantGenre,
+        to: persona.dominantGenre,
+        text: `You pivoted from ${prevSeason.persona.dominantGenre} into ${persona.dominantGenre}.`
+      };
+    } else if (prevSeason.persona.preferredSessionBucket && persona.preferredSessionBucket &&
+               prevSeason.persona.preferredSessionBucket !== persona.preferredSessionBucket) {
+      pivot = {
+        type: 'session',
+        from: prevSeason.persona.preferredSessionLabel,
+        to: persona.preferredSessionLabel,
+        text: `Your rhythm changed — ${prevSeason.persona.preferredSessionLabel.toLowerCase()} gave way to ${persona.preferredSessionLabel.toLowerCase()}.`
+      };
+    }
+  }
+
+  // Build narrative headline
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthsActive = [...new Set(seasonSessions.map(s => s.timestamp.getMonth()))].sort((a, b) => a - b);
+  const monthRange = monthsActive.length > 0
+    ? `${monthNames[monthsActive[0]]}${monthsActive.length > 1 ? `–${monthNames[monthsActive[monthsActive.length - 1]]}` : ''}`
+    : '';
+
+  let headline;
+  const isEveningHeavy = seasonSessions.filter(s => s.timestamp.getHours() >= 18).length > seasonSessions.length / 2;
+
+  if (pivot) {
+    headline = `${season}: The ${pivot.type === 'genre' ? 'pivot' : pivot.type === 'mood' ? 'turn' : 'shift'}.`;
+  } else if (topGame && topGame.minutes > totalMinutes * 0.4) {
+    headline = `${season}: The ${topGame.name} season.`;
+  } else if (uniqueGames >= 5) {
+    headline = `${season}: A sampler's journey.`;
+  } else if (isEveningHeavy) {
+    headline = `${season}: After-dark sessions.`;
+  } else {
+    headline = `${season}: Steady hands on the sticks.`;
+  }
+
+  // Build narrative body
+  const bodyParts = [];
+  bodyParts.push(`You logged ${Math.round(totalMinutes / 60)} hours across ${seasonSessions.length} sessions${uniqueGames > 1 ? ` and ${uniqueGames} games` : ''}.`);
+
+  if (persona.dominantMood && persona.dominantGenre) {
+    bodyParts.push(`${persona.identityLabel} — ${persona.dominantMood.toLowerCase()} energy, ${persona.dominantGenre.toLowerCase()} focus.`);
+  } else if (persona.dominantMood) {
+    bodyParts.push(`${persona.identityLabel} — a ${persona.dominantMood.toLowerCase()} stretch.`);
+  }
+
+  if (topGame) {
+    bodyParts.push(`${topGame.name} led the charge with ${Math.round(topGame.minutes / 60)}h.`);
+  }
+
+  if (longest) {
+    bodyParts.push(`Your longest sitting: ${Math.round(longest.playtimeMinutes)} minutes on ${formatReviewDate(longest.timestamp) || 'one focused day'}.`);
+  }
+
+  if (pivot) {
+    bodyParts.push(pivot.text);
+  }
 
   return {
-    trackedUnlocksThisYear: history.length,
-    highlights: (history.length > 0 ? history : fallbackHighlights).slice(0, 8),
-    totalUnlocked: AchievementTracker.getUnlockedAchievements().length,
-    questsCompletedThisYear: questSummary.totalCompleted,
-    questPeriodCounts: questSummary.periodCounts,
-    topQuestPeriod: questSummary.topPeriod,
-    historyAvailable: history.length > 0
+    season,
+    hasData: true,
+    headline,
+    body: bodyParts.join(' '),
+    monthRange,
+    stats: {
+      playtimeMinutes: totalMinutes,
+      playtimeHours: Number((totalMinutes / 60).toFixed(1)),
+      sessions: seasonSessions.length,
+      uniqueGames,
+      dominantMood: persona.dominantMood,
+      dominantGenre: persona.dominantGenre,
+      preferredSessionLabel: persona.preferredSessionLabel,
+      topGame: topGame ? { name: topGame.name, hours: Number((topGame.minutes / 60).toFixed(1)) } : null,
+      longestSession: longest ? { gameName: longest.gameName, minutes: longest.playtimeMinutes, dateLabel: formatReviewDate(longest.timestamp) } : null
+    },
+    persona: {
+      identityLabel: persona.identityLabel,
+      identityDescription: persona.identityDescription
+    },
+    pivot
+  };
+};
+
+const buildSeasonalStory = (sessions = [], selectedYear) => {
+  if (!Array.isArray(sessions) || sessions.length === 0) {
+    return null;
+  }
+
+  const yearSessions = sessions.filter((s) => s.timestamp.getFullYear() === selectedYear);
+  if (yearSessions.length === 0) return null;
+
+  // Group sessions by season
+  const seasonGroups = {};
+  yearSessions.forEach((s) => {
+    const season = getSeasonForMonth(s.timestamp.getMonth());
+    if (!season) return;
+    if (!seasonGroups[season]) seasonGroups[season] = [];
+    seasonGroups[season].push(s);
+  });
+
+  // Sort seasons in chronological order for the selected year
+  // We need to handle year-boundary: Winter includes Dec of previous year AND Jan/Feb of current year
+  // For simplicity, we'll just map the months within the selected year
+  const chapters = [];
+  let prevChapter = null;
+
+  for (const season of SEASON_ORDER) {
+    const seasonSessions = seasonGroups[season] || [];
+    const chapter = buildSeasonalChapter(season, seasonSessions, prevChapter);
+    chapters.push(chapter);
+    if (chapter.hasData) {
+      prevChapter = chapter;
+    }
+  }
+
+  // Build overall narrative arc
+  const activeSeasons = chapters.filter(c => c.hasData);
+  let arc = '';
+  if (activeSeasons.length === 0) {
+    arc = 'A quiet year. The controller gathered dust.';
+  } else if (activeSeasons.length === 1) {
+    arc = `${activeSeasons[0].season} was your season. Everything else was filler.`;
+  } else {
+    const first = activeSeasons[0];
+    const last = activeSeasons[activeSeasons.length - 1];
+    const pivots = activeSeasons.filter(c => c.pivot).length;
+    if (pivots >= 2) {
+      arc = `A year of change — ${pivots} pivots in playstyle across the seasons.`;
+    } else if (first.persona?.identityLabel && last.persona?.identityLabel &&
+               first.persona.identityLabel === last.persona.identityLabel) {
+      arc = `Consistent all year — ${first.persona.identityLabel} from start to finish.`;
+    } else {
+      arc = `You started as ${first.persona?.identityLabel || 'a player'} and ended as ${last.persona?.identityLabel || 'someone new'}.`;
+    }
+  }
+
+  return {
+    arc,
+    chapters,
+    activeSeasons: activeSeasons.length,
+    totalSeasons: SEASON_ORDER.length
+  };
+};
+
+const buildHabitSummary = (selectedYear, sessions = []) => {
+  const yearSessions = sessions.filter((s) => new Date(s.timestamp || 0).getFullYear() === selectedYear);
+  const daysActive = new Set(yearSessions.map((s) => getDateKey(s.timestamp))).size;
+  const avgSessionMinutes = yearSessions.length > 0
+    ? Math.round(yearSessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0) / yearSessions.length)
+    : 0;
+
+  return {
+    daysActive,
+    avgSessionMinutes,
+    sessionsCount: yearSessions.length
   };
 };
 
@@ -348,12 +537,21 @@ const buildDistributionSummary = (sessions = []) => {
   };
 };
 
-const buildSummaryCards = ({ year, summary, topGames, persona, distributions, achievements, progression, deepStats }) => {
+const buildEngagementSummary = () => {
+  const engagement = DailyEngagementService.getStatus();
+  return {
+    currentStreak: Number(engagement?.currentStreak || 0),
+    longestStreak: Number(engagement?.longestStreak || 0),
+    totalLogins: Number(engagement?.totalLogins || 0),
+    lastLoginDate: engagement?.lastLoginDate || null
+  };
+};
+
+const buildSummaryCards = ({ year, summary, topGames, persona, distributions, habits, deepStats, engagement }) => {
   const topGame = topGames[0] || null;
   const topPlatform = distributions.topPlatforms[0] || null;
   const topMood = distributions.topMoods[0] || null;
   const longestSession = deepStats?.longestSession || null;
-  const nextUnlock = progression.nextUnlock;
 
   return [
     {
@@ -366,7 +564,7 @@ const buildSummaryCards = ({ year, summary, topGames, persona, distributions, ac
       id: 'top-game',
       title: 'Most Played',
       value: topGame?.name || 'No sessions yet',
-      detail: topGame ? `${Math.round(topGame.totalPlaytime / 60)}h · ${topGame.sessions} sessions` : 'Launch and finish sessions to populate this card'
+      detail: topGame ? `${Math.round(topGame.totalPlaytime / 60)}h · ${topGame.sessions} launch${topGame.sessions !== 1 ? 'es' : ''} this year` : 'Launch and finish sessions to populate this card'
     },
     {
       id: 'longest-session',
@@ -393,30 +591,18 @@ const buildSummaryCards = ({ year, summary, topGames, persona, distributions, ac
       detail: topMood ? `${topMood.count} tracked sessions` : 'No mood trend yet'
     },
     {
-      id: 'achievements',
-      title: 'Achievement Highlights',
-      value: `${achievements.trackedUnlocksThisYear}`,
-      detail: achievements.historyAvailable ? 'Tracked unlocks captured this year' : 'Recent highlight tracking is just getting started'
+      id: 'habits',
+      title: 'Days Active',
+      value: `${habits.daysActive}`,
+      detail: habits.daysActive > 0 ? `${habits.sessionsCount} sessions · ~${habits.avgSessionMinutes} min avg` : 'Play sessions will appear here as you build your habit history'
     },
     {
-      id: 'quests',
-      title: 'Quest Completions',
-      value: `${achievements.questsCompletedThisYear || 0}`,
-      detail: achievements.topQuestPeriod
-        ? `${achievements.topQuestPeriod.period} quests led with ${achievements.topQuestPeriod.count}`
-        : 'Complete rotating quests to build your local challenge history'
-    },
-    {
-      id: 'level',
-      title: 'Progression Level',
-      value: `Level ${progression.level}`,
-      detail: `${progression.xp.toLocaleString()} XP total`
-    },
-    {
-      id: 'next-unlock',
-      title: 'Next Unlock',
-      value: nextUnlock?.name || 'All caught up',
-      detail: nextUnlock ? `${nextUnlock.remainingXP.toLocaleString()} XP to go` : 'No pending unlocks right now'
+      id: 'streak',
+      title: 'Current Streak',
+      value: `${engagement.currentStreak}`,
+      detail: engagement.longestStreak > 0
+        ? `Best streak: ${engagement.longestStreak} days`
+        : 'Daily check-ins will build your streak over time'
     }
   ];
 };
@@ -466,24 +652,29 @@ export class YearInReviewService {
       const distributions = buildDistributionSummary(sessions);
       const topGames = buildTopGames(sessions, 6);
       const persona = buildPersonaFromSessions(sessions);
-      const achievements = buildAchievementSummary(safeYear);
-      const progressionSnapshot = ProgressionUnlockService.getUnlockSnapshot();
-      const progression = {
-        xp: progressionSnapshot.xp,
-        level: progressionSnapshot.level,
-        nextUnlock: progressionSnapshot.summary?.nextUnlock || null,
-        progressionGroups: Object.entries(progressionSnapshot.summary?.progressionGroups || {}).map(([key, value]) => ({
-          key,
-          label: PROGRESSION_GROUP_LABELS[key] || key,
-          unlocked: Number(value?.unlocked || 0),
-          total: Number(value?.total || 0)
-        })),
-        unlockedCounts: progressionSnapshot.summary?.unlockedCounts || {},
-        totalCounts: progressionSnapshot.summary?.totalCounts || {}
-      };
+      const habits = buildHabitSummary(safeYear, sessions);
+      const engagement = buildEngagementSummary();
       const monthly = buildMonthlyBreakdown(sessions);
       const evolution = buildPersonaEvolution(sessions);
+      const seasonalStory = buildSeasonalStory(sessions, safeYear);
       const deepStats = buildDeepStats(sessions, topGames);
+
+      let progression = null;
+      try {
+        const progSummary = ProgressionUnlockService.getRewardCatalogSummary();
+        progression = {
+          level: progSummary.level ?? 1,
+          xp: progSummary.xp ?? 0,
+          progressionGroups: Object.entries(progSummary.progressionGroups || {}).map(([key, group]) => ({
+            key,
+            label: key.charAt(0).toUpperCase() + key.slice(1),
+            unlocked: group.unlocked ?? 0,
+            total: group.total ?? 0
+          }))
+        };
+      } catch {
+        progression = { level: 1, xp: 0, progressionGroups: [] };
+      }
 
       return {
         year: safeYear,
@@ -493,19 +684,21 @@ export class YearInReviewService {
         distributions,
         topGames,
         persona,
-        achievements,
-        progression,
+        habits,
+        engagement,
         monthly,
         evolution,
+        seasonalStory,
         deepStats,
+        progression,
         summaryCards: buildSummaryCards({
           year: safeYear,
           summary,
           topGames,
           persona,
           distributions,
-          achievements,
-          progression,
+          habits,
+          engagement,
           deepStats
         })
       };
@@ -541,28 +734,39 @@ export class YearInReviewService {
         moodMix: [],
         genreMix: []
       };
-      const fallbackAchievements = {
-        trackedUnlocksThisYear: 0,
-        highlights: [],
-        totalUnlocked: 0,
-        questsCompletedThisYear: 0,
-        questPeriodCounts: { daily: 0, weekly: 0, monthly: 0, yearly: 0 },
-        topQuestPeriod: null,
-        historyAvailable: false
+      const fallbackHabits = {
+        daysActive: 0,
+        avgSessionMinutes: 0,
+        sessionsCount: 0
       };
-      const fallbackProgression = {
-        xp: 0,
-        level: 1,
-        nextUnlock: null,
-        progressionGroups: [],
-        unlockedCounts: {},
-        totalCounts: {}
+      const fallbackEngagement = {
+        currentStreak: 0,
+        longestStreak: 0,
+        totalLogins: 0,
+        lastLoginDate: null
       };
       const fallbackMonthly = {
         playtimeMinutes: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0])),
         playtimeHours: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0])),
         sessionCounts: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0]))
       };
+
+      let fallbackProgression = { level: 1, xp: 0, progressionGroups: [] };
+      try {
+        const progSummary = ProgressionUnlockService.getRewardCatalogSummary();
+        fallbackProgression = {
+          level: progSummary.level ?? 1,
+          xp: progSummary.xp ?? 0,
+          progressionGroups: Object.entries(progSummary.progressionGroups || {}).map(([key, group]) => ({
+            key,
+            label: key.charAt(0).toUpperCase() + key.slice(1),
+            unlocked: group.unlocked ?? 0,
+            total: group.total ?? 0
+          }))
+        };
+      } catch {
+        // keep defaults
+      }
 
       return {
         year: fallbackYear,
@@ -572,19 +776,21 @@ export class YearInReviewService {
         distributions: fallbackDistributions,
         topGames: [],
         persona: fallbackPersona,
-        achievements: fallbackAchievements,
-        progression: fallbackProgression,
+        habits: fallbackHabits,
+        engagement: fallbackEngagement,
         monthly: fallbackMonthly,
         evolution: null,
+        seasonalStory: null,
         deepStats: buildDeepStats([], []),
+        progression: fallbackProgression,
         summaryCards: buildSummaryCards({
           year: fallbackYear,
           summary: fallbackSummary,
           topGames: [],
           persona: fallbackPersona,
           distributions: fallbackDistributions,
-          achievements: fallbackAchievements,
-          progression: fallbackProgression,
+          habits: fallbackHabits,
+          engagement: fallbackEngagement,
           deepStats: buildDeepStats([], [])
         })
       };
@@ -601,9 +807,10 @@ export class YearInReviewService {
         summary: snapshot.summary,
         persona: snapshot.persona,
         evolution: snapshot.evolution,
-        achievements: snapshot.achievements,
-        progression: snapshot.progression,
+        habits: snapshot.habits,
+        engagement: snapshot.engagement,
         monthly: snapshot.monthly,
+        seasonalStory: snapshot.seasonalStory,
         deepStats: snapshot.deepStats,
         topGames: snapshot.topGames,
         distributions: {

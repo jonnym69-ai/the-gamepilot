@@ -211,6 +211,11 @@
   border-color: #ff6b35;
 }
 
+.badge-item:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
 .badge-icon {
   font-size: 20px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));

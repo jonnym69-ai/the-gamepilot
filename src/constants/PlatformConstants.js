@@ -14,6 +14,7 @@ export const PLATFORM_ICONS = {
   'CurseForge': '⛏️',
   'Amazon': '📦',
   'Itch.io': '🎲',
+  'Emulated': '🕹️',
   'Manual': '📝',
   'Unknown': '❓'
 };
@@ -33,6 +34,7 @@ export const PLATFORM_COLORS = {
   'CurseForge': '#f16436',
   'Amazon': '#00a8e1',
   'Itch.io': '#fa5c5c',
+  'Emulated': '#8b5cf6',
   'Manual': '#6b46c1',
   'Unknown': '#666666'
 };

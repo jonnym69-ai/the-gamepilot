@@ -1,0 +1,97 @@
+.time-of-day-heatmap {
+  width: 100%;
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.time-of-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.time-of-day-total {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.time-of-day-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+}
+
+.time-of-day-legend .legend-gradient {
+  width: 60px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 1));
+}
+
+.time-of-day-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(24, 1fr);
+  gap: 2px;
+  min-width: 600px;
+}
+
+.time-of-day-corner {
+  width: 40px;
+  height: 24px;
+}
+
+.time-of-day-hour-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+  text-align: center;
+  height: 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+}
+
+.time-of-day-day-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  height: 28px;
+}
+
+.time-of-day-cell {
+  height: 28px;
+  border-radius: 3px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: default;
+}
+
+.time-of-day-cell:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
+  z-index: 1;
+}
+
+.time-of-day-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px;
+  text-align: center;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+}
+
+.time-of-day-empty-icon {
+  font-size: 2rem;
+  opacity: 0.6;
+}

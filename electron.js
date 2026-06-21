@@ -1,5 +1,5 @@
 const electron = require('electron');
-const { app, BrowserWindow, ipcMain, shell, dialog, Menu, protocol } = electron;
+const { app, BrowserWindow, ipcMain, shell, dialog, Menu, protocol, powerMonitor } = electron;
 const fs = require('fs');
 const path = require('path');
 const GameLauncher = require('./launchHandler');
@@ -15,6 +15,7 @@ global.shell = shell;
 // Initialize game launcher
 const gameLauncher = new GameLauncher();
 const activeGameMonitors = new Map();
+let mainWindow = null;
 const KNOWN_LAUNCHER_PROCESS_NAMES = new Set([
   'steam.exe',
   'epicgameslauncher.exe',
@@ -348,16 +349,127 @@ if (process.env.ELECTRON_ENABLE_RELOADER === 'true') {
 }
 
 const collectSystemInfo = async () => {
-  const [cpu, graphics, memory, osInfo, disks, memModules] = await Promise.all([
+  const [cpu, graphics, memory, osInfo, disks, memModules, fsSizes, blockDevs] = await Promise.all([
     si.cpu(),
     si.graphics(),
     si.mem(),
     si.osInfo(),
     si.diskLayout(),
-    si.memLayout()
+    si.memLayout(),
+    si.fsSize(),
+    si.blockDevices()
   ]);
 
   const primaryGpu = graphics.controllers.find(controller => !controller.integrated) || graphics.controllers[0] || {};
+
+  // Build a lookup from mount/fs path -> filesystem stats
+  const fsMap = new Map();
+  if (Array.isArray(fsSizes)) {
+    for (const fs of fsSizes) {
+      if (fs && fs.fs) {
+        const key = fs.fs.toLowerCase();
+        fsMap.set(key, fs);
+        fsMap.set(key.replace(/\\/g, ''), fs); // also store without backslashes
+      }
+    }
+  }
+
+  // Build drive letter -> drive type mapping using blockDevices + diskLayout correlation.
+  // blockDevices physical is a numeric index (e.g. "0"), while diskLayout device is
+  // "\\.\\PHYSICALDRIVE0". We extract the numeric index for robust matching.
+  const driveTypeMap = {};
+  const getDiskIndex = (str) => {
+    const m = String(str || '').match(/(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+  };
+
+  if (Array.isArray(blockDevs) && Array.isArray(disks)) {
+    for (const bd of blockDevs) {
+      if (!bd || !bd.mount || bd.physical == null) continue;
+      const mountUpper = bd.mount.toUpperCase();
+      // Skip entries without a simple drive-letter mount (e.g. recovery partitions)
+      if (!/^[A-Z]:$/.test(mountUpper)) continue;
+
+      const bdIndex = getDiskIndex(bd.physical);
+      const physicalDisk = disks.find(d => {
+        if (!d.device) return false;
+        const dIndex = getDiskIndex(d.device);
+        return dIndex !== null && bdIndex !== null && dIndex === bdIndex;
+      });
+
+      if (physicalDisk) {
+        const diskInterface = physicalDisk.interfaceType || '';
+        const diskName = physicalDisk.name || physicalDisk.model || '';
+        const diskModel = physicalDisk.model || '';
+        const isNVMe = /nvme/i.test(diskInterface) || /nvme/i.test(diskName) || /nvme/i.test(diskModel);
+        const isSSD = isNVMe || /ssd/i.test(physicalDisk.type || '') || /ssd/i.test(diskInterface) || /ssd/i.test(diskName);
+
+        driveTypeMap[mountUpper] = {
+          type: isNVMe ? 'NVMe' : isSSD ? 'SSD' : 'HDD',
+          isNVMe,
+          isSSD,
+          name: physicalDisk.name || physicalDisk.model || 'Unknown Drive',
+          model: physicalDisk.model || physicalDisk.name || '',
+          size: physicalDisk.size ? Math.round(physicalDisk.size / (1024 ** 3)) : 0
+        };
+      }
+    }
+  }
+
+  // Fallback: match fsSize logical drives to diskLayout physical disks by total
+  // capacity so we can still report NVMe / SSD / HDD when blockDevices fails.
+  if (Array.isArray(fsSizes) && Array.isArray(disks)) {
+    for (const fs of fsSizes) {
+      if (!fs || !fs.fs || !/^[A-Z]:$/i.test(fs.fs)) continue;
+      const letter = fs.fs.toUpperCase();
+      if (driveTypeMap[letter]) continue; // already resolved above
+
+      const fsSizeBytes = fs.size || 0;
+      const fsSizeGB = Math.round(fsSizeBytes / (1024 ** 3));
+
+      let bestDisk = null;
+      let bestDiff = Infinity;
+      for (const disk of disks) {
+        const diskSizeGB = disk.size ? Math.round(disk.size / (1024 ** 3)) : 0;
+        // A partition can never be larger than its parent disk, so disqualify
+        // physical disks that are smaller than the logical drive.
+        if (diskSizeGB < fsSizeGB) continue;
+        const diff = Math.abs(diskSizeGB - fsSizeGB);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestDisk = disk;
+        }
+      }
+
+      if (bestDisk) {
+        const diskInterface = bestDisk.interfaceType || '';
+        const diskName = bestDisk.name || bestDisk.model || '';
+        const diskModel = bestDisk.model || '';
+        const isNVMe = /nvme/i.test(diskInterface) || /nvme/i.test(diskName) || /nvme/i.test(diskModel);
+        const isSSD = isNVMe || /ssd/i.test(bestDisk.type || '') || /ssd/i.test(diskInterface) || /ssd/i.test(diskName);
+
+        driveTypeMap[letter] = {
+          type: isNVMe ? 'NVMe' : isSSD ? 'SSD' : 'HDD',
+          isNVMe,
+          isSSD,
+          name: bestDisk.name || bestDisk.model || 'Unknown Drive',
+          model: bestDisk.model || bestDisk.name || '',
+          size: bestDisk.size ? Math.round(bestDisk.size / (1024 ** 3)) : 0
+        };
+      } else {
+        // Last resort: unknown but keep the letter so the mapper doesn’t bail
+        driveTypeMap[letter] = {
+          type: 'Unknown',
+          isNVMe: false,
+          isSSD: false,
+          name: fs.fs,
+          model: fs.fs,
+          size: fsSizeGB
+        };
+      }
+    }
+  }
+
   const normalizeDrive = (disk = {}) => {
     const type = disk.type || 'Unknown';
     const interfaceType = disk.interfaceType || '';
@@ -367,6 +479,34 @@ const collectSystemInfo = async () => {
     const isNVMe = /nvme/i.test(interfaceType) || /nvme/i.test(name) || /nvme/i.test(model) || /nvme/i.test(vendor);
     const isSSD = isNVMe || /ssd/i.test(type) || /ssd/i.test(interfaceType) || /ssd/i.test(name) || /ssd/i.test(model);
 
+    // Try to find mount points for this physical disk via driveTypeMap keys
+    // that match the physical device from blockDevices correlation.
+    // If we can't, fall back to any fsSize mount that isn't already claimed.
+    const ownedMounts = new Set();
+    if (Array.isArray(blockDevs)) {
+      for (const bd of blockDevs) {
+        const bdIndex = getDiskIndex(bd?.physical);
+        const diskIndex = getDiskIndex(disk.device);
+        if (bdIndex !== null && diskIndex !== null && bdIndex === diskIndex) {
+          if (bd.mount && /^[A-Z]:$/i.test(bd.mount)) {
+            ownedMounts.add(bd.mount.toUpperCase());
+          }
+        }
+      }
+    }
+
+    const partitions = [];
+    for (const mp of ownedMounts) {
+      const fsStat = fsMap.get(mp.toLowerCase()) || fsMap.get(mp.toLowerCase().replace(/\\/g, '')) || null;
+      partitions.push({
+        mount: mp,
+        size: fsStat ? Math.round(fsStat.size / (1024 ** 3)) : 0,
+        free: fsStat ? Math.round(fsStat.available / (1024 ** 3)) : 0,
+        used: fsStat ? Math.round(fsStat.used / (1024 ** 3)) : 0,
+        usePercent: fsStat ? Math.round(fsStat.use) : 0
+      });
+    }
+
     return {
       type,
       size: disk.size ? Math.round(disk.size / (1024 ** 3)) : 0,
@@ -374,10 +514,10 @@ const collectSystemInfo = async () => {
       model: model || name,
       vendor,
       interfaceType: interfaceType || 'Unknown',
-      mount: disk.mount || disk.mountpoints?.[0] || '',
+      mount: Array.from(ownedMounts)[0] || '',
       isSSD,
       isNVMe,
-      partitions: disk.mountpoints ? disk.mountpoints.map(mp => ({ mount: mp, size: 0, free: 0, usePercent: 0 })) : []
+      partitions
     };
   };
 
@@ -445,6 +585,15 @@ const collectSystemInfo = async () => {
       arch: osInfo.arch,
       build: osInfo.build
     },
+    driveTypeMap,
+    logicalDrives: Array.isArray(fsSizes) ? fsSizes.map(fs => ({
+      mount: fs.fs,
+      fsType: fs.type,
+      sizeGB: fs.size ? Math.round(fs.size / (1024 ** 3)) : 0,
+      usedGB: fs.used ? Math.round(fs.used / (1024 ** 3)) : 0,
+      freeGB: fs.available ? Math.round(fs.available / (1024 ** 3)) : 0,
+      usePercent: Math.round(fs.use || 0)
+    })).filter(d => /^[A-Z]:$/i.test(d.mount)) : [],
     lastUpdated: Date.now()
   };
 };
@@ -544,6 +693,23 @@ ipcMain.handle('get-scan-debug', async () => global.lastScanDebug || null);
 let cachedHltbBleed = { token: null, hpKey: null, hpVal: null, expires: 0 };
 
 const HLTB_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36';
+const HLTB_DEBUG = process.env.GAMEPILOT_HLTB_DEBUG === 'true';
+
+const hltbDebug = (...args) => {
+  if (HLTB_DEBUG) {
+    console.log(...args);
+  }
+};
+
+const sanitizeHltbQuery = (value) => String(value || '')
+  .replace(/Ôäó/g, '™')
+  .replace(/┬«/g, '®')
+  .replace(/┬®/g, '©')
+  .replace(/ÔÇÖ/g, '’')
+  .replace(/ÔÇ£|ÔÇØ/g, '"')
+  .replace(/ÔÇô|ÔÇö/g, '-')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 const httpsRequest = (url, body = null, headers = {}) => new Promise((resolve, reject) => {
   let req;
@@ -605,20 +771,21 @@ const fetchHltbBleedInit = async () => {
     throw new Error('HLTB bleed/init missing fields');
   }
   cachedHltbBleed = { token: parsed.token, hpKey: parsed.hpKey, hpVal: parsed.hpVal, expires: now + 60 * 60 * 1000 };
-  console.log(`[HLTB] bleed/init ok — hpKey=${parsed.hpKey}`);
+  hltbDebug(`[HLTB] bleed/init ok — hpKey=${parsed.hpKey}`);
   return { token: parsed.token, hpKey: parsed.hpKey, hpVal: parsed.hpVal };
 };
 
 ipcMain.handle('hltb-search', async (_event, query) => {
-  if (!query || typeof query !== 'string') {
+  const cleanedQuery = sanitizeHltbQuery(query);
+  if (!cleanedQuery || typeof cleanedQuery !== 'string') {
     return { ok: false, error: 'invalid-query' };
   }
-  console.log(`[HLTB main] search request: "${query}"`);
+  hltbDebug(`[HLTB main] search request: "${cleanedQuery}"`);
   try {
     const { token, hpKey, hpVal } = await fetchHltbBleedInit();
     // Strip trademark symbols and punctuation from each term so HLTB's
     // search engine isn't tripped up by trailing colons or ™ symbols.
-    const rawTerms = query.trim().split(/\s+/);
+    const rawTerms = cleanedQuery.trim().split(/\s+/);
     const cleanTerms = rawTerms.map((t) =>
       t.replace(/[\u00ae\u2122\u00a9:;,.!?&\-–—]/g, '')
     ).filter(Boolean);
@@ -681,7 +848,7 @@ ipcMain.handle('hltb-search', async (_event, query) => {
       releaseYear: g.release_world || null,
       reviewScore: g.review_score || null
     }));
-    console.log(`[HLTB] found ${results.length} result(s) for "${query}"`);
+    hltbDebug(`[HLTB] found ${results.length} result(s) for "${cleanedQuery}"`);
     return { ok: true, results };
   } catch (error) {
     console.warn('[HLTB] search failed:', error.message);
@@ -1436,8 +1603,8 @@ ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
   const manifestPath = String(payload?.manifestPath || '').trim();
   const game = payload?.game || {};
   const confirmation = String(payload?.confirmation || '').trim();
-  const expectedConfirmation = String(game.name || game.title || '').trim();
-  if (!manifestPath) return { ok: false, error: 'missing-manifest' };
+  const expectedConfirmation = String(game?.name || game?.title || 'RESTORE').trim();
+
   if (!expectedConfirmation || confirmation !== expectedConfirmation) return { ok: false, error: 'confirmation-mismatch' };
 
   try {
@@ -1507,6 +1674,96 @@ ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
   } catch (err) {
     return { ok: false, error: err.message || 'restore-save-backup-failed' };
   }
+});
+
+ipcMain.handle('choose-emulator-executable', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: 'Choose emulator executable',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Executable Files', extensions: ['exe', 'bat', 'cmd'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    return result.canceled ? null : result.filePaths?.[0] || null;
+  } catch (error) {
+    console.error('❌ Failed to choose emulator executable:', error);
+    return null;
+  }
+});
+
+ipcMain.handle('choose-rom-folder', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: 'Choose ROM folder',
+      properties: ['openDirectory']
+    });
+
+    return result.canceled ? null : result.filePaths?.[0] || null;
+  } catch (error) {
+    console.error('❌ Failed to choose ROM folder:', error);
+    return null;
+  }
+});
+
+ipcMain.handle('scan-emulator-roms', async (_event, payload = {}) => {
+  const romFolder = String(payload?.romFolder || '').trim();
+  const extensions = new Set((Array.isArray(payload?.extensions) ? payload.extensions : [])
+    .map((extension) => String(extension || '').replace(/^\./, '').trim().toLowerCase())
+    .filter(Boolean));
+
+  if (!romFolder || !fs.existsSync(romFolder)) {
+    return [];
+  }
+
+  const roms = [];
+  const maxFiles = 5000;
+
+  const scanDirectory = (currentPath, depth = 0) => {
+    if (depth > 3 || roms.length >= maxFiles) {
+      return;
+    }
+
+    let entries = [];
+    try {
+      entries = fs.readdirSync(currentPath, { withFileTypes: true });
+    } catch (error) {
+      return;
+    }
+
+    entries.forEach((entry) => {
+      if (roms.length >= maxFiles) {
+        return;
+      }
+
+      const entryPath = path.join(currentPath, entry.name);
+      if (entry.isDirectory()) {
+        scanDirectory(entryPath, depth + 1);
+        return;
+      }
+
+      if (!entry.isFile()) {
+        return;
+      }
+
+      const extension = path.extname(entry.name).replace(/^\./, '').toLowerCase();
+      if (extensions.size > 0 && !extensions.has(extension)) {
+        return;
+      }
+
+      roms.push({
+        name: entry.name,
+        fileName: entry.name,
+        path: entryPath,
+        extension
+      });
+    });
+  };
+
+  scanDirectory(romFolder);
+  return roms;
 });
 
 ipcMain.handle('disk-folder-size', async (_event, payload) => {
@@ -1760,6 +2017,23 @@ ipcMain.handle('start-game-monitor', async (event, payload = {}) => {
   };
 });
 
+ipcMain.handle('minimize-window', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.minimize();
+  }
+  return { ok: true };
+});
+
+ipcMain.handle('restore-window', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.focus();
+  }
+  return { ok: true };
+});
+
 ipcMain.handle('stop-game-monitor', async (event, payload = {}) => {
   const monitorId = payload?.monitorId;
 
@@ -1803,7 +2077,7 @@ function createWindow() {
   console.log('🏗️ Creating Electron window...');
 
   try {
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
       width: 1200,
       height: 800,
       title: 'GamePilot',
@@ -1837,6 +2111,16 @@ function createWindow() {
     mainWindow.on('closed', () => {
       console.log('❌ Main window closed');
       stopAllGameMonitors();
+      mainWindow = null;
+    });
+
+    // Notify renderer when the system is shutting down so it can end
+    // active sessions before the process is killed.
+    powerMonitor.on('shutdown', () => {
+      console.log('⚡ System shutdown imminent — notifying renderer to end sessions');
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('system-shutdown');
+      }
     });
 
     // Set up application menu

@@ -6,6 +6,7 @@
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import { StartupPersonalizationService } from './StartupPersonalizationService';
+import { GamingIdentity } from '../GamingIdentity';
 
 export class RecommendationExplainer {
   /**
@@ -28,6 +29,12 @@ export class RecommendationExplainer {
     const personaReason = this.getPersonaReasoning(personaSnapshot, mood, genre);
     if (personaReason) {
       reasons.push(personaReason);
+    }
+
+    // Gaming Identity reasoning
+    const identityReason = this.getIdentityReasoning(game, mood, genre);
+    if (identityReason) {
+      reasons.push(identityReason);
     }
 
     const startupReason = this.getStartupSeedReasoning(game, mood, genre, startupSeed, normalizedTimeAvailable, startupInfluence);
@@ -100,6 +107,46 @@ export class RecommendationExplainer {
     }
 
     return `${personaIdentity.label}: ${personaIdentity.description}`;
+  }
+
+  static getIdentityReasoning(game, mood, genre) {
+    try {
+      const identity = GamingIdentity.getProfile();
+      if (!identity?.identity) return null;
+
+      const id = identity.identity;
+      const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+      const reasons = [];
+
+      if (mood && id.favoriteMood && mood === id.favoriteMood) {
+        reasons.push(`Matches your signature ${id.favoriteMood} mood`);
+      }
+
+      if (genre && id.favoriteGenre && genre === id.favoriteGenre) {
+        reasons.push(`Fits your ${id.favoriteGenre} specialty`);
+      } else if (id.favoriteGenre && gameGenres.includes(id.favoriteGenre)) {
+        reasons.push(`From your favorite genre: ${id.favoriteGenre}`);
+      }
+
+      if (id.playStyle) {
+        const estimated = PersonaPerformanceInsights.estimateSessionMinutes(game);
+        if (id.playStyle === 'Marathon' && estimated > 120) {
+          reasons.push('Suits your marathon playstyle');
+        } else if (id.playStyle === 'Quick Sessions' && estimated <= 60) {
+          reasons.push('Perfect for your quick-session habit');
+        } else if (id.playStyle === 'Strategic' && estimated >= 60 && estimated <= 180) {
+          reasons.push('Matches your strategic session pace');
+        }
+      }
+
+      if (id.archetype) {
+        reasons.push(`Aligned with your ${id.archetype} identity`);
+      }
+
+      return reasons.length > 0 ? reasons[0] : null;
+    } catch {
+      return null;
+    }
   }
 
   static getStartupSeedReasoning(game, mood, genre, startupSeed, timeAvailable, startupInfluence) {

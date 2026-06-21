@@ -788,7 +788,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.3s ease;
+  transition: var(--transition-base, 0.25s ease);
   box-shadow: 0 4px 12px rgba(255, 66, 77, 0.3);
   text-decoration: none;
 }
@@ -797,6 +797,11 @@
   background: linear-gradient(135deg, #e63746, #d62834);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(255, 66, 77, 0.4);
+}
+
+.patron-link:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .activation-code-section {
@@ -829,6 +834,12 @@
   box-shadow: 0 0 0 3px rgba(var(--accent-primary), 0.2);
 }
 
+.activation-input:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+  border-color: var(--accent-primary);
+}
+
 .activation-button {
   background: linear-gradient(135deg, var(--button-primary-bg), var(--button-hover));
   color: var(--button-primary-text);
@@ -838,17 +849,28 @@
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-base, 0.25s ease);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   width: 100% !important;
   margin-top: 0 !important;
   margin-left: 0 !important;
 }
 
-.activation-button:hover {
+.activation-button:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--button-hover), var(--accent-primary));
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.activation-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+.activation-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+  transform: none;
 }
 
 .patreon-links {
@@ -870,7 +892,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.3s ease;
+  transition: var(--transition-base, 0.25s ease);
   box-shadow: 0 4px 12px rgba(255, 66, 77, 0.3);
 }
 
@@ -878,6 +900,11 @@
   background: linear-gradient(135deg, #e63746, #d62834);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(255, 66, 77, 0.4);
+}
+
+.patreon-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 /* Settings Actions - Modern Button Group - Better Position */
@@ -910,15 +937,20 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-base, 0.25s ease);
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 
+  box-shadow:
     0 8px 24px rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.1);
   z-index: 1000;
   animation: slideInUp 0.5s ease;
+}
+
+.floating-save-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 @keyframes slideInUp {
@@ -963,7 +995,7 @@
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-base, 0.25s ease);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -971,10 +1003,21 @@
   margin-top: 16px;
 }
 
-.section-save-button:hover {
+.section-save-button:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--button-hover), var(--accent-primary));
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.section-save-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+.section-save-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+  transform: none;
 }
 
 /* Save Button - Original (but improved) */
@@ -987,17 +1030,28 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-base, 0.25s ease);
   display: flex;
   align-items: center;
   gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.save-button:hover {
+.save-button:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--button-hover), var(--accent-primary));
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.save-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+.save-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+  transform: none;
 }
 
 /* Quick Save Indicator */
@@ -1313,17 +1367,6 @@
     0 0 0 1px rgba(255, 255, 255, 0.2);
   border: 1px solid var(--border-color);
   animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
 }
 
 .feedback-modal-header {

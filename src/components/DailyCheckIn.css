@@ -1,24 +1,27 @@
 /* Daily Check-In Modal Styles */
 
 .checkin-overlay {
-  position: fixed;
+  position: fixed !important;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
+  left: 0;
+  width: 100vw;
+  min-height: 100vh;
   background: rgba(0, 0, 0, 0.88);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10001 !important;
   animation: checkinFadeIn 0.4s ease;
   overflow-y: auto;
   padding: 24px;
+  box-sizing: border-box;
 }
 
 @keyframes checkinFadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .checkin-modal {
@@ -29,6 +32,7 @@
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   position: relative;
+  margin: auto;
   border: 2px solid #4ade80;
   box-shadow: 
     0 0 60px rgba(74, 222, 128, 0.25),
@@ -74,6 +78,11 @@
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
   transform: scale(1.05);
+}
+
+.checkin-close:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .greeting-section {
@@ -392,15 +401,10 @@
   left: 50%;
   top: 0;
   transform-origin: bottom left;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-  border: 1px solid #4b5563;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.spin-segment:nth-child(odd) {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
 }
 
 .segment-label {
@@ -515,6 +519,11 @@
   box-shadow: 0 8px 25px rgba(74, 222, 128, 0.5);
 }
 
+.spin-action-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
 .spin-action-button.disabled {
   background: #374151;
   color: #6b7280;
@@ -599,11 +608,16 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.view-history-btn:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .checkin-overlay {
     padding: 12px;
-    align-items: flex-start;
+    align-items: center !important;
   }
   
   .checkin-modal {

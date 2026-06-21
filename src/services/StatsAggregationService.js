@@ -141,6 +141,40 @@ const normalizeSession = (session, libraryIndex) => {
   };
 };
 
+const getImportedPlaytimeSummary = (library = []) => {
+  if (!Array.isArray(library) || library.length === 0) {
+    return { totalMinutes: 0, gameCount: 0, games: [] };
+  }
+
+  const games = [];
+  let totalMinutes = 0;
+
+  library.forEach((game) => {
+    if (!game) return;
+
+    const importedMinutes = Number(game.importedPlaytimeMinutes) || 0;
+    const steamImported = game.playtimeSource === 'steam' ? Number(game.time_played || 0) : 0;
+    const totalImported = importedMinutes > 0 ? importedMinutes : steamImported;
+
+    if (totalImported <= 0) return;
+
+    totalMinutes += totalImported;
+    games.push({
+      gameId: game.appid || game.app_id || game.steamAppId || game.name,
+      gameName: game.name || 'Unknown Game',
+      platform: game.platform || 'Unknown',
+      minutes: totalImported,
+      source: game.playtimeSource || 'imported'
+    });
+  });
+
+  return {
+    totalMinutes,
+    gameCount: games.length,
+    games
+  };
+};
+
 const isSessionInPeriod = (session, period, referenceDate = new Date()) => {
   if (!session?.timestamp) {
     return false;
@@ -205,7 +239,14 @@ const getRangeLabel = (period, referenceDate = new Date(), sessions = []) => {
 
 const buildTimeline = (sessions, period) => {
   if (period === 'daily') {
-    const labels = ['00-04', '04-08', '08-12', '12-16', '16-20', '20-24'];
+    const labels = [
+      'Late Night (12-4am)',
+      'Early Morning (4-8am)',
+      'Morning (8am-12pm)',
+      'Afternoon (12-4pm)',
+      'Evening (4-8pm)',
+      'Night (8pm-12am)'
+    ];
     const timeline = Object.fromEntries(labels.map((label) => [label, 0]));
     sessions.forEach((session) => {
       const hour = session.timestamp.getHours();
@@ -573,10 +614,14 @@ export class StatsAggregationService {
 
   static getNormalizedSessionHistory(library = []) {
     const libraryIndex = buildLibraryIndex(library);
-    return PlaytimeAutoLogger.getSessionHistory()
+    const sessions = PlaytimeAutoLogger.getSessionHistory()
       .map((session) => normalizeSession(session, libraryIndex))
-      .filter(Boolean)
-      .sort((left, right) => left.timestamp - right.timestamp);
+      .filter(Boolean);
+    return sessions.sort((left, right) => left.timestamp - right.timestamp);
+  }
+
+  static getImportedPlaytimeSummary(library = []) {
+    return getImportedPlaytimeSummary(library);
   }
 
   static getAvailableYears(library = []) {
@@ -613,9 +658,12 @@ export class StatsAggregationService {
       return acc;
     }, {});
 
+    const importedPlaytime = getImportedPlaytimeSummary(library);
+
     return {
       lastUpdated: Date.now(),
       totalSessionsRecorded: sessionHistory.length,
+      importedPlaytime,
       periods
     };
   }

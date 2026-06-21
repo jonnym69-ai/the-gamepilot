@@ -1,4 +1,5 @@
 import { getGameGenres } from '../GameGenreDatabase';
+import { getMoodForGame } from '../constants/GenresMoods';
 import StorageService from './StorageService';
 
 const EMULATOR_PROFILES_KEY = 'emulatorProfiles';
@@ -25,20 +26,6 @@ const PLATFORM_FALLBACK_GENRES = {
   'Wii U': ['Adventure', 'Platformer']
 };
 
-const GENRE_TO_MOOD = {
-  'Action': 'Energetic',
-  'Adventure': 'Immersive',
-  'Arcade': 'Energetic',
-  'Fighting': 'Competitive',
-  'Horror': 'Intense',
-  'Platformer': 'Energetic',
-  'Puzzle': 'Focused',
-  'Racing': 'Competitive',
-  'RPG': 'Immersive',
-  'Shooter': 'Intense',
-  'Sports': 'Competitive',
-  'Strategy': 'Focused'
-};
 
 const normalizeExtensions = (extensions) => {
   if (Array.isArray(extensions)) {
@@ -130,8 +117,6 @@ export class EmulatorLibraryService {
     const detectedGenres = getGameGenres(name);
     const fallbackGenres = PLATFORM_FALLBACK_GENRES[profile.consolePlatform] || ['Adventure'];
     const genres = detectedGenres.length > 0 ? detectedGenres : fallbackGenres;
-    const primaryGenre = genres.find((genre) => genre && genre !== 'Unknown') || genres[0] || 'Adventure';
-
     return {
       name,
       platform: 'Emulated',
@@ -149,7 +134,7 @@ export class EmulatorLibraryService {
       iconUrl: '',
       icon: '',
       genres,
-      mood: GENRE_TO_MOOD[primaryGenre] || 'Immersive',
+      mood: getMoodForGame(genres) || 'Escapist',
       ...createTrackedDefaults()
     };
   }

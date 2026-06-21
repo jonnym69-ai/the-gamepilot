@@ -3,6 +3,13 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const SHELL_COMMAND_TIMEOUT_MS = 4000;
+const SCANNER_DEBUG = process.env.GAMEPILOT_SCANNER_DEBUG === 'true';
+
+const scannerDebug = (...args) => {
+  if (SCANNER_DEBUG) {
+    console.log(...args);
+  }
+};
 
 const runCommand = (command) => {
   try {
@@ -13,7 +20,7 @@ const runCommand = (command) => {
       windowsHide: true
     });
   } catch (error) {
-    console.error('[Scanner] Command failed:', command, error.message);
+    scannerDebug('[Scanner] Command failed:', command, error.message);
     return '';
   }
 };
@@ -22,7 +29,7 @@ const safeReadDir = (targetPath) => {
   try {
     return fs.readdirSync(targetPath);
   } catch (error) {
-    console.error('[Scanner] Failed to read directory:', targetPath, error.message);
+    scannerDebug('[Scanner] Failed to read directory:', targetPath, error.message);
     return [];
   }
 };
@@ -31,10 +38,20 @@ const safeReadJson = (targetPath) => {
   try {
     return JSON.parse(fs.readFileSync(targetPath, 'utf8'));
   } catch (error) {
-    console.error('[Scanner] Failed to read JSON:', targetPath, error.message);
+    scannerDebug('[Scanner] Failed to read JSON:', targetPath, error.message);
     return null;
   }
 };
+
+const sanitizeScannedGameName = (value) => String(value || '')
+  .replace(/Ôäó/g, '™')
+  .replace(/┬«/g, '®')
+  .replace(/┬®/g, '©')
+  .replace(/ÔÇÖ/g, '’')
+  .replace(/ÔÇ£|ÔÇØ/g, '"')
+  .replace(/ÔÇô|ÔÇö/g, '-')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 const normalizeScannerToken = (value) => String(value || '')
   .toLowerCase()
@@ -213,7 +230,7 @@ const looksLikeInstalledGameDirectory = (gamePath, folderName) => {
     }
     return false;
   } catch (error) {
-    console.error('[Scanner] Error checking game directory:', gamePath, error.message);
+    scannerDebug('[Scanner] Error checking game directory:', gamePath, error.message);
     return false;
   }
 };
@@ -238,7 +255,7 @@ const findExecutableDeep = (rootDir, maxDepth = 3) => {
           }
         }
       } catch (e) {
-        console.error('[Scanner] Error walking:', entryPath, e.message);
+        scannerDebug('[Scanner] Error walking:', entryPath, e.message);
       }
     });
   };
@@ -304,6 +321,180 @@ const addGameIfUnique = (games, game) => {
   }
 };
 
+// --- Steam playtime (localconfig.vdf) ---------------------------------------
+
+/**
+ * Minimal brace-aware VDF (Valve KeyValues) parser. Sufficient for reading
+ * localconfig.vdf. Returns a nested plain object.
+ */
+const parseVdf = (text) => {
+  let i = 0;
+  const n = text.length;
+
+  const skipWhitespace = () => {
+    while (i < n) {
+      const char = text[i];
+      if (char === ' ' || char === '\t' || char === '\r' || char === '\n') {
+        i += 1;
+        continue;
+      }
+      // Skip // line comments
+      if (char === '/' && text[i + 1] === '/') {
+        while (i < n && text[i] !== '\n') i += 1;
+        continue;
+      }
+      break;
+    }
+  };
+
+  const parseString = () => {
+    i += 1; // skip opening quote
+    let value = '';
+    while (i < n) {
+      const char = text[i];
+      if (char === '\\') {
+        const next = text[i + 1];
+        if (next === 'n') value += '\n';
+        else if (next === 't') value += '\t';
+        else value += next; // handles \\ and \"
+        i += 2;
+        continue;
+      }
+      if (char === '"') {
+        i += 1;
+        break;
+      }
+      value += char;
+      i += 1;
+    }
+    return value;
+  };
+
+  const parseObject = () => {
+    i += 1; // skip {
+    const obj = {};
+    while (i < n) {
+      skipWhitespace();
+      if (i >= n || text[i] === '}') {
+        i += 1;
+        break;
+      }
+      if (text[i] !== '"') {
+        i += 1;
+        continue;
+      }
+      const key = parseString();
+      skipWhitespace();
+      if (i < n && text[i] === '{') {
+        obj[key] = parseObject();
+      } else if (i < n && text[i] === '"') {
+        obj[key] = parseString();
+      } else {
+        obj[key] = '';
+      }
+    }
+    return obj;
+  };
+
+  const root = {};
+  while (i < n) {
+    skipWhitespace();
+    if (i >= n) break;
+    if (text[i] !== '"') {
+      i += 1;
+      continue;
+    }
+    const key = parseString();
+    skipWhitespace();
+    if (i < n && text[i] === '{') {
+      root[key] = parseObject();
+    } else if (i < n && text[i] === '"') {
+      root[key] = parseString();
+    } else {
+      root[key] = '';
+    }
+  }
+  return root;
+};
+
+const getCaseInsensitive = (obj, key) => {
+  if (!obj || typeof obj !== 'object') return undefined;
+  if (obj[key] !== undefined) return obj[key];
+  const lowerKey = key.toLowerCase();
+  for (const objectKey of Object.keys(obj)) {
+    if (objectKey.toLowerCase() === lowerKey) return obj[objectKey];
+  }
+  return undefined;
+};
+
+/**
+ * Reads real Steam playtime from each Steam account's localconfig.vdf.
+ * No API key required — this is local data Steam already stores.
+ *
+ * @param {string[]} steamAppsPaths - Array of `...\\steamapps` paths (the
+ *   Steam root is their parent directory, which contains `userdata`).
+ * @returns {Object<string, {minutes:number, lastPlayedMs:(number|null)}>}
+ *   Map keyed by Steam appid, aggregated across accounts (max wins).
+ */
+const getSteamPlaytimeMap = (steamAppsPaths = []) => {
+  const playtimeMap = {};
+
+  // Derive unique Steam roots (parent of steamapps) that hold a userdata dir.
+  const roots = [];
+  (Array.isArray(steamAppsPaths) ? steamAppsPaths : []).forEach((steamAppsPath) => {
+    if (!steamAppsPath) return;
+    const root = path.dirname(steamAppsPath);
+    if (root && !roots.includes(root)) roots.push(root);
+  });
+
+  roots.forEach((root) => {
+    const userdataPath = path.join(root, 'userdata');
+    if (!fs.existsSync(userdataPath)) return;
+
+    safeReadDir(userdataPath).forEach((accountId) => {
+      const configPath = path.join(userdataPath, accountId, 'config', 'localconfig.vdf');
+      if (!fs.existsSync(configPath)) return;
+
+      let parsed;
+      try {
+        parsed = parseVdf(fs.readFileSync(configPath, 'utf8'));
+      } catch (error) {
+        scannerDebug('[Scanner] Failed to parse localconfig.vdf:', configPath, error.message);
+        return;
+      }
+
+      const store = getCaseInsensitive(parsed, 'UserLocalConfigStore');
+      const software = getCaseInsensitive(store, 'Software');
+      const valve = getCaseInsensitive(software, 'Valve');
+      const steam = getCaseInsensitive(valve, 'Steam');
+      const apps = getCaseInsensitive(steam, 'apps');
+      if (!apps || typeof apps !== 'object') return;
+
+      Object.keys(apps).forEach((appId) => {
+        const entry = apps[appId];
+        if (!entry || typeof entry !== 'object') return;
+
+        const minutes = parseInt(getCaseInsensitive(entry, 'Playtime'), 10) || 0;
+        const lastPlayedSeconds = parseInt(getCaseInsensitive(entry, 'LastPlayed'), 10) || 0;
+        if (minutes <= 0 && lastPlayedSeconds <= 0) return;
+
+        const lastPlayedMs = lastPlayedSeconds > 0 ? lastPlayedSeconds * 1000 : null;
+        const existing = playtimeMap[appId];
+        if (!existing) {
+          playtimeMap[appId] = { minutes, lastPlayedMs };
+        } else {
+          playtimeMap[appId] = {
+            minutes: Math.max(existing.minutes, minutes),
+            lastPlayedMs: Math.max(existing.lastPlayedMs || 0, lastPlayedMs || 0) || null
+          };
+        }
+      });
+    });
+  });
+
+  return playtimeMap;
+};
+
 const getActiveDrives = () => {
   const logicalDiskOutput = runCommand('powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType | ConvertTo-Json -Compress"');
   let activeDrives = [];
@@ -328,7 +519,7 @@ const getActiveDrives = () => {
           }
         });
     } catch (error) {
-      console.error('[Scanner] Failed to parse disk info:', error.message);
+      scannerDebug('[Scanner] Failed to parse disk info:', error.message);
       activeDrives = [];
     }
   }
@@ -351,6 +542,7 @@ module.exports = {
   runCommand,
   safeReadDir,
   safeReadJson,
+  sanitizeScannedGameName,
   normalizeScannerToken,
   addUniquePath,
   queryRegistryValue,
@@ -364,5 +556,7 @@ module.exports = {
   collectNestedGameDirectories,
   createTrackedDefaults,
   addGameIfUnique,
-  getActiveDrives
+  getActiveDrives,
+  parseVdf,
+  getSteamPlaytimeMap
 };

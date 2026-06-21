@@ -22,6 +22,9 @@ window.electronAPI = {
   createSaveBackup: (payload) => ipcRenderer.invoke('create-save-backup', payload),
   previewSaveRestore: (payload) => ipcRenderer.invoke('preview-save-restore', payload),
   restoreSaveBackup: (payload) => ipcRenderer.invoke('restore-save-backup', payload),
+  chooseEmulatorExecutable: () => ipcRenderer.invoke('choose-emulator-executable'),
+  chooseRomFolder: () => ipcRenderer.invoke('choose-rom-folder'),
+  scanEmulatorRoms: (payload) => ipcRenderer.invoke('scan-emulator-roms', payload),
   buildUninstallPlan: (game) => ipcRenderer.invoke('build-uninstall-plan', game),
   startUninstall: (payload) => ipcRenderer.invoke('start-uninstall', payload),
   onLaunchGameResult: (callback) => ipcRenderer.on('launch-game-result', callback),
@@ -42,5 +45,12 @@ window.electronAPI = {
     const listener = (_event, data) => callback?.(data);
     ipcRenderer.on('game-monitor-timeout', listener);
     return () => ipcRenderer.removeListener('game-monitor-timeout', listener);
-  }
+  },
+  onSystemShutdown: (callback) => {
+    const listener = () => callback?.();
+    ipcRenderer.on('system-shutdown', listener);
+    return () => ipcRenderer.removeListener('system-shutdown', listener);
+  },
+  minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+  restoreWindow: () => ipcRenderer.invoke('restore-window')
 };

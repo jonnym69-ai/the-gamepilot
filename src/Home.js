@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import NavBar from './NavBar';
-import { AchievementTracker } from './AchievementSystem';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
+import { DiscoveryService } from './services/DiscoveryService';
+import { HabitTrackerService } from './services/HabitTrackerService';
 import CollapsibleSection from './components/CollapsibleSection';
-import { Library, SlidersHorizontal } from 'lucide-react';
+import { Library, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { RecommendationEngine } from './services/RecommendationEngine';
-import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import { GamingIdentity } from './GamingIdentity';
 import { RetentionQuestService } from './services/RetentionQuestService';
+import EntitlementService from './services/EntitlementService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
@@ -14,18 +16,31 @@ import './Home.css';
 import './LibraryValue.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
 import WishlistSection from './components/WishlistSection';
+import NostalgiaCard from './components/NostalgiaCard';
+import PatchNotesBadge from './components/PatchNotesBadge';
+import LibrarianHubCarousel from './components/LibrarianHubCarousel';
 import {
   HomeGuidedContent,
   HomeSection,
   HomeToolsContent,
   LibraryTodaySection,
-  MomentumSection,
   TuneYourNextPickSection,
   PerfectPlayResultSection,
   RecommendationResultsSection,
   SurpriseGameResultSection,
   RediscoverResultSection,
+  IdentitySnapshotCard,
+  WeeklyPlaySnapshot,
+  HabitGoalsMiniCard,
+  BecauseYouAreSection,
 } from './components/HomeDashboardSections';
+import {
+  DashboardWidgetGrid,
+  MiniStatsWidget,
+  MiniQuestWidget,
+  MiniNextUpWidget,
+  MiniBacklogWidget,
+} from './components/DashboardWidgets';
 
 const GETTING_STARTED_PREFERENCE_KEY = 'gettingStartedPreferences';
 
@@ -73,81 +88,37 @@ const formatPlaytime = (minutes) => {
 function GettingStartedModal({ isOpen, onClose, onHidePermanently, theme }) {
   if (!isOpen) return null;
 
-  const shortcutHints = [
-    { label: 'Search', key: KeyboardShortcuts.getShortcutForAction('focus_search') || 'Ctrl+K' },
-    { label: 'Library', key: KeyboardShortcuts.getShortcutForAction('go_library') || 'Ctrl+L' },
-    { label: 'Stats', key: KeyboardShortcuts.getShortcutForAction('go_stats') || 'Ctrl+S' },
-    { label: 'Settings', key: KeyboardShortcuts.getShortcutForAction('go_settings') || 'Ctrl+T' },
-    { label: 'Exports', key: KeyboardShortcuts.getShortcutForAction('go_exports') || 'Ctrl+E' },
-    { label: 'Shortcut Help', key: KeyboardShortcuts.getShortcutForAction('show_shortcuts') || '?' }
-  ];
+  const searchShortcut = KeyboardShortcuts.getShortcutForAction('focus_search') || 'Ctrl+K';
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content" style={{ maxWidth: '520px' }}>
         <button
           onClick={onClose}
           className="modal-close"
         >
           ×
         </button>
-        <h2 className={`modal-title ${theme}`}>Welcome to GamePilot! 🎮</h2>
-        <p style={{ marginBottom: '30px' }}>Your comprehensive PC gaming library manager with advanced features.</p>
-        <div className="getting-started-steps">
-          <h1 className={`stats-title ${theme}`}>Getting Started</h1>
-          <ol>
-            <li><strong>🔍 Scan Your Games:</strong> Click "Scan Local Games" to discover your Steam, Epic, Game Pass, Rockstar, Battle.net, EA, Ubisoft, and GOG games</li>
-            <li><strong>🎯 Find Perfect Play:</strong> Use mood, genre, and time filters to get personalized game recommendations</li>
-            <li><strong>🎲 Quick Actions:</strong> Use "Surprise Me" for random games or "Rediscover" to find old favorites</li>
-            <li><strong>📚 Manage Library:</strong> Browse, filter, sort, and manage your entire game collection</li>
-            <li><strong>💰 Track Library Value:</strong> View your collection's worth in multiple currencies - open games in GameModal for accurate Steam pricing</li>
-            <li><strong>📈 Track Progress:</strong> View detailed stats, achievements, and gaming sessions</li>
-            <li><strong>📤 Export & Share:</strong> Export your library data in multiple formats</li>
+        <h2 className={`modal-title ${theme}`}>Welcome to GamePilot</h2>
+        <p style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
+          Your personal gaming mission control. Three steps to get started:
+        </p>
+        <div className="getting-started-steps" style={{ textAlign: 'left', marginBottom: '24px' }}>
+          <ol style={{ paddingLeft: '20px', margin: 0 }}>
+            <li style={{ marginBottom: '12px', lineHeight: 1.5 }}>
+              <strong>Scan your games</strong> — Auto-detects Steam, Epic, Xbox, GOG, and more
+            </li>
+            <li style={{ marginBottom: '12px', lineHeight: 1.5 }}>
+              <strong>Launch & play</strong> — Click any game to start. Playtime tracks automatically
+            </li>
+            <li style={{ lineHeight: 1.5 }}>
+              <strong>Find your next game</strong> — Use mood and time filters for recommendations
+            </li>
           </ol>
         </div>
-        <div className="advanced-features">
-          <h3>Advanced Features:</h3>
-          <ul>
-            <li><strong>🎨 Theme System:</strong> Multiple themes including mood-based themes</li>
-            <li><strong>⌨️ Keyboard Shortcuts:</strong> Quick access to common actions</li>
-            <li><strong>🔄 Bulk Operations:</strong> Select and manage multiple games at once</li>
-            <li><strong>📊 Advanced Filtering:</strong> Filter by playtime, completion status, platforms, and more</li>
-            <li><strong>🏅 Achievement System:</strong> Unlock achievements and earn XP</li>
-            <li><strong>💾 Offline Support:</strong> Works even when you're offline</li>
-            <li><strong>🔔 Notifications:</strong> Get notified about achievements and game launches</li>
-            <li><strong>📱 Responsive Design:</strong> Works on desktop and tablet devices</li>
-          </ul>
-        </div>
-        <div className="support-section">
-          <h3>Support GamePilot:</h3>
-          <p>Love GamePilot? Support development on Patreon for optional XP multipliers and founder recognition.</p>
-          <ul>
-            <li><strong>💎 Patreon Supporter Achievement:</strong> Founder recognition in GamePilot</li>
-            <li><strong>⚡ XP Multipliers:</strong> 2x, 3x, 4x, or 5x progression boosts depending on tier</li>
-            <li><strong>🌟 Founder Status:</strong> Special recognition in community</li>
-            <li><strong>🏆 Achievement System:</strong> Complete challenges and earn XP</li>
-            <li><strong>💰 Currency System:</strong> Multi-currency price tracking</li>
-            <li><strong>🎮 Library Value:</strong> Track your collection's worth</li>
-          </ul>
-          <p style={{ fontSize: '14px', marginTop: '15px' }}>
-            <strong>How to Unlock:</strong> Visit Settings → Support GamePilot → Enter your Patreon activation code
-          </p>
-          <p style={{ fontSize: '12px', marginTop: '10px', color: '#636e72' }}>
-            <strong>🏆 Achievement System:</strong> Unlock achievements by playing games, using different moods/genres, and completing daily/weekly challenges. Earn XP to level up your profile and unlock progression rewards across the app.
-          </p>
-        </div>
-        <div className="tips-section">
-          <h1 className={`library-title ${theme}`}>Quick Tips</h1>
-          <ul>
-            {shortcutHints.map((shortcutHint) => (
-              <li key={shortcutHint.label}>Use <strong>{shortcutHint.key}</strong> for {shortcutHint.label.toLowerCase()}</li>
-            ))}
-            <li>Try different <strong>moods</strong> to get varied recommendations</li>
-            <li>Enable <strong>bulk mode</strong> to manage multiple games efficiently</li>
-            <li>Check your <strong>achievements</strong> regularly for new goals</li>
-            <li>Export your library regularly as a <strong>backup</strong></li>
-          </ul>
-        </div>
+        <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '24px' }}>
+          Tip: Press <strong>{searchShortcut}</strong> anytime to search your library
+        </p>
         <div className="getting-started-actions">
           <button onClick={onClose} className="getting-started-primary">Let's Go</button>
           <button onClick={onHidePermanently} className="getting-started-secondary">Don't show again</button>
@@ -207,6 +178,14 @@ function Home({
   const [feedbackPreferences, setFeedbackPreferences] = useState(() => UserBehaviorProfile.getFeedbackPreferences());
   const [recommendationFeedbackState, setRecommendationFeedbackState] = useState({});
   const [sessionFeedbackPrompt, setSessionFeedbackPrompt] = useState(null);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [personaSnapshot, setPersonaSnapshot] = useState(null);
+  const [goalProgress, setGoalProgress] = useState({ weekly: [], monthly: [] });
+  const [streaks, setStreaks] = useState({ current: 0, longest: 0 });
+  const [weeklyHabitStats, setWeeklyHabitStats] = useState({ totalHours: 0, sessions: 0, daysPlayed: 0, uniqueGames: 0 });
+  const [discoveryRecommendations, setDiscoveryRecommendations] = useState([]);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [wishlistVersion, setWishlistVersion] = useState(0);
 
   const recentGames = useMemo(() => {
     return library
@@ -240,13 +219,6 @@ function Home({
       .slice(0, 6);
   }, [library]);
 
-  const recommendations = useMemo(() => {
-    return library
-      .filter(game => game.time_played === 0 || !game.time_played)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 5);
-  }, [library]);
-
   const getHomeShelfGameKey = useCallback((game) => {
     if (!game) {
       return null;
@@ -255,18 +227,53 @@ function Home({
     return game.appid || game.name || null;
   }, []);
 
-  const allRecommendations = useMemo(() => {
-    return library
-      .filter(game => game.time_played === 0 || !game.time_played)
-      .sort(() => Math.random() - 0.5);
-  }, [library]);
+  useEffect(() => {
+    // Compute identity, habits, and insights surfaces
+    try {
+      setPersonaSnapshot(UserBehaviorProfile.getPersonaSnapshot());
+    } catch (e) {
+      console.error('Home: failed to load persona snapshot', e);
+    }
+    try {
+      setGoalProgress(HabitTrackerService.getGoalProgress());
+    } catch (e) {
+      console.error('Home: failed to load goal progress', e);
+    }
+    try {
+      setStreaks(HabitTrackerService.getStreaks());
+    } catch (e) {
+      console.error('Home: failed to load streaks', e);
+    }
+    try {
+      setWeeklyHabitStats(HabitTrackerService.getWeeklyStats(0));
+    } catch (e) {
+      console.error('Home: failed to load weekly stats', e);
+    }
+    try {
+      GamingIdentity.saveIdentitySnapshot();
+      GamingIdentity.checkIdentityRewards();
+    } catch {
+      // Non-critical identity tracking
+    }
+    setRetentionRefreshKey((current) => current + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    // Check and unlock achievements when component mounts
-    AchievementTracker.checkAndResetTimeBasedAchievements();
-    AchievementTracker.checkTimeBasedAchievements();
-    setRetentionRefreshKey((current) => current + 1);
-  }, [library]);
+    let cancelled = false;
+    setDiscoveryLoading(true);
+    DiscoveryService.getRecommendations({ limit: 6 })
+      .then((recs) => {
+        if (!cancelled) setDiscoveryRecommendations(recs);
+      })
+      .catch(() => {
+        if (!cancelled) setDiscoveryRecommendations([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDiscoveryLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const savedUsername = localStorage.getItem('gamepilot-profileUsername') || localStorage.getItem('profileUsername') || '';
@@ -322,16 +329,12 @@ function Home({
   const handleMoodSelection = (nextMood) => {
     setMood(nextMood);
     if (nextMood) {
-      AchievementTracker.logGameplayMood(nextMood);
-      syncAchievementsSafely();
     }
   };
 
   const handleGenreSelection = (nextGenre) => {
     setSelectedGenre(nextGenre);
     if (nextGenre) {
-      AchievementTracker.logGameplayGenre(nextGenre);
-      syncAchievementsSafely();
     }
   };
 
@@ -376,7 +379,7 @@ function Home({
   const launchTonightPick = () => {
     handleTrackedLaunch(tonightPickGame, {
       feature: 'home_tonight_pick',
-      result: tonightPickEntry === continuePlayingEntry ? continuePlayingResult : (perfectPlayResult || gamePilotPicksResult)
+      result: perfectPlayResult || gamePilotPicksResult
     });
   };
 
@@ -475,15 +478,6 @@ function Home({
     });
   };
 
-  const syncAchievementsSafely = () => {
-    try {
-      AchievementTracker.checkAndUnlockAchievements();
-      setRetentionRefreshKey((current) => current + 1);
-    } catch (error) {
-      console.error('Home: Failed to sync achievements', error);
-    }
-  };
-
   const handleTrackedLaunch = (game, options = {}) => {
     const { feature = null, result = null } = options;
 
@@ -493,8 +487,6 @@ function Home({
 
     if (feature) {
       try {
-        AchievementTracker.logGameplayFeature(feature);
-        syncAchievementsSafely();
       } catch (error) {
         console.error(`Home: Failed to log gameplay feature "${feature}"`, error);
       }
@@ -554,6 +546,7 @@ function Home({
   const submitSessionFeedback = (enjoyed) => {
     if (!sessionFeedbackPrompt || typeof enjoyed !== 'boolean') {
       setSessionFeedbackPrompt(null);
+      setSessionCompleted(false);
       return;
     }
 
@@ -562,10 +555,12 @@ function Home({
       mood: sessionFeedbackPrompt.mood,
       genre: sessionFeedbackPrompt.genre,
       playtimeMinutes: sessionFeedbackPrompt.playtimeMinutes,
-      endTime: sessionFeedbackPrompt.endTime
+      endTime: sessionFeedbackPrompt.endTime,
+      completed: sessionCompleted
     });
 
     setSessionFeedbackPrompt(null);
+    setSessionCompleted(false);
   };
 
   const disableSessionFeedback = () => {
@@ -575,6 +570,7 @@ function Home({
       sessionPromptEnabled: false
     }));
     setSessionFeedbackPrompt(null);
+    setSessionCompleted(false);
   };
 
   const renderRecommendationFeedback = (entry, result) => {
@@ -659,9 +655,9 @@ function Home({
 
   // Get available filter options from library
   const availableMoods = React.useMemo(() => {
-    // Always show all 8 moods regardless of library content
+    // Always show all 5 moods regardless of library content
     // This ensures users can select any mood even if no games currently have that mood
-    return ['Relaxed', 'Social', 'Focused', 'Creative', 'Escapist', 'Tactical', 'Sporty', 'Competitive'];
+    return ['Relaxed', 'Social', 'Focused', 'Creative', 'Escapist'];
   }, []);
 
   const availableGenres = React.useMemo(() => {
@@ -684,16 +680,6 @@ function Home({
     ];
   }, [library]);
 
-  const rewardPresentationCustomization = ProgressionUnlockService.getRewardPresentationCustomization();
-  const homeLayoutRewards = ProgressionUnlockService.getHomeLayoutVariants();
-  const recommendationPackRewards = ProgressionUnlockService.getRecommendationPacks();
-  const selectedHomeLayout = homeLayoutRewards.find((layout) => layout.id === rewardPresentationCustomization.selectedHomeLayout) || homeLayoutRewards[0] || null;
-  const selectedRecommendationPack = recommendationPackRewards.find((pack) => pack.id === rewardPresentationCustomization.selectedRecommendationPack) || recommendationPackRewards[0] || null;
-  const homeRewardPresentationStyle = {
-    '--reward-pack-accent': selectedRecommendationPack?.accentColor || '#ff6b35',
-    '--reward-pack-secondary': selectedRecommendationPack?.secondaryColor || '#f093fb',
-    '--reward-pack-preview': selectedRecommendationPack?.preview || 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.2))'
-  };
   const endSessionButtonStyle = {
     backgroundColor: '#dc3545',
     color: 'white',
@@ -721,10 +707,17 @@ function Home({
   const surpriseGameArtwork = surpriseGame ? resolveGameArtwork(surpriseGame, { surface: 'recommendation_card' }) : null;
   const surpriseGamePlaceholder = surpriseGame ? getGameArtworkPlaceholder({ game: surpriseGame, surface: 'recommendation_card' }) : null;
   const rediscoverEntries = rediscoverGameResult?.entries || [];
-  const retentionSnapshot = React.useMemo(() => (
-    RetentionQuestService.getHomeRetentionSnapshot(library, retentionRefreshKey)
-  ), [library, retentionRefreshKey]);
-  const weeklyQuest = retentionSnapshot?.weeklyQuest || {
+  const retentionSnapshot = useMemo(() => {
+    try {
+      return RetentionQuestService.getHomeRetentionSnapshot(library);
+    } catch (e) {
+      console.error('Home: failed to load retention snapshot', e);
+      return { weeklyQuest: null, gamePilotPicks: null };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [library, retentionRefreshKey]);
+  const hasWidgetPack = EntitlementService.hasEntitlement('widget_pack') || EntitlementService.hasEntitlement('gamepilot_pro');
+  const weeklyQuest = hasWidgetPack ? (retentionSnapshot?.weeklyQuest || {
     quests: [],
     primaryQuest: null,
     weeklyStats: null,
@@ -732,11 +725,11 @@ function Home({
     totalCount: 0,
     label: 'This Week',
     periodKey: null
-  };
-  const gamePilotPicksResult = retentionSnapshot?.gamePilotPicks || null;
+  }) : null;
+  const gamePilotPicksResult = hasWidgetPack ? retentionSnapshot?.gamePilotPicks || null : null;
   const gamePilotPickEntries = gamePilotPicksResult?.entries || [];
   const trackedRetentionPicksKeyRef = React.useRef('');
-  const tonightPickEntry = perfectPlayEntries[0] || gamePilotPickEntries[0] || continuePlayingEntry || null;
+  const tonightPickEntry = perfectPlayEntries[0] || gamePilotPickEntries[0] || null;
   const tonightPickGame = tonightPickEntry?.game || null;
   const tonightPickArtwork = tonightPickGame ? resolveGameArtwork(tonightPickGame, { surface: 'recommendation_card' }) : null;
   const tonightPickPlaceholder = tonightPickGame ? getGameArtworkPlaceholder({ game: tonightPickGame, surface: 'recommendation_card' }) : null;
@@ -805,8 +798,8 @@ function Home({
   const favoriteShelfPlaceholder = favoriteShelfGame ? getGameArtworkPlaceholder({ game: favoriteShelfGame, surface: 'recommendation_card' }) : null;
   const homeShelfCards = [tonightPickGame, continuePlayingGame, rediscoverShelfGame, favoriteShelfGame].filter(Boolean).length;
   const weeklyQuestSummary = weeklyQuest?.primaryQuest?.title || weeklyQuest?.label || 'A few thoughtful picks are ready for you.';
-  const weeklyPlayDays = weeklyQuest?.weeklyStats?.activeDays || 0;
-  const weeklyPlaytimeHours = weeklyQuest?.weeklyStats?.playtimeHours || 0;
+  const weeklyPlayDays = weeklyHabitStats.daysPlayed || weeklyQuest?.weeklyStats?.activeDays || 0;
+  const weeklyPlaytimeHours = weeklyHabitStats.totalHours || weeklyQuest?.weeklyStats?.playtimeHours || 0;
   const recentLibraryActivity = recentGames.length;
   const shouldShowLegacyContinueSection = continuePlayingGame && homeShelfCards === 0;
   const shouldShowLegacyTopRatedSection = topRatedGames.length > 0 && !favoriteShelfGame;
@@ -833,7 +826,7 @@ function Home({
   useEffect(() => {
     const recommendedIds = gamePilotPicksResult?.tracking?.recommendedGameIds || [];
     const nextTrackingKey = recommendedIds.length > 0
-      ? `${weeklyQuest.periodKey || 'weekly'}:${recommendedIds.join('|')}`
+      ? `${weeklyQuest?.periodKey || 'weekly'}:${recommendedIds.join('|')}`
       : '';
 
     if (!nextTrackingKey || trackedRetentionPicksKeyRef.current === nextTrackingKey) {
@@ -842,7 +835,7 @@ function Home({
 
     trackRecommendationResult(gamePilotPicksResult);
     trackedRetentionPicksKeyRef.current = nextTrackingKey;
-  }, [gamePilotPicksResult, weeklyQuest.periodKey]);
+  }, [gamePilotPicksResult, weeklyQuest?.periodKey]);
 
   const handleWeeklyQuestPinToggle = (quest) => {
     if (!quest?.id) {
@@ -878,7 +871,7 @@ function Home({
   };
 
   const handleHomeControllerInput = useCallback((action) => {
-    const itemsCount = recentGames.length + featuredGames.length + (false ? allRecommendations.length : recommendations.length);
+    const itemsCount = recentGames.length + featuredGames.length;
     if (action === 'down' && selectedItemIndex < itemsCount - 1) {
       setSelectedItemIndex(prev => prev + 1);
       return true;
@@ -891,9 +884,6 @@ function Home({
         gameToLaunch = recentGames[selectedItemIndex];
       } else if (selectedItemIndex < recentGames.length + featuredGames.length) {
         gameToLaunch = featuredGames[selectedItemIndex - recentGames.length];
-      } else {
-        const recIndex = selectedItemIndex - recentGames.length - featuredGames.length;
-        gameToLaunch = false ? allRecommendations[recIndex] : recommendations[recIndex];
       }
       if (gameToLaunch) {
         onLaunchGame(gameToLaunch);
@@ -901,7 +891,7 @@ function Home({
       }
     }
     return false;
-  }, [selectedItemIndex, recentGames, featuredGames, recommendations, allRecommendations, onLaunchGame]);
+  }, [selectedItemIndex, recentGames, featuredGames, onLaunchGame]);
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
@@ -945,10 +935,99 @@ function Home({
     };
   }, [library]);
 
+  const renderDiscoveryContent = () => (
+    <>
+      {discoveryLoading ? (
+        <div className="discovery-skeleton-grid">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="discovery-skeleton-card" />
+          ))}
+        </div>
+      ) : discoveryRecommendations.length > 0 ? (
+        <div className="discovery-grid">
+          <div className="discovery-header">
+            <span>Matched to {personaSnapshot?.personaIdentity?.label || 'your playstyle'}</span>
+            <button
+              className="discovery-refresh-btn"
+              disabled={discoveryLoading}
+              onClick={() => {
+                setDiscoveryLoading(true);
+                DiscoveryService.clearCache();
+                DiscoveryService.getRecommendations({ limit: 6, forceRefresh: true })
+                  .then((recs) => setDiscoveryRecommendations(recs))
+                  .catch(() => setDiscoveryRecommendations([]))
+                  .finally(() => setDiscoveryLoading(false));
+              }}
+              title="Refresh recommendations"
+            >
+              {discoveryLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          <div className="discovery-cards" key={wishlistVersion}>
+            {discoveryRecommendations.map((game) => (
+              <article key={game.id} className="discovery-card">
+                <div className="discovery-card-badge">
+                  <span>{personaSnapshot?.source === 'empty' ? (game.matchReasons?.[0] || 'Popular') : `${game.matchScore}% match`}</span>
+                </div>
+                <h4>{game.name}</h4>
+                <div className="discovery-card-meta">
+                  <span className="discovery-genres">{game.genres.slice(0, 2).join(' · ')}</span>
+                  <span className="discovery-rating">{game.rating}%</span>
+                </div>
+                <div className="discovery-card-reasons">
+                  {game.matchReasons.slice(0, 2).map((reason, i) => (
+                    <span key={i}>{reason}</span>
+                  ))}
+                </div>
+                <div className="discovery-card-price">
+                  {game.priceFormatted.original && (
+                    <span className="discovery-original">{game.priceFormatted.original}</span>
+                  )}
+                  <span className="discovery-price">{game.priceFormatted.display}</span>
+                  {game.priceFormatted.discount > 0 && (
+                    <span className="discovery-discount">-{game.priceFormatted.discount}%</span>
+                  )}
+                </div>
+                <div className="discovery-card-actions">
+                  <a
+                    href={`https://store.steampowered.com/search/?term=${encodeURIComponent(game.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="discovery-link"
+                  >
+                    View on Steam
+                  </a>
+                  <button
+                    className="discovery-wishlist-btn"
+                    onClick={() => {
+                      if (DiscoveryService.isInWishlist(game.id)) {
+                        DiscoveryService.removeFromWishlist(game.id);
+                      } else {
+                        DiscoveryService.addToWishlist(game);
+                      }
+                      setWishlistVersion((v) => v + 1);
+                    }}
+                  >
+                    {DiscoveryService.isInWishlist(game.id) ? 'Saved' : 'Wishlist'}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="discovery-empty">
+          <Sparkles size={28} />
+          <p>No recommendations yet.</p>
+          <span>Play a few sessions and we’ll surface games that match your vibe.</span>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div
-      className={`home-page ${theme} home-layout-${selectedHomeLayout?.id || 'mission_control'} recommendation-pack-${selectedRecommendationPack?.id || 'classic_glow'}`}
-      style={homeRewardPresentationStyle}
+      className={`home-page ${theme}`}
     >
       <NavBar />
       
@@ -970,33 +1049,20 @@ function Home({
             : 'Scan your local installs to build a cleaner launcher overview and unlock guided Home picks.'}
         </p>
 
-        <div className="home-reward-strip">
-          <div className="home-reward-pill">
-            <span>Home Layout</span>
-            <strong>{selectedHomeLayout?.name || 'Mission Control'}</strong>
-          </div>
-          <div className="home-reward-pill is-pack">
-            <span>Recommendation Pack</span>
-            <strong>{selectedRecommendationPack?.name || 'Classic Glow'}</strong>
-          </div>
-        </div>
-        
         {/* Scan Button */}
         <button 
           onClick={() => {
             if (onScan) {
               onScan();
-            } else {
-              console.error('❌ onScan is not defined!');
             }
           }} 
           disabled={loading} 
           className={`scan-button ${loading ? 'loading' : ''}`}
         >
           {loading ? (
-            <span>🔄 Scanning...</span>
+            <span>Scanning...</span>
           ) : (
-            <span>🎮 Scan Local Games</span>
+            <span>Scan Local Games</span>
           )}
         </button>
         
@@ -1009,12 +1075,12 @@ function Home({
           <div className="launcher-status-header">
             <div>
               <h4 className="launcher-status-title">
-                🎯 Launcher Overview
+                Launcher Overview
               </h4>
               <p className="launcher-status-copy">
                 {launcherSummary.totalGames > 0
-                  ? `Showing the platforms currently represented in your merged library, not just the latest scan pass.`
-                  : 'After your first scan, this strip becomes a quick read on where your library currently lives.'}
+                  ? `Showing the platforms currently represented in your merged library.`
+                  : 'After your first scan, this strip shows where your library lives.'}
               </p>
             </div>
             <div className="launcher-status-pill">
@@ -1027,7 +1093,7 @@ function Home({
                 <div
                   key={launcher.name}
                   className={`launcher-badge ${launcher.games > 0 ? 'detected' : ''}`}
-                  title={`${launcher.name}: ${launcher.games} game${launcher.games === 1 ? '' : 's'} currently represented in your library`}
+                  title={`${launcher.name}: ${launcher.games} game${launcher.games === 1 ? '' : 's'} in your library`}
                 >
                   <span>{launcher.icon}</span>
                   <span>{launcher.name}</span>
@@ -1044,6 +1110,11 @@ function Home({
 
       {isDashboard ? (
         <>
+          <NostalgiaCard library={library} />
+          <PatchNotesBadge library={library} />
+
+          <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
+
           <CollapsibleSection
             title="Library Today"
             subtitle="Guided shelves, picks, and your weekly story."
@@ -1099,6 +1170,27 @@ function Home({
           </CollapsibleSection>
 
           <CollapsibleSection
+            title="Identity & Habits"
+            subtitle="Your gaming persona, weekly progress, and active goals."
+            icon={<Library size={18} />}
+            className="home-identity-section"
+            defaultOpen={false}
+          >
+            <IdentitySnapshotCard persona={personaSnapshot} />
+            <BecauseYouAreSection
+              library={library}
+              resolveGameArtwork={resolveGameArtwork}
+              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+              platformIcons={PLATFORM_ICONS}
+              formatPlaytime={formatPlaytime}
+              onLaunchGame={onLaunchGame}
+              getGameCardClass={getGameCardClass}
+            />
+            <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
+            <HabitGoalsMiniCard goalProgress={goalProgress} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
             title="Tools & Recommendations"
             subtitle="Mood filters, Perfect Play, Surprise Me, and Rediscover."
             icon={<SlidersHorizontal size={18} />}
@@ -1148,6 +1240,16 @@ function Home({
           </CollapsibleSection>
 
           <CollapsibleSection
+            title="Discover Games"
+            subtitle="Games that match your vibe, pulled from Steam and beyond."
+            icon={<Sparkles size={18} />}
+            className="home-discovery-section"
+            defaultOpen={false}
+          >
+            {renderDiscoveryContent()}
+          </CollapsibleSection>
+
+          <CollapsibleSection
             title="Wishlist"
             subtitle="Games you're tracking for a good deal."
             icon={<Library size={18} />}
@@ -1159,6 +1261,8 @@ function Home({
         </>
       ) : (
         <>
+          <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
+
           <HomeSection
             eyebrow="Your Library"
             title="Library Today"
@@ -1193,6 +1297,17 @@ function Home({
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
             />
+          </HomeSection>
+
+          <HomeSection
+            eyebrow="Who You Are"
+            title="Your Gaming Identity"
+            copy="GamePilot learns your patterns and turns them into a living profile."
+            compact
+          >
+            <IdentitySnapshotCard persona={personaSnapshot} />
+            <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
+            <HabitGoalsMiniCard goalProgress={goalProgress} />
           </HomeSection>
 
           <HomeSection
@@ -1258,21 +1373,49 @@ function Home({
             </RecommendationResultsSection>
           </HomeSection>
 
-          <MomentumSection
-            weeklyQuest={weeklyQuest}
-            gamePilotPickEntries={gamePilotPickEntries}
-            gamePilotPicksResult={gamePilotPicksResult}
-            getGameCardClass={getGameCardClass}
-            resolveGameArtwork={resolveGameArtwork}
-            getGameArtworkPlaceholder={getGameArtworkPlaceholder}
-            platformIcons={platformIcons}
-            formatLastPlayed={formatLastPlayed}
-            formatPlaytime={formatPlaytime}
-            onLaunchGame={onLaunchGame}
-            trackRecommendationLaunch={trackRecommendationLaunch}
-            renderEndSessionButton={renderEndSessionButton}
-            handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
-          />
+          <HomeSection
+            className="home-discovery-section"
+            eyebrow="Discover"
+            title="Games to Buy"
+            copy="Persona-matched picks from Steam and beyond."
+            compact
+          >
+            {renderDiscoveryContent()}
+          </HomeSection>
+
+          {hasWidgetPack && (
+            <HomeSection
+              className="home-widgets-section"
+              eyebrow="Widgets"
+              title="At a Glance"
+              copy="Quick stats and updates from your library."
+              compact
+            >
+              <DashboardWidgetGrid>
+                <MiniStatsWidget
+                  weeklyPlayDays={weeklyPlayDays}
+                  weeklyPlaytimeHours={weeklyPlaytimeHours}
+                  libraryCount={library?.length || 0}
+                />
+                <MiniQuestWidget
+                  weeklyQuest={weeklyQuest}
+                  handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
+                />
+                <MiniNextUpWidget
+                  game={tonightPickGame}
+                  entry={tonightPickEntry}
+                  artwork={tonightPickArtwork}
+                  placeholder={tonightPickPlaceholder}
+                  platformIcons={platformIcons}
+                  onLaunch={launchTonightPick}
+                />
+                <MiniBacklogWidget
+                  libraryCount={library?.length || 0}
+                  completedCount={library?.filter(g => g?.status === 'completed' || g?.completed).length || 0}
+                />
+              </DashboardWidgetGrid>
+            </HomeSection>
+          )}
         </>
       )}
 
@@ -1293,10 +1436,18 @@ function Home({
             <p style={{ fontSize: '0.9rem', opacity: 0.75, marginBottom: '20px' }}>
               This helps GamePilot learn which recommendations actually land well for you.
             </p>
+            <label className="session-completed-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', cursor: 'pointer', justifyContent: 'center' }}>
+              <input
+                type="checkbox"
+                checked={sessionCompleted}
+                onChange={(e) => setSessionCompleted(e.target.checked)}
+              />
+              <span>I completed this game 🏆</span>
+            </label>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
               <button onClick={() => submitSessionFeedback(true)} className="action-button primary">👍 Good Session</button>
               <button onClick={() => submitSessionFeedback(false)} className="action-button secondary">👎 Not Really</button>
-              <button onClick={() => setSessionFeedbackPrompt(null)} className="clear-button">Skip</button>
+              <button onClick={() => { setSessionFeedbackPrompt(null); setSessionCompleted(false); }} className="clear-button">Skip</button>
             </div>
             <button onClick={disableSessionFeedback} className="clear-button">
               Hide this feature
@@ -1315,8 +1466,8 @@ function Home({
             <a href="mailto:gamepilot91@hotmail.com" className="contact-link">
               📧 Email: gamepilot91@hotmail.com
             </a>
-            <a href="https://twitter.com/Moz_Makes_stuff" target="_blank" rel="noopener noreferrer" className="contact-link">
-              🐦 Twitter: @Moz_Makes_stuff
+            <a href="https://x.com/Mozog91" target="_blank" rel="noopener noreferrer" className="contact-link">
+              🐦 Twitter: @Mozog91
             </a>
           </div>
           <p className="contact-note">

@@ -11,6 +11,7 @@ import Profile from '../Profile';
 import YearInReview from '../YearInReview';
 import ChallengeBoard from '../ChallengeBoard';
 import PerformanceCockpit from '../PerformanceCockpit';
+import ThemeBuilder from '../ThemeBuilder';
 import ErrorBoundary from './ErrorBoundary';
 
 const renderWithBoundary = (element) => (
@@ -153,6 +154,7 @@ const AppRoutes = ({
           />
         )}
       />
+      <Route path="/theme-builder" element={renderWithBoundary(<ThemeBuilder />)} />
     </Routes>
   </HashRouter>
 );

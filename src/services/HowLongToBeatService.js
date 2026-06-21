@@ -13,8 +13,25 @@ const CACHE_KEY = 'hltbCacheV5';
 const TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const PENDING_TTL_MS = 60 * 60 * 1000;    // re-try misses after 1h
 const SETTINGS_KEY = 'hltbEnabled';
+const HLTB_DEBUG = process.env.REACT_APP_GAMEPILOT_HLTB_DEBUG === 'true';
 
 let inflight = new Map(); // gameKey -> Promise<entry>
+
+const hltbDebug = (...args) => {
+  if (HLTB_DEBUG) {
+    console.log(...args);
+  }
+};
+
+const sanitizeGameName = (value) => String(value || '')
+  .replace(/Ôäó/g, '™')
+  .replace(/┬«/g, '®')
+  .replace(/┬®/g, '©')
+  .replace(/ÔÇÖ/g, '’')
+  .replace(/ÔÇ£|ÔÇØ/g, '"')
+  .replace(/ÔÇô|ÔÇö/g, '-')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 const slug = (s) => String(s || '')
   .toLowerCase()
@@ -24,7 +41,7 @@ const slug = (s) => String(s || '')
 
 const gameKeyFor = (game) => {
   if (!game) return '';
-  const name = game.name || game.title || '';
+  const name = sanitizeGameName(game.name || game.title || '');
   return slug(name);
 };
 
@@ -109,6 +126,10 @@ const buildEntry = (queryName, apiResult) => {
 };
 
 class HowLongToBeatService {
+  static getCacheSnapshot() {
+    return readCache();
+  }
+
   static isEnabled() {
     // Default ON: HLTB lookups are anonymous, public, and require no GamePilot
     // backend. Users can disable in Settings any time.
@@ -130,30 +151,42 @@ class HowLongToBeatService {
     return entry || null;
   }
 
+  // Synchronous estimate read for analytics / UI scoring.
+  // Returns { mainStory, mainExtra, completionist } in hours, or null.
+  static getEstimate(game) {
+    const entry = this.getCached(game);
+    if (!entry || !entry.found) return null;
+    return {
+      mainStory: entry.mainHours || null,
+      mainExtra: entry.mainExtraHours || null,
+      completionist: entry.completionistHours || null
+    };
+  }
+
   // Async fetch with cache + dedupe. Returns entry or null.
   static async getTimes(game, { force = false } = {}) {
     const key = gameKeyFor(game);
-    const name = game?.name || game?.title || '';
+    const name = sanitizeGameName(game?.name || game?.title || '');
     if (!key || !name) {
-      console.log('[HLTB] getTimes skipped: no name for', game);
+      hltbDebug('[HLTB] getTimes skipped: no name for', game);
       return null;
     }
     if (!this.isEnabled()) {
-      console.log('[HLTB] getTimes skipped: disabled');
+      hltbDebug('[HLTB] getTimes skipped: disabled');
       return this.getCached(game);
     }
 
     const cache = readCache();
     const cached = cache[key];
     if (!force && cached && isFresh(cached)) {
-      console.log('[HLTB] cache hit:', name, cached.found ? 'found' : 'miss');
+      hltbDebug('[HLTB] cache hit:', name, cached.found ? 'found' : 'miss');
       return cached;
     }
     if (cached?.manualOverride) {
       return cached;
     }
     if (inflight.has(key)) {
-      console.log('[HLTB] dedupe inflight:', name);
+      hltbDebug('[HLTB] dedupe inflight:', name);
       return inflight.get(key);
     }
 
@@ -165,13 +198,13 @@ class HowLongToBeatService {
       return cached || null;
     }
 
-    console.log('[HLTB] fetching:', name);
+    hltbDebug('[HLTB] fetching:', name);
     const promise = (async () => {
       try {
         const result = await api(name);
-        console.log('[HLTB] raw result for', name, ':', result?.ok, result?.results?.length || 0, 'results');
+        hltbDebug('[HLTB] raw result for', name, ':', result?.ok, result?.results?.length || 0, 'results');
         const entry = buildEntry(name, result);
-        console.log('[HLTB] built entry for', name, ':', entry.found ? 'found' : entry.error, entry);
+        hltbDebug('[HLTB] built entry for', name, ':', entry.found ? 'found' : entry.error, entry);
         const next = { ...readCache(), [key]: entry };
         writeCache(next);
         return entry;

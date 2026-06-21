@@ -1,0 +1,131 @@
+.export-hub-page {
+  min-height: 100vh;
+  padding: 24px;
+  color: var(--text-primary, var(--text));
+}
+
+.export-hub-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.export-hub-hero h1 {
+  margin: 12px 0 8px;
+}
+
+.export-hub-hero p {
+  margin: 0;
+  max-width: 760px;
+  opacity: 0.82;
+}
+
+.export-hub-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 20px;
+}
+
+.export-hub-stat {
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+}
+
+.export-hub-stat-label {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.export-hub-stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.export-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.export-hub-card {
+  background: var(--card-bg, var(--card));
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.export-hub-card h2 {
+  margin-top: 0;
+}
+
+.export-hub-card p {
+  opacity: 0.8;
+}
+
+.export-hub-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.export-hub-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
+  color: var(--text-primary, var(--text));
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.export-hub-btn:hover {
+  filter: brightness(1.12);
+}
+
+.export-hub-btn.danger {
+  border: 1px solid rgba(255, 99, 132, 0.35);
+  color: #ff6384;
+}
+
+.export-hub-btn.danger:hover {
+  background: rgba(255, 99, 132, 0.08);
+}
+
+.export-hub-hidden-input {
+  display: none;
+}
+
+.export-hub-year-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.export-hub-year-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.export-hub-year-select {
+  padding: 10px 12px;
+}
+
+.export-hub-share-text {
+  opacity: 0.8;
+  white-space: pre-line;
+  margin-top: 14px;
+}

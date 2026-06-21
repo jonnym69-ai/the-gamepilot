@@ -30,7 +30,7 @@ export const EMPTY_LIBRARY_FALLBACK = Object.freeze({
       name: 'DOOM Eternal',
       platform: 'Steam',
       genre: 'FPS',
-      mood: 'Intense',
+      mood: 'Focused',
       playtime: 0,
       lastPlayed: null,
       icon: '🔥',

@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
-import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal } from 'lucide-react';
+import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal, Zap } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
 import EmptyState from './components/EmptyState';
@@ -9,10 +9,16 @@ import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { MilestoneService } from './services/MilestoneService';
 import StorageService from './services/StorageService';
+import { DailyEngagementService } from './services/DailyEngagementService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
+import { HabitTrackerService } from './services/HabitTrackerService';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
+import TimeOfDayHeatmap from './components/TimeOfDayHeatmap';
 import CollapsibleSection from './components/CollapsibleSection';
+import PowerStatsDeepDive from './components/PowerStatsDeepDive';
+import { LibraryAnalyticsService } from './services/LibraryAnalyticsService';
+import EntitlementService from './services/EntitlementService';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
@@ -31,15 +37,17 @@ const formatRelativeTime = (timestamp) => {
 };
 
 function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 'USD' }) {
-  const [achievementData, setAchievementData] = useState(null);
+  const [progressionData, setProgressionData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [libraryStats, setLibraryStats] = useState(null);
   const [personaData, setPersonaData] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('all');
+  const hasPowerTools = EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro');
+  const analytics = useMemo(() => (hasPowerTools ? LibraryAnalyticsService.getFullAnalytics(library) : null), [library, hasPowerTools]);
 
-  const calculateAchievementData = useCallback((dashboardSnapshot = null) => {
-    const unlockedAchievements = AchievementTracker.getUnlockedAchievements();
+  const calculateProgressionData = useCallback((dashboardSnapshot = null) => {
+    const unlockedAchievements = [];
     const xpStats = AchievementTracker.getXPStats();
     const periods = dashboardSnapshot?.periods || {};
     const currentYear = new Date().getFullYear();
@@ -82,6 +90,13 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const calculateDashboardData = useCallback(() => StatsAggregationService.getDashboardData(library), [library]);
 
   const calculateLibraryStats = useCallback(() => {
+    let storedPrices = {};
+    try {
+      storedPrices = StorageService.get('gamePrices', {});
+    } catch (e) {
+      storedPrices = {};
+    }
+
     const totalValue = library.reduce((total, game) => {
       let gamePrice = 0;
       
@@ -91,15 +106,10 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
         const priceMatch = game.price.toString().match(/[\d.]+/);
         gamePrice = priceMatch ? parseFloat(priceMatch[0]) : 0;
       } else {
-        try {
-          const storedPrices = StorageService.get('gamePrices', {});
-          const storedPrice = storedPrices[game.appid];
-          if (storedPrice && storedPrice.priceNumeric) {
-            gamePrice = storedPrice.priceNumeric;
-          } else {
-            gamePrice = 15; 
-          }
-        } catch (e) {
+        const storedPrice = storedPrices[game.appid];
+        if (storedPrice && storedPrice.priceNumeric) {
+          gamePrice = storedPrice.priceNumeric;
+        } else {
           gamePrice = 15;
         }
       }
@@ -109,12 +119,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
     const pricedGames = Array.isArray(library) ? library.filter(game => {
       if (game.priceNumeric || game.price) return true;
-      try {
-        const storedPrices = StorageService.get('gamePrices', {});
-        return storedPrices[game.appid]?.priceNumeric;
-      } catch (e) {
-        return false;
-      }
+      return storedPrices[game.appid]?.priceNumeric;
     }).length : 0;
 
     // Platform distribution
@@ -205,52 +210,67 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
   const refreshStats = useCallback(() => {
     const dashboardSnapshot = calculateDashboardData();
-    const achievementSnapshot = calculateAchievementData(dashboardSnapshot);
+    const achievementSnapshot = calculateProgressionData(dashboardSnapshot);
     const personaSnapshot = calculatePersonaData(dashboardSnapshot);
     const librarySnapshot = calculateLibraryStats();
 
-    setAchievementData(achievementSnapshot);
+    setProgressionData(achievementSnapshot);
     setDashboardData(dashboardSnapshot);
     setPersonaData(personaSnapshot);
     setLibraryStats(librarySnapshot);
     setLastRefresh(Date.now());
   }, [
-    calculateAchievementData,
+    calculateProgressionData,
     calculateDashboardData,
     calculatePersonaData,
     calculateLibraryStats
   ]);
 
+  const scheduleRefresh = useCallback((delay = 0) => {
+    if (typeof window === 'undefined') {
+      refreshStats();
+      return () => {};
+    }
+
+    let timeoutId = null;
+    timeoutId = window.setTimeout(() => {
+      refreshStats();
+    }, delay);
+
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [refreshStats]);
+
   useEffect(() => {
     refreshStats();
   }, [refreshStats]);
 
-  // Auto-refresh stats every 30 seconds and when window gains focus
+  // Refresh when the page regains focus
   useEffect(() => {
-    const handleFocus = () => refreshStats();
+    const handleFocus = () => {
+      scheduleRefresh();
+    };
+
     window.addEventListener('focus', handleFocus);
-    
-    // Set up auto-refresh interval
-    const intervalId = setInterval(() => {
-      refreshStats();
-    }, 30000); // Refresh every 30 seconds
 
     return () => {
       window.removeEventListener('focus', handleFocus);
-      clearInterval(intervalId);
     };
-  }, [refreshStats]);
+  }, [scheduleRefresh]);
 
   // Listen for game session events to trigger immediate refresh
   useEffect(() => {
+    const cleanupCallbacks = [];
+
     const handleGameSession = () => {
-      // Small delay to ensure data is saved
-      setTimeout(() => refreshStats(), 1000);
+      cleanupCallbacks.push(scheduleRefresh(1000));
     };
 
     const handleRollingAchievementsUpdate = () => {
-      // Immediate refresh when rolling achievements are updated
-      setTimeout(() => refreshStats(), 500);
+      cleanupCallbacks.push(scheduleRefresh(500));
     };
 
     window.addEventListener('gameSessionEnded', handleGameSession);
@@ -261,10 +281,16 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       window.removeEventListener('gameSessionEnded', handleGameSession);
       window.removeEventListener('gameSessionStarted', handleGameSession);
       window.removeEventListener('rollingAchievementsUpdated', handleRollingAchievementsUpdate);
+      cleanupCallbacks.forEach((cleanup) => cleanup());
     };
-  }, [refreshStats]);
+  }, [scheduleRefresh]);
 
-  const isLoading = !achievementData || !dashboardData || !libraryStats || !personaData;
+  const engagement = DailyEngagementService.getStatus();
+  const currentStreak = Number(engagement?.currentStreak || 0);
+  const bestStreak = Number(engagement?.longestStreak || 0);
+  const habitProgress = HabitTrackerService.getHabitXP();
+
+  const isLoading = !progressionData || !dashboardData || !libraryStats || !personaData;
 
   const formatSessionBucket = (bucket) => {
     if (!bucket) return 'Flexible sessions';
@@ -293,8 +319,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const allTimeStats = dashboardData?.periods?.all || {};
   const totalFeatureUses = Number(allTimeStats?.featureUsage?.totalUses || 0);
   const favoriteFeature = allTimeStats?.featureUsage?.favoriteFeature || '—';
-  const currentStreak = Number(allTimeStats?.streak?.current || 0);
-  const bestStreak = Number(allTimeStats?.streak?.best || 0);
   const selectedStats = dashboardData?.periods?.[selectedPeriod] || allTimeStats;
   const habitInsights = selectedStats?.habitInsights || {};
 
@@ -329,9 +353,18 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
         </CollapsibleSection>
 
         <CollapsibleSection
-          title="Achievement Statistics"
-          subtitle="Your unlocks, quests, XP and level progress."
-          badge={`Lv ${achievementData.xpStats.level}`}
+          title="Time of Day Heatmap"
+          subtitle="7×24 grid showing when you play most across the week."
+          icon={<BarChart3 size={18} />}
+          className="stats-section"
+        >
+          <TimeOfDayHeatmap library={library} />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Progression & Habits"
+          subtitle="XP and level progress, earned through your gaming habits."
+          badge={`Lv ${progressionData.xpStats.level}`}
           icon={<Trophy size={18} />}
           className="stats-section"
           defaultOpen
@@ -342,8 +375,8 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 <Award size={24} />
               </div>
               <div className="stat-content">
-                <h3>{achievementData.unlocked.length}</h3>
-                <p>Achievements Unlocked</p>
+                <h3>{habitProgress.activeDays}</h3>
+                <p>Active Days</p>
               </div>
             </div>
 
@@ -352,8 +385,8 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 <TrendingUp size={24} />
               </div>
               <div className="stat-content">
-                <h3>{achievementData.timeCounters.yearly.count}</h3>
-                <p>Quests This Year</p>
+                <h3>{habitProgress.totalSessions}</h3>
+                <p>Sessions Tracked</p>
               </div>
             </div>
 
@@ -362,8 +395,8 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 <Trophy size={24} />
               </div>
               <div className="stat-content">
-                <h3>{achievementData.unlockCounters.yearly}</h3>
-                <p>Unlocks This Year</p>
+                <h3>{habitProgress.totalCompletions}</h3>
+                <p>Games Completed</p>
               </div>
             </div>
 
@@ -372,8 +405,8 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 <Star size={24} />
               </div>
               <div className="stat-content">
-                <h3>Level {achievementData.xpStats.level}</h3>
-                <p>{achievementData.xpStats.xpProgress}/{achievementData.xpStats.xpToNextLevel} XP</p>
+                <h3>Level {progressionData.xpStats.level}</h3>
+                <p>{progressionData.xpStats.xpProgress}/{progressionData.xpStats.xpToNextLevel} XP</p>
               </div>
             </div>
           </div>
@@ -545,7 +578,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                       <span className="heatmap-value">{allTimeStats.sessions || 0}</span>
                     </div>
                     <div className="heatmap-row">
-                      <span>Active Days</span>
+                      <span>Session days</span>
                       <span className="heatmap-value">{allTimeStats.activeDays || 0}</span>
                     </div>
                     <div className="heatmap-row">
@@ -646,7 +679,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
         <CollapsibleSection
           title="Milestones & Prestige"
-          subtitle="Track your major XP achievements and prestige progress."
+          subtitle="Track your major XP milestones and prestige progress."
           icon={<Medal size={18} />}
           className="stats-section"
         >
@@ -746,11 +779,24 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           })()}
         </CollapsibleSection>
 
-        {library.length === 0 && achievementData.unlocked.length === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
+        {/* Power Tools — Deep Stats */}
+        {hasPowerTools && analytics && (
+          <CollapsibleSection
+            title="Power Stats Deep-Dive"
+            subtitle="Advanced library analytics, diversity scores, and backlog intelligence."
+            badge="Power Tools"
+            icon={<Zap size={18} />}
+            className="stats-section power-tools-deep-stats"
+          >
+            <PowerStatsDeepDive analytics={analytics} />
+          </CollapsibleSection>
+        )}
+
+        {library.length === 0 && habitProgress.totalSessions === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
           <EmptyState
             icon="📈"
             title={getEmptyLibraryFallback('Stats').message}
-            description="Start building your game library and logging a few sessions to unlock richer analytics, streaks, usage insights, and achievement trends."
+            description="Start building your game library and logging a few sessions to unlock richer analytics, streaks, usage insights, and habit trends."
           />
         )}
       </div>

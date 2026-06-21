@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Waves, Keyboard, Sparkles, Eye } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, Unlock, SlidersHorizontal } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
 import NavBar from './NavBar';
-import { AchievementTracker } from './AchievementSystem';
-import { audioManager } from './services/AudioManager';
-import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import CollapsibleSection from './components/CollapsibleSection';
 import { isElectronRuntime, waitForElectronAPI } from './services/ElectronBridge';
@@ -18,14 +16,19 @@ import SteamNewsService from './services/SteamNewsService';
 import DiskUsageService from './services/DiskUsageService';
 import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
+import EntitlementService from './services/EntitlementService';
+import TrialService from './services/TrialService';
+import { LibraryExportService } from './services/LibraryExportService';
+import RecommendationTunerPanel from './components/RecommendationTunerPanel';
+import { ScanReportPanel } from './components/ScanReportPanel';
 import './Settings.css';
 
-function Settings() {
-  const { currentTheme, setTheme, availableThemes, validatePatreonCode, isThemeUnlocked, bigScreenMode, toggleBigScreenMode } = useTheme();
+function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
+  const navigate = useNavigate();
+  const { currentTheme, setTheme, availableThemes, validatePatreonCode, hasPatreonAccess, bigScreenMode, toggleBigScreenMode, autoTheme, toggleAutoTheme } = useTheme();
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [timeFormat, setTimeFormat] = useState('24-hour');
   const [timezone, setTimezone] = useState('UTC');
-  const [autoTheme, setAutoTheme] = useState(false);
   const [themeMode, setThemeMode] = useState('custom'); // 'light', 'dark', or 'custom'
   const [cacheEnabled, setCacheEnabled] = useState(true);
   const [hltbEnabled, setHltbEnabled] = useState(() => HowLongToBeatService.isEnabled());
@@ -36,7 +39,6 @@ function Settings() {
   const [wishlistEnabled, setWishlistEnabled] = useState(() => WishlistService.isEnabled());
   const [buyRecommendationsEnabled, setBuyRecommendationsEnabled] = useState(() => BuyRecommendationService.isEnabled());
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [achievementNotifications, setAchievementNotifications] = useState(true);
   const [gameLaunchNotifications, setGameLaunchNotifications] = useState(true);
   const [dailySummaryNotifications, setDailySummaryNotifications] = useState(false);
   const [scanCompleteNotifications, setScanCompleteNotifications] = useState(true);
@@ -46,112 +48,44 @@ function Settings() {
   const [startupLaunchLoading, setStartupLaunchLoading] = useState(false);
   const [patreonCode, setPatreonCode] = useState('');
   const [activationResult, setActivationResult] = useState(null);
+  const [storeCode, setStoreCode] = useState('');
+  const [storeCodeResult, setStoreCodeResult] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [previewTheme] = useState(currentTheme);
   const [showLegalModal, setShowLegalModal] = useState(null);
   const [customBgImage, setCustomBgImage] = useState('');
   const [customBgOverlay, setCustomBgOverlay] = useState(30);
   const [customBgPreview, setCustomBgPreview] = useState('');
-  const [ambientPackOptions, setAmbientPackOptions] = useState(() => audioManager.getAmbientPacks());
-  const [musicPackOptions, setMusicPackOptions] = useState(() => audioManager.getMusicPacks());
-  const [buttonPackOptions, setButtonPackOptions] = useState(() => audioManager.getButtonPacks());
-  const [libraryPresentationOptions, setLibraryPresentationOptions] = useState(() => ProgressionUnlockService.getLibraryPresentationVariants());
-  const [homeLayoutOptions, setHomeLayoutOptions] = useState(() => ProgressionUnlockService.getHomeLayoutVariants());
-  const [recommendationPackOptions, setRecommendationPackOptions] = useState(() => ProgressionUnlockService.getRecommendationPacks());
   const [shortcutSettings, setShortcutSettings] = useState(() => KeyboardShortcuts.getSettings());
   const [shortcutEntries, setShortcutEntries] = useState(() => KeyboardShortcuts.getShortcutList());
   const [recommendationStyle, setRecommendationStyle] = useState(() => StorageService.getString('recommendationStyle', 'balanced'));
   const { success, error: toastError } = useToast();
-  const ambientPackProgress = useMemo(() => {
-    const nextUnlock = ambientPackOptions
-      .filter((pack) => !pack.unlocked)
-      .sort((left, right) => left.requiredXP - right.requiredXP || left.label.localeCompare(right.label))[0] || null;
-
-    return {
-      unlockedCount: ambientPackOptions.filter((pack) => pack.unlocked).length,
-      totalCount: ambientPackOptions.length,
-      nextUnlock
-    };
-  }, [ambientPackOptions]);
-  const musicPackProgress = useMemo(() => {
-    const nextUnlock = musicPackOptions
-      .filter((pack) => !pack.unlocked)
-      .sort((left, right) => left.requiredXP - right.requiredXP || left.label.localeCompare(right.label))[0] || null;
-
-    return {
-      unlockedCount: musicPackOptions.filter((pack) => pack.unlocked).length,
-      totalCount: musicPackOptions.length,
-      nextUnlock
-    };
-  }, [musicPackOptions]);
-  const buttonPackProgress = useMemo(() => {
-    const nextUnlock = buttonPackOptions
-      .filter((pack) => !pack.unlocked)
-      .sort((left, right) => left.requiredXP - right.requiredXP || left.label.localeCompare(right.label))[0] || null;
-
-    return {
-      unlockedCount: buttonPackOptions.filter((pack) => pack.unlocked).length,
-      totalCount: buttonPackOptions.length,
-      nextUnlock
-    };
-  }, [buttonPackOptions]);
-  const nextAudioUnlock = useMemo(() => {
-    return [
-      ambientPackProgress.nextUnlock ? { ...ambientPackProgress.nextUnlock, category: 'Atmosphere Pack' } : null,
-      musicPackProgress.nextUnlock ? { ...musicPackProgress.nextUnlock, category: 'Music Pack' } : null,
-      buttonPackProgress.nextUnlock ? { ...buttonPackProgress.nextUnlock, category: buttonPackProgress.nextUnlock.type === 'synth' ? 'Button Synth' : 'Button SFX' } : null
-    ]
-      .filter(Boolean)
-      .sort((left, right) => left.requiredXP - right.requiredXP || left.label.localeCompare(right.label))[0] || null;
-  }, [ambientPackProgress, buttonPackProgress, musicPackProgress]);
-  const presentationRewardCounts = useMemo(() => ({
-    unlocked: libraryPresentationOptions.filter((reward) => reward.unlocked).length
-      + homeLayoutOptions.filter((reward) => reward.unlocked).length
-      + recommendationPackOptions.filter((reward) => reward.unlocked).length,
-    total: libraryPresentationOptions.length + homeLayoutOptions.length + recommendationPackOptions.length
-  }), [homeLayoutOptions, libraryPresentationOptions, recommendationPackOptions]);
-
-  const refreshRewardPresentation = useCallback(() => {
-    setLibraryPresentationOptions(ProgressionUnlockService.getLibraryPresentationVariants());
-    setHomeLayoutOptions(ProgressionUnlockService.getHomeLayoutVariants());
-    setRecommendationPackOptions(ProgressionUnlockService.getRecommendationPacks());
-  }, []);
 
   const refreshShortcutSettings = useCallback(() => {
     setShortcutSettings(KeyboardShortcuts.getSettings());
     setShortcutEntries(KeyboardShortcuts.getShortcutList());
   }, []);
 
-  const refreshAudioLocks = useCallback(() => {
-    setAmbientPackOptions(audioManager.getAmbientPacks());
-    setMusicPackOptions(audioManager.getMusicPacks());
-    setButtonPackOptions(audioManager.getButtonPacks());
-  }, []);
-
   useEffect(() => {
     setDateFormat(StorageService.getString('dateFormat', 'DD/MM/YYYY'));
     setTimeFormat(StorageService.getString('timeFormat', '24-hour'));
     setTimezone(StorageService.getString('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone));
-    setAutoTheme(StorageService.getString('autoTheme') === 'true');
     setThemeMode(StorageService.getString('themeMode', 'custom'));
-    setCacheEnabled(StorageService.getString('cacheEnabled', 'true') !== 'false');
+    setCacheEnabled(StorageService.getString('cacheEnabled', 'true') === 'true');
 
     // Load notification settings
-    setNotificationsEnabled(StorageService.getString('notificationsEnabled', 'true') !== 'false');
-    setAchievementNotifications(StorageService.getString('achievementNotifications', 'true') !== 'false');
-    setGameLaunchNotifications(StorageService.getString('gameLaunchNotifications', 'true') !== 'false');
+    setNotificationsEnabled(StorageService.getString('notificationsEnabled', 'true') === 'true');
+    setGameLaunchNotifications(StorageService.getString('gameLaunchNotifications', 'true') === 'true');
     setDailySummaryNotifications(StorageService.getString('dailySummaryNotifications') === 'true');
-    setScanCompleteNotifications(StorageService.getString('scanCompleteNotifications', 'true') !== 'false');
+    setScanCompleteNotifications(StorageService.getString('scanCompleteNotifications', 'true') === 'true');
     setBackupReminders(StorageService.getString('backupReminders') === 'true');
     setSelectedCurrency(StorageService.getString('selectedCurrency', 'USD'));
 
     // Load custom background settings
     setCustomBgImage(StorageService.getString('customBgImage', ''));
     setCustomBgOverlay(parseInt(StorageService.getString('customBgOverlay', '30')));
-    refreshAudioLocks();
-    refreshRewardPresentation();
     refreshShortcutSettings();
-  }, [refreshAudioLocks, refreshRewardPresentation, refreshShortcutSettings]);
+  }, [refreshShortcutSettings]);
 
   useEffect(() => {
     let active = true;
@@ -244,14 +178,18 @@ function Settings() {
 
   const handleThemeModeChange = (newMode) => {
     setThemeMode(newMode);
-    
+
+    if (autoTheme) {
+      toggleAutoTheme();
+    }
+
     if (newMode === 'light') {
       setTheme('light');
     } else if (newMode === 'dark') {
       setTheme('dark');
     }
     // For 'custom', keep the current theme
-    
+
     StorageService.setString('themeMode', newMode);
     success(`Theme mode changed to ${newMode}`);
   };
@@ -260,21 +198,19 @@ function Settings() {
     StorageService.setString('dateFormat', dateFormat);
     StorageService.setString('timeFormat', timeFormat);
     StorageService.setString('timezone', timezone);
-    StorageService.setString('autoTheme', autoTheme);
-    StorageService.setString('cacheEnabled', cacheEnabled);
-    StorageService.setString('theme', currentTheme); // Save theme
+    StorageService.setString('autoTheme', autoTheme ? 'true' : 'false');
+    StorageService.setString('cacheEnabled', cacheEnabled ? 'true' : 'false');
+    StorageService.setString('theme', currentTheme);
+    StorageService.setString('themeMode', themeMode);
     StorageService.setString('selectedCurrency', selectedCurrency);
+    StorageService.setString('recommendationStyle', recommendationStyle);
 
     // Save notification settings
-    StorageService.setString('notificationsEnabled', notificationsEnabled);
-    StorageService.setString('achievementNotifications', achievementNotifications);
-    StorageService.setString('gameLaunchNotifications', gameLaunchNotifications);
-    StorageService.setString('dailySummaryNotifications', dailySummaryNotifications);
-    StorageService.setString('scanCompleteNotifications', scanCompleteNotifications);
-    StorageService.setString('backupReminders', backupReminders);
-    
-    // Track settings changes for achievements
-    AchievementTracker.trackFeatureUsage('settings');
+    StorageService.setString('notificationsEnabled', notificationsEnabled ? 'true' : 'false');
+    StorageService.setString('gameLaunchNotifications', gameLaunchNotifications ? 'true' : 'false');
+    StorageService.setString('dailySummaryNotifications', dailySummaryNotifications ? 'true' : 'false');
+    StorageService.setString('scanCompleteNotifications', scanCompleteNotifications ? 'true' : 'false');
+    StorageService.setString('backupReminders', backupReminders ? 'true' : 'false');
     
     success('Settings saved successfully!');
   };
@@ -326,7 +262,6 @@ function Settings() {
     // Apply custom theme
     setTheme('custom');
     success('Custom background applied! Your theme has been updated.');
-    AchievementTracker.trackFeatureUsage('custom_theme');
   };
 
   const clearCustomBackground = () => {
@@ -346,17 +281,33 @@ function Settings() {
 
     const result = validatePatreonCode(patreonCode.trim());
     setActivationResult(result);
-    
+
     if (result.success) {
       success(result.message);
-      refreshAudioLocks();
-      refreshRewardPresentation();
-      audioManager.playAmbientForTheme(currentTheme);
       setPatreonCode(''); // Clear the input after successful activation
       setTimeout(() => setActivationResult(null), 5000); // Clear result message after 5 seconds
     } else {
       toastError(result.message);
       setTimeout(() => setActivationResult(null), 5000); // Clear error message after 5 seconds
+    }
+  };
+
+  const handleStoreCodeSubmit = () => {
+    if (!storeCode.trim()) {
+      toastError('Please enter an unlock code');
+      return;
+    }
+
+    const result = EntitlementService.redeemCode(storeCode.trim());
+    setStoreCodeResult(result);
+
+    if (result.success) {
+      success(result.message);
+      setStoreCode('');
+      setTimeout(() => setStoreCodeResult(null), 5000);
+    } else {
+      toastError(result.message);
+      setTimeout(() => setStoreCodeResult(null), 5000);
     }
   };
 
@@ -367,9 +318,7 @@ function Settings() {
       setDateFormat('DD/MM/YYYY');
       setTimeFormat('24-hour');
       setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-      setAutoTheme(false);
       setNotificationsEnabled(true);
-      setAchievementNotifications(true);
       setGameLaunchNotifications(true);
       setDailySummaryNotifications(false);
       setScanCompleteNotifications(true);
@@ -538,10 +487,10 @@ function Settings() {
                               position: 'relative'
                             }}
                           >
-                            {availableThemes[previewTheme]?.isUnlockable && !isThemeUnlocked(previewTheme) && (
+                            {availableThemes[previewTheme]?.patreonExclusive && !hasPatreonAccess() && (
                               <div className="theme-wheel-lock-overlay">
                                 <Heart size={20} />
-                                <div className="theme-wheel-lock-text">Locked</div>
+                                <div className="theme-wheel-lock-text">Patreon Exclusive</div>
                               </div>
                             )}
                           </div>
@@ -574,9 +523,14 @@ function Settings() {
                   
                   <div className="setting-item">
                     <label>Big Screen/Controller Mode</label>
-                    <div className="toggle-switch" onClick={toggleBigScreenMode}>
-                      <div className={`toggle-slider ${bigScreenMode ? 'toggled' : ''}`}></div>
-                      <span className="toggle-label">{bigScreenMode ? 'ON' : 'OFF'}</span>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={bigScreenMode}
+                        onChange={() => toggleBigScreenMode()}
+                        id="big-screen-mode"
+                      />
+                      <label htmlFor="big-screen-mode" className="toggle-slider"></label>
                     </div>
                     <p className="setting-description">
                       Optimizes the interface for larger screens and enables controller navigation. Ideal for TV or console-like setups.
@@ -589,43 +543,52 @@ function Settings() {
                       <input
                         type="checkbox"
                         checked={autoTheme}
-                        onChange={(e) => setAutoTheme(e.target.checked)}
+                        onChange={() => toggleAutoTheme()}
                         id="auto-theme"
                       />
                       <label htmlFor="auto-theme" className="toggle-slider"></label>
                     </div>
                   </div>
-                  </div>
-                </div>
-              </CollapsibleSection>
 
-              {/* Reward Presentation Section - Summary Only */}
-              <CollapsibleSection
-                title="Reward Presentation"
-                subtitle="Manage presentation rewards on the dedicated Rewards page."
-                badge={`${presentationRewardCounts.unlocked}/${presentationRewardCounts.total} unlocked`}
-                icon={<Palette size={18} />}
-                className="settings-folder"
-                defaultOpen={false}
-              >
-                <div className="settings-section">
-                  <div className="section-header">
-                    <Palette size={20} />
-                    <h2>Reward Presentation</h2>
-                  </div>
-                  <div className="presentation-reward-panel">
-                    <p className="setting-description" style={{ marginBottom: '15px' }}>
-                      All presentation rewards (Home layouts, Library variants, Recommendation packs, Card styles, and Logo animations) are now managed on the dedicated Rewards page.
+                  <div className="setting-item">
+                    <label>Last-played cover art background</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={dynamicCoverBg}
+                        onChange={() => {
+                          const next = !dynamicCoverBg;
+                          setDynamicCoverBg(next);
+                          StorageService.setString('dynamicCoverBg', next ? 'true' : 'false');
+                        }}
+                        id="dynamic-cover-bg"
+                      />
+                      <label htmlFor="dynamic-cover-bg" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      Use the cover art of your most recently played game as a subtle full-screen background. Falls back to the normal theme when no recent game exists.
                     </p>
-                    <button
-                      type="button"
-                      className="save-btn"
-                      onClick={() => {
-                        window.location.hash = '#/rewards';
-                      }}
-                    >
-                      Open Rewards Page
-                    </button>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Minimize on game launch</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={minimizeOnLaunch}
+                        onChange={() => {
+                          const next = !minimizeOnLaunch;
+                          setMinimizeOnLaunch(next);
+                          StorageService.setString('minimizeOnLaunch', next ? 'true' : 'false');
+                        }}
+                        id="minimize-on-launch"
+                      />
+                      <label htmlFor="minimize-on-launch" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      Automatically minimize GamePilot to the taskbar when you launch a game, and restore the window when the session ends.
+                    </p>
+                  </div>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -685,7 +648,7 @@ function Settings() {
                   <p className="section-description">
                     Upload your own background image to personalize GamePilot. Supports JPG, PNG, GIF, and WebP (max 5MB).
                   </p>
-                  
+
                   <div className="setting-item">
                     <label>Upload Background Image</label>
                     <input
@@ -806,70 +769,6 @@ function Settings() {
                 <InterfaceSettings />
               </CollapsibleSection>
 
-              {/* Atmosphere + UI Audio Section */}
-              <CollapsibleSection
-                title="Ambient Atmosphere + UI Audio"
-                subtitle="Audio progression snapshot and a shortcut to the dedicated Rewards page."
-                badge={`${ambientPackProgress.unlockedCount + musicPackProgress.unlockedCount + buttonPackProgress.unlockedCount} unlocked`}
-                icon={<Waves size={18} />}
-                className="settings-folder"
-              >
-                <div className="settings-section">
-                  <div className="section-header">
-                    <Waves size={20} />
-                    <h2>Ambient Atmosphere + UI Audio</h2>
-                  </div>
-                  <div className="audio-settings" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className="premium-lock-message" style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px dashed var(--border-primary)',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Heart size={18} />
-                        <div>
-                          Unlockable audio packs now live on the dedicated Rewards page so all XP-gated customization sits in one place.
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-                        <div style={{ padding: '10px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-primary)' }}>
-                          <strong>{ambientPackProgress.unlockedCount}/{ambientPackProgress.totalCount}</strong>
-                          <div style={{ fontSize: '12px', opacity: 0.72, marginTop: '4px' }}>Atmosphere packs unlocked</div>
-                        </div>
-                        <div style={{ padding: '10px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-primary)' }}>
-                          <strong>{musicPackProgress.unlockedCount}/{musicPackProgress.totalCount}</strong>
-                          <div style={{ fontSize: '12px', opacity: 0.72, marginTop: '4px' }}>Music packs unlocked</div>
-                        </div>
-                        <div style={{ padding: '10px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-primary)' }}>
-                          <strong>{buttonPackProgress.unlockedCount}/{buttonPackProgress.totalCount}</strong>
-                          <div style={{ fontSize: '12px', opacity: 0.72, marginTop: '4px' }}>Button packs unlocked</div>
-                        </div>
-                      </div>
-                      {nextAudioUnlock && (
-                        <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                          {`Next audio unlock: ${nextAudioUnlock.label} (${nextAudioUnlock.category}) at ${Number(nextAudioUnlock.requiredXP || 0).toLocaleString()} XP.`}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="save-btn"
-                          onClick={() => {
-                            window.location.hash = '#/rewards';
-                          }}
-                        >
-                          Open Rewards Audio Controls
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleSection>
-
               {/* Preferences Section */}
               <CollapsibleSection
                 title="Preferences"
@@ -901,19 +800,6 @@ function Settings() {
                     <>
                       <div className="notification-section">
                         <h4>Notification Types</h4>
-
-                        <div className="setting-item">
-                          <label>🏆 Achievement unlocked</label>
-                          <div className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={achievementNotifications}
-                              onChange={(e) => setAchievementNotifications(e.target.checked)}
-                              id="achievement-notifications"
-                            />
-                            <label htmlFor="achievement-notifications" className="toggle-slider"></label>
-                          </div>
-                        </div>
 
                         <div className="setting-item">
                           <label>🎮 Game launched successfully</label>
@@ -1068,7 +954,7 @@ function Settings() {
                   </div>
 
                   <div className="setting-item">
-                    <label>Disk Usage &amp; Storage Manager</label>
+                    <label>Disk Usage &amp; Library Reclaimer</label>
                     <div className="toggle-switch">
                       <input
                         type="checkbox"
@@ -1084,7 +970,7 @@ function Settings() {
                       <label htmlFor="disk-usage-enabled" className="toggle-slider"></label>
                     </div>
                     <p className="setting-description">
-                      On by default. GamePilot walks each game's install folder locally to measure disk usage and powers the Storage Manager page + size chips on Library cards. Everything stays on-device — no data leaves your machine. Folder walks are throttled and bounded so they cannot hang the app.
+                      On by default. GamePilot walks each game's install folder locally to measure disk usage and powers the Library Reclaimer page + size chips on Library cards. Everything stays on-device — no data leaves your machine. Folder walks are throttled and bounded so they cannot hang the app.
                   </p>
                   </div>
 
@@ -1236,7 +1122,7 @@ function Settings() {
               {/* Data Management Section */}
               <CollapsibleSection
                 title="Data Management"
-                subtitle="Clear cache or reset local settings. Full backups live in Export & Share."
+                subtitle="Clear cache or reset local settings to defaults."
                 badge="Local tools"
                 icon={<Database size={18} />}
                 className="settings-folder"
@@ -1248,6 +1134,14 @@ function Settings() {
                   </div>
                   <div className="data-settings">
                   <div className="data-actions">
+                    <button onClick={() => LibraryExportService.exportLibrary(library, 'csv')} className="data-button export">
+                      <Save size={16} />
+                      Export CSV
+                    </button>
+                    <button onClick={() => LibraryExportService.exportLibrary(library, 'markdown')} className="data-button export">
+                      <Save size={16} />
+                      Export Markdown
+                    </button>
                     <button onClick={clearCache} className="data-button clear">
                       <Trash2 size={16} />
                       Clear Cache
@@ -1257,6 +1151,7 @@ function Settings() {
                       Reset All
                     </button>
                   </div>
+                  <ScanReportPanel />
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1264,8 +1159,8 @@ function Settings() {
               {/* Patreon Supporter Section */}
               <CollapsibleSection
                 title="Support GamePilot"
-                subtitle="Patreon support links plus optional XP boost code activation."
-                badge="XP boost"
+                subtitle="Cosmetic supporter extras — all progression rewards unlock free through gameplay."
+                badge={hasPatreonAccess() ? 'Supporter' : 'Themes +'}
                 icon={<Heart size={18} />}
                 className="settings-folder"
               >
@@ -1276,8 +1171,8 @@ function Settings() {
                   </div>
                   <div className="patreon-section">
                   <div className="patreon-info">
-                    <p>Support GamePilot development on Patreon and activate optional XP boost perks.</p>
-                    <p>Enter your Patreon code to apply an XP multiplier to your progression.</p>
+                    <p>Every reward, theme, and feature in GamePilot unlocks free through gameplay and XP progression.</p>
+                    <p>Supporters get cosmetic extras — bonus themes, a theme builder with colors and effects, accent colors, and an XP boost — as a thank you for backing development.</p>
                   </div>
                   <div className="activation-code-section">
                     <div className="setting-item">
@@ -1330,9 +1225,111 @@ function Settings() {
                       )}
                     </div>
                   </div>
+
+                  {/* Store Unlock Code Section */}
+                  <div className="activation-code-section">
+                    <div className="setting-item">
+                      <label>Store Unlock Code <span style={{ fontSize: '12px', opacity: 0.7 }}>(itch.io / one-time)</span></label>
+                      <div className="activation-input-group">
+                        <input
+                          type="text"
+                          placeholder="Enter your store unlock code"
+                          value={storeCode}
+                          onChange={(e) => setStoreCode(e.target.value)}
+                          className="activation-input"
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            border: '1px solid var(--border-primary)',
+                            borderRadius: '4px',
+                            backgroundColor: 'var(--bg-secondary)',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
+                        <button
+                          onClick={handleStoreCodeSubmit}
+                          className="activation-button"
+                          style={{
+                            marginLeft: '8px',
+                            padding: '8px 16px',
+                            backgroundColor: 'var(--button-primary-bg)',
+                            color: 'var(--button-primary-text)',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          <Unlock size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                          Redeem
+                        </button>
+                      </div>
+                      {storeCodeResult && (
+                        <div className={`activation-result ${storeCodeResult.success ? 'success' : 'error'}`} style={{
+                          marginTop: '8px',
+                          padding: '8px 12px',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          backgroundColor: storeCodeResult.success ? 'var(--success-bg, #d4edda)' : 'var(--error-bg, #f8d7da)',
+                          color: storeCodeResult.success ? 'var(--success-text, #155724)' : 'var(--error-text, #721c24)',
+                          border: `1px solid ${storeCodeResult.success ? 'var(--success-border, #c3e6cb)' : 'var(--error-border, #f5c6cb)'}`
+                        }}>
+                          {storeCodeResult.message}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="patreon-links">
-                    <button 
-                      onClick={() => window.open('https://www.patreon.com/gamepilot', '_blank')}
+                    {(hasPatreonAccess() || EntitlementService.hasEntitlement('advanced_theme_builder') || EntitlementService.hasEntitlement('gamepilot_pro') || TrialService.isTrialActive('advanced_theme_builder')) && (
+                      <button
+                        onClick={() => navigate('/theme-builder')}
+                        className="patreon-button"
+                        style={{
+                          backgroundColor: 'var(--accent-primary)',
+                          color: '#0f172a',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '12px 24px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <Palette size={16} />
+                        Open Theme Builder
+                        {TrialService.isTrialActive('advanced_theme_builder') && !EntitlementService.hasEntitlement('advanced_theme_builder') && !EntitlementService.hasEntitlement('gamepilot_pro') && (
+                          <span className="trial-badge">Trial</span>
+                        )}
+                      </button>
+                    )}
+                    {!hasPatreonAccess() && !EntitlementService.hasEntitlement('advanced_theme_builder') && !EntitlementService.hasEntitlement('gamepilot_pro') && !TrialService.isTrialActive('advanced_theme_builder') && (
+                      <button
+                        onClick={() => {
+                          const result = TrialService.startTrial('advanced_theme_builder');
+                          alert(result.message);
+                        }}
+                        className="patreon-button trial-btn"
+                        style={{
+                          borderRadius: '8px',
+                          padding: '12px 24px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <Palette size={16} />
+                        Try Theme Builder
+                      </button>
+                    )}
+                    <button
+                      onClick={() => window.open('https://www.patreon.com/cw/GamePilot', '_blank')}
                       className="patreon-button"
                       style={{
                         backgroundColor: '#ff424d',
@@ -1357,6 +1354,23 @@ function Settings() {
               </CollapsibleSection>
             </div>
           </div>
+
+          {/* Recommendation Engine Tuner — Power Tools exclusive */}
+          {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')) && (
+            <div className="settings-section-wrapper">
+              <div className="settings-folder-content">
+                <CollapsibleSection
+                  title="Recommendation Engine Tuner"
+                  subtitle="Fine-tune how GamePilot scores and ranks game recommendations."
+                  badge="Power Tools"
+                  icon={<SlidersHorizontal size={18} />}
+                  className="settings-folder power-tools-folder"
+                >
+                  <RecommendationTunerPanel />
+                </CollapsibleSection>
+              </div>
+            </div>
+          )}
 
           {/* Save Settings */}
           <div className="settings-actions">

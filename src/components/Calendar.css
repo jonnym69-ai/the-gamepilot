@@ -220,6 +220,11 @@
   color: var(--text-primary);
 }
 
+.close-modal:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
 .event-form {
   display: flex;
   flex-direction: column;
@@ -274,6 +279,12 @@
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .btn-primary {
@@ -399,6 +410,11 @@
 
 .event-action-btn:hover {
   background: var(--bg-hover);
+}
+
+.event-action-btn:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 /* Responsive Design */
@@ -589,6 +605,11 @@
 
 .close-button:hover {
   background: var(--danger-hover);
+}
+
+.close-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .events-list {

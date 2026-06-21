@@ -27,18 +27,84 @@ const MOOD_PERSONA_IDENTITIES = {
     label: 'Story Diver',
     description: 'Loses hours to expansive narratives and atmospheric journeys.'
   },
-  Tactical: {
-    label: 'Battle Planner',
-    description: 'Enjoys calculating every move and optimizing combat loadouts.'
-  },
-  Sporty: {
-    label: 'Momentum Driver',
-    description: 'Chases competitive seasons, bracket runs, and tight scorelines.'
-  },
-  Competitive: {
-    label: 'Clutch Specialist',
-    description: 'Lives for head-to-head showdowns and outplaying the meta.'
-  }
+};
+
+const GENRE_PERSONA_IDENTITIES = {
+  Strategy: { label: 'Grand Tactician', description: 'Commands empires, plots turn-by-turn, and outthinks the AI.' },
+  RPG: { label: 'Realm Wanderer', description: 'Chases epic quests, deep builds, and unforgettable party dynamics.' },
+  Action: { label: 'Adrenaline Ace', description: 'Lives for reflex-driven spectacle and explosive set pieces.' },
+  Shooter: { label: 'Sharpshooter', description: 'Calibrates aim, reads the map, and controls the arena.' },
+  FPS: { label: 'Sharpshooter', description: 'Calibrates aim, reads the map, and controls the arena.' },
+  Horror: { label: 'Dread Navigator', description: 'Survives the dark and comes back for the tension.' },
+  Adventure: { label: 'Expedition Lead', description: 'Follows curiosity into unknown worlds and hidden paths.' },
+  Simulation: { label: 'System Weaver', description: 'Tends complex worlds where every dial matters.' },
+  Sports: { label: 'Pitch Champion', description: 'Competes on the court, field, or track with pure athletic drive.' },
+  Racing: { label: 'Velocity Hunter', description: 'Chases the perfect racing line and the podium finish.' },
+  Puzzle: { label: 'Pattern Breaker', description: 'Untangles logic grids and finds beauty in elegant solutions.' },
+  Fighting: { label: 'Combo Sculptor', description: 'Masters frame data and turns every match into a duel.' },
+  MOBA: { label: 'Lane Commander', description: 'Orchestrates team fights and reads the macro game.' },
+  Indie: { label: 'Curator Scout', description: 'Digs deep for the unexpected gems outside the mainstream.' },
+  Sandbox: { label: 'World Builder', description: 'Shapes open sandboxes into something entirely personal.' },
+  Survival: { label: 'Wilderness Forged', description: 'Outlasts the elements and thrives where others retreat.' },
+  'Visual Novel': { label: 'Narrative Connoisseur', description: 'Follows branching stories and savours every dialogue beat.' },
+  Platformer: { label: 'Precision Jumper', description: 'Nails pixel-perfect leaps and finds flow in momentum.' },
+  Management: { label: 'Empire Architect', description: 'Balances resources, staff, and growth with ruthless efficiency.' },
+  Exploration: { label: 'Cartographer', description: 'Maps the uncharted and collects every hidden corner.' },
+  MMO: { label: 'Realm Regular', description: 'Commits to shared worlds and the communities inside them.' },
+  'Story-driven': { label: 'Narrative Voyager', description: 'Follows branching stories and savours every dialogue beat.' },
+  Competitive: { label: 'Arena Challenger', description: 'Thrives on ranked ladders and high-stakes matches.' },
+  Multiplayer: { label: 'Online Operative', description: 'Lives in shared lobbies and persistent online worlds.' },
+  Casual: { label: 'Easygoing Explorer', description: 'Drops in for light, low-pressure sessions any time.' },
+  Party: { label: 'Party Catalyst', description: 'Brings the couch-co-op chaos and group laughs.' },
+  Stealth: { label: 'Shadow Operative', description: 'Favours patience, planning, and the quiet approach.' },
+  Roguelike: { label: 'Run Chaser', description: 'Loves the one-more-run loop and earned mastery.' },
+};
+
+// Genre -> mood lean, used to infer a provisional mood from a scanned library
+const GENRE_MOOD_MAP = Object.freeze({
+  RPG: 'Escapist',
+  Adventure: 'Escapist',
+  Action: 'Escapist',
+  Horror: 'Escapist',
+  Survival: 'Escapist',
+  Exploration: 'Escapist',
+  'Story-driven': 'Escapist',
+  'Visual Novel': 'Escapist',
+  MMO: 'Social',
+  Multiplayer: 'Social',
+  Competitive: 'Social',
+  MOBA: 'Social',
+  Shooter: 'Social',
+  FPS: 'Social',
+  Fighting: 'Social',
+  Sports: 'Social',
+  Racing: 'Social',
+  Party: 'Social',
+  Strategy: 'Focused',
+  Puzzle: 'Focused',
+  Management: 'Focused',
+  Platformer: 'Focused',
+  Stealth: 'Focused',
+  Roguelike: 'Focused',
+  Simulation: 'Creative',
+  Sandbox: 'Creative',
+  Indie: 'Relaxed',
+  Casual: 'Relaxed',
+});
+
+const SESSION_PATTERN_IDENTITIES = {
+  '0-30': { label: 'Quick Bite Player', description: 'Prefers short, focused bursts over long marathons.' },
+  '30-60': { label: 'Snack Sessioner', description: 'Squeezes in satisfying hour-long play windows.' },
+  '60-120': { label: 'Deep Diver', description: 'Commits to medium-length sessions that dig into the meat of a game.' },
+  '120+': { label: 'Marathon Runner', description: 'Settles in for long, uninterrupted play marathons.' },
+};
+
+const TIME_OF_DAY_IDENTITIES = {
+  'Late Night': { label: 'Midnight Forger', description: 'Burns midnight oil and games into the small hours.' },
+  'Morning': { label: 'Dawn Patroller', description: 'Starts the day with a quick session before the world wakes.' },
+  'Afternoon': { label: 'Day Shift Pilot', description: 'Claims the afternoon as prime gaming time.' },
+  'Evening': { label: 'Twilight Commander', description: 'Winds down the day with focused evening play.' },
+  'Night': { label: 'Night Owl', description: 'Gears up after dark when the house goes quiet.' },
 };
 
 const TIME_FILTER_MINUTES = Object.freeze({
@@ -95,11 +161,40 @@ export class UserBehaviorProfile {
           ? profile.completionStats.completedByGenre
           : {}
       },
+      ratingPreferences: {
+        ...defaults.ratingPreferences,
+        ...(profile?.ratingPreferences || {}),
+        highRatedMoods: profile?.ratingPreferences?.highRatedMoods && typeof profile.ratingPreferences.highRatedMoods === 'object'
+          ? profile.ratingPreferences.highRatedMoods
+          : {},
+        highRatedGenres: profile?.ratingPreferences?.highRatedGenres && typeof profile.ratingPreferences.highRatedGenres === 'object'
+          ? profile.ratingPreferences.highRatedGenres
+          : {},
+        lowRatedMoods: profile?.ratingPreferences?.lowRatedMoods && typeof profile.ratingPreferences.lowRatedMoods === 'object'
+          ? profile.ratingPreferences.lowRatedMoods
+          : {},
+        lowRatedGenres: profile?.ratingPreferences?.lowRatedGenres && typeof profile.ratingPreferences.lowRatedGenres === 'object'
+          ? profile.ratingPreferences.lowRatedGenres
+          : {},
+        likedTags: profile?.ratingPreferences?.likedTags && typeof profile.ratingPreferences.likedTags === 'object'
+          ? profile.ratingPreferences.likedTags
+          : {},
+        dislikedTags: profile?.ratingPreferences?.dislikedTags && typeof profile.ratingPreferences.dislikedTags === 'object'
+          ? profile.ratingPreferences.dislikedTags
+          : {},
+        wouldReplayMoods: profile?.ratingPreferences?.wouldReplayMoods && typeof profile.ratingPreferences.wouldReplayMoods === 'object'
+          ? profile.ratingPreferences.wouldReplayMoods
+          : {},
+        wouldReplayGenres: profile?.ratingPreferences?.wouldReplayGenres && typeof profile.ratingPreferences.wouldReplayGenres === 'object'
+          ? profile.ratingPreferences.wouldReplayGenres
+          : {}
+      },
       feedbackPreferences: {
         ...defaults.feedbackPreferences,
         ...(profile?.feedbackPreferences || {})
       },
-      selectionHistory: Array.isArray(profile?.selectionHistory) ? profile.selectionHistory : []
+      selectionHistory: Array.isArray(profile?.selectionHistory) ? profile.selectionHistory : [],
+      lastSyncedSessionTimestamp: profile?.lastSyncedSessionTimestamp || null
     };
   }
 
@@ -125,11 +220,23 @@ export class UserBehaviorProfile {
         completedByGenre: {}, // { genre: count }
         averageCompletionTime: 0 // minutes
       },
+      ratingPreferences: {
+        highRatedMoods: {},
+        highRatedGenres: {},
+        lowRatedMoods: {},
+        lowRatedGenres: {},
+        likedTags: {},
+        dislikedTags: {},
+        wouldReplayMoods: {},
+        wouldReplayGenres: {},
+        ratedGameCount: 0
+      },
       feedbackPreferences: {
         recommendationPromptEnabled: true,
         sessionPromptEnabled: true
       },
-      selectionHistory: [] // { mood, genre, time, selectedGameId, timestamp, completed }
+      selectionHistory: [], // { mood, genre, time, selectedGameId, timestamp, completed }
+      lastSyncedSessionTimestamp: null
     };
   }
 
@@ -384,6 +491,58 @@ export class UserBehaviorProfile {
     return profile;
   }
 
+  /**
+   * Track a local 0-10 rating + wouldReplay + tags to learn taste preferences
+   */
+  static trackRating({ gameId = null, rating = 0, wouldReplay = null, tags = [], mood = null, genres = [] } = {}) {
+    const profile = this.getProfile();
+    const normalizedGameId = gameId ? String(gameId) : null;
+    const normalizedRating = Number(rating) || 0;
+
+    if (!normalizedGameId || normalizedRating <= 0) {
+      return profile;
+    }
+
+    const gameGenres = Array.isArray(genres) ? genres.filter(Boolean) : [];
+    const normalizedMood = mood || null;
+
+    const updateBucket = (bucket, key, weight) => {
+      if (!key) return;
+      bucket[key] = (bucket[key] || 0) + weight;
+    };
+
+    const normalized = normalizedRating / 10;
+    if (normalized >= 0.7) {
+      if (normalizedMood) updateBucket(profile.ratingPreferences.highRatedMoods, normalizedMood, normalized);
+      gameGenres.forEach((genre) => updateBucket(profile.ratingPreferences.highRatedGenres, genre, normalized));
+    } else if (normalized <= 0.4) {
+      if (normalizedMood) updateBucket(profile.ratingPreferences.lowRatedMoods, normalizedMood, 1 - normalized);
+      gameGenres.forEach((genre) => updateBucket(profile.ratingPreferences.lowRatedGenres, genre, 1 - normalized));
+    }
+
+    if (Array.isArray(tags)) {
+      tags.forEach((tag) => {
+        if (!tag) return;
+        const weight = normalized >= 0.6 ? normalized : normalized <= 0.4 ? -(1 - normalized) : 0;
+        if (weight > 0) {
+          profile.ratingPreferences.likedTags[tag] = (profile.ratingPreferences.likedTags[tag] || 0) + weight;
+        } else if (weight < 0) {
+          profile.ratingPreferences.dislikedTags[tag] = (profile.ratingPreferences.dislikedTags[tag] || 0) + Math.abs(weight);
+        }
+      });
+    }
+
+    if (wouldReplay === true) {
+      if (normalizedMood) updateBucket(profile.ratingPreferences.wouldReplayMoods, normalizedMood, 1);
+      gameGenres.forEach((genre) => updateBucket(profile.ratingPreferences.wouldReplayGenres, genre, 1));
+    }
+
+    profile.ratingPreferences.ratedGameCount = (profile.ratingPreferences.ratedGameCount || 0) + 1;
+    profile.lastUpdated = new Date().toISOString();
+    this.saveProfile(profile);
+    return profile;
+  }
+
   static trackSessionFeedback(gameName, enjoyed, metadata = {}) {
     if (!gameName || typeof enjoyed !== 'boolean') {
       return this.getProfile();
@@ -442,6 +601,11 @@ export class UserBehaviorProfile {
       Object.assign(historyMatch, metadata);
     }
 
+    // If user marked game as completed during session feedback, track completion
+    if (metadata?.completed) {
+      this.trackCompletion(gameName, resolvedMood, resolvedGenre, playtimeMinutes, normalizedGameId);
+    }
+
     profile.lastUpdated = new Date().toISOString();
     this.saveProfile(profile);
     return profile;
@@ -476,6 +640,36 @@ export class UserBehaviorProfile {
     profile.lastUpdated = new Date().toISOString();
     this.saveProfile(profile);
     return profile;
+  }
+
+  /**
+   * Get liked and disliked game IDs from explicit feedback
+   */
+  static getGameFeedbackMap() {
+    const profile = this.getProfile();
+    const liked = new Set();
+    const disliked = new Set();
+    (profile.selectionHistory || []).forEach((entry) => {
+      const gameId = entry?.selectedGameId || entry?.launchedGameId;
+      if (!gameId) return;
+      const id = String(gameId);
+      if (entry.recommendationHelpful === true || entry.sessionEnjoyed === true) {
+        liked.add(id);
+        disliked.delete(id);
+      } else if (entry.recommendationHelpful === false || entry.sessionEnjoyed === false) {
+        disliked.add(id);
+        liked.delete(id);
+      }
+    });
+    return { liked, disliked };
+  }
+
+  static getLikedGames() {
+    return this.getGameFeedbackMap().liked;
+  }
+
+  static getDislikedGames() {
+    return this.getGameFeedbackMap().disliked;
   }
 
   /**
@@ -537,6 +731,97 @@ export class UserBehaviorProfile {
   }
 
   /**
+   * Get a score boost (0-100) based on how much a game's mood/genres/tags align
+   * with games the user has rated highly or tagged as would-replay.
+   */
+  static getRatingPreferenceBoost(mood = null, genres = [], tags = []) {
+    const profile = this.getProfile();
+    const rp = profile.ratingPreferences;
+    if (!rp || rp.ratedGameCount === 0) return 0;
+
+    let boost = 0;
+    const gameGenres = Array.isArray(genres) ? genres.filter(Boolean) : [];
+    const gameTags = Array.isArray(tags) ? tags.filter(Boolean) : [];
+
+    if (mood && rp.highRatedMoods[mood]) boost += rp.highRatedMoods[mood] * 6;
+    gameGenres.forEach((genre) => {
+      if (rp.highRatedGenres[genre]) boost += rp.highRatedGenres[genre] * 4;
+      if (rp.wouldReplayGenres[genre]) boost += rp.wouldReplayGenres[genre] * 3;
+      if (rp.lowRatedGenres[genre]) boost -= rp.lowRatedGenres[genre] * 6;
+    });
+
+    gameTags.forEach((tag) => {
+      if (rp.likedTags[tag]) boost += rp.likedTags[tag] * 5;
+      if (rp.dislikedTags[tag]) boost -= rp.dislikedTags[tag] * 5;
+    });
+
+    if (mood && rp.lowRatedMoods[mood]) boost -= rp.lowRatedMoods[mood] * 6;
+
+    return Math.max(0, Math.min(100, boost));
+  }
+
+  /**
+   * Build a provisional genre profile from the installed library.
+   * Each game counts as 1 (ownership) and is amplified by hours played, so a
+   * freshly scanned library still yields a meaningful dominant genre.
+   */
+  static getLibraryGenreProfile() {
+    let library = [];
+    try {
+      library = StorageService.get('library', []);
+    } catch (error) {
+      library = [];
+    }
+
+    if (!Array.isArray(library) || library.length === 0) {
+      return {
+        totalGames: 0,
+        topGenres: [],
+        dominantGenre: null,
+        secondaryGenre: null,
+        inferredMood: null,
+        hasPlaytime: false
+      };
+    }
+
+    const weights = {};
+    let hasPlaytime = false;
+
+    library.forEach((game) => {
+      if (!game) return;
+      const genres = Array.isArray(game.genres) ? game.genres : [];
+      if (genres.length === 0) return;
+
+      const minutes = Number(game.time_played || 0);
+      if (minutes > 0) hasPlaytime = true;
+      // Ownership = 1; playtime amplifies but is capped so a single game can't dominate.
+      const weight = 1 + Math.min(minutes / 60, 50) * 0.5;
+
+      genres.forEach((rawGenre) => {
+        const genre = typeof rawGenre === 'string' ? rawGenre.trim() : '';
+        if (!genre) return;
+        weights[genre] = (weights[genre] || 0) + weight;
+      });
+    });
+
+    const ranked = Object.entries(weights)
+      .map(([genre, weight]) => ({ genre, weight: Math.round(weight * 10) / 10 }))
+      .sort((a, b) => b.weight - a.weight);
+
+    const dominantGenre = ranked[0]?.genre || null;
+    const secondaryGenre = ranked[1]?.genre || null;
+
+    return {
+      totalGames: library.length,
+      topGenres: ranked.slice(0, 5),
+      dominantGenre,
+      secondaryGenre,
+      inferredMood: dominantGenre ? (GENRE_MOOD_MAP[dominantGenre] || null) : null,
+      hasPlaytime
+    };
+  }
+
+  /**
    * Get preferred session lengths
    */
   static getPreferredSessionLengths() {
@@ -578,8 +863,9 @@ export class UserBehaviorProfile {
   static getPersonaSnapshot() {
     const profile = this.getProfile();
     const topMoods = this.getTopMoods(3);
+    const topGenres = this.getTopGenres(3);
     const topMood = topMoods[0] || null;
-    const topGenre = this.getTopGenres(1)[0] || null;
+    const topGenre = topGenres[0] || null;
     const sessionPref = this.getPreferredSessionBucket();
     const peakHour = this.getPeakPlayHours(1)[0] || null;
     const onboardingSeed = profile.onboardingSeed || null;
@@ -588,17 +874,54 @@ export class UserBehaviorProfile {
     const overallCompletionRate = profile.selectionHistory.length > 0
       ? Math.round((profile.completionStats.totalCompleted / profile.selectionHistory.length) * 100)
       : 0;
-    const personaIdentity = this.buildPersonaIdentity(topMoods.length > 0 ? topMoods : (seedMood ? [{ mood: seedMood, completionRate: 0, count: 1 }] : []));
+
+    // Provisional signal inferred from the installed library (cold-start support)
+    const libraryProfile = this.getLibraryGenreProfile();
+
+    const hasHistory = topMoods.length > 0 || topGenres.length > 0;
+    const hasSeed = Boolean(seedMood || seedGenre);
+    const hasLibrarySignal = Boolean(libraryProfile.dominantGenre);
+
+    // Resolve effective signals with priority: live history > onboarding seed > library
+    const dominantMood = topMood?.mood || seedMood || libraryProfile.inferredMood || null;
+    const dominantGenre = topGenre?.genre || seedGenre || libraryProfile.dominantGenre || null;
+
+    let source = 'empty';
+    if (hasHistory) source = 'history';
+    else if (hasSeed) source = 'seed';
+    else if (hasLibrarySignal) source = 'library';
+
+    let confidence = 'none';
+    if (source === 'history') {
+      confidence = profile.selectionHistory.length >= 8 ? 'confirmed' : 'growing';
+    } else if (source === 'seed' || source === 'library') {
+      confidence = 'provisional';
+    }
+
+    // Build identity, falling back to inferred mood/genre when there's no live history
+    const moodsForIdentity = topMoods.length > 0
+      ? topMoods
+      : (dominantMood ? [{ mood: dominantMood, completionRate: 0, count: hasSeed ? 1 : 0 }] : []);
+    const genresForIdentity = topGenres.length > 0
+      ? topGenres
+      : (dominantGenre ? [{ genre: dominantGenre, count: 0, completionRate: 0 }] : []);
+
+    const personaIdentity = this.buildPersonaIdentity(
+      moodsForIdentity,
+      genresForIdentity,
+      sessionPref.bucket,
+      peakHour?.timeOfDay || null
+    );
 
     const personaTags = [];
     if (personaIdentity) {
       personaTags.push(personaIdentity.label);
     }
-    if (topMood || seedMood) {
-      personaTags.push(`${(topMood?.mood || seedMood)} seeker`);
+    if (dominantMood) {
+      personaTags.push(`${dominantMood} seeker`);
     }
-    if (topGenre || seedGenre) {
-      personaTags.push(`${(topGenre?.genre || seedGenre)} specialist`);
+    if (dominantGenre) {
+      personaTags.push(`${dominantGenre} specialist`);
     }
     if (sessionPref.bucket) {
       const bucketLabel = {
@@ -613,20 +936,38 @@ export class UserBehaviorProfile {
       }[sessionPref.bucket] || sessionPref.bucket;
       personaTags.push(bucketLabel);
     }
+    if (peakHour?.timeOfDay) {
+      personaTags.push(`${peakHour.timeOfDay} Gamer`);
+    }
+
+    const sessionPatternLabel = sessionPref.bucket
+      ? (SESSION_PATTERN_IDENTITIES[sessionPref.bucket]?.label || sessionPref.bucket)
+      : null;
+    const timeOfDayLabel = peakHour?.timeOfDay
+      ? (TIME_OF_DAY_IDENTITIES[peakHour.timeOfDay]?.label || peakHour.timeOfDay)
+      : null;
 
     return {
-      dominantMood: topMood?.mood || seedMood || null,
+      dominantMood,
       dominantMoodCompletion: topMood?.completionRate || 0,
-      dominantGenre: topGenre?.genre || seedGenre || null,
+      dominantGenre,
       dominantGenreCompletion: topGenre?.completionRate || 0,
       preferredSessionBucket: sessionPref.bucket,
+      sessionPatternLabel,
+      timeOfDayLabel,
       avgSessionLength: Math.round(profile.playstylePatterns.avgSessionLength) || 0,
       peakPlayWindow: peakHour ? peakHour.timeOfDay : null,
       peakPlayHour: peakHour ? peakHour.hour : null,
       overallCompletionRate,
       personaTags,
       personaIdentity,
-      onboardingSeed
+      onboardingSeed,
+      // Cold-start metadata: how this persona was derived and how confident we are
+      source,
+      confidence,
+      inferredFromLibrary: source === 'library',
+      totalLibraryGames: libraryProfile.totalGames,
+      libraryTopGenres: libraryProfile.topGenres
     };
   }
 
@@ -701,22 +1042,53 @@ export class UserBehaviorProfile {
   /**
    * Build persona identity metadata from the top moods
    */
-  static buildPersonaIdentity(topMoods = []) {
+  static buildPersonaIdentity(topMoods = [], topGenres = [], sessionBucket = null, peakTimeOfDay = null) {
     if (!Array.isArray(topMoods) || topMoods.length === 0) {
       return null;
     }
 
     const primary = topMoods[0];
     const secondary = topMoods[1];
-    const identityMeta = MOOD_PERSONA_IDENTITIES[primary.mood] || {
+    const moodMeta = MOOD_PERSONA_IDENTITIES[primary.mood] || {
       label: `${primary.mood} Specialist`,
       description: `Primarily drawn to ${primary.mood.toLowerCase()} sessions.`
     };
 
+    // Blend genre identity when available
+    const primaryGenre = topGenres[0];
+    let label = moodMeta.label;
+    let description = moodMeta.description;
+
+    if (primaryGenre) {
+      const genreMeta = GENRE_PERSONA_IDENTITIES[primaryGenre.genre] || {
+        label: `${primaryGenre.genre} Specialist`,
+        description: `Frequently plays ${primaryGenre.genre.toLowerCase()} titles.`
+      };
+      label = `${moodMeta.label} · ${genreMeta.label}`;
+      description = `${moodMeta.description} Also ${genreMeta.description.toLowerCase()}`;
+    }
+
+    // Blend session pattern into description
+    if (sessionBucket) {
+      const sessionMeta = SESSION_PATTERN_IDENTITIES[sessionBucket] || null;
+      if (sessionMeta) {
+        description += ` Tends toward ${sessionMeta.label.toLowerCase()} sessions.`;
+      }
+    }
+
+    if (peakTimeOfDay) {
+      const timeMeta = TIME_OF_DAY_IDENTITIES[peakTimeOfDay] || null;
+      if (timeMeta) {
+        description += ` Often a ${timeMeta.label.toLowerCase()} (${peakTimeOfDay.toLowerCase()}).`;
+      }
+    }
+
     return {
-      label: identityMeta.label,
-      description: identityMeta.description,
-      anchors: [primary.mood, secondary?.mood].filter(Boolean),
+      label,
+      description,
+      anchors: [primary.mood, secondary?.mood, primaryGenre?.genre].filter(Boolean),
+      sessionPattern: sessionBucket,
+      peakTimeOfDay,
       completionSignal: primary.completionRate,
       selectionWeight: primary.count
     };
@@ -854,6 +1226,72 @@ export class UserBehaviorProfile {
     if (hour < 17) return 'Afternoon';
     if (hour < 21) return 'Evening';
     return 'Night';
+  }
+
+  /**
+   * Track a passive play session (any game launch/end, not just recommendation picks).
+   * This is the primary learning signal — every session teaches the behavior profile
+   * about mood/genre preferences, session length patterns, and peak play times.
+   */
+  static trackPassiveSession(gameName, playtimeMinutes, { mood = null, genres = [], gameId = null } = {}) {
+    if (!playtimeMinutes || playtimeMinutes < 1) {
+      return this.getProfile();
+    }
+
+    const profile = this.getProfile();
+
+    // 1. Track session length patterns (avgSessionLength, preferred buckets, peak hours)
+    const totalSessions = profile.playstylePatterns.totalSessionsTracked;
+    profile.playstylePatterns.avgSessionLength =
+      (profile.playstylePatterns.avgSessionLength * totalSessions + playtimeMinutes) / (totalSessions + 1);
+
+    const lengthCategory = this.getSessionLengthCategory(playtimeMinutes);
+    if (!profile.playstylePatterns.preferredSessionLengths[lengthCategory]) {
+      profile.playstylePatterns.preferredSessionLengths[lengthCategory] = 0;
+    }
+    profile.playstylePatterns.preferredSessionLengths[lengthCategory] += 1;
+
+    const hour = new Date().getHours();
+    if (!profile.playstylePatterns.peakPlayTimes[hour]) {
+      profile.playstylePatterns.peakPlayTimes[hour] = 0;
+    }
+    profile.playstylePatterns.peakPlayTimes[hour] += 1;
+
+    profile.playstylePatterns.totalSessionsTracked += 1;
+
+    // 2. Track mood preference from this session
+    if (mood) {
+      if (!profile.moodPreferences[mood]) {
+        profile.moodPreferences[mood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
+      }
+      profile.moodPreferences[mood].count += 1;
+      profile.moodPreferences[mood].totalPlaytime = (profile.moodPreferences[mood].totalPlaytime || 0) + playtimeMinutes;
+    }
+
+    // 3. Track genre preferences from this session
+    const validGenres = Array.isArray(genres) ? genres.filter(Boolean) : [];
+    validGenres.forEach((genre) => {
+      if (!profile.genrePreferences[genre]) {
+        profile.genrePreferences[genre] = { count: 0, totalPlaytime: 0, completedCount: 0 };
+      }
+      profile.genrePreferences[genre].count += 1;
+      profile.genrePreferences[genre].totalPlaytime = (profile.genrePreferences[genre].totalPlaytime || 0) + playtimeMinutes;
+    });
+
+    // 4. Track time slot preference
+    const timeSlot = this.getTimeSlot(playtimeMinutes);
+    if (timeSlot) {
+      if (!profile.timeSlotPreferences[timeSlot]) {
+        profile.timeSlotPreferences[timeSlot] = { count: 0, totalPlaytime: 0 };
+      }
+      profile.timeSlotPreferences[timeSlot].count += 1;
+      profile.timeSlotPreferences[timeSlot].totalPlaytime = (profile.timeSlotPreferences[timeSlot].totalPlaytime || 0) + playtimeMinutes;
+    }
+
+    profile.lastUpdated = new Date().toISOString();
+    profile.lastSyncedSessionTimestamp = new Date().toISOString();
+    this.saveProfile(profile);
+    return profile;
   }
 
   /**

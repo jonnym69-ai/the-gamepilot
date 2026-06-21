@@ -1,0 +1,33 @@
+.recommendation-reason-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--accent-bg, rgba(99, 102, 241, 0.12));
+  border: 1px solid var(--accent-border, rgba(99, 102, 241, 0.25));
+  color: var(--accent-text, #a5b4fc);
+  font-size: 0.8rem;
+  line-height: 1.2;
+  max-width: 100%;
+  margin-top: 8px;
+}
+
+.recommendation-reason-confidence {
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--accent-primary, #818cf8);
+}
+
+.recommendation-reason-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .recommendation-reason-chip {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+}

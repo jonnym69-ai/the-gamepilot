@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Share2, Trash2 } from 'lucide-react';
+import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Share2, Trash2 } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
 import { GameRequirements } from '../services/GameRequirements';
@@ -7,16 +7,20 @@ import { openExternalUrl } from '../services/ElectronBridge';
 import { HardwareDetector } from '../services/HardwareDetector';
 import { LocalShareService } from '../services/LocalShareService';
 import { GameCurationService } from '../services/GameCurationService';
+import { GameRatingService } from '../services/GameRatingService';
 import LibrariansNotes from './LibrariansNotes';
 import SaveBackupPanel from './SaveBackupPanel';
 import SteamSnapshot from './SteamSnapshot';
 import PatchNewsPanel from './PatchNewsPanel';
 import UninstallModal from './UninstallModal';
+import useInterfacePreferences from '../hooks/useInterfacePreferences';
+import { useToast } from './Toast';
 import './GameModal.css';
 
 const REPLAY_INTENT_OPTIONS = ['none', 'soon', 'active', 'finished', 'endless'];
 
 const RATING_PRESETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const RATING_TAG_SUGGESTIONS = GameRatingService.getDefaultTags();
 
 const getRatingLabel = (value) => {
   if (!value) return 'Not rated yet';
@@ -29,7 +33,8 @@ const getRatingLabel = (value) => {
   return 'Avoid';
 };
 
-const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavorite = false, onUpdatePrice, onUpdateRating, onUpdateCollections, onToggleHidden, onUpdateCompletion, onUpdateNotes, onUpdateCoverArt, onAddSessionNote }) => {
+const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavorite = false, onTogglePin, onUpdatePrice, onUpdateRating, onUpdateCollections, onToggleHidden, onUpdateCompletion, onUpdateNotes, onUpdateCoverArt, onAddSessionNote }) => {
+  const { success: toastSuccess } = useToast();
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [screenshots, setScreenshots] = useState([]);
@@ -39,6 +44,9 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const [compatibility, setCompatibility] = useState(null);
   const [rating, setRating] = useState(game?.userRating || 0);
   const [replayIntent, setReplayIntent] = useState(game?.replayIntent || 'none');
+  const [wouldReplay, setWouldReplay] = useState(null);
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [saveState, setSaveState] = useState('idle');
   const [selectedControlIndex, setSelectedControlIndex] = useState(0);
   const [collections] = useState(() => GameCurationService.getCollections());
@@ -47,12 +55,21 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const [coverArtUrl, setCoverArtUrl] = useState(game?.coverArtOverride || '');
   const [sessionNoteText, setSessionNoteText] = useState('');
   const fetchedGameId = React.useRef(null);
+  const interfacePrefs = useInterfacePreferences();
+  const isPinned = useMemo(() => {
+    const key = String(game?.appid || game?.name || '');
+    return (interfacePrefs.pinnedGameIds || []).map(String).includes(key);
+  }, [interfacePrefs.pinnedGameIds, game]);
 
   // Sync state when game prop changes
   useEffect(() => {
     if (game) {
       setRating(game.userRating || 0);
       setReplayIntent(game.replayIntent || 'none');
+      const gameId = String(game.appid || game.name || '');
+      const ratingData = gameId ? GameRatingService.getRating(gameId) : null;
+      setWouldReplay(ratingData?.wouldReplay ?? null);
+      setTags(ratingData?.tags || []);
       setSelectedCollections(game.userCollections || []);
       setCompletionStatus(game.completionStatus || 'not-started');
       setCoverArtUrl(game.coverArtOverride || '');
@@ -67,21 +84,39 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   }, []);
 
   const handleRatingSave = useCallback((finalRating = rating, finalReplayIntent = replayIntent) => {
+    const gameId = String(game?.appid || game?.name || '');
+    if (gameId) {
+      GameRatingService.setRating(gameId, {
+        value: finalRating,
+        wouldReplay,
+        tags
+      });
+    }
     if (onUpdateRating) {
-      onUpdateRating(game.name, finalRating, finalReplayIntent);
+      onUpdateRating(game.name, finalRating, finalReplayIntent, { wouldReplay, tags });
     }
     setSaveState('saved');
-  }, [game, onUpdateRating, rating, replayIntent]);
+  }, [game, onUpdateRating, rating, replayIntent, wouldReplay, tags]);
 
   const handleReplayIntentChange = useCallback((newIntent) => {
     setReplayIntent(newIntent);
     setSaveState('dirty');
   }, []);
 
-  const hasUnsavedRatingChanges = useMemo(() => (
-    Number(game?.userRating || 0) !== Number(rating || 0)
-    || (game?.replayIntent || 'none') !== replayIntent
-  ), [game?.replayIntent, game?.userRating, rating, replayIntent]);
+  const hasUnsavedRatingChanges = useMemo(() => {
+    const gameId = String(game?.appid || game?.name || '');
+    const ratingData = gameId ? GameRatingService.getRating(gameId) : null;
+    const storedWouldReplay = ratingData?.wouldReplay ?? null;
+    const storedTags = ratingData?.tags || [];
+    const tagsChanged = tags.length !== storedTags.length
+      || tags.some((tag, index) => tag !== storedTags[index]);
+    return (
+      Number(game?.userRating || 0) !== Number(rating || 0)
+      || (game?.replayIntent || 'none') !== replayIntent
+      || storedWouldReplay !== wouldReplay
+      || tagsChanged
+    );
+  }, [game, rating, replayIntent, wouldReplay, tags]);
 
   // Get system info on component mount
   useEffect(() => {
@@ -251,9 +286,10 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     'replay',
     'saveRating',
     ...(game?.appid ? ['store'] : []),
+    ...(typeof onTogglePin === 'function' ? ['pin'] : []),
     ...(typeof onToggleFavorite === 'function' ? ['favorite'] : []),
     'share'
-  ], [game?.appid, onToggleFavorite]);
+  ], [game?.appid, onTogglePin, onToggleFavorite]);
 
   useEffect(() => {
     if (!isOpen || !game) {
@@ -344,7 +380,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
         case 'share': {
           const shareText = `Check out ${game.name} on GamePilot! I've played for ${((game.time_played || 0) / 60).toFixed(1)} hours. #GamePilot`;
           LocalShareService.copyTextToClipboard(shareText);
-          alert('Share text copied to clipboard!');
+          toastSuccess('Share text copied to clipboard!');
           break;
         }
         default:
@@ -354,7 +390,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
 
     window.addEventListener('controllerInput', handleModalControllerInput);
     return () => window.removeEventListener('controllerInput', handleModalControllerInput);
-  }, [favoriteKey, game, handleLaunchGame, handleOpenStore, handleRatingChange, handleRatingSave, handleReplayIntentChange, isOpen, modalControls, onClose, onToggleFavorite, rating, replayIntent, selectedControlIndex, handleCompletionChange, completionStatus]);
+  }, [favoriteKey, game, handleLaunchGame, handleOpenStore, handleRatingChange, handleRatingSave, handleReplayIntentChange, isOpen, modalControls, onClose, onToggleFavorite, rating, replayIntent, selectedControlIndex, handleCompletionChange, completionStatus, toastSuccess]);
 
   if (!isOpen || !game) {
     return <div style={{ display: 'none' }} aria-hidden="true" />;
@@ -367,6 +403,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const compatibilityLabel = compatibility ? GameRequirements.getSettingsLabel(compatibility.settingsLevel) : null;
   const fallbackOverview = `${game.name} is tracked in your ${platformLabel} library${game.mood ? ` and tagged for ${String(game.mood).toLowerCase()} sessions` : ''}.`;
   const playtimeHours = ((game.time_played || 0) / 60).toFixed(1);
+  const ratingPercent = Math.max(0, Math.min(100, ((rating || 0) / 10) * 100));
   const formatDateValue = (value) => {
     if (!value) return null;
     const parsed = new Date(value);
@@ -412,9 +449,9 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                   {screenshots.length > 0 ? (
                     <div className="screenshot-carousel">
                       <div className="screenshot-main">
-                        <img 
+                        <img
                           key={`main-screenshot-${currentScreenshot}`}
-                          src={screenshots[currentScreenshot]?.path_full} 
+                          src={screenshots[currentScreenshot]?.path_full}
                           alt={`Screenshot ${currentScreenshot + 1}`}
                           className="screenshot-main-img"
                           onError={(e) => {
@@ -441,7 +478,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                     </div>
                   ) : (
                     <div className="game-hero-fallback">
-                      <img 
+                      <img
                         src={iconSource}
                         alt={game.name}
                         className="game-hero-art"
@@ -460,7 +497,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                 <div className="game-info-panel">
                   <h3>Overview</h3>
                   {gameDetails?.short_description ? (
-                    <p 
+                    <p
                       className="game-description"
                       dangerouslySetInnerHTML={{ __html: gameDetails.short_description }}
                     />
@@ -511,8 +548,15 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                   <h3>Game Details</h3>
                   <div className="info-grid">
                     <div className="info-item rating-control">
-                      <Star size={16} />
-                      <span className="info-label">Your Rating</span>
+                      <div className="rating-control-header">
+                        <div className="rating-control-label-group">
+                          <Star size={16} />
+                          <span className="info-label">Your Rating</span>
+                        </div>
+                        <div className={`rating-save-status ${hasUnsavedRatingChanges ? 'dirty' : saveState === 'saved' ? 'saved' : ''}`}>
+                          {hasUnsavedRatingChanges ? 'Unsaved changes' : saveState === 'saved' ? 'Saved' : 'Saved to library'}
+                        </div>
+                      </div>
                       <div className="rating-editor" style={{ outline: modalControls[selectedControlIndex] === 'rating' ? '2px solid var(--accent, #ff6b35)' : 'none' }}>
                         <div className="rating-editor-header">
                           <div>
@@ -531,32 +575,42 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                             Clear
                           </button>
                         </div>
-                        <div className="rating-preset-grid" role="group" aria-label="Choose rating out of 10">
-                          {RATING_PRESETS.map((score) => (
-                            <button
-                              key={score}
-                              type="button"
-                              className={`rating-preset ${Math.round(rating) === score && rating > 0 ? 'active' : ''}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRatingChange(score);
-                              }}
-                              aria-pressed={Math.round(rating) === score && rating > 0}
-                            >
-                              {score}
-                            </button>
-                          ))}
+                        <div className="rating-slider-row">
+                          <input
+                            type="range"
+                            min="0"
+                            max="10"
+                            step="0.5"
+                            value={rating || 0}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleRatingChange(Number(e.target.value));
+                            }}
+                            className="rating-slider"
+                            aria-label="Rating out of 10"
+                            style={{
+                              background: `linear-gradient(90deg, rgba(251, 191, 36, 0.95) 0%, rgba(249, 115, 22, 0.95) ${ratingPercent}%, rgba(255, 255, 255, 0.12) ${ratingPercent}%, rgba(255, 255, 255, 0.08) 100%)`
+                            }}
+                          />
+                          <div className="rating-slider-ticks">
+                            {RATING_PRESETS.map((score) => (
+                              <span
+                                key={score}
+                                className={`rating-tick ${(rating || 0) >= score ? 'active' : ''}`}
+                              >
+                                {score}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <div className={`rating-save-status ${hasUnsavedRatingChanges ? 'dirty' : saveState === 'saved' ? 'saved' : ''}`}>
-                        {hasUnsavedRatingChanges ? 'Unsaved changes' : saveState === 'saved' ? 'Saved' : 'Saved to library'}
-                      </div>
                     </div>
+
                     <div className="info-item intent-control">
                       <Play size={16} />
                       <span className="info-label">Replay Intent</span>
-                      <select 
-                        value={replayIntent} 
+                      <select
+                        value={replayIntent}
                         onChange={(e) => {
                           e.stopPropagation();
                           handleReplayIntentChange(e.target.value);
@@ -571,11 +625,111 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                         <option value="endless">Endless/Ongoing</option>
                       </select>
                     </div>
+
+                    <div className="info-item would-replay-control">
+                      <span className="info-label">Would Replay?</span>
+                      <div className="would-replay-options">
+                        <button
+                          type="button"
+                          className={`would-replay-option ${wouldReplay === true ? 'selected' : ''}`}
+                          onClick={() => {
+                            setWouldReplay(true);
+                            setSaveState('dirty');
+                          }}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          className={`would-replay-option ${wouldReplay === false ? 'selected' : ''}`}
+                          onClick={() => {
+                            setWouldReplay(false);
+                            setSaveState('dirty');
+                          }}
+                        >
+                          No
+                        </button>
+                        <button
+                          type="button"
+                          className={`would-replay-option ${wouldReplay === null ? 'selected' : ''}`}
+                          onClick={() => {
+                            setWouldReplay(null);
+                            setSaveState('dirty');
+                          }}
+                        >
+                          Not sure
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="info-item rating-tags-control">
+                      <span className="info-label">Tags</span>
+                      <div className="rating-tags">
+                        {tags.map((tag) => (
+                          <span key={tag} className="rating-tag">
+                            {tag}
+                            <button
+                              type="button"
+                              className="rating-tag-remove"
+                              onClick={() => {
+                                setTags(tags.filter((t) => t !== tag));
+                                setSaveState('dirty');
+                              }}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="tag-input-row">
+                        <input
+                          type="text"
+                          list="rating-tag-suggestions"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          placeholder="Add a tag..."
+                          className="tag-input"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && tagInput.trim()) {
+                              e.preventDefault();
+                              const next = tagInput.trim();
+                              if (!tags.includes(next)) {
+                                setTags([...tags, next]);
+                                setSaveState('dirty');
+                              }
+                              setTagInput('');
+                            }
+                          }}
+                        />
+                        <datalist id="rating-tag-suggestions">
+                          {RATING_TAG_SUGGESTIONS.map((tag) => (
+                            <option key={tag} value={tag} />
+                          ))}
+                        </datalist>
+                        <button
+                          type="button"
+                          className="tag-add-button"
+                          disabled={!tagInput.trim() || tags.includes(tagInput.trim())}
+                          onClick={() => {
+                            const next = tagInput.trim();
+                            if (next) {
+                              setTags([...tags, next]);
+                              setSaveState('dirty');
+                              setTagInput('');
+                            }
+                          }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="info-item">
                       <Clock size={16} />
                       <span className="info-label">Playtime</span>
                       <span>{playtimeHours} hours played</span>
                     </div>
+
                     {gameDetails?.release_date && (
                       <div className="info-item">
                         <Calendar size={16} />
@@ -583,6 +737,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                         <span>{gameDetails.release_date.date}</span>
                       </div>
                     )}
+
                     {genreLabels.length > 0 && (
                       <div className="info-item">
                         <Star size={16} />
@@ -590,6 +745,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                         <span>{genreLabels.join(', ')}</span>
                       </div>
                     )}
+
                     {typeof game.launch_count === 'number' && (
                       <div className="info-item">
                         <Play size={16} />
@@ -597,6 +753,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                         <span>{game.launch_count}</span>
                       </div>
                     )}
+
                     {game.last_played && (
                       <div className="info-item">
                         <span className="info-label">Last Played</span>
@@ -738,7 +895,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                           This is an estimated result based on your current hardware because this game does not have a verified requirements profile in the local database yet.
                         </p>
                       )}
-                      
+
                       {compatibility.requirements && (
                         <div className="requirements-grid">
                           <div className="requirement-level">
@@ -751,7 +908,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                               {compatibility.requirements.minimum.requiresSSD && <li>⚠️ Requires SSD</li>}
                             </ul>
                           </div>
-                          
+
                           <div className="requirement-level">
                             <h4>Recommended Requirements</h4>
                             <ul>
@@ -762,7 +919,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                               {compatibility.requirements.recommended.requiresSSD && <li>⚠️ Requires SSD</li>}
                             </ul>
                           </div>
-                          
+
                           <div className="requirement-level">
                             <h4>Ultra Requirements</h4>
                             <ul>
@@ -775,7 +932,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                           </div>
                         </div>
                       )}
-                      
+
                       {compatibility.bottlenecks && compatibility.bottlenecks.length > 0 && (
                         <div className="bottlenecks-section">
                           <h4>⚡ Potential Bottlenecks</h4>
@@ -830,6 +987,17 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             </button>
           )}
           
+          {typeof onTogglePin === 'function' && (
+            <button
+              className={`wishlist-button ${isPinned ? 'wishlisted' : ''}`}
+              onClick={() => onTogglePin(game)}
+              style={{ outline: modalControls[selectedControlIndex] === 'pin' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
+            >
+              <Pin size={16} />
+              {isPinned ? 'Unpin Game' : 'Pin Game'}
+            </button>
+          )}
+
           {typeof onToggleFavorite === 'function' && (
             <button 
               className={`wishlist-button ${isFavorite ? 'wishlisted' : ''}`}
@@ -846,7 +1014,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             onClick={() => {
               const shareText = `Check out ${game.name} on GamePilot! I've played for ${playtimeHours} hours. #GamePilot`;
               LocalShareService.copyTextToClipboard(shareText);
-              alert('Share text copied to clipboard!');
+              toastSuccess('Share text copied to clipboard!');
             }}
             style={{ outline: modalControls[selectedControlIndex] === 'share' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
           >

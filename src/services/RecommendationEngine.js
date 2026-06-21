@@ -6,6 +6,9 @@ import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import { RecommendationExplainer } from './RecommendationExplainer';
 import { getActiveRecommendationWeights } from './RecommendationWeights';
 import { mapGameGenresToValid, getMoodScoresForGame } from '../constants/GenresMoods';
+import { GamingIdentity } from '../GamingIdentity';
+import { RecommendationTuningService } from './RecommendationTuningService';
+import { GameRatingService } from './GameRatingService';
 import StorageService from './StorageService';
 
 const PERFECT_PLAY_TIME_FILTERS = Object.freeze({
@@ -27,7 +30,7 @@ const PERFECT_PLAY_TIME_FILTERS = Object.freeze({
   }
 });
 
-const RECENTLY_RECOMMENDED_TTL_MS = 60 * 60 * 1000;
+const DEFAULT_RECENTLY_RECOMMENDED_TTL_MS = 60 * 60 * 1000;
 
 const REDISCOVER_MESSAGES = Object.freeze([
   "Haven't played these in a while!",
@@ -152,6 +155,67 @@ export class RecommendationEngine {
       }
     }
 
+    // Gaming Identity archetype & preference bonuses
+    try {
+      const identity = GamingIdentity.getProfile();
+      if (identity?.identity) {
+        const id = identity.identity;
+
+        // Favorite mood match bonus
+        if (mood && id.favoriteMood && mood === id.favoriteMood) {
+          score += w.identityFavoriteMoodBonus || 15;
+        }
+
+        // Favorite genre match bonus
+        const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+        if (id.favoriteGenre && gameGenres.includes(id.favoriteGenre)) {
+          score += w.identityFavoriteGenreBonus || 15;
+        }
+
+        // Playstyle session-length bonus
+        if (id.playStyle && estimatedSessionMinutes) {
+          const playStyle = id.playStyle;
+          if (playStyle === 'Marathon' && estimatedSessionMinutes > 120) {
+            score += w.identityPlaystyleMatchBonus || 10;
+          } else if (playStyle === 'Quick Sessions' && estimatedSessionMinutes <= 60) {
+            score += w.identityPlaystyleMatchBonus || 10;
+          } else if (playStyle === 'Strategic' && estimatedSessionMinutes >= 60 && estimatedSessionMinutes <= 180) {
+            score += w.identityPlaystyleMatchBonus || 10;
+          } else if (playStyle === 'Explorer' && gameGenres.some((g) => ['Adventure', 'RPG', 'Survival', 'Simulation'].includes(g))) {
+            score += w.identityPlaystyleMatchBonus || 10;
+          } else if (playStyle === 'Balanced') {
+            score += Math.round((w.identityPlaystyleMatchBonus || 10) / 2);
+          }
+        }
+
+        // Archetype-genre affinity bonus
+        if (id.archetype) {
+          const archetypeGenreMap = {
+            'RPG Connoisseur': ['RPG'],
+            'Strategy Sage': ['Strategy', 'Management'],
+            'Shooter Specialist': ['Shooter', 'FPS', 'Action'],
+            'Adventure Seeker': ['Adventure', 'Exploration'],
+            'Puzzle Master': ['Puzzle', 'Logic'],
+            'Indie Explorer': ['Indie'],
+            'Horror Enthusiast': ['Horror'],
+            'Sports Fanatic': ['Sports', 'Racing'],
+            'Sandbox Architect': ['Simulation', 'Sandbox', 'Survival'],
+            'MOBA Strategist': ['MOBA', 'Strategy'],
+            'Fighting Veteran': ['Fighting'],
+            'MMO Devotee': ['MMO', 'RPG'],
+            'Narrative Lover': ['Adventure', 'RPG', 'Visual Novel'],
+            'Completionist': ['RPG', 'Adventure', 'Platformer']
+          };
+          const affinityGenres = archetypeGenreMap[id.archetype] || [];
+          if (affinityGenres.some((ag) => gameGenres.includes(ag))) {
+            score += w.identityArchetypeMatchBonus || 12;
+          }
+        }
+      }
+    } catch {
+      // Identity data optional; ignore errors
+    }
+
     // Hardware readiness bonus/penalty
     const compatibility = PersonaPerformanceInsights.getCompatibility(game);
     if (compatibility) {
@@ -207,6 +271,39 @@ export class RecommendationEngine {
         default:
           break;
       }
+    }
+
+    // Explicit feedback from the user (thumbs up/down on specific games)
+    const gameId = String(game?.appid || game?.name || '');
+    if (gameId) {
+      const { liked, disliked } = UserBehaviorProfile.getGameFeedbackMap();
+      if (disliked.has(gameId)) {
+        score -= w.dislikedGamePenalty;
+      } else if (liked.has(gameId)) {
+        score += w.likedGameBonus;
+      }
+
+      const rating = GameRatingService.getRating(gameId);
+      if (rating && typeof rating.value === 'number' && rating.value > 0) {
+        const normalized = rating.value / 10;
+        if (normalized >= 0.8) {
+          score += w.highRatedGameBonus || 18;
+        } else if (normalized >= 0.6) {
+          score += w.likedGameBonus || 12;
+        } else if (normalized <= 0.3) {
+          score -= w.lowRatedGamePenalty || 25;
+        }
+        if (rating.wouldReplay === true) {
+          score += w.wouldReplayBonus || 12;
+        } else if (rating.wouldReplay === false) {
+          score -= w.wouldReplayPenalty || 8;
+        }
+      }
+
+      const gameGenres = mapGameGenresToValid(game?.genres);
+      const gameTags = Array.isArray(rating?.tags) ? rating.tags.filter(Boolean) : [];
+      const ratingBoost = UserBehaviorProfile.getRatingPreferenceBoost(game?.mood || null, gameGenres, gameTags);
+      score += Math.round(ratingBoost * (w.ratingPreferenceMultiplier || 0.25));
     }
 
     return Math.max(w.scoreMin, Math.min(w.scoreMax, score));
@@ -397,18 +494,25 @@ export class RecommendationEngine {
 
   static getRecentRecommendationState() {
     const now = Date.now();
+    const tuning = RecommendationTuningService.getTuning();
+    const fatigueWindowMs = Math.max(
+      0,
+      (Number(tuning.fatigueWindowHours) || 1) * 60 * 60 * 1000
+    );
+    const ttlMs = fatigueWindowMs > 0 ? fatigueWindowMs : DEFAULT_RECENTLY_RECOMMENDED_TTL_MS;
+
     if (typeof localStorage === 'undefined') {
-      return { now, validRecent: [] };
+      return { now, validRecent: [], ttlMs };
     }
 
     try {
       const parsed = StorageService.get('recentlyRecommended', []);
       const validRecent = Array.isArray(parsed)
-        ? parsed.filter((entry) => entry?.name && now - Number(entry.timestamp || 0) < RECENTLY_RECOMMENDED_TTL_MS)
+        ? parsed.filter((entry) => entry?.name && now - Number(entry.timestamp || 0) < ttlMs)
         : [];
-      return { now, validRecent };
+      return { now, validRecent, ttlMs };
     } catch (error) {
-      return { now, validRecent: [] };
+      return { now, validRecent: [], ttlMs };
     }
   }
 
@@ -492,11 +596,26 @@ export class RecommendationEngine {
   static finalizeRecommendations(library, recommendations, count, validRecent, mood, selectedGenre, availableMinutes) {
     const finalRecommendations = [];
     const seenGames = new Set();
+    const tuning = RecommendationTuningService.getTuning();
+    const diversity = Number(tuning.diversity) || 0;
+    const selectedGenres = new Set();
+    const selectedMoods = new Set();
+
+    const applyDiversityPenalty = (game) => {
+      if (diversity <= 0) return 0;
+      const gameGenres = mapGameGenresToValid(game?.genres);
+      const gameMood = game?.mood || null;
+      const genreOverlap = gameGenres.filter((g) => selectedGenres.has(g)).length;
+      const moodOverlap = gameMood && selectedMoods.has(gameMood) ? 1 : 0;
+      return Math.round((genreOverlap * 8 + moodOverlap * 6) * diversity);
+    };
 
     recommendations.forEach((game) => {
       if (game && !seenGames.has(game.name)) {
-        finalRecommendations.push(game);
+        finalRecommendations.push({ ...game, scorePenalty: applyDiversityPenalty(game) });
         seenGames.add(game.name);
+        mapGameGenresToValid(game?.genres).forEach((g) => selectedGenres.add(g));
+        if (game?.mood) selectedMoods.add(game.mood);
       }
     });
 
@@ -509,13 +628,18 @@ export class RecommendationEngine {
           if (validRecent.some((entry) => entry.name === game.name)) {
             score -= 20;
           }
+          score -= applyDiversityPenalty(game);
           score += Math.random() * 10;
           return { ...game, score };
         })
         .sort((left, right) => right.score - left.score);
 
       while (finalRecommendations.length < count && remainingGames.length > 0) {
-        finalRecommendations.push(remainingGames.shift());
+        const next = remainingGames.shift();
+        finalRecommendations.push(next);
+        seenGames.add(next.name);
+        mapGameGenresToValid(next?.genres).forEach((g) => selectedGenres.add(g));
+        if (next?.mood) selectedMoods.add(next.mood);
       }
     }
 
@@ -537,7 +661,9 @@ export class RecommendationEngine {
    */
   static injectExplorationPick(finalRecommendations, library, validRecent, mood, availableMinutes, count) {
     const w = getActiveRecommendationWeights();
-    if (!w.explorationSlotEnabled || count < w.explorationMinPicks || finalRecommendations.length < w.explorationMinPicks) {
+    const tuning = RecommendationTuningService.getTuning();
+    const explorationEnabled = tuning.explorationEnabled && w.explorationSlotEnabled;
+    if (!explorationEnabled || count < w.explorationMinPicks || finalRecommendations.length < w.explorationMinPicks) {
       return finalRecommendations;
     }
 

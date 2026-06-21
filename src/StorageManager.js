@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import NavBar from './NavBar';
-import { HardDrive, RefreshCw, Trash2, Search, Filter, Play, ExternalLink } from 'lucide-react';
+import { HardDrive, RefreshCw, Trash2, Search, Filter, Play, ExternalLink, ThermometerSnowflake, Zap, Disc3 } from 'lucide-react';
 import DiskUsageService, { formatBytes, getDiskKey } from './services/DiskUsageService';
+import { StorageDriveMapper } from './services/StorageDriveMapper';
+import { HardwareDetector } from './services/HardwareDetector';
 import UninstallModal from './components/UninstallModal';
 import LazyImage from './components/LazyImage';
 import { resolveGameArtwork, getGameArtworkPlaceholder } from './services/GameArtworkService';
@@ -12,6 +14,16 @@ const SORT_OPTIONS = [
   { value: 'reclaim', label: 'Most reclaimable (cold + big)' },
   { value: 'cold', label: 'Coldest (longest unplayed)' },
   { value: 'name', label: 'Name (A → Z)' }
+];
+
+const COLD_THRESHOLD_OPTIONS = [
+  { value: 30, label: '30 days' },
+  { value: 60, label: '60 days' },
+  { value: 90, label: '90 days' },
+  { value: 120, label: '120 days' },
+  { value: 180, label: '6 months' },
+  { value: 365, label: '1 year' },
+  { value: 0, label: 'Never played' }
 ];
 
 const formatLastPlayed = (lastPlayed) => {
@@ -43,6 +55,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   const [filterPlatform, setFilterPlatform] = useState('');
   const [sortBy, setSortBy] = useState('size');
   const [search, setSearch] = useState('');
+  const [coldDays, setColdDays] = useState(60);
   const [uninstallTarget, setUninstallTarget] = useState(null);
   const [enabled, setEnabled] = useState(() => DiskUsageService.isEnabled());
 
@@ -60,6 +73,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   const runScan = useCallback(async ({ force = false } = {}) => {
     if (!DiskUsageService.isEnabled()) return;
     if (measurableGames.length === 0) return;
+    if (force) DiskUsageService.clearStaleErrors();
     setScanProgress({ scanned: 0, total: measurableGames.length, running: true });
     let scanned = 0;
     for (const game of measurableGames) {
@@ -81,6 +95,10 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   }, [measurableGames]);
 
   useEffect(() => {
+    // Refresh hardware info so StorageDriveMapper has an up-to-date
+    // driveTypeMap. This is fire-and-forget — the page re-renders via tick
+    // once the IPC round-trip completes and caches systemInfo.
+    HardwareDetector.getSystemInfo().then(() => setTick((t) => t + 1)).catch(() => {});
     // Auto-kick a scan on first mount; if everything is already cached it
     // returns instantly.
     runScan();
@@ -98,6 +116,17 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
     return measurableGames
       .filter((g) => !filterPlatform || g.platform === filterPlatform)
       .filter((g) => !q || (g.name || '').toLowerCase().includes(q))
+      .filter((g) => {
+        if (coldDays === 0) {
+          // Never played
+          return !g.last_played || g.time_played === 0 || g.time_played == null;
+        }
+        if (!g.last_played) return true; // show never-played in all thresholds
+        const ms = new Date(g.last_played).getTime();
+        if (!Number.isFinite(ms) || ms === 0) return true;
+        const days = Math.round((Date.now() - ms) / 86400000);
+        return days >= coldDays;
+      })
       .map((g) => {
         const entry = DiskUsageService.getCached(g);
         const bytes = entry?.ok ? entry.bytes : 0;
@@ -122,7 +151,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
           default: return b.bytes - a.bytes;
         }
       });
-  }, [measurableGames, filterPlatform, search, sortBy, tick]);
+  }, [measurableGames, filterPlatform, search, sortBy, tick, coldDays]);
 
   const totalKnownBytes = useMemo(
     () => decorated.reduce((sum, row) => sum + (row.known ? row.bytes : 0), 0),
@@ -131,10 +160,20 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   const knownCount = decorated.filter((r) => r.known).length;
   const reclaimablePool = useMemo(
     () => decorated
-      .filter((r) => r.known && r.score > 1.5) // >1.5 GB-equivalent reclaim score
+      .filter((r) => r.known && r.score > 1.5)
       .reduce((sum, r) => sum + r.bytes, 0),
     [decorated]
   );
+
+  // Fast-drive cold storage: games on NVMe/SSD that are cold by threshold
+  const fastDriveColdBytes = useMemo(() => {
+    return decorated.reduce((sum, row) => {
+      if (!row.known || row.bytes <= 0) return sum;
+      const driveInfo = StorageDriveMapper.resolve(row.game);
+      if (!driveInfo.drive || (!driveInfo.drive.isNVMe && !driveInfo.drive.isSSD)) return sum;
+      return sum + row.bytes;
+    }, 0);
+  }, [decorated]);
 
   const progressPercent = scanProgress.total > 0
     ? Math.round((scanProgress.scanned / scanProgress.total) * 100)
@@ -146,17 +185,16 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
         <NavBar />
         <div className="storage-manager-empty">
           <HardDrive size={28} />
-          <h1>Disk usage scanning is off</h1>
+          <h1>Library Reclaimer is off</h1>
           <p>
-            GamePilot can measure how much disk space each installed game uses by walking its
-            install folder locally. Nothing leaves your machine — but it does I/O work, so it's
-            opt-in.
+            GamePilot can scan your installed games to find cold, heavy titles that might not be
+            worth keeping around. Everything stays local — but it does I/O work, so it's opt-in.
           </p>
           <button
             type="button"
             onClick={() => { DiskUsageService.setEnabled(true); setEnabled(true); }}
           >
-            Enable disk usage scanning
+            Enable Library Reclaimer
           </button>
         </div>
       </div>
@@ -171,11 +209,11 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
         <div className="storage-manager-hero-text">
           <div className="storage-manager-hero-title">
             <HardDrive size={20} />
-            <h1>Storage Manager</h1>
+            <h1>Library Reclaimer</h1>
           </div>
           <p>
-            Local-only disk audit of every installed game. GamePilot never deletes files —
-            uninstalls are handed to each launcher's official uninstaller.
+            Find the cold, heavy games in your library and reclaim space for your next obsession.
+            GamePilot never deletes files — uninstalls are handed to each launcher's official tool.
           </p>
         </div>
         <div className="storage-manager-hero-stats">
@@ -188,6 +226,11 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
             <span>Reclaim candidates</span>
             <strong>{formatBytes(reclaimablePool)}</strong>
             <em>cold + big</em>
+          </div>
+          <div className="storage-manager-hero-stat fast-cold">
+            <span>Fast drive cold</span>
+            <strong>{formatBytes(fastDriveColdBytes)}</strong>
+            <em>NVMe/SSD unplayed</em>
           </div>
           <button
             type="button"
@@ -225,6 +268,15 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
           </select>
         </label>
         <label className="storage-manager-control">
+          <ThermometerSnowflake size={12} />
+          <span>Cold threshold</span>
+          <select value={coldDays} onChange={(e) => setColdDays(Number(e.target.value))}>
+            {COLD_THRESHOLD_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="storage-manager-control">
           <span>Sort</span>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
             {SORT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -246,8 +298,19 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
             <div role="columnheader" className="num">Last played</div>
             <div role="columnheader" className="actions">Actions</div>
           </div>
-          {decorated.map(({ game, bytes, known }) => (
-            <div className="storage-manager-row" role="row" key={getDiskKey(game) || game.name}>
+          {decorated.map(({ game, bytes, known }) => {
+            const lastPlayedMs = game.last_played ? new Date(game.last_played).getTime() : 0;
+            const daysSincePlayed = lastPlayedMs ? Math.round((Date.now() - lastPlayedMs) / 86400000) : Infinity;
+            const isCold = daysSincePlayed >= 30;
+            const isVeryCold = daysSincePlayed >= 60;
+            const reclaimPrompt = !game.time_played || isVeryCold
+              ? 'Never played — is this worth keeping installed?'
+              : isCold
+                ? `Not played in ${daysSincePlayed} days — is this worth keeping installed?`
+                : null;
+            const driveInfo = StorageDriveMapper.resolve(game);
+            return (
+            <div className={`storage-manager-row${isCold ? ' cold-game' : ''}`} role="row" key={getDiskKey(game) || game.name}>
               <div className="storage-manager-cell-game">
                 <div className="storage-manager-cell-art">
                   <LazyImage
@@ -259,6 +322,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
                 </div>
                 <div className="storage-manager-cell-meta">
                   <strong>{game.name}</strong>
+                  {reclaimPrompt && <span className="reclaim-prompt">{reclaimPrompt}</span>}
                   {game.installDir && <code title={game.installDir}>{game.installDir}</code>}
                 </div>
               </div>
@@ -269,6 +333,15 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
               <div role="cell" className="num">{formatHours(game.time_played)}</div>
               <div role="cell" className="num">{formatLastPlayed(game.last_played)}</div>
               <div role="cell" className="actions">
+                <span
+                  className={`drive-badge ${driveInfo.cssClass}`}
+                  title={driveInfo.name}
+                >
+                  {driveInfo.type === 'NVMe' && <Zap size={10} />}
+                  {driveInfo.type === 'SSD' && <Disc3 size={10} />}
+                  {driveInfo.type === 'HDD' && <HardDrive size={10} />}
+                  {driveInfo.type}
+                </span>
                 <button
                   type="button"
                   className="storage-manager-action launch"
@@ -298,7 +371,8 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

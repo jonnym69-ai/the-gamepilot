@@ -808,15 +808,7 @@ export class RollingAchievementsTracker {
       this.ensureCurrentPeriods(data, now);
 
       if (!library) {
-        const storedLibrary = StorageService.getString('gameLibrary');
-        if (storedLibrary) {
-          try {
-            library = JSON.parse(storedLibrary);
-          } catch (error) {
-            console.error('Error parsing library for rolling achievements:', error);
-            library = null;
-          }
-        }
+        library = StorageService.get('library', null);
       }
 
       const history = PlaytimeAutoLogger.getSessionHistory ? PlaytimeAutoLogger.getSessionHistory() : [];

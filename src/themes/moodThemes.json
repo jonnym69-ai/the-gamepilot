@@ -111,6 +111,14 @@
       "bloom": 0.1,
       "shadow": "0 4px 20px rgba(255, 87, 34, 0.3)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "slow",
+      "intensity": 0.6,
+      "particleCount": 80,
+      "color": "rgba(0, 229, 255, 0.7)"
+    },
     "isPremium": true,
     "requiredTier": "basic"
   },
@@ -226,6 +234,14 @@
       "bloom": 0.12,
       "shadow": "0 4px 20px rgba(139, 92, 246, 0.6)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "medium",
+      "intensity": 0.7,
+      "particleCount": 100,
+      "color": "rgba(139, 92, 246, 0.8)"
+    },
     "isPremium": true,
     "requiredTier": "plus"
   },
@@ -295,28 +311,36 @@
       "bloom": 0.09,
       "shadow": "0 4px 20px rgba(0, 212, 255, 0.5)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "waves",
+      "speed": "slow",
+      "intensity": 0.6,
+      "particleCount": 60,
+      "color": "rgba(0, 212, 255, 0.25)"
+    },
     "isPremium": true,
     "requiredTier": "plus"
   },
   {
     "id": "dark",
     "name": "Dark",
-    "description": "Professional dark theme with grey and orange accents for comfortable night-time gaming.",
+    "description": "Professional dark theme with refined depth layers and warm orange accents.",
     "palette": {
-      "background": "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
-      "surface": "#2d2d2d",
+      "background": "linear-gradient(160deg, #0c0e14 0%, #12141c 40%, #161a24 100%)",
+      "surface": "#181c26",
       "primary": "#ff6b35",
       "secondary": "#ff8c42",
-      "text": "#f5f5f5",
+      "text": "#e8eaf0",
       "accent": "#ffab00",
-      "card": "#2a2a2a",
-      "hover": "#333333"
+      "card": "rgba(22, 26, 38, 0.85)",
+      "hover": "rgba(255, 107, 53, 0.08)"
     },
     "effects": {
       "vignette": 0.02,
       "grain": 0.003,
       "bloom": 0.04,
-      "shadow": "0 4px 20px rgba(255, 107, 53, 0.2)"
+      "shadow": "0 4px 24px rgba(0, 0, 0, 0.4)"
     },
     "isPremium": false
   },
@@ -387,6 +411,14 @@
       "bloom": 0.12,
       "shadow": "0 4px 20px rgba(0, 255, 65, 0.4)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "matrix-rain",
+      "speed": "fast",
+      "intensity": 0.6,
+      "particleCount": 80,
+      "color": "rgba(0, 255, 65, 0.8)"
+    },
     "isPremium": true,
     "requiredTier": "plus"
   },
@@ -456,6 +488,14 @@
       "bloom": 0.2,
       "shadow": "0 4px 20px rgba(0, 255, 255, 0.4)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "medium",
+      "intensity": 0.7,
+      "particleCount": 100,
+      "color": "rgba(0, 255, 255, 0.8)"
+    },
     "isPremium": true,
     "requiredTier": "plus"
   },
@@ -478,6 +518,14 @@
       "grain": 0.008,
       "bloom": 0.12,
       "shadow": "0 4px 20px rgba(233, 30, 99, 0.3)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "slow",
+      "intensity": 0.6,
+      "particleCount": 80,
+      "color": "rgba(255, 0, 100, 0.8)"
     },
     "isPremium": true,
     "requiredTier": "plus"
@@ -525,6 +573,13 @@
       "bloom": 0.15,
       "shadow": "0 4px 20px rgba(56, 239, 125, 0.3)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "snow",
+      "speed": "slow",
+      "intensity": 0.5,
+      "color": "rgba(56, 239, 125, 0.7)"
+    },
     "isPremium": true,
     "requiredTier": "gold"
   },
@@ -548,6 +603,13 @@
       "bloom": 0.2,
       "shadow": "0 4px 20px rgba(255, 0, 102, 0.4)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "pulse",
+      "speed": "slow",
+      "intensity": 0.5,
+      "color": "rgba(255, 0, 102, 0.3)"
+    },
     "isPremium": true,
     "requiredTier": "gold"
   },
@@ -570,6 +632,13 @@
       "grain": 0.004,
       "bloom": 0.08,
       "shadow": "0 4px 20px rgba(255, 118, 117, 0.2)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "pulse",
+      "speed": "medium",
+      "intensity": 0.6,
+      "color": "rgba(255, 0, 102, 0.35)"
     },
     "isPremium": true,
     "requiredTier": "gold"
@@ -617,6 +686,13 @@
       "bloom": 0.1,
       "shadow": "0 4px 20px rgba(255, 107, 53, 0.25)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "pulse",
+      "speed": "slow",
+      "intensity": 0.5,
+      "color": "rgba(255, 107, 53, 0.3)"
+    },
     "isPremium": true,
     "requiredTier": "plus"
   },
@@ -639,6 +715,13 @@
       "grain": 0.009,
       "bloom": 0.08,
       "shadow": "0 4px 20px rgba(19, 78, 94, 0.3)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "rain",
+      "speed": "slow",
+      "intensity": 0.5,
+      "color": "rgba(19, 78, 94, 0.6)"
     },
     "isPremium": true,
     "requiredTier": "gold"
@@ -663,6 +746,14 @@
       "bloom": 0.25,
       "shadow": "0 4px 20px rgba(127, 0, 255, 0.4)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "fast",
+      "intensity": 0.8,
+      "particleCount": 120,
+      "color": "rgba(180, 100, 255, 0.8)"
+    },
     "isPremium": true,
     "requiredTier": "gold"
   },
@@ -685,6 +776,13 @@
       "grain": 0.018,
       "bloom": 0.3,
       "shadow": "0 4px 20px rgba(255, 0, 0, 0.5)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "pulse",
+      "speed": "slow",
+      "intensity": 0.7,
+      "color": "rgba(255, 0, 0, 0.35)"
     },
     "isPremium": true,
     "requiredTier": "gold"
@@ -709,6 +807,13 @@
       "bloom": 0.18,
       "shadow": "0 4px 20px rgba(139, 120, 230, 0.35)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "pulse",
+      "speed": "slow",
+      "intensity": 0.6,
+      "color": "rgba(139, 120, 230, 0.35)"
+    },
     "isPremium": true,
     "requiredTier": "gold"
   },
@@ -732,6 +837,14 @@
       "bloom": 0.22,
       "shadow": "0 4px 20px rgba(0, 210, 255, 0.4)"
     },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "medium",
+      "intensity": 0.7,
+      "particleCount": 100,
+      "color": "rgba(0, 210, 255, 0.8)"
+    },
     "isPremium": true,
     "requiredTier": "gold"
   },
@@ -754,6 +867,14 @@
       "grain": 0.008,
       "bloom": 0.16,
       "shadow": "0 4px 20px rgba(0, 212, 230, 0.35)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "waves",
+      "speed": "slow",
+      "intensity": 0.5,
+      "particleCount": 50,
+      "color": "rgba(0, 212, 230, 0.25)"
     },
     "isPremium": true,
     "requiredTier": "gold"
@@ -800,6 +921,14 @@
       "grain": 0.01,
       "bloom": 0.2,
       "shadow": "0 4px 20px rgba(192, 108, 132, 0.35)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "medium",
+      "intensity": 0.6,
+      "particleCount": 90,
+      "color": "rgba(255, 100, 180, 0.8)"
     },
     "isPremium": true,
     "requiredTier": "gold"
@@ -1135,5 +1264,89 @@
     },
     "seasonal": "winter",
     "isPremium": false
+  },
+  {
+    "id": "aurora-gold",
+    "name": "Aurora Gold",
+    "description": "Exclusive Patreon theme with deep midnight blues, shimmering gold accents, and aurora particle effects.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0e1a 0%, #0f172a 25%, #1a2342 50%, #1e293b 75%, #0f172a 100%)",
+      "surface": "rgba(15, 23, 42, 0.9)",
+      "primary": "#fbbf24",
+      "secondary": "#f59e0b",
+      "text": "#e2e8f0",
+      "accent": "#fbbf24",
+      "card": "rgba(30, 41, 59, 0.85)",
+      "hover": "rgba(251, 191, 36, 0.15)"
+    },
+    "effects": {
+      "vignette": 0.1,
+      "grain": 0.008,
+      "bloom": 0.15,
+      "shadow": "0 4px 24px rgba(251, 191, 36, 0.3)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "starfield",
+      "speed": "slow",
+      "intensity": 0.5,
+      "particleCount": 60,
+      "color": "rgba(251, 191, 36, 0.6)"
+    },
+    "patreonExclusive": true,
+    "isPremium": true
+  },
+  {
+    "id": "rose-quartz",
+    "name": "Rose Quartz",
+    "description": "Exclusive Patreon theme with soft rose pinks, warm creams, and gentle gold highlights.",
+    "palette": {
+      "background": "linear-gradient(135deg, #fff0f3 0%, #ffe4e9 25%, #ffd6de 50%, #fecdd6 75%, #fbcfe8 100%)",
+      "surface": "rgba(255, 255, 255, 0.85)",
+      "primary": "#be185d",
+      "secondary": "#db2777",
+      "text": "#831843",
+      "accent": "#fbbf24",
+      "card": "rgba(255, 255, 255, 0.9)",
+      "hover": "rgba(190, 24, 93, 0.1)"
+    },
+    "effects": {
+      "vignette": 0.02,
+      "grain": 0.004,
+      "bloom": 0.08,
+      "shadow": "0 4px 20px rgba(190, 24, 93, 0.15)"
+    },
+    "patreonExclusive": true,
+    "isPremium": true
+  },
+  {
+    "id": "obsidian-crimson",
+    "name": "Obsidian Crimson",
+    "description": "Exclusive Patreon theme with deep black obsidian surfaces and glowing crimson red accents for a bold, premium look.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0a0a 0%, #111111 25%, #1a0a0a 50%, #111111 75%, #0a0a0a 100%)",
+      "surface": "rgba(20, 10, 10, 0.9)",
+      "primary": "#ef4444",
+      "secondary": "#dc2626",
+      "text": "#fca5a5",
+      "accent": "#ef4444",
+      "card": "rgba(30, 15, 15, 0.85)",
+      "hover": "rgba(239, 68, 68, 0.2)"
+    },
+    "effects": {
+      "vignette": 0.15,
+      "grain": 0.01,
+      "bloom": 0.2,
+      "shadow": "0 4px 24px rgba(239, 68, 68, 0.4)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "pulse",
+      "speed": "slow",
+      "intensity": 0.4,
+      "color": "rgba(239, 68, 68, 0.25)"
+    },
+    "patreonExclusive": true,
+    "isPremium": true
   }
 ]

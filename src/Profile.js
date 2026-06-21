@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon } from 'lucide-react';
+import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon, Sparkles, Award } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
 import { AchievementTracker } from './AchievementSystem';
@@ -8,7 +8,6 @@ import CollapsibleSection from './components/CollapsibleSection';
 import StorageService from './services/StorageService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
-import { BackgroundScanner } from './BackgroundScanner';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
 import NavBar from './NavBar';
@@ -104,6 +103,7 @@ const Profile = ({ theme, library = [] }) => {
   const [tempMessage, setTempMessage] = useState('Ready to find your perfect play?');
   const [gamingIdentity, setGamingIdentity] = useState(null);
   const [xpStats, setXpStats] = useState(null);
+  const [xpBoost, setXpBoost] = useState(null);
   const [completedGames, setCompletedGames] = useState([]);
   const [founderTier, setFounderTier] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -213,22 +213,6 @@ const Profile = ({ theme, library = [] }) => {
     }
   };
 
-  // Check for library updates quietly
-  useEffect(() => {
-    if (library.length > 0) {
-      BackgroundScanner.startScan(
-        ['steam', 'epic', 'xbox', 'gog', 'ea', 'ubisoft', 'playstation', 'battlenet'],
-        null,
-        (stats) => {
-          if (stats && (stats.newGames > 0 || stats.updatedGames > 0)) {
-            success(`Found ${stats.newGames} new and updated ${stats.updatedGames} games`);
-            StatsAggregationService.clearCache();
-          }
-        }
-      );
-    }
-  }, [library.length, success]);
-
   // Load completed games from localStorage
   useEffect(() => {
     const savedCompletedGames = StorageService.get('completedGames', []);
@@ -252,20 +236,20 @@ const Profile = ({ theme, library = [] }) => {
     setCompletedGames(prev => {
       const exists = prev.some(g => g.name === gameName);
       if (!exists) {
-        const newGames = [...prev, { 
-          name: gameName, 
+        const newGames = [...prev, {
+          name: gameName,
           completedAt: new Date().toISOString(),
           playTime: Math.floor(Math.random() * 100) + 50 // Random playtime between 50-150 minutes
         }];
         saveCompletedGames(newGames);
-        
+
         // Update gaming identity
         const identity = GamingIdentity.getProfile();
         if (identity && identity.totalGames) {
           identity.totalGames += 1;
           GamingIdentity.updateGamingIdentity();
         }
-        
+
         success(`${gameName} added to completed games!`);
         return newGames;
       }
@@ -352,7 +336,7 @@ const Profile = ({ theme, library = [] }) => {
       const currentMinutes = sessionStart && !Number.isNaN(sessionStart.getTime())
         ? Math.max(0, Math.floor((Date.now() - sessionStart.getTime()) / (1000 * 60)))
         : 0;
-      
+
       // Check if this is a launcher-based game that might be inaccurate
       const isLauncherBased = ['EA', 'Rockstar', 'Uplay'].includes(game.platform);
       const session = activeSessions[gameName];
@@ -551,8 +535,8 @@ const Profile = ({ theme, library = [] }) => {
         const sessionMinutes = sessionStart && !Number.isNaN(sessionStart.getTime())
           ? Math.max(0, Math.floor((Date.now() - sessionStart.getTime()) / (1000 * 60)))
           : 0;
-        
-        alert(`Ended session for ${gameName}: ${sessionMinutes} minutes recorded`);
+
+        success(`Ended session for ${gameName}: ${sessionMinutes} minutes recorded`);
         delete sessions[gameName];
         StorageService.set('activeGameSessions', sessions);
       }
@@ -587,7 +571,7 @@ const Profile = ({ theme, library = [] }) => {
     const savedMessage = StorageService.getString('welcomeMessage', 'Ready to find your perfect play?');
     const savedTimezone = StorageService.getString('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
     const savedTimeFormat = StorageService.getString('timeFormat', '24-hour');
-    
+
     setUsername(savedUsername);
     setProfilePic(savedProfilePic);
     setWelcomeMessage(savedMessage);
@@ -595,7 +579,7 @@ const Profile = ({ theme, library = [] }) => {
     setTimeFormat(savedTimeFormat);
     setTempUsername(savedUsername);
     setTempMessage(savedMessage);
-    
+
     let userFounders = [];
     try {
       const parsedFounders = StorageService.get('userFounders', []);
@@ -609,7 +593,7 @@ const Profile = ({ theme, library = [] }) => {
 
     setIsFounder(Boolean(effectiveSupportTier));
     setFounderTier(effectiveSupportTier);
-    
+
     const identity = GamingIdentity.getProfile();
     setGamingIdentity(identity);
     setStartupPersonalization(StartupPersonalizationService.getProfile());
@@ -617,6 +601,7 @@ const Profile = ({ theme, library = [] }) => {
 
     const xpData = AchievementTracker.getXPStats();
     setXpStats(xpData);
+    setXpBoost(AchievementTracker.getPatreonBoostProfile());
 
     // Load behavior profile and session stats
     const rawBehaviorProfile = UserBehaviorProfile.getProfile();
@@ -689,7 +674,7 @@ const Profile = ({ theme, library = [] }) => {
         error('Image size must be less than 2MB');
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target.result;
@@ -813,16 +798,16 @@ const Profile = ({ theme, library = [] }) => {
               <User size={32} />
               <h1 className="profile-title" style={{ margin: 0 }}>{username ? `${username}'s Profile` : 'Player Profile'}</h1>
             </div>
-            <div className="profile-header-actions" style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                className="action-btn" 
+            <div className="profile-header-actions" style={{ display: 'none', gap: '10px' }}>
+              <button
+                className="action-btn"
                 onClick={() => setIsCinematicExportOpen(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', background: 'var(--card)', border: '1px solid var(--border-color)', color: 'var(--text)', cursor: 'pointer' }}
               >
                 <ImageIcon size={16} /> Cinematic Poster
               </button>
-              <button 
-                className="action-btn" 
+              <button
+                className="action-btn"
                 onClick={() => setIsExportModalOpen(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', background: 'var(--card)', border: '1px solid var(--border-color)', color: 'var(--text)', cursor: 'pointer' }}
               >
@@ -1180,7 +1165,14 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="identity-trait">
                   <span className="trait-label">Favorite Mood:</span>
                   <span className="trait-value">{gamingIdentity.identity.favoriteMood}</span>
-                </div>
+
+                {gamingIdentity.identity.archetype && (
+                  <div className="identity-trait">
+                    <span className="trait-label">Archetype:</span>
+                    <span className="trait-value">{gamingIdentity.identity.archetype}</span>
+                  </div>
+                )}
+              </div>
               </div>
             </div>
           </CollapsibleSection>
@@ -1195,6 +1187,31 @@ const Profile = ({ theme, library = [] }) => {
           className={getSectionClass(1)}
         >
           <PersonaEvolutionCard evolution={personaEvolution} />
+        </CollapsibleSection>
+
+        {/* Identity Rewards Section */}
+        <CollapsibleSection
+          title="Identity Rewards"
+          subtitle="Earned titles based on your playstyle and identity."
+          badge={GamingIdentity.getIdentityRewards().filter((r) => r.unlocked).length}
+          icon={<Award size={18} />}
+          className={getSectionClass(1)}
+          defaultOpen={false}
+        >
+          <div className="identity-rewards-grid">
+            {GamingIdentity.getIdentityRewards().map((reward) => (
+              <div key={reward.id} className={`identity-reward-card ${reward.unlocked ? 'unlocked' : 'locked'}`}>
+                <span className="identity-reward-icon">{reward.icon}</span>
+                <span className="identity-reward-name">{reward.name}</span>
+                <span className="identity-reward-desc">{reward.desc}</span>
+                {reward.unlocked ? (
+                  <span className="identity-reward-status">Unlocked</span>
+                ) : (
+                  <span className="identity-reward-status">Locked</span>
+                )}
+              </div>
+            ))}
+          </div>
         </CollapsibleSection>
 
         {/* XP & Level Section */}
@@ -1225,7 +1242,7 @@ const Profile = ({ theme, library = [] }) => {
                   <span>{xpStats.xpProgress}/{xpStats.xpToNextLevel} XP</span>
                 </div>
                 <div className="xp-progress-bar">
-                  <div 
+                  <div
                     className="xp-progress-fill"
                     style={{ width: `${xpStats.levelProgress}%` }}
                   ></div>
@@ -1233,23 +1250,33 @@ const Profile = ({ theme, library = [] }) => {
               </div>
               <div className="xp-breakdown">
                 <div className="xp-source">
-                  <Trophy size={16} />
-                  <span>Achievements: {xpStats.achievementXP} XP</span>
+                  <TrendingUp size={16} />
+                  <span>Habits: {(xpStats.habitXP || 0).toLocaleString()} XP</span>
                 </div>
                 <div className="xp-source">
                   <Clock size={16} />
-                  <span>Playtime: {xpStats.playtimeXP} XP</span>
+                  <span>Playtime: {(xpStats.playtimeXP || 0).toLocaleString()} XP</span>
                 </div>
                 <div className="xp-source">
                   <Star size={16} />
-                  <span>Total: {xpStats.totalXP} XP</span>
+                  <span>Total: {xpStats.totalXP.toLocaleString()} XP</span>
                 </div>
               </div>
+              {xpBoost && xpBoost.multiplier > 1 && (
+                <div className="xp-boost-indicator">
+                  <Sparkles size={16} />
+                  <span>
+                    <strong>{xpBoost.multiplier}x XP Boost</strong> active
+                    {xpBoost.tier && ` (${xpBoost.tier} tier)`}
+                    {xpBoost.isMonthly && ' — monthly'}
+                  </span>
+                </div>
+              )}
             </div>
           </CollapsibleSection>
         )}
 
-        {rewardSummary && (
+        {false && rewardSummary && (
           <CollapsibleSection
             title="Reward Economy"
             subtitle="XP totals, category counts, and the next unlocks on your roadmap."
@@ -1291,16 +1318,6 @@ const Profile = ({ theme, library = [] }) => {
                 <span className="reward-summary-label">Themes</span>
                 <strong className="reward-summary-value">{rewardSummary.unlockedCounts.themes}/{rewardSummary.totalCounts.themes}</strong>
                 <span className="reward-summary-caption">Theme variants waiting across XP tiers</span>
-              </div>
-              <div className="reward-summary-card">
-                <span className="reward-summary-label">Music Packs</span>
-                <strong className="reward-summary-value">{rewardSummary.unlockedCounts.musicPacks}/{rewardSummary.totalCounts.musicPacks}</strong>
-                <span className="reward-summary-caption">Background tracks configurable in Rewards</span>
-              </div>
-              <div className="reward-summary-card">
-                <span className="reward-summary-label">Atmosphere Packs</span>
-                <strong className="reward-summary-value">{rewardSummary.unlockedCounts.ambientPacks}/{rewardSummary.totalCounts.ambientPacks}</strong>
-                <span className="reward-summary-caption">Ambient loops for mood and theme matching</span>
               </div>
               <div className="reward-summary-card">
                 <span className="reward-summary-label">Button Packs</span>
@@ -1401,7 +1418,7 @@ const Profile = ({ theme, library = [] }) => {
           </CollapsibleSection>
         )}
 
-        {rewardCatalog && (
+        {false && rewardCatalog && (
           <CollapsibleSection
             title="Reward Catalog"
             subtitle="Browse every unlockable profile, presentation, theme, and audio reward."
@@ -1431,16 +1448,6 @@ const Profile = ({ theme, library = [] }) => {
                       <span className="reward-summary-label">Themes</span>
                       <strong className="reward-summary-value">{rewardSummary.unlockedCounts.themes}/{rewardSummary.totalCounts.themes}</strong>
                       <span className="reward-summary-caption">Theme variants waiting across XP tiers</span>
-                    </div>
-                    <div className="reward-summary-card">
-                      <span className="reward-summary-label">Music Packs</span>
-                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.musicPacks}/{rewardSummary.totalCounts.musicPacks}</strong>
-                      <span className="reward-summary-caption">Background tracks configurable in Rewards</span>
-                    </div>
-                    <div className="reward-summary-card">
-                      <span className="reward-summary-label">Atmosphere Packs</span>
-                      <strong className="reward-summary-value">{rewardSummary.unlockedCounts.ambientPacks}/{rewardSummary.totalCounts.ambientPacks}</strong>
-                      <span className="reward-summary-caption">Ambient loops for mood and theme matching</span>
                     </div>
                     <div className="reward-summary-card">
                       <span className="reward-summary-label">Button Packs</span>
@@ -1919,20 +1926,20 @@ const Profile = ({ theme, library = [] }) => {
                 }
               }}
             />
-            
+
             {isExportModalOpen && (
-              <ExportModal 
-                isOpen={isExportModalOpen} 
-                onClose={() => setIsExportModalOpen(false)} 
-                library={[]} 
+              <ExportModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                library={[]}
               />
             )}
-            
+
             {isCinematicExportOpen && (
-              <CinematicExport 
-                isOpen={isCinematicExportOpen} 
-                onClose={() => setIsCinematicExportOpen(false)} 
-                library={[]} 
+              <CinematicExport
+                isOpen={isCinematicExportOpen}
+                onClose={() => setIsCinematicExportOpen(false)}
+                library={[]}
               />
             )}
           </div>
@@ -1940,6 +1947,7 @@ const Profile = ({ theme, library = [] }) => {
         </CollapsibleSection>
 
         {/* Collections Section */}
+        {false && (
         <CollapsibleSection
           title="Collections"
           subtitle="Complete themed sets of rewards for exclusive bonuses."
@@ -1949,13 +1957,11 @@ const Profile = ({ theme, library = [] }) => {
           defaultOpen={false}
         >
           <div className="gaming-identity-card">
-            <CollectionsPanel 
+            <CollectionsPanel
               unlockedData={{
                 frames: rewardCatalog?.frames?.filter(f => f.unlocked).map(f => f.id) || [],
                 banners: rewardCatalog?.banners?.filter(b => b.unlocked).map(b => b.id) || [],
                 titles: rewardCatalog?.titles?.filter(t => t.unlocked).map(t => t.id) || [],
-                ambientPacks: rewardCatalog?.ambientPacks?.filter(p => p.unlocked).map(p => p.id) || [],
-                musicPacks: rewardCatalog?.musicPacks?.filter(p => p.unlocked).map(p => p.id) || [],
                 buttonPacks: rewardCatalog?.buttonPacks?.filter(p => p.unlocked).map(p => p.id) || []
               }}
               totalXP={xpStats?.totalXP || 0}
@@ -1967,6 +1973,7 @@ const Profile = ({ theme, library = [] }) => {
           </div>
         </CollapsibleSection>
 
+        )}
         {/* Gaming Style Dashboard */}
         {behaviorProfile ? (
           <CollapsibleSection
@@ -2079,7 +2086,7 @@ const Profile = ({ theme, library = [] }) => {
                 </div>
               )}
 
-              {sessionStats && sessionStats.mostPlayedGames && sessionStats.mostPlayedGames.length > 0 && (
+              {false && sessionStats && sessionStats.mostPlayedGames && sessionStats.mostPlayedGames.length > 0 && (
                 <div className="gaming-preference-section">
                   <h4>🏆 Most Played Games</h4>
                   <div className="most-played-list">
@@ -2159,14 +2166,14 @@ const Profile = ({ theme, library = [] }) => {
 
         {/* Data & Sync Section */}
         <CollapsibleSection
-          title="Data & Sync Management"
-          subtitle="Backup, restore, manual sync, and local data controls."
-          badge={isSyncing ? 'Syncing' : 'Local-first'}
+          title="Data Management"
+          subtitle="Backup, restore, and local data controls."
+          badge="Local-first"
           icon={<Download size={18} />}
           className={getSectionClass(12)}
         >
           <div className="gaming-identity-card">
-            <h3>⚙️ Data & Sync Management</h3>
+            <h3>⚙️ Data Management</h3>
           <div className="data-management-grid">
             <div className="data-action-card">
               <h4>Backup & Restore</h4>
@@ -2182,11 +2189,13 @@ const Profile = ({ theme, library = [] }) => {
             </div>
 
             <div className="data-action-card">
-              <h4>Cloud Sync</h4>
+              <h4>Reset</h4>
               <div className="data-buttons">
+                {false && (
                 <button onClick={handleManualSync} disabled={isSyncing} className="data-btn sync">
                   <Clock size={16} /> {isSyncing ? 'Syncing...' : 'Sync Now'}
                 </button>
+                )}
                 <button onClick={handleClearData} className="data-btn clear">
                   <X size={16} /> Clear All
                 </button>

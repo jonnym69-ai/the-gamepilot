@@ -9,37 +9,40 @@ export class HardwareScoring {
     let baseScore = 0;
     
     // Intel Core (latest gen = higher score)
-    if (brand.includes('i9-14') || brand.includes('i9-13900')) baseScore = 95;
+    if (brand.includes('i9-15') || brand.includes('i9-14900')) baseScore = 98;
+    else if (brand.includes('i9-14') || brand.includes('i9-13900')) baseScore = 95;
     else if (brand.includes('i9-13') || brand.includes('i9-12900')) baseScore = 90;
     else if (brand.includes('i9-12') || brand.includes('i9-11900')) baseScore = 85;
     else if (brand.includes('i9-10') || brand.includes('i9-9')) baseScore = 75;
     else if (brand.includes('i9')) baseScore = 70;
-    
+
+    else if (brand.includes('i7-15') || brand.includes('i7-14700')) baseScore = 88;
     else if (brand.includes('i7-14') || brand.includes('i7-13700')) baseScore = 85;
     else if (brand.includes('i7-13') || brand.includes('i7-12700')) baseScore = 80;
     else if (brand.includes('i7-12') || brand.includes('i7-11700')) baseScore = 75;
     else if (brand.includes('i7-10') || brand.includes('i7-9')) baseScore = 65;
     else if (brand.includes('i7-8') || brand.includes('i7-7')) baseScore = 55;
     else if (brand.includes('i7')) baseScore = 50;
-    
+
+    else if (brand.includes('i5-15') || brand.includes('i5-14600')) baseScore = 78;
     else if (brand.includes('i5-14') || brand.includes('i5-13600')) baseScore = 75;
     else if (brand.includes('i5-13') || brand.includes('i5-12600')) baseScore = 70;
     else if (brand.includes('i5-12') || brand.includes('i5-11600')) baseScore = 65;
     else if (brand.includes('i5-10') || brand.includes('i5-9')) baseScore = 55;
     else if (brand.includes('i5-8') || brand.includes('i5-7')) baseScore = 45;
     else if (brand.includes('i5')) baseScore = 40;
-    
-    else if (brand.includes('i3-13') || brand.includes('i3-12')) baseScore = 50;
+
+    else if (brand.includes('i3-14') || brand.includes('i3-13') || brand.includes('i3-12')) baseScore = 50;
     else if (brand.includes('i3-10') || brand.includes('i3-9')) baseScore = 40;
     else if (brand.includes('i3')) baseScore = 35;
-    
+
     // AMD Ryzen (latest gen = higher score)
     else if (brand.includes('ryzen 9 9950') || brand.includes('ryzen 9 7950')) baseScore = 98;
     else if (brand.includes('ryzen 9 9900') || brand.includes('ryzen 9 7900')) baseScore = 95;
     else if (brand.includes('ryzen 9 5950') || brand.includes('ryzen 9 5900')) baseScore = 85;
     else if (brand.includes('ryzen 9 3950') || brand.includes('ryzen 9 3900')) baseScore = 75;
     else if (brand.includes('ryzen 9')) baseScore = 80;
-    
+
     else if (brand.includes('ryzen 7 9800') || brand.includes('ryzen 7 7800')) baseScore = 90;
     else if (brand.includes('ryzen 7 9700') || brand.includes('ryzen 7 7700')) baseScore = 85;
     else if (brand.includes('ryzen 7 5800')) baseScore = 80;
@@ -47,13 +50,13 @@ export class HardwareScoring {
     else if (brand.includes('ryzen 7 3800') || brand.includes('ryzen 7 3700')) baseScore = 65;
     else if (brand.includes('ryzen 7 2700')) baseScore = 55;
     else if (brand.includes('ryzen 7')) baseScore = 70;
-    
+
     else if (brand.includes('ryzen 5 9600') || brand.includes('ryzen 5 7600')) baseScore = 80;
     else if (brand.includes('ryzen 5 5600')) baseScore = 70;
     else if (brand.includes('ryzen 5 3600')) baseScore = 60;
     else if (brand.includes('ryzen 5 2600')) baseScore = 50;
     else if (brand.includes('ryzen 5')) baseScore = 65;
-    
+
     else if (brand.includes('ryzen 3 5300') || brand.includes('ryzen 3 3300')) baseScore = 50;
     else if (brand.includes('ryzen 3')) baseScore = 45;
     
@@ -89,12 +92,24 @@ export class HardwareScoring {
     const model = gpuModel.toLowerCase();
     let baseScore = 0;
     
+    // NVIDIA RTX 50 series
+    if (model.includes('rtx 5090')) baseScore = 105;
+    else if (model.includes('rtx 5080')) baseScore = 100;
+    else if (model.includes('rtx 5070 ti')) baseScore = 92;
+    else if (model.includes('rtx 5070')) baseScore = 85;
+    else if (model.includes('rtx 5060 ti')) baseScore = 78;
+    else if (model.includes('rtx 5060')) baseScore = 70;
+    else if (model.includes('rtx 5050')) baseScore = 58;
+
     // NVIDIA RTX 40 series
-    if (model.includes('rtx 4090')) baseScore = 100;
+    else if (model.includes('rtx 4090')) baseScore = 100;
+    else if (model.includes('rtx 4080 super')) baseScore = 96;
     else if (model.includes('rtx 4080')) baseScore = 95;
+    else if (model.includes('rtx 4070 ti super')) baseScore = 90;
     else if (model.includes('rtx 4070 ti')) baseScore = 88;
+    else if (model.includes('rtx 4070 super')) baseScore = 85;
     else if (model.includes('rtx 4070')) baseScore = 82;
-    else if (model.includes('rtx 4060 ti')) baseScore = 72;
+    else if (model.includes('rtx 4060 ti')) baseScore = 75;
     else if (model.includes('rtx 4060')) baseScore = 65;
     else if (model.includes('rtx 4050')) baseScore = 55;
     
@@ -128,6 +143,13 @@ export class HardwareScoring {
     else if (model.includes('gtx 1050 ti')) baseScore = 48;
     else if (model.includes('gtx 1050')) baseScore = 42;
     
+    // AMD Radeon RX 9000 series
+    else if (model.includes('rx 9950')) baseScore = 100;
+    else if (model.includes('rx 9900')) baseScore = 95;
+    else if (model.includes('rx 9070 xt')) baseScore = 88;
+    else if (model.includes('rx 9070')) baseScore = 82;
+    else if (model.includes('rx 9060')) baseScore = 70;
+
     // AMD Radeon RX 7000 series
     else if (model.includes('rx 7900 xtx')) baseScore = 95;
     else if (model.includes('rx 7900 xt')) baseScore = 90;

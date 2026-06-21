@@ -2,30 +2,73 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Import modular scanners - handle both dev and production paths
-let scanSteamLibraryNew, scanEALibraryNew, scanRockstarLibraryNew, scanAmazonLibraryNew, scanItchLibraryNew;
-try {
-  ({ scanSteamLibrary: scanSteamLibraryNew } = require('./src/services/scanner/steamScanner'));
-  ({ scanEALibrary: scanEALibraryNew } = require('./src/services/scanner/eaScanner'));
-  ({ scanRockstarLibrary: scanRockstarLibraryNew } = require('./src/services/scanner/rockstarScanner'));
-  ({ scanAmazonLibrary: scanAmazonLibraryNew } = require('./src/services/scanner/amazonScanner'));
-  ({ scanItchLibrary: scanItchLibraryNew } = require('./src/services/scanner/itchScanner'));
-} catch (error) {
-  try {
-    // Production path (when bundled in app.asar)
-    ({ scanSteamLibrary: scanSteamLibraryNew } = require('./steamScanner'));
-    ({ scanEALibrary: scanEALibraryNew } = require('./eaScanner'));
-    ({ scanRockstarLibrary: scanRockstarLibraryNew } = require('./rockstarScanner'));
-    ({ scanAmazonLibrary: scanAmazonLibraryNew } = require('./amazonScanner'));
-    ({ scanItchLibrary: scanItchLibraryNew } = require('./itchScanner'));
-  } catch (prodError) {
-    console.error('[Scanner] Failed to load modular scanners:', prodError.message);
-    scanSteamLibraryNew = null;
-    scanEALibraryNew = null;
-    scanRockstarLibraryNew = null;
-    scanAmazonLibraryNew = null;
-    scanItchLibraryNew = null;
+const SCANNER_DEBUG = process.env.GAMEPILOT_SCANNER_DEBUG === 'true';
+
+const scannerDebug = (...args) => {
+  if (SCANNER_DEBUG) {
+    console.log(...args);
   }
+};
+
+// Import modular scanners - handle both dev and production paths.
+// Each scanner is loaded INDEPENDENTLY so that one failing require cannot
+// null out all the others. Previously a single failure forced a fallback to
+// the legacy Steam scanner, which dropped imported Steam playtime in packaged
+// builds. Resolution is __dirname-based so it works inside an asar too.
+const loadScannerExport = (moduleBaseName, exportName) => {
+  const candidates = [
+    path.join(__dirname, 'src', 'services', 'scanner', moduleBaseName),
+    path.join(__dirname, moduleBaseName),
+    `./src/services/scanner/${moduleBaseName}`,
+    `./${moduleBaseName}`
+  ];
+  for (const candidate of candidates) {
+    try {
+      const mod = require(candidate);
+      if (mod && typeof mod[exportName] === 'function') {
+        return mod[exportName];
+      }
+    } catch (error) {
+      // try next candidate
+    }
+  }
+  console.error(`[Scanner] Failed to load modular scanner '${moduleBaseName}' (export ${exportName}).`);
+  return null;
+};
+
+const scanSteamLibraryNew = loadScannerExport('steamScanner', 'scanSteamLibrary');
+const scanEALibraryNew = loadScannerExport('eaScanner', 'scanEALibrary');
+const scanRockstarLibraryNew = loadScannerExport('rockstarScanner', 'scanRockstarLibrary');
+const scanAmazonLibraryNew = loadScannerExport('amazonScanner', 'scanAmazonLibrary');
+const scanItchLibraryNew = loadScannerExport('itchScanner', 'scanItchLibrary');
+
+// Steam playtime reader (localconfig.vdf) - shared util, dev/prod paths.
+// Resolve via absolute __dirname so it works both in dev and inside an
+// asar-packaged build. Each candidate is logged on failure so a broken
+// packaged build is diagnosable instead of silently dropping Steam playtime.
+let getSteamPlaytimeMap;
+const STEAM_PLAYTIME_REQUIRE_CANDIDATES = [
+  path.join(__dirname, 'src', 'services', 'scanner', 'scannerUtils'),
+  path.join(__dirname, 'scannerUtils'),
+  './src/services/scanner/scannerUtils',
+  './scannerUtils'
+];
+
+for (const candidate of STEAM_PLAYTIME_REQUIRE_CANDIDATES) {
+  try {
+    ({ getSteamPlaytimeMap } = require(candidate));
+    if (typeof getSteamPlaytimeMap === 'function') {
+      console.log('[Scanner] Steam playtime reader loaded from:', candidate);
+      break;
+    }
+  } catch (error) {
+    console.warn('[Scanner] Could not load Steam playtime reader from', candidate, '-', error.message);
+  }
+}
+
+if (typeof getSteamPlaytimeMap !== 'function') {
+  console.error('[Scanner] Steam playtime reader unavailable — imported Steam playtime will be empty. Ensure scannerUtils is bundled.');
+  getSteamPlaytimeMap = () => ({});
 }
 
 // Import genre database for game classification
@@ -99,6 +142,16 @@ const runCommand = (command) => {
     return '';
   }
 };
+
+const sanitizeScannedGameName = (value) => String(value || '')
+  .replace(/Ôäó/g, '™')
+  .replace(/┬«/g, '®')
+  .replace(/┬®/g, '©')
+  .replace(/ÔÇÖ/g, '’')
+  .replace(/ÔÇ£|ÔÇØ/g, '"')
+  .replace(/ÔÇô|ÔÇö/g, '-')
+  .replace(/\s+/g, ' ')
+  .trim();
 
 const BATTLE_NET_FOLDER_HINTS = [
   'world of warcraft',
@@ -231,19 +284,26 @@ const addGameIfUnique = (games, game) => {
   if (!game?.name || !game?.platform) {
     return;
   }
+  const normalizedGame = {
+    ...game,
+    name: sanitizeScannedGameName(game.name)
+  };
+  if (!normalizedGame.name || isLikelyNonGameFolder(normalizedGame.name)) {
+    return;
+  }
   const exists = games.some((existingGame) => (
-    existingGame.platform === game.platform
+    existingGame.platform === normalizedGame.platform
     && (
-      (existingGame.appid && game.appid && String(existingGame.appid) === String(game.appid))
-      || (existingGame.launchId && game.launchId && String(existingGame.launchId) === String(game.launchId))
-      || (existingGame.aumid && game.aumid && String(existingGame.aumid) === String(game.aumid))
-      || (existingGame.installDir && game.installDir && existingGame.installDir.toLowerCase() === game.installDir.toLowerCase())
-      || existingGame.name.toLowerCase() === game.name.toLowerCase()
+      (existingGame.appid && normalizedGame.appid && String(existingGame.appid) === String(normalizedGame.appid))
+      || (existingGame.launchId && normalizedGame.launchId && String(existingGame.launchId) === String(normalizedGame.launchId))
+      || (existingGame.aumid && normalizedGame.aumid && String(existingGame.aumid) === String(normalizedGame.aumid))
+      || (existingGame.installDir && normalizedGame.installDir && existingGame.installDir.toLowerCase() === normalizedGame.installDir.toLowerCase())
+      || existingGame.name.toLowerCase() === normalizedGame.name.toLowerCase()
     )
   ));
 
   if (!exists) {
-    games.push(game);
+    games.push(normalizedGame);
   }
 };
 
@@ -500,9 +560,9 @@ const getActiveDrives = () => {
   }
 
   activeDrives.forEach((drive) => {
-    console.log(`[Scanner] Found active drive: ${drive}:`);
+    scannerDebug(`[Scanner] Found active drive: ${drive}:`);
   });
-  console.log('[Scanner] Active drives found:', activeDrives);
+  scannerDebug('[Scanner] Active drives found:', activeDrives);
   scannerRuntimeCache.activeDrives = activeDrives;
   return activeDrives;
 };
@@ -588,20 +648,21 @@ const getSteamInstallPaths = () => {
 const scanSteamLibrary = () => {
   const games = [];
   const steamPaths = getSteamInstallPaths();
-  console.log('[Scanner] Steam paths found:', steamPaths);
+  const playtimeMap = getSteamPlaytimeMap(steamPaths);
+  scannerDebug('[Scanner] Steam paths found:', steamPaths);
 
   steamPaths.forEach((steamPath) => {
-    console.log('[Scanner] Checking Steam path:', steamPath);
+    scannerDebug('[Scanner] Checking Steam path:', steamPath);
     if (!fs.existsSync(steamPath)) {
-      console.log('[Scanner] Path does not exist:', steamPath);
+      scannerDebug('[Scanner] Path does not exist:', steamPath);
       return;
     }
     
     const files = safeReadDir(steamPath);
-    console.log('[Scanner] Files in path:', files.length);
+    scannerDebug('[Scanner] Files in path:', files.length);
     
     const acfFiles = files.filter((fileName) => fileName.endsWith('.acf'));
-    console.log('[Scanner] ACF files found:', acfFiles.length);
+    scannerDebug('[Scanner] ACF files found:', acfFiles.length);
     
     acfFiles.forEach((acfFile) => {
       try {
@@ -628,13 +689,23 @@ const scanSteamLibrary = () => {
         ];
 
         if (skipGames.some((skipName) => gameName.includes(skipName)) || isLikelyNonGameFolder(gameName)) {
-          console.log('[Scanner] Skipping non-game:', gameName);
+          scannerDebug('[Scanner] Skipping non-game:', gameName);
           return;
         }
 
         // Get genres from database for better Perfect Play recommendations
         const detectedGenres = getGameGenres(gameName);
-        
+
+        const tracked = createTrackedDefaults();
+        const playtime = playtimeMap[appId];
+        if (playtime) {
+          tracked.time_played = playtime.minutes;
+          tracked.playtime.total = playtime.minutes;
+          tracked.last_played = playtime.lastPlayedMs;
+          tracked.importedPlaytimeMinutes = playtime.minutes;
+          tracked.playtimeSource = 'steam';
+        }
+
         games.push({
           name: gameName,
           platform: 'Steam',
@@ -643,16 +714,16 @@ const scanSteamLibrary = () => {
           iconUrl: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_231x87.jpg`,
           icon: '',
           executable: `steam://run/${appId}`,
-          ...createTrackedDefaults()
+          ...tracked
         });
-        console.log('[Scanner] Added Steam game:', gameName);
+        scannerDebug('[Scanner] Added Steam game:', gameName);
       } catch (error) {
         console.error('[Scanner] Error parsing ACF:', acfFile, error);
       }
     });
   });
 
-  console.log('[Scanner] Steam scan complete. Found', games.length, 'games');
+  scannerDebug('[Scanner] Steam scan complete. Found', games.length, 'games');
   return games;
 };
 
@@ -1601,7 +1672,143 @@ const filterCrossPlatformDuplicates = (games) => {
   });
 };
 
-const scanBSGLibrary = () => [];
+const getBSGRegistryCandidates = () => {
+  const candidates = [];
+  const registryRoots = [
+    'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
+  ];
+
+  registryRoots.forEach((registryRoot) => {
+    const output = runCommand(`reg query "${registryRoot}" /s`);
+    parseRegistryBlocks(output).forEach((block) => {
+      const displayName = parseRegistryValueFromBlock(block, 'DisplayName');
+      const publisher = parseRegistryValueFromBlock(block, 'Publisher');
+      const installLocation = parseRegistryValueFromBlock(block, 'InstallLocation');
+      const uninstallString = parseRegistryValueFromBlock(block, 'UninstallString');
+      const normalizedBlock = `${displayName} ${publisher} ${installLocation} ${uninstallString}`.toLowerCase();
+
+      if (!normalizedBlock.includes('battlestate') && !normalizedBlock.includes('tarkov')) {
+        return;
+      }
+
+      [installLocation, uninstallString]
+        .map((candidate) => String(candidate || '').trim().replace(/^"|"$/g, ''))
+        .map((candidate) => candidate.endsWith('.exe') ? path.dirname(candidate) : candidate)
+        .forEach((candidate) => addUniquePath(candidates, candidate));
+    });
+  });
+
+  return candidates;
+};
+
+const findBSGLauncherPath = (installDir = '') => {
+  const localAppDataPrograms = process.env.LOCALAPPDATA
+    ? path.join(process.env.LOCALAPPDATA, 'Programs')
+    : null;
+  const launcherCandidates = [
+    installDir ? path.join(installDir, 'BsgLauncher.exe') : null,
+    installDir ? path.join(installDir, 'Launcher', 'BsgLauncher.exe') : null,
+    installDir ? path.join(installDir, 'BsgLauncher', 'BsgLauncher.exe') : null,
+    installDir ? path.join(installDir, '..', 'BsgLauncher', 'BsgLauncher.exe') : null,
+    installDir ? path.join(installDir, '..', 'Launcher', 'BsgLauncher.exe') : null,
+    'C:\\Battlestate Games\\BsgLauncher\\BsgLauncher.exe',
+    'D:\\Battlestate Games\\BsgLauncher\\BsgLauncher.exe',
+    'E:\\Battlestate Games\\BsgLauncher\\BsgLauncher.exe',
+    'C:\\Program Files\\BsgLauncher\\BsgLauncher.exe',
+    'C:\\Program Files (x86)\\BsgLauncher\\BsgLauncher.exe',
+    localAppDataPrograms ? path.join(localAppDataPrograms, 'BsgLauncher', 'BsgLauncher.exe') : null,
+    localAppDataPrograms ? path.join(localAppDataPrograms, 'Battlestate Games', 'BsgLauncher', 'BsgLauncher.exe') : null
+  ].filter(Boolean);
+
+  return launcherCandidates.find((candidate) => fs.existsSync(candidate)) || null;
+};
+
+const resolveTarkovInstallCandidate = (candidatePath) => {
+  if (!candidatePath || !fs.existsSync(candidatePath)) {
+    return null;
+  }
+
+  const directTarkovExe = path.join(candidatePath, 'EscapeFromTarkov.exe');
+  const directBattleEyeExe = path.join(candidatePath, 'EscapeFromTarkov_BE.exe');
+  const directArenaExe = path.join(candidatePath, 'EscapeFromTarkov_Arena.exe');
+  if (fs.existsSync(directTarkovExe) || fs.existsSync(directBattleEyeExe) || fs.existsSync(directArenaExe)) {
+    return candidatePath;
+  }
+
+  const childFolders = safeReadDir(candidatePath)
+    .map((entry) => path.join(candidatePath, entry))
+    .filter((entryPath) => {
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch (error) {
+        return false;
+      }
+    });
+
+  return childFolders.find((childPath) => (
+    fs.existsSync(path.join(childPath, 'EscapeFromTarkov.exe'))
+    || fs.existsSync(path.join(childPath, 'EscapeFromTarkov_BE.exe'))
+    || fs.existsSync(path.join(childPath, 'EscapeFromTarkov_Arena.exe'))
+  )) || null;
+};
+
+const createBSGGame = (name, installDir, launcherPath) => {
+  const detectedGenres = getGameGenres(name);
+  const executablePath = findBSGLauncherPath(installDir) || launcherPath || path.join(installDir, 'EscapeFromTarkov_BE.exe');
+
+  return {
+    name,
+    platform: 'BSG',
+    brandPlatform: 'BSG',
+    appid: normalizeScannerToken(name),
+    launchId: normalizeScannerToken(name),
+    genres: detectedGenres.length > 0 ? detectedGenres : ['Shooter'],
+    iconUrl: '',
+    icon: '',
+    executable: executablePath,
+    executablePath,
+    installDir,
+    ...createTrackedDefaults()
+  };
+};
+
+const scanBSGLibrary = () => {
+  const games = [];
+  const candidateRoots = [];
+
+  getBSGRegistryCandidates().forEach((candidate) => addUniquePath(candidateRoots, candidate));
+  getActiveDrives().forEach((drive) => {
+    [
+      `${drive}:\\Battlestate Games`,
+      `${drive}:\\Battlestate Games\\EFT`,
+      `${drive}:\\Battlestate Games\\Escape from Tarkov`,
+      `${drive}:\\Games\\Battlestate Games`,
+      `${drive}:\\Games\\Escape from Tarkov`,
+      `${drive}:\\Program Files\\Battlestate Games`,
+      `${drive}:\\Program Files (x86)\\Battlestate Games`
+    ].forEach((candidate) => addUniquePath(candidateRoots, candidate));
+  });
+
+  const launcherPath = findBSGLauncherPath();
+  if (launcherPath) {
+    addUniquePath(candidateRoots, path.dirname(launcherPath));
+    addUniquePath(candidateRoots, path.join(path.dirname(launcherPath), '..'));
+  }
+
+  candidateRoots.forEach((candidateRoot) => {
+    const installDir = resolveTarkovInstallCandidate(candidateRoot);
+    if (!installDir) {
+      return;
+    }
+
+    const hasArenaExecutable = fs.existsSync(path.join(installDir, 'EscapeFromTarkov_Arena.exe'));
+    addGameIfUnique(games, createBSGGame(hasArenaExecutable ? 'Escape from Tarkov: Arena' : 'Escape from Tarkov', installDir, launcherPath));
+  });
+
+  return games;
+};
 
 const safeRunPlatformScanner = (label, scanner) => {
   if (typeof scanner !== 'function') {
@@ -1619,14 +1826,14 @@ const safeRunPlatformScanner = (label, scanner) => {
 };
 
 const scanAllLibraries = () => {
-  console.log('[Scanner] Starting scanAllLibraries...');
+  scannerDebug('[Scanner] Starting scanAllLibraries...');
 
-  console.log('[Scanner] Testing getGameGenres function...');
+  scannerDebug('[Scanner] Testing getGameGenres function...');
   try {
     const testGenres = getGameGenres('Escape from Tarkov');
-    console.log('[Scanner] getGameGenres test result:', testGenres);
+    scannerDebug('[Scanner] getGameGenres test result:', testGenres);
   } catch (error) {
-    console.log('[Scanner] getGameGenres test failed:', error.message);
+    scannerDebug('[Scanner] getGameGenres test failed:', error.message);
   }
 
   const activeDrives = getActiveDrives();
@@ -1680,7 +1887,7 @@ const scanAllLibraries = () => {
     uplayPaths.push(`${drive}:\\Games\\Ubisoft Connect`);
   });
 
-  console.log('[Scanner] Resolving Ubisoft install roots...');
+  scannerDebug('[Scanner] Resolving Ubisoft install roots...');
   getUbisoftInstallRoots().forEach((rootPath) => {
     addUniquePath(uplayPaths, rootPath);
     addUniquePath(uplayPaths, path.join(rootPath, 'games'));
@@ -1700,27 +1907,27 @@ const scanAllLibraries = () => {
     rockstarPaths.push(`${drive}:\\Games\\Rockstar`);
   });
 
-  console.log('[Scanner] Active drives:', activeDrives);
-  console.log('[Scanner] GOG paths:', gogPaths);
-  console.log('[Scanner] Origin paths:', originPaths);
-  console.log('[Scanner] Uplay paths:', uplayPaths);
-  console.log('[Scanner] Rockstar paths:', rockstarPaths);
+  scannerDebug('[Scanner] Active drives:', activeDrives);
+  scannerDebug('[Scanner] GOG paths:', gogPaths);
+  scannerDebug('[Scanner] Origin paths:', originPaths);
+  scannerDebug('[Scanner] Uplay paths:', uplayPaths);
+  scannerDebug('[Scanner] Rockstar paths:', rockstarPaths);
 
   const steamGames = safeRunPlatformScanner('Steam', scanSteamLibraryNew || scanSteamLibrary);
-  console.log('[Scanner] Steam found:', steamGames.length, 'games');
+  scannerDebug('[Scanner] Steam found:', steamGames.length, 'games');
   
   const epicGames = safeRunPlatformScanner('Epic', scanEpicLibrary);
-  console.log('[Scanner] Epic found:', epicGames.length, 'games');
+  scannerDebug('[Scanner] Epic found:', epicGames.length, 'games');
   
   const gogGames = safeRunPlatformScanner('GOG', scanGOGLibrary);
-  console.log('[Scanner] GOG found:', gogGames.length, 'games');
+  scannerDebug('[Scanner] GOG found:', gogGames.length, 'games');
   
   const uplayGames = safeRunPlatformScanner('Uplay', scanUbisoftLibrary);
   const rockstarGames = safeRunPlatformScanner('Rockstar', scanRockstarLibraryNew);
-  console.log('[Scanner] Rockstar found:', rockstarGames.length, 'games');
+  scannerDebug('[Scanner] Rockstar found:', rockstarGames.length, 'games');
   
   const eaGames = safeRunPlatformScanner('EA', scanEALibraryNew || scanEALibrary);
-  console.log(`[Scanner] EA found: ${eaGames.length} games`);
+  scannerDebug(`[Scanner] EA found: ${eaGames.length} games`);
 
   const playstationGames = safeRunPlatformScanner('PlayStation', scanPlaystationLibrary);
   const battleNetGames = safeRunPlatformScanner('Battle.net', scanBattleNetLibrary);
@@ -1729,9 +1936,9 @@ const scanAllLibraries = () => {
   const riotGames = safeRunPlatformScanner('Riot', scanRiotLibrary);
   const curseForgeGames = safeRunPlatformScanner('CurseForge', scanCurseForgeLibrary);
   const amazonGames = safeRunPlatformScanner('Amazon', scanAmazonLibraryNew);
-  console.log(`[Scanner] Amazon found: ${amazonGames.length} games`);
+  scannerDebug(`[Scanner] Amazon found: ${amazonGames.length} games`);
   const itchGames = safeRunPlatformScanner('Itch.io', scanItchLibraryNew);
-  console.log(`[Scanner] Itch.io found: ${itchGames.length} games`);
+  scannerDebug(`[Scanner] Itch.io found: ${itchGames.length} games`);
 
   const platformEntries = [
     { key: 'steam', platform: 'Steam', games: steamGames, paths: [] },
@@ -1767,15 +1974,15 @@ const scanAllLibraries = () => {
     ...itchGames
   ].map((game) => enrichGameWithCollectionTrust(game));
 
-  console.log('[Scanner] Total games before dedupe:', games.length);
+  scannerDebug('[Scanner] Total games before dedupe:', games.length);
   
   // First filter cross-platform duplicates (prefer Epic/Steam over Rockstar)
   const crossPlatformFiltered = filterCrossPlatformDuplicates(games);
-  console.log('[Scanner] After cross-platform dedupe:', crossPlatformFiltered.length);
+  scannerDebug('[Scanner] After cross-platform dedupe:', crossPlatformFiltered.length);
   
   // Then dedupe within same platform
   const deduped = dedupeGames(crossPlatformFiltered);
-  console.log('[Scanner] Total games after dedupe:', deduped.length);
+  scannerDebug('[Scanner] Total games after dedupe:', deduped.length);
   
   // Store debug info globally so we can access it from renderer
   const platformStatus = buildPlatformStatusMap(platformEntries);

@@ -1,14 +1,20 @@
 .command-palette-overlay {
-  position: fixed;
-  inset: 0;
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  min-height: 100vh;
   background: rgba(0, 0, 0, 0.55);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  z-index: 11000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 12vh;
+  z-index: 11000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px;
+  box-sizing: border-box;
   animation: cp-fade 0.12s ease-out;
 }
 
@@ -28,6 +34,7 @@
   flex-direction: column;
   overflow: hidden;
   color: var(--text-primary, #fff);
+  margin: auto;
 }
 
 .command-palette-search {

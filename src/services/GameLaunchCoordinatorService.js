@@ -155,6 +155,7 @@ export class GameLaunchCoordinatorService {
       this.cleanupFailedLaunch(game.name, hadExistingSession);
       return {
         success: false,
+        mode: result?.mode || 'unknown',
         message: result?.message || 'Failed to launch game.',
         result
       };
@@ -181,6 +182,8 @@ export class GameLaunchCoordinatorService {
 
     return {
       success: true,
+      mode: result?.mode || 'unknown',
+      message: result?.message || `Launched ${game.name}`,
       launchedGame,
       libraryChanged,
       startedNewSession,

@@ -1,11 +1,52 @@
 // GamePilot Master Launch Handler
 // Implements proper URI protocols for all platforms
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
 // Registry access for Windows
 const { execSync } = require('child_process');
+
+const parseShellCommand = (command = '') => {
+  const args = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ' ' && !inQuotes) {
+      if (current.length > 0) {
+        args.push(current);
+        current = '';
+      }
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.length > 0) {
+    args.push(current);
+  }
+
+  return args;
+};
+
+const LAUNCH_MODES = Object.freeze({
+  DIRECT: 'direct',
+  PROTOCOL: 'protocol',
+  LAUNCHER_OPENED: 'launcher_opened',
+  MANUAL_REQUIRED: 'manual_required'
+});
+
+const createLaunchResult = (success, mode, message, metadata = {}) => ({
+  success,
+  mode: LAUNCH_MODES[mode] || mode || 'unknown',
+  message,
+  metadata,
+  timestamp: Date.now()
+});
 
 class GameLauncher {
   constructor() {
@@ -30,6 +71,7 @@ class GameLauncher {
     if (lowerPlatform === 'playstation brand') return 'PlayStation';
     if (compactPlatform === 'amazon' || compactPlatform === 'amazonapp' || compactPlatform === 'amazongames') return 'Amazon';
     if (compactPlatform === 'itch' || compactPlatform === 'itchio' || lowerPlatform === 'itch.io') return 'Itch.io';
+    if (compactPlatform === 'emulated' || compactPlatform === 'emulator' || compactPlatform === 'emulation') return 'Emulated';
 
     return normalizedPlatform;
   }
@@ -237,25 +279,28 @@ class GameLauncher {
         case 'Itch.io':
           return this.launchItch(game);
 
+        case 'Emulated':
+          return this.launchEmulated(game);
+
         default:
-          return { success: false, message: `Unsupported platform: ${game.platform}` };
+          return createLaunchResult(false, 'unknown', `Unsupported platform: ${game.platform}`);
       }
     } catch (error) {
       console.error(`Launch error for ${game.name}:`, error);
-      return { success: false, message: error.message };
+      return createLaunchResult(false, 'unknown', error.message);
     }
   }
 
   // Steam launch (already working)
   async launchSteam(game) {
     if (!game.appid) {
-      return { success: false, message: 'Steam game missing AppID' };
+      return createLaunchResult(false, 'unknown', 'Steam game missing AppID');
     }
-    
+
     const steamUrl = `steam://run/${game.appid}`;
     console.log('🚂 Steam URL:', steamUrl);
     await this.shell.openExternal(steamUrl);
-    return { success: true, message: `Launched ${game.name}` };
+    return createLaunchResult(true, 'protocol', `Launched ${game.name}`, { launchUrl: steamUrl });
   }
 
   // Epic Games launch - Protocol-First with manifest parsing
@@ -268,21 +313,21 @@ class GameLauncher {
     if (manifestData && manifestData.launchUri) {
       console.log('🎮 Using Epic manifest-based launch URI:', manifestData.launchUri);
       await this.shell.openExternal(manifestData.launchUri);
-      return { success: true, message: `Launched ${game.name} via manifest` };
+      return createLaunchResult(true, 'protocol', `Launched ${game.name} via manifest`, { launchUrl: manifestData.launchUri });
     }
-    
+
     // Fallback to launchId if available
     if (game.launchId) {
       const epicUrl = `com.epicgames.launcher://apps/${game.launchId}?action=launch&silent=true`;
       console.log('🎮 Using Epic launchId fallback:', epicUrl);
       await this.shell.openExternal(epicUrl);
-      return { success: true, message: `Launched ${game.name} via launchId` };
+      return createLaunchResult(true, 'protocol', `Launched ${game.name} via launchId`, { launchUrl: epicUrl });
     }
-    
+
     // Final fallback to Epic launcher
     console.log('🎮 Opening Epic Launcher (final fallback)');
     await this.shell.openExternal('com.epicgames.launcher://');
-    return { success: true, message: 'Epic Launcher opened - please launch game manually' };
+    return createLaunchResult(true, 'launcher_opened', 'Epic Launcher opened - please launch game manually');
   }
 
   // Xbox launch - Use AUMID from game object
@@ -300,14 +345,14 @@ class GameLauncher {
       try {
         await this.shell.openExternal(launchUrl);
         console.log('✅ Xbox game launched successfully via AUMID');
-        return { success: true, message: `Launched ${game.name} via AUMID` };
+        return createLaunchResult(true, 'protocol', `Launched ${game.name} via AUMID`, { aumid });
       } catch (error) {
         console.error('❌ Xbox launch failed:', error);
-        return { success: false, message: `Failed to launch ${game.name}: ${error.message}` };
+        return createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`);
       }
     }
-    
-    return { success: false, message: `Xbox AUMID not found for ${game.name}` };
+
+    return createLaunchResult(false, 'unknown', `Xbox AUMID not found for ${game.name}`);
   }
 
   // Battle.net launch - Protocol-First with --exec argument
@@ -342,22 +387,21 @@ class GameLauncher {
           exec(command, (error) => {
             if (error) {
               console.error('❌ Battle.net launch failed:', error);
-              resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+              resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
             } else {
               console.log('✅ Battle.net game launched successfully');
-              resolve({ success: true, message: `Launched ${game.name}` });
+              resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { gameCode }));
             }
           });
         });
-      } else {
-        console.log('❌ No game code found for Battle.net game');
       }
+      console.log('❌ No game code found for Battle.net game');
     }
-    
+
     // Fallback to Battle.net URI
     console.log('⚔️ Falling back to Battle.net URI');
     await this.shell.openExternal('battlenet://');
-    return { success: true, message: 'Battle.net opened - please launch game manually' };
+    return createLaunchResult(true, 'launcher_opened', 'Battle.net opened - please launch game manually');
   }
 
   // GOG launch
@@ -371,26 +415,26 @@ class GameLauncher {
         exec(`start "" "${executablePath}"`, { shell: true }, (error) => {
           if (error) {
             console.error('❌ Direct GOG executable launch failed:', error);
-            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
           } else {
-            resolve({ success: true, message: `Launched ${game.name}` });
+            resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath }));
           }
         });
       });
     }
-    
+
     if (game.launchId) {
       const gogUrl = `goggalaxy://openGame/${game.launchId}`;
       console.log('🌌 GOG URL:', gogUrl);
       await this.shell.openExternal(gogUrl);
-      return { success: true, message: `Launched ${game.name}` };
+      return createLaunchResult(true, 'protocol', `Launched ${game.name}`, { launchUrl: gogUrl });
     }
 
     if (game.appid) {
       const gogUrl = `goggalaxy://openGameById/${game.appid}`;
       console.log('🌌 GOG AppID URL:', gogUrl);
       await this.shell.openExternal(gogUrl);
-      return { success: true, message: `Launched ${game.name}` };
+      return createLaunchResult(true, 'protocol', `Launched ${game.name}`, { launchUrl: gogUrl });
     }
 
     const localAppData = process.env.LOCALAPPDATA || '';
@@ -409,17 +453,17 @@ class GameLauncher {
         exec(`start "" "${galaxyClientPath}"`, { shell: true }, (error) => {
           if (error) {
             console.error('❌ GOG Galaxy client launch failed:', error);
-            resolve({ success: false, message: `Failed to open GOG Galaxy: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to open GOG Galaxy: ${error.message}`));
           } else {
-            resolve({ success: true, message: 'GOG Galaxy opened - please launch game manually' });
+            resolve(createLaunchResult(true, 'launcher_opened', 'GOG Galaxy opened - please launch game manually'));
           }
         });
       });
     }
-    
+
     // Fallback
     await this.shell.openExternal('goggalaxy://');
-    return { success: true, message: 'GOG Galaxy opened - please launch game manually' };
+    return createLaunchResult(true, 'launcher_opened', 'GOG Galaxy opened - please launch game manually');
   }
 
   // Rockstar launch
@@ -429,7 +473,7 @@ class GameLauncher {
     const rockstarUrl = 'rockstar://';
     console.log('🪨 Rockstar URL:', rockstarUrl);
     await this.shell.openExternal(rockstarUrl);
-    return { success: true, message: `Rockstar Launcher opened - please launch ${game.name} manually` };
+    return createLaunchResult(true, 'launcher_opened', `Rockstar Launcher opened - please launch ${game.name} manually`);
   }
 
   // Origin launch
@@ -440,12 +484,12 @@ class GameLauncher {
       const originUrl = `origin://launch/${game.launchId}`;
       console.log('🎪 Origin URL:', originUrl);
       await this.shell.openExternal(originUrl);
-      return { success: true, message: `Launched ${game.name}` };
+      return createLaunchResult(true, 'protocol', `Launched ${game.name}`, { launchUrl: originUrl });
     }
-    
+
     // Fallback
     await this.shell.openExternal('origin://');
-    return { success: true, message: 'Origin opened - please launch game manually' };
+    return createLaunchResult(true, 'launcher_opened', 'Origin opened - please launch game manually');
   }
 
   // Uplay / Ubisoft Connect launch
@@ -459,7 +503,7 @@ class GameLauncher {
       const { spawn } = require('child_process');
       const child = spawn(game.executablePath, { detached: true, stdio: 'ignore' });
       child.unref();
-      return { success: true, message: `Launched ${game.name} (direct)` };
+      return createLaunchResult(true, 'direct', `Launched ${game.name} (direct)`, { executablePath: game.executablePath });
     }
 
     // Final fallback: open Ubisoft Connect client
@@ -476,11 +520,11 @@ class GameLauncher {
         const { spawn } = require('child_process');
         const child = spawn(connectPath, { detached: true, stdio: 'ignore' });
         child.unref();
-        return { success: true, message: 'Ubisoft Connect opened — please launch game manually' };
+        return createLaunchResult(true, 'launcher_opened', 'Ubisoft Connect opened — please launch game manually');
       }
     }
 
-    return { success: false, message: 'Ubisoft Connect executable not found for launch' };
+    return createLaunchResult(false, 'unknown', 'Ubisoft Connect executable not found for launch');
   }
 
   async launchBSG(game) {
@@ -515,11 +559,11 @@ class GameLauncher {
         exec(`"${launcherPath}"`, (error) => {
           if (error) {
             console.error('❌ BSG launcher failed:', error);
-            resolve({ success: false, message: `Failed to open BSG Launcher: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to open BSG Launcher: ${error.message}`));
             return;
           }
 
-          resolve({ success: true, message: 'BSG Launcher opened - launch Escape from Tarkov from the launcher to satisfy BattlEye' });
+          resolve(createLaunchResult(true, 'launcher_opened', 'BSG Launcher opened - launch Escape from Tarkov from the launcher to satisfy BattlEye'));
         });
       });
     }
@@ -537,10 +581,10 @@ class GameLauncher {
       }
 
       exec(`"${executablePath}"`, () => {});
-      return { success: true, message: `Launched ${game.name}` };
+      return createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath });
     }
 
-    return { success: false, message: 'BSG Launcher not found - please install Escape from Tarkov' };
+    return createLaunchResult(false, 'unknown', 'BSG Launcher not found - please install Escape from Tarkov');
   }
 
   async launchRiot(game) {
@@ -557,14 +601,13 @@ class GameLauncher {
         exec(riotCommand, { shell: true }, (error) => {
           if (error) {
             console.error('❌ Riot client launch failed:', error);
-            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
             return;
           }
 
-          resolve({
-            success: true,
-            message: riotLaunchArgs.length > 0 ? `Launched ${game.name}` : 'Riot Client opened - please launch the game manually'
-          });
+          const mode = riotLaunchArgs.length > 0 ? 'direct' : 'launcher_opened';
+          const message = riotLaunchArgs.length > 0 ? `Launched ${game.name}` : 'Riot Client opened - please launch the game manually';
+          resolve(createLaunchResult(true, mode, message, { riotClientPath, riotLaunchArgs }));
         });
       });
     }
@@ -576,11 +619,11 @@ class GameLauncher {
         exec(executableCommand, { shell: true }, (error) => {
           if (error) {
             console.error('❌ Riot executable launch failed:', error);
-            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
             return;
           }
 
-          resolve({ success: true, message: `Launched ${game.name}` });
+          resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath, riotLaunchArgs }));
         });
       });
     }
@@ -591,16 +634,16 @@ class GameLauncher {
         exec(game.executable, { shell: true }, (error) => {
           if (error) {
             console.error('❌ Riot raw command fallback failed:', error);
-            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
             return;
           }
 
-          resolve({ success: true, message: `Launched ${game.name}` });
+          resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { command: game.executable }));
         });
       });
     }
 
-    return { success: false, message: 'Riot Client not found for launch' };
+    return createLaunchResult(false, 'unknown', 'Riot Client not found for launch');
   }
 
   async launchCurseForge(game) {
@@ -609,20 +652,20 @@ class GameLauncher {
     if (typeof game.executable === 'string' && game.executable.startsWith('curseforge://')) {
       console.log('⛏️ Opening CurseForge protocol:', game.executable);
       await this.shell.openExternal(game.executable);
-      return { success: true, message: `Launched ${game.name}` };
+      return createLaunchResult(true, 'protocol', `Launched ${game.name}`, { launchUrl: game.executable });
     }
 
     if (game.launchId) {
       const launchUrl = `curseforge://launch/${game.launchId}`;
       console.log('⛏️ Opening CurseForge launch URL:', launchUrl);
       await this.shell.openExternal(launchUrl);
-      return { success: true, message: `Launched ${game.name}` };
+      return createLaunchResult(true, 'protocol', `Launched ${game.name}`, { launchUrl });
     }
 
     if (game.executablePath && fs.existsSync(game.executablePath)) {
       console.log('⛏️ Launching CurseForge executable path:', game.executablePath);
       exec(`start "" "${game.executablePath}"`, { shell: true }, () => {});
-      return { success: true, message: `Launched ${game.name}` };
+      return createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath });
     }
 
     const curseForgeCandidates = [
@@ -635,10 +678,10 @@ class GameLauncher {
     if (curseForgePath) {
       console.log('⛏️ Opening CurseForge client:', curseForgePath);
       exec(`start "" "${curseForgePath}"`, { shell: true }, () => {});
-      return { success: true, message: 'CurseForge opened - please launch the instance manually' };
+      return createLaunchResult(true, 'launcher_opened', 'CurseForge opened - please launch the instance manually');
     }
 
-    return { success: false, message: 'CurseForge launcher not found for launch' };
+    return createLaunchResult(false, 'unknown', 'CurseForge launcher not found for launch');
   }
 
   async launchAmazon(game) {
@@ -650,9 +693,9 @@ class GameLauncher {
         exec(`start "" "${game.executablePath}"`, { shell: true }, (error) => {
           if (error) {
             console.error('❌ Direct Amazon executable launch failed:', error);
-            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
           } else {
-            resolve({ success: true, message: `Launched ${game.name}` });
+            resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath }));
           }
         });
       });
@@ -668,10 +711,10 @@ class GameLauncher {
     if (amazonAppPath) {
       console.log('📦 Opening Amazon Games app:', amazonAppPath);
       exec(`start "" "${amazonAppPath}"`, { shell: true }, () => {});
-      return { success: true, message: 'Amazon Games opened - please launch the game manually' };
+      return createLaunchResult(true, 'launcher_opened', 'Amazon Games opened - please launch the game manually');
     }
 
-    return { success: false, message: 'Amazon Games app not found for launch' };
+    return createLaunchResult(false, 'unknown', 'Amazon Games app not found for launch');
   }
 
   async launchItch(game) {
@@ -683,9 +726,9 @@ class GameLauncher {
         exec(`start "" "${game.executablePath}"`, { shell: true }, (error) => {
           if (error) {
             console.error('❌ Direct itch.io executable launch failed:', error);
-            resolve({ success: false, message: `Failed to launch ${game.name}: ${error.message}` });
+            resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
           } else {
-            resolve({ success: true, message: `Launched ${game.name}` });
+            resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath }));
           }
         });
       });
@@ -702,10 +745,46 @@ class GameLauncher {
     if (itchAppPath) {
       console.log('🎲 Opening itch.io app:', itchAppPath);
       exec(`start "" "${itchAppPath}"`, { shell: true }, () => {});
-      return { success: true, message: 'itch.io opened - please launch the game manually' };
+      return createLaunchResult(true, 'launcher_opened', 'itch.io opened - please launch the game manually');
     }
 
-    return { success: false, message: 'itch.io app not found for launch' };
+    return createLaunchResult(false, 'unknown', 'itch.io app not found for launch');
+  }
+
+  async launchEmulated(game) {
+    console.log('🕹️ Emulated game data:', game);
+
+    const emulatorPath = String(game.emulatorPath || game.executablePath || '').trim();
+    const romPath = String(game.romPath || '').trim();
+    const launchTemplate = String(game.executable || game.launchTemplate || '"{emulator}" "{rom}"').trim();
+
+    if (!emulatorPath || !fs.existsSync(emulatorPath)) {
+      return createLaunchResult(false, 'unknown', `Emulator executable not found for ${game.name}`);
+    }
+
+    if (!romPath || !fs.existsSync(romPath)) {
+      return createLaunchResult(false, 'unknown', `ROM file not found for ${game.name}`);
+    }
+
+    const command = launchTemplate
+      .replace(/\{emulator\}/g, emulatorPath)
+      .replace(/\{rom\}/g, romPath);
+
+    const args = parseShellCommand(command);
+    const exe = args.shift();
+
+    if (!exe || !fs.existsSync(exe)) {
+      return createLaunchResult(false, 'unknown', `Emulator executable not found for ${game.name}`);
+    }
+
+    try {
+      const child = spawn(exe, args, { detached: true, stdio: 'ignore' });
+      child.unref();
+      return createLaunchResult(true, 'direct', `Launched ${game.name} via ${game.emulator || 'emulator'}`, { emulatorPath, romPath });
+    } catch (error) {
+      console.error('❌ Emulator launch failed:', error);
+      return createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`);
+    }
   }
 }
 

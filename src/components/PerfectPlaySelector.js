@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { MOODS, GENRES, getGenresForMood } from '../constants/GenresMoods';
 import { RecommendationEngine } from '../services/RecommendationEngine';
+import { RecommendationTuningService } from '../services/RecommendationTuningService';
+import { RecommendationReasonChip } from './RecommendationReasonChip';
 import '../styles/PerfectPlaySelector.css';
 
 export function PerfectPlaySelector({ library = [], onGameSelected = () => {} }) {
@@ -8,6 +10,12 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [availableMinutes, setAvailableMinutes] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
+  const [tuning, setTuning] = useState(() => RecommendationTuningService.getTuning());
+
+  const updateTuning = (patch) => {
+    const next = RecommendationTuningService.setTuning({ ...tuning, ...patch });
+    setTuning(next);
+  };
 
   // Toggle mood selection
   const toggleMood = (mood) => {
@@ -33,6 +41,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
       return null;
     }
 
+    RecommendationTuningService.applyTuningToWeights();
     return RecommendationEngine.getPerfectPlaySelectionResult(
       library,
       selectedMoods,
@@ -40,7 +49,8 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
       availableMinutes,
       10
     );
-  }, [library, selectedMoods, selectedGenres, availableMinutes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [library, selectedMoods, selectedGenres, availableMinutes, tuning]);
 
   const matchingGames = recommendationResult?.games || [];
   const matchingEntries = recommendationResult?.entries || [];
@@ -147,6 +157,57 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
           </div>
         </div>
 
+        {/* Tuning Controls */}
+        <div className="selector-section tuning-section">
+          <h3>🎚️ Recommendation Tuning</h3>
+          <div className="tuning-controls">
+            <div className="tuning-control">
+              <label htmlFor="novelty-slider">Novelty</label>
+              <input
+                id="novelty-slider"
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(tuning.novelty * 100)}
+                onChange={(e) => updateTuning({ novelty: Number(e.target.value) / 100 })}
+              />
+              <span>{Math.round(tuning.novelty * 100)}%</span>
+            </div>
+            <div className="tuning-control">
+              <label htmlFor="diversity-slider">Diversity</label>
+              <input
+                id="diversity-slider"
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(tuning.diversity * 100)}
+                onChange={(e) => updateTuning({ diversity: Number(e.target.value) / 100 })}
+              />
+              <span>{Math.round(tuning.diversity * 100)}%</span>
+            </div>
+            <div className="tuning-control">
+              <label htmlFor="fatigue-select">Fatigue window</label>
+              <select
+                id="fatigue-select"
+                value={tuning.fatigueWindowHours}
+                onChange={(e) => updateTuning({ fatigueWindowHours: Number(e.target.value) })}
+              >
+                <option value={1}>1 hour</option>
+                <option value={6}>6 hours</option>
+                <option value={24}>1 day</option>
+                <option value={72}>3 days</option>
+                <option value={168}>1 week</option>
+              </select>
+            </div>
+            <button
+              className={`tuning-toggle ${tuning.explorationEnabled ? 'selected' : ''}`}
+              onClick={() => updateTuning({ explorationEnabled: !tuning.explorationEnabled })}
+            >
+              {tuning.explorationEnabled ? 'Exploration slot on' : 'Exploration slot off'}
+            </button>
+          </div>
+        </div>
+
         {/* Results Section */}
         {(selectedMoods.length > 0 || selectedGenres.length > 0) && (
           <div className="selector-section results-section">
@@ -168,6 +229,13 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                           {bestRecommendation.launch_count || 0} plays
                         </span>
                       </div>
+                      <RecommendationReasonChip
+                        game={bestRecommendation}
+                        mood={selectedMoods[0] || null}
+                        genre={selectedGenres[0] || null}
+                        timeAvailable={availableMinutes}
+                        recommendationType="perfect-play"
+                      />
                       <button
                         className="select-button"
                         onClick={() => handleSelectGame(bestRecommendation)}
@@ -195,6 +263,13 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                         <div className="game-info">
                           <div className="game-name">{game.name}</div>
                           <div className="game-platform">{game.platform}</div>
+                          <RecommendationReasonChip
+                            game={game}
+                            mood={selectedMoods[0] || null}
+                            genre={selectedGenres[0] || null}
+                            timeAvailable={availableMinutes}
+                            recommendationType="perfect-play"
+                          />
                         </div>
                         <div className="game-stats">
                           <span>{game.launch_count || 0} plays</span>

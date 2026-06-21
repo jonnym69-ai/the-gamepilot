@@ -1,24 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  Menu, X, Gift, Search,
-  Palette, Trophy, BarChart3, Package, Target, Zap, Link2, Heart, HardDrive, Scale
-} from 'lucide-react';
-import DailyCheckIn from './DailyCheckIn';
-import { DailyEngagementService } from '../services/DailyEngagementService';
-import useInterfacePreferences from '../hooks/useInterfacePreferences';
+import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Gift, Wand2, Heart, Link2, Trophy, Download, Target, HardDrive, Gauge, Monitor, Sparkles, Compass } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showSpin, setShowSpin] = useState(false);
-  const [engagementStatus, setEngagementStatus] = useState(null);
   const location = useLocation();
   const dropdownRef = useRef(null);
-  const prefs = useInterfacePreferences();
-
-  useEffect(() => {
-    setEngagementStatus(DailyEngagementService.getStatus());
-  }, []);
+  const { bigScreenMode, toggleBigScreenMode } = useTheme();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -62,39 +51,21 @@ function HybridNavBar() {
           <span className="nav-search-pill-label">Search</span>
           <kbd className="nav-search-pill-kbd">/</kbd>
         </button>
-        <Link to="/" className="nav-link" title="Home mission control and recommendations">Home</Link>
-        <Link to="/library" className="nav-link" title="Browse and manage your launcher libraries">Library</Link>
-        <Link to="/stats" className="nav-link" title="View local-first playtime, quest, and achievement stats">Stats</Link>
-        <Link to="/profile" className="nav-link" title="See your progression, identity, and reward roadmap">Profile</Link>
-        <Link to="/settings" className="nav-link" title="Customize themes, shortcuts, controller mode, and preferences">Settings</Link>
-        {prefs.showDailyButton && (
-          <button
-            className={`nav-link spin-nav-button ${engagementStatus?.canSpin ? 'has-spin' : ''}`}
-            onClick={() => setShowSpin(true)}
-            title="Daily reward spin - come back every day!"
-          >
-            <Gift size={18} />
-            <span>Daily</span>
-            {prefs.showStreakBadge && engagementStatus?.currentStreak > 0 && (
-              <span className="streak-badge">{engagementStatus.currentStreak}</span>
-            )}
-          </button>
-        )}
+        <Link to="/" className="nav-link" title="Home — recommendations and dashboard">Home</Link>
+        <Link to="/library" className="nav-link" title="Browse and manage your game libraries">Library</Link>
+        <Link to="/stats" className="nav-link" title="Playtime stats and session history">Stats</Link>
+        <Link to="/profile" className="nav-link" title="Your gaming identity and profile">Profile</Link>
+        <Link to="/settings" className="nav-link" title="Preferences, themes, and configuration">Settings</Link>
       </div>
 
-      <DailyCheckIn isOpen={showSpin} onClose={() => {
-        setShowSpin(false);
-        setEngagementStatus(DailyEngagementService.getStatus());
-      }} />
-
-      {/* Dropdown Menu for Less Frequent Items */}
+      {/* Dropdown Menu for Secondary Items */}
       <div className="navbar-dropdown" ref={dropdownRef}>
         <button 
           className="dropdown-toggle"
           onClick={toggleDropdown}
           aria-label="More navigation options"
           aria-expanded={isDropdownOpen}
-          title="Open more pages, tools, and export options"
+          title="More pages and tools"
         >
           {isDropdownOpen ? <X size={20} /> : <Menu size={20} />}
           <span>More</span>
@@ -103,59 +74,70 @@ function HybridNavBar() {
         {isDropdownOpen && (
           <div className="dropdown-menu">
             <div className="dropdown-section">
-              <div className="dropdown-section-title">Customization & Rewards</div>
-              <Link to="/themes" className="dropdown-item" onClick={closeDropdown} title="Switch and preview your unlocked themes">
-                <Palette size={16} className="dropdown-item-icon" /> Themes
+              <div className="dropdown-section-title">Tools</div>
+              <Link to="/recommendations" className="dropdown-item" onClick={closeDropdown} title="Discover games with different recommendation styles">
+                <Compass size={16} className="dropdown-item-icon" /> Recommendations
               </Link>
-              <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="Browse progression rewards and unlocks">
-                <Gift size={16} className="dropdown-item-icon" /> Rewards
+              <Link to="/free-games" className="dropdown-item" onClick={closeDropdown} title="Browse free-to-keep game giveaways">
+                <Gift size={16} className="dropdown-item-icon" /> Free Games
               </Link>
-            </div>
-
-            <div className="dropdown-section">
-              <div className="dropdown-section-title">Stats & Achievements</div>
-              <Link to="/library-intelligence" className="dropdown-item" onClick={closeDropdown} title="Compare owned games and surface backlog priorities">
+              <Link to="/swipe-deck" className="dropdown-item" onClick={closeDropdown} title="Swipe through your library to build a shortlist">
+                <Sparkles size={16} className="dropdown-item-icon" /> Swipe Deck
+              </Link>
+              <Link to="/library-intelligence" className="dropdown-item" onClick={closeDropdown} title="Compare games and surface backlog priorities">
                 <Scale size={16} className="dropdown-item-icon" /> Library Intelligence
               </Link>
-              <Link to="/achievements" className="dropdown-item" onClick={closeDropdown} title="See achievement chains, rarity, and XP rewards">
+              <Link to="/habits" className="dropdown-item" onClick={closeDropdown} title="Track gaming habits and goals">
+                <Calendar size={16} className="dropdown-item-icon" /> Habits
+              </Link>
+              <Link to="/achievements" className="dropdown-item" onClick={closeDropdown} title="View your achievements and rolling assignments">
                 <Trophy size={16} className="dropdown-item-icon" /> Achievements
               </Link>
-            </div>
-
-            <div className="dropdown-section">
-              <div className="dropdown-section-title">Progress & Challenges</div>
-              <Link to="/dashboard" className="dropdown-item" onClick={closeDropdown} title="Open the full dashboard with goals, wishlist, buy picks, collections, and session tools">
-                <BarChart3 size={16} className="dropdown-item-icon" /> Dashboard
-              </Link>
-              <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Revisit your yearly recap and exportable review">
-                <BarChart3 size={16} className="dropdown-item-icon" /> Year in Review
-              </Link>
-              <Link to="/exports" className="dropdown-item" onClick={closeDropdown} title="Central hub for backup, export, import, and sharing">
-                <Package size={16} className="dropdown-item-icon" /> Export & Share
-              </Link>
-              <Link to="/challenge-board" className="dropdown-item" onClick={closeDropdown} title="Track rotating goals, quests, and challenge progress">
+              <Link to="/challenge-board" className="dropdown-item" onClick={closeDropdown} title="Gaming challenges and quests">
                 <Target size={16} className="dropdown-item-icon" /> Challenge Board
               </Link>
-            </div>
-
-            <div className="dropdown-section">
-              <div className="dropdown-section-title">Tools & Links</div>
-              <Link to="/performance" className="dropdown-item" onClick={closeDropdown} title="Inspect play patterns and recommendation performance">
-                <Zap size={16} className="dropdown-item-icon" /> Performance
+              <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Your yearly gaming recap">
+                <BarChart3 size={16} className="dropdown-item-icon" /> Year in Review
               </Link>
-              <Link to="/gaming-links" className="dropdown-item" onClick={closeDropdown} title="Open curated gaming links and companion resources">
+              <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="Unlockable customization earned through your habits">
+                <Gift size={16} className="dropdown-item-icon" /> Rewards
+              </Link>
+              <Link to="/gaming-links" className="dropdown-item" onClick={closeDropdown} title="Your personal collection of gaming sites and resources">
                 <Link2 size={16} className="dropdown-item-icon" /> Gaming Links
               </Link>
-              <Link to="/storage" className="dropdown-item" onClick={closeDropdown} title="See disk usage per game and start safe uninstalls">
-                <HardDrive size={16} className="dropdown-item-icon" /> Storage Manager
+              <Link to="/export-hub" className="dropdown-item" onClick={closeDropdown} title="Export and backup your GamePilot data">
+                <Download size={16} className="dropdown-item-icon" /> Export Hub
+              </Link>
+              <Link to="/storage-manager" className="dropdown-item" onClick={closeDropdown} title="Find cold games and reclaim disk space">
+                <HardDrive size={16} className="dropdown-item-icon" /> Library Reclaimer
+              </Link>
+              <Link to="/performance-cockpit" className="dropdown-item" onClick={closeDropdown} title="Hardware analysis and game compatibility">
+                <Gauge size={16} className="dropdown-item-icon" /> Performance Cockpit
+              </Link>
+              <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Founder Lounge, Patreon support, and unlock codes">
+                <Heart size={16} className="dropdown-item-icon" /> Founder Lounge
+              </Link>
+              <Link to="/themes" className="dropdown-item" onClick={closeDropdown} title="Switch mood themes">
+                <Palette size={16} className="dropdown-item-icon" /> Themes
+              </Link>
+              <Link to="/theme-builder" className="dropdown-item" onClick={closeDropdown} title="Build custom themes with colors and effects">
+                <Wand2 size={16} className="dropdown-item-icon" /> Theme Builder
               </Link>
             </div>
-
             <div className="dropdown-section">
-              <div className="dropdown-section-title">Support</div>
-              <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Founder support and optional XP boost information">
-                <Heart size={16} className="dropdown-item-icon" /> Founders
-              </Link>
+              <div className="dropdown-section-title">View</div>
+              <button
+                type="button"
+                className="dropdown-item"
+                onClick={() => {
+                  toggleBigScreenMode();
+                  closeDropdown();
+                }}
+                title={bigScreenMode ? 'Switch to normal desktop view' : 'Switch to TV / controller-friendly view'}
+              >
+                <Monitor size={16} className="dropdown-item-icon" />
+                {bigScreenMode ? 'Exit TV Mode' : 'TV Mode'}
+              </button>
             </div>
           </div>
         )}

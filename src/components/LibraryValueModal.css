@@ -45,6 +45,11 @@
   color: var(--text);
 }
 
+.library-value-modal .close-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
 .library-value-modal .modal-tabs {
   display: flex;
   gap: 8px;
@@ -70,6 +75,11 @@
 .library-value-modal .modal-tabs button:hover {
   background: var(--card);
   color: var(--text);
+}
+
+.library-value-modal .modal-tabs button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .library-value-modal .modal-tabs button.active {
@@ -173,6 +183,11 @@
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.library-value-modal .btn:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .btn-primary {

@@ -42,6 +42,7 @@
   border-radius: 6px;
 }
 .uninstall-modal-close:hover { color: var(--text-primary, #e2e8f0); background: rgba(255, 255, 255, 0.06); }
+.uninstall-modal-close:focus-visible { outline: 2px solid var(--accent-primary, #ff6b35); outline-offset: 2px; }
 
 .uninstall-modal-header { display: flex; flex-direction: column; gap: 4px; }
 .uninstall-modal-title {
@@ -173,6 +174,12 @@
   border: none;
   transition: filter 120ms ease, transform 120ms ease;
 }
+.uninstall-modal-cancel:focus-visible,
+.uninstall-modal-confirm:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
 .uninstall-modal-cancel {
   background: rgba(148, 163, 184, 0.16);
   color: var(--text-primary, #e2e8f0);

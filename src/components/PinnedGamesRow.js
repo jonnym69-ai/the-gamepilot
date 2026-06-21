@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Pin, X, Play } from 'lucide-react';
 import InterfacePreferencesService from '../services/InterfacePreferencesService';
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
+import LazyImage from './LazyImage';
 import { resolveGameArtwork, getGameArtworkPlaceholder } from '../services/GameArtworkService';
 import './PinnedGamesRow.css';
 
@@ -41,17 +42,22 @@ export default function PinnedGamesRow({ library = [], onLaunchGame, favorites =
       </div>
       <div className="pinned-games-list">
         {pinnedGames.map((game) => {
-          const art = resolveGameArtwork(game, { surface: 'pinned_row' }) || getGameArtworkPlaceholder({ game, surface: 'pinned_row' });
+          const art = resolveGameArtwork(game, { surface: 'recommendation_card' });
+          const placeholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
           return (
             <div key={gameKey(game)} className="pinned-game-card" title={game.name}>
               <button
                 type="button"
                 className="pinned-game-art"
                 onClick={() => onLaunchGame && onLaunchGame(game)}
-                style={{ backgroundImage: art ? `url(${art})` : undefined }}
                 aria-label={`Launch ${game.name}`}
               >
-                {!art && <Play size={20} />}
+                <LazyImage
+                  src={art}
+                  alt={game.name}
+                  placeholder={placeholder}
+                  className="pinned-game-image"
+                />
                 <div className="pinned-game-overlay">
                   <Play size={20} />
                 </div>

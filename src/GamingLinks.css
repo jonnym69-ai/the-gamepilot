@@ -1,0 +1,421 @@
+/* Gaming Links — layout & box-style rewards */
+
+.gaming-links-page {
+  --gl-border-radius: 12px;
+  --gl-card-padding: 16px 20px;
+  --gl-card-gap: 14px;
+}
+
+/* Default link card */
+.gl-link-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--gl-border-radius);
+  padding: var(--gl-card-padding);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gl-card-gap);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.gl-link-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--button-primary-bg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.gl-feature-neon_glow .gl-link-card {
+  border-color: rgba(61, 217, 255, 0.42);
+  box-shadow: 0 0 16px rgba(61, 217, 255, 0.16);
+}
+
+.gl-feature-neon_glow .gl-link-card:hover {
+  box-shadow: 0 0 24px rgba(61, 217, 255, 0.34);
+}
+
+.gl-feature-gradient_cards .gl-link-card {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(61, 217, 255, 0.12));
+}
+
+.gl-feature-glass_panels .gl-link-card {
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.gl-feature-particle_effects .gl-link-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.45;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.gl-feature-3d_transforms .gl-link-card:hover {
+  transform: perspective(700px) rotateX(5deg) rotateY(-5deg) translateY(-4px);
+}
+
+.gl-feature-status_badges .gl-link-card::after {
+  content: 'LINK';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 107, 53, 0.18);
+  color: var(--button-primary-bg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.gl-feature-spotlight_rows .gl-link-card:nth-child(1) {
+  grid-column: 1 / -1;
+  padding: 26px 30px;
+  background: linear-gradient(135deg, rgba(245, 183, 0, 0.18), rgba(255, 107, 53, 0.2));
+  border-color: rgba(245, 183, 0, 0.42);
+}
+
+/* Default link grid */
+.gl-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* === Layout variants === */
+
+/* Compact List — single column, denser */
+.gl-layout-list .gl-link-grid {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.gl-layout-list .gl-link-card {
+  padding: 10px 16px;
+}
+
+/* Showcase Hero — first card per category is featured */
+.gl-layout-hero .gl-link-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.gl-layout-hero .gl-link-card.gl-hero {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, rgba(245, 183, 0, 0.15), rgba(255, 107, 53, 0.18));
+  border: 1px solid rgba(245, 183, 0, 0.4);
+  padding: 24px 28px;
+  font-size: 1.05rem;
+}
+
+.gl-layout-hero .gl-link-card.gl-hero img {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+/* Magazine Mosaic — asymmetric mixed sizes */
+.gl-layout-mosaic .gl-link-grid {
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 88px;
+  gap: 12px;
+}
+
+.gl-layout-mosaic .gl-link-card {
+  grid-column: span 3;
+}
+
+.gl-layout-mosaic .gl-link-card:nth-child(7n + 1) {
+  grid-column: span 4;
+  grid-row: span 2;
+  font-size: 1.05rem;
+}
+
+.gl-layout-mosaic .gl-link-card:nth-child(7n + 4) {
+  grid-column: span 2;
+}
+
+.gl-layout-mosaic .gl-link-card:nth-child(7n + 5) {
+  grid-column: span 2;
+}
+
+/* Hex Grid — honeycomb tiles */
+.gl-layout-hex .gl-link-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-start;
+}
+
+.gl-layout-hex .gl-link-card {
+  flex: 0 0 180px;
+  height: 200px;
+  flex-direction: column;
+  text-align: center;
+  justify-content: center;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  padding: 16px;
+  border-radius: 0;
+}
+
+.gl-layout-hex .gl-link-card:nth-child(even) {
+  margin-top: 50px;
+}
+
+.gl-layout-hex .gl-link-card img {
+  margin-bottom: 8px;
+}
+
+/* Arcade Cabinet — CRT marquee */
+.gl-layout-arcade .gl-link-grid {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.gl-layout-arcade .gl-link-card {
+  background: #0a0a14;
+  border: 2px solid #ff0080;
+  box-shadow:
+    0 0 12px rgba(255, 0, 128, 0.5),
+    inset 0 0 12px rgba(0, 212, 255, 0.15);
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.7);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gl-layout-arcade .gl-link-card:hover {
+  box-shadow:
+    0 0 18px rgba(255, 0, 128, 0.8),
+    inset 0 0 18px rgba(0, 212, 255, 0.3);
+  border-color: #00d4ff;
+}
+
+/* === Box-shape variants === */
+
+.gl-box-pill .gl-link-card {
+  border-radius: 999px;
+  padding: 10px 20px;
+}
+
+.gl-box-sharp .gl-link-card {
+  border-radius: 2px;
+}
+
+.gl-box-hex .gl-link-card {
+  /* hex layout already shapes the box; keep this for non-hex layouts using hex box */
+  border-radius: 8px;
+}
+
+.gl-box-arcade .gl-link-card {
+  border-radius: 4px;
+}
+
+/* Page container */
+.gl-container {
+  padding: 40px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.gl-page {
+  background-color: var(--primary);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.gl-link-favicon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background-color: #fff;
+}
+
+.gl-link-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.gl-link-external-icon {
+  color: var(--text);
+  opacity: 0.3;
+}
+
+.gl-page-header {
+  margin-bottom: 32px;
+}
+.gl-page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+.gl-page-header p {
+  margin: 0;
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 15px;
+}
+
+/* Add link form */
+.gl-form-card {
+  background-color: var(--card);
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+}
+.gl-form-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.gl-form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.gl-form-input {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--input);
+  color: var(--text);
+  font-size: 14px;
+}
+.gl-form-input.name {
+  flex: 1 1 180px;
+}
+.gl-form-input.url {
+  flex: 2 1 280px;
+}
+.gl-form-select {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--input);
+  color: var(--text);
+  font-size: 14px;
+  min-width: 140px;
+}
+.gl-form-btn {
+  background-color: var(--button-primary-bg);
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.gl-form-btn:disabled {
+  background-color: var(--border);
+  cursor: not-allowed;
+}
+
+/* Category section */
+.gl-category {
+  margin-bottom: 32px;
+}
+.gl-category-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.gl-category-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+.gl-category-count {
+  color: var(--text);
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+/* Link card inner text */
+.gl-link-name {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.gl-link-domain {
+  color: var(--text);
+  opacity: 0.5;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Delete button inside link card */
+.gl-link-delete {
+  background-color: transparent;
+  border: none;
+  color: var(--text);
+  opacity: 0.3;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.gl-link-delete:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+  opacity: 1;
+  color: #dc3545;
+}
+
+/* Control buttons */
+.gl-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.gl-btn-secondary {
+  background-color: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.gl-btn-danger {
+  background-color: transparent;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Reduce motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .gl-link-card,
+  .gl-link-card:hover {
+    transition: none;
+    transform: none;
+  }
+}

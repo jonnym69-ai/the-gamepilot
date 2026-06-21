@@ -1,4 +1,4 @@
-// GenresMoods.js - Fixed 16 genres and 8 moods system (independent of game data)
+// GenresMoods.js - Fixed genres and 5 moods system (independent of game data)
 
 export const GENRES = [
   'Action',
@@ -32,22 +32,16 @@ export const MOODS = [
   'Social',
   'Creative',
   'Focused',
-  'Escapist',
-  'Tactical',
-  'Sporty',
-  'Competitive'
+  'Escapist'
 ];
 
-// Genre->Mood mapping (expanded so nothing falls through to "Unknown")
+// Genre->Mood mapping
 export const GENRE_MOOD_MAP = {
-  Relaxed: ['Casual', 'Story-driven', 'Simulation', 'Indie'],
-  Social: ['Multiplayer', 'Party', 'Casual'],
-  Creative: ['Sandbox', 'Puzzle', 'Simulation', 'Indie', 'Platformer'],
-  Focused: ['Strategy', 'Tactical', 'Roguelike', 'Management'],
-  Escapist: ['RPG', 'Adventure', 'Story-driven'],
-  Tactical: ['Action', 'Shooter', 'Stealth', 'Survival'],
-  Sporty: ['Sports', 'Racing'],
-  Competitive: ['Fighting', 'Competitive', 'Shooter', 'Multiplayer']
+  Relaxed: ['Casual', 'Simulation', 'Platformer', 'Puzzle', 'Management'],
+  Social: ['Multiplayer', 'Party', 'Sports', 'Racing', 'Competitive', 'Fighting'],
+  Creative: ['Sandbox', 'Story-driven', 'Indie'],
+  Focused: ['Action', 'Shooter', 'Strategy', 'Tactical', 'Roguelike', 'Stealth', 'Survival'],
+  Escapist: ['RPG', 'Adventure', 'Horror']
 };
 
 const CANONICAL_LOOKUP = GENRES.reduce((acc, genre) => {
@@ -66,11 +60,11 @@ const GENRE_ALIAS_MAP = {
   'looter shooter': ['Shooter', 'RPG'],
   'soulslike': ['Action', 'RPG', 'Tactical'],
   'souls-like': ['Action', 'RPG', 'Tactical'],
-  'metroidvania': ['Action', 'Adventure'],
-  'platformer': ['Platformer', 'Action'],
-  'platform': ['Platformer', 'Action'],
-  'stealth': ['Stealth', 'Action'],
-  'stealth action': ['Stealth', 'Action'],
+  'metroidvania': ['Platformer', 'Adventure'],
+  'platformer': ['Platformer'],
+  'platform': ['Platformer'],
+  'stealth': ['Stealth'],
+  'stealth action': ['Stealth'],
   'roguelite': ['Roguelike'],
   'rogue-lite': ['Roguelike'],
   'rogue like': ['Roguelike'],
@@ -82,10 +76,10 @@ const GENRE_ALIAS_MAP = {
   'cooperative': ['Multiplayer', 'Party'],
   'battle royale': ['Shooter', 'Competitive'],
   'fps': ['Shooter'],
-  'tps': ['Shooter', 'Action'],
+  'tps': ['Shooter'],
   'first person shooter': ['Shooter'],
-  'third person shooter': ['Shooter', 'Action'],
-  'open world': ['Adventure', 'Action'],
+  'third person shooter': ['Shooter'],
+  'open world': ['Adventure'],
   'survival horror': ['Horror', 'Survival'],
   'builder': ['Simulation', 'Management'],
   'city builder': ['Simulation', 'Management'],
@@ -125,10 +119,10 @@ const KEYWORD_HINTS = [
   { test: /(builder|tycoon|management)/, genres: ['Simulation', 'Management'] },
   { test: /(co\s?-?op|cooperative|multiplayer)/, genres: ['Multiplayer', 'Party'] },
   { test: /puzzle/, genres: ['Puzzle'] },
-  { test: /platform/, genres: ['Platformer', 'Action'] },
+  { test: /platform/, genres: ['Platformer'] },
   { test: /(strategy|tactic|tactical)/, genres: ['Strategy', 'Tactical'] },
-  { test: /(shooter|fps|tps|gun)/, genres: ['Shooter', 'Action'] },
-  { test: /(racing|driving|kart)/, genres: ['Racing', 'Sports'] },
+  { test: /(shooter|fps|tps|gun)/, genres: ['Shooter'] },
+  { test: /(racing|driving|kart)/, genres: ['Racing'] },
   { test: /(sport|soccer|basketball|football|golf|skate)/, genres: ['Sports'] },
   { test: /(sandbox|craft|builder)/, genres: ['Sandbox', 'Survival'] },
   { test: /(simulation|simulator)/, genres: ['Simulation'] },
@@ -179,17 +173,41 @@ export const normalizeGenres = (gameGenres) => {
   return Array.from(normalizedSet);
 };
 
-const DEFAULT_FALLBACK_GENRE = 'Story-driven';
+// Genre weight: how strongly a genre signals its mapped mood.
+const GENRE_SIGNAL_WEIGHT = {
+  Indie: 0.3,      // Weak Creative signal — wins only when no stronger genre present
+  Action: 0.5,     // Common but meaningful — contributes to Focused without dominating
+  Adventure: 0.5   // Common but meaningful — contributes to Escapist without dominating
+};
+
+// Context suppression: when certain genres appear together, one genre's mood
+// contribution is suppressed. E.g., "Simulation" stops counting toward Relaxed
+// when Management/Strategy/Survival are also present (colony mgmt ≠ relaxing).
+const GENRE_CONTEXT_SUPPRESSION = [
+  { ifPresent: ['Strategy', 'Survival'], suppress: 'Simulation', fromMood: 'Relaxed' }
+];
 
 const scoreMoodsFromGenres = (genres) => {
   const moodScores = {};
+  const genreSet = new Set(genres);
+
   genres.forEach((genre) => {
+    const weight = GENRE_SIGNAL_WEIGHT[genre] || 1.0;
     Object.entries(GENRE_MOOD_MAP).forEach(([mood, mappedGenres]) => {
       if (!Array.isArray(mappedGenres) || !mappedGenres.includes(genre)) {
         return;
       }
 
-      moodScores[mood] = (moodScores[mood] || 0) + 1;
+      // Check if this genre's contribution to this mood is suppressed by context
+      const suppressed = GENRE_CONTEXT_SUPPRESSION.some(
+        (rule) => rule.suppress === genre && rule.fromMood === mood
+          && rule.ifPresent.some((trigger) => genreSet.has(trigger))
+      );
+      if (suppressed) {
+        return;
+      }
+
+      moodScores[mood] = (moodScores[mood] || 0) + weight;
     });
   });
   return moodScores;
@@ -238,11 +256,6 @@ export const mapGameGenresToValid = (gameGenres) => {
     return normalized;
   }
 
-  // Provide a graceful fallback so recommendations never see "Unknown" genres
-  if (Array.isArray(gameGenres) && gameGenres.length > 0) {
-    return [DEFAULT_FALLBACK_GENRE];
-  }
-
   return [];
 };
 
@@ -255,7 +268,11 @@ export const getMoodForGame = (gameGenres) => {
   }
 
   const moodScores = scoreMoodsFromGenres(validGenres);
-  const sortedMoods = Object.entries(moodScores).sort((a, b) => b[1] - a[1]);
+  // Sort by score descending; on tie, prefer MOODS order (Relaxed > Social > Creative > Focused > Escapist)
+  const sortedMoods = Object.entries(moodScores).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return MOODS.indexOf(a[0]) - MOODS.indexOf(b[0]);
+  });
   return sortedMoods.length ? sortedMoods[0][0] : null;
 };
 

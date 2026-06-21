@@ -6,6 +6,7 @@
 // games not in the DB), so callers always get a usable result.
 
 import { HardwareScoring } from './HardwareScoring';
+import { GameRequirementsHeuristics } from './GameRequirementsHeuristics';
 
 export class GameRequirements {
 
@@ -130,6 +131,25 @@ export class GameRequirements {
     return null;
   }
   
+  static interpolateRequirements(minimum, recommended) {
+    if (!minimum || !recommended) return null;
+    return {
+      cpuScore: typeof minimum.cpuScore === 'number' && typeof recommended.cpuScore === 'number'
+        ? Math.round((minimum.cpuScore + recommended.cpuScore) / 2)
+        : undefined,
+      gpuScore: typeof minimum.gpuScore === 'number' && typeof recommended.gpuScore === 'number'
+        ? Math.round((minimum.gpuScore + recommended.gpuScore) / 2)
+        : undefined,
+      ram: typeof minimum.ram === 'number' && typeof recommended.ram === 'number'
+        ? Math.round((minimum.ram + recommended.ram) / 2)
+        : undefined,
+      storage: typeof minimum.storage === 'number' && typeof recommended.storage === 'number'
+        ? Math.round((minimum.storage + recommended.storage) / 2)
+        : undefined,
+      requiresSSD: recommended.requiresSSD || minimum.requiresSSD || false
+    };
+  }
+
   static checkGameCompatibility(gameId, systemInfo) {
     // Kick off lazy DB load on first sync use. Until it resolves, the call
     // below will just hit the empty database and fall through to the
@@ -144,37 +164,48 @@ export class GameRequirements {
       : requirements?.name || String(gameId || 'Unknown Game');
     const lookupKey = resolvedGame?.id || this.getLookupKey(gameId);
     const scores = HardwareScoring.getOverallScore(systemInfo);
+    const gameObj = gameId && typeof gameId === 'object' ? gameId : { name: displayName };
     
     if (!requirements) {
-      let estimatedLevel = 'cannot_run';
-      if (scores.overall >= 85) {
-        estimatedLevel = 'ultra';
-      } else if (scores.overall >= 60) {
-        estimatedLevel = 'high';
-      } else if (scores.overall >= 35) {
-        estimatedLevel = 'low';
-      }
-      
+      const heuristicReqs = GameRequirementsHeuristics.estimateRequirements(gameObj);
+      const mediumReqs = this.interpolateRequirements(heuristicReqs.minimum, heuristicReqs.recommended);
+      const meetsMinimum = this.meetsRequirements(heuristicReqs.minimum, scores, systemInfo);
+      const meetsMedium = mediumReqs ? this.meetsRequirements(mediumReqs, scores, systemInfo) : { passes: false };
+      const meetsRecommended = this.meetsRequirements(heuristicReqs.recommended, scores, systemInfo);
+      const meetsUltra = this.meetsRequirements(heuristicReqs.ultra, scores, systemInfo);
+
+      let settingsLevel = 'cannot_run';
+      if (meetsMinimum.passes) settingsLevel = 'low';
+      if (meetsMedium.passes) settingsLevel = 'medium';
+      if (meetsRecommended.passes) settingsLevel = 'high';
+      if (meetsUltra.passes) settingsLevel = 'ultra';
+
+      const bottlenecks = this.detectBottlenecks(heuristicReqs, scores, systemInfo, settingsLevel);
+      const estimatedFPS = this.estimateFPS(settingsLevel, scores.overall);
+
       return {
-        compatible: estimatedLevel !== 'cannot_run',
-        settingsLevel: estimatedLevel,
-        bottlenecks: [],
-        estimatedFPS: this.estimateFPS(estimatedLevel, scores.overall),
-        canRun: estimatedLevel !== 'cannot_run',
+        compatible: meetsMinimum.passes,
+        settingsLevel,
+        bottlenecks,
+        estimatedFPS,
+        canRun: meetsMinimum.passes,
         gameName: displayName,
-        requirements: null,
+        requirements: heuristicReqs,
         isEstimate: true,
-        matchType: 'estimate',
+        matchType: heuristicReqs.source || 'estimate',
         lookupKey
       };
     }
     
+    const mediumReqs = this.interpolateRequirements(requirements.minimum, requirements.recommended);
     const meetsMinimum = this.meetsRequirements(requirements.minimum, scores, systemInfo);
+    const meetsMedium = mediumReqs ? this.meetsRequirements(mediumReqs, scores, systemInfo) : { passes: false };
     const meetsRecommended = this.meetsRequirements(requirements.recommended, scores, systemInfo);
     const meetsUltra = this.meetsRequirements(requirements.ultra, scores, systemInfo);
     
     let settingsLevel = 'cannot_run';
     if (meetsMinimum.passes) settingsLevel = 'low';
+    if (meetsMedium.passes) settingsLevel = 'medium';
     if (meetsRecommended.passes) settingsLevel = 'high';
     if (meetsUltra.passes) settingsLevel = 'ultra';
     
@@ -270,7 +301,7 @@ export class GameRequirements {
     const hasNVMe = storageDevices.some(d => d && d.isNVMe);
     const hasSSD = storageDevices.some(d => d && d.isSSD);
     
-    if (cpuGap > 0) {
+    if (cpuGap > 5) {
       bottlenecks.push({
         component: 'CPU',
         impact: cpuGap > 20 ? 'high' : cpuGap > 10 ? 'medium' : 'low',
@@ -278,8 +309,8 @@ export class GameRequirements {
         scoreGap: cpuGap
       });
     }
-    
-    if (gpuGap > 0) {
+
+    if (gpuGap > 5) {
       bottlenecks.push({
         component: 'GPU',
         impact: gpuGap > 20 ? 'high' : gpuGap > 10 ? 'medium' : 'low',
@@ -287,8 +318,8 @@ export class GameRequirements {
         scoreGap: gpuGap
       });
     }
-    
-    if (ramGap > 0) {
+
+    if (ramGap > 2) {
       bottlenecks.push({
         component: 'RAM',
         impact: ramGap >= 8 ? 'high' : 'medium',
@@ -319,6 +350,10 @@ export class GameRequirements {
   static estimateFPS(settingsLevel, overallScore) {
     if (settingsLevel === 'cannot_run') return '< 30';
     if (settingsLevel === 'low') return '30-45';
+    if (settingsLevel === 'medium') {
+      if (overallScore >= 70) return '50-60';
+      return '40-50';
+    }
     if (settingsLevel === 'high') {
       if (overallScore >= 75) return '60-90';
       return '45-60';
@@ -330,11 +365,12 @@ export class GameRequirements {
     }
     return 'Unknown';
   }
-  
+
   static getSettingsLabel(settingsLevel) {
     const labels = {
       'ultra': { text: 'Ultra', description: 'Maxed out settings', color: '#00e676', emoji: '🔥' },
       'high': { text: 'High', description: 'High settings', color: '#4caf50', emoji: '⚡' },
+      'medium': { text: 'Medium', description: 'Balanced settings', color: '#8ab4f8', emoji: '✨' },
       'low': { text: 'Low', description: 'Low settings', color: '#2196f3', emoji: '👍' },
       'cannot_run': { text: 'Below Minimum', description: 'Below minimum requirements', color: '#f44336', emoji: '⛔' },
       'unknown': { text: 'Unknown', description: 'No data available', color: '#9e9e9e', emoji: '❓' }

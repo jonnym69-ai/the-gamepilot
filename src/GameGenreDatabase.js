@@ -1,6 +1,6 @@
+/* eslint-disable */
 // Game Genre Database - Comprehensive mapping of games to genres
-export const gameGenreDatabase = {
-  "Action": [
+export const gameGenreDatabase = {  "Action": [
     "Grand Theft Auto V", "Elden Ring", "Black Myth: Wukong", "Monster Hunter: World", "Sekiro: Shadows Die Twice",
     "Ghost of Tsushima", "God of War (2018)", "Batman: Arkham City", "Batman: Arkham Asylum", "Batman: Arkham Knight", "Batman: Arkham Origins", "Devil May Cry 5", "Metal Gear Solid V: The Phantom Pain",
     "Stellar Blade", "Warhammer 40,000: Space Marine 2", "Nier: Automata", "Lies of P", "Sifu",
@@ -251,7 +251,7 @@ export const gameGenreDatabase = {
     "Subnautica: Below Zero", "The Hunter: Call of the Wild", "Tiny Bookshop", "Cairn", "Manor Lords",
     "Slime Rancher 2", "Tabletop Simulator", "Cooking Simulator 2", "Bus Simulator 27", "Gas Station Simulator",
     "Dungeon Keeper", "Exelio", "World Crafter TD", "Docked", "Ranger's Path",
-    "Oil Rig Simulator", "Subnautica 2", "Enshrouded", "Sunkenland", "Cities: Skylines",
+    "Oil Rig Simulator", "Subnautica 2", "Sunkenland", "Cities: Skylines",
     "Prison Architect", "American Truck Simulator", "Anno 1800", "Zoo Tycoon",
     "Farming Simulator 19 (2019 momentum)", "Transport Fever 2", "Anno 1800", "Tropico 6", "Football Manager 2020",
     "PC Building Simulator (full release 2019)", "House Flipper (2019 expansions)",
@@ -268,7 +268,7 @@ export const gameGenreDatabase = {
     "Anno 117", "RimWorld", "Dyson Sphere Program", "Euro Truck Simulator", "PC Building Simulator",
     "Subnautica", "The Hunter", "Tiny Bookshop", "Cairn", "Manor Lords", "Tabletop Simulator",
     "Cooking Simulator", "Bus Simulator", "Gas Station Simulator", "Oil Rig Simulator", "Subnautica 2",
-    "Enshrouded", "Sunkenland", "Cities: Skylines", "Prison Architect", "American Truck Simulator", "Anno 1800",
+    "Sunkenland", "Cities: Skylines", "Prison Architect", "American Truck Simulator", "Anno 1800",
     "Zoo Tycoon", "Transport Fever 2", "Tropico 6", "Football Manager", "House Flipper", "Farming Simulator 19",
     "PC Building Simulator", "The Sims 3", "Anno 1404", "Silent Hunter 4", "Silent Hunter 5", "Farming Simulator 2011",
     "Victoria II", "Kerbal Space Program", "Cities: Skylines", "Planet Coaster", "RimWorld", "Two Point Hospital",
@@ -278,7 +278,7 @@ export const gameGenreDatabase = {
     "Euro Truck Simulator 2", "PC Building Simulator 2", "Subnautica: Below Zero", "The Hunter: Call of the Wild",
     "Tiny Bookshop", "Cairn", "Manor Lords", "Tabletop Simulator", "Cooking Simulator 2", "Bus Simulator 27",
     "Gas Station Simulator", "Exelio", "World Crafter TD", "Docked", "Ranger's Path", "Oil Rig Simulator",
-    "Subnautica 2", "Enshrouded", "Sunkenland", "Cities: Skylines", "Prison Architect", "American Truck Simulator",
+    "Subnautica 2", "Sunkenland", "Cities: Skylines", "Prison Architect", "American Truck Simulator",
     "Anno 1800", "Zoo Tycoon", "Farming Simulator 19", "Transport Fever 2", "Anno 1800", "Tropico 6",
     "Football Manager 2020", "PC Building Simulator", "House Flipper", "Microsoft Flight Simulator 1.0", "SimCity",
     "SimEarth", "SimCity 2000", "Transport Tycoon", "Theme Park", "Theme Hospital", "Dungeon Keeper",
@@ -364,7 +364,8 @@ export const gameGenreDatabase = {
     "Rust", "The Forest", "Valheim", "Subnautica", "Don't Starve",
     "7 Days to Die", "Conan Exiles", "ARK: Survival Evolved", "Green Hell", "The Long Dark",
     "Sons of the Forest", "Grounded", "Stranded Deep", "Raft", "Icarus",
-    "SCUM", "DayZ", "The Isle", "Atlas", "V Rising"
+    "SCUM", "DayZ", "The Isle", "Atlas", "V Rising",
+    "Enshrouded"
   ]
 };
 
@@ -440,6 +441,44 @@ export const gameBelongsToGenre = (gameName, genre) => {
   });
 };
 
+  // Smart fallback for games not matched by explicit database or keywords
+const getSmartFallbackGenre = (gameName) => {
+  const normalized = normalizeGameName(gameName);
+  if (!normalized) return [];
+  const genres = [];
+
+  // Pattern-based detection (single-word triggers for high-confidence matches)
+  if (/\b(simulator?|sim)\b/i.test(normalized)) genres.push('Simulation');
+  if (/\btycoon\b/i.test(normalized)) genres.push('Management');
+  if (/\b(racing|race|driver|speed|drift|nascar|formula|rally|kart|motogp)\b/i.test(normalized)) genres.push('Racing');
+  if (/\b(sports?|soccer|football|basketball|baseball|tennis|golf|hockey|skate|wrestling|ufc|mma|boxing|fifa|nba|nfl|nhl|mlb|olympic|stadium)\b/i.test(normalized)) genres.push('Sports');
+  if (/\b(fighting|fighter|brawler|wrestle|kick|punch|karate|kung fu|martial)\b/i.test(normalized)) genres.push('Fighting');
+  if (/\b(shooter|shoot|fps|gun|pistol|rifle|shotgun|sniper|bazooka|grenade)\b/i.test(normalized)) genres.push('Shooter');
+  if (/\b(survival|survive|zombie|apocalypse|post.apocalyptic)\b/i.test(normalized)) genres.push('Survival');
+  if (/\b(horror|scary|haunted|ghost|demon|monster|fear|nightmare|evil|dead)\b/i.test(normalized)) genres.push('Horror');
+  if (/\b(platform|platformer|jump|jumping|side.scroll|side.scrolling)\b/i.test(normalized)) genres.push('Platformer');
+  if (/\b(stealth|sneak|spy|infiltrat|thief|assassin|silent|covert)\b/i.test(normalized)) genres.push('Stealth');
+  if (/\b(rogue|roguelike|rogue.lite|permadeath|procedural)\b/i.test(normalized)) genres.push('Roguelike');
+  if (/\b(sandbox|crafting|craft|build|builder|creative mode|open world)\b/i.test(normalized)) genres.push('Sandbox');
+  if (/\b(strategy|strategic|tactic|tactical|rts|turn.based|4x|wargame|war.game|empire|civilization)\b/i.test(normalized)) genres.push('Strategy');
+  if (/\b(puzzle|puzzler|brain|logic|mind|match.3|jigsaw|crossword|sudoku|tetris|mahjong)\b/i.test(normalized)) genres.push('Puzzle');
+  if (/\b(adventure|adventurous|explore|exploration|journey|quest|treasure|mystery|detective|investigation)\b/i.test(normalized)) genres.push('Adventure');
+  if (/\b(rpg|role.?playing|jrpg|action rpg|fantasy|dragon|dungeon|loot|level up|experience|questing)\b/i.test(normalized)) genres.push('RPG');
+  if (/\b(indie|independent)\b/i.test(normalized)) genres.push('Indie');
+  if (/\b(party|party.game|multiplayer|co-op|coop|local multiplayer|split.screen)\b/i.test(normalized)) genres.push('Party');
+  if (/\b(management|manager|organize|business|restaurant|hotel|hospital|zoo|theme park|city|cafe|shop|store|airport|prison|school|university)\b/i.test(normalized)) genres.push('Management');
+  if (/\b(card|deck|collectible|trading card|tcg|ccg|card battler|card game)\b/i.test(normalized)) genres.push('Strategy');
+  if (/\b(visual novel|vn|otome|dating sim|kinetic novel|narrative|story rich|story.driven|walking sim|walking simulator)\b/i.test(normalized)) genres.push('Story-driven');
+  if (/\b(tower defense|tower defence|td$)\b/i.test(normalized)) genres.push('Strategy');
+  if (/\b(moba|arena|battle.arena)\b/i.test(normalized)) genres.push('Competitive');
+  if (/\b(mmo|mmorpg|massively multiplayer|online rpg)\b/i.test(normalized)) genres.push('Multiplayer');
+  if (/\b(rhythm|music|beat|dance|guitar|drum|band|concert|song|audio|sound)\b/i.test(normalized)) genres.push('Casual');
+  if (/\b(casual|relax|relaxing|zen|cozy|idle|clicker|incremental|cookie clicker|adVenture capitalist)\b/i.test(normalized)) genres.push('Casual');
+  if (/\b(soulslike|souls.like|dark fantasy|gothic|punishing|difficult|hardcore action)\b/i.test(normalized)) genres.push('Action');
+
+  return genres;
+};
+
 // Keyword-based genre detection as fallback
 const detectGenreByKeywords = (gameName) => {
   const normalized = normalizeGameName(gameName);
@@ -448,18 +487,68 @@ const detectGenreByKeywords = (gameName) => {
   }
   const genres = [];
   
-  // Shooter keywords
-  if (/\b(call of duty|battlefield|counter.?strike|cs:?go|valorant|apex|warzone|halo|doom|quake|overwatch|destiny|borderlands|payday|rainbow six|far cry|metro|bioshock|wolfenstein|titanfall|crysis|gears of war|left 4 dead|killing floor|serious sam|unreal tournament|prey|rage|bulletstorm|sniper|warfare|combat|shooter|fps|gun)\b/i.test(normalized)) {
+  // Shooter keywords - major franchises and common terms
+  if (/\b(call of duty|battlefield|counter.?strike|csgo|cs2|valorant|apex legends?|warzone|halo|doom|quake|overwatch|destiny|borderlands|payday|rainbow six|far cry|metro|bioshock|wolfenstein|titanfall|crysis|gears of war|left 4 dead|killing floor|serious sam|unreal tournament|prey|bulletstorm|sniper|gtfo|ready or not|insurgency|vermitide|deep rock galactic|squad|arma|swat|half.life|team fortress|dusk|ion fury|prodeus|amid evil|wrath|ultrakill|postal|shadow warrior|blood|duke nukem|painkiller|soldier of fortune|no one lives forever|dark forces|jedi knight|republic commando|battlefront|spec ops|black ops|ghost recon|mercenary|shooter|fps|first.person.shooter)\b/i.test(normalized)) {
     genres.push('Shooter');
+  }
+
+  // MOBA keywords
+  if (/\b(league of legends|lol|dota|smite|heroes of the storm|paladins|battlerite|arena of valor|mobile legends|wild rift|moba|multiplayer.online.battle.arena)\b/i.test(normalized)) {
+    genres.push('Competitive');
+  }
+
+  // MMO keywords
+  if (/\b(world of warcraft|wow|final fantasy xiv|xiv|guild wars|elder scrolls online|eso|new world|lost ark|runescape|black desert|blade and soul|aion|tera|swtor|star wars.*old republic|everquest|lineage|archeage| Bless Unleashed|pantheon|ashes of creation|mortal online|albion online|mmo|mmorpg|massively multiplayer)\b/i.test(normalized)) {
+    genres.push('Multiplayer');
+  }
+
+  // Visual Novel keywords
+  if (/\b(visual novel|vn$|otome|dating sim|choice of|telltales|life is strange|detroit become human|beyond two souls|heavy rain|until dawn|the quarry|her story|telling lies|immortality|sam barlow|narrative game|walking sim|walking simulator|story rich|story.driven|dialogue heavy|kinetic novel)\b/i.test(normalized)) {
+    genres.push('Story-driven');
+  }
+
+  // Tower Defense keywords
+  if (/\b(tower defense|tower defence|td$|bloons td|plants vs zombies|defense grid|sanctum|orcs must die|dungeon defenders|kingdom rush|fieldrunners|pixeljunk|defender|tower.battle)\b/i.test(normalized)) {
+    genres.push('Strategy');
+  }
+
+  // Deckbuilder / Card Game keywords
+  if (/\b(balatro|slay the spire|monster train|griftlands|across the obelisk|fights in tight spaces|rogue book|ring of pain|nowhere prophet|neoverse|deckbuilder|deck.build|card game|card battler|ccg|collectible card|trading card|tcg)\b/i.test(normalized)) {
+    genres.push('Strategy');
+  }
+
+  // City Builder keywords
+  if (/\b(city builder|city building|cities skylines|simcity|banished|foundation|patron|farthest frontier|new cycle|ixion|highrise city|surviving the aftermath|frozenheim|norland|settlement builder|town builder|village builder|colony builder)\b/i.test(normalized)) {
+    genres.push('Management');
+  }
+
+  // Music / Rhythm keywords
+  if (/\b(guitar hero|rock band|beat saber|osu|friday night funkin|rhythm game|rhythm heaven|crypt of the necrodancer|hifi rush|hi.fi rush|metal hellsinger|invector|thumper|audiosurf|bit.trip|pa rappa|vib.ribbon|dance dance|just dance|hatsune miku|project diva|osu!|taiko|rhythm|music game)\b/i.test(normalized)) {
+    genres.push('Casual');
+  }
+
+  // Point & Click keywords
+  if (/\b(point and click|point.&.click|point.click|lucasarts|sierra|monkey island|grim fandango|sam & max|broken sword|deponia|machinarium|botanicula|gorogoa|thimbleweed|maniac mansion|day of the tentacle|full throttle|the dig|indiana jones.*adventure|king's quest|space quest|police quest|hero's quest|quest for glory|leisure suit larry|gabriel knight|phineas|curse of monkey island|sam and max|monkey island 2)\b/i.test(normalized)) {
+    genres.push('Adventure');
+  }
+
+  // Soulslike keywords
+  if (/\b(dark souls|elden ring|sekiro|bloodborne|demons souls|demon's souls|nioh|lies of p|wo long|fallen order|lords of the fallen|salt and sanctuary|blasphemous|hollow knight|ashen|surge|code vein|mortal shell|thymesia|steelrising|hellpoint|remnant.*from the ashes|remnant 2|soulslike|souls.like)\b/i.test(normalized)) {
+    genres.push('Action');
+  }
+
+  // Metroidvania keywords
+  if (/\b(metroid|castlevania|hollow knight|ori and|ori.*blind forest|ori.*will of the wisps|blasphemous|axiom verge|guacamelee|timespinner|bloodstained|dust.*an elysian tail|salt and sanctuary|dead cells|ender lilies|grime|ghost song|luna nights|record of lodoss war|valfaris|strider|iconoclasts|environmental station|frog detective|metroidvania)\b/i.test(normalized)) {
+    genres.push('Platformer');
   }
   
   // RPG keywords
-  if (/\b(elder scrolls|skyrim|fallout|witcher|dragon age|mass effect|final fantasy|persona|divinity|baldur|pillars of eternity|wasteland|pathfinder|kingdom come|greedfall|elex|risen|gothic|two worlds|fable|dragon's dogma|nier|tales of|star ocean|xenoblade|chrono|rpg|role.?playing)\b/i.test(normalized)) {
+  if (/\b(elder scrolls|skyrim|fallout|witcher|dragon age|mass effect|final fantasy|persona|divinity|baldur|pillars of eternity|wasteland|pathfinder|kingdom come|greedfall|elex|risen|gothic|two worlds|fable|dragon's dogma|nier|tales of|star ocean|xenoblade|chrono|pokemon|shin megami tensei|smt|yakuza|like a dragon|octopath|bravely|live a live|triangle|baten kaitos|lost odyssey|blue dragon|suikoden|grandia|wild arms|legend of dragoon|legend of legaia|arc the lad|lunar|skies of arcadia|vagrant story|parasite eve|chrono cross|crosscode|eiyuden|rpg|role.?playing|jrpg|action rpg|arpg|crpg)\b/i.test(normalized)) {
     genres.push('RPG');
   }
   
   // Strategy keywords
-  if (/\b(civilization|total war|age of empires|starcraft|warcraft|command.?conquer|company of heroes|hearts of iron|crusader kings|europa universalis|stellaris|xcom|into the breach|advance wars|fire emblem|disgaea|tactics|strategy|rts|turn.?based)\b/i.test(normalized)) {
+  if (/\b(civilization|total war|age of empires|starcraft|warcraft|command.?conquer|company of heroes|hearts of iron|crusader kings|europa universalis|stellaris|xcom|into the breach|advance wars|fire emblem|disgaea|tactics|strategy|rts|turn.?based|4x|grand strategy|wargame|paradox interactive|totalwar|aow|age of wonders|warhammer.*total war|three kingdoms|shogun|napoleon|rome.*total war|medieval.*total war|empire.*total war|attila.*total war|warhammer.*total war|britannia|troy|phantom|dynasty| Romance of the Three Kingdoms)\b/i.test(normalized)) {
     genres.push('Strategy');
   }
   
@@ -479,7 +568,7 @@ const detectGenreByKeywords = (gameName) => {
   }
   
   // Simulation keywords
-  if (/\b(sims|cities skylines|planet coaster|planet zoo|farming simulator|truck simulator|flight simulator|train simulator|kerbal|space engineers|satisfactory|factorio|rimworld|oxygen not included|frostpunk|banished|tropico|anno|tycoon|simulator|simulation|management)\b/i.test(normalized)) {
+  if (/\b(sims|cities skylines|planet coaster|planet zoo|farming simulator|truck simulator|flight simulator|train simulator|ship simulator|bus simulator|subway simulator|police simulator|firefighter simulator|mechanic simulator|electrician simulator|plumber simulator|cooking simulator|chef simulator|restaurant simulator|hotel simulator|airport simulator|port simulator|garage simulator|pc building simulator|car mechanic simulator|kerbal|space engineers|satisfactory|factorio|rimworld|oxygen not included|frostpunk|banished|tropico|anno|tycoon|simulator|simulation|colony sim)\b/i.test(normalized)) {
     genres.push('Simulation');
   }
   
@@ -494,10 +583,70 @@ const detectGenreByKeywords = (gameName) => {
   }
   
   // Puzzle keywords
-  if (/\b(portal|tetris|baba is you|witness|talos principle|antichamber|superliminal|puzzle|brain|logic)\b/i.test(normalized)) {
+  if (/\b(portal|tetris|baba is you|witness|talos principle|antichamber|superliminal|puzzle|brain|logic|mahjong|sudoku|crossword|match.?3|jigsaw)\b/i.test(normalized)) {
     genres.push('Puzzle');
   }
-  
+
+  // Sandbox keywords
+  if (/\b(minecraft|terraria|valheim|starbound|astroneer|subnautica|no man's sky|empyrion|space engineers|satisfactory|factorio|raft|green hell|the forest|grounded|core keeper|vinland|sunkenland|sons of the forest|abandoned|stranded deep|icarus|v rising|v-rising|soulmask|nightingale|enshrouded|palworld|sandbox|open world|crafting|build|creative mode|lego|automation|factory|conveyor)\b/i.test(normalized)) {
+    genres.push('Sandbox');
+  }
+
+  // Survival keywords
+  if (/\b(valheim|rust|ark|dayz|h1z1|scum|miscreated|the forest|green hell|stranded deep|don't starve|raft|subnautica|oxygen not included|rimworld|frostpunk|survival|survive)\b/i.test(normalized)) {
+    genres.push('Survival');
+  }
+
+  // Stealth keywords
+  if (/\b(thief|dishonored|hitman|metal gear|splinter cell|tenchu|styx|mark of the ninja|aragami|ghost recon|watch dogs|assassin's creed|stealth|sneak|infiltrat)\b/i.test(normalized)) {
+    genres.push('Stealth');
+  }
+
+  // Roguelike keywords
+  if (/\b(rogue|roguelike|rogue-lite|roguelite|binding of isaac|slay the spire|hades|dead cells|enter the gungeon|risk of rain|monolith|ftl|into the breach|spelunky|dungeon crawl|procedural|permadeath)\b/i.test(normalized)) {
+    genres.push('Roguelike');
+  }
+
+  // Adventure keywords
+  if (/\b(uncharted|tomb raider|the last of us|red dead|witcher|zelda|god of war|horizon|ghost of tsushima|assassin's creed|journey|firewatch|gris|sable|abzu|adventure|exploration|treasure hunt)\b/i.test(normalized)) {
+    genres.push('Adventure');
+  }
+
+  // Action keywords (broader catch-all for combat-focused games not caught above)
+  if (/\b(god of war|devil may cry|bayonetta|ninja gaiden|metal gear|dark souls|elden ring|sekiro|bloodborne|nioh|lies of p|wo long|ghost of tsushima|infamous|prototype|destroy all humans|action.?packed|hack and slash|soulslike)\b/i.test(normalized)) {
+    genres.push('Action');
+  }
+
+  // Indie keywords
+  if (/\b(indie|stardew valley|hollow knight|celeste|undertale|deltarune|shovel knight|cuphead|hades|katana zero|a short hike|unpacking|venba|chicory|gris|sable|spiritfarer|coffee talk|oxenfree|night in the woods|bugsnax|death's door|tunic|cult of the lamb|dredge|manor lords|pizza tower|animal well|lethal company|balatro|content warning|buckshot roulette|dave the diver|mineko|webfishing|schedule|inscryption|norco|citizen sleeper|pentiment|signalis|sable|chicory|venba|unpacking|a little to the left|before your eyes|goodbye volcano high|bugsnax|eastward|oom|neurodeck|cloudpunk|gamedev tycoon|moonlighter|forager|core keeper|mewnbase|astroneer|astroneer)\b/i.test(normalized)) {
+    genres.push('Indie');
+  }
+
+  // Party keywords
+  if (/\b(party game|party pack|jackbox|mario party|overcooked|moving out|heave ho|tools up|party animals|gang beasts|fall guys|party|co-op party|local multiplayer)\b/i.test(normalized)) {
+    genres.push('Party');
+  }
+
+  // Management keywords
+  if (/\b(two point|planet coaster|planet zoo|zoo tycoon|rollercoaster|theme park|jurassic world|parkitect|frontier|prison architect|rimworld|oxygen not included|surviving mars|anno|banished|foundation|patrician|port royale|management|manager)\b/i.test(normalized)) {
+    genres.push('Management');
+  }
+
+  // Story-driven keywords
+  if (/\b(visual novel|walking sim|telltales|life is strange|detroit become human|beyond two souls|heavy rain|until dawn|the quarry|immortality|her story|barlow|narrative|story.?rich|story driven|choice.?based|dialogue.?heavy|vn game)\b/i.test(normalized)) {
+    genres.push('Story-driven');
+  }
+
+  // Tactical keywords
+  if (/\b(xcom|phoenix point|battletech|mutant year zero|shadowrun|divinity original sin|baldur's gate|pillars of eternity|pathfinder|wasteland|fire emblem|advance wars|into the breach|disgaea|langrisser|tactical|turn.based.tactics|squad.based)\b/i.test(normalized)) {
+    genres.push('Tactical');
+  }
+
+  // Competitive keywords
+  if (/\b(esports|ranked|league of legends|dota|smite|overwatch|valorant|cs:?go|rainbow six|rocket league|fortnite|apex|pubg|warzone|competitive multiplayer|esport)\b/i.test(normalized)) {
+    genres.push('Competitive');
+  }
+
   return genres;
 };
 
@@ -515,20 +664,26 @@ export const getGameGenres = (gameName) => {
     return genreCache.get(cacheKey);
   }
   
-  const genres = [];
+  const genreSet = new Set();
   
-  // First try database matching
+  // Database matching
   Object.keys(gameGenreDatabase).forEach(genre => {
     if (gameBelongsToGenre(gameName, genre)) {
-      genres.push(genre);
+      genreSet.add(genre);
     }
   });
   
-  // If no genres found, try keyword-based detection
-  if (genres.length === 0) {
-    const keywordGenres = detectGenreByKeywords(gameName);
-    genres.push(...keywordGenres);
+  // Always run keyword detection to supplement database results
+  const keywordGenres = detectGenreByKeywords(gameName);
+  keywordGenres.forEach(g => genreSet.add(g));
+  
+  // Last resort: smart fallback based on game name patterns
+  if (genreSet.size === 0) {
+    const fallbackGenres = getSmartFallbackGenre(gameName);
+    fallbackGenres.forEach(g => genreSet.add(g));
   }
+  
+  const genres = Array.from(genreSet);
   
   // Cache the result
   genreCache.set(cacheKey, genres);

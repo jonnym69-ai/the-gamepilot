@@ -167,7 +167,7 @@ class PersonaPerformanceInsights {
     const fps = compatibility.estimatedFPS || 'Unknown FPS';
     const bottleneck = compatibility.bottlenecks && compatibility.bottlenecks[0];
 
-    let reason = `${emoji} Runs at ${text} settings (≈${fps} FPS)`;
+    let reason = `${emoji} Estimated ${text} settings (~${fps} FPS)`;
     if (bottleneck) {
       reason += ` • ${bottleneck.component} is the limiting factor`;
     }

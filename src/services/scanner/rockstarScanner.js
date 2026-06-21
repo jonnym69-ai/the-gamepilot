@@ -16,7 +16,7 @@ try {
   getGameGenres = require('../../GameGenreDatabase.js').getGameGenres;
 } catch (error) {
   getGameGenres = (gameName) => {
-    if (!gameName) return ['Story-driven'];
+    if (!gameName) return [];
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
@@ -30,7 +30,7 @@ try {
     if (name.includes('platformer') || name.includes('mario') || name.includes('sonic')) return ['Platformer'];
     if (name.includes('horror') || name.includes('outlast') || name.includes('amnesia')) return ['Horror'];
     if (name.includes('indie') || name.includes('stardew') || name.includes('hollow')) return ['Indie'];
-    return ['Story-driven'];
+    return [];
   };
 }
 
@@ -162,7 +162,7 @@ const getRockstarRegistryGames = () => {
       registryGames.push({
         name: gameName.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
         platform: 'Rockstar',
-        genres: getGameGenres(gameName).length > 0 ? getGameGenres(gameName) : ['Story-driven'],
+        genres: getGameGenres(gameName) || [],
         iconUrl: '',
         icon: '',
         executable: executablePath,
@@ -214,7 +214,7 @@ const scanRockstarLibrary = () => {
           rockstarGames.push({
             name: folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim(),
             platform: 'Rockstar',
-            genres: getGameGenres(folder).length > 0 ? getGameGenres(folder) : ['Story-driven'],
+            genres: getGameGenres(folder) || [],
             iconUrl: '',
             icon: '',
             executable: executablePath,

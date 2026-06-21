@@ -1,4 +1,3 @@
-import { ProgressionUnlockService } from './ProgressionUnlockService';
 import StorageService from './StorageService';
 import {
   ALL_BUTTON_PACKS,
@@ -15,8 +14,6 @@ import {
 const normalizeAmbientPackId = (packId) => (packId === 'dynamic' || AMBIENT_PACK_OPTIONS.includes(packId) ? packId : 'dynamic');
 const normalizeMusicPackId = (packId) => (MUSIC_PACK_OPTIONS.includes(packId) ? packId : MUSIC_PACK_OPTIONS[0]);
 const normalizeButtonPackId = (packId) => (ALL_BUTTON_PACKS.includes(packId) ? packId : 'analog-soft');
-
-const getFirstUnlockedRewardId = (collection = [], fallbackId = null) => collection.find((reward) => reward.unlocked)?.id || fallbackId;
 
 const loadButtonSampleSelection = () => {
   return StorageService.get('buttonSampleSelection', {});
@@ -83,25 +80,9 @@ class AudioManager {
       buttonSoundPack: normalizeButtonPackId(DEFAULT_SETTINGS.buttonSoundPack),
       buttonSampleSelection: { ...DEFAULT_SETTINGS.buttonSampleSelection }
     };
-    const resolvedPack = this.resolveUnlockedButtonPack(this.settings.buttonSoundPack);
-    if (resolvedPack !== this.settings.buttonSoundPack) {
-      this.settings.buttonSoundPack = resolvedPack;
-      StorageService.setString('buttonSoundPack', resolvedPack);
-    }
-    const resolvedAmbientPack = this.resolveUnlockedAmbientPack(this.settings.ambientSoundPack);
-    if (resolvedAmbientPack !== this.settings.ambientSoundPack) {
-      this.settings.ambientSoundPack = resolvedAmbientPack;
-      StorageService.setString('ambientSoundPack', resolvedAmbientPack);
-    }
-    const resolvedMusicPack = this.resolveUnlockedMusicPack(this.settings.musicPack);
-    if (resolvedMusicPack !== this.settings.musicPack) {
-      this.settings.musicPack = resolvedMusicPack;
-      StorageService.setString('musicPack', resolvedMusicPack);
-    }
-    if (!this.isMusicUnlocked() && this.settings.musicEnabled) {
-      this.settings.musicEnabled = false;
-      StorageService.setString('musicEnabled', 'false');
-    }
+    this.settings.buttonSoundPack = normalizeButtonPackId(this.settings.buttonSoundPack);
+    this.settings.ambientSoundPack = normalizeAmbientPackId(this.settings.ambientSoundPack);
+    this.settings.musicPack = normalizeMusicPackId(this.settings.musicPack);
   }
 
   getSettings() {
@@ -109,17 +90,33 @@ class AudioManager {
   }
 
   getAmbientPacks() {
-    return ProgressionUnlockService.getAmbientPacks();
+    return AMBIENT_PACK_OPTIONS.map((id) => ({
+      id,
+      label: AMBIENT_PACK_LIBRARY[id]?.name || id,
+      description: AMBIENT_PACK_LIBRARY[id]?.description || '',
+      unlocked: true,
+      requiredXP: 0
+    }));
   }
 
   getMusicPacks() {
-    return ProgressionUnlockService.getMusicPacks();
+    return MUSIC_PACK_OPTIONS.map((id) => ({
+      id,
+      label: MUSIC_PACK_LIBRARY[id]?.name || id,
+      description: MUSIC_PACK_LIBRARY[id]?.description || '',
+      unlocked: true,
+      requiredXP: 0
+    }));
   }
 
   getButtonPacks() {
-    return ProgressionUnlockService.getButtonPacks().map((pack) => ({
-      ...pack,
-      type: pack.packType
+    return ALL_BUTTON_PACKS.map((id) => ({
+      id,
+      label: (BUTTON_SFX_LIBRARY[id]?.name || BUTTON_SYNTH_PRESETS[id]?.name || id),
+      description: (BUTTON_SFX_LIBRARY[id]?.description || BUTTON_SYNTH_PRESETS[id]?.description || ''),
+      unlocked: true,
+      requiredXP: 0,
+      type: SAMPLE_BUTTON_PACKS.includes(id) ? 'sample' : 'synth'
     }));
   }
 
@@ -132,62 +129,43 @@ class AudioManager {
   }
 
   isAmbientUnlocked() {
-    return ProgressionUnlockService.isAmbientUnlocked();
+    return true;
   }
 
   isMusicUnlocked() {
-    return ProgressionUnlockService.isMusicUnlocked();
+    return true;
   }
 
   isAudioUnlocked() {
-    return this.isAmbientUnlocked() || this.isMusicUnlocked() || this.getButtonPacks().some((pack) => pack.unlocked);
+    return true;
   }
 
-  isButtonPackUnlocked(packId) {
-    return ProgressionUnlockService.isButtonPackUnlocked(packId);
+  isButtonPackUnlocked() {
+    return true;
   }
 
-  isAmbientPackUnlocked(packId) {
-    return this.getAmbientPacks().some((pack) => pack.id === packId && pack.unlocked);
+  isAmbientPackUnlocked() {
+    return true;
   }
 
-  isMusicPackUnlocked(packId) {
-    return this.getMusicPacks().some((pack) => pack.id === packId && pack.unlocked);
+  isMusicPackUnlocked() {
+    return true;
   }
 
   resolveUnlockedButtonPack(packId) {
-    const normalized = normalizeButtonPackId(packId);
-    if (this.isButtonPackUnlocked(normalized)) {
-      return normalized;
-    }
-    return ALL_BUTTON_PACKS.find((id) => this.isButtonPackUnlocked(id)) || 'analog-soft';
+    return normalizeButtonPackId(packId);
   }
 
   resolveUnlockedAmbientPack(packId) {
-    const normalized = normalizeAmbientPackId(packId);
-    if (normalized === 'dynamic') {
-      return normalized;
-    }
-    if (this.isAmbientPackUnlocked(normalized)) {
-      return normalized;
-    }
-    return getFirstUnlockedRewardId(this.getAmbientPacks(), 'dynamic');
+    return normalizeAmbientPackId(packId);
   }
 
   resolveUnlockedMusicPack(packId) {
-    const normalized = normalizeMusicPackId(packId);
-    if (this.isMusicPackUnlocked(normalized)) {
-      return normalized;
-    }
-    return getFirstUnlockedRewardId(this.getMusicPacks(), normalized);
+    return normalizeMusicPackId(packId);
   }
 
   resolveDynamicAmbientPack(themeId) {
-    const desiredPack = THEME_TO_PACK[themeId] || 'campfire';
-    if (this.isAmbientPackUnlocked(desiredPack)) {
-      return desiredPack;
-    }
-    return getFirstUnlockedRewardId(this.getAmbientPacks(), null);
+    return THEME_TO_PACK[themeId] || 'campfire';
   }
 
   ensureContext() {
@@ -231,7 +209,7 @@ class AudioManager {
   bindGlobalClickSfx() {
     if (typeof document === 'undefined' || this.globalClickHandler) return;
     this.globalClickHandler = (event) => {
-      if (!this.settings.sfxEnabled || !this.isAudioUnlocked()) return;
+      if (!this.settings.sfxEnabled) return;
       const target = event.target;
       if (!target) return;
       const clickable = target.closest('button, .btn, [data-sfx]');
@@ -254,7 +232,6 @@ class AudioManager {
   }
 
   setAmbientEnabled(enabled) {
-    if (!this.isAmbientUnlocked()) return;
     this.saveSetting('ambientEnabled', enabled);
     StorageService.setString('ambientAudioEnabled', enabled ? 'true' : 'false');
     if (!enabled) {
@@ -265,7 +242,7 @@ class AudioManager {
   }
 
   setAmbientPack(pack) {
-    const resolved = this.resolveUnlockedAmbientPack(pack);
+    const resolved = normalizeAmbientPackId(pack);
     this.saveSetting('ambientSoundPack', resolved);
     StorageService.setString('ambientSoundPack', resolved);
     this.playAmbientForTheme();
@@ -280,11 +257,6 @@ class AudioManager {
   }
 
   setMusicEnabled(enabled) {
-    if (!this.isMusicUnlocked()) {
-      this.saveSetting('musicEnabled', false);
-      StorageService.setString('musicEnabled', 'false');
-      return;
-    }
     this.saveSetting('musicEnabled', enabled);
     StorageService.setString('musicEnabled', enabled ? 'true' : 'false');
     if (!enabled) {
@@ -295,7 +267,7 @@ class AudioManager {
   }
 
   setMusicPack(packId) {
-    const resolved = this.resolveUnlockedMusicPack(packId);
+    const resolved = normalizeMusicPackId(packId);
     this.saveSetting('musicPack', resolved);
     StorageService.setString('musicPack', resolved);
     this.playMusicPack(resolved);
@@ -456,8 +428,7 @@ class AudioManager {
 
   previewButtonSample(packId, file) {
     if (!SAMPLE_BUTTON_PACKS.includes(packId)) return;
-    if (!this.settings.sfxEnabled || !this.isAudioUnlocked()) return;
-    if (!this.isButtonPackUnlocked(packId)) return;
+    if (!this.settings.sfxEnabled) return;
     const files = this.getAvailableSampleFiles(packId);
     const resolvedFile = file && files.includes(file) ? file : this.getSampleFileForPlayback(packId);
     if (!resolvedFile) return;
@@ -471,7 +442,6 @@ class AudioManager {
 
   setButtonSampleSelection(packId, file) {
     if (!SAMPLE_BUTTON_PACKS.includes(packId)) return;
-    if (!this.isButtonPackUnlocked(packId)) return;
     const files = this.getAvailableSampleFiles(packId);
     const next = { ...(this.settings.buttonSampleSelection || {}) };
     if (!file || !files.includes(file)) {
@@ -519,7 +489,7 @@ class AudioManager {
   }
 
   setButtonPack(pack) {
-    const resolved = this.resolveUnlockedButtonPack(pack);
+    const resolved = normalizeButtonPackId(pack);
     this.saveSetting('buttonSoundPack', resolved);
     StorageService.setString('buttonSoundPack', resolved);
   }
@@ -558,8 +528,8 @@ class AudioManager {
   }
 
   playButtonSfx(variant = 'primary') {
-    if (!this.settings.sfxEnabled || !this.isAudioUnlocked()) return;
-    const packId = this.resolveUnlockedButtonPack(this.settings.buttonSoundPack);
+    if (!this.settings.sfxEnabled) return;
+    const packId = normalizeButtonPackId(this.settings.buttonSoundPack);
     if (packId !== this.settings.buttonSoundPack) {
       this.saveSetting('buttonSoundPack', packId);
       StorageService.setString('buttonSoundPack', packId);

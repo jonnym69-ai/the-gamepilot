@@ -84,7 +84,7 @@ describe('StartupPersonalizationService', () => {
 
     test('first-listed mood gets a higher seeded count than later moods', () => {
       StartupPersonalizationService.completeOnboarding({
-        selectedMoods: ['Focused', 'Relaxed', 'Tactical'],
+        selectedMoods: ['Focused', 'Relaxed', 'Social'],
         favoriteGenres: ['Strategy', 'RPG', 'Roguelike'],
         sessionPreference: 'medium'
       });

@@ -817,3 +817,329 @@
     min-width: 600px;
   }
 }
+
+/* Budget Upgrade Card */
+.budget-upgrade-card {
+  background: var(--card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.budget-upgrade-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.budget-copy {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.budget-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-prefix {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.budget-input {
+  flex: 1;
+  max-width: 180px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 15px;
+}
+
+.budget-btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent-primary);
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.budget-btn:hover {
+  opacity: 0.9;
+}
+
+.budget-result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(138, 180, 248, 0.08);
+  border: 1px solid rgba(138, 180, 248, 0.25);
+}
+
+.budget-result.over-budget {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.budget-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.budget-result-component {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary);
+}
+
+.budget-result-cost {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.budget-result-suggestion {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.budget-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.budget-result-gain {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 230, 118, 0.15);
+  color: #00e676;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.budget-result-games {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Storage Cockpit */
+.storage-cockpit-section {
+  margin: 40px 0;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--card-bg, rgba(15, 23, 42, 0.45));
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.18));
+}
+
+.storage-cockpit-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.storage-cockpit-subtitle {
+  margin: 0 0 18px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 13.5px;
+}
+
+.storage-cockpit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.storage-cockpit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.storage-cockpit-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.storage-cockpit-card strong {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.storage-cockpit-card em {
+  font-size: 11.5px;
+  color: var(--text-secondary, #94a3b8);
+  font-style: normal;
+}
+
+.storage-cockpit-card.total { border-color: rgba(56, 189, 248, 0.3); }
+.storage-cockpit-card.total strong { color: #7dd3fc; }
+
+.storage-cockpit-card.nvme { border-color: rgba(0, 230, 118, 0.3); }
+.storage-cockpit-card.nvme strong { color: #00e676; }
+
+.storage-cockpit-card.ssd { border-color: rgba(76, 175, 80, 0.3); }
+.storage-cockpit-card.ssd strong { color: #4caf50; }
+
+.storage-cockpit-card.hdd { border-color: rgba(255, 152, 0, 0.3); }
+.storage-cockpit-card.hdd strong { color: #ff9800; }
+
+.storage-cockpit-card.cold { border-color: rgba(248, 113, 113, 0.3); }
+.storage-cockpit-card.cold strong { color: #fca5a5; }
+
+.storage-cockpit-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.storage-cockpit-insight p {
+  margin: 0;
+}
+
+.storage-cockpit-insight p strong {
+  color: #fff;
+}
+
+/* Drive capacity bars */
+.storage-cockpit-drives {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.storage-cockpit-drive-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.storage-cockpit-drive-bar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.drive-type-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+}
+
+.drive-type-tag.nvme {
+  background: rgba(0, 230, 118, 0.12);
+  border-color: rgba(0, 230, 118, 0.35);
+  color: #00e676;
+}
+.drive-type-tag.ssd {
+  background: rgba(76, 175, 80, 0.12);
+  border-color: rgba(76, 175, 80, 0.35);
+  color: #4caf50;
+}
+.drive-type-tag.hdd {
+  background: rgba(255, 152, 0, 0.12);
+  border-color: rgba(255, 152, 0, 0.35);
+  color: #ff9800;
+}
+
+.drive-letter {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary, #e2e8f0);
+  min-width: 0;
+}
+
+.drive-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #94a3b8);
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drive-free {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.storage-cockpit-drive-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  overflow: hidden;
+}
+
+.storage-cockpit-drive-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  transition: width 300ms ease;
+}
+
+.storage-cockpit-drive-bar-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.storage-cockpit-library-heading {
+  margin: 24px 0 14px;
+  font-size: 15px;
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}

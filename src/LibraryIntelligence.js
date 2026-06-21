@@ -33,7 +33,7 @@ const getCompletionLabel = (game) => (
 
 const getRatingLabel = (game) => {
   const rating = game?.userRating ?? game?.rating ?? game?.user_rating;
-  return rating ? `${rating}/5` : 'Not rated';
+  return rating ? `${rating}/10` : 'Not rated';
 };
 
 const getTopGenres = (game) => (

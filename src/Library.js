@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useContext, useEffect, useCallback, useRef } from 'react';
-import { Search, Download, Grid, List, Clock, Heart, Trash2, Sparkles, Dices } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Search, Download, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
-import PinnedGamesRow from './components/PinnedGamesRow';
 import GameModal from './components/GameModal';
 import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
+import LibraryAnalyticsPanel from './components/LibraryAnalyticsPanel';
 import EmptyLibraryState from './components/EmptyLibraryState';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
@@ -16,52 +16,49 @@ import InterfacePreferencesService from './services/InterfacePreferencesService'
 import SteamNewsService from './services/SteamNewsService';
 import DiskUsageService from './services/DiskUsageService';
 import { useToast } from './components/Toast';
-import { MOODS } from './constants/GenresMoods';
+import HowLongToBeatService, { hltbGameKey } from './services/HowLongToBeatService';
+import { MOODS, getMoodForGame } from './constants/GenresMoods';
 import StorageService from './services/StorageService';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import EntitlementService from './services/EntitlementService';
+import TrialService from './services/TrialService';
 import { GameCurationService } from './services/GameCurationService';
 import EmulatorLibraryService from './services/EmulatorLibraryService';
 import { mergeLibraryUpdates } from './services/LibraryDataService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { formatPrice } from './CurrencyConverter';
+import useInterfacePreferences from './hooks/useInterfacePreferences';
 import './Library.css';
 
 const getFavoriteGameKey = (game) => game?.appid || game?.app_id || game?.steamAppId || game?.name;
 const NOOP = () => {};
-const CONTROLLER_NAV_ROUTES = ['/', '/library', '/stats', '/achievements', '/year-in-review', '/challenge-board', '/performance', '/gaming-links', '/profile', '/settings'];
+const CONTROLLER_NAV_ROUTES = ['/', '/library', '/stats', '/year-in-review', '/profile', '/settings'];
 const FAVORITES_STORAGE_KEY = 'favorites';
 const RECENTLY_ADDED_WINDOW_DAYS = 14;
-const LIBRARY_SHELF_CATEGORIES = Object.freeze([
-  { id: 'recent', label: 'Recently Added', kicker: 'Fresh in your library' },
-  { id: 'pinned', label: 'Pinned', kicker: 'Quick launch shelf' },
-  { id: 'favorites', label: 'Favourites', kicker: 'Your saved picks' },
-  { id: 'top-rated', label: 'Top Rated', kicker: 'Highest rated games' }
-]);
 
 const getResolvedMood = (game) => {
   if (!game || typeof game !== 'object') {
-    return '';
+    return 'Relaxed';
   }
 
+  // Always derive mood fresh from current genres + mapping
+  const genres = game.genres || [];
+  if (genres.length > 0) {
+    const derived = getMoodForGame(genres);
+    if (derived) {
+      return derived;
+    }
+  }
+
+  // No genres at all — use stored mood if available, else default
   if (typeof game.mood === 'string' && game.mood.trim()) {
     return game.mood.trim();
   }
 
-  if (typeof game.primaryMood === 'string' && game.primaryMood.trim()) {
-    return game.primaryMood.trim();
-  }
-
-  if (Array.isArray(game.moods)) {
-    const moodEntry = game.moods.find((entry) => typeof entry === 'string' && entry.trim());
-    if (moodEntry) {
-      return moodEntry.trim();
-    }
-  }
-
-  return '';
+  return 'Relaxed';
 };
 
 const getGameValue = (game) => {
@@ -235,7 +232,6 @@ function Library({
   currency = 'USD'
 }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const { currentTheme } = useContext(ThemeContext);
   const { success } = useToast();
   const scanLibraryHandler = onScanLibrary || onScan || scanLocalLibrary;
@@ -253,8 +249,9 @@ function Library({
   });
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [itemsPerPage] = useState(50);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [displayCount, setDisplayCount] = useState(50);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedGames, setSelectedGames] = useState(new Set());
   const [systemInfo, setSystemInfo] = useState(null);
@@ -273,44 +270,48 @@ function Library({
     extensions: EmulatorLibraryService.getDefaultExtensions().join(', '),
     launchTemplate: '"{emulator}" "{rom}"'
   }));
-  const [completionFilter] = useState('');
-  const [minPlaytime] = useState('');
-  const [maxPlaytime] = useState('');
   const [localSortBy, setLocalSortBy] = useState(sortBy);
   const [localFilterMood, setLocalFilterMood] = useState(filterMood);
   const [localFilterGenre, setLocalFilterGenre] = useState(filterGenre);
   const [localFilterPlatform, setLocalFilterPlatform] = useState(filterPlatform);
   const [localFilterMaxTime, setLocalFilterMaxTime] = useState(filterMaxTime);
   const [localFilterReplayIntent, setLocalFilterReplayIntent] = useState('');
-  const [localFilterCollection, setLocalFilterCollection] = useState('');
   const [localFilterCompletion, setLocalFilterCompletion] = useState('');
   const [showHidden, setShowHidden] = useState(false);
-  const [collections] = useState(() => GameCurationService.getCollections());
-
-  // Deep-link support: ?filter=never-played activates the never-played
-  // playtime filter on mount. Used by the Home backlog insight card so a
-  // single click takes the user straight to a filtered library view.
-  useEffect(() => {
-    const search = (location?.search || '').replace(/^\?/, '');
-    if (!search) return;
-    const params = new URLSearchParams(search);
-    if (params.get('filter') === 'never-played') {
-      setLocalFilterMaxTime('0');
-      if (typeof setFilterMaxTime === 'function') {
-        setFilterMaxTime('0');
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location?.search]);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [selectedGameIndex, setSelectedGameIndex] = useState(-1);
   const [librarianPick, setLibrarianPick] = useState(null);
-  const [activeShelfCategoryIndex, setActiveShelfCategoryIndex] = useState(0);
   const [isLuckyAnimating, setIsLuckyAnimating] = useState(false);
   const [luckyPreviewName, setLuckyPreviewName] = useState('');
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const libraryContainerRef = useRef(null);
   const luckyAnimationTimeoutRef = useRef(null);
   const luckyPreviewIntervalRef = useRef(null);
+  const interfacePrefs = useInterfacePreferences();
+  const pinnedIds = useMemo(() => new Set((interfacePrefs.pinnedGameIds || []).map(String)), [interfacePrefs.pinnedGameIds]);
+  const handleTogglePin = useCallback((game) => {
+    const key = String(getFavoriteGameKey(game));
+    InterfacePreferencesService.togglePin(key);
+  }, []);
+
+  const handleToggleFavorite = useCallback((key) => {
+    setFavorites((prev) => {
+      const exists = prev.includes(key);
+      const next = exists ? prev.filter((k) => k !== key) : [...prev, key];
+      StorageService.set(FAVORITES_STORAGE_KEY, next);
+      return next;
+    });
+  }, []);
+
+  const openGameModal = useCallback((game) => {
+    setSelectedGame(game);
+    setIsModalOpen(true);
+  }, []);
+
+  const closeGameModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedGame(null);
+  }, []);
 
   const handleScanLibrary = useCallback(async () => {
     if (loading) {
@@ -491,7 +492,7 @@ function Library({
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setLocalSearchQuery(value);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
     debouncedSearch(value);
   };
@@ -499,7 +500,7 @@ function Library({
   const handleSortChange = (value) => {
     setLocalSortBy(value);
     setSortBy(value);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
   };
 
@@ -515,96 +516,48 @@ function Library({
     setLocalFilterMaxTime('');
     setFilterMaxTime('');
     setLocalFilterReplayIntent('');
-    setLocalFilterCollection('');
-    setLocalFilterCompletion('');
     setShowHidden(false);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
   };
 
   const handlePlatformFilterChange = (value) => {
     setLocalFilterPlatform(value);
     setFilterPlatform(value);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
   };
 
   const handleMoodFilterChange = (value) => {
     setLocalFilterMood(value);
     setFilterMood(value);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
   };
 
   const handleGenreFilterChange = (value) => {
     setLocalFilterGenre(value);
     setFilterGenre(value);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
   };
 
   const handlePlaytimeFilterChange = (value) => {
     setLocalFilterMaxTime(value);
     setFilterMaxTime(value);
-    setCurrentPage(0);
     setSelectedGameIndex(0);
   };
 
   const handleReplayIntentFilterChange = (value) => {
     setLocalFilterReplayIntent(value);
-    setCurrentPage(0);
-    setSelectedGameIndex(0);
-  };
-
-  const handleCollectionFilterChange = (value) => {
-    setLocalFilterCollection(value);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
   };
 
   const handleCompletionFilterChange = (value) => {
     setLocalFilterCompletion(value);
-    setCurrentPage(0);
+    setDisplayCount(50);
     setSelectedGameIndex(0);
-  };
-
-  const handleToggleFavorite = useCallback((favoriteKey) => {
-    if (!favoriteKey) {
-      return;
-    }
-
-    setFavorites((previousFavorites) => {
-      const nextFavorites = previousFavorites.includes(favoriteKey)
-        ? previousFavorites.filter((entry) => entry !== favoriteKey)
-        : [...previousFavorites, favoriteKey];
-
-      try {
-        StorageService.set(FAVORITES_STORAGE_KEY, nextFavorites);
-      } catch (error) {
-        console.error('Failed to persist favorites:', error);
-      }
-
-      return nextFavorites;
-    });
-
-    onToggleFavorite(favoriteKey);
-  }, [onToggleFavorite]);
-
-  const handleToggleHiddenGame = useCallback((gameName) => {
-    if (typeof onToggleHidden === 'function') {
-      onToggleHidden(gameName);
-    }
-  }, [onToggleHidden]);
-  void handleToggleHiddenGame;
-
-  const openGameModal = useCallback((game) => {
-    setSelectedGame(game);
-    setIsModalOpen(true);
-  }, []);
-
-  const closeGameModal = () => {
-    setIsModalOpen(false);
-    setSelectedGame(null);
   };
 
   const filteredAndSortedGames = useMemo(() => {
@@ -626,28 +579,18 @@ function Library({
         ? gamePlaytime === 0
         : gamePlaytime > 0 && gamePlaytime <= maxTimeFilter;
       const matchesReplayIntent = !localFilterReplayIntent || (game.replayIntent || 'none') === localFilterReplayIntent;
-      const matchesMinPlaytime = !minPlaytime || gamePlaytime >= parseInt(minPlaytime);
-      const matchesMaxPlaytime = !maxPlaytime || gamePlaytime <= parseInt(maxPlaytime);
-
-      // Collection filter
-      const matchesCollection = !localFilterCollection || (game.userCollections || []).includes(localFilterCollection);
-      // Completion status filter
-      const matchesCompletionStatus = !localFilterCompletion || (game.completionStatus || 'not-started') === localFilterCompletion;
-      // Hidden filter
       const matchesHidden = showHidden ? true : !(game.isHidden || false);
 
-      let matchesLegacyCompletion = true;
-      if (completionFilter) {
-        const completedGames = StorageService.get('completedGames', []);
-        const isCompleted = completedGames.some(cg => cg.name === game.name);
-        if (completionFilter === 'completed') matchesLegacyCompletion = isCompleted;
-        else if (completionFilter === 'not-completed') matchesLegacyCompletion = !isCompleted;
-      }
-
       return matchesSearch && matchesMood && matchesGenre && matchesPlatform &&
-             matchesMaxTime && matchesReplayIntent && matchesMinPlaytime && matchesMaxPlaytime &&
-             matchesCollection && matchesCompletionStatus && matchesHidden && matchesLegacyCompletion;
+             matchesMaxTime && matchesReplayIntent && matchesHidden;
     });
+
+    const hltbCache = HowLongToBeatService.getCacheSnapshot();
+    const getHltbHours = (game) => {
+      const entry = hltbCache[hltbGameKey(game)];
+      if (!entry || !entry.found) return 0;
+      return entry.mainExtraHours || entry.mainHours || entry.completionistHours || 0;
+    };
 
     filtered.sort((a, b) => {
       switch (localSortBy) {
@@ -668,23 +611,40 @@ function Library({
           return bRating - aRating;
         case 'platform': return (a.platform || '').localeCompare(b.platform || '');
         case 'mood': return getResolvedMood(a).localeCompare(getResolvedMood(b));
+        case 'storage-size':
+          const aStorage = a.storageSize || a.installedSize || 0;
+          const bStorage = b.storageSize || b.installedSize || 0;
+          return bStorage - aStorage;
         case 'favorites':
           const aFav = favorites.includes(getFavoriteGameKey(a));
           const bFav = favorites.includes(getFavoriteGameKey(b));
           if (aFav && !bFav) return -1;
           if (!aFav && bFav) return 1;
           return a.name.localeCompare(b.name);
+        case 'hltb-longest':
+          const aHltbL = getHltbHours(a);
+          const bHltbL = getHltbHours(b);
+          if (aHltbL === 0 && bHltbL === 0) return a.name.localeCompare(b.name);
+          if (aHltbL === 0) return 1;
+          if (bHltbL === 0) return -1;
+          return bHltbL - aHltbL;
+        case 'hltb-shortest':
+          const aHltbS = getHltbHours(a);
+          const bHltbS = getHltbHours(b);
+          if (aHltbS === 0 && bHltbS === 0) return a.name.localeCompare(b.name);
+          if (aHltbS === 0) return 1;
+          if (bHltbS === 0) return -1;
+          return aHltbS - bHltbS;
         default: return a.name.localeCompare(b.name);
       }
     });
 
     return filtered;
-  }, [library, localSearchQuery, localFilterMood, localFilterGenre, localFilterPlatform, localFilterMaxTime, localFilterReplayIntent, localFilterCollection, localFilterCompletion, showHidden, localSortBy, favorites, completionFilter, minPlaytime, maxPlaytime]);
+  }, [library, localSearchQuery, localFilterMood, localFilterGenre, localFilterPlatform, localFilterMaxTime, localFilterReplayIntent, showHidden, localSortBy, favorites]);
 
   const displayedGames = useMemo(() => {
-    const startIndex = currentPage * itemsPerPage;
-    return filteredAndSortedGames.slice(startIndex, startIndex + itemsPerPage);
-  }, [currentPage, filteredAndSortedGames, itemsPerPage]);
+    return filteredAndSortedGames.slice(0, displayCount);
+  }, [displayCount, filteredAndSortedGames]);
 
   // Steam News warmup — pulls recent posts so PatchNewsBadge can render the
   // "updated since you last played" pill on cards without an extra round-trip
@@ -698,6 +658,17 @@ function Library({
       if (cancelled) return;
       SteamNewsService.warmup(displayedGames, { concurrency: 2, delayMs: 400 });
     }, 900);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [displayedGames]);
+
+  useEffect(() => {
+    if (!Array.isArray(displayedGames) || displayedGames.length === 0) return undefined;
+    if (!HowLongToBeatService.isEnabled()) return undefined;
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      if (cancelled) return;
+      HowLongToBeatService.warmup(displayedGames, { concurrency: 1, delayMs: 500 });
+    }, 1000);
     return () => { cancelled = true; clearTimeout(handle); };
   }, [displayedGames]);
 
@@ -753,40 +724,25 @@ function Library({
     });
   }, [getVisibleGameCount, itemsPerPage, viewMode]);
 
-  const goToPreviousPage = useCallback(() => {
-    if (currentPage > 0) {
-      setCurrentPage((prev) => prev - 1);
-      setSelectedGameIndex(0);
-      return;
-    }
+  const handleLoadMore = useCallback(() => {
+    setDisplayCount((prev) => prev + itemsPerPage);
+  }, [itemsPerPage]);
 
+  const goToPreviousPage = useCallback(() => {
     const currentRouteIndex = CONTROLLER_NAV_ROUTES.indexOf('/library');
     const previousRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length];
     navigate(previousRoute);
-  }, [currentPage, navigate]);
+  }, [navigate]);
 
   const goToNextPage = useCallback(() => {
-    const totalPages = Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage));
-
-    if (currentPage < totalPages - 1) {
-      setCurrentPage((prev) => prev + 1);
-      setSelectedGameIndex(0);
-      return;
-    }
-
     const currentRouteIndex = CONTROLLER_NAV_ROUTES.indexOf('/library');
     const nextRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex + 1) % CONTROLLER_NAV_ROUTES.length];
     navigate(nextRoute);
-  }, [currentPage, filteredAndSortedGames.length, itemsPerPage, navigate]);
+  }, [navigate]);
 
   const toggleBulkMode = () => {
     setBulkMode(!bulkMode);
     if (bulkMode) setSelectedGames(new Set());
-  };
-
-  const toggleShowAll = () => {
-    const totalPages = Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage));
-    setCurrentPage((prev) => (prev >= totalPages - 1 ? 0 : totalPages - 1));
   };
 
   const bulkMarkCompleted = () => {
@@ -1031,7 +987,6 @@ function Library({
     }
   }, [selectedGameIndex]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage));
   const playedGameCount = library.filter((game) => (game.time_played || 0) > 0).length;
   const totalPlaytimeMinutes = library.reduce((sum, game) => sum + (Number(game?.time_played) || 0), 0);
   const selectedModalGame = selectedGame
@@ -1045,17 +1000,6 @@ function Library({
       .filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS))
       .slice(0, 6)
   ), [filteredAndSortedGames]);
-  const pinnedShelfGames = useMemo(() => {
-    const pinnedIds = new Set((InterfacePreferencesService.getAll().pinnedGameIds || []).map(String));
-    return filteredAndSortedGames
-      .filter((game) => pinnedIds.has(String(getFavoriteGameKey(game))))
-      .slice(0, 6);
-  }, [filteredAndSortedGames]);
-  const favoriteShelfGames = useMemo(() => (
-    filteredAndSortedGames
-      .filter((game) => favorites.includes(getFavoriteGameKey(game)) || favorites.includes(game?.name) || favorites.includes(String(game?.appid)))
-      .slice(0, 6)
-  ), [filteredAndSortedGames, favorites]);
   const topRatedShelfGames = useMemo(() => (
     filteredAndSortedGames
       .filter((game) => typeof game.userRating === 'number' && game.userRating > 0)
@@ -1066,21 +1010,13 @@ function Library({
       })
       .slice(0, 6)
   ), [filteredAndSortedGames]);
-  const libraryShelfCategories = useMemo(() => LIBRARY_SHELF_CATEGORIES.map((category) => {
-    if (category.id === 'pinned') return { ...category, games: pinnedShelfGames };
-    if (category.id === 'favorites') return { ...category, games: favoriteShelfGames };
-    if (category.id === 'top-rated') return { ...category, games: topRatedShelfGames };
-    return { ...category, games: recentlyAddedShelfGames };
-  }), [favoriteShelfGames, pinnedShelfGames, recentlyAddedShelfGames, topRatedShelfGames]);
-  const activeShelfCategory = libraryShelfCategories[activeShelfCategoryIndex] || libraryShelfCategories[0];
-  const activeShelfGames = activeShelfCategory?.games || [];
-  const handleShelfCategoryChange = useCallback((direction) => {
-    setActiveShelfCategoryIndex((previousIndex) => {
-      const totalCategories = LIBRARY_SHELF_CATEGORIES.length;
-      return (previousIndex + direction + totalCategories) % totalCategories;
-    });
-  }, []);
-  const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCollection, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0);
+  const pinnedGames = useMemo(() => (
+    library.filter((game) => pinnedIds.has(String(getFavoriteGameKey(game))))
+  ), [library, pinnedIds]);
+  const favoriteGames = useMemo(() => (
+    library.filter((game) => favorites.includes(getFavoriteGameKey(game)))
+  ), [library, favorites]);
+  const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0);
 
   return (
     <div className={`App ${theme} library-page library-presentation-${libraryPresentationId} library-card-style-${libraryCardStyle}`} style={libraryRootStyle}>
@@ -1239,12 +1175,22 @@ function Library({
           >
             <Dices size={16} /> {isLuckyAnimating ? 'Drawing...' : 'Feeling Lucky'}
           </button>
-          <button 
-            onClick={toggleBulkMode} 
-            className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
-          >
-            {bulkMode ? 'Exit Bulk Mode' : 'Bulk Mode'}
-          </button>
+          {EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro') ? (
+            <button
+              onClick={toggleBulkMode}
+              className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
+            >
+              {bulkMode ? 'Exit Bulk Mode' : 'Bulk Mode'}
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/donate')}
+              className="bulk-mode-btn locked"
+              title="Unlock Power Tools to use Bulk Mode"
+            >
+              Bulk Mode 🔒
+            </button>
+          )}
           {bulkMode && (
             <div className="library-bulk-status" role="status" aria-live="polite">
               <span>Bulk Mode</span>
@@ -1267,8 +1213,50 @@ function Library({
               <Trash2 size={16} /> Remove {selectedGames.size}
             </button>
           )}
+          {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro') || TrialService.isTrialActive('power_tools')) && !bulkMode && (
+            <button
+              onClick={() => {
+                TrialService.recordTrialUse('power_tools');
+                setShowAnalytics(true);
+              }}
+              className="export-button"
+              title="Open Library Analytics"
+            >
+              <BarChart3 size={16} /> Analytics
+              {TrialService.isTrialActive('power_tools') && !EntitlementService.hasEntitlement('power_tools') && !EntitlementService.hasEntitlement('gamepilot_pro') && (
+                <span className="trial-badge">Trial</span>
+              )}
+            </button>
+          )}
+          {!EntitlementService.hasEntitlement('power_tools') && !EntitlementService.hasEntitlement('gamepilot_pro') && !TrialService.isTrialActive('power_tools') && !bulkMode && (
+            <button
+              onClick={() => {
+                const result = TrialService.startTrial('power_tools');
+                success(result.message);
+              }}
+              className="export-button trial-btn"
+              title="Try Library Analytics for free"
+            >
+              <BarChart3 size={16} /> Try Analytics
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Library Analytics Modal */}
+      {showAnalytics && (
+        <div className="library-analytics-overlay" onClick={() => setShowAnalytics(false)}>
+          <div className="library-analytics-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="library-analytics-modal-header">
+              <h2><BarChart3 size={20} /> Library Analytics</h2>
+              <button className="analytics-close-btn" onClick={() => setShowAnalytics(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <LibraryAnalyticsPanel library={library} />
+          </div>
+        </div>
+      )}
 
       <div className="emulator-library-panel">
         <div className="emulator-library-header">
@@ -1366,9 +1354,12 @@ function Library({
             <option value="least-played">Least Played</option>
             <option value="genre">Genre</option>
             <option value="platform">Platform</option>
+            <option value="storage-size">Storage Size</option>
             <option value="rating">Your Rating</option>
             <option value="mood">Mood</option>
             <option value="favorites">Favorites First</option>
+            <option value="hltb-longest">HLTB: Longest</option>
+            <option value="hltb-shortest">HLTB: Shortest</option>
           </select>
         </div>
         <div className="view-toggle">
@@ -1447,15 +1438,6 @@ function Library({
           </select>
         </div>
         <div className="filter-group">
-          <label>Collection</label>
-          <select value={localFilterCollection} onChange={(e) => handleCollectionFilterChange(e.target.value)} className="filter-select">
-            <option value="">All Collections</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-group">
           <label>Completion</label>
           <select value={localFilterCompletion} onChange={(e) => handleCompletionFilterChange(e.target.value)} className="filter-select">
             <option value="">Any</option>
@@ -1493,8 +1475,8 @@ function Library({
           <strong>{activeFilterCount > 0 ? `${activeFilterCount} active` : 'None'}</strong>
         </div>
         <div className="library-context-pill">
-          <span>Page</span>
-          <strong>{currentPage + 1} / {totalPages}</strong>
+          <span>Loaded</span>
+          <strong>{displayedGames.length} / {filteredAndSortedGames.length}</strong>
         </div>
         <div className="library-context-pill">
           <span>Free Games Radar</span>
@@ -1502,98 +1484,102 @@ function Library({
         </div>
       </div>
 
-      <PinnedGamesRow library={library} favorites={favorites} onLaunchGame={onLaunchGame} />
-
-      {activeShelfCategory && (
-        <section className="library-recent-section" aria-labelledby="library-recent-title">
-          <div className="library-recent-section-header">
-            <div>
-              <span className="library-recent-section-kicker">{activeShelfCategory.kicker}</span>
-              <h2 id="library-recent-title" className="library-recent-section-title">{activeShelfCategory.label}</h2>
-            </div>
-            <div className="library-shelf-carousel-controls">
-              <button type="button" onClick={() => handleShelfCategoryChange(-1)} aria-label="Show previous library shelf">‹</button>
-              <div className="library-recent-section-meta">
-                {activeShelfGames.length > 0 ? `${activeShelfGames.length} showing` : 'Nothing here yet'}
+      {/* Unified Shelf Carousel */}
+      {(() => {
+        const sections = [
+          { id: 'pinned', kicker: 'Quick access', title: 'Pinned Games', games: pinnedGames, getBadge: () => null },
+          { id: 'favorites', kicker: 'Your picks', title: 'Favourite Games', games: favoriteGames, getBadge: () => null },
+          { id: 'top-rated', kicker: 'Highest rated', title: 'Top Rated Games', games: topRatedShelfGames, getBadge: (g) => `${g.userRating}/10` },
+          { id: 'recent', kicker: 'Fresh in your library', title: 'Newly Added Games', games: recentlyAddedShelfGames, getBadge: () => 'New' },
+        ];
+        const active = sections[carouselIndex];
+        if (!active || active.games.length === 0) return null;
+        return (
+          <section className="library-recent-section" aria-labelledby="library-carousel-title">
+            <div className="library-recent-section-header">
+              <div>
+                <span className="library-recent-section-kicker">{active.kicker}</span>
+                <h2 id="library-carousel-title" className="library-recent-section-title">{active.title}</h2>
               </div>
-              <button type="button" onClick={() => handleShelfCategoryChange(1)} aria-label="Show next library shelf">›</button>
-            </div>
-          </div>
-          <div className="library-shelf-tabs" role="tablist" aria-label="Library shelf categories">
-            {libraryShelfCategories.map((category, categoryIndex) => (
-              <button
-                key={category.id}
-                type="button"
-                role="tab"
-                aria-selected={categoryIndex === activeShelfCategoryIndex}
-                className={categoryIndex === activeShelfCategoryIndex ? 'is-active' : ''}
-                onClick={() => setActiveShelfCategoryIndex(categoryIndex)}
-              >
-                {category.label}
-                <span>{category.games.length}</span>
-              </button>
-            ))}
-          </div>
-          {activeShelfGames.length > 0 ? (
-            <div className="library-recent-shelf">
-            {activeShelfGames.map((game) => {
-              const favoriteKey = getFavoriteGameKey(game);
-              const isFavorite = favorites.includes(favoriteKey);
-              const resolvedMood = getResolvedMood(game);
-
-              return (
-                <article
-                  key={`shelf-${activeShelfCategory.id}-${game.appid || game.name}`}
-                  className="library-recent-shelf-card"
-                  onClick={() => openGameModal(game)}
+              <div className="library-shelf-carousel-controls">
+                <button
+                  type="button"
+                  onClick={() => setCarouselIndex((i) => (i - 1 + sections.length) % sections.length)}
+                  aria-label="Previous section"
                 >
-                  <div className="library-recent-shelf-image">
-                    <LazyImage
-                      src={resolveGameArtwork(game, { surface: 'library_card' })}
-                      alt={game.name}
-                      gameName={game.name}
-                      platform={getDisplayPlatform(game)}
-                      genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
-                      mood={game.mood}
-                      placeholder={getGameArtworkPlaceholder({ game, surface: 'library_card' })}
-                      style={{ height: '100%', width: '100%', objectFit: 'cover' }}
-                    />
-                  </div>
-                  <div className="library-recent-shelf-content">
-                    <div className="library-recent-shelf-title-row">
-                      <h3>{game.name}</h3>
-                      {activeShelfCategory.id === 'recent' && <span className="library-new-badge">New</span>}
-                      {activeShelfCategory.id === 'top-rated' && <span className="library-new-badge">{game.userRating}/5</span>}
-                    </div>
-                    <p className="library-recent-shelf-subtitle">
-                      {getDisplayPlatform(game)}<span>•</span><span>{formatTimePlayed(game.time_played)}</span>
-                    </p>
-                    <div className="library-recent-shelf-tags">
-                      {resolvedMood && <span className="library-game-tag mood">{resolvedMood}</span>}
-                      {Array.isArray(game.genres) && game.genres[0] && <span className="library-game-tag genre">{game.genres[0]}</span>}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleToggleFavorite(favoriteKey);
-                    }}
-                    aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
-                    className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCarouselIndex((i) => (i + 1) % sections.length)}
+                  aria-label="Next section"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="library-recent-shelf">
+              {active.games.map((game) => {
+                const favoriteKey = getFavoriteGameKey(game);
+                const isFavorite = favorites.includes(favoriteKey);
+                const badge = active.getBadge ? active.getBadge(game) : null;
+                return (
+                  <div
+                    key={`${active.id}-${game.appid || game.name}`}
+                    className="library-recent-shelf-card"
+                    title={game.name}
                   >
-                    <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-                  </button>
-                </article>
-              );
-            })}
+                    <button
+                      type="button"
+                      className="library-recent-shelf-art"
+                      onClick={() => onLaunchGame(game)}
+                      aria-label={`Launch ${game.name}`}
+                    >
+                      <LazyImage
+                        src={resolveGameArtwork(game, { surface: 'recommendation_card' })}
+                        alt={game.name}
+                        gameName={game.name}
+                        platform={getDisplayPlatform(game)}
+                        genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
+                        mood={game.mood}
+                        placeholder={getGameArtworkPlaceholder({ game, surface: 'recommendation_card' })}
+                        className="library-recent-shelf-art-image"
+                      />
+                      <div className="library-recent-shelf-overlay">
+                        <Play size={20} />
+                      </div>
+                      {badge && (
+                        <span className="library-recent-shelf-badge">{badge}</span>
+                      )}
+                    </button>
+                    <div className="library-recent-shelf-name">{game.name}</div>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleTogglePin(game);
+                      }}
+                      aria-label={pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`}
+                      className={`library-recent-shelf-pin ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
+                    >
+                      <Pin size={12} />
+                    </button>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleToggleFavorite(favoriteKey);
+                      }}
+                      aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
+                      className={`library-recent-shelf-fav ${isFavorite ? 'is-favorite' : ''}`}
+                    >
+                      <Heart size={12} fill={isFavorite ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-          ) : (
-            <div className="library-empty-shelf-message">
-              Add games to {activeShelfCategory.label.toLowerCase()} to fill this shelf.
-            </div>
-          )}
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
       <div ref={libraryContainerRef} className={`library-${viewMode}`} style={viewMode === 'grid' ? {
         display: 'grid',
@@ -1684,98 +1670,128 @@ function Library({
                     placeholder={getGameArtworkPlaceholder({ game, surface: viewMode === 'grid' ? 'library_card' : 'recommendation_card' })}
                     style={{ height: '100%', width: '100%', objectFit: 'cover' }}
                 />
-            </div>
-
-            <div className="game-info" style={{ flexGrow: 1 }}>
-              <div className="library-game-title-row">
-                <h3 className="library-game-title">{game.name}</h3>
-                <div className="library-game-title-actions">
-                  {isRecentlyAdded && <span className="library-new-badge">New</span>}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavorite(favoriteKey);
-                    }}
-                    aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
-                    className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
-                  >
-                    <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-                  </button>
-                </div>
               </div>
-              <p className="playtime library-game-playtime">
-                <Clock size={12} /> {formatTimePlayed(game.time_played)}
-                <HLTBChip game={game} />
-                <PatchNewsBadge game={game} />
-                <DiskSizeChip game={game} />
-              </p>
-              {gameValue > 0 && (
-                <p className="library-game-value">
-                  Value: {formatPrice(gameValue, currency)}
-                </p>
-              )}
-              <div className="library-game-tags">
-                <span className="library-game-tag platform">
-                  {getDisplayPlatform(game)}
-                  {Array.isArray(game.launchSources) && game.launchSources.length > 1 && (
-                    <span
-                      className="library-game-tag-multi-source"
-                      title={`Also available on ${game.launchSources
-                        .map((source) => source.platform)
-                        .filter((platform) => platform && platform !== getDisplayPlatform(game))
-                        .join(', ')}`}
+              <div className="game-info" style={{ flexGrow: 1 }}>
+                <div className="library-game-title-row">
+                  <h3 className="library-game-title">{game.name}</h3>
+                  <div className="library-game-title-actions">
+                    {isRecentlyAdded && <span className="library-new-badge">New</span>}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTogglePin(game);
+                      }}
+                      aria-label={pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`}
+                      className={`library-pin-button ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
                     >
-                      +{game.launchSources.length - 1}
+                      <Pin size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleFavorite(favoriteKey);
+                      }}
+                      aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
+                      className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
+                    >
+                      <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
+                </div>
+                <p className="playtime library-game-playtime">
+                  <Clock size={12} /> {formatTimePlayed(game.time_played)}
+                  <HLTBChip game={game} autoFetch />
+                  <PatchNewsBadge game={game} />
+                  <DiskSizeChip game={game} />
+                </p>
+                {gameValue > 0 && (
+                  <p className="library-game-value">
+                    Value: {formatPrice(gameValue, currency)}
+                  </p>
+                )}
+                <div className="library-game-tags">
+                  <span className="library-game-tag platform">
+                    {getDisplayPlatform(game)}
+                    {Array.isArray(game.launchSources) && game.launchSources.length > 1 && (
+                      <span
+                        className="library-game-tag-multi-source"
+                        title={`Also available on ${game.launchSources
+                          .map((source) => source.platform)
+                          .filter((platform) => platform && platform !== getDisplayPlatform(game))
+                          .join(', ')}`}
+                      >
+                        +{game.launchSources.length - 1}
+                      </span>
+                    )}
+                  </span>
+                  {resolvedMood && (
+                    <span className="library-game-tag mood">
+                      {resolvedMood}
                     </span>
                   )}
-                </span>
-                {resolvedMood && (
-                  <span className="library-game-tag mood">
-                    {resolvedMood}
-                  </span>
-                )}
-                {Array.isArray(game.genres) && game.genres[0] && (
-                  <span className="library-game-tag genre">
-                    {game.genres[0]}
-                  </span>
-                )}
-                {game.replayIntent && game.replayIntent !== 'none' && (
-                  <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>
-                    {game.replayIntent === 'active' && '▶ Playing'}
-                    {game.replayIntent === 'soon' && '⏳ Soon'}
-                    {game.replayIntent === 'finished' && '✓ Done'}
-                    {game.replayIntent === 'endless' && '∞ Endless'}
-                  </span>
-                )}
+                  {Array.isArray(game.genres) && game.genres[0] && (
+                    <span className="library-game-tag genre">
+                      {game.genres[0]}
+                    </span>
+                  )}
+                  {game.replayIntent && game.replayIntent !== 'none' && (
+                    <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>
+                      {game.replayIntent === 'active' && '▶ Playing'}
+                      {game.replayIntent === 'soon' && '⏳ Soon'}
+                      {game.replayIntent === 'finished' && '✓ Done'}
+                      {game.replayIntent === 'endless' && '∞ Endless'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className={`library-game-actions ${viewMode === 'list' ? 'list-mode' : 'grid-mode'}`}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLaunchGame(game);
+                  }}
+                  className="library-launch-button"
+                >
+                  Launch
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleHidden(game);
+                    success(game.hidden ? 'Game unhidden' : 'Game hidden');
+                  }}
+                  className="library-action-button"
+                  title={game.hidden ? 'Unhide game' : 'Hide game'}
+                >
+                  {game.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Remove "${game.name}" from your library?`)) {
+                      onRemoveGames([game.appid || game.name]);
+                      success(`Removed "${game.name}" from library`);
+                    }
+                  }}
+                  className="library-action-button danger"
+                  title="Remove game"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
-
-            <div className={`library-game-actions ${viewMode === 'list' ? 'list-mode' : 'grid-mode'}`}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onLaunchGame(game);
-                }}
-                className="library-launch-button"
-              >
-                Launch
-              </button>
-            </div>
-          </div>
-        )})}
+          )})}
       </div>
 
-      {/* Show More/Less Button */}
-      {filteredAndSortedGames.length > itemsPerPage && (
+      {/* Load More */}
+      {displayCount < filteredAndSortedGames.length && (
         <div className="library-pagination-footer">
-          <div className="library-pagination-copy">
-            Page {currentPage + 1} of {Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage))}
-          </div>
           <button
-            onClick={() => toggleShowAll()}
+            onClick={handleLoadMore}
             className="library-pagination-button"
           >
-            {currentPage >= Math.max(1, Math.ceil(filteredAndSortedGames.length / itemsPerPage)) - 1 ? 'Return to First Page' : 'Jump to Final Page'}
+            Load More
           </button>
         </div>
       )}
@@ -1784,7 +1800,7 @@ function Library({
       )}
 
       {/* Modals */}
-      {isModalOpen && <GameModal game={selectedModalGame} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} />}
+      {isModalOpen && <GameModal game={selectedModalGame} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onTogglePin={handleTogglePin} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} />}
       {isExportModalOpen && <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} library={library} />}
       {isCinematicExportOpen && <CinematicExport isOpen={isCinematicExportOpen} onClose={() => setIsCinematicExportOpen(false)} library={library} />}
       <BackToTopButton />

@@ -1,10 +1,15 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const {
   isLikelyNonGameFolder,
   isProtectedSystemPath,
   isLikelyGameExecutable,
   safeReadDir,
   createTrackedDefaults,
-  addGameIfUnique
+  addGameIfUnique,
+  parseVdf,
+  getSteamPlaytimeMap
 } = require('./scannerUtils');
 
 describe('Scanner Utils', () => {
@@ -111,6 +116,89 @@ describe('Scanner Utils', () => {
     test('returns empty array for non-existing directory', () => {
       const result = safeReadDir('/non/existent/path');
       expect(result).toEqual([]);
+    });
+  });
+
+  const SAMPLE_LOCALCONFIG = `
+"UserLocalConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"apps"
+				{
+					"292030"
+					{
+						"LastPlayed"		"1700000000"
+						"Playtime2wks"		"0"
+						"Playtime"		"12345"
+						"cloud"
+						{
+							"last_sync_state"		"2"
+						}
+					}
+					"570"
+					{
+						"LastPlayed"		"1690000000"
+						"Playtime"		"6000"
+					}
+					"9999"
+					{
+						"Playtime2wks"		"0"
+					}
+				}
+			}
+		}
+	}
+}
+`;
+
+  describe('parseVdf', () => {
+    test('parses nested KeyValues including blocks within app entries', () => {
+      const parsed = parseVdf(SAMPLE_LOCALCONFIG);
+      const apps = parsed.UserLocalConfigStore.Software.Valve.Steam.apps;
+      expect(apps['292030'].Playtime).toBe('12345');
+      expect(apps['292030'].LastPlayed).toBe('1700000000');
+      expect(apps['292030'].cloud.last_sync_state).toBe('2');
+      expect(apps['570'].Playtime).toBe('6000');
+    });
+  });
+
+  describe('getSteamPlaytimeMap', () => {
+    let tmpRoot;
+    let steamApps;
+
+    beforeAll(() => {
+      tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gp-steam-test-'));
+      const steamRoot = path.join(tmpRoot, 'Steam');
+      steamApps = path.join(steamRoot, 'steamapps');
+      const configDir = path.join(steamRoot, 'userdata', '123456', 'config');
+      fs.mkdirSync(steamApps, { recursive: true });
+      fs.mkdirSync(configDir, { recursive: true });
+      fs.writeFileSync(path.join(configDir, 'localconfig.vdf'), SAMPLE_LOCALCONFIG);
+    });
+
+    afterAll(() => {
+      if (tmpRoot) fs.rmSync(tmpRoot, { recursive: true, force: true });
+    });
+
+    test('reads playtime (minutes) and converts LastPlayed seconds to ms', () => {
+      const map = getSteamPlaytimeMap([steamApps]);
+      expect(map['292030']).toEqual({ minutes: 12345, lastPlayedMs: 1700000000000 });
+      expect(map['570']).toEqual({ minutes: 6000, lastPlayedMs: 1690000000000 });
+    });
+
+    test('skips apps with no playtime and no last-played', () => {
+      const map = getSteamPlaytimeMap([steamApps]);
+      expect(map['9999']).toBeUndefined();
+    });
+
+    test('returns empty map when no userdata exists', () => {
+      expect(getSteamPlaytimeMap([])).toEqual({});
+      expect(getSteamPlaytimeMap(['/non/existent/steamapps'])).toEqual({});
     });
   });
 });

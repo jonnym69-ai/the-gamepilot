@@ -1,6 +1,63 @@
 import React from 'react';
 import LazyImage from './LazyImage';
 import EmptyState from './EmptyState';
+import { GamingIdentity } from '../GamingIdentity';
+
+function MiniProgressRing({ percent, size = 36, stroke = 4, color = '#8ab4f8' }) {
+  const radius = (size - stroke) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (percent / 100) * circumference;
+  return (
+    <svg width={size} height={size} style={{ flexShrink: 0 }}>
+      <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} fill="none" stroke="rgba(255,255,255,0.12)" />
+      <circle
+        cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} fill="none"
+        strokeDasharray={circumference} strokeDashoffset={offset} stroke={color}
+        strokeLinecap="round" style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+      />
+      <text x="50%" y="50%" dy="0.3em" textAnchor="middle" fill="currentColor" fontSize={size * 0.35} fontWeight={700}>
+        {percent}%
+      </text>
+    </svg>
+  );
+}
+
+function IdentityMatchBadge({ game, mood, genre }) {
+  try {
+    const identity = React.useMemo(() => {
+      try { return GamingIdentity.getProfile(); } catch { return null; }
+    }, []);
+    if (!identity?.identity) return null;
+
+    const id = identity.identity;
+    const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+    const badges = [];
+
+    if (mood && id.favoriteMood && mood === id.favoriteMood) {
+      badges.push({ label: `🎭 ${id.favoriteMood}`, type: 'mood' });
+    }
+    if (genre && id.favoriteGenre && genre === id.favoriteGenre) {
+      badges.push({ label: `🎯 ${id.favoriteGenre}`, type: 'genre' });
+    } else if (id.favoriteGenre && gameGenres.includes(id.favoriteGenre)) {
+      badges.push({ label: `🎯 ${id.favoriteGenre}`, type: 'genre' });
+    }
+    if (id.archetype) {
+      badges.push({ label: `🏆 ${id.archetype}`, type: 'archetype' });
+    }
+
+    if (badges.length === 0) return null;
+
+    return (
+      <div className="identity-match-badges">
+        {badges.map((b, i) => (
+          <span key={i} className={`identity-match-badge ${b.type}`}>{b.label}</span>
+        ))}
+      </div>
+    );
+  } catch {
+    return null;
+  }
+}
 
 export function HomeSection({ className = '', eyebrow, title, copy, compact = false, children }) {
   const headingClassName = `home-section-heading${compact ? ' compact' : ''}`;
@@ -47,7 +104,10 @@ export function RecommendationReasoning({ entry }) {
       </div>
       <div className="recommendation-reasoning">
         <details className="reasoning-details">
-          <summary>Why this game?</summary>
+          <summary>
+            <span className="reasoning-summary-label">💡 Why this game?</span>
+            <span className="reasoning-summary-hint">{reasons.length} reason{reasons.length === 1 ? '' : 's'}</span>
+          </summary>
           <div className="reasoning-content">
             {reasons.map((reason, index) => (
               <div key={`${entry?.game?.appid || entry?.game?.name || 'recommendation'}-${index}`} className="reasoning-item">
@@ -80,7 +140,7 @@ export function CuratedShelfCard({
   }
 
   return (
-    <div className="game-card fade-in" style={{ maxWidth: '320px', width: '100%' }}>
+    <div className="game-card curated-shelf-card fade-in" style={{ maxWidth: '400px', width: '100%' }}>
       <div style={{ marginBottom: '12px' }}>
         <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.7, marginBottom: '4px' }}>
           {title}
@@ -444,12 +504,12 @@ export function MatchMyMoodSection({
 }) {
   const quickVibes = [
     { id: 'stress_relief', label: 'Stress Relief', icon: '🧘', mood: 'Relaxed' },
-    { id: 'feel_powerful', label: 'Feel Powerful', icon: '💪', mood: 'Competitive' },
+    { id: 'feel_powerful', label: 'Feel Powerful', icon: '💪', mood: 'Social' },
     { id: 'mindless_fun', label: 'Mindless Fun', icon: '🎮', mood: 'Escapist' },
     { id: 'play_with_friends', label: 'Play With Friends', icon: '👥', mood: 'Social' },
     { id: 'get_creative', label: 'Get Creative', icon: '🎨', mood: 'Creative' },
     { id: 'epic_escape', label: 'Epic Escape', icon: '🏔️', mood: 'Escapist' },
-    { id: 'test_my_skills', label: 'Test My Skills', icon: '🎯', mood: 'Tactical' },
+    { id: 'test_my_skills', label: 'Test My Skills', icon: '🎯', mood: 'Focused' },
     { id: 'nostalgia_trip', label: 'Nostalgia Trip', icon: '🕹️', mood: 'Relaxed' }
   ];
 
@@ -723,8 +783,12 @@ export function PerfectPlayResultSection({
               const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
               const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
 
+              const recMood = result?.tracking?.mood || entry?.explanation?.personaIdentity?.anchors?.[0] || null;
+              const recGenre = result?.tracking?.genre || game?.genres?.[0] || null;
+
               return (
                 <div key={game.appid || `perfect-${index}`} className={getGameCardClass(index)}>
+                  <IdentityMatchBadge game={game} mood={recMood} genre={recGenre} />
                   <RecommendationReasoning entry={entry} />
                   <div className="game-card-image-wrapper">
                     {gameArtwork ? (
@@ -819,6 +883,7 @@ export function SurpriseGameResultSection({
         </p>
       ) : game ? (
         <div style={{ textAlign: 'center' }}>
+          <IdentityMatchBadge game={game} mood={result?.tracking?.mood || game?.mood || null} genre={result?.tracking?.genre || game?.genres?.[0] || null} />
           <div className="game-card-image-wrapper">
             {artwork ? (
               <LazyImage
@@ -924,8 +989,12 @@ export function RediscoverResultSection({
               const gameArtwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
               const gamePlaceholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
 
+              const recMood = result?.tracking?.mood || entry?.explanation?.personaIdentity?.anchors?.[0] || null;
+              const recGenre = result?.tracking?.genre || game?.genres?.[0] || null;
+
               return (
                 <div key={game.appid || game.name || index} className={getGameCardClass(index)}>
+                  <IdentityMatchBadge game={game} mood={recMood} genre={recGenre} />
                   <RecommendationReasoning entry={entry} />
                   <div className="game-card-image-wrapper">
                     {gameArtwork ? (
@@ -1058,7 +1127,7 @@ export function HomeToolsContent({
   onClearSurprise,
   onCloseRediscover,
   onLaunchGame,
-  onOpenGettingStarted
+  onOpenGettingStarted,
 }) {
   const hasLibrary = Number(libraryCount || 0) > 0;
   const hasMeaningfulLibrary = Number(libraryCount || 0) >= 3;
@@ -1479,3 +1548,295 @@ export function LibraryStoryCard({ items }) {
     </div>
   );
 }
+
+const formatSessionStyle = (bucket) => {
+  switch (bucket) {
+    case '0-30':
+      return 'Quick play · under 30 min';
+    case '30-60':
+      return 'Steady · 30–60 min';
+    case '60-120':
+      return 'Deep session · 1–2 hrs';
+    case '120+':
+      return 'Marathon · 2 hrs+';
+    default:
+      return bucket;
+  }
+};
+
+export function IdentitySnapshotCard({ persona }) {
+  if (!persona) return null;
+  const identity = persona.personaIdentity;
+  const tags = persona.personaTags || [];
+  const source = persona.source || (identity ? 'history' : 'empty');
+  const confidence = persona.confidence || 'none';
+  const isEmpty = source === 'empty' || (!identity && tags.length === 0);
+
+  const confidenceMeta = {
+    confirmed: { label: 'Confirmed', className: 'is-confirmed' },
+    growing: { label: 'Learning', className: 'is-growing' },
+    provisional: { label: 'Provisional', className: 'is-provisional' }
+  }[confidence] || null;
+
+  const provisionalNote = source === 'library'
+    ? `Inferred from your ${persona.totalLibraryGames || ''} installed games — we'll sharpen this as you play.`.replace('  ', ' ')
+    : source === 'seed'
+      ? "Based on your onboarding picks — we'll refine this as you play."
+      : null;
+
+  if (isEmpty) {
+    return (
+      <div className="results-section">
+        <div className="result-card identity-card">
+          <h3 className="result-title">🎭 Your Gaming Persona</h3>
+          <div className="identity-empty">
+            <span className="identity-empty-icon">🧭</span>
+            <p className="identity-empty-text">
+              Scan your library to generate your starting persona — it sharpens every time you play.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="results-section">
+      <div className="result-card identity-card">
+        <div className="identity-title-row">
+          <h3 className="result-title">🎭 Your Gaming Persona</h3>
+          {confidenceMeta && (
+            <span className={`identity-confidence-badge ${confidenceMeta.className}`}>{confidenceMeta.label}</span>
+          )}
+        </div>
+        <div className="identity-body">
+          {identity && (
+            <div className="identity-header">
+              <span className="identity-label">{identity.label}</span>
+              <p className="identity-description">{identity.description}</p>
+            </div>
+          )}
+          {provisionalNote && (
+            <p className="identity-provisional-note">{provisionalNote}</p>
+          )}
+          <div className="identity-tags">
+            {tags.map((tag, i) => (
+              <span key={`tag-${i}`} className="identity-tag">{tag}</span>
+            ))}
+          </div>
+          <div className="identity-metrics">
+            {persona.dominantMood && (
+              <div className="identity-metric">
+                <span className="identity-metric-label">Dominant Mood</span>
+                <span className="identity-metric-value">{persona.dominantMood}</span>
+              </div>
+            )}
+            {persona.dominantGenre && (
+              <div className="identity-metric">
+                <span className="identity-metric-label">Top Genre</span>
+                <span className="identity-metric-value">{persona.dominantGenre}</span>
+              </div>
+            )}
+            {persona.preferredSessionBucket && (
+              <div className="identity-metric">
+                <span className="identity-metric-label">Typical Session</span>
+                <span className="identity-metric-value">{formatSessionStyle(persona.preferredSessionBucket)}</span>
+              </div>
+            )}
+            {persona.peakPlayWindow && (
+              <div className="identity-metric">
+                <span className="identity-metric-label">Peak Window</span>
+                <span className="identity-metric-value">{persona.peakPlayWindow}</span>
+              </div>
+            )}
+            {persona.avgSessionLength > 0 && (
+              <div className="identity-metric">
+                <span className="identity-metric-label">Avg Session</span>
+                <span className="identity-metric-value">{persona.avgSessionLength}m</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function WeeklyPlaySnapshot({ weeklyStats, streaks }) {
+  const hasData = weeklyStats && (weeklyStats.totalHours > 0 || weeklyStats.sessions > 0 || weeklyStats.daysPlayed > 0);
+  if (!hasData) return null;
+
+  return (
+    <div className="results-section">
+      <div className="result-card weekly-play-card">
+        <h3 className="result-title">📊 This Week</h3>
+        <div className="weekly-play-grid">
+          <div className="weekly-play-metric">
+            <span className="weekly-play-number">{weeklyStats.totalHours}h</span>
+            <span className="weekly-play-label">Played</span>
+          </div>
+          <div className="weekly-play-metric">
+            <span className="weekly-play-number">{weeklyStats.sessions}</span>
+            <span className="weekly-play-label">Sessions</span>
+          </div>
+          <div className="weekly-play-metric">
+            <span className="weekly-play-number">{weeklyStats.daysPlayed}</span>
+            <span className="weekly-play-label">Days</span>
+          </div>
+          <div className="weekly-play-metric">
+            <span className="weekly-play-number">{weeklyStats.uniqueGames}</span>
+            <span className="weekly-play-label">Games</span>
+          </div>
+          {streaks && streaks.current > 0 && (
+            <div className="weekly-play-metric streak">
+              <span className="weekly-play-number">{streaks.current}🔥</span>
+              <span className="weekly-play-label">Streak</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function HabitGoalsMiniCard({ goalProgress }) {
+  const activeGoals = [
+    ...(goalProgress?.weekly || []),
+    ...(goalProgress?.monthly || [])
+  ].filter((g) => !g.completed);
+
+  if (activeGoals.length === 0) return null;
+
+  const colorForPeriod = (period) =>
+    period === 'week' ? '#8ab4f8' : '#c58af9';
+
+  return (
+    <div className="results-section">
+      <div className="result-card habit-goals-card">
+        <h3 className="result-title">🎯 Active Goals</h3>
+        <div className="habit-goals-list">
+          {activeGoals.slice(0, 4).map((goal) => (
+            <div key={goal.id} className="habit-goal-row">
+              <MiniProgressRing percent={goal.percent} color={colorForPeriod(goal.period)} />
+              <div className="habit-goal-info">
+                <span className="habit-goal-label">{goal.label}</span>
+                <span className="habit-goal-sub">
+                  {goal.current} / {goal.target} {goal.period === 'week' ? 'this week' : 'this month'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BecauseYouAreSection({
+  library,
+  resolveGameArtwork,
+  getGameArtworkPlaceholder,
+  platformIcons,
+  formatPlaytime,
+  onLaunchGame,
+  getGameCardClass
+}) {
+  try {
+    const identity = React.useMemo(() => {
+      try { return GamingIdentity.getProfile(); } catch { return null; }
+    }, []);
+    if (!identity?.identity) return null;
+
+    const id = identity.identity;
+    if (!id.favoriteMood && !id.favoriteGenre && !id.archetype) return null;
+
+    const matchedGames = library.filter((game) => {
+      if (!game) return false;
+      const genres = Array.isArray(game.genres) ? game.genres : [];
+      const mood = game.mood || null;
+
+      if (id.favoriteMood && mood === id.favoriteMood) return true;
+      if (id.favoriteGenre && genres.includes(id.favoriteGenre)) return true;
+      if (id.archetype) {
+        const archetypeGenreMap = {
+          'RPG Connoisseur': ['RPG'],
+          'Strategy Sage': ['Strategy', 'Management'],
+          'Shooter Specialist': ['Shooter', 'FPS', 'Action'],
+          'Adventure Seeker': ['Adventure', 'Exploration'],
+          'Puzzle Master': ['Puzzle', 'Logic'],
+          'Indie Explorer': ['Indie'],
+          'Horror Enthusiast': ['Horror'],
+          'Sports Fanatic': ['Sports', 'Racing'],
+          'Sandbox Architect': ['Simulation', 'Sandbox', 'Survival'],
+          'MOBA Strategist': ['MOBA', 'Strategy'],
+          'Fighting Veteran': ['Fighting'],
+          'MMO Devotee': ['MMO', 'RPG'],
+          'Narrative Lover': ['Adventure', 'RPG', 'Visual Novel'],
+          'Completionist': ['RPG', 'Adventure', 'Platformer']
+        };
+        const affinities = archetypeGenreMap[id.archetype] || [];
+        if (affinities.some((ag) => genres.includes(ag))) return true;
+      }
+      return false;
+    }).slice(0, 2);
+
+    if (matchedGames.length === 0) return null;
+
+    const parts = [];
+    if (id.archetype) parts.push(id.archetype);
+    else if (id.favoriteGenre) parts.push(`${id.favoriteGenre} specialist`);
+    else if (id.favoriteMood) parts.push(`${id.favoriteMood} seeker`);
+
+    const identityLabel = parts.join(' ');
+
+    return (
+      <div className="results-section">
+        <div className="result-card because-you-are-card">
+          <h3 className="result-title">
+            🎭 Because you&apos;re a {identityLabel}
+          </h3>
+          <p style={{ color: 'var(--text)', opacity: 0.7, marginBottom: '16px', fontSize: '0.9rem' }}>
+            Games that fit your gaming identity.
+          </p>
+          <div className="game-grid">
+            {matchedGames.map((game, index) => {
+              const artwork = resolveGameArtwork(game, { surface: 'recommendation_card' });
+              const placeholder = getGameArtworkPlaceholder({ game, surface: 'recommendation_card' });
+              return (
+                <div key={game.appid || game.name || index} className={getGameCardClass ? getGameCardClass(index) : 'game-card'}>
+                  <div className="game-card-image-wrapper">
+                    {artwork ? (
+                      <LazyImage src={artwork} alt={game.name} placeholder={placeholder} className="game-image" />
+                    ) : (
+                      <div className="game-placeholder">
+                        <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
+                      </div>
+                    )}
+                  </div>
+                  <h4 className="game-name">{game.name}</h4>
+                  <p className="game-platform">{game.platform}</p>
+                  <div className="game-info">
+                    <span className="game-genre">
+                      {game.genres && game.genres.length > 0 ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                    </span>
+                    {formatPlaytime(game.time_played) && (
+                      <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
+                    )}
+                  </div>
+                  <div className="game-actions">
+                    <button onClick={() => onLaunchGame(game)} className="game-launch-button primary">
+                      🎮 Launch
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  } catch {
+    return null;
+  }
+}
+

@@ -11,74 +11,7 @@ import { LocalShareService } from './services/LocalShareService';
 import { YearInReviewService } from './services/YearInReviewService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
-
-const shellStyle = {
-  minHeight: '100vh',
-  padding: '24px',
-  color: 'var(--text-primary, var(--text))'
-};
-
-const heroStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: '16px',
-  alignItems: 'flex-start',
-  flexWrap: 'wrap',
-  marginBottom: '24px'
-};
-
-const cardGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  gap: '16px'
-};
-
-const cardStyle = {
-  background: 'var(--card-bg, var(--card))',
-  border: '1px solid var(--border-color)',
-  borderRadius: '16px',
-  padding: '18px',
-  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.12)'
-};
-
-const buttonRowStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '10px',
-  marginTop: '14px'
-};
-
-const buttonStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '8px',
-  borderRadius: '10px',
-  border: '1px solid var(--border-color)',
-  background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
-  color: 'var(--text-primary, var(--text))',
-  padding: '10px 14px',
-  cursor: 'pointer'
-};
-
-const dangerButtonStyle = {
-  ...buttonStyle,
-  border: '1px solid rgba(255, 99, 132, 0.35)'
-};
-
-const summaryGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  gap: '12px',
-  marginTop: '16px',
-  marginBottom: '20px'
-};
-
-const statCardStyle = {
-  background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
-  borderRadius: '12px',
-  padding: '12px 14px',
-  border: '1px solid var(--border-color)'
-};
+import './ExportHub.css';
 
 const getFallbackLibrary = () => {
   const fallback = getEmptyLibraryFallback('Home');
@@ -183,67 +116,67 @@ function ExportHub({ library = [], theme }) {
   };
 
   return (
-    <div style={shellStyle}>
+    <div className="export-hub-page">
       <NavBar />
-      <div style={heroStyle}>
+      <div className="export-hub-hero">
         <div>
           <div className="confidence-badge">Local-first export center</div>
-          <h1 style={{ margin: '12px 0 8px' }}>Export, Import & Share</h1>
-          <p style={{ margin: 0, maxWidth: '760px', opacity: 0.82 }}>
+          <h1>Export, Import & Share</h1>
+          <p>
             Keep backups safe, export your library as a spreadsheet, and create visual recap/share assets from one place.
           </p>
         </div>
-        <button type="button" style={buttonStyle} onClick={() => navigate('/year-in-review')} title="Open the full recap page with visuals and exports">
+        <button type="button" className="export-hub-btn" onClick={() => navigate('/year-in-review')} title="Open the full recap page with visuals and exports">
           <RefreshCcw size={16} />
           <span>Open Year in Review</span>
         </button>
       </div>
 
-      <div style={summaryGridStyle}>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Library Size</div>
-          <strong style={{ fontSize: '1.2rem' }}>{Array.isArray(library) ? library.length : 0}</strong>
+      <div className="export-hub-summary">
+        <div className="export-hub-stat">
+          <div className="export-hub-stat-label">Library Size</div>
+          <strong className="export-hub-stat-value">{Array.isArray(library) ? library.length : 0}</strong>
         </div>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Unlocked Rewards</div>
-          <strong style={{ fontSize: '1.2rem' }}>{rewardSummary?.totals?.unlocked || 0}</strong>
+        <div className="export-hub-stat">
+          <div className="export-hub-stat-label">Unlocked Rewards</div>
+          <strong className="export-hub-stat-value">{rewardSummary?.totals?.unlocked || 0}</strong>
         </div>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Achievements</div>
-          <strong style={{ fontSize: '1.2rem' }}>{backupSummary?.unlockedAchievements || 0}</strong>
+        <div className="export-hub-stat">
+          <div className="export-hub-stat-label">Achievements</div>
+          <strong className="export-hub-stat-value">{backupSummary?.unlockedAchievements || 0}</strong>
         </div>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Tracked Playtime</div>
-          <strong style={{ fontSize: '1.2rem' }}>{backupSummary?.totalPlaytimeHours || '0.0'}h</strong>
+        <div className="export-hub-stat">
+          <div className="export-hub-stat-label">Tracked Playtime</div>
+          <strong className="export-hub-stat-value">{backupSummary?.totalPlaytimeHours || '0.0'}h</strong>
         </div>
       </div>
 
-      <div style={cardGridStyle}>
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Full Backup</h2>
-          <p style={{ opacity: 0.8 }}>Save or restore your complete local GamePilot profile, including library curation, progression, rewards, settings, and usage history.</p>
-          <div style={buttonRowStyle}>
-            <button type="button" style={buttonStyle} onClick={handleBackupExport} title="Download a full local backup including progression and profile data">
+      <div className="export-hub-grid">
+        <section className="export-hub-card">
+          <h2>Full Backup</h2>
+          <p>Save or restore your complete local GamePilot profile, including library curation, progression, rewards, settings, and usage history.</p>
+          <div className="export-hub-btn-row">
+            <button type="button" className="export-hub-btn" onClick={handleBackupExport} title="Download a full local backup including progression and profile data">
               <Download size={16} />
               <span>Export Backup</span>
             </button>
-            <button type="button" style={buttonStyle} onClick={() => backupImportRef.current?.click()} title="Restore a previously exported full GamePilot backup">
+            <button type="button" className="export-hub-btn" onClick={() => backupImportRef.current?.click()} title="Restore a previously exported full GamePilot backup">
               <Upload size={16} />
               <span>Import Backup</span>
             </button>
-            <button type="button" style={dangerButtonStyle} onClick={handleClearAllData} title="Erase all local GamePilot data on this device">
+            <button type="button" className="export-hub-btn danger" onClick={handleClearAllData} title="Erase all local GamePilot data on this device">
               <Trash2 size={16} />
               <span>Clear All Data</span>
             </button>
           </div>
-          <input ref={backupImportRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleBackupImport} />
+          <input ref={backupImportRef} type="file" accept=".json" className="export-hub-hidden-input" onChange={handleBackupImport} />
         </section>
 
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Library Exports</h2>
-          <p style={{ opacity: 0.8 }}>Export your catalogue as a spreadsheet-friendly CSV or create visual showcase images and posters.</p>
-          <div style={buttonRowStyle}>
-            <button type="button" style={buttonStyle} onClick={() => {
+        <section className="export-hub-card">
+          <h2>Library Exports</h2>
+          <p>Export your catalogue as a spreadsheet-friendly CSV or create visual showcase images and posters.</p>
+          <div className="export-hub-btn-row">
+            <button type="button" className="export-hub-btn" onClick={() => {
               const exported = DataExportService.exportLibraryAsCSV(library || []);
               if (exported) {
                 success('Library CSV exported.');
@@ -254,43 +187,43 @@ function ExportHub({ library = [], theme }) {
               <Download size={16} />
               <span>Export CSV</span>
             </button>
-            <button type="button" style={buttonStyle} onClick={() => setIsExportModalOpen(true)} title="Open the richer visual library showcase exporter">
+            <button type="button" className="export-hub-btn" onClick={() => setIsExportModalOpen(true)} title="Open the richer visual library showcase exporter">
               <ImageIcon size={16} />
               <span>Open Showcase Export</span>
             </button>
-            <button type="button" style={buttonStyle} onClick={() => setIsCinematicExportOpen(true)} title="Open the cinematic poster generator for a stylized share image">
+            <button type="button" className="export-hub-btn" onClick={() => setIsCinematicExportOpen(true)} title="Open the cinematic poster generator for a stylized share image">
               <ImageIcon size={16} />
               <span>Open Cinematic Poster</span>
             </button>
           </div>
         </section>
 
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Year in Review Share</h2>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <section className="export-hub-card">
+          <h2>Year in Review Share</h2>
+          <div className="export-hub-year-row">
             <label>
-              <span style={{ display: 'block', fontSize: '0.8rem', opacity: 0.7, marginBottom: '6px' }}>Recap year</span>
-              <select value={resolvedYear} onChange={(event) => setSelectedYear(Number(event.target.value))} style={{ ...buttonStyle, padding: '10px 12px' }}>
+              <span className="export-hub-stat-label export-hub-year-label">Recap year</span>
+              <select value={resolvedYear} onChange={(event) => setSelectedYear(Number(event.target.value))} className="export-hub-btn export-hub-year-select">
                 {availableYears.map((year) => (
                   <option key={year} value={year}>{year}</option>
                 ))}
               </select>
             </label>
           </div>
-          <p style={{ opacity: 0.8, whiteSpace: 'pre-line', marginTop: '14px' }}>{shareText}</p>
-          <div style={buttonRowStyle}>
-            <button type="button" style={buttonStyle} onClick={handleCopyYearShare} title="Copy your recap summary text to the clipboard">
+          <p className="export-hub-share-text">{shareText}</p>
+          <div className="export-hub-btn-row">
+            <button type="button" className="export-hub-btn" onClick={handleCopyYearShare} title="Copy your recap summary text to the clipboard">
               <Share2 size={16} />
               <span>Copy Share Text</span>
             </button>
-            <button type="button" style={buttonStyle} onClick={handleDownloadYearShare} title="Download your recap summary as a plain text file">
+            <button type="button" className="export-hub-btn" onClick={handleDownloadYearShare} title="Download your recap summary as a plain text file">
               <FileText size={16} />
               <span>Download Share Text</span>
             </button>
           </div>
-          <div style={buttonRowStyle}>
+          <div className="export-hub-btn-row">
             {LocalShareService.getSupportedChannels().map((channel) => (
-              <button key={channel.id} type="button" style={buttonStyle} onClick={() => handleOpenShareChannel(channel.id)} title={`Open a ${channel.label} share intent with your current recap text`}>
+              <button key={channel.id} type="button" className="export-hub-btn" onClick={() => handleOpenShareChannel(channel.id)} title={`Open a ${channel.label} share intent with your current recap text`}>
                 <LinkIcon size={16} />
                 <span>Share to {channel.label}</span>
               </button>

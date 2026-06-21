@@ -1,8 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { DailyEngagementService, DAILY_REWARDS } from '../services/DailyEngagementService';
-import { X, Gift, Zap, Star, Trophy, Sparkles } from 'lucide-react';
+import {
+  X, Gift, Zap, Star, Trophy, Sparkles,
+  RotateCcw, Palette, Award, Image, Frame
+} from 'lucide-react';
 import './DailySpin.css';
+
+const REWARD_COLORS = {
+  xp: { bg: 'linear-gradient(145deg, #4ade80, #22c55e)', text: '#fff', glow: 'rgba(74,222,128,0.6)' },
+  booster: { bg: 'linear-gradient(145deg, #67e8f9, #22d3ee)', text: '#0f172a', glow: 'rgba(103,232,249,0.6)' },
+  spin: { bg: 'linear-gradient(145deg, #fbbf24, #f59e0b)', text: '#1e1b4b', glow: 'rgba(251,191,36,0.6)' },
+  reroll: { bg: 'linear-gradient(145deg, #fb923c, #f97316)', text: '#fff', glow: 'rgba(251,146,60,0.6)' },
+  frame: { bg: 'linear-gradient(145deg, #f472b6, #ec4899)', text: '#fff', glow: 'rgba(244,114,182,0.6)' },
+  banner: { bg: 'linear-gradient(145deg, #a78bfa, #8b5cf6)', text: '#fff', glow: 'rgba(167,139,250,0.6)' },
+  title: { bg: 'linear-gradient(145deg, #fde047, #eab308)', text: '#1e1b4b', glow: 'rgba(253,224,71,0.6)' },
+  theme: { bg: 'linear-gradient(145deg, #c084fc, #a855f7)', text: '#fff', glow: 'rgba(192,132,252,0.6)' },
+};
+
+const REWARD_ICONS = {
+  xp: Zap,
+  booster: Sparkles,
+  spin: Gift,
+  reroll: RotateCcw,
+  frame: Frame,
+  banner: Image,
+  title: Award,
+  theme: Palette,
+};
+
+const getRewardStyle = (reward) => REWARD_COLORS[reward.type] || REWARD_COLORS.xp;
+const getRewardIcon = (reward) => REWARD_ICONS[reward.type] || Star;
 
 const DailySpin = ({ isOpen, onClose }) => {
   const [status, setStatus] = useState(null);
@@ -91,19 +119,31 @@ const DailySpin = ({ isOpen, onClose }) => {
             className={`spin-wheel ${spinning ? 'spinning' : ''}`}
             style={{ transform: `rotate(${rotation}deg)` }}
           >
-            {rewards.map((reward, index) => (
-              <div
-                key={reward.id}
-                className="spin-segment"
-                style={{
-                  transform: `rotate(${index * segmentAngle}deg) skewY(${90 - segmentAngle}deg)`
-                }}
-              >
-                <span className="segment-label" style={{ transform: `skewY(${-90 + segmentAngle}deg) rotate(${segmentAngle / 2}deg)` }}>
-                  {reward.label}
-                </span>
-              </div>
-            ))}
+            {rewards.map((reward, index) => {
+              const style = getRewardStyle(reward);
+              const Icon = getRewardIcon(reward);
+              return (
+                <div
+                  key={reward.id}
+                  className="spin-segment"
+                  style={{
+                    transform: `rotate(${index * segmentAngle}deg) skewY(${90 - segmentAngle}deg)`,
+                    background: style.bg,
+                  }}
+                >
+                  <span
+                    className="segment-label"
+                    style={{
+                      transform: `skewY(${-90 + segmentAngle}deg) rotate(${segmentAngle / 2}deg)`,
+                      color: style.text,
+                    }}
+                  >
+                    <Icon size={14} className="segment-icon" />
+                    {reward.label}
+                  </span>
+                </div>
+              );
+            })}
           </div>
           <div className="spin-center">
             {spinning ? <Sparkles className="spin-burst" /> : <Gift size={32} />}

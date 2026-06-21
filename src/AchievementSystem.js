@@ -5,6 +5,7 @@ import { QuestHistoryService } from './services/QuestHistoryService';
 import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
 import { getDateKey } from './services/DateKeyService';
 import StorageService from './services/StorageService';
+import { HabitTrackerService } from './services/HabitTrackerService';
 
 // Achievement rarity system
 export const ACHIEVEMENT_RARITY = {
@@ -105,29 +106,8 @@ export const ACHIEVEMENTS = {
     { id: 'escapist_50', name: 'Immersive Master', desc: 'Choose "Escapist" mood 50 times', icon: '🎭', rarity: 'EPIC' },
     { id: 'escapist_100', name: 'Escape Legend', desc: 'Choose "Escapist" mood 100 times', icon: '🚀', rarity: 'LEGENDARY' },
     
-    // Tactical mood achievements
-    { id: 'tactical_5', name: 'Strategic Mind', desc: 'Choose "Tactical" mood 5 times', icon: '♟️', rarity: 'COMMON' },
-    { id: 'tactical_10', name: 'Tactical Master', desc: 'Choose "Tactical" mood 10 times', icon: '🎯', rarity: 'COMMON' },
-    { id: 'tactical_25', name: 'Strategy Expert', desc: 'Choose "Tactical" mood 25 times', icon: '🧠', rarity: 'RARE' },
-    { id: 'tactical_50', name: 'Tactical Legend', desc: 'Choose "Tactical" mood 50 times', icon: '🏆', rarity: 'EPIC' },
-    { id: 'tactical_100', name: 'Strategic Myth', desc: 'Choose "Tactical" mood 100 times', icon: '👑', rarity: 'LEGENDARY' },
-    
-    // Sporty mood achievements
-    { id: 'sporty_5', name: 'Athlete', desc: 'Choose "Sporty" mood 5 times', icon: '⚽', rarity: 'COMMON' },
-    { id: 'sporty_10', name: 'Sports Master', desc: 'Choose "Sporty" mood 10 times', icon: '🏆', rarity: 'COMMON' },
-    { id: 'sporty_25', name: 'Athletic Expert', desc: 'Choose "Sporty" mood 25 times', icon: '🥇', rarity: 'RARE' },
-    { id: 'sporty_50', name: 'Sports Legend', desc: 'Choose "Sporty" mood 50 times', icon: '🏆', rarity: 'EPIC' },
-    { id: 'sporty_100', name: 'Athletic Myth', desc: 'Choose "Sporty" mood 100 times', icon: '🏅', rarity: 'LEGENDARY' },
-    
-    // Competitive mood achievements
-    { id: 'competitive_5', name: 'Competitor', desc: 'Choose "Competitive" mood 5 times', icon: '🏆', rarity: 'COMMON' },
-    { id: 'competitive_10', name: 'Rival Master', desc: 'Choose "Competitive" mood 10 times', icon: '⚔️', rarity: 'COMMON' },
-    { id: 'competitive_25', name: 'Competition Expert', desc: 'Choose "Competitive" mood 25 times', icon: '🥇', rarity: 'RARE' },
-    { id: 'competitive_50', name: 'Competitive Legend', desc: 'Choose "Competitive" mood 50 times', icon: '👑', rarity: 'EPIC' },
-    { id: 'competitive_100', name: 'Rival Myth', desc: 'Choose "Competitive" mood 100 times', icon: '🏆', rarity: 'LEGENDARY' },
-    
     // Mood variety achievements
-    { id: 'mood_explorer', name: 'Mood Explorer', desc: 'Try all 8 mood types at least once', icon: '🦎', rarity: 'RARE' },
+    { id: 'mood_explorer', name: 'Mood Explorer', desc: 'Try all 5 mood types at least once', icon: '🦎', rarity: 'RARE' },
     { id: 'mood_variety_10', name: 'Mood Chameleon', desc: 'Use each mood at least 10 times', icon: '🦎', rarity: 'EPIC' },
     { id: 'mood_master', name: 'Mood Master', desc: 'Use each mood at least 25 times', icon: '🎭', rarity: 'LEGENDARY' },
     { id: 'mood_legend', name: 'Mood Legend', desc: 'Use each mood at least 50 times', icon: '👑', rarity: 'LEGENDARY' },
@@ -148,13 +128,13 @@ export const ACHIEVEMENTS = {
     // Patreon supporter achievements
     { id: 'patreon_supporter', name: 'Patreon Supporter', desc: 'Support GamePilot on Patreon', icon: '💎', xp: 0, hidden: true, rarity: 'LEGENDARY' },
     
-    // Surprise Game achievements
-    { id: 'surprise_1', name: 'Surprise!', desc: 'Use Surprise Game once', icon: '🎁', rarity: 'COMMON' },
-    { id: 'surprise_5', name: 'Surprise Hunter', desc: 'Use Surprise Game 5 times', icon: '', rarity: 'COMMON' },
-    { id: 'surprise_10', name: 'Surprise Master', desc: 'Use Surprise Game 10 times', icon: '', rarity: 'RARE' },
-    { id: 'surprise_25', name: 'Surprise Expert', desc: 'Use Surprise Game 25 times', icon: '', rarity: 'EPIC' },
-    { id: 'surprise_50', name: 'Surprise Legend', desc: 'Use Surprise Game 50 times', icon: '', rarity: 'LEGENDARY' },
-    { id: 'surprise_100', name: 'Surprise Myth', desc: 'Use Surprise Game 100 times', icon: '', rarity: 'LEGENDARY' },
+    // Surprise Me achievements
+    { id: 'surprise_1', name: 'Surprise!', desc: 'Use Surprise Me once', icon: '🎁', rarity: 'COMMON' },
+    { id: 'surprise_5', name: 'Surprise Hunter', desc: 'Use Surprise Me 5 times', icon: '', rarity: 'COMMON' },
+    { id: 'surprise_10', name: 'Surprise Master', desc: 'Use Surprise Me 10 times', icon: '', rarity: 'RARE' },
+    { id: 'surprise_25', name: 'Surprise Expert', desc: 'Use Surprise Me 25 times', icon: '', rarity: 'EPIC' },
+    { id: 'surprise_50', name: 'Surprise Legend', desc: 'Use Surprise Me 50 times', icon: '', rarity: 'LEGENDARY' },
+    { id: 'surprise_100', name: 'Surprise Myth', desc: 'Use Surprise Me 100 times', icon: '', rarity: 'LEGENDARY' },
     
     // Rediscover achievements
     { id: 'rediscover_1', name: 'Memory Lane', desc: 'Rediscover a game once', icon: '🔮', rarity: 'COMMON' },
@@ -496,7 +476,7 @@ export const ACHIEVEMENTS = {
   ]
 };
 
-export const MOOD_SLUGS = ['relaxed', 'social', 'creative', 'focused', 'escapist', 'tactical', 'sporty', 'competitive'];
+export const MOOD_SLUGS = ['relaxed', 'social', 'creative', 'focused', 'escapist'];
 
 export const GENRE_SLUGS = Array.from(new Set((ACHIEVEMENTS.genres || []).map(({ id }) => id.split('_')[0])));
 export const FEATURE_SLUGS = Array.from(new Set((ACHIEVEMENTS.features || [])
@@ -799,7 +779,7 @@ export const normalizeGenre = (value) => {
   return GENRE_SLUGS.includes(slug) ? slug : null;
 };
 
-export const normalizeFeature = (value) => {
+const normalizeFeature = (value) => {
   const slug = slugify(value);
   if (!slug) return null;
   if (FEATURE_SLUGS.includes(slug)) {
@@ -810,7 +790,7 @@ export const normalizeFeature = (value) => {
   return FEATURE_SLUGS.includes(slug.replace(/_/g, '')) ? slug.replace(/_/g, '') : null;
 };
 
-export const AchievementStats = {
+const AchievementStats = {
   getCompletionRate(unlockedIds = null) {
     const unlockedCount = Array.isArray(unlockedIds) ? unlockedIds.length : AchievementTracker.getUnlockedAchievements().length;
     return {
@@ -916,11 +896,6 @@ export class AchievementTracker {
     }
     
     if (achievementId.startsWith('adventurous_')) {
-      const target = parseInt(achievementId.split('_')[1]);
-      return Math.min((current / target) * 100, 100);
-    }
-    
-    if (achievementId.startsWith('competitive_')) {
       const target = parseInt(achievementId.split('_')[1]);
       return Math.min((current / target) * 100, 100);
     }
@@ -2126,16 +2101,26 @@ export class AchievementTracker {
     const launchRewardStats = this.getLaunchRewardStats();
     const bonusRewardStats = this.getBonusRewardStats();
 
-    // Calculate XP from achievements
+    // Legacy achievement XP is still computed for display/back-compat, but it no
+    // longer feeds progression — XP and reward unlocks now come from habits.
     const achievementXP = unlockedAchievements.reduce((total, achievementId) => {
       return total + (achievementPoints[achievementId] ?? 10);
     }, 0);
 
-    // Calculate XP from playtime (1 XP per minute)
-    const playtimeXP = timeStats.total;
+    // Habit-driven XP: consistency, engagement, completions, and streaks.
+    let habitXP = 0;
+    try {
+      habitXP = HabitTrackerService.getHabitXP()?.total || 0;
+    } catch (habitError) {
+      console.warn('Failed to read habit XP, defaulting to 0:', habitError);
+    }
+
+    // Calculate XP from playtime (0.5 XP per minute) so raw hours stay a
+    // meaningful but non-dominant slice of the balanced habit-driven mix.
+    const playtimeXP = Math.round((timeStats.total || 0) * 0.5);
     const launchXP = launchRewardStats.totalXP;
     const bonusRewardXP = bonusRewardStats.totalXP;
-    const baseXP = achievementXP + playtimeXP + launchXP + bonusRewardXP;
+    const baseXP = habitXP + playtimeXP + launchXP + bonusRewardXP;
     
     // Check for monthly boost expiry before getting boost profile
     const boostProfile = this.checkMonthlyBoostExpiry();
@@ -2154,6 +2139,7 @@ export class AchievementTracker {
     return {
       totalXP,
       achievementXP,
+      habitXP,
       playtimeXP,
       launchXP,
       bonusRewardXP,
@@ -2197,9 +2183,10 @@ export class AchievementTracker {
     
     const moodBadges = {
       'Relaxed': '😌 Chill Champion',
+      'Social': '🔥 Social Butterfly',
+      'Creative': '🎨 Creative Genius',
       'Focused': '🎯 Focus Master',
-      'Adventurous': '🗺️ Adventure Seeker',
-      'Competitive': '⚔️ Champion'
+      'Escapist': '🌌 Dream Weaver'
     };
     
     return {
@@ -2402,7 +2389,7 @@ export class AchievementTracker {
     if (!achievementId) {
       return { 
         success: false, 
-        message: 'Invalid activation code. Valid codes: PATREON-2024-FOUNDERS, GAMEPILOT-SUPPORTER-2024, FOUNDER-PACK-2024, EARLY-ADOPTER-2024, SUPPORTER-2025, FOUNDER-2025, PATREON-SUPPORTER' 
+        message: 'Invalid activation code. Please check your code and try again.' 
       };
     }
 

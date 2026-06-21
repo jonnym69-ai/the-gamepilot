@@ -179,22 +179,7 @@ function Achievements({ theme, library = [] }) {
       'escapist_25': 'Choose "Escapist" mood 25 times. Fantasy explorer!',
       'escapist_50': 'Choose "Escapist" mood 50 times. Immersive master!',
       'escapist_100': 'Choose "Escapist" mood 100 times. Escape legend!',
-      'tactical_5': 'Choose "Tactical" mood 5 times. Strategic thinking!',
-      'tactical_10': 'Choose "Tactical" mood 10 times. Tactical master!',
-      'tactical_25': 'Choose "Tactical" mood 25 times. Strategy expert!',
-      'tactical_50': 'Choose "Tactical" mood 50 times. Tactical legend!',
-      'tactical_100': 'Choose "Tactical" mood 100 times. Strategic myth!',
-      'sporty_5': 'Choose "Sporty" mood 5 times. Get active!',
-      'sporty_10': 'Choose "Sporty" mood 10 times. Sports master!',
-      'sporty_25': 'Choose "Sporty" mood 25 times. Athletic expert!',
-      'sporty_50': 'Choose "Sporty" mood 50 times. Sports legend!',
-      'sporty_100': 'Choose "Sporty" mood 100 times. Athletic myth!',
-      'competitive_5': 'Choose "Competitive" mood 5 times. Ready to compete!',
-      'competitive_10': 'Choose "Competitive" mood 10 times. Rival master!',
-      'competitive_25': 'Choose "Competitive" mood 25 times. Competition expert!',
-      'competitive_50': 'Choose "Competitive" mood 50 times. Competitive legend!',
-      'competitive_100': 'Choose "Competitive" mood 100 times. Rival myth!',
-      'mood_explorer': 'Try all 8 mood types at least once. Explore different gaming vibes!',
+      'mood_explorer': 'Try all 5 mood types at least once. Explore different gaming vibes!',
       'mood_variety_10': 'Use each mood at least 10 times. Mood chameleon!',
       'mood_master': 'Use each mood at least 25 times. Master all moods!',
       'mood_legend': 'Use each mood at least 50 times. Mood legend!',
@@ -368,60 +353,6 @@ function Achievements({ theme, library = [] }) {
   };
 
   useEffect(() => {
-    // Load previously notified achievements
-    try {
-      // Notified achievements are tracked in localStorage only
-      StorageService.get('notifiedAchievements', []);
-    } catch (error) {
-      console.error('Error loading notified achievements:', error);
-      StorageService.set('notifiedAchievements', []);
-    }
-    
-    // Ensure rolling period assignments are current, then unlock achievements
-    AchievementTracker.checkAndResetTimeBasedAchievements();
-    AchievementTracker.checkAndUnlockAchievements();
-    
-    loadAchievements();
-    
-    // Check for recently unlocked achievements
-    const checkRecentUnlocks = () => {
-      const recent = AchievementTracker.getRecentlyUnlocked();
-      if (recent && recent.length > 0) {
-        // Get current notified achievements from localStorage to avoid stale state
-        const savedNotified = StorageService.get('notifiedAchievements', []);
-        const notifiedSet = new Set(savedNotified);
-        
-        // Find the first achievement that hasn't been notified about yet
-        const newAchievement = recent.find(achievement => !notifiedSet.has(achievement.id));
-        
-        if (newAchievement) {
-          setRecentlyUnlocked(newAchievement);
-          
-          // Mark this achievement as notified
-          const updatedNotified = [...savedNotified, newAchievement.id];
-          StorageService.set('notifiedAchievements', updatedNotified);
-          
-          // Auto-hide notification after 5 seconds
-          setTimeout(() => {
-            setRecentlyUnlocked(null);
-          }, 5000);
-        }
-      }
-    };
-    
-    checkRecentUnlocks();
-    
-    // Set up periodic checking for new achievements
-    const interval = setInterval(() => {
-      AchievementTracker.checkAndUnlockAchievements();
-      checkRecentUnlocks();
-      loadAchievements();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, []); // Empty dependency array - only run once on mount
-
-  useEffect(() => {
     setSteamAggregation(SteamAchievementAggregationService.getCachedSnapshot(library));
   }, [library]);
 
@@ -574,27 +505,6 @@ function Achievements({ theme, library = [] }) {
       'escapist_25': <Crown size={16} />,
       'escapist_50': <Trophy size={16} />,
       'escapist_100': <Target size={16} />,
-      
-      // Mood achievements - Tactical
-      'tactical_5': <Star size={16} />,
-      'tactical_10': <Medal size={16} />,
-      'tactical_25': <Crown size={16} />,
-      'tactical_50': <Trophy size={16} />,
-      'tactical_100': <Target size={16} />,
-      
-      // Mood achievements - Sporty
-      'sporty_5': <Star size={16} />,
-      'sporty_10': <Medal size={16} />,
-      'sporty_25': <Crown size={16} />,
-      'sporty_50': <Trophy size={16} />,
-      'sporty_100': <Target size={16} />,
-      
-      // Mood achievements - Competitive
-      'competitive_5': <Star size={16} />,
-      'competitive_10': <Medal size={16} />,
-      'competitive_25': <Crown size={16} />,
-      'competitive_50': <Trophy size={16} />,
-      'competitive_100': <Target size={16} />,
       
       // Mood variety achievements
       'mood_explorer': <Star size={16} />,
@@ -909,21 +819,6 @@ function Achievements({ theme, library = [] }) {
       'escapist_25': 800,
       'escapist_50': 1500,
       'escapist_100': 3000,
-      'tactical_5': 150,
-      'tactical_10': 350,
-      'tactical_25': 800,
-      'tactical_50': 1500,
-      'tactical_100': 3000,
-      'sporty_5': 150,
-      'sporty_10': 350,
-      'sporty_25': 800,
-      'sporty_50': 1500,
-      'sporty_100': 3000,
-      'competitive_5': 150,
-      'competitive_10': 350,
-      'competitive_25': 800,
-      'competitive_50': 1500,
-      'competitive_100': 3000,
       'mood_explorer': 500,
       'mood_variety_10': 1000,
       'mood_master': 2000,
@@ -950,261 +845,11 @@ function Achievements({ theme, library = [] }) {
     return pointsMap[achievementId] || 100;
   };
 
-  const loadAchievements = () => {
+  const loadAchievements = React.useCallback(() => {
     try {
       // Get unlocked achievements
       const unlocked = AchievementTracker.getUnlockedAchievements();
       setUnlockedAchievements(unlocked);
-      
-      // Get all achievement definitions
-      const allDefs = {
-        library: [
-          { id: 'first_game', name: 'First Steps', desc: 'Launch your first game', icon: '🎮', category: 'library' },
-          { id: 'collector_5', name: 'Collector', desc: 'Have 5 games in library', icon: '📚', category: 'library' },
-          { id: 'collector_10', name: 'Game Hoarder', desc: 'Have 10 games in library', icon: '📦', category: 'library' },
-          { id: 'collector_25', name: 'Library Master', desc: 'Have 25 games in library', icon: '🏛️', category: 'library' },
-          { id: 'collector_50', name: 'Game Collector', desc: 'Have 50 games in library', icon: '🏆', category: 'library' },
-          { id: 'collector_100', name: 'Century Club', desc: 'Have 100 games in library', icon: '💯', category: 'library' },
-          { id: 'collector_250', name: 'Quarter Master', desc: 'Have 250 games in library', icon: '🎯', category: 'library' },
-          { id: 'collector_500', name: 'Halfway Hero', desc: 'Have 500 games in library', icon: '🎖️', category: 'library' },
-          { id: 'collector_750', name: 'Three Quarter King', desc: 'Have 750 games in library', icon: '👑', category: 'library' },
-          { id: 'collector_1000', name: 'Millennium Master', desc: 'Have 1000 games in library', icon: '🎊', category: 'library' },
-          { id: 'collector_1500', name: 'Epic Collector', desc: 'Have 1500 games in library', icon: '🌟', category: 'library' },
-          { id: 'collector_2500', name: 'Ultimate Collector', desc: 'Have 2500 games in library', icon: '🔥', category: 'library' },
-          { id: 'variety_3', name: 'Variety Player', desc: 'Play 3 different genres', icon: '🌈', category: 'library' },
-          { id: 'variety_5', name: 'Genre Explorer', desc: 'Play 5 different genres', icon: '🎨', category: 'library' },
-          { id: 'platform_diverse', name: 'Platform Diverse', desc: 'Use 3 different platforms', icon: '🔄', category: 'library' }
-        ],
-        time: [
-          { id: 'hour_1', name: 'Quick Session', desc: 'Play 1 hour total', icon: '⏱️', category: 'time' },
-          { id: 'hour_5', name: 'Casual Gamer', desc: 'Play 5 hours total', icon: '☕', category: 'time' },
-          { id: 'hour_10', name: 'Dedicated Gamer', desc: 'Play 10 hours total', icon: '⚡', category: 'time' },
-          { id: 'hour_25', name: 'Marathon Runner', desc: 'Play 25 hours total', icon: '🏃', category: 'time' },
-          { id: 'hour_50', name: 'Gaming Legend', desc: 'Play 50 hours total', icon: '👑', category: 'time' },
-          { id: 'hour_100', name: 'Century Player', desc: 'Play 100 hours total', icon: '💯', category: 'time' },
-          { id: 'hour_250', name: 'Quarter Century Gamer', desc: 'Play 250 hours total', icon: '🎯', category: 'time' },
-          { id: 'hour_500', name: 'Half Millennium', desc: 'Play 500 hours total', icon: '🎖️', category: 'time' },
-          { id: 'hour_1000', name: 'Millennium Master', desc: 'Play 1000 hours total', icon: '🏆', category: 'time' },
-          { id: 'session_10', name: 'Regular Player', desc: 'Complete 10 gaming sessions', icon: '📅', category: 'time' },
-          { id: 'session_25', name: 'Frequent Gamer', desc: 'Complete 25 gaming sessions', icon: '📆', category: 'time' },
-          { id: 'session_50', name: 'Daily Player', desc: 'Complete 50 gaming sessions', icon: '📊', category: 'time' },
-          { id: 'session_100', name: 'Century Sessions', desc: 'Complete 100 gaming sessions', icon: '📊', category: 'time' },
-          { id: 'session_250', name: 'Session Master', desc: 'Complete 250 gaming sessions', icon: '🎯', category: 'time' },
-          { id: 'session_500', name: 'Session Legend', desc: 'Complete 500 gaming sessions', icon: '🏆', category: 'time' }
-        ],
-        mood: [
-          // Correct 8 moods from the system
-          { id: 'relaxed_5', name: 'Chill Master', desc: 'Choose "Relaxed" mood 5 times', icon: '😌', category: 'mood' },
-          { id: 'relaxed_10', name: 'Zen Master', desc: 'Choose "Relaxed" mood 10 times', icon: '🧘', category: 'mood' },
-          { id: 'relaxed_25', name: 'Ultimate Chill', desc: 'Choose "Relaxed" mood 25 times', icon: '😎', category: 'mood' },
-          { id: 'relaxed_50', name: 'Tranquility Expert', desc: 'Choose "Relaxed" mood 50 times', icon: '🔥', category: 'mood' },
-          { id: 'relaxed_100', name: 'Peace Master', desc: 'Choose "Relaxed" mood 100 times', icon: '☯️', category: 'mood' },
-          { id: 'social_5', name: 'Social Butterfly', desc: 'Choose "Social" mood 5 times', icon: '🦋', category: 'mood' },
-          { id: 'social_10', name: 'Party Master', desc: 'Choose "Social" mood 10 times', icon: '🎉', category: 'mood' },
-          { id: 'social_25', name: 'Community Builder', desc: 'Choose "Social" mood 25 times', icon: '🤝', category: 'mood' },
-          { id: 'social_50', name: 'Social Champion', desc: 'Choose "Social" mood 50 times', icon: '👑', category: 'mood' },
-          { id: 'social_100', name: 'Connection Master', desc: 'Choose "Social" mood 100 times', icon: '🌍', category: 'mood' },
-          { id: 'creative_5', name: 'Artisan', desc: 'Choose "Creative" mood 5 times', icon: '🎨', category: 'mood' },
-          { id: 'creative_10', name: 'Master Creator', desc: 'Choose "Creative" mood 10 times', icon: '🖌️', category: 'mood' },
-          { id: 'creative_25', name: 'Innovation Expert', desc: 'Choose "Creative" mood 25 times', icon: '💡', category: 'mood' },
-          { id: 'creative_50', name: 'Creative Genius', desc: 'Choose "Creative" mood 50 times', icon: '🎭', category: 'mood' },
-          { id: 'creative_100', name: 'Imagination Master', desc: 'Choose "Creative" mood 100 times', icon: '🔥', category: 'mood' },
-          { id: 'focused_5', name: 'Focus Expert', desc: 'Choose "Focused" mood 5 times', icon: '🎯', category: 'mood' },
-          { id: 'focused_10', name: 'Concentration Master', desc: 'Choose "Focused" mood 10 times', icon: '🔥', category: 'mood' },
-          { id: 'focused_25', name: 'Discipline Champion', desc: 'Choose "Focused" mood 25 times', icon: '⚡', category: 'mood' },
-          { id: 'focused_50', name: 'Precision Expert', desc: 'Choose "Focused" mood 50 times', icon: '🎯', category: 'mood' },
-          { id: 'focused_100', name: 'Focus Legend', desc: 'Choose "Focused" mood 100 times', icon: '🏹', category: 'mood' },
-          { id: 'escapist_5', name: 'Dreamer', desc: 'Choose "Escapist" mood 5 times', icon: '💭', category: 'mood' },
-          { id: 'escapist_10', name: 'Reality Bender', desc: 'Choose "Escapist" mood 10 times', icon: '🌌', category: 'mood' },
-          { id: 'escapist_25', name: 'Fantasy Explorer', desc: 'Choose "Escapist" mood 25 times', icon: '🗺️', category: 'mood' },
-          { id: 'escapist_50', name: 'Immersive Master', desc: 'Choose "Escapist" mood 50 times', icon: '🎭', category: 'mood' },
-          { id: 'escapist_100', name: 'Escape Legend', desc: 'Choose "Escapist" mood 100 times', icon: '🚀', category: 'mood' },
-          // Additional 3 moods from the 8-mood system
-          { id: 'tactical_5', name: 'Strategic Mind', desc: 'Choose "Tactical" mood 5 times', icon: '♟️', category: 'mood' },
-          { id: 'tactical_10', name: 'Tactical Master', desc: 'Choose "Tactical" mood 10 times', icon: '�', category: 'mood' },
-          { id: 'tactical_25', name: 'Strategy Expert', desc: 'Choose "Tactical" mood 25 times', icon: '🧠', category: 'mood' },
-          { id: 'tactical_50', name: 'Tactical Legend', desc: 'Choose "Tactical" mood 50 times', icon: '�', category: 'mood' },
-          { id: 'tactical_100', name: 'Strategic Myth', desc: 'Choose "Tactical" mood 100 times', icon: '🏆', category: 'mood' },
-          { id: 'sporty_5', name: 'Athlete', desc: 'Choose "Sporty" mood 5 times', icon: '⚽', category: 'mood' },
-          { id: 'sporty_10', name: 'Sports Master', desc: 'Choose "Sporty" mood 10 times', icon: '�', category: 'mood' },
-          { id: 'sporty_25', name: 'Athletic Expert', desc: 'Choose "Sporty" mood 25 times', icon: '�', category: 'mood' },
-          { id: 'sporty_50', name: 'Sports Legend', desc: 'Choose "Sporty" mood 50 times', icon: '�', category: 'mood' },
-          { id: 'sporty_100', name: 'Athletic Myth', desc: 'Choose "Sporty" mood 100 times', icon: '�️', category: 'mood' },
-          { id: 'competitive_5', name: 'Competitor', desc: 'Choose "Competitive" mood 5 times', icon: '�', category: 'mood' },
-          { id: 'competitive_10', name: 'Rival Master', desc: 'Choose "Competitive" mood 10 times', icon: '⚔️', category: 'mood' },
-          { id: 'competitive_25', name: 'Competition Expert', desc: 'Choose "Competitive" mood 25 times', icon: '🥇', category: 'mood' },
-          { id: 'competitive_50', name: 'Competitive Legend', desc: 'Choose "Competitive" mood 50 times', icon: '�', category: 'mood' },
-          { id: 'competitive_100', name: 'Rival Myth', desc: 'Choose "Competitive" mood 100 times', icon: '�', category: 'mood' },
-          // Mood variety achievements
-          { id: 'mood_explorer', name: 'Mood Explorer', desc: 'Try all 8 mood types at least once', icon: '🦎', category: 'mood' },
-          { id: 'mood_variety_10', name: 'Mood Chameleon', desc: 'Use each mood at least 10 times', icon: '🦎', category: 'mood' },
-          { id: 'mood_master', name: 'Mood Master', desc: 'Use each mood at least 25 times', icon: '🎭', category: 'mood' },
-          { id: 'mood_legend', name: 'Mood Legend', desc: 'Use each mood at least 50 times', icon: '👑', category: 'mood' }
-        ],
-        features: [
-          { id: 'perfect_play_1', name: 'Perfect Start', desc: 'Use Perfect Play once', icon: '✨', category: 'features' },
-          { id: 'perfect_play_5', name: 'Perfect Player', desc: 'Use Perfect Play 5 times', icon: '🌟', category: 'features' },
-          { id: 'perfect_play_10', name: 'Perfect Master', desc: 'Use Perfect Play 10 times', icon: '💫', category: 'features' },
-          { id: 'perfect_play_25', name: 'Perfect Expert', desc: 'Use Perfect Play 25 times', icon: '🎯', category: 'features' },
-          { id: 'perfect_play_50', name: 'Perfect Legend', desc: 'Use Perfect Play 50 times', icon: '👑', category: 'features' },
-          { id: 'perfect_play_100', name: 'Perfect Myth', desc: 'Use Perfect Play 100 times', icon: '🌟', category: 'features' },
-          { id: 'patreon_supporter', name: 'Patreon Supporter', desc: 'Support GamePilot on Patreon', icon: '💎', category: 'features', hidden: true },
-          { id: 'surprise_1', name: 'Surprise!', desc: 'Use Surprise Game once', icon: '🎁', category: 'features' },
-          { id: 'surprise_5', name: 'Surprise Hunter', desc: 'Use Surprise Game 5 times', icon: '🎲', category: 'features' },
-          { id: 'surprise_10', name: 'Surprise Master', desc: 'Use Surprise Game 10 times', icon: '🎰', category: 'features' },
-          { id: 'surprise_25', name: 'Surprise Expert', desc: 'Use Surprise Game 25 times', icon: '🎪', category: 'features' },
-          { id: 'surprise_50', name: 'Surprise Legend', desc: 'Use Surprise Game 50 times', icon: '🎨', category: 'features' },
-          { id: 'surprise_100', name: 'Surprise Myth', desc: 'Use Surprise Game 100 times', icon: '🎭', category: 'features' },
-          { id: 'rediscover_1', name: 'Memory Lane', desc: 'Rediscover a game once', icon: '🔮', category: 'features' },
-          { id: 'rediscover_5', name: 'Nostalgic', desc: 'Rediscover 5 games', icon: '📜', category: 'features' },
-          { id: 'rediscover_10', name: 'Memory Master', desc: 'Rediscover 10 games', icon: '🗝️', category: 'features' },
-          { id: 'rediscover_25', name: 'Nostalgia Expert', desc: 'Rediscover 25 games', icon: '📚', category: 'features' },
-          { id: 'rediscover_50', name: 'Time Traveler', desc: 'Rediscover 50 games', icon: '⏰', category: 'features' },
-          { id: 'rediscover_100', name: 'Eternal Memory', desc: 'Rediscover 100 games', icon: '🌌', category: 'features' },
-          { id: 'share_1', name: 'Show Off', desc: 'Share your library once', icon: '📤', category: 'features' },
-          { id: 'share_3', name: 'Social Butterfly', desc: 'Share your library 3 times', icon: '🦋', category: 'features' },
-          { id: 'share_5', name: 'Community Star', desc: 'Share your library 5 times', icon: '⭐', category: 'features' },
-          { id: 'share_10', name: 'Social Influencer', desc: 'Share your library 10 times', icon: '📱', category: 'features' },
-          { id: 'share_25', name: 'Community Legend', desc: 'Share your library 25 times', icon: '🌟', category: 'features' },
-          { id: 'share_50', name: 'Social Myth', desc: 'Share your library 50 times', icon: '🌍', category: 'features' },
-          { id: 'filter_10', name: 'Filter Expert', desc: 'Apply 10 different filters', icon: '🔍', category: 'features' },
-          { id: 'filter_25', name: 'Search Master', desc: 'Apply 25 different filters', icon: '🎯', category: 'features' },
-          { id: 'filter_50', name: 'Filter Legend', desc: 'Apply 50 different filters', icon: '🔬', category: 'features' },
-          { id: 'filter_100', name: 'Search Guru', desc: 'Apply 100 different filters', icon: '🧠', category: 'features' },
-          { id: 'filter_250', name: 'Filter Myth', desc: 'Apply 250 different filters', icon: '🔭', category: 'features' },
-          { id: 'sort_5', name: 'Organizer', desc: 'Use sorting options 5 times', icon: '📋', category: 'features' },
-          { id: 'sort_15', name: 'Data Wrangler', desc: 'Use sorting options 15 times', icon: '📊', category: 'features' },
-          { id: 'sort_30', name: 'Sort Master', desc: 'Use sorting options 30 times', icon: '📈', category: 'features' },
-          { id: 'sort_50', name: 'Organization Legend', desc: 'Use sorting options 50 times', icon: '🏆', category: 'features' },
-          { id: 'sort_100', name: 'Data Myth', desc: 'Use sorting options 100 times', icon: '📊', category: 'features' },
-          { id: 'export_1', name: 'Data Exporter', desc: 'Export your library once', icon: '💾', category: 'features' },
-          { id: 'export_5', name: 'Backup Master', desc: 'Export your library 5 times', icon: '📦', category: 'features' },
-          { id: 'export_10', name: 'Data Guardian', desc: 'Export your library 10 times', icon: '🛡️', category: 'features' },
-          { id: 'export_25', name: 'Backup Legend', desc: 'Export your library 25 times', icon: '🎎', category: 'features' },
-          { id: 'export_50', name: 'Backup Legend', desc: 'Export your library 50 times', icon: '💎', category: 'features' },
-          { id: 'settings_3', name: 'Customizer', desc: 'Change 3 different settings', icon: '⚙️', category: 'features' }
-        ],
-        genres: [
-          { id: 'action_1', name: 'Action Initiate', desc: 'Play 1 Action game', icon: '⚔️', category: 'genres' },
-          { id: 'action_5', name: 'Action Explorer', desc: 'Play 5 different Action games', icon: '🎯', category: 'genres' },
-          { id: 'action_10', name: 'Action Fan', desc: 'Play 10 different Action games', icon: '🎯', category: 'genres' },
-          { id: 'action_25', name: 'Action Expert', desc: 'Play 25 different Action games', icon: '🔥', category: 'genres' },
-          { id: 'action_50', name: 'Action Master', desc: 'Play 50 different Action games', icon: '💥', category: 'genres' },
-          { id: 'adventure_1', name: 'Adventure Initiate', desc: 'Play 1 Adventure game', icon: '🗺️', category: 'genres' },
-          { id: 'adventure_5', name: 'Adventure Explorer', desc: 'Play 5 different Adventure games', icon: '🗺️', category: 'genres' },
-          { id: 'adventure_10', name: 'Adventure Fan', desc: 'Play 10 different Adventure games', icon: '🗺️', category: 'genres' },
-          { id: 'adventure_25', name: 'Adventure Expert', desc: 'Play 25 different Adventure games', icon: '🔥', category: 'genres' },
-          { id: 'adventure_50', name: 'Adventure Master', desc: 'Play 50 different Adventure games', icon: '💥', category: 'genres' },
-          { id: 'rpg_1', name: 'RPG Initiate', desc: 'Play 1 RPG game', icon: '⚔️', category: 'genres' },
-          { id: 'rpg_5', name: 'RPG Explorer', desc: 'Play 5 different RPG games', icon: '🎯', category: 'genres' },
-          { id: 'rpg_10', name: 'RPG Fan', desc: 'Play 10 different RPG games', icon: '🎯', category: 'genres' },
-          { id: 'rpg_25', name: 'RPG Expert', desc: 'Play 25 different RPG games', icon: '🔥', category: 'genres' },
-          { id: 'rpg_50', name: 'RPG Master', desc: 'Play 50 different RPG games', icon: '💥', category: 'genres' },
-          { id: 'indie_1', name: 'Indie Initiate', desc: 'Play 1 Indie game', icon: '🎮', category: 'genres' },
-          { id: 'indie_5', name: 'Indie Explorer', desc: 'Play 5 different Indie games', icon: '🎮', category: 'genres' },
-          { id: 'indie_10', name: 'Indie Fan', desc: 'Play 10 different Indie games', icon: '🎮', category: 'genres' },
-          { id: 'indie_25', name: 'Indie Expert', desc: 'Play 25 different Indie games', icon: '🔥', category: 'genres' },
-          { id: 'indie_50', name: 'Indie Master', desc: 'Play 50 different Indie games', icon: '💥', category: 'genres' },
-          { id: 'puzzle_1', name: 'Puzzle Initiate', desc: 'Play 1 Puzzle game', icon: '🧩', category: 'genres' },
-          { id: 'puzzle_5', name: 'Puzzle Explorer', desc: 'Play 5 different Puzzle games', icon: '🧩', category: 'genres' },
-          { id: 'puzzle_10', name: 'Puzzle Fan', desc: 'Play 10 different Puzzle games', icon: '🧩', category: 'genres' },
-          { id: 'puzzle_25', name: 'Puzzle Expert', desc: 'Progress through 25 Puzzle games', icon: '🔥', category: 'genres' },
-          { id: 'puzzle_50', name: 'Puzzle Master', desc: 'Play 50 different Puzzle games', icon: '💥', category: 'genres' },
-          { id: 'simulation_1', name: 'Simulation Initiate', desc: 'Play 1 Simulation game', icon: '🏗️', category: 'genres' },
-          { id: 'simulation_5', name: 'Simulation Explorer', desc: 'Play 5 different Simulation games', icon: '🏗️', category: 'genres' },
-          { id: 'simulation_10', name: 'Simulation Fan', desc: 'Play 10 different Simulation games', icon: '🏗️', category: 'genres' },
-          { id: 'simulation_25', name: 'Simulation Expert', desc: 'Play 25 different Simulation games', icon: '🔥', category: 'genres' },
-          { id: 'simulation_50', name: 'Simulation Master', desc: 'Play 50 different Simulation games', icon: '💥', category: 'genres' },
-          { id: 'strategy_1', name: 'Strategy Initiate', desc: 'Play 1 Strategy game', icon: '♟️', category: 'genres' },
-          { id: 'strategy_5', name: 'Strategy Explorer', desc: 'Play 5 different Strategy games', icon: '♟️', category: 'genres' },
-          { id: 'strategy_10', name: 'Strategy Fan', desc: 'Play 10 different Strategy games', icon: '♟️', category: 'genres' },
-          { id: 'strategy_25', name: 'Strategy Expert', desc: 'Play 25 different Strategy games', icon: '🔥', category: 'genres' },
-          { id: 'strategy_50', name: 'Strategy Master', desc: 'Play 50 different Strategy games', icon: '💥', category: 'genres' },
-          { id: 'shooter_1', name: 'Shooter Initiate', desc: 'Play 1 Shooter game', icon: '🔫', category: 'genres' },
-          { id: 'shooter_5', name: 'Shooter Explorer', desc: 'Play 5 different Shooter games', icon: '🔫', category: 'genres' },
-          { id: 'shooter_10', name: 'Shooter Fan', desc: 'Play 10 different Shooter games', icon: '🔫', category: 'genres' },
-          { id: 'shooter_25', name: 'Shooter Expert', desc: 'Play 25 different Shooter games', icon: '🔥', category: 'genres' },
-          { id: 'shooter_50', name: 'Shooter Master', desc: 'Play 50 different Shooter games', icon: '💥', category: 'genres' },
-          { id: 'racing_1', name: 'Racing Initiate', desc: 'Play 1 Racing game', icon: '🏁️', category: 'genres' },
-          { id: 'racing_5', name: 'Racing Explorer', desc: 'Play 5 different Racing games', icon: '🏁️', category: 'genres' },
-          { id: 'racing_10', name: 'Racing Fan', desc: 'Play 10 different Racing games', icon: '🏁️', category: 'genres' },
-          { id: 'racing_25', name: 'Racing Expert', desc: 'Play 25 different Racing games', icon: '🔥', category: 'genres' },
-          { id: 'racing_50', name: 'Racing Master', desc: 'Play 50 different Racing games', icon: '💥', category: 'genres' },
-          { id: 'platformer_1', name: 'Platformer Initiate', desc: 'Play 1 Platformer game', icon: '🦘', category: 'genres' },
-          { id: 'platformer_5', name: 'Platformer Explorer', desc: 'Play 5 different Platformer games', icon: '🦘', category: 'genres' },
-          { id: 'platformer_10', name: 'Platformer Fan', desc: 'Play 10 different Platformer games', icon: '🦘', category: 'genres' },
-          { id: 'platformer_25', name: 'Platformer Expert', desc: 'Play 25 different Platformer games', icon: '🔥', category: 'genres' },
-          { id: 'platformer_50', name: 'Platformer Master', desc: 'Play 50 different Platformer games', icon: '💥', category: 'genres' },
-          { id: 'horror_1', name: 'Horror Initiate', desc: 'Play 1 Horror game', icon: '😱', category: 'genres' },
-          { id: 'horror_5', name: 'Horror Explorer', desc: 'Play 5 different Horror games', icon: '😱', category: 'genres' },
-          { id: 'horror_10', name: 'Horror Fan', desc: 'Play 10 different Horror games', icon: '😱', category: 'genres' },
-          { id: 'horror_25', name: 'Horror Expert', desc: 'Play 25 different Horror games', icon: '🔥', category: 'genres' },
-          { id: 'horror_50', name: 'Horror Master', desc: 'Play 50 different Horror games', icon: '💥', category: 'genres' },
-          { id: 'fighting_1', name: 'Fighting Initiate', desc: 'Play 1 Fighting game', icon: '🥊', category: 'genres' },
-          { id: 'fighting_5', name: 'Fighting Explorer', desc: 'Play 5 different Fighting games', icon: '🥊', category: 'genres' },
-          { id: 'fighting_10', name: 'Fighting Fan', desc: 'Play 10 different Fighting games', icon: '🥊', category: 'genres' },
-          { id: 'fighting_25', name: 'Fighting Expert', desc: 'Play 25 different Fighting games', icon: '🔥', category: 'genres' },
-          { id: 'fighting_50', name: 'Fighting Master', desc: 'Play 50 different Fighting games', icon: '💥', category: 'genres' },
-          { id: 'sports_1', name: 'Sports Initiate', desc: 'Play 1 Sports game', icon: '⚽', category: 'genres' },
-          { id: 'sports_5', name: 'Sports Explorer', desc: 'Play 5 different Sports games', icon: '⚽', category: 'genres' },
-          { id: 'sports_10', name: 'Sports Fan', desc: 'Play 10 different Sports games', icon: '⚽', category: 'genres' },
-          { id: 'sports_25', name: 'Sports Expert', desc: 'Play 25 different Sports games', icon: '🔥', category: 'genres' },
-          { id: 'sports_50', name: 'Sports Master', desc: 'Play 50 different Sports games', icon: '💥', category: 'genres' },
-          { id: 'roguelike_1', name: 'Roguelike Initiate', desc: 'Play 1 Roguelike game', icon: '🎲', category: 'genres' },
-          { id: 'roguelike_5', name: 'Roguelike Explorer', desc: 'Play 5 different Roguelike games', icon: '🎲', category: 'genres' },
-          { id: 'roguelike_10', name: 'Roguelike Fan', desc: 'Play 10 different Roguelike games', icon: '🎲', category: 'genres' },
-          { id: 'roguelike_25', name: 'Roguelike Expert', desc: 'Play 25 different Roguelike games', icon: '🔥', category: 'genres' },
-          { id: 'roguelike_50', name: 'Roguelike Master', desc: 'Play 50 different Roguelike games', icon: '💥', category: 'genres' },
-          { id: 'management_1', name: 'Management Initiate', desc: 'Play 1 Management game', icon: '📋', category: 'genres' },
-          { id: 'management_5', name: 'Management Explorer', desc: 'Play 5 different Management games', icon: '📋', category: 'genres' },
-          { id: 'management_10', name: 'Management Fan', desc: 'Play 10 different Management games', icon: '📋', category: 'genres' },
-          { id: 'management_25', name: 'Management Expert', desc: 'Play 25 different Management games', icon: '🔥', category: 'genres' },
-          { id: 'management_50', name: 'Management Master', desc: 'Play 50 different Management games', icon: '💥', category: 'genres' },
-          { id: 'survival_1', name: 'Survival Initiate', desc: 'Play 1 Survival game', icon: '🏕️', category: 'genres' },
-          { id: 'survival_5', name: 'Survival Explorer', desc: 'Play 5 different Survival games', icon: '🏕️', category: 'genres' },
-          { id: 'survival_10', name: 'Survival Fan', desc: 'Play 10 different Survival games', icon: '🏕️', category: 'genres' },
-          { id: 'survival_25', name: 'Survival Expert', desc: 'Play 25 different Survival games', icon: '🔥', category: 'genres' },
-          { id: 'survival_50', name: 'Survival Master', desc: 'Play 50 different Survival games', icon: '💥', category: 'genres' }
-        ],
-        uniqueGames: (ACHIEVEMENTS.uniqueGames || []).map(def => ({
-          ...def,
-          category: 'uniqueGames'
-        })),
-        daily: [
-          { id: 'daily_15min', name: 'Daily Quickie', desc: 'Play 15 minutes in one day', icon: '⏰', category: 'daily' },
-          { id: 'daily_30min', name: 'Daily Gamer', desc: 'Play 30 minutes in one day', icon: '⏰', category: 'daily' },
-          { id: 'daily_1hour', name: 'Daily Player', desc: 'Play 1 hour in one day', icon: '⏰', category: 'daily' },
-          { id: 'daily_2hours', name: 'Daily Enthusiast', desc: 'Play 2 hours in one day', icon: '⏰', category: 'daily' },
-          { id: 'daily_3hours', name: 'Daily Marathon', desc: 'Play 3 hours in one day', icon: '⏰', category: 'daily' },
-          { id: 'daily_5hours', name: 'Daily Legend', desc: 'Play 5 hours in one day', icon: '⏰', category: 'daily' },
-          { id: 'daily_7hours', name: 'Daily Immortal', desc: 'Play 7 hours in one day', icon: '🔥', category: 'daily' },
-          { id: 'daily_10hours', name: 'Daily Godlike', desc: 'Play 10 hours in one day', icon: '👑', category: 'daily' }
-        ],
-        weekly: [
-          { id: 'weekly_2hours', name: 'Weekend Warrior', desc: 'Play 2 hours in a week', icon: '📅', category: 'weekly' },
-          { id: 'weekly_5hours', name: 'Weekly Gamer', desc: 'Play 5 hours in a week', icon: '📅', category: 'weekly' },
-          { id: 'weekly_10hours', name: 'Weekly Enthusiast', desc: 'Play 10 hours in a week', icon: '📅', category: 'weekly' },
-          { id: 'weekly_20hours', name: 'Weekly Marathon', desc: 'Play 20 hours in a week', icon: '📅', category: 'weekly' },
-          { id: 'weekly_40hours', name: 'Weekly Legend', desc: 'Play 40 hours in a week', icon: '📅', category: 'weekly' },
-          { id: 'weekly_60hours', name: 'Weekly Immortal', desc: 'Play 60 hours in a week', icon: '🔥', category: 'weekly' },
-          { id: 'weekly_100hours', name: 'Weekly Godlike', desc: 'Play 100 hours in a week', icon: '👑', category: 'weekly' }
-        ],
-        monthly: [
-          { id: 'monthly_10hours', name: 'Monthly Player', desc: 'Play 10 hours in a month', icon: '📆', category: 'monthly' },
-          { id: 'monthly_25hours', name: 'Monthly Gamer', desc: 'Play 25 hours in a month', icon: '📆', category: 'monthly' },
-          { id: 'monthly_50hours', name: 'Monthly Enthusiast', desc: 'Play 50 hours in a month', icon: '📆', category: 'monthly' },
-          { id: 'monthly_100hours', name: 'Monthly Marathon', desc: 'Play 100 hours in a month', icon: '📆', category: 'monthly' },
-          { id: 'monthly_150hours', name: 'Monthly Immortal', desc: 'Play 150 hours in a month', icon: '🔥', category: 'monthly' },
-          { id: 'monthly_200hours', name: 'Monthly Godlike', desc: 'Play 200 hours in a month', icon: '👑', category: 'monthly' }
-        ],
-        yearly: [
-          { id: 'yearly_100hours', name: 'Yearly Player', desc: 'Play 100 hours in a year', icon: '🎊', category: 'yearly' },
-          { id: 'yearly_500hours', name: 'Yearly Gamer', desc: 'Play 500 hours in a year', icon: '🎊', category: 'yearly' },
-          { id: 'yearly_1000hours', name: 'Yearly Legend', desc: 'Play 1000 hours in a year', icon: '🎊', category: 'yearly' },
-          { id: 'yearly_1500hours', name: 'Yearly Immortal', desc: 'Play 1500 hours in a year', icon: '🔥', category: 'yearly' },
-          { id: 'yearly_2000hours', name: 'Yearly Godlike', desc: 'Play 2000 hours in a year', icon: '👑', category: 'yearly' }
-        ]
-      };
 
       const activeRollingDefs = ['daily', 'weekly', 'monthly', 'yearly'].reduce((acc, period) => {
         const activeDefs = AchievementTracker.getActivePeriodAchievementDefinitions(period);
@@ -1214,13 +859,10 @@ function Achievements({ theme, library = [] }) {
         return acc;
       }, {});
 
+      const staticAchievements = achievementCatalog.filter(({ category }) => !['daily', 'weekly', 'monthly', 'yearly'].includes(category));
+
       setAllAchievements([
-        ...allDefs.library,
-        ...allDefs.time,
-        ...allDefs.mood,
-        ...allDefs.features,
-        ...allDefs.genres,
-        ...allDefs.uniqueGames,
+        ...staticAchievements,
         ...activeRollingDefs.daily,
         ...activeRollingDefs.weekly,
         ...activeRollingDefs.monthly,
@@ -1230,7 +872,76 @@ function Achievements({ theme, library = [] }) {
       console.error('Error setting achievements:', error);
       setAllAchievements([]);
     }
-  };
+  }, [achievementCatalog]);
+
+  useEffect(() => {
+    // Load previously notified achievements
+    try {
+      // Notified achievements are tracked in localStorage only
+      StorageService.get('notifiedAchievements', []);
+    } catch (error) {
+      console.error('Error loading notified achievements:', error);
+      StorageService.set('notifiedAchievements', []);
+    }
+    
+    let notificationTimeout = null;
+
+    const checkRecentUnlocks = () => {
+      const recent = AchievementTracker.getRecentlyUnlocked();
+      if (recent && recent.length > 0) {
+        // Get current notified achievements from localStorage to avoid stale state
+        const savedNotified = StorageService.get('notifiedAchievements', []);
+        const notifiedSet = new Set(savedNotified);
+        
+        // Find the first achievement that hasn't been notified about yet
+        const newAchievement = recent.find(achievement => !notifiedSet.has(achievement.id));
+        
+        if (newAchievement) {
+          setRecentlyUnlocked(newAchievement);
+          
+          // Mark this achievement as notified
+          const updatedNotified = [...savedNotified, newAchievement.id];
+          StorageService.set('notifiedAchievements', updatedNotified);
+          
+          // Auto-hide notification after 5 seconds
+          if (notificationTimeout) {
+            window.clearTimeout(notificationTimeout);
+          }
+          notificationTimeout = window.setTimeout(() => {
+            setRecentlyUnlocked(null);
+          }, 5000);
+        }
+      }
+    };
+
+    const refreshAchievements = () => {
+      AchievementTracker.checkAndResetTimeBasedAchievements();
+      AchievementTracker.checkAndUnlockAchievements();
+      loadAchievements();
+      checkRecentUnlocks();
+    };
+
+    const handleRefresh = () => {
+      window.setTimeout(refreshAchievements, 250);
+    };
+
+    refreshAchievements();
+
+    window.addEventListener('gameSessionStarted', handleRefresh);
+    window.addEventListener('gameSessionEnded', handleRefresh);
+    window.addEventListener('rollingAchievementsUpdated', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+
+    return () => {
+      if (notificationTimeout) {
+        window.clearTimeout(notificationTimeout);
+      }
+      window.removeEventListener('gameSessionStarted', handleRefresh);
+      window.removeEventListener('gameSessionEnded', handleRefresh);
+      window.removeEventListener('rollingAchievementsUpdated', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+    };
+  }, [loadAchievements]);
 
   const getAchievementProgress = (achievement) => {
     const stats = AchievementTracker.getGamingStats();

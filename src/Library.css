@@ -22,7 +22,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  padding: 30px 24px 18px;
+  padding: 24px 24px 16px;
   flex-wrap: wrap;
 }
 
@@ -46,7 +46,7 @@
 
 .library-title {
   margin: 0;
-  font-size: 1.95rem;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.15;
@@ -121,7 +121,7 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 10px 26px rgba(0,0,0,0.16);
-  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
   position: relative;
 }
 
@@ -214,6 +214,12 @@
   color: var(--text-primary, #fff);
   cursor: pointer;
   font-weight: 700;
+  transition: var(--transition-base, 0.25s ease);
+}
+
+.library-tools-toggle:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .library-tools-drawer {
@@ -437,6 +443,12 @@
   font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
+  transition: var(--transition-base, 0.25s ease);
+}
+
+.library-launch-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .library-page .game-actions,
@@ -618,7 +630,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
   flex-shrink: 0;
 }
 
@@ -627,8 +639,42 @@
   transform: scale(1.15);
 }
 
+.library-favorite-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .library-favorite-button.is-favorite {
   color: #ff4757;
+}
+
+.library-pin-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary, rgba(255,255,255,0.45));
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-base, 0.25s ease);
+  flex-shrink: 0;
+}
+
+.library-pin-button:hover {
+  color: #f1c40f;
+  transform: scale(1.15);
+}
+
+.library-pin-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.library-pin-button.is-pinned {
+  color: #f1c40f;
 }
 
 .library-game-title-actions {
@@ -720,7 +766,7 @@
   color: var(--text-primary, #fff);
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
 }
 
 .library-shelf-carousel-controls button {
@@ -731,11 +777,17 @@
   line-height: 1;
 }
 
-.library-shelf-carousel-controls button:hover,
-.library-shelf-tabs button:hover {
+.library-shelf-carousel-controls button:hover:not(:disabled),
+.library-shelf-tabs button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.09);
   border-color: rgba(125, 220, 132, 0.32);
   transform: translateY(-1px);
+}
+
+.library-shelf-carousel-controls button:focus-visible,
+.library-shelf-tabs button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .library-shelf-tabs {
@@ -782,78 +834,131 @@
   color: var(--text-secondary, rgba(255,255,255,0.58));
   font-size: 0.86rem;
   font-weight: 600;
+  animation: empty-state-enter 0.5s ease both;
 }
 
 .library-recent-shelf {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 12px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
+
+.library-recent-shelf::-webkit-scrollbar { height: 6px; }
+.library-recent-shelf::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
 
 .library-recent-shelf-card {
   position: relative;
-  display: grid;
-  grid-template-columns: 82px 1fr auto;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  padding: 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(8, 12, 20, 0.42);
-  cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+  width: 152px;
 }
 
-.library-recent-shelf-card:hover {
-  border-color: rgba(125, 220, 132, 0.42);
-  background: rgba(255, 255, 255, 0.055);
-  transform: translateY(-2px);
-}
-
-.library-recent-shelf-image {
-  width: 82px;
-  aspect-ratio: 231 / 87;
-  overflow: hidden;
+.library-recent-shelf-art {
+  width: 152px;
+  aspect-ratio: 184 / 69;
   border-radius: 10px;
-  background: #111827;
-}
-
-.library-recent-shelf-content {
-  min-width: 0;
-}
-
-.library-recent-shelf-title-row {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+  padding: 0;
 }
 
-.library-recent-shelf-title-row h3 {
-  margin: 0;
-  color: var(--text-primary, #fff);
-  font-size: 0.86rem;
-  font-weight: 800;
+.library-recent-shelf-art-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.library-recent-shelf-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  border-radius: 10px;
+}
+
+.library-recent-shelf-art:hover .library-recent-shelf-overlay {
+  opacity: 1;
+}
+
+.library-recent-shelf-name {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  min-height: 32px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  opacity: 0.85;
 }
 
-.library-recent-shelf-subtitle {
+.library-recent-shelf-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(125, 220, 132, 0.18), rgba(61, 217, 255, 0.16));
+  border: 1px solid rgba(125, 220, 132, 0.3);
+  color: #b8ffbf;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.library-recent-shelf-pin,
+.library-recent-shelf-fav {
+  position: absolute;
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  color: #fff;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 4px 0 7px;
-  color: var(--text-secondary, rgba(255,255,255,0.56));
-  font-size: 0.75rem;
+  justify-content: center;
+  opacity: 0;
+  transition: var(--transition-fast, 0.15s ease);
+  padding: 0;
 }
 
-.library-recent-shelf-tags {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+.library-recent-shelf-pin:focus-visible,
+.library-recent-shelf-fav:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
+
+.library-recent-shelf-pin { right: 28px; }
+.library-recent-shelf-fav { right: 4px; }
+
+.library-recent-shelf-card:hover .library-recent-shelf-pin,
+.library-recent-shelf-card:hover .library-recent-shelf-fav {
+  opacity: 1;
+}
+
+.library-recent-shelf-pin.is-pinned { color: #f1c40f; }
+.library-recent-shelf-fav.is-favorite { color: #ff4757; }
 
 /* Game Card Image Wrapper */
 .game-card-image-wrapper {
@@ -960,13 +1065,25 @@
   font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
 }
 
-.library-pagination-button:hover,
-.back-to-top-button:hover {
+.library-pagination-button:hover:not(:disabled),
+.back-to-top-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
+}
+
+.library-pagination-button:focus-visible,
+.back-to-top-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+.library-pagination-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .library-page .back-to-top-button {
@@ -979,5 +1096,16 @@ body.big-screen-mode .game-card.selected {
   border: 3px solid #fff;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
   transform: scale(1.05);
-  transition: all 0.2s ease;
+  transition: var(--transition-base, 0.25s ease);
+}
+
+@keyframes empty-state-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

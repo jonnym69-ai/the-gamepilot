@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import moodThemes from './themes/moodThemes.json';
 import { AchievementTracker } from './AchievementSystem';
-import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import StorageService from './services/StorageService';
+import InterfacePreferencesService from './services/InterfacePreferencesService';
+import EntitlementService from './services/EntitlementService';
 
 // Helper function to determine if text should be white or based on theme color
 const getContrastColor = (bgColor) => {
@@ -37,17 +38,17 @@ const convertMoodThemeToCSS = (theme) => ({
   '--border-color': theme.palette.secondary,
   '--card-border': theme.palette.secondary,
   '--button-primary-bg': theme.palette.primary,
-  '--button-primary-text': theme.palette.buttonText || theme.palette.text,
+  '--button-primary-text': theme.palette.buttonText || getContrastColor(theme.palette.primary),
   '--button-primary-hover': theme.palette.accent,
   '--button-secondary-bg': theme.palette.secondary,
-  '--button-secondary-text': theme.palette.buttonSecondaryText || theme.palette.text,
+  '--button-secondary-text': theme.palette.buttonSecondaryText || getContrastColor(theme.palette.secondary),
   '--link-primary': theme.palette.accent,
   '--link-primary-hover': theme.palette.primary,
   '--text-color': theme.palette.text,
   '--card-bg': theme.palette.card || theme.palette.surface,
   '--input-bg': theme.palette.surface,
   '--button-bg': theme.palette.primary,
-  '--button-text': theme.palette.buttonText || theme.palette.text,
+  '--button-text': theme.palette.buttonText || getContrastColor(theme.palette.primary),
   '--accent-color': theme.palette.accent,
   '--gradient-primary': theme.palette.primary,
   '--gradient-accent': theme.palette.accent,
@@ -96,9 +97,6 @@ const getThemeSpecificTitle = (themeId) => {
     focused: "⚡ GamePilot - Focus Mode",
     creative: "🎨 GamePilot - Art Studio",
     escapist: "🌌 GamePilot - Escape Portal",
-    tactical: "⚔️ GamePilot - Tactical Command",
-    sporty: "⚽ GamePilot - Sports Arena",
-    competitive: "🏆 GamePilot - Battle Ground",
     sunset: "🌅 GamePilot - Golden Hour",
     midnight: "🌙 GamePilot - Midnight Mode",
     retro: "🕹️ GamePilot - Retro Arcade",
@@ -115,9 +113,6 @@ const getThemeSpecificHomeTitle = (themeId) => {
     focused: "⚡ Focus Central",
     creative: "🎨 Art Space",
     escapist: "🌌 Escape Portal",
-    tactical: "⚔️ Tactical Base",
-    sporty: "⚽ Sports Center",
-    competitive: "🏆 Battle Arena",
     sunset: "🌅 Sunset Lounge",
     midnight: "🌙 Midnight Station",
     retro: "🎮 16-Bit Game Room",
@@ -139,9 +134,6 @@ const getThemeSpecificLibraryTitle = (themeId) => {
     focused: "⚡ Focus Library",
     creative: "🎨 Art Gallery",
     escapist: "🌌 Escape Library",
-    tactical: "⚔️ Tactical Arsenal",
-    sporty: "🏀 Sports Locker",
-    competitive: "🏆 Battle Collection",
     sunset: "🌅 Sunset Gallery",
     midnight: "🌙 Midnight Archive",
     retro: "🎮 16-Bit Console",
@@ -164,9 +156,6 @@ const getThemeSpecificStatsTitle = (themeId) => {
     focused: "⚡ Focus Metrics",
     creative: "🎨 Art Insights",
     escapist: "🌌 Escape Statistics",
-    tactical: "⚔️ Tactical Analysis",
-    sporty: "⚾ Sports Stats",
-    competitive: "🏆 Battle Records",
     sunset: "🌅 Sunset Analytics",
     midnight: "🌙 Midnight Metrics",
     retro: "🎮 16-Bit High Scores",
@@ -188,9 +177,6 @@ const getThemeSpecificAchievementsTitle = (themeId) => {
     focused: "⚡ Focus Medals",
     creative: "🎨 Art Awards",
     escapist: "🌌 Escape Badges",
-    tactical: "⚔️ Tactical Honors",
-    sporty: "🏆 Sports Trophies",
-    competitive: "🏆 Battle Achievements",
     sunset: "🌅 Sunset Awards",
     midnight: "🌙 Midnight Badges",
     retro: "🎮 16-Bit Achievements",
@@ -212,9 +198,6 @@ const getThemeSpecificProfileTitle = (themeId) => {
     focused: "⚡ Focus Profile",
     creative: "🎨 Artist Profile",
     escapist: "🌌 Escape Profile",
-    tactical: "⚔️ Tactical Profile",
-    sporty: "🎾 Sports Profile",
-    competitive: "🏆 Battle Profile",
     sunset: "🌅 Sunset Profile",
     midnight: "🌙 Midnight Profile",
     retro: "🎮 16-Bit Profile",
@@ -236,9 +219,6 @@ const getThemeSpecificSettingsTitle = (themeId) => {
     focused: "⚡ Focus Settings",
     creative: "🎨 Art Settings",
     escapist: "🌌 Escape Settings",
-    tactical: "⚔️ Tactical Settings",
-    sporty: "🏈 Sports Settings",
-    competitive: "🏆 Battle Settings",
     sunset: "🌅 Sunset Settings",
     midnight: "🌙 Midnight Settings",
     retro: "🎮 16-Bit Settings",
@@ -277,11 +257,6 @@ export const ThemeProvider = ({ children }) => {
     
     // Validate saved theme
     if (savedTheme && allThemes[savedTheme]) {
-      const savedMoodTheme = moodThemes.find((theme) => theme.id === savedTheme);
-      if (savedMoodTheme && !ProgressionUnlockService.isThemeUnlocked(savedTheme)) {
-        console.warn(`Saved theme '${savedTheme}' is now locked by progression, falling back to dark.`);
-        return 'dark';
-      }
       return savedTheme;
     }
 
@@ -292,8 +267,9 @@ export const ThemeProvider = ({ children }) => {
     return 'dark';
   });
 
-  const [bigScreenMode, setBigScreenMode] = useState(false);
+  const [bigScreenMode, setBigScreenMode] = useState(() => !!InterfacePreferencesService.get('bigScreenMode'));
   const [compactMode, setCompactMode] = useState(() => StorageService.getString('compactMode') === 'true');
+  const [autoTheme, setAutoTheme] = useState(() => StorageService.getString('autoTheme') === 'true');
 
   // Validate Patreon code and apply XP boost (no direct content unlocks)
   const validatePatreonCode = (code) => {
@@ -320,55 +296,34 @@ export const ThemeProvider = ({ children }) => {
     };
   };
 
-  // Get XP-gated themes with current progression requirement snapshots
-  const getAvailableUnlockableThemes = () => {
-    return ProgressionUnlockService.getUnlockableThemes().map((theme) => ({
-      id: theme.id,
-      name: theme.name,
-      tier: theme.requiredTier || 'basic',
-      description: theme.description || '',
-      unlocked: theme.unlocked,
-      requiredXP: theme.requiredXP,
-      currentXP: theme.currentXP,
-      progressPercent: theme.progressPercent
-    }));
+  // Check if a theme requires Patreon (exclusive themes)
+  const isPatreonTheme = (themeId) => {
+    const theme = moodThemes.find((t) => t.id === themeId);
+    return theme?.patreonExclusive === true;
   };
 
-  // Check if theme is unlocked
-  const isThemeUnlocked = (themeId) => {
-    return ProgressionUnlockService.isThemeUnlocked(themeId);
-  };
+  // Check if user has an active Patreon boost (any tier)
+  const hasPatreonAccess = useCallback(() => {
+    const profile = AchievementTracker.getPatreonBoostProfile();
+    return Boolean(profile?.code) && profile.tier !== null && profile.tier !== 'none';
+  }, []);
 
-  // Get currently unlocked theme ids
-  const getUnlockedThemes = () => {
-    return moodThemes
-      .filter((theme) => ProgressionUnlockService.isThemeUnlocked(theme.id))
-      .map((theme) => theme.id);
-  };
+  // Check premium access (Patreon or store purchase)
+  const hasPremiumAccess = useCallback(() => hasPatreonAccess() || EntitlementService.hasEntitlement('premium_theme_pack') || EntitlementService.hasEntitlement('gamepilot_pro'), [hasPatreonAccess]);
 
-  // Get unlockable themes by tier
-  const getUnlockableThemesByTier = (tier) => {
-    return ProgressionUnlockService.getUnlockableThemes().filter((theme) => theme.requiredTier === tier);
-  };
-
-  // Get all available themes (filtered by unlock status)
+  // Get all available themes
   const getAvailableThemes = () => {
     const themes = {
       light: { name: 'Light', id: 'light' },
       dark: { name: 'Dark', id: 'dark' }
     };
 
-    // Add mood themes with progression unlock metadata
+    // Add mood themes
     moodThemes.forEach(theme => {
-      const unlockMeta = ProgressionUnlockService.getThemeRequirement(theme.id);
-      themes[theme.id] = { 
-        name: theme.name, 
-        id: theme.id, 
-        isUnlockable: unlockMeta.requiredXP > 0,
-        requiredTier: theme.requiredTier || null,
-        requiredXP: unlockMeta.requiredXP,
-        unlocked: unlockMeta.unlocked,
-        progressPercent: unlockMeta.progressPercent
+      themes[theme.id] = {
+        name: theme.name,
+        id: theme.id,
+        patreonExclusive: isPatreonTheme(theme.id)
       };
     });
 
@@ -391,6 +346,111 @@ export const ThemeProvider = ({ children }) => {
     return themes;
   };
 
+  // Apply theme builder override if active
+  useEffect(() => {
+    const isBuilderActive = StorageService.getString('themeBuilderActive') === 'true';
+    if (!isBuilderActive) return;
+
+    const config = StorageService.get('themeBuilderConfig', null);
+    if (!config) return;
+
+    const root = document.documentElement;
+    const bg = config.bgType === 'solid'
+      ? config.solidColor
+      : `linear-gradient(${config.gradientAngle}deg, ${config.gradientFrom}, ${config.gradientTo})`;
+
+    const tc = config.textColor || '#ffffff';
+    const tcRgb = tc
+      .replace('#','')
+      .match(/.{2}/g)
+      .map((x) => parseInt(x,16))
+      .join(', ');
+    const effectColor = config.effectColor || '#ffffff';
+    const effectRgb = effectColor
+      .replace('#','')
+      .match(/.{2}/g)
+      .map((x) => parseInt(x,16))
+      .join(', ');
+    const effectSoft = `rgba(${effectRgb}, ${Math.min(0.8, 0.08 + (config.effectIntensity ?? 3) * 0.1)})`;
+
+    const cssVars = {
+      '--bg-primary': bg,
+      '--bg-secondary': config.bgType === 'solid' ? config.solidColor : config.gradientFrom,
+      '--bg-card': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--bg-input': `rgba(255,255,255,0.${String(Math.max(4, (config.cardOpacity ?? 8) - 4)).padStart(2, '0')})`,
+      '--bg-hover': `rgba(255,255,255,0.${String(Math.min(20, (config.cardOpacity ?? 8) + 4)).padStart(2, '0')})`,
+      '--text-primary': tc,
+      '--text-secondary': `rgba(${tcRgb}, 0.8)`,
+      '--text-muted': `rgba(${tcRgb}, 0.6)`,
+      '--text-color': tc,
+      '--text-accent': config.accent,
+      '--border-primary': 'rgba(255,255,255,0.15)',
+      '--border-secondary': 'rgba(255,255,255,0.1)',
+      '--accent-color': config.accent,
+      '--primary-color': config.accent,
+      '--button-primary-bg': config.accent,
+      '--button-primary-text': '#0f172a',
+      '--link-primary': config.accent,
+      '--gradient-primary': config.gradientFrom || config.solidColor,
+      '--gradient-accent': config.gradientTo || config.solidColor,
+      '--card-radius': `${config.cardRadius ?? 12}px`,
+      '--card-blur': `${config.cardBlur ?? 12}px`,
+      '--card-border-width': `${config.borderWidth ?? 1}px`,
+      '--card-shadow-depth': config.shadowDepth ?? 10,
+      '--builder-font': config.fontFamily === 'monospace' ? "'Fira Code', 'Cascadia Code', monospace" : config.fontFamily === 'serif' ? "'Merriweather', 'Georgia', serif" : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      '--neon-glow': config.neonGlow ? `0 0 ${Math.max(12, (config.shadowDepth ?? 10) * 2)}px ${config.accent}66, 0 0 4px ${config.accent}44` : `0 ${Math.max(4, (config.shadowDepth ?? 10) / 2)}px ${Math.max(12, (config.shadowDepth ?? 10) * 2)}px rgba(0, 0, 0, 0.2)`,
+      '--builder-effect': config.effect || 'none',
+      '--builder-effect-color': effectColor,
+      '--builder-effect-soft': effectSoft,
+      '--builder-effect-intensity': config.effectIntensity ?? 3,
+      '--builder-effect-speed': `${Math.max(3, 18 - (config.particleSpeed ?? 3) * 3)}s`,
+      '--builder-vignette': (config.vignette ?? 0) / 100,
+      '--builder-grain': (config.grain ?? 0) / 100,
+      '--builder-bloom': (config.bloom ?? 0) / 100,
+      '--nav-text': tc,
+      '--nav-bg': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--nav-hover': `rgba(255,255,255,0.${String(Math.min(20, (config.cardOpacity ?? 8) + 4)).padStart(2, '0')})`,
+      '--nav-active': config.accent,
+      '--header-text': tc,
+      '--header-bg': bg,
+      '--header-border': 'rgba(255,255,255,0.15)',
+      '--header-accent': config.accent,
+      '--card-bg': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--input-bg': `rgba(255,255,255,0.${String(Math.max(4, (config.cardOpacity ?? 8) - 4)).padStart(2, '0')})`,
+      '--option-bg': config.bgType === 'solid' ? config.solidColor : config.gradientFrom,
+      '--button-bg': config.accent,
+      '--button-text': '#0f172a',
+      '--muted-color': `rgba(${tcRgb}, 0.6)`,
+      '--text-inverse': config.accent,
+      '--card': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--container-bg': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--content-bg': bg,
+      '--modal-bg': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--sidebar-bg': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--dropdown-bg': `rgba(255,255,255,0.${String(config.cardOpacity ?? 8).padStart(2, '0')})`,
+      '--tooltip-bg': config.accent,
+      '--page-title': tc,
+      '--page-subtitle': `rgba(${tcRgb}, 0.8)`,
+      '--section-header': tc,
+      '--section-border': 'rgba(255,255,255,0.15)',
+      '--shadow': '0 4px 20px rgba(0, 0, 0, 0.1)',
+    };
+
+    Object.entries(cssVars).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+
+    document.body.classList.add('theme-builder-active');
+    document.body.dataset.builderEffect = config.effect || 'none';
+    return () => {
+      document.body.classList.remove('theme-builder-active');
+      delete document.body.dataset.builderEffect;
+      Object.keys(cssVars).forEach((key) => {
+        root.style.removeProperty(key);
+      });
+    };
+  }, [currentTheme]);
+
   // Apply theme to DOM
   useEffect(() => {
     const root = document.documentElement;
@@ -403,6 +463,10 @@ export const ThemeProvider = ({ children }) => {
 
     // Add current theme class
     document.body.classList.add(currentTheme);
+
+    // Skip normal theme CSS if theme builder is active
+    const isBuilderActive = StorageService.getString('themeBuilderActive') === 'true';
+    if (isBuilderActive) return;
 
     // Apply CSS variables based on theme
     const moodTheme = moodThemes.find(t => t.id === currentTheme);
@@ -438,6 +502,13 @@ export const ThemeProvider = ({ children }) => {
   }, [bigScreenMode]);
 
   useEffect(() => {
+    const unsubscribe = InterfacePreferencesService.subscribe((prefs) => {
+      setBigScreenMode(!!prefs.bigScreenMode);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     if (compactMode) {
       document.body.classList.add('compact-mode');
     } else {
@@ -446,12 +517,25 @@ export const ThemeProvider = ({ children }) => {
   }, [compactMode]);
 
   useEffect(() => {
+    if (!autoTheme) return;
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const apply = () => {
+      const next = mq.matches ? 'light' : 'dark';
+      setCurrentTheme(next);
+      StorageService.setString('theme', next);
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [autoTheme]);
+
+  useEffect(() => {
     const activeTheme = moodThemes.find((theme) => theme.id === currentTheme);
-    if (activeTheme && !ProgressionUnlockService.isThemeUnlocked(currentTheme)) {
+    if (isPatreonTheme(activeTheme?.id) && !hasPremiumAccess()) {
       setCurrentTheme('dark');
       StorageService.setString('theme', 'dark');
     }
-  }, [currentTheme]);
+  }, [currentTheme, hasPremiumAccess]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -459,8 +543,29 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [currentTheme]);
 
+  // Listen for external theme-change requests (e.g. Pilot Persona apply).
+  useEffect(() => {
+    const handleRequest = (event) => {
+      const themeId = event?.detail?.themeId;
+      if (!themeId) return;
+      const allThemes = getAvailableThemes();
+      if (!allThemes[themeId]) return;
+      const meta = moodThemes.find((theme) => theme.id === themeId);
+      if (isPatreonTheme(meta?.id) && !hasPremiumAccess()) return;
+      setCurrentTheme(themeId);
+      StorageService.setString('theme', themeId);
+    };
+    window.addEventListener('gamepilot:request-theme', handleRequest);
+    return () => window.removeEventListener('gamepilot:request-theme', handleRequest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggleBigScreenMode = () => {
-    setBigScreenMode(prev => !prev);
+    const next = !bigScreenMode;
+    InterfacePreferencesService.set('bigScreenMode', next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('gamepilot:bigscreen-toggled', { detail: { enabled: next } }));
+    }
   };
 
   const toggleCompactMode = () => {
@@ -471,24 +576,32 @@ export const ThemeProvider = ({ children }) => {
     });
   };
 
+  const toggleAutoTheme = () => {
+    setAutoTheme(prev => {
+      const next = !prev;
+      StorageService.setString('autoTheme', String(next));
+      return next;
+    });
+  };
+
   const value = {
     currentTheme,
     setTheme: (themeId) => {
       const allThemes = getAvailableThemes();
       if (allThemes[themeId]) {
         const selectedTheme = moodThemes.find((theme) => theme.id === themeId);
-        if (selectedTheme && !ProgressionUnlockService.isThemeUnlocked(themeId)) {
-          console.warn(`Theme '${themeId}' is locked by progression requirements.`);
+        if (isPatreonTheme(selectedTheme?.id) && !hasPremiumAccess()) {
           return false;
         }
         setCurrentTheme(themeId);
         StorageService.setString('theme', themeId);
+        StorageService.remove('themeBuilderActive');
         return true;
       } else {
         console.warn(`Theme '${themeId}' is not available. Available themes:`, Object.keys(allThemes));
-        // Fall back to dark theme if invalid theme is requested
         setCurrentTheme('dark');
         StorageService.setString('theme', 'dark');
+        StorageService.remove('themeBuilderActive');
         return false;
       }
     },
@@ -499,15 +612,16 @@ export const ThemeProvider = ({ children }) => {
     getFounderTier: () => AchievementTracker.getPatreonBoostProfile().tier || null,
     validatePatreonCode,
     selectThemesWithCredits,
-    getAvailableUnlockableThemes,
-    isThemeUnlocked,
-    getUnlockedThemes,
-    getUnlockableThemesByTier,
+    isPatreonTheme,
+    hasPatreonAccess,
+    hasPremiumAccess,
     getAvailableThemes,
     bigScreenMode,
     toggleBigScreenMode,
     compactMode,
-    toggleCompactMode
+    toggleCompactMode,
+    autoTheme,
+    toggleAutoTheme
   };
 
   return (

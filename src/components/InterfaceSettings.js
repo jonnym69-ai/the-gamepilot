@@ -1,19 +1,14 @@
 import React from 'react';
-import { Eye, EyeOff, Focus, RotateCcw, BookOpen, Scale, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Focus, RotateCcw, BookOpen, Scale, Sparkles, Heart } from 'lucide-react';
 import InterfacePreferencesService from '../services/InterfacePreferencesService';
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
+import { useTheme } from '../ThemeContext';
+import EntitlementService from '../services/EntitlementService';
 
-const NAV_TOGGLES = [
-  { key: 'showDailyButton', label: 'Show Daily button', hint: 'Hides the Daily spin button in the navbar.' },
-  { key: 'showStreakBadge', label: 'Show streak count', hint: 'Hides the small streak number on the Daily button.' }
-];
+const NAV_TOGGLES = [];
 
 const HOME_TOGGLES = [
   { key: 'showHomeHeroSummary', label: 'Library summary line', hint: 'Shows "X games tracked across Y platforms" in the hero.' },
-  { key: 'showHomeRewardStrip', label: 'Hero reward strip', hint: 'Home Layout / Recommendation Pack pills at the top.' },
-  { key: 'showHomeCheckinPill', label: 'Check-in pill', hint: 'Daily check-in shortcut inside the hero.' },
-  { key: 'showHomeRetentionQuests', label: 'Weekly challenge & GamePilot Picks', hint: 'Curated recommendations and your weekly focused challenge card.' },
-  { key: 'showHomeDailyMissions', label: 'Daily missions card', hint: 'Engagement pulse daily mission card.' },
   { key: 'showHomeBacklogRescue', label: 'Backlog rescue card', hint: 'Recommendation of a backlog game to finish.' },
   { key: 'showHomeShelves', label: 'Curated shelves', hint: 'Tonight\u2019s pick / Continue / Rediscover / Favourite cards.' },
   { key: 'showHomeLauncherSummary', label: 'Launcher summary grid', hint: 'Platform badges and scan status row.' }
@@ -62,6 +57,8 @@ const ToggleRow = ({ pref, prefKey, label, hint, onChange }) => (
 
 export default function InterfaceSettings() {
   const prefs = useInterfacePreferences();
+  const { hasPatreonAccess } = useTheme();
+  const hasPremiumAccess = hasPatreonAccess() || EntitlementService.hasEntitlement('gamepilot_pro');
 
   const handleChange = (key, value) => InterfacePreferencesService.set(key, value);
   const handleAccent = (value) => InterfacePreferencesService.set('accentOverride', value);
@@ -70,9 +67,9 @@ export default function InterfaceSettings() {
   const experienceMode = InterfacePreferencesService.getExperienceMode();
 
   const EXPERIENCE_PRESETS = [
-    { id: 'librarian', label: 'Librarian', Icon: BookOpen, hint: 'Pure tool mode. No streaks, no daily, no quests. Compact, plain fonts.', apply: () => InterfacePreferencesService.applyLibrarianPreset() },
-    { id: 'balanced', label: 'Balanced', Icon: Scale, hint: 'Tool-first with light gamification. Streak visible, weekly challenges hidden.', apply: () => InterfacePreferencesService.applyBalancedPreset() },
-    { id: 'full', label: 'Full experience', Icon: Sparkles, hint: 'Everything on: quests, streak, themed titles, flourishes.', apply: () => InterfacePreferencesService.applyFullPreset() }
+    { id: 'librarian', label: 'Librarian', Icon: BookOpen, hint: 'Pure tool mode. Clean layout, plain fonts, no decorative extras.', apply: () => InterfacePreferencesService.applyLibrarianPreset() },
+    { id: 'balanced', label: 'Balanced', Icon: Scale, hint: 'Tool-first with light theming. Recommendations and shelves visible.', apply: () => InterfacePreferencesService.applyBalancedPreset() },
+    { id: 'full', label: 'Full experience', Icon: Sparkles, hint: 'Everything on: themed titles, decorative flourishes, all shelves.', apply: () => InterfacePreferencesService.applyFullPreset() }
   ];
 
   return (
@@ -185,45 +182,61 @@ export default function InterfaceSettings() {
         <p className="setting-description" style={{ margin: '0 0 8px', opacity: 0.72, fontSize: '12px' }}>
           Override the accent color for buttons and links. Does not change your theme.
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {ACCENT_PRESETS.map((preset) => {
-            const active = prefs.accentOverride === preset.value;
-            return (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => handleAccent(preset.value)}
-                className={`accent-swatch ${active ? 'active' : ''}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 12px',
-                  borderRadius: 999,
-                  border: active ? '2px solid var(--accent-primary, #ff6b35)' : '1px solid var(--border-primary)',
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  fontSize: 12
-                }}
-                title={preset.label}
-              >
-                <span
-                  aria-hidden
+        {!hasPremiumAccess && (
+          <div style={{
+            padding: '12px',
+            background: 'var(--bg-secondary)',
+            borderRadius: '8px',
+            border: '1px dashed var(--border-primary)',
+            textAlign: 'center'
+          }}>
+            <Heart size={20} style={{ marginBottom: '6px', color: 'var(--accent-primary)' }} />
+            <p style={{ margin: '0', fontSize: '13px' }}>
+              Supporters can set a custom accent color.
+            </p>
+          </div>
+        )}
+        {hasPremiumAccess && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {ACCENT_PRESETS.map((preset) => {
+              const active = prefs.accentOverride === preset.value;
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => handleAccent(preset.value)}
+                  className={`accent-swatch ${active ? 'active' : ''}`}
                   style={{
-                    display: 'inline-block',
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    background: preset.value || 'conic-gradient(#ff6b35,#10b981,#8b5cf6,#38bdf8,#ff6b35)',
-                    border: '1px solid rgba(255,255,255,0.25)'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 12px',
+                    borderRadius: 999,
+                    border: active ? '2px solid var(--accent-primary, #ff6b35)' : '1px solid var(--border-primary)',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontSize: 12
                   }}
-                />
-                {preset.label}
-              </button>
-            );
-          })}
-        </div>
+                  title={preset.label}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      display: 'inline-block',
+                      width: 14,
+                      height: 14,
+                      borderRadius: '50%',
+                      background: preset.value || 'conic-gradient(#ff6b35,#10b981,#8b5cf6,#38bdf8,#ff6b35)',
+                      border: '1px solid rgba(255,255,255,0.25)'
+                    }}
+                  />
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

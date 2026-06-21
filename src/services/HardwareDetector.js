@@ -54,6 +54,8 @@ export class HardwareDetector {
           tier: this.getRAMTier(rawInfo.ram.total)
         },
         storage: this.normalizeStorage(rawInfo.storage),
+        driveTypeMap: rawInfo.driveTypeMap || {},
+        logicalDrives: rawInfo.logicalDrives || [],
         os: rawInfo.os,
         lastUpdated: rawInfo.lastUpdated
       };
@@ -71,7 +73,9 @@ export class HardwareDetector {
         const parsed = JSON.parse(cached);
         return {
           ...parsed,
-          storage: this.normalizeStorage(parsed.storage)
+          storage: this.normalizeStorage(parsed.storage),
+          driveTypeMap: parsed.driveTypeMap || {},
+          logicalDrives: parsed.logicalDrives || []
         };
       }
       

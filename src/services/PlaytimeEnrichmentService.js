@@ -60,10 +60,15 @@ export class PlaytimeEnrichmentService {
         }
       });
 
+      // Preserve externally-sourced playtime (e.g. imported Steam playtime)
+      // which lives on game.time_played and is NOT represented in our local
+      // session history. Session-derived total only wins when it is higher.
+      const resolvedTotal = Math.max(total, Number(game.time_played) || 0);
+
       return {
         ...game,
         playtime: {
-          total,
+          total: resolvedTotal,
           daily,
           weekly,
           monthly,
@@ -73,7 +78,7 @@ export class PlaytimeEnrichmentService {
             ? gameSessions[gameSessions.length - 1].date 
             : null
         },
-        time_played: total,
+        time_played: resolvedTotal,
         launch_count: gameSessions.length
       };
     }).filter(Boolean);

@@ -36,7 +36,13 @@ export const createActiveSessionEntry = (game) => ({
   metadata: {
     genres: Array.isArray(game?.genres) ? game.genres : [],
     mood: game?.mood || null,
-    platform: game?.platform || null
+    platform: game?.platform || null,
+    source: game?.source || null,
+    launchType: game?.launchType || null,
+    emulator: game?.emulator || null,
+    emulatorProfileId: game?.emulatorProfileId || null,
+    romPath: game?.romPath || null,
+    brandPlatform: game?.brandPlatform || null
   },
   paused: false
 });
