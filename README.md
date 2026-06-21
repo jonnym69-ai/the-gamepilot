@@ -1,8 +1,39 @@
-# GamePilot - Your Personal Gaming Library Manager
+# GamePilot
 
-**Version 1.4.0** | **Copyright © 2026 Moz** | **MIT License**
+### Your library. Your stats. Your machine.
 
-GamePilot is a comprehensive desktop application for managing your gaming library, analyzing system performance, and getting smart game recommendations based on your mood, available time, and hardware capabilities.
+**Version 1.5.0** | **Copyright © 2026 Moz** | **MIT License** | **Local-first · Private · Open source**
+
+GamePilot is a local-first desktop app that unifies your game library across every launcher, tracks your playtime (even offline), and turns your collection into a private, gamified dashboard — without accounts, cloud sync, or telemetry of any kind.
+
+---
+
+## Why GamePilot?
+
+**🔓 Open source — verify, don't trust.**
+Most launchers ask you to trust them with your data. GamePilot lets you read every line before you install.
+
+**🔒 100% local & private.**
+No accounts, no cloud, no telemetry. Your library and stats never leave your machine.
+
+**🛰️ Tracks even when Steam can't.**
+GamePilot watches the game process itself, so your playtime keeps logging fully offline — perfect for laptops and travel.
+
+**📊 Year in Review, every day.**
+Playtime, longest sessions, busiest days, and top games — always on, not a once-a-year recap.
+
+**⚔️ Your library, leveled up.**
+A gaming identity that learns your habits, recommendations that explain *why*, and XP / achievements / rewards that make your backlog fun.
+
+---
+
+## Screenshots
+
+> Screenshots live in the [`screenshots/`](screenshots/) folder.
+
+![GamePilot library view](screenshots/page-2026-04-15T23-41-57-768Z.png)
+
+---
 
 ## Features
 
@@ -12,42 +43,37 @@ GamePilot is a comprehensive desktop application for managing your gaming librar
 - Organize games by mood, genre, and platform
 - Export library data in multiple formats
 
-### 🎮 Game Compatibility Analysis
-- 770+ game database with detailed system requirements
-- Real-time compatibility checking against your hardware
-- Detailed system requirements breakdown in Game Modal
-- Performance level indicators (Ultra, High, Low, Ultra Low)
-- Estimated FPS calculations
-
-### ⚡ Performance Cockpit
-- Comprehensive system hardware analysis
-- Bottleneck detection and identification
-- Upgrade recommendations with cost estimates
-- Game compatibility matrix
-- Overall system performance score
+### 📊 Stats & Year in Review
+- Always-available playtime dashboard (daily / weekly / monthly / yearly / all time)
+- Imports your real Steam lifetime playtime, clearly separated from GamePilot-tracked sessions
+- Switchable hours / days display for huge playtime totals
+- Deeper play habits: longest session, busiest day, late-night & weekend runs
 
 ### 🎯 Smart Recommendations (Perfect Play)
-- Get game recommendations based on mood and genre
-- Filter by available playtime
-- Intelligent matching algorithm
-- Quick access to best matches
+- Recommendations based on mood, genre, and available playtime
+- Explains *why* each game was picked
+- Tunable novelty, diversity, and exploration controls
+
+### ⚔️ Gaming Identity & Progression
+- A behavioural profile that learns how you actually play
+- XP, achievements, challenges, and rewards layered over your backlog
+
+### � Game Compatibility & Performance
+- 770+ game database with detailed system requirements
+- Real-time compatibility checking and estimated FPS against your hardware
+- Performance Cockpit: bottleneck detection and upgrade recommendations
 
 ### 💰 Library Valuation
-- Calculate total library value
-- Multi-currency support (USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, INR, BRL, RUB)
-- Real-time price conversion
-- Game pricing from Steam API
+- Calculate total library value with multi-currency support
+- Real-time price conversion from Steam pricing
 
 ### Customization
-- Multiple theme options (Digital Ocean, Cyberpunk, Retro, etc.)
-- Dark/Light mode support
-- Customizable currency selection
-- Flexible UI layouts
+- Multiple themes, dark/light mode, big-screen (TV) mode, and flexible layouts
 
 ## Installation
 
 ### Windows
-1. Download `GamePilot Setup 1.4.0.exe` from the releases page
+1. Download `GamePilot Setup 1.5.0.exe` from the releases page
 2. Run the installer
 3. Follow the installation wizard
 4. Launch GamePilot from your Start Menu
@@ -170,7 +196,14 @@ For issues, questions, or suggestions, contact the author directly.
 
 ## Changelog
 
-### v1.4.0 (Current)
+### v1.5.0 (Current)
+- ✅ Fixed Steam playtime import in packaged builds (resilient scanner loading)
+- ✅ Imported Steam lifetime playtime now surfaced on the All Time view, separate from tracked sessions
+- ✅ Most Played Games can switch between GamePilot-tracked and Steam-imported rankings
+- ✅ Hours / days display toggle for large playtime totals
+- ✅ Clearer "Tracked by GamePilot" vs "Steam Lifetime" labelling
+
+### v1.4.0
 - ✅ Enhanced Year in Review with deeper stats (longest session, busiest day, repeat games)
 - ✅ Added period-aware deeper insights to Stats page
 - ✅ Fixed Epic mystery games in Free Games Radar
