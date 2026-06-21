@@ -18,6 +18,7 @@ import TimeOfDayHeatmap from './components/TimeOfDayHeatmap';
 import CollapsibleSection from './components/CollapsibleSection';
 import PowerStatsDeepDive from './components/PowerStatsDeepDive';
 import { LibraryAnalyticsService } from './services/LibraryAnalyticsService';
+import AdvancedAnalyticsDashboard from './components/AdvancedAnalyticsDashboard';
 import EntitlementService from './services/EntitlementService';
 import './Stats.css';
 
@@ -789,6 +790,24 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             className="stats-section power-tools-deep-stats"
           >
             <PowerStatsDeepDive analytics={analytics} />
+          </CollapsibleSection>
+        )}
+
+        {/* Advanced Analytics Dashboard */}
+        {hasPowerTools && (
+          <CollapsibleSection
+            title="Advanced Analytics Dashboard"
+            subtitle="Developer, publisher, price tier, value-per-hour, completion, and genre evolution breakdowns."
+            badge="Pro"
+            icon={<BarChart3 size={18} />}
+            className="stats-section advanced-analytics-section"
+            defaultOpen={false}
+          >
+            <AdvancedAnalyticsDashboard
+              library={library}
+              username={StorageService.getString('profileUsername', '') || 'Gamer'}
+              isPro={hasPowerTools}
+            />
           </CollapsibleSection>
         )}
 
