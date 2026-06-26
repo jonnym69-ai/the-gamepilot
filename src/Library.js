@@ -253,6 +253,8 @@ function Library({
   const [recapCustomization, setRecapCustomization] = useState(
     () => ProgressionUnlockService.getRecapCustomization?.() || { palette: null, visibleStats: {} }
   );
+  const [selectedTopRatedGames, setSelectedTopRatedGames] = useState([]);
+  const [showTopRatedPicker, setShowTopRatedPicker] = useState(false);
   const libraryShareCardRef = useRef(null);
   const topRatedShareCardRef = useRef(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -301,6 +303,18 @@ function Library({
   }, []);
 
   const username = useMemo(() => ProfileService.getCurrentUsername(), []);
+
+  const allTopRatedGames = useMemo(() => {
+    return (library || [])
+      .filter((game) => typeof game?.userRating === 'number' && game.userRating >= 10)
+      .sort((left, right) => {
+        const ratingDiff = (right.userRating || 0) - (left.userRating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        const aTime = Number(left?.time_played ?? left?.playtime ?? left?.totalPlaytime ?? 0);
+        const bTime = Number(right?.time_played ?? right?.playtime ?? right?.totalPlaytime ?? 0);
+        return bTime - aTime;
+      });
+  }, [library]);
 
   const generateLibraryShareCardBlob = useCallback(async () => {
     if (!libraryShareCardRef.current) {
@@ -481,12 +495,12 @@ function Library({
   }, []);
 
   const handleShareTopRatedToChannel = useCallback(async (channel, text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
     let imageStaged = false;
     try {
       const blob = await generateTopRatedShareCardBlob();
       if (blob && LocalShareService.canCopyImage()) {
-        const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+        const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
         const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
         imageStaged = copyResult.success;
       }
@@ -503,15 +517,15 @@ function Library({
     } else {
       toastError(result.message || 'Could not open share link.');
     }
-  }, [library, username, generateTopRatedShareCardBlob, success, toastError]);
+  }, [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]);
 
   const handleShareTopRatedToDiscord = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
     let imageBlob = null;
     let filename = 'gamepilot-top-rated.png';
     try {
       imageBlob = await generateTopRatedShareCardBlob();
-      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username);
+      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
       filename = packageResult.filename;
     } catch (error) {
       imageBlob = null;
@@ -526,15 +540,15 @@ function Library({
     } else {
       toastError(result.message || 'Could not share to Discord.');
     }
-  }, [library, username, generateTopRatedShareCardBlob, success, toastError]);
+  }, [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]);
 
   const handleShareTopRatedToMessenger = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
     let imageBlob = null;
     let filename = 'gamepilot-top-rated.png';
     try {
       imageBlob = await generateTopRatedShareCardBlob();
-      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username);
+      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
       filename = packageResult.filename;
     } catch (error) {
       imageBlob = null;
@@ -549,10 +563,10 @@ function Library({
     } else {
       toastError(result.message || 'Could not share to Messenger.');
     }
-  }, [library, username, generateTopRatedShareCardBlob, success, toastError]);
+  }, [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]);
 
   const handleCopyTopRatedShareText = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
     const copied = await LocalShareService.copyTextToClipboard(shareText);
     if (copied) {
       success('Top-rated picks text copied to clipboard.');
@@ -560,7 +574,7 @@ function Library({
       toastError('Could not copy top-rated picks text.');
     }
     return copied;
-  }, [library, username, success, toastError]);
+  }, [library, username, selectedTopRatedGames, success, toastError]);
 
   const handleCopyTopRatedShareCard = useCallback(async () => {
     const blob = await generateTopRatedShareCardBlob();
@@ -568,7 +582,7 @@ function Library({
       toastError('Could not generate top-rated card.');
       return false;
     }
-    const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+    const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
     const result = await LocalShareService.copyImageToClipboard(blob, filename);
     if (result.success) {
       success('Top-rated card copied to clipboard.');
@@ -576,7 +590,7 @@ function Library({
     }
     toastError(result.message || 'Could not copy image.');
     return false;
-  }, [generateTopRatedShareCardBlob, library, username, success, toastError]);
+  }, [generateTopRatedShareCardBlob, library, username, selectedTopRatedGames, success, toastError]);
 
   const handleDownloadTopRatedShareCard = useCallback(async () => {
     const blob = await generateTopRatedShareCardBlob();
@@ -584,15 +598,15 @@ function Library({
       toastError('Could not generate top-rated card.');
       return false;
     }
-    const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+    const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
     DataExportService.downloadFile(blob, filename);
     success('Top-rated card saved.');
     return true;
-  }, [generateTopRatedShareCardBlob, library, username, success, toastError]);
+  }, [generateTopRatedShareCardBlob, library, username, selectedTopRatedGames, success, toastError]);
 
   const handleNativeShareTopRatedCard = useCallback(async (text = null) => {
     const blob = await generateTopRatedShareCardBlob();
-    const { text: baseText, filename, title } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+    const { text: baseText, filename, title } = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
     if (!blob) {
       toastError('Could not generate top-rated card.');
       return;
@@ -602,7 +616,7 @@ function Library({
     if (!result.success) {
       toastError(result.message || 'Native share failed.');
     }
-  }, [generateTopRatedShareCardBlob, library, username, toastError]);
+  }, [generateTopRatedShareCardBlob, library, username, selectedTopRatedGames, toastError]);
 
   const handleToggleFavorite = useCallback((key) => {
     setFavorites((prev) => {
@@ -1528,9 +1542,18 @@ function Library({
             onShareToMessenger={handleShareTopRatedToMessenger}
             onDownloadText={handleCopyTopRatedShareText}
             onNativeShare={handleNativeShareTopRatedCard}
-            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username))}
+            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames))}
             triggerLabel="Share 10/10 Picks"
           />
+          {allTopRatedGames.length > 6 && (
+            <button
+              onClick={() => setShowTopRatedPicker(true)}
+              className="export-button"
+              title={`Choose which ${allTopRatedGames.length} perfect 10/10 games to display (max 6)`}
+            >
+              Edit Picks ({selectedTopRatedGames.length > 0 ? selectedTopRatedGames.length : '6 auto'})
+            </button>
+          )}
           <button onClick={handleScanLibrary} className="export-button" disabled={loading}>
             {loading ? '⏳ Scanning Library...' : '🔄 Scan Library'}
           </button>
@@ -2235,12 +2258,70 @@ function Library({
         <div ref={topRatedShareCardRef}>
           <TopRatedShareCard
             library={library}
+            selectedGames={selectedTopRatedGames}
             username={username}
             showCover={recapCustomization.useMostPlayedCover !== false}
             watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
           />
         </div>
       </div>
+
+      {showTopRatedPicker && (
+        <div className="library-top-rated-picker-overlay" onClick={() => setShowTopRatedPicker(false)}>
+          <div className="library-top-rated-picker" onClick={(e) => e.stopPropagation()}>
+            <div className="library-top-rated-picker-header">
+              <h3>Choose your 10/10 picks</h3>
+              <p>Select up to 6 games to show on the share card. Leave blank to auto-pick by playtime.</p>
+            </div>
+            <div className="library-top-rated-picker-list">
+              {allTopRatedGames.map((game) => {
+                const id = game.id || game.appid || game.name;
+                const checked = selectedTopRatedGames.some((g) => (g.id || g.appid || g.name) === id);
+                const disabled = !checked && selectedTopRatedGames.length >= 6;
+                return (
+                  <label key={id} className={`library-top-rated-picker-item${disabled ? ' disabled' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => {
+                        setSelectedTopRatedGames((prev) => {
+                          const exists = prev.some((g) => (g.id || g.appid || g.name) === id);
+                          if (exists) return prev.filter((g) => (g.id || g.appid || g.name) !== id);
+                          if (prev.length >= 6) return prev;
+                          return [...prev, game];
+                        });
+                      }}
+                    />
+                    <span className="library-top-rated-picker-name">{game.name}</span>
+                    <span className="library-top-rated-picker-playtime">
+                      {formatPlaytime(Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0))}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="library-top-rated-picker-actions">
+              <span className="library-top-rated-picker-count">
+                {selectedTopRatedGames.length}/6 selected
+              </span>
+              <button
+                className="library-top-rated-picker-clear"
+                onClick={() => setSelectedTopRatedGames([])}
+                disabled={selectedTopRatedGames.length === 0}
+              >
+                Clear
+              </button>
+              <button
+                className="library-top-rated-picker-done"
+                onClick={() => setShowTopRatedPicker(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BackToTopButton />
     </div>

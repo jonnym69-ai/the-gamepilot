@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Clock, Trophy, Gamepad2, Calendar, Zap, CheckCircle2, Monitor, BarChart3 } from 'lucide-react';
+import { Star, Clock, Trophy, Gamepad2, Calendar, Zap, CheckCircle2, Monitor, Tag, Sparkles } from 'lucide-react';
 import { resolveGameArtwork } from '../services/GameArtworkService';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import { ShareCardWatermark } from './ShareCardWatermark';
@@ -78,11 +78,6 @@ export function buildGameShareData(game = {}, gameStats = {}) {
   const gameId = getGameId(safeGame);
   const launchData = gameId ? GameLaunchTracker.getGameLaunchData(gameId) : null;
 
-  const totalLibraryPlaytime = Math.max(1, GameLaunchTracker.getTotalPlaytime());
-  const libraryShare = timePlayed > 0 && totalLibraryPlaytime > 0
-    ? Math.min(100, Math.round((timePlayed / totalLibraryPlaytime) * 100))
-    : 0;
-
   const avgSessionLength = safeStats.averageSessionLength || safeStats.avgSessionLength || launchData?.averageSessionLength || 0;
 
   const completionStatus = safeGame.completed
@@ -92,6 +87,10 @@ export function buildGameShareData(game = {}, gameStats = {}) {
       : 'Backlog';
 
   const platform = safeGame.platform || safeGame.brandPlatform || (safeGame.launchSources?.[0]?.platform) || null;
+  const genre = Array.isArray(safeGame.genres) && safeGame.genres.length > 0
+    ? safeGame.genres[0]
+    : (safeGame.genre || null);
+  const mood = safeGame.mood || null;
 
   return {
     name: safeGame.name || 'Unknown Game',
@@ -106,7 +105,8 @@ export function buildGameShareData(game = {}, gameStats = {}) {
     lastPlayedSteam: safeGame.last_played || null,
     completionStatus,
     platform,
-    libraryShare,
+    genre,
+    mood,
   };
 }
 
@@ -116,8 +116,9 @@ export function buildGameShareCaption(data = {}) {
   const sessions = data.sessions || 0;
   const rating = data.rating || 0;
   const avgSession = data.avgSessionLength ? formatPlaytime(data.avgSessionLength) : null;
-  const libraryShare = data.libraryShare > 0 ? `${data.libraryShare}%` : null;
   const completion = data.completionStatus;
+  const genre = data.genre;
+  const mood = data.mood;
 
   const templates = [
     `I've put ${playtime} into ${name} and I'm still having a blast 🎮`,
@@ -133,8 +134,8 @@ export function buildGameShareCaption(data = {}) {
     templates.push(`My average ${name} session runs ${avgSession} — ${sessions} times and counting 🎯`);
   }
 
-  if (libraryShare && data.libraryShare >= 10) {
-    templates.push(`${name} is eating ${libraryShare} of my GamePilot playtime right now. Worth it 🎮`);
+  if (genre && mood) {
+    templates.push(`My ${mood} ${genre} pick right now: ${name}. ${playtime} well spent �`);
   }
 
   if (completion === 'Completed') {
@@ -158,7 +159,8 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
   const hasPlaytime = data.timePlayed > 0;
   const hasSessions = data.sessions > 0;
   const hasAvgSession = data.avgSessionLength > 0;
-  const hasLibraryShare = data.libraryShare > 0;
+  const hasGenre = !!data.genre;
+  const hasMood = !!data.mood;
   const hasPlatform = data.platform && data.platform !== 'Unknown';
   const lastPlayedGamePilot = formatDate(data.lastPlayedGamePilot);
   const firstPlayedGamePilot = formatDate(data.firstPlayedGamePilot);
@@ -210,6 +212,23 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
           </div>
         </div>
 
+        {(hasGenre || hasMood) && (
+          <div className="game-share-card-sub-badges">
+            {hasGenre && (
+              <span className="game-share-card-badge genre-badge">
+                <Tag size={14} />
+                {data.genre}
+              </span>
+            )}
+            {hasMood && (
+              <span className="game-share-card-badge mood-badge">
+                <Sparkles size={14} />
+                {data.mood}
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="game-share-card-strip">
           {hasPlaytime && (
             <div className="game-share-card-stat-pill">
@@ -244,15 +263,6 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
               <div>
                 <strong>{formatPlaytime(data.avgSessionLength)}</strong>
                 <span>avg session</span>
-              </div>
-            </div>
-          )}
-          {hasLibraryShare && (
-            <div className="game-share-card-stat-pill">
-              <BarChart3 size={20} />
-              <div>
-                <strong>{data.libraryShare}%</strong>
-                <span>of your library</span>
               </div>
             </div>
           )}

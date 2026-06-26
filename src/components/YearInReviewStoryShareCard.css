@@ -106,25 +106,35 @@
 }
 
 .yir-story-share-card-chapters {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .yir-story-share-card-chapter {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 18px 22px;
+  border-radius: 16px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow: hidden;
+}
+
+.yir-story-share-card-chapter.empty {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .yir-story-share-card-chapter-season {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   font-size: 13px;
   font-weight: 700;
   color: #ec4899;
@@ -132,19 +142,63 @@
   letter-spacing: 1px;
 }
 
+.yir-story-share-card-month-range {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.yir-story-share-card-chapter.empty .yir-story-share-card-chapter-season {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 .yir-story-share-card-chapter strong {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #ffffff;
-  line-height: 1.3;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.yir-story-share-card-chapter-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.yir-story-share-card-chapter-pivot {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #f59e0b;
+  margin: 0;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .yir-story-share-card-chapter-stats {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
   align-items: center;
-  font-size: 14px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.55);
+  margin-top: auto;
 }
 
 .yir-story-share-card-chapter-stats span {

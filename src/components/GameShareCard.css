@@ -178,6 +178,25 @@
   color: #86efac;
 }
 
+.game-share-card-badge.genre-badge {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+}
+
+.game-share-card-badge.mood-badge {
+  background: rgba(244, 114, 182, 0.14);
+  border-color: rgba(244, 114, 182, 0.35);
+  color: #fbcfe8;
+}
+
+.game-share-card-sub-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: -12px;
+}
+
 .game-share-card-strip {
   display: flex;
   flex-wrap: wrap;

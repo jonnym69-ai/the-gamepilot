@@ -34,13 +34,18 @@ export function YearInReviewStoryShareCard({ seasonalStory = {}, year, username 
         )}
 
         <div className="yir-story-share-card-chapters">
-          {chapters.filter((c) => c.hasData).slice(0, 4).map((chapter) => (
-            <div key={chapter.season} className="yir-story-share-card-chapter">
+          {chapters.slice(0, 4).map((chapter) => (
+            <div key={chapter.season} className={`yir-story-share-card-chapter${chapter.hasData ? '' : ' empty'}`}>
               <div className="yir-story-share-card-chapter-season">
                 <Calendar size={14} />
                 <span>{chapter.season}</span>
+                {chapter.monthRange && <span className="yir-story-share-card-month-range">{chapter.monthRange}</span>}
               </div>
               <strong>{chapter.headline}</strong>
+              {chapter.body && <p className="yir-story-share-card-chapter-body">{chapter.body}</p>}
+              {chapter.pivot && (
+                <p className="yir-story-share-card-chapter-pivot">{chapter.pivot.text}</p>
+              )}
               {chapter.stats && (
                 <div className="yir-story-share-card-chapter-stats">
                   <span><Clock size={12} /> {chapter.stats.playtimeHours}h</span>

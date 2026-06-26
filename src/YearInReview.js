@@ -9,6 +9,7 @@ import StorageService from './services/StorageService';
 import { LocalShareService } from './services/LocalShareService';
 import ProfileService from './services/ProfileService';
 import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
+import { YearInReviewStoryShareCard } from './components/YearInReviewStoryShareCard';
 import ShareMenu from './components/ShareMenu';
 import { formatPlaytime } from './utils/formatPlaytime';
 import './YearInReview.css';
@@ -135,6 +136,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
   const exportRef = useRef(null);
   const shareCardRef = useRef(null);
   const storySectionRef = useRef(null);
+  const storyShareCardRef = useRef(null);
   const noticeTimeoutRef = useRef(null);
   const [isCapturingStory, setIsCapturingStory] = useState(false);
   const availableYears = useMemo(() => YearInReviewService.getAvailableYears(library || []), [library]);
@@ -444,10 +446,10 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         return copied;
                       }}
                       onCopyImage={async () => {
-                        if (!storySectionRef.current) return false;
+                        if (!storyShareCardRef.current) return false;
                         setIsCapturingStory(true);
                         try {
-                          const canvas = await html2canvas(storySectionRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                          const canvas = await html2canvas(storyShareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
                           const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
                           if (!blob) { showStatus('Could not generate story card.'); return false; }
                           const copied = await LocalShareService.copyImageToClipboard(blob);
@@ -457,10 +459,10 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         finally { setIsCapturingStory(false); }
                       }}
                       onSaveImage={async () => {
-                        if (!storySectionRef.current) return;
+                        if (!storyShareCardRef.current) return;
                         setIsCapturingStory(true);
                         try {
-                          const canvas = await html2canvas(storySectionRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                          const canvas = await html2canvas(storyShareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
                           const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
                           if (!blob) { showStatus('Could not generate story card.'); return; }
                           const url = URL.createObjectURL(blob);
@@ -524,10 +526,10 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         return ProfileService.appendSocialLinksToShareText(text);
                       }}
                       onNativeShare={async () => {
-                        if (!storySectionRef.current) return;
+                        if (!storyShareCardRef.current) return;
                         setIsCapturingStory(true);
                         try {
-                          const canvas = await html2canvas(storySectionRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                          const canvas = await html2canvas(storyShareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
                           const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
                           if (!blob) { showStatus('Could not generate story card.'); return; }
                           const file = new File([blob], `gamepilot-story-${selectedYear}.png`, { type: 'image/png' });
@@ -865,6 +867,29 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
               username={pilotName}
               watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
             />
+          </div>
+        </div>
+
+        {/* Offscreen story share card — captured when sharing the seasonal story. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            opacity: 0,
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+        >
+          <div ref={storyShareCardRef}>
+            {snapshot?.seasonalStory && (
+              <YearInReviewStoryShareCard
+                seasonalStory={snapshot.seasonalStory}
+                year={selectedYear}
+                username={pilotName}
+              />
+            )}
           </div>
         </div>
 

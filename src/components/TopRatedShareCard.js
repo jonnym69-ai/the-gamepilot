@@ -12,16 +12,19 @@ const resolvePlaytime = (game) => {
   return Number.isFinite(value) ? value : 0;
 };
 
-export function buildTopRatedShareData(library = [], username = 'Pilot') {
+export function buildTopRatedShareData(library = [], username = 'Pilot', selectedGames = null) {
   const safeLibrary = Array.isArray(library) ? library : [];
-  const topRated = safeLibrary
+  const allTopRated = safeLibrary
     .filter((game) => typeof game?.userRating === 'number' && game.userRating >= 10)
     .sort((left, right) => {
       const ratingDiff = (right.userRating || 0) - (left.userRating || 0);
       if (ratingDiff !== 0) return ratingDiff;
       return resolvePlaytime(right) - resolvePlaytime(left);
-    })
-    .slice(0, 6);
+    });
+
+  const topRated = Array.isArray(selectedGames) && selectedGames.length > 0
+    ? selectedGames.slice(0, 6)
+    : allTopRated.slice(0, 6);
 
   const totalPlaytime = topRated.reduce((sum, game) => sum + resolvePlaytime(game), 0);
 
@@ -30,18 +33,36 @@ export function buildTopRatedShareData(library = [], username = 'Pilot') {
     gameCount: topRated.length,
     totalPlaytime,
     formattedTotalPlaytime: formatPlaytime(totalPlaytime),
-    topRated
+    topRated,
+    allTopRated
   };
 }
 
-export function TopRatedShareCard({ library = [], username = 'Pilot', showCover = true, watermark = 'gamepilot' }) {
-  const data = buildTopRatedShareData(library, username);
+export function TopRatedShareCard({ library = [], selectedGames = null, username = 'Pilot', showCover = true, watermark = 'gamepilot' }) {
+  const data = buildTopRatedShareData(library, username, selectedGames);
   const topGame = data.topRated?.[0];
   const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'hero' }) : null;
+  const coverGrid = showCover && data.topRated.length > 0
+    ? data.topRated.slice(0, 6).map((game) => resolveGameArtwork(game, { surface: 'hero' })).filter(Boolean)
+    : [];
+  const showCoverGrid = coverGrid.length > 1;
 
   return (
     <div className="top-rated-share-card" style={{ width: TOP_RATED_SHARE_CARD_SIZE_PX, height: TOP_RATED_SHARE_CARD_SIZE_PX }}>
-      {coverUrl && (
+      {showCoverGrid ? (
+        <>
+          <div className="top-rated-share-card-cover-grid" aria-hidden="true">
+            {coverGrid.map((url, index) => (
+              <div
+                key={index}
+                className="top-rated-share-card-cover-cell"
+                style={{ backgroundImage: `url(${url})` }}
+              />
+            ))}
+          </div>
+          <div className="top-rated-share-card-cover-overlay" aria-hidden="true" />
+        </>
+      ) : coverUrl ? (
         <>
           <div
             className="top-rated-share-card-cover"
@@ -50,7 +71,7 @@ export function TopRatedShareCard({ library = [], username = 'Pilot', showCover 
           />
           <div className="top-rated-share-card-cover-overlay" aria-hidden="true" />
         </>
-      )}
+      ) : null}
       <div className="top-rated-share-card-glow" aria-hidden="true" />
       <Gamepad2 className="top-rated-watermark" size={320} aria-hidden="true" />
 

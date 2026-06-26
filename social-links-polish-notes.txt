@@ -22,6 +22,12 @@ Completed today:
 - Fixed doodle spacing: left content now sizes to its content, right meta fills remaining space, logo/wordmark gap increased
 - Fixed ShareCaptionDialog click-through issue: rendered via portal to document.body, z-index bumped to 200000
 - Added "The Story of Your Year" arc to YearInReviewShareCard image and share text
+- Added average session length, completion status, platform badge, genre, and mood to GameShareCard
+- Removed confusing library share % from GameShareCard (only counted local sessions)
+- Added clear section labels to each HabitsShareCard stat block (Longest Session, Most Active Day, etc.)
+- Fixed Year in Review story share image cutting out seasons: now uses dedicated YearInReviewStoryShareCard with 2x2 grid layout and all chapters
+- Added cover art grid background to TopRatedShareCard (3x2 grid of the top 6 perfect 10 games)
+- Added "Edit Picks" selector to Library so users can choose which 10/10 games appear on the share card (max 6)
 
 Needs polish / testing:
 1. GameShareCard layout

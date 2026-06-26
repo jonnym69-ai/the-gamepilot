@@ -29,6 +29,25 @@
   filter: saturate(0.6) brightness(0.7);
 }
 
+.top-rated-share-card-cover-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  z-index: 0;
+  gap: 4px;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.top-rated-share-card-cover-cell {
+  background-size: cover;
+  background-position: center;
+  filter: saturate(0.7) brightness(0.55);
+  opacity: 0.9;
+}
+
 .top-rated-share-card-cover-overlay {
   position: absolute;
   inset: 0;

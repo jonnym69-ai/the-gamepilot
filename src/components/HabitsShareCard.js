@@ -30,15 +30,21 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
         <div className="habits-share-card-grid">
           {h.longestSession && (
             <div className="habits-share-card-stat featured">
-              <Clock size={22} />
+              <div className="habits-share-card-stat-label">
+                <Clock size={18} />
+                Longest Session
+              </div>
               <strong>{h.longestSession.gameName}</strong>
-              <span>{h.longestSession.playtimeMinutes} min · Longest Session</span>
+              <span>{h.longestSession.playtimeMinutes} min</span>
             </div>
           )}
 
           {h.busiestDay && (
             <div className="habits-share-card-stat">
-              <Calendar size={20} />
+              <div className="habits-share-card-stat-label">
+                <Calendar size={18} />
+                Most Active Day
+              </div>
               <strong>{h.busiestDay.dateLabel}</strong>
               <span>{h.busiestDay.playtimeMinutes} min · {h.busiestDay.sessions} sessions</span>
             </div>
@@ -46,28 +52,40 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
 
           {h.mostReturnedTo && (
             <div className="habits-share-card-stat">
-              <RotateCcw size={20} />
+              <div className="habits-share-card-stat-label">
+                <RotateCcw size={18} />
+                Most Returned To
+              </div>
               <strong>{h.mostReturnedTo.name}</strong>
               <span>{h.mostReturnedTo.sessions} sessions · {h.mostReturnedTo.totalPlaytime} min</span>
             </div>
           )}
 
           <div className="habits-share-card-stat">
-            <Moon size={20} />
+            <div className="habits-share-card-stat-label">
+              <Moon size={18} />
+              Late-night Runs
+            </div>
             <strong>{h.lateNightSessions || 0}</strong>
-            <span>Late-night runs</span>
+            <span>sessions after dark</span>
           </div>
 
           <div className="habits-share-card-stat">
-            <Sunrise size={20} />
+            <div className="habits-share-card-stat-label">
+              <Sunrise size={18} />
+              Weekend Sessions
+            </div>
             <strong>{h.weekendSessions || 0}</strong>
-            <span>Weekend sessions</span>
+            <span>sessions on weekends</span>
           </div>
 
           <div className="habits-share-card-stat">
-            <RotateCcw size={20} />
+            <div className="habits-share-card-stat-label">
+              <RotateCcw size={18} />
+              Repeat Games
+            </div>
             <strong>{h.repeatGames || 0}</strong>
-            <span>Repeat games</span>
+            <span>games replayed</span>
           </div>
         </div>
       </div>

@@ -437,9 +437,9 @@ export class LocalShareService {
     return lines.join('\n');
   }
 
-  static buildTopRatedShareText(library = [], username = 'Gamer') {
+  static buildTopRatedShareText(library = [], username = 'Gamer', selectedGames = null) {
     const safeLibrary = Array.isArray(library) ? library : [];
-    const topRated = safeLibrary
+    const allTopRated = safeLibrary
       .filter((game) => typeof game?.userRating === 'number' && game.userRating >= 10)
       .sort((left, right) => {
         const ratingDiff = (right.userRating || 0) - (left.userRating || 0);
@@ -447,8 +447,11 @@ export class LocalShareService {
         const aTime = Number(left?.time_played ?? left?.playtime ?? left?.totalPlaytime ?? 0);
         const bTime = Number(right?.time_played ?? right?.playtime ?? right?.totalPlaytime ?? 0);
         return bTime - aTime;
-      })
-      .slice(0, 6);
+      });
+
+    const topRated = Array.isArray(selectedGames) && selectedGames.length > 0
+      ? selectedGames.slice(0, 6)
+      : allTopRated.slice(0, 6);
 
     const totalMinutes = topRated.reduce((sum, game) => {
       const value = Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0);
@@ -478,8 +481,8 @@ export class LocalShareService {
     return lines.join('\n');
   }
 
-  static buildTopRatedShareCardPackage(library = [], username = 'Gamer') {
-    const text = LocalShareService.buildTopRatedShareText(library, username);
+  static buildTopRatedShareCardPackage(library = [], username = 'Gamer', selectedGames = null) {
+    const text = LocalShareService.buildTopRatedShareText(library, username, selectedGames);
     const filename = `gamepilot-top-rated-${new Date().toISOString().split('T')[0]}.png`;
     const title = `${username}'s Perfect 10/10 Picks`;
     return { text, filename, title };

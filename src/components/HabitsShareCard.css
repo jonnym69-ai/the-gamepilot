@@ -119,15 +119,30 @@
 .habits-share-card-stat svg {
   color: #3b82f6;
   opacity: 0.9;
-  margin-bottom: 4px;
 }
 
 .habits-share-card-stat.featured svg {
   color: #ff6b35;
 }
 
+.habits-share-card-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 4px;
+}
+
+.habits-share-card-stat.featured .habits-share-card-stat-label {
+  color: #ff6b35;
+}
+
 .habits-share-card-stat strong {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   color: #ffffff;
   line-height: 1.2;
