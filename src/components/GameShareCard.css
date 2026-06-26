@@ -1,0 +1,319 @@
+.game-share-card {
+  --recap-bg: linear-gradient(135deg, #0d1224 0%, #111827 50%, #0d1224 100%);
+  --recap-accent: #ff6b35;
+  --recap-glow: rgba(255, 107, 53, 0.22);
+  --recap-text: #f8fafc;
+  --recap-muted: #94a3b8;
+  --recap-surface: rgba(255, 255, 255, 0.06);
+  --recap-surface-border: rgba(255, 255, 255, 0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1080px;
+  height: 1080px;
+  padding: 56px 64px 64px;
+  box-sizing: border-box;
+  background: var(--recap-bg);
+  color: var(--recap-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+}
+
+.game-share-card-cover-frame {
+  position: relative;
+  width: 800px;
+  height: 480px;
+  border-radius: 20px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  z-index: 1;
+  flex-shrink: 0;
+  margin-top: 20px;
+  margin-bottom: 24px;
+}
+
+.game-share-card-glow {
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--recap-glow) 0%, rgba(255, 107, 53, 0) 70%);
+  pointer-events: none;
+}
+
+.game-share-watermark {
+  position: absolute;
+  bottom: -48px;
+  right: -48px;
+  color: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 0;
+}
+
+.game-share-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1;
+}
+
+.game-share-card-brand {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--recap-accent);
+  text-transform: uppercase;
+}
+
+.game-share-card-tag {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--recap-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.game-share-card-top {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 1;
+  padding: 8px 0 0;
+}
+
+.game-share-card-eyebrow {
+  font-size: 20px;
+  color: var(--recap-muted);
+  font-weight: 500;
+}
+
+.game-share-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.game-share-rating .filled {
+  color: #fbbf24;
+  fill: #fbbf24;
+}
+
+.game-share-rating .empty {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.game-share-rating span {
+  margin-left: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--recap-text);
+}
+
+.game-share-card-title {
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--recap-text);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0;
+  max-width: 760px;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+}
+
+.game-share-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.game-share-card-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 8px;
+}
+
+.game-share-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--recap-text);
+  white-space: nowrap;
+}
+
+.game-share-card-badge svg {
+  flex-shrink: 0;
+}
+
+.game-share-card-badge.platform-badge {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #c4b5fd;
+}
+
+.game-share-card-badge.completed-badge {
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #86efac;
+}
+
+.game-share-card-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.game-share-card-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 14px 18px;
+  color: var(--recap-accent);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.game-share-card-stat-pill svg {
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(255, 107, 53, 0.45));
+}
+
+.game-share-card-stat-pill div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.game-share-card-stat-pill strong {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.game-share-card-stat-pill span {
+  font-size: 12px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+}
+
+.game-share-card-empty {
+  font-size: 20px;
+  color: var(--recap-muted);
+  text-align: center;
+  padding: 32px;
+  background: var(--recap-surface);
+  border: 1px solid var(--recap-surface-border);
+  border-radius: 16px;
+}
+
+.game-share-card-stat-pill.date-pill {
+  background: rgba(255, 107, 53, 0.12);
+  border-color: rgba(255, 107, 53, 0.25);
+}
+
+.game-share-card-stat-pill.date-pill strong {
+  color: var(--recap-accent);
+  font-size: 22px;
+}
+
+.game-share-card-stat-pill.date-pill span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.game-share-card-footer {
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  padding-top: 0;
+  margin-top: auto;
+}
+
+.game-share-card-socials {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 64px;
+  z-index: 3;
+  pointer-events: none;
+  margin-bottom: 16px;
+}
+
+.game-share-card-social-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 11px;
+  border-radius: 999px;
+  background-color: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  max-width: 340px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 1.3;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.game-share-card-social-pill .social-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--platform-color, #888888);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+  box-shadow: 0 0 8px var(--platform-color, #888888);
+}
+
+.game-share-card-social-pill .social-label {
+  font-size: 14px;
+  color: var(--platform-color, #ffffff);
+  flex-shrink: 0;
+}
+
+.game-share-card-social-pill .social-handle {
+  font-size: 13px;
+  opacity: 0.9;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+}

@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon, Sparkles, Award } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon, Sparkles, Award, Share2, Dna } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
-import { AchievementTracker } from './AchievementSystem';
+import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
 import StorageService from './services/StorageService';
+import ProfileService, { SOCIAL_PLATFORMS } from './services/ProfileService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
+import CalendarXPService from './services/CalendarXPService';
 import NavBar from './NavBar';
 import { GamingIdentity } from './GamingIdentity';
 import { DataManager } from './DataManager';
@@ -20,8 +23,11 @@ import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
 import PersonaEvolutionCard from './components/PersonaEvolutionCard';
+import { IdentityShareCard, IDENTITY_SHARE_CARD_SIZE_PX } from './components/IdentityShareCard';
 import { YearInReviewService } from './services/YearInReviewService';
+import { LocalShareService } from './services/LocalShareService';
 import CollectionsPanel from './components/CollectionsPanel';
+import ShareMenu from './components/ShareMenu';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { GENRES, MOODS } from './constants/GenresMoods';
 
@@ -101,7 +107,13 @@ const Profile = ({ theme, library = [] }) => {
     [library]
   );
   const [tempMessage, setTempMessage] = useState('Ready to find your perfect play?');
+  const [tempBirthdayMonth, setTempBirthdayMonth] = useState('');
+  const [tempBirthdayDay, setTempBirthdayDay] = useState('');
+  const [socialLinks, setSocialLinks] = useState([]);
+  const [tempSocialLinks, setTempSocialLinks] = useState([]);
   const [gamingIdentity, setGamingIdentity] = useState(null);
+  const identityShareCardRef = useRef(null);
+  const [isCapturingIdentity, setIsCapturingIdentity] = useState(false);
   const [xpStats, setXpStats] = useState(null);
   const [xpBoost, setXpBoost] = useState(null);
   const [completedGames, setCompletedGames] = useState([]);
@@ -124,6 +136,7 @@ const Profile = ({ theme, library = [] }) => {
   const [sessionStats, setSessionStats] = useState(null);
   const [rewardCatalog, setRewardCatalog] = useState(() => ProgressionUnlockService.getProfileRewardCatalog());
   const [rewardSummary, setRewardSummary] = useState(() => ProgressionUnlockService.getRewardCatalogSummary());
+  const [recapCustomization] = useState(() => ProgressionUnlockService.getRecapCustomization());
   const [selectedSection, setSelectedSection] = useState(0);
 
   const refreshRewardCatalog = useCallback(() => {
@@ -192,6 +205,114 @@ const Profile = ({ theme, library = [] }) => {
       }
     }
   };
+
+  const handleShareLibraryRecap = useCallback(async () => {
+    const text = LocalShareService.buildLibraryShareText(library, username);
+    const copied = await LocalShareService.copyTextToClipboard(text);
+    if (copied) {
+      success('Library recap copied to clipboard. Paste it anywhere to flex.');
+    } else {
+      error('Could not copy library recap.');
+    }
+  }, [library, username, success, error]);
+
+  const generateIdentityShareCardBlob = useCallback(async () => {
+    if (!identityShareCardRef.current) return null;
+    setIsCapturingIdentity(true);
+    try {
+      const canvas = await html2canvas(identityShareCardRef.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true,
+        logging: false
+      });
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    } catch (err) {
+      console.error('Failed to generate identity share card:', err);
+      return null;
+    } finally {
+      setIsCapturingIdentity(false);
+    }
+  }, []);
+
+  const handleCopyIdentityShareText = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
+    const copied = await LocalShareService.copyTextToClipboard(shareText);
+    if (copied) {
+      success('Identity share text copied to clipboard.');
+    } else {
+      error('Could not copy identity text.');
+    }
+    return copied;
+  }, [gamingIdentity, username, success, error]);
+
+  const handleDownloadIdentityShareCard = useCallback(async () => {
+    const blob = await generateIdentityShareCardBlob();
+    if (!blob) {
+      error('Could not generate identity share card.');
+      return;
+    }
+    const { filename } = LocalShareService.buildIdentityShareCardPackage(gamingIdentity, username);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    success('Identity share card saved.');
+  }, [generateIdentityShareCardBlob, gamingIdentity, username, success, error]);
+
+  const handleCopyIdentityShareCard = useCallback(async () => {
+    const blob = await generateIdentityShareCardBlob();
+    if (!blob) {
+      error('Could not generate identity share card.');
+      return false;
+    }
+    const copied = await LocalShareService.copyImageToClipboard(blob);
+    success(copied ? 'Identity card copied to clipboard.' : 'Could not copy identity card.');
+    return copied;
+  }, [generateIdentityShareCardBlob, success, error]);
+
+  const handleShareIdentityToChannel = useCallback(async (channel, text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
+    const result = await LocalShareService.openShareIntent(channel, shareText);
+    success(result.success ? `Opened ${result.label}.` : result.message || 'Could not open share.');
+  }, [gamingIdentity, username, success]);
+
+  const handleShareIdentityToDiscord = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
+    const blob = await generateIdentityShareCardBlob();
+    const { filename } = LocalShareService.buildIdentityShareCardPackage(gamingIdentity, username);
+    const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
+    success(result.success ? 'Discord opened with identity card.' : result.message || 'Could not share to Discord.');
+  }, [generateIdentityShareCardBlob, gamingIdentity, username, success]);
+
+  const handleShareIdentityToMessenger = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
+    const blob = await generateIdentityShareCardBlob();
+    const { filename } = LocalShareService.buildIdentityShareCardPackage(gamingIdentity, username);
+    const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
+    success(result.success ? 'Messenger opened with identity card.' : result.message || 'Could not share to Messenger.');
+  }, [generateIdentityShareCardBlob, gamingIdentity, username, success]);
+
+  const handleNativeShareIdentityCard = useCallback(async (text = null) => {
+    const blob = await generateIdentityShareCardBlob();
+    if (!blob) {
+      error('Could not generate identity share card.');
+      return;
+    }
+    const { title, filename } = LocalShareService.buildIdentityShareCardPackage(gamingIdentity, username);
+    const file = new File([blob], filename, { type: 'image/png' });
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
+    const result = await LocalShareService.shareWithNativeShare({
+      title,
+      text: shareText,
+      files: [file]
+    });
+    success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+  }, [generateIdentityShareCardBlob, gamingIdentity, username, success, error]);
 
   // Offline sync functions
   const handleManualSync = async () => {
@@ -503,6 +624,38 @@ const Profile = ({ theme, library = [] }) => {
 
   const emptyShowcaseSlots = Math.max(0, unlockedShowcaseSlotCount - showcasedAchievements.length);
 
+  const achievementSummary = useMemo(() => {
+    const total = Object.values(ACHIEVEMENTS).reduce((sum, category) => sum + (category?.length || 0), 0);
+    const unlocked = AchievementTracker.getUnlockedAchievements() || [];
+    const pointsMap = AchievementTracker.getAchievementPoints();
+    const unlockedPoints = unlocked.reduce((sum, id) => sum + (pointsMap[id] || 0), 0);
+    return {
+      total,
+      unlocked: unlocked.length,
+      percent: total > 0 ? Math.round((unlocked.length / total) * 100) : 0,
+      points: unlockedPoints
+    };
+  }, []);
+
+  const recentUnlocks = useMemo(() => {
+    const pointsMap = AchievementTracker.getAchievementPoints();
+    return AchievementTracker.getRecentlyUnlocked()
+      .slice(0, 5)
+      .map((entry) => {
+        const achievement = AchievementTracker.getAchievementById(entry.id);
+        return achievement
+          ? {
+              ...entry,
+              name: achievement.name,
+              icon: achievement.icon,
+              rarity: achievement.rarity,
+              points: pointsMap[entry.id] || 0
+            }
+          : null;
+      })
+      .filter(Boolean);
+  }, []);
+
   const handleToggleShowcaseAchievement = useCallback((achievementId) => {
     const selectedIds = rewardCatalog?.customization?.showcasedAchievements || [];
     const achievement = AchievementTracker.getAchievementById(achievementId);
@@ -579,6 +732,9 @@ const Profile = ({ theme, library = [] }) => {
     setTimeFormat(savedTimeFormat);
     setTempUsername(savedUsername);
     setTempMessage(savedMessage);
+    const savedSocialLinks = ProfileService.getSocialLinks();
+    setSocialLinks(savedSocialLinks);
+    setTempSocialLinks(savedSocialLinks);
 
     let userFounders = [];
     try {
@@ -693,9 +849,21 @@ const Profile = ({ theme, library = [] }) => {
     if (tempUsername.trim()) {
       setUsername(tempUsername.trim());
       setWelcomeMessage(tempMessage);
+      setSocialLinks(tempSocialLinks);
       StorageService.setString('profileUsername', tempUsername.trim());
       StorageService.setString('profilePic', profilePic);
       StorageService.setString('welcomeMessage', tempMessage);
+      ProfileService.setSocialLinks(tempSocialLinks);
+
+      // Persist birthday for annual XP bonus / seasonal events
+      if (tempBirthdayMonth && tempBirthdayDay) {
+        const month = parseInt(tempBirthdayMonth, 10) - 1; // 0-indexed
+        const day = parseInt(tempBirthdayDay, 10);
+        if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+          CalendarXPService.setBirthday(month, day);
+        }
+      }
+
       dispatchProfileUpdatedEvent({
         username: tempUsername.trim(),
         profilePic,
@@ -708,15 +876,30 @@ const Profile = ({ theme, library = [] }) => {
     }
   };
 
+  const loadBirthdayDraft = () => {
+    const birthday = CalendarXPService.getBirthday();
+    if (birthday && Number.isInteger(birthday.month) && Number.isInteger(birthday.day)) {
+      setTempBirthdayMonth(String(birthday.month + 1));
+      setTempBirthdayDay(String(birthday.day));
+    } else {
+      setTempBirthdayMonth('');
+      setTempBirthdayDay('');
+    }
+  };
+
   const handleCancel = () => {
     setTempUsername(username);
     setTempMessage(welcomeMessage);
+    setTempSocialLinks(socialLinks);
+    loadBirthdayDraft();
     setIsEditing(false);
   };
 
   const handleEdit = () => {
     setTempUsername(username);
     setTempMessage(welcomeMessage);
+    setTempSocialLinks(socialLinks);
+    loadBirthdayDraft();
     setIsEditing(true);
   };
 
@@ -876,6 +1059,10 @@ const Profile = ({ theme, library = [] }) => {
                 )}
                 <span>{selectedProfileFrame?.name || 'Starter Halo'}</span>
                 <span>{unlockedShowcaseSlotCount} showcase slot{unlockedShowcaseSlotCount === 1 ? '' : 's'}</span>
+                <span className="profile-achievement-badge">
+                  <Trophy size={14} />
+                  {achievementSummary.unlocked} / {achievementSummary.total} badges
+                </span>
               </div>
             </div>
             {isEditing ? (
@@ -905,6 +1092,116 @@ const Profile = ({ theme, library = [] }) => {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Birthday (annual XP bonus)</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <select
+                      value={tempBirthdayMonth}
+                      onChange={(e) => setTempBirthdayMonth(e.target.value)}
+                      className="profile-select"
+                      style={{ flex: 2 }}
+                    >
+                      <option value="">Month</option>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i} value={i + 1}>
+                          {new Date(2024, i, 1).toLocaleDateString('en-US', { month: 'long' })}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={tempBirthdayDay}
+                      onChange={(e) => setTempBirthdayDay(e.target.value)}
+                      className="profile-select"
+                      style={{ flex: 1 }}
+                    >
+                      <option value="">Day</option>
+                      {Array.from({ length: 31 }, (_, i) => (
+                        <option key={i} value={i + 1}>{i + 1}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Social Links</label>
+                  <div className="social-links-editor">
+                    {tempSocialLinks.length === 0 && (
+                      <p style={{ margin: '0 0 10px', fontSize: 12, opacity: 0.7 }}>
+                        Add your social links to include them on share cards and captions.
+                      </p>
+                    )}
+                    {tempSocialLinks.map((link, index) => (
+                      <div key={link.id} className="social-link-row" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                        <select
+                          value={link.platform}
+                          onChange={(e) => {
+                            const next = [...tempSocialLinks];
+                            next[index] = { ...next[index], platform: e.target.value };
+                            setTempSocialLinks(next);
+                          }}
+                          className="profile-select"
+                          style={{ flex: 1 }}
+                        >
+                          {SOCIAL_PLATFORMS.map((p) => (
+                            <option key={p.key} value={p.key}>{p.icon} {p.label}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => {
+                            const next = [...tempSocialLinks];
+                            next[index] = { ...next[index], url: e.target.value };
+                            setTempSocialLinks(next);
+                          }}
+                          placeholder="https://..."
+                          className="profile-input"
+                          style={{ flex: 2 }}
+                        />
+                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 4 }} title="Include by default">
+                          <input
+                            type="checkbox"
+                            checked={link.enabled}
+                            onChange={(e) => {
+                              const next = [...tempSocialLinks];
+                              next[index] = { ...next[index], enabled: e.target.checked };
+                              setTempSocialLinks(next);
+                            }}
+                          />
+                          <span style={{ fontSize: 12 }}>Share</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTempSocialLinks(tempSocialLinks.filter((_, i) => i !== index));
+                          }}
+                          className="cancel-button"
+                          style={{ padding: '6px 10px' }}
+                          title="Remove"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempSocialLinks([
+                          ...tempSocialLinks,
+                          { id: `social-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, platform: 'youtube', url: '', enabled: true }
+                        ]);
+                      }}
+                      className="edit-button"
+                      style={{ marginTop: 4 }}
+                    >
+                      + Add social link
+                    </button>
+                  </div>
+                  <p style={{ margin: '6px 0 0', fontSize: 12, opacity: 0.7 }}>
+                    Manual only. GamePilot will never auto-post on your behalf.
+                  </p>
                 </div>
 
                 <div className="edit-actions">
@@ -947,6 +1244,39 @@ const Profile = ({ theme, library = [] }) => {
                   <span>Frame: {selectedProfileFrame?.name || 'Starter Halo'}</span>
                   <span>Banner: {selectedProfileBanner?.name || 'Pilot Sunset'}</span>
                 </div>
+                {socialLinks.length > 0 && (
+                  <div className="profile-social-links" style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {socialLinks.map((link) => {
+                      const platform = SOCIAL_PLATFORMS.find((p) => p.key === link.platform) || SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
+                      return (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="profile-social-chip"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 13,
+                            padding: '4px 10px',
+                            borderRadius: 999,
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            color: 'inherit',
+                            textDecoration: 'none',
+                            opacity: link.enabled ? 1 : 0.6
+                          }}
+                          title={link.enabled ? 'Included in shares' : 'Not included in shares'}
+                        >
+                          <span>{platform.icon}</span>
+                          <span>{platform.label}</span>
+                          {!link.enabled && <span style={{ fontSize: 10, marginLeft: 2 }}>(hidden)</span>}
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
                 {(showcasedAchievements.length > 0 || emptyShowcaseSlots > 0) && (
                   <div className="profile-showcase-strip">
                     {showcasedAchievements.map((achievement) => (
@@ -1023,7 +1353,33 @@ const Profile = ({ theme, library = [] }) => {
             className={getSectionClass(1)}
           >
             <div className="gaming-identity-card">
-              <h3>Gaming Identity</h3>
+              <div className="gaming-identity-card-header">
+                <h3>Gaming Identity</h3>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="gaming-dna-link"
+                    onClick={() => navigate('/gaming-dna')}
+                  >
+                    <Dna size={14} />
+                    View Full DNA
+                  </button>
+                  <ShareMenu
+                    imageAvailable={Boolean(gamingIdentity)}
+                    onCopyText={handleCopyIdentityShareText}
+                    onCopyImage={handleCopyIdentityShareCard}
+                    onSaveImage={handleDownloadIdentityShareCard}
+                    onShareText={handleShareIdentityToChannel}
+                    onShareToDiscord={handleShareIdentityToDiscord}
+                    onShareToMessenger={handleShareIdentityToMessenger}
+                    onDownloadText={handleCopyIdentityShareText}
+                    onNativeShare={handleNativeShareIdentityCard}
+                    buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username))}
+                    disabled={isCapturingIdentity}
+                    triggerLabel="Share Identity"
+                  />
+                </div>
+              </div>
               <div className="identity-header">
                 <div className="level-badge">
                   <div className="level-number">{xpStats ? xpStats.level : gamingIdentity.level}</div>
@@ -1177,6 +1533,132 @@ const Profile = ({ theme, library = [] }) => {
             </div>
           </CollapsibleSection>
         )}
+
+        {/* Achievements Section */}
+        <CollapsibleSection
+          title="Achievements"
+          subtitle="Your badges and unlock progress."
+          badge={`${achievementSummary.unlocked} / ${achievementSummary.total}`}
+          icon={<Trophy size={18} />}
+          className={getSectionClass(1)}
+          defaultOpen={false}
+        >
+          <div className="profile-achievements-card">
+            <div className="profile-achievement-summary">
+              <div className="profile-achievement-summary-stat">
+                <Trophy size={24} />
+                <div>
+                  <div className="profile-achievement-summary-number">{achievementSummary.unlocked}</div>
+                  <div className="profile-achievement-summary-label">Unlocked</div>
+                </div>
+              </div>
+              <div className="profile-achievement-summary-stat">
+                <Star size={24} />
+                <div>
+                  <div className="profile-achievement-summary-number">{achievementSummary.points.toLocaleString()}</div>
+                  <div className="profile-achievement-summary-label">Achievement XP</div>
+                </div>
+              </div>
+              <div className="profile-achievement-summary-stat">
+                <Award size={24} />
+                <div>
+                  <div className="profile-achievement-summary-number">{achievementSummary.percent}%</div>
+                  <div className="profile-achievement-summary-label">Complete</div>
+                </div>
+              </div>
+            </div>
+            <div className="profile-achievement-progress-wrap">
+              <div className="profile-achievement-progress-bar">
+                <div
+                  className="profile-achievement-progress-fill"
+                  style={{ width: `${achievementSummary.percent}%` }}
+                />
+              </div>
+              <span className="profile-achievement-progress-text">
+                {achievementSummary.unlocked} of {achievementSummary.total} badges
+              </span>
+            </div>
+
+            {recentUnlocks.length > 0 && (
+              <div className="profile-achievement-recent">
+                <h4>Recently Unlocked</h4>
+                <div className="profile-achievement-recent-list">
+                  {recentUnlocks.map((achievement) => (
+                    <div key={achievement.id} className={`profile-achievement-recent-item rarity-${achievement.rarity?.toLowerCase()}`}>
+                      <span className="profile-achievement-recent-icon">{achievement.icon || '🏆'}</span>
+                      <div className="profile-achievement-recent-info">
+                        <div className="profile-achievement-recent-name">{achievement.name}</div>
+                        <div className="profile-achievement-recent-meta">{achievement.rarity} • +{achievement.points} XP</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="profile-achievement-showcase">
+              <div className="profile-achievement-showcase-header">
+                <h4>Showcase</h4>
+                <span className="profile-achievement-showcase-count">
+                  {showcasedAchievements.length}/{unlockedShowcaseSlotCount} slots
+                </span>
+              </div>
+              {unlockedShowcaseSlotCount === 0 ? (
+                <p className="profile-achievement-muted">
+                  Earn XP to unlock showcase slots and pin your favourite badges here.
+                </p>
+              ) : (
+                <>
+                  <div className="profile-achievement-showcase-slots">
+                    {Array.from({ length: unlockedShowcaseSlotCount }).map((_, index) => {
+                      const achievement = showcasedAchievements[index];
+                      return (
+                        <div
+                          key={`profile-slot-${index}`}
+                          className={`profile-achievement-showcase-slot${achievement ? '' : ' empty'}`}
+                        >
+                          {achievement ? (
+                            <>
+                              <span className="profile-achievement-showcase-icon">🏆</span>
+                              <span className="profile-achievement-showcase-name">{achievement.name}</span>
+                            </>
+                          ) : (
+                            <span className="profile-achievement-showcase-empty">Empty slot</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {availableShowcaseAchievements.length > 0 && (
+                    <div className="profile-achievement-showcase-selector">
+                      {availableShowcaseAchievements.map((achievement) => {
+                        const selectionLimitReached = showcasedAchievements.length >= unlockedShowcaseSlotCount && !achievement.isSelected;
+                        return (
+                          <button
+                            key={achievement.id}
+                            type="button"
+                            className={`profile-achievement-showcase-chip${achievement.isSelected ? ' selected' : ''}`}
+                            onClick={() => handleToggleShowcaseAchievement(achievement.id)}
+                            disabled={selectionLimitReached}
+                          >
+                            <span className="profile-achievement-showcase-chip-name">{achievement.name}</span>
+                            <span className="profile-achievement-showcase-chip-meta">+{achievement.points} XP</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="profile-achievement-actions">
+              <button className="profile-achievement-button" onClick={() => navigate('/achievements')}>
+                <Award size={16} /> View All Achievements
+              </button>
+            </div>
+          </div>
+        </CollapsibleSection>
 
         {/* Persona Evolution Section */}
         <CollapsibleSection
@@ -2189,6 +2671,15 @@ const Profile = ({ theme, library = [] }) => {
             </div>
 
             <div className="data-action-card">
+              <h4>Share</h4>
+              <div className="data-buttons">
+                <button onClick={handleShareLibraryRecap} className="data-btn export">
+                  <Share2 size={16} /> Share Library Recap
+                </button>
+              </div>
+            </div>
+
+            <div className="data-action-card">
               <h4>Reset</h4>
               <div className="data-buttons">
                 {false && (
@@ -2204,6 +2695,30 @@ const Profile = ({ theme, library = [] }) => {
           </div>
           </div>
         </CollapsibleSection>
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: -10000,
+            left: -10000,
+            width: IDENTITY_SHARE_CARD_SIZE_PX,
+            height: IDENTITY_SHARE_CARD_SIZE_PX,
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+        >
+          <div ref={identityShareCardRef}>
+            {gamingIdentity && (
+              <IdentityShareCard
+                profile={gamingIdentity}
+                evolution={personaEvolution}
+                library={library}
+                watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -1,24 +1,33 @@
 import React, { useState, useMemo, useContext, useEffect, useCallback, useRef } from 'react';
-import { Search, Download, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { Search, Download, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
 import GameModal from './components/GameModal';
 import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
 import LibraryAnalyticsPanel from './components/LibraryAnalyticsPanel';
+import LibraryValueModal from './components/LibraryValueModal';
+import LibraryShareCard, { LIBRARY_SHARE_CARD_SIZE_PX } from './components/LibraryShareCard';
+import TopRatedShareCard, { TOP_RATED_SHARE_CARD_SIZE_PX } from './components/TopRatedShareCard';
+import RecapCustomizeModal from './components/RecapCustomizeModal';
+import ShareMenu from './components/ShareMenu';
 import EmptyLibraryState from './components/EmptyLibraryState';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
 import HLTBChip from './components/HLTBChip';
 import PatchNewsBadge from './components/PatchNewsBadge';
 import DiskSizeChip from './components/DiskSizeChip';
+import { LocalShareService } from './services/LocalShareService';
+import { ProfileService } from './services/ProfileService';
+import StorageService from './services/StorageService';
 import InterfacePreferencesService from './services/InterfacePreferencesService';
 import SteamNewsService from './services/SteamNewsService';
 import DiskUsageService from './services/DiskUsageService';
 import { useToast } from './components/Toast';
+import { DataExportService } from './services/DataExportService';
 import HowLongToBeatService, { hltbGameKey } from './services/HowLongToBeatService';
 import { MOODS, getMoodForGame } from './constants/GenresMoods';
-import StorageService from './services/StorageService';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
@@ -30,6 +39,7 @@ import EmulatorLibraryService from './services/EmulatorLibraryService';
 import { mergeLibraryUpdates } from './services/LibraryDataService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { formatPrice } from './CurrencyConverter';
+import { formatPlaytime } from './utils/formatPlaytime';
 import useInterfacePreferences from './hooks/useInterfacePreferences';
 import './Library.css';
 
@@ -86,21 +96,9 @@ const getGameValue = (game) => {
   return 0;
 };
 
-// Format time played function
 const formatTimePlayed = (minutes) => {
   if (!minutes || minutes === 0) return 'Never played';
-  
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const remainingHours = hours % 24;
-  
-  if (days > 0) {
-    return `${days}d ${remainingHours}h`;
-  } else if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`;
-  } else {
-    return `${minutes}m`;
-  }
+  return formatPlaytime(minutes);
 };
 
 const getLastPlayedSortValue = (lastPlayedValue) => {
@@ -233,7 +231,7 @@ function Library({
 }) {
   const navigate = useNavigate();
   const { currentTheme } = useContext(ThemeContext);
-  const { success } = useToast();
+  const { success, error: toastError } = useToast();
   const scanLibraryHandler = onScanLibrary || onScan || scanLocalLibrary;
   const [viewMode, setViewMode] = useState('grid');
   const [selectedGame, setSelectedGame] = useState(null);
@@ -249,6 +247,14 @@ function Library({
   });
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
+  const [isLibraryValueModalOpen, setIsLibraryValueModalOpen] = useState(false);
+  const [isRecapCustomizeOpen, setIsRecapCustomizeOpen] = useState(false);
+  const [sharePeriod, setSharePeriod] = useState('all');
+  const [recapCustomization, setRecapCustomization] = useState(
+    () => ProgressionUnlockService.getRecapCustomization?.() || { palette: null, visibleStats: {} }
+  );
+  const libraryShareCardRef = useRef(null);
+  const topRatedShareCardRef = useRef(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [itemsPerPage] = useState(50);
   const [displayCount, setDisplayCount] = useState(50);
@@ -293,6 +299,310 @@ function Library({
     const key = String(getFavoriteGameKey(game));
     InterfacePreferencesService.togglePin(key);
   }, []);
+
+  const username = useMemo(() => ProfileService.getCurrentUsername(), []);
+
+  const generateLibraryShareCardBlob = useCallback(async () => {
+    if (!libraryShareCardRef.current) {
+      return null;
+    }
+    const canvas = await html2canvas(libraryShareCardRef.current, {
+      scale: 1,
+      width: LIBRARY_SHARE_CARD_SIZE_PX,
+      height: LIBRARY_SHARE_CARD_SIZE_PX,
+      backgroundColor: null,
+      logging: false,
+      useCORS: true
+    });
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }, []);
+
+  const handleCopyLibraryShareText = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
+    const copied = await LocalShareService.copyTextToClipboard(shareText);
+    if (copied) {
+      success('Library recap text copied to clipboard.');
+    } else {
+      toastError('Could not copy library recap text.');
+    }
+    return copied;
+  }, [library, username, sharePeriod, success, toastError]);
+
+  const handleDownloadShareText = useCallback((text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
+    const result = LocalShareService.downloadShareText(shareText, `gamepilot-${sharePeriod}-recap-${new Date().toISOString().split('T')[0]}.txt`);
+    if (result) {
+      success('Library recap caption downloaded.');
+    } else {
+      toastError('Could not download caption.');
+    }
+  }, [library, username, sharePeriod, success, toastError]);
+
+  const handleShareToChannel = useCallback(async (channel, text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
+
+    // Social web intents are text-only, so pre-stage the recap image on the
+    // clipboard where supported. Gamers can then paste it straight into the post.
+    let imageStaged = false;
+    if (library.length > 0 && LocalShareService.canCopyImage()) {
+      try {
+        const blob = await generateLibraryShareCardBlob();
+        if (blob) {
+          const { filename } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+          const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
+          imageStaged = copyResult.success;
+        }
+      } catch (error) {
+        imageStaged = false;
+      }
+    }
+
+    const result = await LocalShareService.openShareIntent(channel, shareText);
+    if (result.success) {
+      if (imageStaged) {
+        success(`${result.label} opened — your recap image is copied, just paste it into the post.`);
+      } else {
+        success(`${result.label} share opened. Save the recap image to attach it to your post.`);
+      }
+    } else {
+      toastError(result.message || 'Could not open share link.');
+    }
+  }, [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]);
+
+  const handleShareToDiscord = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
+    let imageBlob = null;
+    let filename = 'gamepilot-library-recap.png';
+
+    if (library.length > 0 && LocalShareService.canCopyImage()) {
+      try {
+        imageBlob = await generateLibraryShareCardBlob();
+        const packageResult = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+        filename = packageResult.filename;
+      } catch (error) {
+        imageBlob = null;
+      }
+    }
+
+    const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
+    if (result.success) {
+      if (result.imageStaged) {
+        success('Discord opened — your recap image and caption are copied, just paste them in.');
+      } else {
+        success('Discord opened — caption copied, save the image to attach it.');
+      }
+    } else {
+      toastError(result.message || 'Could not share to Discord.');
+    }
+  }, [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]);
+
+  const handleShareToMessenger = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
+    let imageBlob = null;
+    let filename = 'gamepilot-library-recap.png';
+
+    if (library.length > 0 && LocalShareService.canCopyImage()) {
+      try {
+        imageBlob = await generateLibraryShareCardBlob();
+        const packageResult = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+        filename = packageResult.filename;
+      } catch (error) {
+        imageBlob = null;
+      }
+    }
+
+    const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
+    if (result.success) {
+      if (result.imageStaged) {
+        success('Messenger opened — your recap image and caption are copied, just paste them in.');
+      } else {
+        success('Messenger opened — caption copied, save the image to attach it.');
+      }
+    } else {
+      toastError(result.message || 'Could not share to Messenger.');
+    }
+  }, [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]);
+
+  const handleDownloadLibraryShareCard = useCallback(async () => {
+    const blob = await generateLibraryShareCardBlob();
+    if (!blob) {
+      toastError('Could not generate share card.');
+      return false;
+    }
+    const { filename } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+    DataExportService.downloadFile(blob, filename);
+    success('Library recap card saved.');
+    return true;
+  }, [generateLibraryShareCardBlob, library, username, sharePeriod, success, toastError]);
+
+  const handleCopyLibraryShareCard = useCallback(async () => {
+    const blob = await generateLibraryShareCardBlob();
+    if (!blob) {
+      toastError('Could not generate share card.');
+      return false;
+    }
+    const { filename } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+    const result = await LocalShareService.copyImageToClipboard(blob, filename);
+    if (result.success) {
+      success('Library recap card copied to clipboard.');
+      return true;
+    }
+    toastError(result.message || 'Could not copy image.');
+    return false;
+  }, [generateLibraryShareCardBlob, library, username, sharePeriod, success, toastError]);
+
+  const handleNativeShareLibraryCard = useCallback(async (text = null) => {
+    const blob = await generateLibraryShareCardBlob();
+    const { text: baseText, filename, title } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+    if (!blob) {
+      toastError('Could not generate share card.');
+      return;
+    }
+    const file = new File([blob], filename, { type: 'image/png' });
+    const result = await LocalShareService.shareWithNativeShare({ text: text || ProfileService.appendSocialLinksToShareText(baseText), files: [file], title });
+    if (!result.success) {
+      toastError(result.message || 'Native share failed.');
+    }
+  }, [generateLibraryShareCardBlob, library, username, sharePeriod, toastError]);
+
+  const generateTopRatedShareCardBlob = useCallback(async () => {
+    if (!topRatedShareCardRef.current) {
+      return null;
+    }
+    const canvas = await html2canvas(topRatedShareCardRef.current, {
+      scale: 1,
+      width: TOP_RATED_SHARE_CARD_SIZE_PX,
+      height: TOP_RATED_SHARE_CARD_SIZE_PX,
+      backgroundColor: null,
+      logging: false,
+      useCORS: true
+    });
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }, []);
+
+  const handleShareTopRatedToChannel = useCallback(async (channel, text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    let imageStaged = false;
+    try {
+      const blob = await generateTopRatedShareCardBlob();
+      if (blob && LocalShareService.canCopyImage()) {
+        const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+        const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
+        imageStaged = copyResult.success;
+      }
+    } catch (error) {
+      imageStaged = false;
+    }
+    const result = await LocalShareService.openShareIntent(channel, shareText);
+    if (result.success) {
+      if (imageStaged) {
+        success(`${result.label} opened — your top-rated card is copied, just paste it into the post.`);
+      } else {
+        success(`${result.label} share opened. Save the top-rated card to attach it to your post.`);
+      }
+    } else {
+      toastError(result.message || 'Could not open share link.');
+    }
+  }, [library, username, generateTopRatedShareCardBlob, success, toastError]);
+
+  const handleShareTopRatedToDiscord = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    let imageBlob = null;
+    let filename = 'gamepilot-top-rated.png';
+    try {
+      imageBlob = await generateTopRatedShareCardBlob();
+      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username);
+      filename = packageResult.filename;
+    } catch (error) {
+      imageBlob = null;
+    }
+    const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
+    if (result.success) {
+      if (result.imageStaged) {
+        success('Discord opened — your top-rated card and caption are copied, just paste them in.');
+      } else {
+        success('Discord opened — caption copied, save the top-rated card to attach it.');
+      }
+    } else {
+      toastError(result.message || 'Could not share to Discord.');
+    }
+  }, [library, username, generateTopRatedShareCardBlob, success, toastError]);
+
+  const handleShareTopRatedToMessenger = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    let imageBlob = null;
+    let filename = 'gamepilot-top-rated.png';
+    try {
+      imageBlob = await generateTopRatedShareCardBlob();
+      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username);
+      filename = packageResult.filename;
+    } catch (error) {
+      imageBlob = null;
+    }
+    const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
+    if (result.success) {
+      if (result.imageStaged) {
+        success('Messenger opened — your top-rated card and caption are copied, just paste them in.');
+      } else {
+        success('Messenger opened — caption copied, save the top-rated card to attach it.');
+      }
+    } else {
+      toastError(result.message || 'Could not share to Messenger.');
+    }
+  }, [library, username, generateTopRatedShareCardBlob, success, toastError]);
+
+  const handleCopyTopRatedShareText = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username));
+    const copied = await LocalShareService.copyTextToClipboard(shareText);
+    if (copied) {
+      success('Top-rated picks text copied to clipboard.');
+    } else {
+      toastError('Could not copy top-rated picks text.');
+    }
+    return copied;
+  }, [library, username, success, toastError]);
+
+  const handleCopyTopRatedShareCard = useCallback(async () => {
+    const blob = await generateTopRatedShareCardBlob();
+    if (!blob) {
+      toastError('Could not generate top-rated card.');
+      return false;
+    }
+    const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+    const result = await LocalShareService.copyImageToClipboard(blob, filename);
+    if (result.success) {
+      success('Top-rated card copied to clipboard.');
+      return true;
+    }
+    toastError(result.message || 'Could not copy image.');
+    return false;
+  }, [generateTopRatedShareCardBlob, library, username, success, toastError]);
+
+  const handleDownloadTopRatedShareCard = useCallback(async () => {
+    const blob = await generateTopRatedShareCardBlob();
+    if (!blob) {
+      toastError('Could not generate top-rated card.');
+      return false;
+    }
+    const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+    DataExportService.downloadFile(blob, filename);
+    success('Top-rated card saved.');
+    return true;
+  }, [generateTopRatedShareCardBlob, library, username, success, toastError]);
+
+  const handleNativeShareTopRatedCard = useCallback(async (text = null) => {
+    const blob = await generateTopRatedShareCardBlob();
+    const { text: baseText, filename, title } = LocalShareService.buildTopRatedShareCardPackage(library, username);
+    if (!blob) {
+      toastError('Could not generate top-rated card.');
+      return;
+    }
+    const file = new File([blob], filename, { type: 'image/png' });
+    const result = await LocalShareService.shareWithNativeShare({ text: text || ProfileService.appendSocialLinksToShareText(baseText), files: [file], title });
+    if (!result.success) {
+      toastError(result.message || 'Native share failed.');
+    }
+  }, [generateTopRatedShareCardBlob, library, username, toastError]);
 
   const handleToggleFavorite = useCallback((key) => {
     setFavorites((prev) => {
@@ -1154,6 +1464,73 @@ function Library({
           <button onClick={() => setIsCinematicExportOpen(true)} className="export-button">
             <Grid size={16} /> Cinematic Poster
           </button>
+          <button
+            onClick={() => setIsLibraryValueModalOpen(true)}
+            className="export-button"
+            title="See and share the estimated value of your library"
+          >
+            <DollarSign size={16} /> Library Value
+          </button>
+          <select
+            className="export-button library-share-period-select"
+            value={sharePeriod}
+            onChange={(event) => setSharePeriod(event.target.value)}
+            title="Choose the recap period"
+          >
+            <option value="all">All-Time Recap</option>
+            <option value="weekly">Weekly Recap</option>
+            <option value="monthly">Monthly Recap</option>
+          </select>
+          <button
+            onClick={() => setIsRecapCustomizeOpen(true)}
+            className="export-button"
+            title="Customize your shareable recap card theme and stats"
+          >
+            <Sparkles size={16} /> Customize Recap
+          </button>
+          <button
+            type="button"
+            className="export-button"
+            title="Toggle between hours and days for playtime display"
+            onClick={() => {
+              const current = InterfacePreferencesService.get('playtimeUnit') || 'auto';
+              const order = ['hours', 'days', 'auto'];
+              const next = order[(order.indexOf(current) + 1) % order.length];
+              InterfacePreferencesService.set('playtimeUnit', next);
+            }}
+          >
+            <Clock size={16} /> {(() => {
+              const unit = interfacePrefs.playtimeUnit || 'auto';
+              if (unit === 'hours') return 'Hours';
+              if (unit === 'days') return 'Days';
+              return 'Auto';
+            })()}
+          </button>
+          <ShareMenu
+            imageAvailable={library.length > 0}
+            onCopyText={handleCopyLibraryShareText}
+            onCopyImage={handleCopyLibraryShareCard}
+            onSaveImage={handleDownloadLibraryShareCard}
+            onShareText={handleShareToChannel}
+            onShareToDiscord={handleShareToDiscord}
+            onShareToMessenger={handleShareToMessenger}
+            onDownloadText={handleDownloadShareText}
+            onNativeShare={handleNativeShareLibraryCard}
+            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod))}
+          />
+          <ShareMenu
+            imageAvailable={library.length > 0}
+            onCopyText={handleCopyTopRatedShareText}
+            onCopyImage={handleCopyTopRatedShareCard}
+            onSaveImage={handleDownloadTopRatedShareCard}
+            onShareText={handleShareTopRatedToChannel}
+            onShareToDiscord={handleShareTopRatedToDiscord}
+            onShareToMessenger={handleShareTopRatedToMessenger}
+            onDownloadText={handleCopyTopRatedShareText}
+            onNativeShare={handleNativeShareTopRatedCard}
+            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username))}
+            triggerLabel="Share 10/10 Picks"
+          />
           <button onClick={handleScanLibrary} className="export-button" disabled={loading}>
             {loading ? '⏳ Scanning Library...' : '🔄 Scan Library'}
           </button>
@@ -1803,6 +2180,68 @@ function Library({
       {isModalOpen && <GameModal game={selectedModalGame} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onTogglePin={handleTogglePin} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} />}
       {isExportModalOpen && <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} library={library} />}
       {isCinematicExportOpen && <CinematicExport isOpen={isCinematicExportOpen} onClose={() => setIsCinematicExportOpen(false)} library={library} />}
+      <LibraryValueModal
+        library={library}
+        isOpen={isLibraryValueModalOpen}
+        onClose={() => setIsLibraryValueModalOpen(false)}
+        username={username}
+      />
+      <RecapCustomizeModal
+        isOpen={isRecapCustomizeOpen}
+        onClose={() => setIsRecapCustomizeOpen(false)}
+        library={library}
+        username={username}
+        period={sharePeriod}
+        onApplied={() => setRecapCustomization(ProgressionUnlockService.getRecapCustomization())}
+      />
+
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          top: -10000,
+          left: -10000,
+          width: LIBRARY_SHARE_CARD_SIZE_PX,
+          height: LIBRARY_SHARE_CARD_SIZE_PX,
+          pointerEvents: 'none',
+          zIndex: -1
+        }}
+      >
+        <div ref={libraryShareCardRef}>
+          <LibraryShareCard
+            library={library}
+            username={username}
+            period={sharePeriod}
+            theme={recapCustomization.palette}
+            visibleStats={recapCustomization.visibleStats}
+            showCover={recapCustomization.useMostPlayedCover !== false}
+            watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+          />
+        </div>
+      </div>
+
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          top: -10000,
+          left: -10000,
+          width: TOP_RATED_SHARE_CARD_SIZE_PX,
+          height: TOP_RATED_SHARE_CARD_SIZE_PX,
+          pointerEvents: 'none',
+          zIndex: -1
+        }}
+      >
+        <div ref={topRatedShareCardRef}>
+          <TopRatedShareCard
+            library={library}
+            username={username}
+            showCover={recapCustomization.useMostPlayedCover !== false}
+            watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+          />
+        </div>
+      </div>
+
       <BackToTopButton />
     </div>
   );

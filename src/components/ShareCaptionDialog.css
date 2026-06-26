@@ -1,0 +1,135 @@
+.share-caption-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200000;
+  padding: 16px;
+  pointer-events: auto;
+}
+
+.share-caption-dialog {
+  background: var(--surface, #1a1f2e);
+  border: 1px solid var(--surface-border, #2a3142);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text, #f5f5f5);
+}
+
+.share-caption-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--surface-border, #2a3142);
+}
+
+.share-caption-dialog-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.share-caption-dialog-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-caption-dialog-close:hover {
+  color: var(--text, #f5f5f5);
+  background: var(--surface-hover, #232838);
+}
+
+.share-caption-dialog-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.share-caption-dialog-body label {
+  font-size: 0.85rem;
+  color: var(--text-muted, #9ca3af);
+  font-weight: 500;
+}
+
+.share-caption-dialog-body textarea {
+  background: var(--background, #0d1224);
+  border: 1px solid var(--surface-border, #2a3142);
+  border-radius: 8px;
+  color: var(--text, #f5f5f5);
+  padding: 12px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 140px;
+  font-family: inherit;
+}
+
+.share-caption-dialog-body textarea:focus {
+  outline: none;
+  border-color: var(--accent, #8b5cf6);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.share-caption-dialog-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.share-caption-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--surface-border, #2a3142);
+}
+
+.share-caption-dialog-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s ease;
+}
+
+.share-caption-dialog-btn.secondary {
+  background: var(--surface-hover, #232838);
+  color: var(--text, #f5f5f5);
+}
+
+.share-caption-dialog-btn.secondary:hover {
+  background: var(--surface-border, #2a3142);
+}
+
+.share-caption-dialog-btn.primary {
+  background: var(--accent, #8b5cf6);
+  color: #fff;
+}
+
+.share-caption-dialog-btn.primary:hover {
+  filter: brightness(1.1);
+}

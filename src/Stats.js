@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
-import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal, Zap } from 'lucide-react';
+import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal, Zap, BookOpen } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
 import EmptyState from './components/EmptyState';
@@ -20,6 +21,15 @@ import PowerStatsDeepDive from './components/PowerStatsDeepDive';
 import { LibraryAnalyticsService } from './services/LibraryAnalyticsService';
 import AdvancedAnalyticsDashboard from './components/AdvancedAnalyticsDashboard';
 import EntitlementService from './services/EntitlementService';
+import { RecapStoryService } from './services/RecapStoryService';
+import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import { ProfileService } from './services/ProfileService';
+import { LocalShareService } from './services/LocalShareService';
+import { useToast } from './components/Toast';
+import ShareMenu from './components/ShareMenu';
+import StoryShareCard, { STORY_SHARE_CARD_SIZE_PX } from './components/StoryShareCard';
+import { HabitsShareCard } from './components/HabitsShareCard';
+import { PersonaShareCard } from './components/PersonaShareCard';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
@@ -38,12 +48,21 @@ const formatRelativeTime = (timestamp) => {
 };
 
 function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 'USD' }) {
+  const { success } = useToast();
+  const [recapCustomization] = useState(() => ProgressionUnlockService.getRecapCustomization());
   const [progressionData, setProgressionData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [libraryStats, setLibraryStats] = useState(null);
   const [personaData, setPersonaData] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('all');
+  const weeklyStoryCardRef = useRef(null);
+  const monthlyStoryCardRef = useRef(null);
+  const [isCapturingStory, setIsCapturingStory] = useState(false);
+  const habitsCardRef = useRef(null);
+  const [isCapturingHabits, setIsCapturingHabits] = useState(false);
+  const personaCardRef = useRef(null);
+  const [isCapturingPersona, setIsCapturingPersona] = useState(false);
   const hasPowerTools = EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro');
   const analytics = useMemo(() => (hasPowerTools ? LibraryAnalyticsService.getFullAnalytics(library) : null), [library, hasPowerTools]);
 
@@ -304,6 +323,26 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     return labels[bucket] || bucket;
   };
 
+  const generateStoryCardBlob = useCallback(async (period) => {
+    const ref = period === 'weekly' ? weeklyStoryCardRef : monthlyStoryCardRef;
+    if (!ref.current) return null;
+    setIsCapturingStory(true);
+    try {
+      const canvas = await html2canvas(ref.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true,
+        logging: false
+      });
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    } catch (err) {
+      console.error('Failed to generate story share card:', err);
+      return null;
+    } finally {
+      setIsCapturingStory(false);
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <div className={`App ${theme}`}>
@@ -432,6 +471,133 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           icon={<TrendingUp size={18} />}
           className="stats-section stats-habit-insights"
         >
+          <div className="habit-insights-share-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <ShareMenu
+              triggerLabel="Share Habits"
+              imageAvailable
+              disabled={isCapturingHabits}
+              onCopyText={async (text = null) => {
+                if (!text) {
+                  const lines = [];
+                  lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
+                  if (habitInsights.longestSession) {
+                    lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                  }
+                  if (habitInsights.busiestDay) {
+                    lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                  }
+                  if (habitInsights.mostReturnedTo) {
+                    lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                  }
+                  lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                  lines.push('Powered by GamePilot');
+                  text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+                }
+                const copied = await LocalShareService.copyTextToClipboard(text);
+                success(copied ? 'Habits copied to clipboard.' : 'Could not copy habits.');
+                return copied;
+              }}
+              onCopyImage={async () => {
+                if (!habitsCardRef.current) return false;
+                setIsCapturingHabits(true);
+                try {
+                  const canvas = await html2canvas(habitsCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                  if (!blob) { success('Could not generate habits card.'); return false; }
+                  const copied = await LocalShareService.copyImageToClipboard(blob);
+                  success(copied ? 'Habits card copied to clipboard.' : 'Could not copy habits card.');
+                  return copied;
+                } catch (err) { console.error(err); success('Could not generate habits card.'); return false; }
+                finally { setIsCapturingHabits(false); }
+              }}
+              onSaveImage={async () => {
+                if (!habitsCardRef.current) return;
+                setIsCapturingHabits(true);
+                try {
+                  const canvas = await html2canvas(habitsCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                  if (!blob) { success('Could not generate habits card.'); return; }
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `gamepilot-habits-${new Date().toISOString().split('T')[0]}.png`;
+                  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                  success('Habits card saved.');
+                } catch (err) { console.error(err); success('Could not generate habits card.'); }
+                finally { setIsCapturingHabits(false); }
+              }}
+              onShareText={async (channel, text = null) => {
+                if (!text) {
+                  const lines = [];
+                  lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
+                  if (habitInsights.longestSession) {
+                    lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                  }
+                  if (habitInsights.busiestDay) {
+                    lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                  }
+                  if (habitInsights.mostReturnedTo) {
+                    lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                  }
+                  lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                  lines.push('Powered by GamePilot');
+                  text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+                }
+                const result = await LocalShareService.openShareIntent(channel, text);
+                success(result.success ? `Opened ${result.label}.` : result.message || 'Could not share habits.');
+              }}
+              onDownloadText={(text = null) => {
+                if (!text) {
+                  const lines = [];
+                  lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
+                  if (habitInsights.longestSession) {
+                    lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                  }
+                  if (habitInsights.busiestDay) {
+                    lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                  }
+                  if (habitInsights.mostReturnedTo) {
+                    lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                  }
+                  lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                  lines.push('Powered by GamePilot');
+                  text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+                }
+                LocalShareService.downloadShareText(text, 'play-habits.txt');
+                success('Habits caption downloaded.');
+              }}
+              buildCaption={() => {
+                const lines = [];
+                lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
+                if (habitInsights.longestSession) {
+                  lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                }
+                if (habitInsights.busiestDay) {
+                  lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                }
+                if (habitInsights.mostReturnedTo) {
+                  lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                }
+                lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                lines.push('Powered by GamePilot');
+                return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+              }}
+              onNativeShare={async (text = null) => {
+                if (!habitsCardRef.current) return;
+                setIsCapturingHabits(true);
+                try {
+                  const canvas = await html2canvas(habitsCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                  if (!blob) { success('Could not generate habits card.'); return; }
+                  const file = new File([blob], `gamepilot-habits-${new Date().toISOString().split('T')[0]}.png`, { type: 'image/png' });
+                  const result = await LocalShareService.shareWithNativeShare({ title: 'My Play Habits', text: text || `My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`, files: [file] });
+                  success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+                } catch (err) { console.error(err); success('Could not generate habits card.'); }
+                finally { setIsCapturingHabits(false); }
+              }}
+            />
+          </div>
           <div className="habit-insights-grid">
             <div className="habit-insight-card habit-insight-featured">
               <span>Longest session</span>
@@ -478,6 +644,153 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </CollapsibleSection>
 
+        <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+          <div ref={habitsCardRef}>
+            <HabitsShareCard
+              insights={habitInsights}
+              username={ProfileService.getCurrentUsername()}
+              periodLabel={selectedStats?.rangeLabel || 'All Time'}
+            />
+          </div>
+        </div>
+
+        <CollapsibleSection
+          title="Story Highlights"
+          subtitle="Weekly and monthly narrative snippets from your play history."
+          icon={<BookOpen size={18} />}
+          className="stats-section stats-story-highlights"
+          defaultOpen={false}
+        >
+          <div className="story-highlights-grid">
+            {['weekly', 'monthly'].map((period) => {
+              const periodSnapshot = dashboardData?.periods?.[period];
+              const packageData = RecapStoryService.buildPeriodStories(
+                periodSnapshot,
+                period,
+                ProfileService.getCurrentUsername()
+              );
+              const buildCaption = () => ProfileService.appendSocialLinksToShareText(
+                RecapStoryService.buildShareText(periodSnapshot, period, ProfileService.getCurrentUsername())
+              );
+
+              const handleCopyStory = async () => {
+                const text = buildCaption();
+                const copied = await LocalShareService.copyTextToClipboard(text);
+                success(copied ? 'Story copied to clipboard.' : 'Could not copy story.');
+                return copied;
+              };
+
+              const handleDownloadStoryText = () => {
+                const text = buildCaption();
+                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
+                const safeFilename = filename.replace('.png', '.txt');
+                LocalShareService.downloadShareText(text, safeFilename);
+                success('Story downloaded.');
+              };
+
+              const handleShareStoryToChannel = async (channel, text = null) => {
+                const shareText = text || buildCaption();
+                const result = await LocalShareService.openShareIntent(channel, shareText);
+                success(result.success ? `Opened ${result.label}.` : result.message || 'Could not open share.');
+              };
+
+              const handleDownloadStoryCard = async () => {
+                const blob = await generateStoryCardBlob(period);
+                if (!blob) {
+                  success('Could not generate story card.');
+                  return;
+                }
+                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                success('Story card saved.');
+              };
+
+              const handleCopyStoryCard = async () => {
+                const blob = await generateStoryCardBlob(period);
+                if (!blob) {
+                  success('Could not generate story card.');
+                  return false;
+                }
+                const copied = await LocalShareService.copyImageToClipboard(blob);
+                success(copied ? 'Story card copied to clipboard.' : 'Could not copy story card.');
+                return copied;
+              };
+
+              const handleNativeShareStoryCard = async () => {
+                const blob = await generateStoryCardBlob(period);
+                if (!blob) {
+                  success('Could not generate story card.');
+                  return;
+                }
+                const { title, filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
+                const file = new File([blob], filename, { type: 'image/png' });
+                const result = await LocalShareService.shareWithNativeShare({
+                  title,
+                  text: buildCaption(),
+                  files: [file]
+                });
+                success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+              };
+
+              const handleShareStoryToDiscord = async (text = null) => {
+                const shareText = text || buildCaption();
+                const blob = await generateStoryCardBlob(period);
+                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
+                const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
+                success(result.success ? 'Discord opened with story card.' : result.message || 'Could not share to Discord.');
+              };
+
+              const handleShareStoryToMessenger = async (text = null) => {
+                const shareText = text || buildCaption();
+                const blob = await generateStoryCardBlob(period);
+                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
+                const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
+                success(result.success ? 'Messenger opened with story card.' : result.message || 'Could not share to Messenger.');
+              };
+
+              return (
+                <div key={period} className="story-highlight-card">
+                  <div className="story-highlight-header">
+                    <strong>{period === 'weekly' ? 'This Week' : 'This Month'}</strong>
+                    <div className="story-highlight-actions">
+                      <span>{periodSnapshot?.rangeLabel || packageData.periodLabel}</span>
+                      <ShareMenu
+                        imageAvailable
+                        onCopyText={handleCopyStory}
+                        onCopyImage={handleCopyStoryCard}
+                        onSaveImage={handleDownloadStoryCard}
+                        onShareText={handleShareStoryToChannel}
+                        onShareToDiscord={handleShareStoryToDiscord}
+                        onShareToMessenger={handleShareStoryToMessenger}
+                        onDownloadText={handleDownloadStoryText}
+                        onNativeShare={handleNativeShareStoryCard}
+                        buildCaption={buildCaption}
+                        disabled={isCapturingStory}
+                        triggerLabel="Share"
+                      />
+                    </div>
+                  </div>
+                  <ul className="story-highlight-list">
+                    {packageData.stories.map((story, index) => (
+                      <li key={index} className="story-highlight-item">
+                        <span className="story-highlight-bullet" />
+                        <span>{story}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
+
         <CollapsibleSection
           title="Flight Persona Snapshot"
           subtitle="Your gaming identity and playstyle traits."
@@ -492,11 +805,140 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                     <p className="persona-label">Identity</p>
                     <h3>{personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}</h3>
                   </div>
-                  {personaData.snapshot.personaIdentity?.anchors?.length > 0 && (
-                    <span className="persona-anchors">
-                      {personaData.snapshot.personaIdentity.anchors.join(' + ')}
-                    </span>
-                  )}
+                  <div className="persona-header-actions">
+                    {personaData.snapshot.personaIdentity?.anchors?.length > 0 && (
+                      <span className="persona-anchors">
+                        {personaData.snapshot.personaIdentity.anchors.join(' + ')}
+                      </span>
+                    )}
+                    <ShareMenu
+                      triggerLabel="Share"
+                      imageAvailable
+                      disabled={isCapturingPersona}
+                      onCopyText={async (text = null) => {
+                        if (!text) {
+                          const lines = [
+                            `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
+                            `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
+                            `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
+                            `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
+                            `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
+                            `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
+                            `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
+                            'Powered by GamePilot'
+                          ];
+                          text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+                        }
+                        const shareText = text;
+                        const copied = await LocalShareService.copyTextToClipboard(shareText);
+                        success(copied ? 'Persona snapshot copied.' : 'Could not copy persona snapshot.');
+                        return copied;
+                      }}
+                      onCopyImage={async () => {
+                        if (!personaCardRef.current) return false;
+                        setIsCapturingPersona(true);
+                        try {
+                          const canvas = await html2canvas(personaCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                          if (!blob) { success('Could not generate persona card.'); return false; }
+                          const copied = await LocalShareService.copyImageToClipboard(blob);
+                          success(copied ? 'Persona card copied to clipboard.' : 'Could not copy persona card.');
+                          return copied;
+                        } catch (err) { console.error(err); success('Could not generate persona card.'); return false; }
+                        finally { setIsCapturingPersona(false); }
+                      }}
+                      onSaveImage={async () => {
+                        if (!personaCardRef.current) return;
+                        setIsCapturingPersona(true);
+                        try {
+                          const canvas = await html2canvas(personaCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                          if (!blob) { success('Could not generate persona card.'); return; }
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `gamepilot-persona-${new Date().toISOString().split('T')[0]}.png`;
+                          document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                          success('Persona card saved.');
+                        } catch (err) { console.error(err); success('Could not generate persona card.'); }
+                        finally { setIsCapturingPersona(false); }
+                      }}
+                      onDownloadText={(text = null) => {
+                        if (!text) {
+                          const lines = [
+                            `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
+                            `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
+                            `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
+                            `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
+                            `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
+                            `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
+                            `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
+                            'Powered by GamePilot'
+                          ];
+                          text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+                        }
+                        LocalShareService.downloadShareText(text, 'flight-persona.txt');
+                        success('Flight persona downloaded.');
+                      }}
+                      onShareText={async (channel, text = null) => {
+                        if (!text) {
+                          const lines = [
+                            `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
+                            `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
+                            `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
+                            `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
+                            `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
+                            `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
+                            `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
+                            'Powered by GamePilot'
+                          ];
+                          text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+                        }
+                        const result = await LocalShareService.openShareIntent(channel, text);
+                        success(result.success ? `Opened ${result.label}.` : result.message || 'Could not share flight persona.');
+                      }}
+                      buildCaption={() => {
+                        const text = [
+                          `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
+                          `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
+                          `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
+                          `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
+                          `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
+                          `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
+                          `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
+                          'Powered by GamePilot'
+                        ].join('\n');
+                        return ProfileService.appendSocialLinksToShareText(text);
+                      }}
+                      onNativeShare={async (text = null) => {
+                        if (!personaCardRef.current) return;
+                        setIsCapturingPersona(true);
+                        try {
+                          const canvas = await html2canvas(personaCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                          if (!blob) { success('Could not generate persona card.'); return; }
+                          const file = new File([blob], `gamepilot-persona-${new Date().toISOString().split('T')[0]}.png`, { type: 'image/png' });
+                          if (!text) {
+                            const lines = [
+                              `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
+                              `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
+                              `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
+                              `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
+                              `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
+                              `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
+                              `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
+                              'Powered by GamePilot'
+                            ];
+                            text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+                          }
+                          const result = await LocalShareService.shareWithNativeShare({ title: 'My Flight Persona', text, files: [file] });
+                          success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+                        } catch (err) { console.error(err); success('Could not generate persona card.'); }
+                        finally { setIsCapturingPersona(false); }
+                      }}
+                    />
+                  </div>
                 </div>
                 <p className="persona-description">
                   {personaData.snapshot.personaIdentity?.description || 'Play a few sessions to let GamePilot map your habits locally.'}
@@ -603,6 +1045,16 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             />
           )}
         </CollapsibleSection>
+
+        <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+          <div ref={personaCardRef}>
+            <PersonaShareCard
+              persona={personaData}
+              username={ProfileService.getCurrentUsername()}
+              streaks={{ current: currentStreak, best: bestStreak }}
+            />
+          </div>
+        </div>
 
         <CollapsibleSection
           title="Library Breakdown"
@@ -789,7 +1241,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             icon={<Zap size={18} />}
             className="stats-section power-tools-deep-stats"
           >
-            <PowerStatsDeepDive analytics={analytics} />
+            <PowerStatsDeepDive analytics={analytics} username={ProfileService.getCurrentUsername()} />
           </CollapsibleSection>
         )}
 
@@ -818,6 +1270,62 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             description="Start building your game library and logging a few sessions to unlock richer analytics, streaks, usage insights, and habit trends."
           />
         )}
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: -10000,
+            left: -10000,
+            width: STORY_SHARE_CARD_SIZE_PX,
+            height: STORY_SHARE_CARD_SIZE_PX,
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+        >
+          <div ref={weeklyStoryCardRef}>
+            <StoryShareCard
+              period="weekly"
+              username={ProfileService.getCurrentUsername()}
+              watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+              stories={(() => {
+                const snapshot = dashboardData?.periods?.weekly;
+                const data = RecapStoryService.buildPeriodStories(snapshot, 'weekly', ProfileService.getCurrentUsername());
+                return data.stories;
+              })()}
+              totalPlaytime={dashboardData?.periods?.weekly?.playtimeMinutes || 0}
+              topGame={dashboardData?.periods?.weekly?.topGames?.[0] || null}
+            />
+          </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: -10000,
+            left: -10000,
+            width: STORY_SHARE_CARD_SIZE_PX,
+            height: STORY_SHARE_CARD_SIZE_PX,
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+        >
+          <div ref={monthlyStoryCardRef}>
+            <StoryShareCard
+              period="monthly"
+              username={ProfileService.getCurrentUsername()}
+              watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+              stories={(() => {
+                const snapshot = dashboardData?.periods?.monthly;
+                const data = RecapStoryService.buildPeriodStories(snapshot, 'monthly', ProfileService.getCurrentUsername());
+                return data.stories;
+              })()}
+              totalPlaytime={dashboardData?.periods?.monthly?.playtimeMinutes || 0}
+              topGame={dashboardData?.periods?.monthly?.topGames?.[0] || null}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

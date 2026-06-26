@@ -69,9 +69,23 @@ jest.mock('./components/ExportModal', () => ({ isOpen, onClose }) => (
   isOpen ? <div data-testid="export-modal">Export Modal</div> : null
 ));
 
+jest.mock('./components/LibraryShareCard', () => ({
+  __esModule: true,
+  default: () => null,
+  LIBRARY_SHARE_CARD_SIZE_PX: 1080
+}));
+
+jest.mock('./components/TopRatedShareCard', () => ({
+  __esModule: true,
+  default: () => null,
+  TOP_RATED_SHARE_CARD_SIZE_PX: 1080
+}));
+
 jest.mock('./components/LazyImage', () => ({ src, alt, style }) => (
   <img src={src} alt={alt} style={style} data-testid="lazy-image" />
 ));
+
+jest.mock('./components/HLTBChip', () => () => null);
 
 // Mock AchievementTracker
 jest.mock('./AchievementSystem', () => ({

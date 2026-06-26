@@ -1,5 +1,11 @@
 import { DataExportService } from './DataExportService';
 import { openExternalUrl } from './ElectronBridge';
+import { LibraryValueService } from './LibraryValueService';
+import { StatsAggregationService } from './StatsAggregationService';
+import { formatPlaytime } from '../utils/formatPlaytime';
+import { GamingIdentity } from '../GamingIdentity';
+import { RecapStoryService } from './RecapStoryService';
+import { YearInReviewService } from './YearInReviewService';
 
 const normalizeShareText = (value) => String(value || '').trim();
 
@@ -29,7 +35,7 @@ const SHARE_CHANNELS = Object.freeze({
   },
   discord: {
     label: 'Discord',
-    buildUrl: (text) => `https://discord.com/channels/@me` // Discord has no web share intent; text is copied
+    buildUrl: (text) => `https://discord.com/channels/@me` // Discord has no web share intent; handled by shareToDiscord
   },
   facebook: {
     label: 'Facebook',
@@ -46,6 +52,10 @@ const SHARE_CHANNELS = Object.freeze({
   telegram: {
     label: 'Telegram',
     buildUrl: (text) => `https://t.me/share/url?url=&text=${encodeURIComponent(text)}`
+  },
+  messenger: {
+    label: 'Messenger',
+    buildUrl: (text) => `https://www.messenger.com/` // Messenger has no direct web compose URL; handled by shareToMessenger
   },
   email: {
     label: 'Email',
@@ -69,8 +79,7 @@ export class LocalShareService {
     const topGames = Array.isArray(snapshot?.topGames) ? snapshot.topGames.slice(0, 3) : [];
     const persona = snapshot?.persona?.identityLabel || 'Player';
     const totalMinutes = Math.max(0, Math.round(Number(summary.playtimeMinutes || 0)));
-    const totalHours = Math.round(totalMinutes / 60);
-    const playtimeLabel = totalHours > 0 ? `${totalHours} hours` : `${totalMinutes} minutes`;
+    const playtimeLabel = formatPlaytime(totalMinutes);
 
     const lines = [
       `My GamePilot Year in Review ${selectedYear}`,
@@ -79,8 +88,16 @@ export class LocalShareService {
       `I played like a ${persona}.`
     ];
 
+    const storyArc = snapshot?.seasonalStory?.arc;
+    if (storyArc) {
+      lines.push('');
+      lines.push(`The Story of My ${selectedYear} Gaming Year`);
+      lines.push(storyArc);
+    }
+
     if (topGames.length > 0) {
       const topGameNames = topGames.map((game) => game.name).filter(Boolean).join(', ');
+      lines.push('');
       lines.push(`Top games: ${topGameNames}`);
     }
 
@@ -176,6 +193,84 @@ export class LocalShareService {
     }
   }
 
+  static async shareToDiscord({ imageBlob = null, text = '', filename = 'gamepilot-share.png' }) {
+    const normalizedText = normalizeShareText(text);
+    if (!normalizedText && !imageBlob) {
+      return { success: false, message: 'Nothing to share to Discord.' };
+    }
+
+    const canWriteClipboard = typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.write === 'function';
+
+    if (imageBlob && !canWriteClipboard) {
+      return { success: false, message: 'Clipboard image sharing is not supported on this device.' };
+    }
+
+    try {
+      const items = [];
+      if (imageBlob) {
+        const file = new File([imageBlob], filename, { type: imageBlob.type || 'image/png' });
+        const clipboardItemData = { [file.type]: file };
+        if (normalizedText) {
+          clipboardItemData['text/plain'] = new Blob([normalizedText], { type: 'text/plain' });
+        }
+        items.push(new ClipboardItem(clipboardItemData));
+      } else if (normalizedText) {
+        await LocalShareService.copyTextToClipboard(normalizedText);
+      }
+
+      if (items.length > 0) {
+        await navigator.clipboard.write(items);
+      }
+
+      const url = SHARE_CHANNELS.discord.buildUrl(normalizedText);
+      await openExternalUrl(url);
+      return { success: true, channel: 'discord', label: 'Discord', url, imageStaged: Boolean(imageBlob) };
+    } catch (error) {
+      return { success: false, channel: 'discord', label: 'Discord', message: error?.message || 'Could not share to Discord.' };
+    }
+  }
+
+  static async shareToMessenger({ imageBlob = null, text = '', filename = 'gamepilot-share.png' }) {
+    const normalizedText = normalizeShareText(text);
+    if (!normalizedText && !imageBlob) {
+      return { success: false, message: 'Nothing to share to Messenger.' };
+    }
+
+    const canWriteClipboard = typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.write === 'function';
+
+    if (imageBlob && !canWriteClipboard) {
+      return { success: false, message: 'Clipboard image sharing is not supported on this device.' };
+    }
+
+    try {
+      const items = [];
+      if (imageBlob) {
+        const file = new File([imageBlob], filename, { type: imageBlob.type || 'image/png' });
+        const clipboardItemData = { [file.type]: file };
+        if (normalizedText) {
+          clipboardItemData['text/plain'] = new Blob([normalizedText], { type: 'text/plain' });
+        }
+        items.push(new ClipboardItem(clipboardItemData));
+      } else if (normalizedText) {
+        await LocalShareService.copyTextToClipboard(normalizedText);
+      }
+
+      if (items.length > 0) {
+        await navigator.clipboard.write(items);
+      }
+
+      const url = SHARE_CHANNELS.messenger.buildUrl(normalizedText);
+      await openExternalUrl(url);
+      return { success: true, channel: 'messenger', label: 'Messenger', url, imageStaged: Boolean(imageBlob) };
+    } catch (error) {
+      return { success: false, channel: 'messenger', label: 'Messenger', message: error?.message || 'Could not share to Messenger.' };
+    }
+  }
+
   static canUseNativeShare() {
     return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   }
@@ -235,11 +330,11 @@ export class LocalShareService {
   }
 
   static buildSteamHoursShareText(totalMinutes = 0, gameCount = 0, username = 'Gamer') {
-    const totalHours = Math.max(0, Math.round(Number(totalMinutes) / 60));
+    const playtimeLabel = formatPlaytime(totalMinutes);
     const lines = [
       `🎮 ${username}'s Steam Lifetime Hours`,
       ``,
-      `⏱️ ${totalHours.toLocaleString()} hours across ${gameCount} game${gameCount !== 1 ? 's' : ''}`,
+      `⏱️ ${playtimeLabel} across ${gameCount} game${gameCount !== 1 ? 's' : ''}`,
       ``,
       `Tracked with GamePilot — my library, my stats, my machine.`,
       `https://github.com/jonnym69-ai/the-gamepilot/releases`,
@@ -267,5 +362,194 @@ export class LocalShareService {
       '#GamePilot #LibraryValue #SteamValue'
     ];
     return lines.join('\n');
+  }
+
+  static buildLibraryShareText(library = [], username = 'Gamer', period = 'all') {
+    const safeLibrary = Array.isArray(library) ? library : [];
+    const validPeriod = ['weekly', 'monthly'].includes(period) ? period : 'all';
+    const periodLabel = validPeriod === 'weekly' ? 'Weekly' : validPeriod === 'monthly' ? 'Monthly' : 'All-Time';
+
+    let totalMinutes = 0;
+    let steamMinutes = 0;
+    let mostPlayed = [];
+    let sessionCount = 0;
+    let gameCount = safeLibrary.length;
+    let steamGameCount = 0;
+
+    if (validPeriod !== 'all') {
+      try {
+        const dashboard = StatsAggregationService.getDashboardData(safeLibrary);
+        const snapshot = dashboard?.periods?.[validPeriod];
+        const games = snapshot?.topGames || [];
+        totalMinutes = snapshot?.playtimeMinutes || 0;
+        sessionCount = snapshot?.sessions || 0;
+        gameCount = snapshot?.uniqueGames || 0;
+        mostPlayed = games.slice(0, 3).filter((game) => game.totalPlaytime > 0);
+        const steamGames = games.filter((game) => String(game?.platform).toLowerCase() === 'steam');
+        steamMinutes = steamGames.reduce((sum, game) => sum + (game.totalPlaytime || 0), 0);
+        steamGameCount = steamGames.length;
+      } catch (error) {
+        console.warn('Failed to compute period share text, falling back to all-time:', error);
+      }
+    }
+
+    if (validPeriod === 'all' || totalMinutes === 0) {
+      const safeMinutes = (game) => {
+        const value = Number(game?.time_played ?? game?.playtime ?? 0);
+        return Number.isFinite(value) ? value : 0;
+      };
+      totalMinutes = safeLibrary.reduce((sum, game) => sum + safeMinutes(game), 0);
+      const steamGames = safeLibrary.filter((game) => String(game?.platform || game?.brandPlatform || '').toLowerCase() === 'steam');
+      steamMinutes = steamGames.reduce((sum, game) => sum + safeMinutes(game), 0);
+      steamGameCount = steamGames.length;
+      mostPlayed = [...safeLibrary]
+        .sort((left, right) => safeMinutes(right) - safeMinutes(left))
+        .slice(0, 3)
+        .filter((game) => safeMinutes(game) > 0);
+      // Fallback: sum library launch counts for all-time session count
+      if (sessionCount === 0) {
+        sessionCount = safeLibrary.reduce((sum, game) => sum + (game?.launch_count || game?.sessions || 0), 0);
+      }
+    }
+
+    const totalPlaytime = formatPlaytime(totalMinutes);
+    const steamPlaytime = formatPlaytime(steamMinutes);
+    const libraryValue = LibraryValueService.calculateLibraryValue(safeLibrary);
+
+    const lines = [
+      `🎮 ${username}'s ${periodLabel} GamePilot Recap`,
+      ``,
+      `⏱️ ${totalPlaytime} across ${gameCount} games · ${sessionCount} session${sessionCount !== 1 ? 's' : ''}`,
+      `🎯 Steam: ${steamPlaytime} · ${steamGameCount} games`,
+      `💰 Library value: $${(libraryValue?.totalValue || 0).toFixed(2)}`
+    ];
+
+    if (mostPlayed.length > 0) {
+      const topNames = mostPlayed.map((game) => game.name).filter(Boolean).join(', ');
+      lines.push(`🏆 Most played: ${topNames}`);
+    }
+
+    lines.push('');
+    lines.push('Get your own local-first recap:');
+    lines.push('https://github.com/jonnym69-ai/the-gamepilot/releases');
+    lines.push('#GamePilot #SteamHours #GamingStats');
+
+    return lines.join('\n');
+  }
+
+  static buildTopRatedShareText(library = [], username = 'Gamer') {
+    const safeLibrary = Array.isArray(library) ? library : [];
+    const topRated = safeLibrary
+      .filter((game) => typeof game?.userRating === 'number' && game.userRating >= 10)
+      .sort((left, right) => {
+        const ratingDiff = (right.userRating || 0) - (left.userRating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        const aTime = Number(left?.time_played ?? left?.playtime ?? left?.totalPlaytime ?? 0);
+        const bTime = Number(right?.time_played ?? right?.playtime ?? right?.totalPlaytime ?? 0);
+        return bTime - aTime;
+      })
+      .slice(0, 6);
+
+    const totalMinutes = topRated.reduce((sum, game) => {
+      const value = Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+
+    const lines = [
+      `🌟 ${username}'s Perfect 10/10 Picks`,
+      ``,
+      `🏆 ${topRated.length} game${topRated.length !== 1 ? 's' : ''} rated a perfect 10`,
+      `⏱️ ${formatPlaytime(totalMinutes)} across these favourites`
+    ];
+
+    if (topRated.length > 0) {
+      lines.push('');
+      topRated.forEach((game, index) => {
+        const playtime = formatPlaytime(Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0));
+        lines.push(`${index + 1}. ${game.name} · ${playtime}`);
+      });
+    }
+
+    lines.push('');
+    lines.push('Get your own local-first library recap:');
+    lines.push('https://github.com/jonnym69-ai/the-gamepilot/releases');
+    lines.push('#GamePilot #TopRated #Perfect10');
+
+    return lines.join('\n');
+  }
+
+  static buildTopRatedShareCardPackage(library = [], username = 'Gamer') {
+    const text = LocalShareService.buildTopRatedShareText(library, username);
+    const filename = `gamepilot-top-rated-${new Date().toISOString().split('T')[0]}.png`;
+    const title = `${username}'s Perfect 10/10 Picks`;
+    return { text, filename, title };
+  }
+
+  static buildLibraryShareCardPackage(library = [], username = 'Gamer', period = 'all') {
+    const validPeriod = ['weekly', 'monthly'].includes(period) ? period : 'all';
+    const periodLabel = validPeriod === 'weekly' ? 'Weekly' : validPeriod === 'monthly' ? 'Monthly' : 'Library';
+    const text = LocalShareService.buildLibraryShareText(library, username, validPeriod);
+    const filename = `gamepilot-${validPeriod}-recap-${new Date().toISOString().split('T')[0]}.png`;
+    const title = `${username}'s ${periodLabel} GamePilot Recap`;
+    return { text, filename, title };
+  }
+
+  static buildIdentityShareText(profile = {}, username = 'Gamer') {
+    const safeProfile = profile || {};
+    const identity = safeProfile.identity || {};
+    const stats = safeProfile.stats || {};
+    const persona = safeProfile.persona || {};
+    const displayName = safeProfile.username || username || 'Pilot';
+
+    const identityLabel = identity.personality || persona?.personaIdentity?.label || 'Uncharted Pilot';
+    const description = identity.description || persona?.personaIdentity?.description || 'My gaming identity';
+    const title = safeProfile.title || 'Newbie';
+    const level = safeProfile.level || 1;
+    const totalPlaytime = stats.totalPlayTime || 0;
+
+    const lines = [
+      `${displayName} · GamePilot Player Identity`,
+      '',
+      `${identityLabel}`,
+      `${description}`,
+      '',
+      `Title: ${title} · Level ${level} · ${formatPlaytime(totalPlaytime)} total playtime`,
+      `Top mood: ${identity.favoriteMood || '—'} · Top genre: ${identity.favoriteGenre || '—'} · Playstyle: ${identity.playStyle || 'Balanced'}`,
+      '',
+      'Generated locally by GamePilot.',
+      'https://github.com/jonnym69-ai/the-gamepilot/releases',
+      '#GamePilot #PlayerIdentity'
+    ];
+
+    return lines.join('\n');
+  }
+
+  static buildIdentityShareCardPackage(profile = {}, username = 'Gamer') {
+    const text = LocalShareService.buildIdentityShareText(profile, username);
+    const filename = `gamepilot-identity-${new Date().toISOString().split('T')[0]}.png`;
+    const title = `${profile?.username || username || 'Pilot'}'s GamePilot Identity`;
+    return { text, filename, title };
+  }
+
+  static buildPeriodStoryShareText(periodSnapshot = {}, period = 'weekly', username = 'Gamer') {
+    return RecapStoryService.buildShareText(periodSnapshot, period, username);
+  }
+
+  static buildPeriodStoryShareCardPackage(periodSnapshot = {}, period = 'weekly', username = 'Gamer') {
+    const text = LocalShareService.buildPeriodStoryShareText(periodSnapshot, period, username);
+    const filename = `gamepilot-${period}-story-${new Date().toISOString().split('T')[0]}.png`;
+    const title = `${username || 'Pilot'}'s ${period === 'weekly' ? 'Weekly' : 'Monthly'} GamePilot Story`;
+    return { text, filename, title };
+  }
+
+  static buildIdentityShareDataFromLibrary(library = [], username = 'Gamer') {
+    const profile = GamingIdentity.getProfile();
+    const evolution = YearInReviewService.getLifetimePersonaEvolution(library);
+    return {
+      profile,
+      evolution,
+      text: LocalShareService.buildIdentityShareText(profile, username),
+      package: LocalShareService.buildIdentityShareCardPackage(profile, username)
+    };
   }
 }

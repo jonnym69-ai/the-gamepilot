@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AdvancedAnalyticsService } from '../services/AdvancedAnalyticsService';
 import { LocalShareService } from '../services/LocalShareService';
+import ProfileService from '../services/ProfileService';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import { BarChart, PieChart } from './StatsCharts';
 import ShareMenu from './ShareMenu';
@@ -105,9 +106,11 @@ export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro 
   } = analytics;
 
   const topInsight = insights?.[0];
-  const shareText = topInsight
-    ? `🎮 ${username}'s Advanced GamePilot Stats\n\n${topInsight.icon} ${topInsight.title}: ${topInsight.text}\n\nDive deeper with GamePilot Pro.`
-    : `🎮 ${username}'s Advanced GamePilot Stats\n\nDeep library analytics powered by GamePilot Pro.`;
+  const shareText = ProfileService.appendSocialLinksToShareText(
+    topInsight
+      ? `🎮 ${username}'s Advanced GamePilot Stats\n\n${topInsight.icon} ${topInsight.title}: ${topInsight.text}\n\nDive deeper with GamePilot Pro.`
+      : `🎮 ${username}'s Advanced GamePilot Stats\n\nDeep library analytics powered by GamePilot Pro.`
+  );
 
   const generateShareImage = async () => {
     if (!cardRef.current) return false;
@@ -154,20 +157,20 @@ export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro 
     URL.revokeObjectURL(url);
   };
 
-  const handleCopyText = async () => {
-    const success = await LocalShareService.copyTextToClipboard(shareText);
+  const handleCopyText = async (text = null) => {
+    const success = await LocalShareService.copyTextToClipboard(text || shareText);
     return success;
   };
 
-  const handleShareChannel = async (channel) => {
-    await LocalShareService.openShareIntent(channel, shareText);
+  const handleShareChannel = async (channel, text = null) => {
+    await LocalShareService.openShareIntent(channel, text || shareText);
   };
 
-  const handleDownloadText = () => {
-    LocalShareService.downloadShareText(shareText, 'gamepilot-advanced-analytics.txt');
+  const handleDownloadText = (text = null) => {
+    LocalShareService.downloadShareText(text || shareText, 'gamepilot-advanced-analytics.txt');
   };
 
-  const handleNativeShare = async () => {
+  const handleNativeShare = async (text = null) => {
     const blob = await (async () => {
       if (!cardRef.current) return null;
       const canvas = await html2canvas(cardRef.current, {
@@ -182,7 +185,7 @@ export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro 
       return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     })();
     const files = blob ? [new File([blob], 'gamepilot-advanced-analytics.png', { type: 'image/png' })] : [];
-    await LocalShareService.shareWithNativeShare({ title: "My Advanced GamePilot Stats", text: shareText, files });
+    await LocalShareService.shareWithNativeShare({ title: "My Advanced GamePilot Stats", text: text || shareText, files });
   };
 
   return (
@@ -197,6 +200,7 @@ export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro 
           onCopyImage={generateShareImage}
           onSaveImage={saveShareImage}
           onShareText={handleShareChannel}
+          buildCaption={() => shareText}
           onDownloadText={handleDownloadText}
           onNativeShare={handleNativeShare}
           imageAvailable

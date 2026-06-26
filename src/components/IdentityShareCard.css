@@ -1,0 +1,310 @@
+.identity-share-card {
+  position: relative;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 64px;
+}
+
+.identity-share-card-glow {
+  position: absolute;
+  top: -160px;
+  right: -160px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, rgba(124, 58, 237, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.identity-share-card-cover {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  opacity: 0.18;
+  filter: saturate(0.6) brightness(0.7);
+}
+
+.identity-share-card-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.92) 50%, rgba(15, 23, 42, 0.88) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.7) 100%);
+  z-index: 0;
+}
+
+.identity-share-watermark {
+  position: absolute;
+  bottom: -48px;
+  right: -48px;
+  color: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 0;
+}
+
+.identity-share-card-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 48px;
+}
+
+.identity-share-card-brand {
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.identity-share-card-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.identity-share-card-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.identity-share-card-hero {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.identity-share-card-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 16px 40px rgba(124, 58, 237, 0.35);
+}
+
+.identity-share-card-avatar svg {
+  color: #ffffff;
+}
+
+.identity-share-card-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.identity-share-card-eyebrow {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.identity-share-card-title {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.identity-share-card-description {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 620px;
+}
+
+.identity-share-card-badges {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.identity-share-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.identity-share-card-badge svg {
+  color: #a78bfa;
+}
+
+.identity-share-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.identity-share-card-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.identity-share-card-stat svg {
+  color: #a78bfa;
+  margin-bottom: 4px;
+}
+
+.identity-share-card-stat strong {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.identity-share-card-stat span {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.identity-share-card-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.identity-share-card-identity-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.identity-share-card-identity-grid span {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.identity-share-card-identity-grid strong {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.identity-share-card-evolution {
+  margin-top: auto;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(124, 58, 237, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+
+.identity-share-card-evolution-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #a78bfa;
+  margin-bottom: 8px;
+}
+
+.identity-share-card-evolution p {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.identity-share-card-evolution-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.identity-share-card-evolution-from {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: line-through;
+}
+
+.identity-share-card-evolution-to {
+  color: #a78bfa;
+}
+
+.identity-share-card-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.identity-share-card-cta {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.identity-share-card-tagline {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 720px) {
+  .identity-share-card {
+    padding: 32px;
+  }
+
+  .identity-share-card-stats,
+  .identity-share-card-identity-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .identity-share-card-title {
+    font-size: 2rem;
+  }
+}

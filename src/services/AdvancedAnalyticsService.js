@@ -61,7 +61,10 @@ const groupByField = (library, field, options = {}) => {
   const groups = {};
 
   library.forEach((game) => {
-    const values = game?.[field];
+    // Support both plural array fields (developers) and singular string fields (developer)
+    const pluralField = field;
+    const singularField = field.replace(/s$/, '');
+    const values = game?.[pluralField] ?? game?.[singularField];
     if (!values) return;
     const list = Array.isArray(values) ? values : [values];
     const minutes = getMinutesPlayed(game);

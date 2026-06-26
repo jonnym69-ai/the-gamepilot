@@ -141,6 +141,12 @@ const GOAL_TYPE_LABELS = {
 
 const generateGoalId = () => `goal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
+const getGoalStorageKey = (period) => {
+  if (period === 'week') return 'weekly';
+  if (period === 'month') return 'monthly';
+  return period;
+};
+
 const getDefaultGoals = () => ({
   weekly: [
     { id: 'w_play_days', label: 'Play at least 3 days this week', target: 3, type: 'days', period: 'week', active: true },
@@ -543,7 +549,9 @@ export const HabitTrackerService = {
       genre: genre || null,
       createdAt: new Date().toISOString(),
     };
-    goals[period].push(newGoal);
+    const storageKey = getGoalStorageKey(period);
+    if (!goals[storageKey]) goals[storageKey] = [];
+    goals[storageKey].push(newGoal);
     saveGoals(goals);
     return newGoal;
   },
@@ -551,10 +559,10 @@ export const HabitTrackerService = {
   updateGoal(id, updates) {
     const goals = loadGoals();
     let updated = false;
-    ['weekly', 'monthly'].forEach((period) => {
-      const idx = goals[period].findIndex((g) => g.id === id);
+    ['weekly', 'monthly'].forEach((storageKey) => {
+      const idx = goals[storageKey]?.findIndex((g) => g.id === id) ?? -1;
       if (idx !== -1) {
-        goals[period][idx] = { ...goals[period][idx], ...updates };
+        goals[storageKey][idx] = { ...goals[storageKey][idx], ...updates };
         updated = true;
       }
     });
@@ -565,10 +573,10 @@ export const HabitTrackerService = {
   deleteGoal(id) {
     const goals = loadGoals();
     let deleted = false;
-    ['weekly', 'monthly'].forEach((period) => {
-      const before = goals[period].length;
-      goals[period] = goals[period].filter((g) => g.id !== id);
-      if (goals[period].length < before) deleted = true;
+    ['weekly', 'monthly'].forEach((storageKey) => {
+      const before = goals[storageKey]?.length || 0;
+      goals[storageKey] = (goals[storageKey] || []).filter((g) => g.id !== id);
+      if (goals[storageKey].length < before) deleted = true;
     });
     if (deleted) saveGoals(goals);
     return deleted;
@@ -576,7 +584,8 @@ export const HabitTrackerService = {
 
   toggleGoalActive(period, id) {
     const goals = loadGoals();
-    const goal = goals[period]?.find((g) => g.id === id);
+    const storageKey = getGoalStorageKey(period);
+    const goal = goals[storageKey]?.find((g) => g.id === id);
     if (goal) {
       goal.active = !goal.active;
       saveGoals(goals);

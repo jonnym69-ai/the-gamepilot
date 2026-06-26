@@ -1,0 +1,67 @@
+Social Links Integration - Polish Notes
+=======================================
+
+Completed:
+- ProfileService multi-social link storage + migration from legacy stream link
+- Profile.js social links editor UI
+- ShareMenu.js social link selector + caption append
+- GameShareCard.js social pill rendering on game card image
+- All share handlers updated to accept optional text and use social-appended captions
+- Build passes successfully
+
+Completed today:
+- Redesigned GameShareCard layout: title/rating/stats at top, framed cover art below
+- Increased cover frame size to 800x480
+- Added 10-star rating display for 10-point scale on GameShareCard
+- Added 10-star rating display on TopRatedShareCard (was showing 5 stars)
+- Added date stat pills: first played (GamePilot), last played (GamePilot), last played (Steam)
+- Added quick caption generator to share text (e.g., "I've put X hours into [game] and I'm still having a blast")
+- Updated GameModal share text to use caption generator
+- Replaced full social URLs with handles on GameShareCard pills (e.g., youtube.com/@handle → @handle)
+- Refactored DailyDoodleTitle layout: logo inline with wordmark, wider card, less padding, doodle-style dashed border
+- Fixed doodle spacing: left content now sizes to its content, right meta fills remaining space, logo/wordmark gap increased
+- Fixed ShareCaptionDialog click-through issue: rendered via portal to document.body, z-index bumped to 200000
+- Added "The Story of Your Year" arc to YearInReviewShareCard image and share text
+
+Needs polish / testing:
+1. GameShareCard layout
+   - Verify spacing works for games with/without ratings, stats, social links
+   - Ensure title, rating, stats don't feel cramped at the top
+   - Test with long game titles and multiple stat pills
+   - Verify social pills sit cleanly below the cover frame
+
+2. GameShareCard social pills
+   - Test with very long URLs and multiple enabled links
+   - Confirm pills stay within 1080x1080 card bounds
+   - Consider a max pill count or wrapping strategy
+   - Platform colors: verify YouTube/Twitch/Discord/etc. look good; X/Threads white indicators need visible border
+
+3. ShareMenu social selector
+   - Visual polish (checkboxes, spacing, hover states)
+   - Keyboard navigation / accessibility
+   - Empty state when no social links are configured
+   - Confirm selection state persists for the current share session only
+
+4. End-to-end share flow testing
+   - Add/edit social links in Profile
+   - Select links in ShareMenu
+   - Verify copy, download, native share, Discord, Messenger all include selected links
+   - Verify no social links are included when none selected
+
+5. Caption text
+   - Test quick caption variations and emoji placement
+   - Ensure selected links are appended cleanly without duplicate line breaks
+   - Consider formatting (e.g., one link per line vs. inline)
+
+6. Edge cases
+   - Malformed URLs
+   - Duplicate platform entries
+   - No enabled social links
+   - Sharing before any links are configured
+   - Missing cover art
+   - Games with no session history (first/last played missing)
+
+7. Nice-to-have / limitations
+   - Optional platform label (currently stored but not exposed in UI)
+   - Better URL validation/normalization in Profile editor
+   - Steam does not expose "first played" in local files; GamePilot uses earliest session timestamp as fallback

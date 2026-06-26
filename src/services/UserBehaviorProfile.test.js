@@ -29,10 +29,13 @@ describe('UserBehaviorProfile', () => {
     });
 
     test('recovers gracefully from corrupt JSON', () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       StorageService.setString(UserBehaviorProfile.STORAGE_KEY, '{not-json');
       const profile = UserBehaviorProfile.getProfile();
       expect(profile.moodPreferences).toEqual({});
       expect(profile.selectionHistory).toEqual([]);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      errorSpy.mockRestore();
     });
 
     test('coerces non-array selectionHistory to empty array', () => {

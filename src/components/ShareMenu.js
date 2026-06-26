@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Check,
   Copy,
@@ -12,12 +13,20 @@ import {
   Share2,
   Smartphone,
   Twitter,
+  X,
 } from 'lucide-react';
 import { LocalShareService } from '../services/LocalShareService';
+import ProfileService, { SOCIAL_PLATFORMS } from '../services/ProfileService';
+import { ShareCaptionDialog } from './ShareCaptionDialog';
 import './ShareMenu.css';
 
 const PLATFORM_ICONS = {
   x: Twitter,
+  messenger: ({ size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2C6.48 2 2 6.03 2 11c0 2.64 1.32 5.01 3.42 6.65V22l4.09-2.24c1.09.3 2.25.47 3.49.47 5.52 0 10-4.03 10-9s-4.48-9-10-9zm1.2 12.1L10.8 12 7 15.2V9.8l3.4 3.2 2.4-2.3 3.8-3.2v5.4l-2.4 2.3-2 1.9z" />
+    </svg>
+  ),
   bluesky: ({ size }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.599 1.5 2.92c-.054 1.151.753 2.014 2.765 3.08 1.449.806 3.843 2.171 4.322 2.531.598.448.502 1.168-.193 1.168-.741 0-3.064-2.571-4.091-3.481C3.19 5.994 1.613 5.5 1 5.5c-.787 0-.787.787-.787.787 0 1.021 1.593 3.07 4.2 4.98 2.604 1.907 5.57 2.479 7.587 2.479 2.017 0 4.983-.572 7.587-2.479 2.607-1.91 4.2-3.959 4.2-4.98 0 0 0-.787-.787-.787-.613 0-2.19.494-3.703 1.718-1.027.91-3.35 3.481-4.091 3.481-.695 0-.791-.72-.193-1.168.479-.36 2.873-1.725 4.322-2.531 2.012-1.066 2.819-1.929 2.765-3.08-.061-1.321-1.066-1.976-2.702-.115-2.752 1.942-5.711 5.881-6.798 7.995z" />
@@ -50,22 +59,42 @@ const PLATFORM_ICONS = {
   email: Mail,
 };
 
-const ORDER = ['x', 'bluesky', 'threads', 'reddit', 'discord', 'facebook', 'linkedin', 'whatsapp', 'telegram', 'email', 'mastodon'];
+const ORDER = ['x', 'bluesky', 'threads', 'reddit', 'discord', 'messenger', 'facebook', 'linkedin', 'whatsapp', 'telegram', 'email', 'mastodon'];
 const SUPPORTED_CHANNELS = LocalShareService.getSupportedChannels();
 const SUPPORTED_IDS = new Set(SUPPORTED_CHANNELS.map((channel) => channel.id));
 
-export function ShareMenu({ onCopyText, onCopyImage, onSaveImage, onShareText, onDownloadText, onNativeShare, imageAvailable, disabled = false }) {
+export function ShareMenu({ onCopyText, onCopyImage, onSaveImage, onShareText, onShareToDiscord, onShareToMessenger, onDownloadText, onNativeShare, imageAvailable, disabled = false, buildCaption = null, triggerLabel = 'Share' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState(null);
+  const [editingChannel, setEditingChannel] = useState(null);
+  const [editingCaption, setEditingCaption] = useState('');
+  const [showSocialSelector, setShowSocialSelector] = useState(false);
+  const [selectedSocialIds, setSelectedSocialIds] = useState(() => {
+    const enabled = ProfileService.getEnabledSocialLinks();
+    return enabled.map((link) => link.id);
+  });
   const menuRef = useRef(null);
+  const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
   const canCopyImage = LocalShareService.canCopyImage();
   const canNativeShare = LocalShareService.canUseNativeShare();
+  const socialLinks = ProfileService.getSocialLinks();
+  const hasSocialLinks = socialLinks.length > 0;
 
-  const close = () => setIsOpen(false);
+  const getShareText = (baseText) => {
+    if (!hasSocialLinks || selectedSocialIds.length === 0) return baseText;
+    return ProfileService.appendSocialLinksToShareText(baseText, selectedSocialIds);
+  };
+
+  const close = () => {
+    setIsOpen(false);
+    setDropdownPosition(null);
+  };
 
   const handleCopyText = async () => {
-    const success = await onCopyText();
+    const baseText = buildCaption ? buildCaption() : null;
+    const success = await onCopyText(baseText ? getShareText(baseText) : null);
     if (success) {
       setCopied('text');
       setTimeout(() => setCopied((current) => (current === 'text' ? null : current)), 2000);
@@ -82,22 +111,77 @@ export function ShareMenu({ onCopyText, onCopyImage, onSaveImage, onShareText, o
     close();
   };
 
+  useLayoutEffect(() => {
+    if (!isOpen || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const dropdownWidth = 220;
+    const margin = 12;
+    const minHeight = 180;
+    const spaceRight = Math.max(0, viewportWidth - rect.right - margin);
+    const spaceLeft = Math.max(0, rect.left - dropdownWidth - margin);
+    const spaceBelow = Math.max(0, viewportHeight - rect.bottom - margin);
+    const spaceAbove = Math.max(0, rect.top - margin);
+
+    let top = rect.bottom + margin;
+    let left = Math.min(Math.max(margin, rect.left), viewportWidth - dropdownWidth - margin);
+    let maxHeight = Math.min(520, spaceBelow);
+
+    const sideHeight = viewportHeight - rect.top - margin;
+    if (spaceRight >= dropdownWidth && sideHeight >= minHeight) {
+      top = rect.top;
+      left = rect.right + margin;
+      maxHeight = Math.min(520, sideHeight);
+    } else if (spaceLeft >= dropdownWidth && sideHeight >= minHeight) {
+      top = rect.top;
+      left = Math.max(margin, rect.left - dropdownWidth - margin);
+      maxHeight = Math.min(520, sideHeight);
+    } else {
+      const placeAbove = spaceBelow < minHeight && spaceAbove > spaceBelow;
+      maxHeight = Math.min(520, placeAbove ? spaceAbove : spaceBelow);
+      top = placeAbove
+        ? Math.max(margin, rect.top - Math.min(520, maxHeight) - margin)
+        : rect.bottom + margin;
+      left = Math.min(Math.max(margin, rect.left), viewportWidth - dropdownWidth - margin);
+    }
+
+    setDropdownPosition({ position: 'fixed', top, left, maxHeight });
+  }, [isOpen]);
+
   useEffect(() => {
+    const isInsideMenu = (target) =>
+      (menuRef.current && menuRef.current.contains(target)) ||
+      (dropdownRef.current && dropdownRef.current.contains(target)) ||
+      (buttonRef.current && buttonRef.current.contains(target));
+
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target) && !buttonRef.current?.contains(event.target)) {
+      if (!isInsideMenu(event.target)) {
         setIsOpen(false);
       }
     };
 
+    const handleClose = () => setIsOpen(false);
+    const handleScroll = (event) => {
+      if (isInsideMenu(event.target)) {
+        return;
+      }
+      setIsOpen(false);
+    };
+
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('click', handleClickOutside);
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') setIsOpen(false);
       });
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleClose);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleClose);
     };
   }, [isOpen]);
 
@@ -107,17 +191,25 @@ export function ShareMenu({ onCopyText, onCopyImage, onSaveImage, onShareText, o
         ref={buttonRef}
         type="button"
         className="share-menu-trigger"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((open) => !open);
+        }}
         disabled={disabled}
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
         <Share2 size={16} />
-        <span>{disabled ? 'Preparing...' : 'Share'}</span>
+        <span>{disabled ? 'Preparing...' : triggerLabel}</span>
       </button>
 
-      {isOpen && (
-        <div className="share-menu-dropdown" role="menu">
+      {isOpen && createPortal(
+        <div
+          className="share-menu-dropdown"
+          ref={dropdownRef}
+          role="menu"
+          style={dropdownPosition ? { ...dropdownPosition, zIndex: 99999, pointerEvents: 'auto' } : { zIndex: 99999, pointerEvents: 'auto' }}
+        >
           {imageAvailable && (
             <div className="share-menu-group">
               <span className="share-menu-label">Image</span>
@@ -140,11 +232,23 @@ export function ShareMenu({ onCopyText, onCopyImage, onSaveImage, onShareText, o
               {copied === 'text' ? <Check size={16} /> : <Copy size={16} />}
               <span>{copied === 'text' ? 'Text copied' : 'Copy share text'}</span>
             </button>
-            <button type="button" role="menuitem" onClick={() => { onDownloadText(); close(); }}>
-              <Download size={16} />
-              <span>Download caption</span>
-            </button>
+            {onDownloadText && (
+              <button type="button" role="menuitem" onClick={() => { onDownloadText(buildCaption ? getShareText(buildCaption()) : null); close(); }}>
+                <Download size={16} />
+                <span>Download caption</span>
+              </button>
+            )}
           </div>
+
+          {hasSocialLinks && (
+            <div className="share-menu-group">
+              <span className="share-menu-label">Socials</span>
+              <button type="button" role="menuitem" onClick={() => setShowSocialSelector(true)}>
+                <Share2 size={16} />
+                <span>{selectedSocialIds.length > 0 ? `${selectedSocialIds.length} social${selectedSocialIds.length === 1 ? '' : 's'} selected` : 'No socials selected'}</span>
+              </button>
+            </div>
+          )}
 
           <div className="share-menu-group">
             <span className="share-menu-label">Platforms</span>
@@ -152,12 +256,29 @@ export function ShareMenu({ onCopyText, onCopyImage, onSaveImage, onShareText, o
               const config = SUPPORTED_CHANNELS.find((channel) => channel.id === channelId);
               if (!config) return null;
               const Icon = PLATFORM_ICONS[channelId] || Monitor;
+              const handleClick = () => {
+                if (buildCaption) {
+                  const config = SUPPORTED_CHANNELS.find((channel) => channel.id === channelId);
+                  setEditingChannel(config || { id: channelId, label: channelId });
+                  setEditingCaption(getShareText(buildCaption(channelId)));
+                  close();
+                  return;
+                }
+                if (channelId === 'discord' && onShareToDiscord) {
+                  onShareToDiscord(null);
+                } else if (channelId === 'messenger' && onShareToMessenger) {
+                  onShareToMessenger(null);
+                } else {
+                  onShareText(channelId);
+                }
+                close();
+              };
               return (
                 <button
                   key={channelId}
                   type="button"
                   role="menuitem"
-                  onClick={() => { onShareText(channelId); close(); }}
+                  onClick={handleClick}
                 >
                   <Icon size={16} />
                   <span>{config.label}</span>
@@ -169,13 +290,104 @@ export function ShareMenu({ onCopyText, onCopyImage, onSaveImage, onShareText, o
           {canNativeShare && (
             <div className="share-menu-group">
               <span className="share-menu-label">Device</span>
-              <button type="button" role="menuitem" onClick={() => { onNativeShare(); close(); }}>
+              <button type="button" role="menuitem" onClick={() => { onNativeShare(buildCaption ? getShareText(buildCaption()) : null); close(); }}>
                 <Smartphone size={16} />
                 <span>Native share</span>
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
+      )}
+
+      <ShareCaptionDialog
+        isOpen={!!editingChannel}
+        onClose={() => setEditingChannel(null)}
+        channel={editingChannel}
+        caption={editingCaption}
+        onShare={(text) => {
+          const channelId = editingChannel?.id;
+          if (channelId === 'discord' && onShareToDiscord) {
+            onShareToDiscord(text);
+          } else if (channelId === 'messenger' && onShareToMessenger) {
+            onShareToMessenger(text);
+          } else if (onShareText) {
+            onShareText(channelId, text);
+          }
+          setEditingChannel(null);
+          close();
+        }}
+      />
+
+      {showSocialSelector && createPortal(
+        <div
+          className="share-social-selector-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            zIndex: 100000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => setShowSocialSelector(false)}
+        >
+          <div
+            className="share-social-selector"
+            style={{
+              backgroundColor: 'var(--card-bg, #1a1a2e)',
+              borderRadius: 12,
+              padding: 20,
+              width: 320,
+              maxWidth: '90vw',
+              border: '1px solid rgba(255,255,255,0.1)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h4 style={{ margin: 0, fontSize: 16 }}>Include social links</h4>
+              <button type="button" onClick={() => setShowSocialSelector(false)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <p style={{ margin: '0 0 12px', fontSize: 12, opacity: 0.7 }}>
+              Choose which links appear in this share caption.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {socialLinks.map((link) => {
+                const platform = SOCIAL_PLATFORMS.find((p) => p.key === link.platform) || SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
+                const checked = selectedSocialIds.includes(link.id);
+                return (
+                  <label key={link.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 10px', borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedSocialIds((prev) => [...prev, link.id]);
+                        } else {
+                          setSelectedSocialIds((prev) => prev.filter((id) => id !== link.id));
+                        }
+                      }}
+                    />
+                    <span style={{ fontSize: 16 }}>{platform.icon}</span>
+                    <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{platform.label}</span>
+                    <span style={{ fontSize: 11, opacity: 0.6, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{link.url}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSocialSelector(false)}
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: 'none', background: 'var(--accent-color, #ff6b35)', color: '#fff', cursor: 'pointer', fontWeight: 600 }}
+            >
+              Done
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

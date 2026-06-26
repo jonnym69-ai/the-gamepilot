@@ -1,0 +1,232 @@
+.library-share-card {
+  --recap-bg: linear-gradient(135deg, #0d1224 0%, #111827 50%, #0d1224 100%);
+  --recap-accent: #ff6b35;
+  --recap-glow: rgba(255, 107, 53, 0.22);
+  --recap-text: #f8fafc;
+  --recap-muted: #94a3b8;
+  --recap-surface: rgba(255, 255, 255, 0.06);
+  --recap-surface-border: rgba(255, 255, 255, 0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 1080px;
+  height: 1080px;
+  padding: 64px;
+  box-sizing: border-box;
+  background: var(--recap-bg);
+  color: var(--recap-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+}
+
+.library-share-card-cover {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  opacity: 0.18;
+  filter: saturate(0.6) brightness(0.7);
+}
+
+.library-share-card-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(13, 18, 36, 0.96) 0%, rgba(13, 18, 36, 0.92) 50%, rgba(13, 18, 36, 0.88) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.7) 100%);
+  z-index: 0;
+}
+
+.library-share-card-glow {
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--recap-glow) 0%, rgba(255, 107, 53, 0) 70%);
+  pointer-events: none;
+}
+
+.library-share-watermark {
+  position: absolute;
+  bottom: -48px;
+  right: -48px;
+  color: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 0;
+}
+
+.library-share-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1;
+}
+
+.library-share-card-brand {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--recap-accent);
+  text-transform: uppercase;
+}
+
+.library-share-card-tag {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--recap-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.library-share-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 1;
+  margin-top: 24px;
+}
+
+.library-share-card-eyebrow {
+  font-size: 22px;
+  color: var(--recap-muted);
+  margin-bottom: 20px;
+  letter-spacing: 0.02em;
+}
+
+.library-share-card-headline {
+  margin-bottom: 36px;
+}
+
+.library-share-card-stat strong {
+  display: block;
+  font-size: 132px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--recap-accent);
+  text-shadow: 0 12px 40px var(--recap-glow);
+}
+
+.library-share-card-stat span {
+  display: block;
+  font-size: 32px;
+  color: var(--recap-text);
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+.library-share-card-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.library-share-card-strip > div {
+  background: var(--recap-surface);
+  border: 1px solid var(--recap-surface-border);
+  border-radius: 18px;
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.library-share-card-strip strong {
+  display: block;
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--recap-text);
+  margin-bottom: 6px;
+}
+
+.library-share-card-strip span {
+  font-size: 18px;
+  color: var(--recap-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.library-share-card-top-games {
+  background: var(--recap-surface);
+  border: 1px solid var(--recap-surface-border);
+  border-radius: 20px;
+  padding: 32px;
+}
+
+.library-share-card-section-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--recap-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.library-share-card-top-games-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.library-share-top-game {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--recap-surface);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.library-share-top-game-rank {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--recap-accent);
+  min-width: 34px;
+}
+
+.library-share-top-game-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.library-share-top-game-info strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--recap-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library-share-top-game-info span {
+  font-size: 16px;
+  color: var(--recap-muted);
+  margin-top: 2px;
+}
+
+.library-share-card-footer {
+  z-index: 1;
+  text-align: center;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.library-share-card-cta {
+  display: block;
+  font-size: 16px;
+  color: var(--recap-accent);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.library-share-card-tagline {
+  display: block;
+  font-size: 14px;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}

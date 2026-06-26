@@ -18,7 +18,6 @@
 }
 
 .smart-collections-badge {
-  margin-left: auto;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -26,6 +25,43 @@
   border-radius: 999px;
   background: var(--accent-muted, rgba(61, 217, 255, 0.12));
   color: var(--accent, #3dd9ff);
+}
+
+.smart-collections-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.smart-collections-create-btn {
+  background: rgba(255, 107, 53, 0.12);
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-radius: 10px;
+  padding: 5px 12px;
+  color: var(--accent-color, #ff6b35);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.smart-collections-create-btn:hover {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: var(--accent-color, #ff6b35);
+}
+
+.smart-collections-empty {
+  background: var(--card, #1a1a2e);
+  border: 1px dashed var(--border-color, rgba(255,255,255,0.12));
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted, #8892a0);
+}
+
+.smart-collections-empty p {
+  margin: 0 0 14px;
 }
 
 .smart-collections-list {
@@ -84,6 +120,33 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary, #f1f5f9);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smart-collection-user-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 107, 53, 0.15);
+  color: var(--accent-color, #ff6b35);
+  border: 1px solid rgba(255, 107, 53, 0.25);
+}
+
+.smart-collection-preset-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(61, 217, 255, 0.12);
+  color: #3dd9ff;
+  border: 1px solid rgba(61, 217, 255, 0.2);
 }
 
 .smart-collection-subtitle {

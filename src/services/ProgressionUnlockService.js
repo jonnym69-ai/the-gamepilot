@@ -313,6 +313,156 @@ const PROFILE_TITLE_UNLOCKS = tuneRewardCollection([
 
 const SHOWCASE_SLOT_XP_REQUIREMENTS = Object.freeze([0, 1200, 3600, 7800].map((requiredXP) => tuneProgressionRequirement(requiredXP)));
 
+const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
+  {
+    id: 'basic_export',
+    name: 'Basic Export',
+    description: 'Export your full library as JSON or CSV anytime.',
+    requiredXP: 0,
+    rewardType: 'utility',
+    filters: ['json', 'csv']
+  },
+  {
+    id: 'platform_filter',
+    name: 'Platform Filter',
+    description: 'Export only games from specific platforms.',
+    requiredXP: 400,
+    rewardType: 'utility',
+    filters: ['platforms']
+  },
+  {
+    id: 'date_filter',
+    name: 'Date Range Filter',
+    description: 'Export games played in the last 7, 30, or 90 days.',
+    requiredXP: 800,
+    rewardType: 'utility',
+    filters: ['dateRange']
+  },
+  {
+    id: 'selection_filter',
+    name: 'Selected Games Export',
+    description: 'Export only the games you hand-pick from your library.',
+    requiredXP: 1200,
+    rewardType: 'utility',
+    filters: ['selectedGames']
+  },
+  {
+    id: 'stats_only',
+    name: 'Stats-Only Export',
+    description: 'Trim exports to just the core stats columns for quick analysis.',
+    requiredXP: 1600,
+    rewardType: 'utility',
+    filters: ['fields']
+  },
+  {
+    id: 'advanced_export',
+    name: 'Advanced Export Suite',
+    description: 'Combine custom date ranges, platforms, selections, and field presets in one export.',
+    requiredXP: 2000,
+    rewardType: 'utility',
+    filters: ['all']
+  }
+]);
+
+const RECAP_THEME_UNLOCKS = tuneRewardCollection([
+  {
+    id: 'nebula',
+    name: 'Nebula',
+    description: 'The signature orange-on-midnight recap look.',
+    requiredXP: 0,
+    rewardType: 'cosmetic',
+    palette: {
+      background: 'linear-gradient(135deg, #0d1224 0%, #111827 50%, #0d1224 100%)',
+      accent: '#ff6b35',
+      glow: 'rgba(255, 107, 53, 0.22)',
+      text: '#f8fafc',
+      muted: '#94a3b8',
+      surface: 'rgba(255, 255, 255, 0.06)',
+      surfaceBorder: 'rgba(255, 255, 255, 0.1)'
+    }
+  },
+  {
+    id: 'midnight',
+    name: 'Midnight Blue',
+    description: 'Cool electric-blue gradient for a calm, premium feel.',
+    requiredXP: 600,
+    rewardType: 'cosmetic',
+    palette: {
+      background: 'linear-gradient(135deg, #0b1120 0%, #0f2742 50%, #0b1120 100%)',
+      accent: '#38bdf8',
+      glow: 'rgba(56, 189, 248, 0.24)',
+      text: '#f1f5f9',
+      muted: '#93a8c4',
+      surface: 'rgba(255, 255, 255, 0.06)',
+      surfaceBorder: 'rgba(148, 197, 255, 0.16)'
+    }
+  },
+  {
+    id: 'emerald',
+    name: 'Emerald',
+    description: 'Deep green tones for that grindset flex.',
+    requiredXP: 1000,
+    rewardType: 'cosmetic',
+    palette: {
+      background: 'linear-gradient(135deg, #07140f 0%, #0d2a1f 50%, #07140f 100%)',
+      accent: '#34d399',
+      glow: 'rgba(52, 211, 153, 0.24)',
+      text: '#f0fdf4',
+      muted: '#8fb8a6',
+      surface: 'rgba(255, 255, 255, 0.06)',
+      surfaceBorder: 'rgba(52, 211, 153, 0.16)'
+    }
+  },
+  {
+    id: 'sunset',
+    name: 'Sunset',
+    description: 'Warm pink-to-amber gradient for a vibrant share.',
+    requiredXP: 1400,
+    rewardType: 'cosmetic',
+    palette: {
+      background: 'linear-gradient(135deg, #1a0b1e 0%, #3a1024 50%, #1a0b1e 100%)',
+      accent: '#fb7185',
+      glow: 'rgba(251, 113, 133, 0.26)',
+      text: '#fdf2f8',
+      muted: '#c89bb0',
+      surface: 'rgba(255, 255, 255, 0.07)',
+      surfaceBorder: 'rgba(251, 113, 133, 0.18)'
+    }
+  },
+  {
+    id: 'mono',
+    name: 'Mono Ink',
+    description: 'Minimal monochrome styling that lets the numbers shine.',
+    requiredXP: 1800,
+    rewardType: 'cosmetic',
+    palette: {
+      background: 'linear-gradient(135deg, #0a0a0a 0%, #1c1c1c 50%, #0a0a0a 100%)',
+      accent: '#e5e7eb',
+      glow: 'rgba(229, 231, 235, 0.16)',
+      text: '#fafafa',
+      muted: '#9ca3af',
+      surface: 'rgba(255, 255, 255, 0.05)',
+      surfaceBorder: 'rgba(255, 255, 255, 0.12)'
+    }
+  },
+  {
+    id: 'aurora',
+    name: 'Aurora',
+    description: 'Teal-to-violet aurora gradient — the prestige recap skin.',
+    requiredXP: 2400,
+    rewardType: 'cosmetic',
+    palette: {
+      background: 'linear-gradient(135deg, #06121f 0%, #15123a 50%, #052024 100%)',
+      accent: '#a855f7',
+      glow: 'rgba(168, 85, 247, 0.26)',
+      text: '#f5f3ff',
+      muted: '#a3a8d4',
+      surface: 'rgba(255, 255, 255, 0.07)',
+      surfaceBorder: 'rgba(168, 85, 247, 0.18)'
+    }
+  }
+]);
+
 const LIBRARY_PRESENTATION_UNLOCKS = tuneRewardCollection([
   {
     id: 'classic_shelf',
@@ -562,6 +712,7 @@ const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
 
 const PROFILE_CUSTOMIZATION_STORAGE_KEY = 'profileCustomization';
 const PRESENTATION_CUSTOMIZATION_STORAGE_KEY = 'rewardPresentationCustomization';
+const EXPORT_FILTER_CUSTOMIZATION_STORAGE_KEY = 'exportFilterCustomization';
 const LEGACY_CARD_STYLE_STORAGE_KEY = 'gamepilot_card_style';
 const LEGACY_LOGO_ANIMATION_STORAGE_KEY = 'gamepilot_logo_animation';
 
@@ -578,7 +729,9 @@ const PRESENTATION_REWARD_COLLECTIONS = Object.freeze({
   homeLayouts: HOME_LAYOUT_UNLOCKS,
   recommendationPacks: RECOMMENDATION_PACK_UNLOCKS,
   gamingLinks: GAMING_LINKS_UNLOCKS,
-  gamingLinksLayouts: GAMING_LINKS_LAYOUT_UNLOCKS
+  gamingLinksLayouts: GAMING_LINKS_LAYOUT_UNLOCKS,
+  exportFilters: EXPORT_FILTER_UNLOCKS,
+  recapThemes: RECAP_THEME_UNLOCKS
 });
 
 const FALLBACK_THEME_TIER = 'basic';
@@ -620,6 +773,15 @@ const readPresentationCustomization = () => {
   }
 };
 
+const readExportFilterCustomization = () => {
+  try {
+    const parsed = StorageService.get(EXPORT_FILTER_CUSTOMIZATION_STORAGE_KEY, null);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+};
+
 const getUnlockedRewardCount = (collection = []) => collection.filter((reward) => reward.unlocked).length;
 
 const getRewardDisplayName = (reward) => reward?.name || reward?.label || '';
@@ -641,7 +803,9 @@ const PROGRESSION_SEQUENCE_ORDER = Object.freeze({
   'Card Style': 13,
   'Logo Animation': 14,
   'Gaming Links': 15,
-  'Gaming Links Layout': 16
+  'Gaming Links Layout': 16,
+  'Export Filter': 17,
+  'Recap Theme': 18
 });
 
 const buildSequencedUnlockTrack = (rewards = [], currentXP = 0, limit = 8) => rewards
@@ -700,6 +864,8 @@ const buildGlobalRewardPool = () => {
     ...RECOMMENDATION_PACK_UNLOCKS.map((reward) => ({ trackKey: `Recommendation Pack:${reward.id}`, category: 'Recommendation Pack', ...reward })),
     ...GAMING_LINKS_UNLOCKS.map((reward) => ({ trackKey: `Gaming Links:${reward.id}`, category: 'Gaming Links', ...reward })),
     ...GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) => ({ trackKey: `Gaming Links Layout:${reward.id}`, category: 'Gaming Links Layout', ...reward })),
+    ...EXPORT_FILTER_UNLOCKS.map((reward) => ({ trackKey: `Export Filter:${reward.id}`, category: 'Export Filter', ...reward })),
+    ...RECAP_THEME_UNLOCKS.map((reward) => ({ trackKey: `Recap Theme:${reward.id}`, category: 'Recap Theme', ...reward })),
   ].map((reward) => ({
     ...reward,
     baseRequiredXP: reward.requiredXP
@@ -746,6 +912,21 @@ const buildSequentialRewardMeta = (category, reward, currentXP) => {
     unlocked: currentXP >= requiredXP,
     progressPercent: toProgressPercent(currentXP, requiredXP)
   };
+};
+
+const RECAP_STAT_KEYS = ['games', 'sessions', 'steamHours', 'libraryValue', 'topGames'];
+const SHARE_CARD_WATERMARKS = ['gamepilot', 'github', 'itchio', 'none'];
+
+const sanitizeShareCardWatermark = (value) => {
+  return SHARE_CARD_WATERMARKS.includes(value) ? value : 'gamepilot';
+};
+
+const sanitizeRecapVisibleStats = (value) => {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  return RECAP_STAT_KEYS.reduce((acc, key) => {
+    acc[key] = source[key] !== false; // default visible
+    return acc;
+  }, {});
 };
 
 const getUnlockedRewardIdFromMeta = (collection = [], selectedId) => {
@@ -1030,6 +1211,154 @@ export class ProgressionUnlockService {
     return GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) => buildSequentialRewardMeta('Gaming Links Layout', reward, currentXP));
   }
 
+  static getExportFilters() {
+    const currentXP = this.getTotalXP();
+    return EXPORT_FILTER_UNLOCKS.map((reward) => buildSequentialRewardMeta('Export Filter', reward, currentXP));
+  }
+
+  static getExportFilterCustomization() {
+    const storedCustomization = readExportFilterCustomization();
+    const exportFilters = this.getExportFilters();
+    const unlockedFilterIds = new Set(exportFilters.filter((reward) => reward.unlocked).map((reward) => reward.id));
+    const selectedPreset = storedCustomization.selectedPreset && unlockedFilterIds.has(storedCustomization.selectedPreset)
+      ? storedCustomization.selectedPreset
+      : 'basic_export';
+
+    const sanitized = {
+      selectedPreset,
+      defaultFields: storedCustomization.defaultFields || 'standard',
+      defaultDateRange: storedCustomization.defaultDateRange || 'all',
+      includePrices: Boolean(storedCustomization.includePrices),
+      includePlaytime: storedCustomization.includePlaytime !== false
+    };
+
+    if (JSON.stringify(storedCustomization) !== JSON.stringify(sanitized)) {
+      StorageService.set(EXPORT_FILTER_CUSTOMIZATION_STORAGE_KEY, sanitized);
+    }
+
+    return sanitized;
+  }
+
+  static updateExportFilterCustomization(partialCustomization = {}) {
+    const currentCustomization = this.getExportFilterCustomization();
+    const mergedCustomization = { ...currentCustomization, ...partialCustomization };
+    const exportFilters = this.getExportFilters();
+    const unlockedFilterIds = new Set(exportFilters.filter((reward) => reward.unlocked).map((reward) => reward.id));
+
+    const sanitized = {
+      selectedPreset: unlockedFilterIds.has(mergedCustomization.selectedPreset)
+        ? mergedCustomization.selectedPreset
+        : currentCustomization.selectedPreset,
+      defaultFields: ['minimal', 'standard', 'full'].includes(mergedCustomization.defaultFields)
+        ? mergedCustomization.defaultFields
+        : currentCustomization.defaultFields,
+      defaultDateRange: ['all', 'last7days', 'last30days', 'last90days', 'lastYear', 'custom'].includes(mergedCustomization.defaultDateRange)
+        ? mergedCustomization.defaultDateRange
+        : currentCustomization.defaultDateRange,
+      includePrices: Boolean(mergedCustomization.includePrices),
+      includePlaytime: mergedCustomization.includePlaytime !== false
+    };
+
+    StorageService.set(EXPORT_FILTER_CUSTOMIZATION_STORAGE_KEY, sanitized);
+    return sanitized;
+  }
+
+  static selectExportFilterPreset(presetId) {
+    const preset = this.getExportFilters().find((reward) => reward.id === presetId);
+    if (!preset) {
+      return { success: false, message: 'Export filter preset not found.' };
+    }
+    if (!preset.unlocked) {
+      return { success: false, message: `${preset.name} unlocks at ${preset.requiredXP.toLocaleString()} XP.` };
+    }
+
+    const exportFilterCustomization = this.updateExportFilterCustomization({ selectedPreset: presetId });
+    const presentationCustomization = this.updateRewardPresentationCustomization({ selectedExportFilter: presetId });
+    return {
+      success: true,
+      message: `${preset.name} equipped as your default export preset.`,
+      customization: exportFilterCustomization,
+      presentationCustomization
+    };
+  }
+
+  static getRecapThemes() {
+    const currentXP = this.getTotalXP();
+    return RECAP_THEME_UNLOCKS.map((reward) => {
+      const meta = buildSequentialRewardMeta('Recap Theme', reward, currentXP);
+      // The default skin (0 XP base) is always available so every user can share.
+      if ((reward.requiredXP ?? 0) === 0) {
+        return { ...meta, unlocked: true, requiredXP: 0, progressPercent: 100 };
+      }
+      return meta;
+    });
+  }
+
+  static getRecapStatKeys() {
+    return ['games', 'sessions', 'steamHours', 'libraryValue', 'topGames'];
+  }
+
+  static getRecapCustomization() {
+    const presentation = this.getRewardPresentationCustomization();
+    const themes = this.getRecapThemes();
+    const selectedTheme = themes.find((reward) => reward.id === presentation.selectedRecapTheme && reward.unlocked)
+      || themes.find((reward) => reward.id === 'nebula')
+      || themes[0]
+      || null;
+
+    return {
+      selectedThemeId: selectedTheme?.id || 'nebula',
+      palette: selectedTheme?.palette || null,
+      visibleStats: presentation.recapVisibleStats,
+      useMostPlayedCover: presentation.useMostPlayedCover !== false,
+      shareCardWatermark: presentation.shareCardWatermark || 'gamepilot'
+    };
+  }
+
+  static selectRecapTheme(themeId) {
+    const theme = this.getRecapThemes().find((reward) => reward.id === themeId);
+    if (!theme) {
+      return { success: false, message: 'Recap theme not found.' };
+    }
+    if (!theme.unlocked) {
+      return { success: false, message: `${theme.name} unlocks at ${theme.requiredXP.toLocaleString()} XP.` };
+    }
+
+    return {
+      success: true,
+      message: `${theme.name} equipped for your recap card.`,
+      customization: this.updateRewardPresentationCustomization({ selectedRecapTheme: themeId })
+    };
+  }
+
+  static updateRecapStatVisibility(partialVisibility = {}) {
+    const current = this.getRewardPresentationCustomization().recapVisibleStats;
+    const nextVisibility = { ...current, ...partialVisibility };
+    return this.updateRewardPresentationCustomization({ recapVisibleStats: nextVisibility });
+  }
+
+  static updateRecapUseMostPlayedCover(useCover = true) {
+    return this.updateRewardPresentationCustomization({ useMostPlayedCover: Boolean(useCover) });
+  }
+
+  static updateShareCardWatermark(watermark = 'gamepilot') {
+    return this.updateRewardPresentationCustomization({ shareCardWatermark: sanitizeShareCardWatermark(watermark) });
+  }
+
+  static getExportFilterUnlockStatus(filterId) {
+    const filter = this.getExportFilters().find((reward) => reward.id === filterId);
+    return filter || { unlocked: false, requiredXP: 0, name: filterId };
+  }
+
+  static isExportFilterUnlocked(filterId) {
+    return this.getExportFilterUnlockStatus(filterId).unlocked;
+  }
+
+  static canUseExportFilter(filterType) {
+    const exportFilters = this.getExportFilters();
+    return exportFilters.some((reward) => reward.unlocked && (reward.filters || []).includes(filterType));
+  }
+
   static getRewardPresentationCustomization() {
     const storedCustomization = readPresentationCustomization();
     const cardStyles = this.getCardStyles();
@@ -1038,6 +1367,8 @@ export class ProgressionUnlockService {
     const homeLayouts = this.getHomeLayoutVariants();
     const recommendationPacks = this.getRecommendationPacks();
     const gamingLinksLayouts = this.getGamingLinksLayouts();
+    const exportFilterCustomization = this.getExportFilterCustomization();
+    const recapThemes = this.getRecapThemes();
 
     const sanitizedCustomization = {
       selectedCardStyle: getUnlockedRewardIdFromMeta(cardStyles, storedCustomization.selectedCardStyle),
@@ -1046,7 +1377,12 @@ export class ProgressionUnlockService {
       selectedHomeLayout: getUnlockedRewardIdFromMeta(homeLayouts, storedCustomization.selectedHomeLayout),
       selectedRecommendationPack: getUnlockedRewardIdFromMeta(recommendationPacks, storedCustomization.selectedRecommendationPack),
       selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(this.getGamingLinksFeatures(), storedCustomization.selectedGamingLinksFeatures),
-      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, storedCustomization.selectedGamingLinksLayout)
+      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, storedCustomization.selectedGamingLinksLayout),
+      selectedExportFilter: getUnlockedRewardIdFromMeta(this.getExportFilters(), exportFilterCustomization.selectedPreset),
+      selectedRecapTheme: getUnlockedRewardIdFromMeta(recapThemes, storedCustomization.selectedRecapTheme),
+      recapVisibleStats: sanitizeRecapVisibleStats(storedCustomization.recapVisibleStats),
+      useMostPlayedCover: storedCustomization.useMostPlayedCover !== false,
+      shareCardWatermark: sanitizeShareCardWatermark(storedCustomization.shareCardWatermark)
     };
 
     const hasStoredCustomization = Object.keys(storedCustomization).length > 0;
@@ -1069,6 +1405,9 @@ export class ProgressionUnlockService {
     const homeLayouts = this.getHomeLayoutVariants();
     const recommendationPacks = this.getRecommendationPacks();
     const gamingLinksLayouts = this.getGamingLinksLayouts();
+    const exportFilterCustomization = this.getExportFilterCustomization();
+    const selectedExportFilter = mergedCustomization.selectedExportFilter || exportFilterCustomization.selectedPreset;
+    const recapThemes = this.getRecapThemes();
 
     const sanitizedCustomization = {
       selectedCardStyle: getUnlockedRewardIdFromMeta(cardStyles, mergedCustomization.selectedCardStyle),
@@ -1077,7 +1416,12 @@ export class ProgressionUnlockService {
       selectedHomeLayout: getUnlockedRewardIdFromMeta(homeLayouts, mergedCustomization.selectedHomeLayout),
       selectedRecommendationPack: getUnlockedRewardIdFromMeta(recommendationPacks, mergedCustomization.selectedRecommendationPack),
       selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(this.getGamingLinksFeatures(), mergedCustomization.selectedGamingLinksFeatures),
-      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, mergedCustomization.selectedGamingLinksLayout)
+      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, mergedCustomization.selectedGamingLinksLayout),
+      selectedExportFilter: getUnlockedRewardIdFromMeta(this.getExportFilters(), selectedExportFilter),
+      selectedRecapTheme: getUnlockedRewardIdFromMeta(recapThemes, mergedCustomization.selectedRecapTheme),
+      recapVisibleStats: sanitizeRecapVisibleStats(mergedCustomization.recapVisibleStats),
+      useMostPlayedCover: mergedCustomization.useMostPlayedCover !== false,
+      shareCardWatermark: sanitizeShareCardWatermark(mergedCustomization.shareCardWatermark)
     };
 
     StorageService.set(PRESENTATION_CUSTOMIZATION_STORAGE_KEY, sanitizedCustomization);
@@ -1213,6 +1557,8 @@ export class ProgressionUnlockService {
       recommendationPacks: this.getRecommendationPacks(),
       gamingLinks: this.getGamingLinksFeatures(),
       gamingLinksLayouts: this.getGamingLinksLayouts(),
+      exportFilters: this.getExportFilters(),
+      exportFilterCustomization: this.getExportFilterCustomization(),
       presentationCustomization: this.getRewardPresentationCustomization()
     };
   }
@@ -1229,6 +1575,7 @@ export class ProgressionUnlockService {
     const recommendationPacks = this.getRecommendationPacks();
     const gamingLinks = this.getGamingLinksFeatures();
     const gamingLinksLayouts = this.getGamingLinksLayouts();
+    const exportFilters = this.getExportFilters();
     const rewardPool = [
       ...themes.map((reward) => ({ ...reward, category: 'Theme' })),
       ...frames.map((reward) => ({ ...reward, category: 'Frame' })),
@@ -1239,6 +1586,7 @@ export class ProgressionUnlockService {
       ...recommendationPacks.map((reward) => ({ ...reward, category: 'Recommendation Pack' })),
       ...gamingLinks.map((reward) => ({ ...reward, category: 'Gaming Links' })),
       ...gamingLinksLayouts.map((reward) => ({ ...reward, category: 'Gaming Links Layout' })),
+      ...exportFilters.map((reward) => ({ ...reward, category: 'Export Filter' })),
       ...showcaseSlots.map((slot) => ({
         id: slot.id,
         name: `Showcase Slot ${slot.slotNumber}`,
@@ -1266,7 +1614,8 @@ export class ProgressionUnlockService {
         homeLayouts: homeLayouts.filter((reward) => reward.unlocked).length,
         recommendationPacks: recommendationPacks.filter((reward) => reward.unlocked).length,
         gamingLinks: gamingLinks.filter((reward) => reward.unlocked).length,
-        gamingLinksLayouts: gamingLinksLayouts.filter((reward) => reward.unlocked).length
+        gamingLinksLayouts: gamingLinksLayouts.filter((reward) => reward.unlocked).length,
+        exportFilters: exportFilters.filter((reward) => reward.unlocked).length
       },
       totalCounts: {
         themes: themes.length,
@@ -1277,7 +1626,8 @@ export class ProgressionUnlockService {
         homeLayouts: homeLayouts.length,
         recommendationPacks: recommendationPacks.length,
         gamingLinks: gamingLinks.length,
-        gamingLinksLayouts: gamingLinksLayouts.length
+        gamingLinksLayouts: gamingLinksLayouts.length,
+        exportFilters: exportFilters.length
       },
       progressionGroups: {
         themes: {
@@ -1293,8 +1643,8 @@ export class ProgressionUnlockService {
           total: frames.length + banners.length + titles.length + recommendationPacks.length + gamingLinks.length + gamingLinksLayouts.length
         },
         utility: {
-          unlocked: showcaseSlots.filter((slot) => slot.unlocked).length + getUnlockedRewardCount(libraryVariants) + getUnlockedRewardCount(homeLayouts),
-          total: showcaseSlots.length + libraryVariants.length + homeLayouts.length
+          unlocked: showcaseSlots.filter((slot) => slot.unlocked).length + getUnlockedRewardCount(libraryVariants) + getUnlockedRewardCount(homeLayouts) + getUnlockedRewardCount(exportFilters),
+          total: showcaseSlots.length + libraryVariants.length + homeLayouts.length + exportFilters.length
         }
       },
       showcaseSlotsUnlocked: showcaseSlots.filter((slot) => slot.unlocked).length,
@@ -1337,6 +1687,8 @@ export class ProgressionUnlockService {
         recommendationPacks: this.getRecommendationPacks(),
         gamingLinks: this.getGamingLinksFeatures(),
         gamingLinksLayouts: this.getGamingLinksLayouts(),
+        exportFilters: this.getExportFilters(),
+        exportFilterCustomization: this.getExportFilterCustomization(),
         customization: this.getRewardPresentationCustomization()
       },
       summary,

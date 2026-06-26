@@ -1,0 +1,322 @@
+.captain-log-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.captain-log-modal {
+  background: var(--card, #1a1a2e);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.captain-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.captain-log-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--accent-color, #ff6b35);
+}
+
+.captain-log-title h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text, #fff);
+}
+
+.captain-log-title span {
+  font-size: 0.8rem;
+  color: var(--text-muted, #8892a0);
+}
+
+.captain-log-close {
+  background: none;
+  border: none;
+  color: var(--text-muted, #8892a0);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.captain-log-close:hover {
+  background: var(--bg-secondary, rgba(255,255,255,0.06));
+  color: var(--text, #fff);
+}
+
+.captain-log-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.captain-log-section {
+  margin-bottom: 20px;
+}
+
+.captain-log-section label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #8892a0);
+  margin-bottom: 10px;
+}
+
+.captain-log-section textarea {
+  width: 100%;
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text, #fff);
+  font-size: 0.9rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.captain-log-section textarea:focus {
+  border-color: var(--accent-color, #ff6b35);
+}
+
+.captain-log-section textarea::placeholder {
+  color: var(--text-muted, #8892a0);
+}
+
+.captain-log-moods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.captain-log-mood {
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  color: var(--text, #fff);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.captain-log-mood:hover {
+  border-color: var(--accent-color, #ff6b35);
+}
+
+.captain-log-mood.active {
+  background: var(--accent-color, #ff6b35);
+  border-color: var(--accent-color, #ff6b35);
+  color: #fff;
+}
+
+.captain-log-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.captain-log-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  color: var(--text, #fff);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.captain-log-tag:hover {
+  border-color: var(--accent-color, #ff6b35);
+}
+
+.captain-log-tag.active {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: var(--accent-color, #ff6b35);
+  color: var(--accent-color, #ff6b35);
+}
+
+.captain-log-rating {
+  display: flex;
+  gap: 6px;
+}
+
+.captain-log-star {
+  background: none;
+  border: none;
+  color: var(--text-muted, #8892a0);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.captain-log-star:hover,
+.captain-log-star.filled {
+  color: #facc15;
+}
+
+.captain-log-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.captain-log-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-color, #ff6b35);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  justify-content: center;
+}
+
+.captain-log-save:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.captain-log-save.saved {
+  background: #22c55e;
+}
+
+.captain-log-history {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color, rgba(255,255,255,0.08));
+}
+
+.captain-log-history h4 {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted, #8892a0);
+  font-weight: 600;
+}
+
+.captain-log-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.captain-log-entry {
+  background: var(--bg-secondary, rgba(255,255,255,0.03));
+  border-radius: 12px;
+  padding: 12px 14px;
+  position: relative;
+}
+
+.captain-log-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.captain-log-entry-meta span:first-child {
+  font-size: 0.75rem;
+  color: var(--text-muted, #8892a0);
+}
+
+.captain-log-entry-rating {
+  display: flex;
+  color: #facc15;
+}
+
+.captain-log-entry p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text, #fff);
+  line-height: 1.4;
+}
+
+.captain-log-entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.captain-log-entry-mood {
+  background: rgba(255, 107, 53, 0.12);
+  color: var(--accent-color, #ff6b35);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.captain-log-entry-tag {
+  background: var(--bg-secondary, rgba(255,255,255,0.06));
+  color: var(--text-muted, #8892a0);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+}
+
+.captain-log-entry-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.captain-log-entry-actions button {
+  background: none;
+  border: none;
+  color: var(--text-muted, #8892a0);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.captain-log-entry-actions button:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text, #fff);
+}
+
+@media (max-width: 560px) {
+  .captain-log-modal {
+    max-height: 95vh;
+    border-radius: 16px;
+  }
+  .captain-log-header,
+  .captain-log-body {
+    padding: 16px;
+  }
+}

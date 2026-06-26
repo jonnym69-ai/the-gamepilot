@@ -3,7 +3,7 @@ import { formatPrice, getCurrentCurrency } from '../CurrencyConverter';
 import StorageService from './StorageService';
 
 export class SteamPriceService {
-  static STEAM_API_URL = 'https://steamcommunity.com/api/ISteamApps/GetAppDetails/v1';
+  static STEAM_API_URL = 'https://store.steampowered.com/api/appdetails';
   static CACHE_KEY = 'steamPriceCache';
   static CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -77,13 +77,15 @@ export class SteamPriceService {
       
       if (!appData.price_overview) {
         // Game is free
-        return {
+        const freeData = {
           price: 'Free',
           priceNumeric: 0,
           currency: 'USD',
           discount: 0,
           originalPrice: 0
         };
+        this.saveToCache(appId, freeData);
+        return freeData;
       }
 
       const priceOverview = appData.price_overview;
@@ -135,8 +137,9 @@ export class SteamPriceService {
     
     // Check if game has cached price
     const cache = this.getCache();
-    if (game.appid && cache[game.appid]) {
-      const cachedPrice = cache[game.appid];
+    const appId = game.appid || game.steamAppId;
+    if (appId && cache[appId]) {
+      const cachedPrice = cache[appId];
       return {
         ...cachedPrice,
         price: this.formatPriceInCurrency(cachedPrice.priceNumeric, selectedCurrency),
@@ -164,14 +167,16 @@ export class SteamPriceService {
 
   // Get numeric price in USD (for calculations)
   static getPriceNumeric(game) {
-    if (!game) return 0;
-    
+    if (!game) return null;
+
     const cache = this.getCache();
-    if (game.appid && cache[game.appid]) {
-      return cache[game.appid].priceNumeric || 0;
+    const appId = game.appid || game.steamAppId;
+    if (appId && cache[appId]) {
+      return cache[appId].priceNumeric ?? null;
     }
-    
-    return game.priceNumeric || 0;
+
+    const numeric = typeof game.priceNumeric === 'number' ? game.priceNumeric : null;
+    return numeric ?? null;
   }
 
   // Clear cache

@@ -27,6 +27,35 @@
   z-index: 0;
 }
 
+.yir-share-card-cover {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  opacity: 0.18;
+  filter: saturate(0.6) brightness(0.7);
+}
+
+.yir-share-card-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(13, 18, 36, 0.96) 0%, rgba(26, 33, 72, 0.92) 50%, rgba(42, 24, 69, 0.88) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.7) 100%);
+  z-index: 0;
+}
+
+.yir-share-watermark {
+  position: absolute;
+  bottom: -48px;
+  right: -48px;
+  color: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 0;
+}
+
 .yir-share-card > * {
   position: relative;
   z-index: 1;
@@ -71,6 +100,29 @@
 
 .yir-share-card-headline {
   margin-top: 4px;
+}
+
+.yir-share-card-story {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.yir-share-card-story p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.4;
+  color: #ffffff;
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .yir-share-card-stat {

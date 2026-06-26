@@ -1,19 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Download, DollarSign, PieChart, TrendingUp, Copy, Image as ImageIcon } from 'lucide-react';
+import { X, Download, DollarSign, PieChart, TrendingUp, Copy, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { LibraryValueService } from '../services/LibraryValueService';
 import { LocalShareService } from '../services/LocalShareService';
+import { formatPrice, getCurrentCurrency } from '../CurrencyConverter';
 import './LibraryValueModal.css';
 
 const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => {
   const [libraryValue, setLibraryValue] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const canvasRef = useRef(null);
+  const currency = getCurrentCurrency();
 
   useEffect(() => {
     if (isOpen && library) {
-      const value = LibraryValueService.calculateLibraryValue(library);
-      setLibraryValue(value);
+      setLibraryValue(LibraryValueService.calculateLibraryValue(library));
     }
   }, [isOpen, library]);
 
@@ -38,6 +40,22 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleRefreshPrices = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const result = await LibraryValueService.fetchRealPrices(library);
+      setLibraryValue(LibraryValueService.calculateLibraryValue(library));
+      // eslint-disable-next-line no-alert
+      window.alert(result.message);
+    } catch (err) {
+      // eslint-disable-next-line no-alert
+      window.alert('Failed to fetch real prices.');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -231,10 +249,17 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
           {activeTab === 'overview' && (
             <div className="overview-tab">
               <div className="big-value">
-                <span className="currency">$</span>
-                <span className="amount">{libraryValue.totalValue.toFixed(2)}</span>
+                <span className="amount">{formatPrice(libraryValue.totalValue, currency)}</span>
               </div>
-              <p className="value-label">Total Library Value</p>
+              <p className="value-label">
+                Total Library Value
+                {libraryValue.games.some((g) => g.hasActualPrice) && (
+                  <span className="value-real-badge">Real prices used</span>
+                )}
+              </p>
+              <p className="value-sublabel">
+                {libraryValue.games.filter((g) => g.hasActualPrice).length} of {libraryValue.totalGames} games priced from real data
+              </p>
 
               <div className="stats-grid">
                 <div className="stat-card">
@@ -242,18 +267,18 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
                   <span className="stat-label">Total Games</span>
                 </div>
                 <div className="stat-card">
-                  <span className="stat-value">${libraryValue.averageValue.toFixed(2)}</span>
+                  <span className="stat-value">{formatPrice(libraryValue.averageValue, currency)}</span>
                   <span className="stat-label">Average Value</span>
                 </div>
                 <div className="stat-card steam">
                   <span className="stat-value">{libraryValue.steamGames}</span>
                   <span className="stat-label">Steam Games</span>
-                  <span className="stat-sub">${libraryValue.steamValue.toFixed(2)}</span>
+                  <span className="stat-sub">{formatPrice(libraryValue.steamValue, currency)}</span>
                 </div>
                 <div className="stat-card non-steam">
                   <span className="stat-value">{libraryValue.nonSteamGames}</span>
                   <span className="stat-label">Non-Steam Games</span>
-                  <span className="stat-sub">${libraryValue.nonSteamValue.toFixed(2)}</span>
+                  <span className="stat-sub">{formatPrice(libraryValue.nonSteamValue, currency)}</span>
                 </div>
               </div>
 
@@ -269,6 +294,10 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
                 <button onClick={generateShareImage} className="btn-secondary">
                   <ImageIcon size={18} />
                   Share Image
+                </button>
+                <button onClick={handleRefreshPrices} className="btn-secondary" disabled={refreshing}>
+                  <RefreshCw size={18} />
+                  {refreshing ? 'Fetching...' : 'Refresh Real Prices'}
                 </button>
               </div>
             </div>
@@ -290,7 +319,7 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
                         style={{ width: `${(data.value / libraryValue.totalValue) * 100}%` }}
                       />
                     </div>
-                    <span className="platform-value">${data.value.toFixed(2)}</span>
+                    <span className="platform-value">{formatPrice(data.value, currency)}</span>
                   </div>
                 ))}
               </div>
@@ -304,12 +333,12 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
                       <span className="platform-count">{data.count} games</span>
                     </div>
                     <div className="platform-bar">
-                      <div 
+                      <div
                         className="platform-fill tier"
                         style={{ width: `${(data.value / libraryValue.totalValue) * 100}%` }}
                       />
                     </div>
-                    <span className="platform-value">${data.value.toFixed(2)}</span>
+                    <span className="platform-value">{formatPrice(data.value, currency)}</span>
                   </div>
                 ))}
               </div>
@@ -328,9 +357,14 @@ const LibraryValueModal = ({ library, isOpen, onClose, username = 'Gamer' }) => 
                     <div className="game-info">
                       <span className="game-name">{game.name}</span>
                       <span className="game-platform">{game.platform}</span>
-                      {game.hasActualPrice && <span className="price-badge actual">Steam Price</span>}
+                      {game.hasActualPrice && (
+                        <span className="price-badge actual">
+                          {game.priceSource === 'manual' ? 'Manual' : game.priceSource === 'steam' ? 'Steam' : 'Stored'}
+                        </span>
+                      )}
+                      {!game.hasActualPrice && <span className="price-badge estimate">Estimated</span>}
                     </div>
-                    <span className="game-value">${game.estimatedValue.toFixed(2)}</span>
+                    <span className="game-value">{formatPrice(game.estimatedValue, currency)}</span>
                   </div>
                 ))}
               </div>

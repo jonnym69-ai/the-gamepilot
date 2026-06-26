@@ -519,19 +519,21 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       >
         <div className="doodle-orbit" />
         <div className="doodle-trail" />
-        <div className={`doodle-logo logo-animation-${resolvedLogoAnimation}`} aria-hidden="true">
-          <div className="doodle-logo-ring" />
-          <div className="doodle-logo-particles">
-            <span className="doodle-logo-particle particle-a" />
-            <span className="doodle-logo-particle particle-b" />
-            <span className="doodle-logo-particle particle-c" />
-          </div>
-          <img src={avatarSrc} alt={avatarAlt} loading="lazy" />
-        </div>
         <div className="doodle-accent">{doodle.accent}</div>
         <div className="doodle-left">
-          <div className="doodle-wordmark">
-            {letters}
+          <div className="doodle-logo-row">
+            <div className={`doodle-logo logo-animation-${resolvedLogoAnimation}`} aria-hidden="true">
+              <div className="doodle-logo-ring" />
+              <div className="doodle-logo-particles">
+                <span className="doodle-logo-particle particle-a" />
+                <span className="doodle-logo-particle particle-b" />
+                <span className="doodle-logo-particle particle-c" />
+              </div>
+              <img src={avatarSrc} alt={avatarAlt} loading="lazy" />
+            </div>
+            <div className="doodle-wordmark">
+              {letters}
+            </div>
           </div>
           {equippedTitle?.name && (
             <div className="doodle-title-badge" style={{ '--title-accent': equippedTitle.accentColor || 'var(--accent)' }}>

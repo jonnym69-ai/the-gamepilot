@@ -6,6 +6,7 @@ import InterfacePreferencesService from '../services/InterfacePreferencesService
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
 import { formatPlaytime as formatPlaytimeUnit } from '../utils/formatPlaytime';
 import { LocalShareService } from '../services/LocalShareService';
+import ProfileService from '../services/ProfileService';
 import StorageService from '../services/StorageService';
 import ShareMenu from './ShareMenu';
 import '../styles/StatsBackbonePanel.css';
@@ -75,24 +76,25 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
 
   const buildSteamHoursText = () => {
     const importedPlaytime = dashboardData?.importedPlaytime || { totalMinutes: 0, gameCount: 0 };
-    return LocalShareService.buildSteamHoursShareText(importedPlaytime.totalMinutes, importedPlaytime.gameCount, pilotName);
+    const text = LocalShareService.buildSteamHoursShareText(importedPlaytime.totalMinutes, importedPlaytime.gameCount, pilotName);
+    return ProfileService.appendSocialLinksToShareText(text);
   };
 
-  const handleCopySteamHoursText = async () => {
-    const success = await LocalShareService.copyTextToClipboard(buildSteamHoursText());
+  const handleCopySteamHoursText = async (text = null) => {
+    const success = await LocalShareService.copyTextToClipboard(text || buildSteamHoursText());
     return success;
   };
 
-  const handleShareSteamHoursToChannel = async (channel) => {
-    await LocalShareService.openShareIntent(channel, buildSteamHoursText());
+  const handleShareSteamHoursToChannel = async (channel, text = null) => {
+    await LocalShareService.openShareIntent(channel, text || buildSteamHoursText());
   };
 
-  const handleDownloadSteamHoursText = () => {
-    LocalShareService.downloadShareText(buildSteamHoursText(), 'gamepilot-steam-hours.txt');
+  const handleDownloadSteamHoursText = (text = null) => {
+    LocalShareService.downloadShareText(text || buildSteamHoursText(), 'gamepilot-steam-hours.txt');
   };
 
-  const handleNativeShareSteamHours = async () => {
-    await LocalShareService.shareWithNativeShare({ title: "My Steam Lifetime Hours", text: buildSteamHoursText() });
+  const handleNativeShareSteamHours = async (text = null) => {
+    await LocalShareService.shareWithNativeShare({ title: "My Steam Lifetime Hours", text: text || buildSteamHoursText() });
   };
 
   const timelineData = useMemo(() => buildTimelineChart(snapshot?.timeline || {}), [snapshot]);
@@ -187,6 +189,7 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
                 <ShareMenu
                   onCopyText={handleCopySteamHoursText}
                   onShareText={handleShareSteamHoursToChannel}
+                  buildCaption={buildSteamHoursText}
                   onDownloadText={handleDownloadSteamHoursText}
                   onNativeShare={handleNativeShareSteamHours}
                   onSaveImage={() => {}}

@@ -1,7 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { BarChart3, Brain, Clock, Gamepad2, Library, Scale, Sparkles, Target, Trophy } from 'lucide-react';
 import NavBar from './NavBar';
 import { BacklogFinisherService } from './services/BacklogFinisherService';
+import { BacklogShareCard } from './components/BacklogShareCard';
+import { ShareMenu } from './components/ShareMenu';
+import { useToast } from './components/Toast';
+import { LocalShareService } from './services/LocalShareService';
+import ProfileService from './services/ProfileService';
 import './LibraryIntelligence.css';
 
 const getGameId = (game) => String(game?.appid || game?.app_id || game?.steamAppId || game?.launchId || game?.name || '');
@@ -84,6 +89,10 @@ const metricRows = [
 ];
 
 function LibraryIntelligence({ library = [], onLaunchGame }) {
+  const { success, error } = useToast();
+  const shareCardRef = useRef(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+
   const playableLibrary = useMemo(() => (
     Array.isArray(library)
       ? library.filter((game) => game && game.name).sort((a, b) => String(a.name).localeCompare(String(b.name)))
@@ -124,6 +133,84 @@ function LibraryIntelligence({ library = [], onLaunchGame }) {
     }
   };
 
+  const generateBacklogShareCardBlob = useCallback(async () => {
+    if (!shareCardRef.current) return null;
+    setIsCapturing(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true
+      });
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      setIsCapturing(false);
+      return blob;
+    } catch {
+      setIsCapturing(false);
+      return null;
+    }
+  }, []);
+
+  const handleCopyBacklogShareCard = useCallback(async () => {
+    const blob = await generateBacklogShareCardBlob();
+    if (!blob) {
+      error('Could not generate backlog share card.');
+      return false;
+    }
+    const copied = await LocalShareService.copyImageToClipboard(blob);
+    success(copied ? 'Backlog card copied to clipboard.' : 'Could not copy backlog card.');
+    return copied;
+  }, [generateBacklogShareCardBlob, success, error]);
+
+  const handleDownloadBacklogShareCard = useCallback(async () => {
+    const blob = await generateBacklogShareCardBlob();
+    if (!blob) {
+      error('Could not generate backlog share card.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gamepilot-backlog-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    success('Backlog card saved.');
+  }, [generateBacklogShareCardBlob, success, error]);
+
+  const buildBacklogShareText = useCallback(() => {
+    const lines = [];
+    lines.push(`🎯 Backlog Report — ${backlogStats.totalBacklog} games to finish`);
+    lines.push(`${backlogStats.totalHoursInvested}h already invested · ${backlogStats.highPriorityCount} high priority`);
+    if (backlogPriorities.length > 0) {
+      lines.push(`Top pick: ${backlogPriorities[0].game?.name} (${backlogPriorities[0].priorityScore} score)`);
+    }
+    lines.push('Powered by GamePilot');
+    return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+  }, [backlogStats, backlogPriorities]);
+
+  const handleShareBacklogText = useCallback(async (channel, text = null) => {
+    const result = await LocalShareService.openShareIntent(channel, text || buildBacklogShareText());
+    success(result.success ? `Opened ${result.label}.` : result.message || 'Could not share backlog report.');
+  }, [buildBacklogShareText, success]);
+
+  const handleNativeShareBacklog = useCallback(async (text = null) => {
+    const blob = await generateBacklogShareCardBlob();
+    if (!blob) {
+      error('Could not generate backlog share card.');
+      return;
+    }
+    const file = new File([blob], `gamepilot-backlog-${Date.now()}.png`, { type: 'image/png' });
+    const result = await LocalShareService.shareWithNativeShare({
+      title: 'My GamePilot Backlog',
+      text: text || buildBacklogShareText(),
+      files: [file]
+    });
+    success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+  }, [generateBacklogShareCardBlob, buildBacklogShareText, success, error]);
+
   return (
     <div className="library-intelligence-page">
       <NavBar />
@@ -146,6 +233,24 @@ function LibraryIntelligence({ library = [], onLaunchGame }) {
           <div className="library-intelligence-stat-card"><Target size={20} /><span>Backlog candidates</span><strong>{backlogStats.totalBacklog}</strong></div>
           <div className="library-intelligence-stat-card"><Clock size={20} /><span>Hours invested</span><strong>{backlogStats.totalHoursInvested || 0}h</strong></div>
           <div className="library-intelligence-stat-card"><Trophy size={20} /><span>High priority</span><strong>{backlogStats.highPriorityCount || 0}</strong></div>
+        </section>
+
+        <section className="library-intelligence-share-bar">
+          <ShareMenu
+            onCopyText={async () => {
+              const copied = await LocalShareService.copyTextToClipboard(buildBacklogShareText());
+              success(copied ? 'Backlog report copied to clipboard.' : 'Could not copy backlog report.');
+              return copied;
+            }}
+            onCopyImage={handleCopyBacklogShareCard}
+            onSaveImage={handleDownloadBacklogShareCard}
+            onShareText={handleShareBacklogText}
+            buildCaption={buildBacklogShareText}
+            onNativeShare={handleNativeShareBacklog}
+            triggerLabel="Share Backlog"
+            imageAvailable={backlogStats.totalBacklog > 0}
+            disabled={isCapturing}
+          />
         </section>
 
         <section className="library-intelligence-panel">
@@ -228,6 +333,16 @@ function LibraryIntelligence({ library = [], onLaunchGame }) {
             {neverLaunched.map((game) => <span className="library-intelligence-chip" key={getGameId(game)}>{game.name}</span>)}
           </div>
         </section>
+
+        <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+          <div ref={shareCardRef}>
+            <BacklogShareCard
+              backlogStats={backlogStats}
+              backlogPriorities={backlogPriorities}
+              username="Pilot"
+            />
+          </div>
+        </div>
       </main>
     </div>
   );

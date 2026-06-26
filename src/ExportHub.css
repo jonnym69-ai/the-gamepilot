@@ -129,3 +129,44 @@
   white-space: pre-line;
   margin-top: 14px;
 }
+
+.export-hub-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: flex-end;
+}
+
+.export-hub-filter-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.export-hub-filter-label.export-hub-filter-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.export-hub-filter-select {
+  padding: 8px 12px;
+  min-width: 140px;
+}
+
+.export-hub-lock-badge {
+  font-size: 0.7rem;
+  color: var(--accent-color, #ff6b35);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.export-hub-filter-summary {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}

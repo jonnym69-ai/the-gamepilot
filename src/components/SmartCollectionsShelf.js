@@ -15,10 +15,15 @@ import {
   Sparkles,
   ChevronRight,
   X,
-  LayoutGrid
+  LayoutGrid,
+  Folder,
+  Shield,
+  Star
 } from 'lucide-react';
 import { SmartCollectionsService } from '../services/SmartCollectionsService';
+import { UserRuleCollectionService } from '../services/UserRuleCollectionService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from '../services/GameArtworkService';
+import CreateCollectionModal from './CreateCollectionModal';
 import './SmartCollectionsShelf.css';
 
 const ICON_MAP = {
@@ -34,7 +39,10 @@ const ICON_MAP = {
   search: Search,
   'alert-circle': AlertCircle,
   trophy: Trophy,
-  sparkles: Sparkles
+  sparkles: Sparkles,
+  folder: Folder,
+  shield: Shield,
+  star: Star
 };
 
 const SmartCollectionCard = ({ collection, onLaunchGame, onDismiss }) => {
@@ -50,7 +58,15 @@ const SmartCollectionCard = ({ collection, onLaunchGame, onDismiss }) => {
             <Icon size={18} />
           </div>
           <div className="smart-collection-titles">
-            <h4 className="smart-collection-title">{collection.title}</h4>
+            <h4 className="smart-collection-title">
+              {collection.title}
+              {collection.isUserCreated && (
+                <span className="smart-collection-user-badge">Custom</span>
+              )}
+              {collection.isPreset && (
+                <span className="smart-collection-preset-badge">Preset</span>
+              )}
+            </h4>
             <p className="smart-collection-subtitle">{collection.subtitle}</p>
           </div>
         </div>
@@ -127,12 +143,21 @@ const SmartCollectionsShelf = ({ library = [], onLaunchGame }) => {
       return new Set();
     }
   });
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [userCollectionsVersion, setUserCollectionsVersion] = useState(0);
+
+  const userCollections = useMemo(() => {
+    if (!Array.isArray(library) || library.length === 0) return [];
+    return UserRuleCollectionService.evaluateAllCollections(library);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [library, userCollectionsVersion]);
 
   const collections = useMemo(() => {
-    if (!Array.isArray(library) || library.length === 0) return [];
-    const all = SmartCollectionsService.buildAllCollections(library);
-    return all.filter((c) => !dismissedIds.has(c.id));
-  }, [library, dismissedIds]);
+    if (!Array.isArray(library) || library.length === 0) return userCollections;
+    const system = SmartCollectionsService.buildAllCollections(library);
+    const merged = [...system, ...userCollections];
+    return merged.filter((c) => !dismissedIds.has(c.id));
+  }, [library, dismissedIds, userCollections]);
 
   const handleDismiss = (id) => {
     SmartCollectionsService.dismissCollection(id);
@@ -143,8 +168,35 @@ const SmartCollectionsShelf = ({ library = [], onLaunchGame }) => {
     });
   };
 
-  if (collections.length === 0) {
-    return null;
+  const handleCreated = () => {
+    setUserCollectionsVersion((v) => v + 1);
+  };
+
+  if (collections.length === 0 && !showCreateModal) {
+    return (
+      <div className="smart-collections-shelf">
+        <div className="smart-collections-header">
+          <LayoutGrid size={18} />
+          <h3>Your Smart Shelves</h3>
+        </div>
+        <div className="smart-collections-empty">
+          <p>No smart collections yet.</p>
+          <button
+            type="button"
+            className="smart-collections-create-btn"
+            onClick={() => setShowCreateModal(true)}
+          >
+            Create your first collection
+          </button>
+        </div>
+        <CreateCollectionModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          library={library}
+          onCreated={handleCreated}
+        />
+      </div>
+    );
   }
 
   return (
@@ -152,7 +204,17 @@ const SmartCollectionsShelf = ({ library = [], onLaunchGame }) => {
       <div className="smart-collections-header">
         <LayoutGrid size={18} />
         <h3>Your Smart Shelves</h3>
-        <span className="smart-collections-badge">{collections.length} curated</span>
+        <div className="smart-collections-header-actions">
+          <span className="smart-collections-badge">{collections.length} curated</span>
+          <button
+            type="button"
+            className="smart-collections-create-btn"
+            onClick={() => setShowCreateModal(true)}
+            title="Create custom collection"
+          >
+            + New
+          </button>
+        </div>
       </div>
       <div className="smart-collections-list">
         {collections.map((collection) => (
@@ -164,6 +226,12 @@ const SmartCollectionsShelf = ({ library = [], onLaunchGame }) => {
           />
         ))}
       </div>
+      <CreateCollectionModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        library={library}
+        onCreated={handleCreated}
+      />
     </div>
   );
 };

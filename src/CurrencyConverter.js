@@ -99,15 +99,16 @@ export const getStoredPrice = (appid) => {
 export const calculateLibraryValue = (games, currency = 'USD') => {
   let totalValue = 0;
   let pricedGames = 0;
-  
+
   games.forEach(game => {
-    const storedPrice = getStoredPrice(game.appid);
+    const priceId = game.appid || game.steamAppId;
+    const storedPrice = getStoredPrice(priceId);
     if (storedPrice && storedPrice.price) {
       totalValue += storedPrice.price;
       pricedGames++;
     }
   });
-  
+
   return {
     totalValue,
     pricedGames,

@@ -39,6 +39,7 @@ const JSON_STORAGE_DEFAULTS = Object.freeze({
   launchRewardStats: { totalXP: 0, launches: 0 },
   profileCustomization: {},
   rewardPresentationCustomization: {},
+  exportFilterCustomization: {},
   retentionQuestPreferences: {}
 });
 

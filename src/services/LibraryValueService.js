@@ -1,7 +1,10 @@
+import { SteamPriceService } from './SteamPriceService';
+import { getStoredPrice } from '../CurrencyConverter';
+
 /**
  * Library Value Calculator Service
- * Calculates the estimated value of a game library based on Steam pricing data
- * and allows sharing as image or spreadsheet
+ * Calculates the real value of a game library based on actual Steam prices
+ * and user-entered purchase prices, with estimation as a last resort.
  */
 
 export class LibraryValueService {
@@ -92,43 +95,96 @@ export class LibraryValueService {
   }
 
   /**
-   * Estimate value for a single game
+   * Get real value for a single game. Priority:
+   * 1. User-entered price on the game
+   * 2. Cached Steam price
+   * 3. Stored purchase price from CurrencyConverter
+   * 4. Estimate based on characteristics
    */
   static estimateGameValue(game) {
     if (!game) return null;
 
     const platform = game.platform || 'Unknown';
-    
-    // Check if game has actual Steam price data
-    if (game.steamPrice || game.price) {
-      const actualPrice = parseFloat(game.steamPrice || game.price);
-      if (!isNaN(actualPrice) && actualPrice >= 0) {
-        return {
-          name: game.name || game.appname || 'Unknown',
-          platform,
-          estimatedValue: actualPrice,
-          priceTier: this.getPriceTier(actualPrice),
-          hasActualPrice: true,
-          genres: game.genres || [],
-          playtime: game.time_played || 0,
-          iconUrl: game.iconUrl || game.icon
-        };
-      }
+    const name = game.name || game.appname || 'Unknown';
+    const genres = game.genres || [];
+    const playtime = game.time_played || 0;
+    const iconUrl = game.iconUrl || game.icon;
+    const sessions = game.sessions || game.launch_count || 0;
+
+    // 1. User-entered price on game object
+    const userPrice = this.parsePrice(game.price) ?? this.parsePrice(game.steamPrice) ?? this.parsePrice(game.priceNumeric);
+    if (userPrice !== null) {
+      return {
+        name,
+        platform,
+        estimatedValue: userPrice,
+        priceTier: this.getPriceTier(userPrice),
+        hasActualPrice: true,
+        priceSource: 'manual',
+        genres,
+        playtime,
+        sessions,
+        iconUrl
+      };
     }
 
-    // Estimate based on game characteristics
+    // 2. Cached Steam price
+    const steamPrice = SteamPriceService.getPriceNumeric(game);
+    if (steamPrice !== null) {
+      return {
+        name,
+        platform,
+        estimatedValue: steamPrice,
+        priceTier: this.getPriceTier(steamPrice),
+        hasActualPrice: true,
+        priceSource: 'steam',
+        genres,
+        playtime,
+        sessions,
+        iconUrl
+      };
+    }
+
+    // 3. Stored purchase price from CurrencyConverter
+    const priceId = game.appid || game.steamAppId;
+    const stored = getStoredPrice(priceId);
+    const storedPrice = this.parsePrice(stored?.price);
+    if (storedPrice !== null && storedPrice > 0) {
+      return {
+        name,
+        platform,
+        estimatedValue: storedPrice,
+        priceTier: this.getPriceTier(storedPrice),
+        hasActualPrice: true,
+        priceSource: 'stored',
+        genres,
+        playtime,
+        sessions,
+        iconUrl
+      };
+    }
+
+    // 4. Estimate based on game characteristics
     const estimatedValue = this.estimateValueByCharacteristics(game);
-    
     return {
-      name: game.name || game.appname || 'Unknown',
+      name,
       platform,
       estimatedValue,
       priceTier: this.getPriceTier(estimatedValue),
       hasActualPrice: false,
-      genres: game.genres || [],
-      playtime: game.time_played || 0,
-      iconUrl: game.iconUrl || game.icon
+      priceSource: 'estimate',
+      genres,
+      playtime,
+      sessions,
+      iconUrl
     };
+  }
+
+  static parsePrice(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const numeric = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, ''));
+    if (Number.isNaN(numeric)) return null;
+    return numeric;
   }
 
   /**
@@ -190,18 +246,70 @@ export class LibraryValueService {
   }
 
   /**
+   * Fetch real prices from Steam for all games with appids. Returns summary of results.
+   */
+  static async fetchRealPrices(library = []) {
+    const safeLibrary = Array.isArray(library) ? library : [];
+    // Fetch any game that has a Steam appid, even if the launcher/brand platform is
+    // Epic, GOG, etc. The appid is the canonical Steam identifier.
+    const priceableGames = safeLibrary.filter((game) => {
+      const appid = game?.appid || game?.steamAppId;
+      return Boolean(appid);
+    });
+
+    if (priceableGames.length === 0) {
+      return {
+        fetched: 0,
+        failed: 0,
+        skipped: safeLibrary.length,
+        message: 'No games with Steam appids found to price-check.'
+      };
+    }
+
+    let fetched = 0;
+    let failed = 0;
+    for (const game of priceableGames) {
+      const appid = game.appid || game.steamAppId;
+      try {
+        const priceData = await SteamPriceService.fetchPrice(appid);
+        if (priceData && typeof priceData.priceNumeric === 'number') {
+          fetched++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        failed++;
+      }
+    }
+
+    const skipped = safeLibrary.length - priceableGames.length;
+    return {
+      fetched,
+      failed,
+      skipped,
+      message: `Fetched real prices for ${fetched} game${fetched !== 1 ? 's' : ''}. ${failed > 0 ? `${failed} failed. ` : ''}${skipped > 0 ? `${skipped} skipped (no Steam ID).` : ''}`
+    };
+  }
+
+  /**
    * Generate CSV export of library value
    */
   static generateValueCSV(libraryValue) {
-    const headers = ['Name', 'Platform', 'Estimated Value', 'Price Source', 'Playtime (min)', 'Genres'];
-    
+    const headers = ['Name', 'Platform', 'Value', 'Price Source', 'Playtime (min)', 'Genres'];
+    const sourceLabel = {
+      manual: 'Manual',
+      steam: 'Steam',
+      stored: 'Stored',
+      estimate: 'Estimated'
+    };
+
     const csvContent = [
       headers.join(','),
       ...libraryValue.games.map(game => [
         `"${game.name.replace(/"/g, '""')}"`,
         game.platform,
         game.estimatedValue.toFixed(2),
-        game.hasActualPrice ? 'Steam Price' : 'Estimated',
+        sourceLabel[game.priceSource] || 'Estimated',
         game.playtime || 0,
         `"${(game.genres || []).join('; ')}"`
       ].join(','))

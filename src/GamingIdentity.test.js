@@ -11,7 +11,8 @@ jest.mock('./AchievementSystem', () => ({
     getFeatureStats: jest.fn(),
     getMoodStats: jest.fn(),
     getGenreStats: jest.fn(),
-    getTimeStats: jest.fn()
+    getTimeStats: jest.fn(),
+    getXPStats: jest.fn()
   }
 }));
 
@@ -33,6 +34,7 @@ describe('GamingIdentity', () => {
     AchievementTracker.getMoodStats.mockReturnValue({});
     AchievementTracker.getGenreStats.mockReturnValue({});
     AchievementTracker.getTimeStats.mockReturnValue({ total: 0, sessions: 0 });
+    AchievementTracker.getXPStats.mockReturnValue({ level: 1, xp: 0, nextLevelXP: 100 });
 
     StatsAggregationService.getDashboardData.mockReturnValue({
       periods: {
@@ -82,6 +84,7 @@ describe('GamingIdentity', () => {
   });
 
   test('calculateGamerLevel scales with playtime, achievements, and library size', () => {
+    AchievementTracker.getXPStats.mockReturnValue({ level: 5, xp: 450, nextLevelXP: 1000 });
     const level = GamingIdentity.calculateGamerLevel({
       totalPlayTime: 6000,
       achievementProgress: { unlocked: 8 },

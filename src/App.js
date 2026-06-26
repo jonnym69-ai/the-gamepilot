@@ -44,6 +44,8 @@ import { SteamGenreEnrichmentService } from './services/SteamGenreEnrichmentServ
 import { ToastProvider, useToast } from './components/Toast';
 import LevelUpToast from './components/LevelUpToast';
 import WeeklySummaryToast from './components/WeeklySummaryToast';
+import CaptainLogModal from './components/CaptainLogModal';
+import GamingDNAPage from './components/GamingDNAPage';
 import { DailyEngagementService } from './services/DailyEngagementService';
 import { AchievementTracker } from './AchievementSystem';
 import { EasterEggService } from './services/EasterEggService';
@@ -150,6 +152,7 @@ function AppContent() {
   const [previousLevel, setPreviousLevel] = useState(1);
   const [stillPlayingPrompt, setStillPlayingPrompt] = useState(null);
   const [stillPlayingDeadlines, setStillPlayingDeadlines] = useState({});
+  const [captainLogPrompt, setCaptainLogPrompt] = useState(null);
   const [showFirstRunWalkthrough, setShowFirstRunWalkthrough] = useState(() => shouldShowFirstRunWalkthrough());
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(() => StorageService.getString('minimizeOnLaunch') === 'true');
@@ -736,6 +739,16 @@ function AppContent() {
       const mins = minutes % 60;
       const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
       toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+      // Prompt Captain's Log for sessions >= 5 minutes
+      if (minutes >= 5) {
+        setCaptainLogPrompt({
+          gameName: detail.gameName,
+          gameId: detail.gameId,
+          sessionTimestamp: detail.endTime,
+          sessionMood: detail.mood,
+          sessionMinutes: minutes
+        });
+      }
     };
 
     window.addEventListener('gamepilot:session-ended', handleSessionEnded);
@@ -1031,10 +1044,19 @@ function AppContent() {
         xpTotal={AchievementTracker.getXPStats().totalXP}
         onClose={() => setShowLevelUp(false)}
       />
-      <WeeklySummaryToast 
-        show={showWeeklySummary} 
+      <WeeklySummaryToast
+        show={showWeeklySummary}
         stats={weeklyStats}
         onClose={() => setShowWeeklySummary(false)}
+      />
+      <CaptainLogModal
+        isOpen={!!captainLogPrompt}
+        onClose={() => setCaptainLogPrompt(null)}
+        gameName={captainLogPrompt?.gameName}
+        gameId={captainLogPrompt?.gameId}
+        sessionTimestamp={captainLogPrompt?.sessionTimestamp}
+        sessionMood={captainLogPrompt?.sessionMood}
+        sessionMinutes={captainLogPrompt?.sessionMinutes}
       />
       {loading && (
         <div className="scan-overlay" role="status" aria-live="polite" aria-label="Scanning local game libraries">
@@ -1080,6 +1102,7 @@ function AppContent() {
         <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
         <Route path="/library" element={<Library library={library} setLibrary={setLibrary} onLibraryUpdated={handleLibraryUpdated} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onScanLibrary={scanLocalLibrary} scanLocalLibrary={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} onUpdateCollections={handleUpdateCollections} onToggleHidden={handleToggleHidden} onUpdateCompletion={handleUpdateCompletion} onUpdateNotes={handleUpdateNotes} onUpdateCoverArt={handleUpdateCoverArt} onAddSessionNote={handleAddSessionNote} loading={loading} />} />
         <Route path="/stats" element={<Stats library={library} />} />
+        <Route path="/gaming-dna" element={<GamingDNAPage library={library} />} />
         <Route path="/themes" element={<Themes />} />
         <Route path="/habits" element={<Habits library={library} />} />
         <Route path="/rewards" element={<Rewards />} />

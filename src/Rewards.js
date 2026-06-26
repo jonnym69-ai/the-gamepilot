@@ -5,7 +5,7 @@ import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { PersonaService } from './services/PersonaService';
 import { SpecialEventsService } from './services/SpecialEventsService';
 import EntitlementService from './services/EntitlementService';
-import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper, ShoppingBag } from 'lucide-react';
+import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper, ShoppingBag, Filter, Image as ImageIcon } from 'lucide-react';
 import './Rewards.css';
 
 // Sample game card for preview
@@ -711,6 +711,114 @@ const RecommendationPackPanel = ({ packs, selectedId, onSelect }) => (
   </div>
 );
 
+const ExportFiltersPanel = ({ filters, selectedId, onSelect }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Export Filters</h2>
+      <p>Unlock smarter ways to export and share your library data.</p>
+    </div>
+    <div className="rewards-grid">
+      {filters.map((filter) => (
+        <div
+          key={filter.id}
+          className={`reward-card ${filter.id === selectedId ? 'selected' : ''} ${!filter.unlocked ? 'locked' : ''}`}
+          onClick={() => onSelect(filter.id)}
+        >
+          <div className="rewards-card-status">
+            {filter.unlocked ? (
+              <span className="rewards-unlocked-badge"><Check size={14} /> Unlocked</span>
+            ) : (
+              <div className="rewards-lock-info">
+                <span className="rewards-lock-icon">🔒</span>
+                <span>Unlocks at {filter.requiredXP?.toLocaleString()} XP</span>
+              </div>
+            )}
+          </div>
+          <div className="rewards-card-info">
+            <h3>{filter.name}</h3>
+            <p>{filter.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const RecapThemesPanel = ({ themes, selectedId, onSelect }) => (
+  <div className="rewards-panel">
+    <div className="rewards-panel-header">
+      <h2>Recap Themes</h2>
+      <p>Customize the look of your shareable library recap cards.</p>
+    </div>
+    <div className="rewards-card-grid">
+      {themes.map((theme) => {
+        const palette = theme.palette || {};
+        return (
+          <div
+            key={theme.id}
+            className={`rewards-card-item ${selectedId === theme.id ? 'active' : ''} ${!theme.unlocked ? 'locked' : ''}`}
+            onClick={() => theme.unlocked && onSelect(theme.id)}
+          >
+            <div
+              style={{
+                position: 'relative',
+                overflow: 'hidden',
+                padding: '30px 20px',
+                borderRadius: '12px',
+                border: selectedId === theme.id ? `2px solid ${palette.accent || 'var(--accent-primary)'}` : '1px solid var(--border-color)',
+                background: palette.background || 'linear-gradient(135deg, #0d1224, #111827)',
+                minHeight: '140px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: palette.surface || 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${palette.surfaceBorder || 'rgba(255,255,255,0.1)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ImageIcon size={20} style={{ color: palette.accent || '#fff' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: palette.text || '#fff' }}>{theme.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: palette.muted || '#94a3b8' }}>Recap Theme</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: palette.accent || '#fff' }} />
+                <span style={{ fontSize: '0.75rem', color: palette.muted || '#94a3b8' }}>Accent color</span>
+              </div>
+              {selectedId === theme.id && (
+                <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                  <Check size={14} />
+                </div>
+              )}
+              {!theme.unlocked && (
+                <div className="reward-locked-overlay">
+                  <div className="reward-lock-icon">🔒</div>
+                  <span>Unlocks at {theme.requiredXP?.toLocaleString()} XP</span>
+                </div>
+              )}
+            </div>
+            <div className="rewards-card-info">
+              <h3>{theme.name}</h3>
+              <p>{theme.description}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
 function Rewards() {
   const [activeSection, setActiveSection] = useState('cardStyles');
   const { success, error: toastError } = useToast();
@@ -723,6 +831,8 @@ function Rewards() {
   const [recommendationPacks, setRecommendationPacks] = useState(() => ProgressionUnlockService.getRecommendationPacks());
   const [gamingLinksFeatures, setGamingLinksFeatures] = useState(() => ProgressionUnlockService.getGamingLinksFeatures());
   const [gamingLinksLayouts, setGamingLinksLayouts] = useState(() => ProgressionUnlockService.getGamingLinksLayouts());
+  const [exportFilters, setExportFilters] = useState(() => ProgressionUnlockService.getExportFilters());
+  const [recapThemes, setRecapThemes] = useState(() => ProgressionUnlockService.getRecapThemes());
   const [premiumCatalog, setPremiumCatalog] = useState(() => EntitlementService.getCatalog());
   const [personas, setPersonas] = useState(() => PersonaService.getPersonas());
   const [specialEvents, setSpecialEvents] = useState(() => SpecialEventsService.getUpcomingEvents());
@@ -757,6 +867,8 @@ function Rewards() {
     setRecommendationPacks(ProgressionUnlockService.getRecommendationPacks());
     setGamingLinksFeatures(ProgressionUnlockService.getGamingLinksFeatures());
     setGamingLinksLayouts(ProgressionUnlockService.getGamingLinksLayouts());
+    setExportFilters(ProgressionUnlockService.getExportFilters());
+    setRecapThemes(ProgressionUnlockService.getRecapThemes());
     setPremiumCatalog(EntitlementService.getCatalog());
     setPersonas(PersonaService.getPersonas());
     setSpecialEvents(SpecialEventsService.getUpcomingEvents());
@@ -790,6 +902,14 @@ function Rewards() {
         current: gamingLinksLayouts.filter(l => l.unlocked).length,
         total: gamingLinksLayouts.length
       },
+      exportFilters: {
+        current: exportFilters.filter(f => f.unlocked).length,
+        total: exportFilters.length
+      },
+      recapThemes: {
+        current: recapThemes.filter(t => t.unlocked).length,
+        total: recapThemes.length
+      },
       personas: {
         current: personas.filter(p => p.fullyUnlocked).length,
         total: personas.length
@@ -804,7 +924,7 @@ function Rewards() {
         total: premiumCatalog.length
       }
     };
-  }, [cardStyles, gamingLinksFeatures, gamingLinksLayouts, homeLayouts, libraryVariants, logoAnimations, personas, recommendationPacks, specialEvents, premiumCatalog]);
+  }, [cardStyles, gamingLinksFeatures, gamingLinksLayouts, homeLayouts, libraryVariants, logoAnimations, personas, recommendationPacks, specialEvents, premiumCatalog, exportFilters, recapThemes]);
 
   const handleSelectAnimation = useCallback((id) => {
     const result = ProgressionUnlockService.selectLogoAnimation(id);
@@ -876,6 +996,26 @@ function Rewards() {
     }
   }, [success, toastError, refreshPresentationRewards]);
 
+  const handleSelectExportFilter = useCallback((filterId) => {
+    const result = ProgressionUnlockService.selectExportFilterPreset(filterId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
+  const handleSelectRecapTheme = useCallback((themeId) => {
+    const result = ProgressionUnlockService.selectRecapTheme(themeId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
   const handleApplyPersona = useCallback((personaId) => {
     const result = PersonaService.applyPersona(personaId);
     if (result.success) {
@@ -919,6 +1059,18 @@ function Rewards() {
           layouts={gamingLinksLayouts}
           selectedId={presentationCustomization?.selectedGamingLinksLayout}
           onSelect={handleSelectGamingLinksLayout}
+        />;
+      case 'exportFilters':
+        return <ExportFiltersPanel
+          filters={exportFilters}
+          selectedId={presentationCustomization?.selectedExportFilter || 'basic_export'}
+          onSelect={handleSelectExportFilter}
+        />;
+      case 'recapThemes':
+        return <RecapThemesPanel
+          themes={recapThemes}
+          selectedId={presentationCustomization?.selectedRecapTheme || 'nebula'}
+          onSelect={handleSelectRecapTheme}
         />;
       case 'personas':
         return <PilotPersonasPanel personas={personas} onApply={handleApplyPersona} />;
@@ -997,6 +1149,8 @@ function Rewards() {
               { id: 'recommendationStyle', label: 'Recommendation Style', icon: Zap },
               { id: 'gamingLinksFeatures', label: 'Gaming Links Rewards', icon: Link2 },
               { id: 'gamingLinksLayouts', label: 'Gaming Links Layouts', icon: LayoutGrid },
+              { id: 'exportFilters', label: 'Export Filters', icon: Filter },
+              { id: 'recapThemes', label: 'Recap Themes', icon: ImageIcon },
               { id: 'logoAnimation', label: 'Logo Animation', icon: PlayCircle },
               { id: 'premiumUnlocks', label: 'Premium Unlocks', icon: ShoppingBag }
             ].map((section) => {

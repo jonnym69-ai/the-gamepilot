@@ -14,6 +14,21 @@ jest.mock('./LibraryScannerService', () => ({
   }
 }));
 
+jest.mock('./UserBehaviorProfile', () => ({
+  __esModule: true,
+  UserBehaviorProfile: {
+    getProfile: jest.fn(() => ({
+      selectionHistory: [],
+      moodCounts: {},
+      genreCounts: {},
+      completionCounts: {},
+      sessionLengths: [],
+      peakPlayHours: {}
+    })),
+    trackRating: jest.fn()
+  }
+}));
+
 describe('LibraryScanCoordinatorService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,7 +52,7 @@ describe('LibraryScanCoordinatorService', () => {
     const collectedGames = await LibraryScanCoordinatorService.collectScannedGames(assignMoodToGame);
 
     expect(collectedGames.map((game) => game.name)).toEqual(['Steam Game', 'Epic Game']);
-    expect(LibraryScannerService.scanAllLibraries).toHaveBeenCalledWith(assignMoodToGame);
+    expect(LibraryScannerService.scanAllLibraries).toHaveBeenCalledWith(assignMoodToGame, expect.any(Object));
   });
 
   test('scans and merges library updates through merge policy', async () => {

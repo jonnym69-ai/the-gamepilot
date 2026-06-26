@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Share2, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Trash2 } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
 import { GameRequirements } from '../services/GameRequirements';
 import { openExternalUrl } from '../services/ElectronBridge';
 import { HardwareDetector } from '../services/HardwareDetector';
 import { LocalShareService } from '../services/LocalShareService';
+import ProfileService from '../services/ProfileService';
 import { GameCurationService } from '../services/GameCurationService';
 import { GameRatingService } from '../services/GameRatingService';
+import { PlaytimeAutoLogger } from '../services/PlaytimeAutoLogger';
+import { GameShareCard, buildGameShareCaption, buildGameShareData } from './GameShareCard';
+import { ShareMenu } from './ShareMenu';
 import LibrariansNotes from './LibrariansNotes';
 import SaveBackupPanel from './SaveBackupPanel';
 import SteamSnapshot from './SteamSnapshot';
@@ -55,7 +59,15 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const [coverArtUrl, setCoverArtUrl] = useState(game?.coverArtOverride || '');
   const [sessionNoteText, setSessionNoteText] = useState('');
   const fetchedGameId = React.useRef(null);
+  const shareCardRef = useRef(null);
+  const [isCapturing, setIsCapturing] = useState(false);
   const interfacePrefs = useInterfacePreferences();
+
+  const gameStats = useMemo(() => {
+    if (!game?.name) return {};
+    return PlaytimeAutoLogger.getGameStats(game.name);
+  }, [game?.name]);
+
   const isPinned = useMemo(() => {
     const key = String(game?.appid || game?.name || '');
     return (interfacePrefs.pinnedGameIds || []).map(String).includes(key);
@@ -276,6 +288,90 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     await openExternalUrl(`https://store.steampowered.com/app/${game.appid}`);
   }, [game]);
 
+  const generateGameShareCardBlob = useCallback(async () => {
+    if (!shareCardRef.current) return null;
+    setIsCapturing(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true
+      });
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      setIsCapturing(false);
+      return blob;
+    } catch (e) {
+      setIsCapturing(false);
+      console.error('Game share capture failed:', e);
+      return null;
+    }
+  }, []);
+
+  const handleCopyGameShareCard = useCallback(async () => {
+    const blob = await generateGameShareCardBlob();
+    if (!blob) {
+      toastSuccess('Could not generate game share card.');
+      return false;
+    }
+    const copied = await LocalShareService.copyImageToClipboard(blob);
+    toastSuccess(copied ? 'Game card copied to clipboard.' : 'Could not copy game card.');
+    return copied;
+  }, [generateGameShareCardBlob, toastSuccess]);
+
+  const handleDownloadGameShareCard = useCallback(async () => {
+    const blob = await generateGameShareCardBlob();
+    if (!blob) {
+      toastSuccess('Could not generate game share card.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gamepilot-game-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toastSuccess('Game card saved.');
+  }, [generateGameShareCardBlob, toastSuccess]);
+
+  const buildGameShareText = useCallback(() => {
+    const shareData = buildGameShareData(game, gameStats);
+    const caption = buildGameShareCaption(shareData);
+    const lines = [caption];
+    if (shareData.rating > 0) {
+      lines.push(`Rated ${shareData.rating}/10`);
+    }
+    const hours = ((shareData.timePlayed || 0) / 60).toFixed(1);
+    lines.push(`${hours}h played · ${shareData.sessions} sessions`);
+    if (shareData.longestSession) {
+      lines.push(`Longest session: ${(shareData.longestSession / 60).toFixed(1)}h`);
+    }
+    lines.push('Powered by GamePilot');
+    return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+  }, [game, gameStats]);
+
+  const handleShareGameText = useCallback(async (channel, text = null) => {
+    const result = await LocalShareService.openShareIntent(channel, text || buildGameShareText());
+    toastSuccess(result.success ? `Opened ${result.label}.` : result.message || 'Could not share game.');
+  }, [buildGameShareText, toastSuccess]);
+
+  const handleNativeShareGame = useCallback(async (text = null) => {
+    const blob = await generateGameShareCardBlob();
+    if (!blob) {
+      toastSuccess('Could not generate game share card.');
+      return;
+    }
+    const file = new File([blob], `gamepilot-game-${Date.now()}.png`, { type: 'image/png' });
+    const result = await LocalShareService.shareWithNativeShare({
+      title: `Check out ${game?.name}`,
+      text: text || buildGameShareText(),
+      files: [file]
+    });
+    toastSuccess(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+  }, [generateGameShareCardBlob, buildGameShareText, toastSuccess, game?.name]);
+
   const favoriteKey = game?.appid || game?.app_id || game?.steamAppId || game?.name;
 
   const modalControls = useMemo(() => [
@@ -378,8 +474,8 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
           onToggleFavorite?.(favoriteKey);
           break;
         case 'share': {
-          const shareText = `Check out ${game.name} on GamePilot! I've played for ${((game.time_played || 0) / 60).toFixed(1)} hours. #GamePilot`;
-          LocalShareService.copyTextToClipboard(shareText);
+          const text = buildGameShareText();
+          LocalShareService.copyTextToClipboard(text);
           toastSuccess('Share text copied to clipboard!');
           break;
         }
@@ -390,7 +486,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
 
     window.addEventListener('controllerInput', handleModalControllerInput);
     return () => window.removeEventListener('controllerInput', handleModalControllerInput);
-  }, [favoriteKey, game, handleLaunchGame, handleOpenStore, handleRatingChange, handleRatingSave, handleReplayIntentChange, isOpen, modalControls, onClose, onToggleFavorite, rating, replayIntent, selectedControlIndex, handleCompletionChange, completionStatus, toastSuccess]);
+  }, [favoriteKey, game, handleLaunchGame, handleOpenStore, handleRatingChange, handleRatingSave, handleReplayIntentChange, isOpen, modalControls, onClose, onToggleFavorite, rating, replayIntent, selectedControlIndex, handleCompletionChange, completionStatus, toastSuccess, buildGameShareText]);
 
   if (!isOpen || !game) {
     return <div style={{ display: 'none' }} aria-hidden="true" />;
@@ -1009,18 +1105,21 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             </button>
           )}
 
-          <button 
-            className="share-btn"
-            onClick={() => {
-              const shareText = `Check out ${game.name} on GamePilot! I've played for ${playtimeHours} hours. #GamePilot`;
-              LocalShareService.copyTextToClipboard(shareText);
-              toastSuccess('Share text copied to clipboard!');
+          <ShareMenu
+            onCopyText={async (text = null) => {
+              const copied = await LocalShareService.copyTextToClipboard(text || buildGameShareText());
+              toastSuccess(copied ? 'Game text copied to clipboard.' : 'Could not copy game text.');
+              return copied;
             }}
-            style={{ outline: modalControls[selectedControlIndex] === 'share' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
-          >
-            <Share2 size={16} />
-            Share Game
-          </button>
+            onCopyImage={handleCopyGameShareCard}
+            onSaveImage={handleDownloadGameShareCard}
+            onShareText={handleShareGameText}
+            buildCaption={buildGameShareText}
+            onNativeShare={handleNativeShareGame}
+            triggerLabel="Share Game"
+            imageAvailable={true}
+            disabled={isCapturing}
+          />
 
           <button
             className="uninstall-modal-button"
@@ -1040,6 +1139,15 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
         onClose={() => setShowUninstall(false)}
         onCompleted={() => setShowUninstall(false)}
       />
+
+      <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+        <div ref={shareCardRef}>
+          <GameShareCard
+            game={game}
+            gameStats={gameStats}
+          />
+        </div>
+      </div>
     </>
   );
 };
