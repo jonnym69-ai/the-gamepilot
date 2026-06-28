@@ -418,23 +418,31 @@ ipcMain.handle('get-system-info', async () => {
   }
 });
 
-// Helper: fetch a URL via https and return parsed JSON
-const fetchJson = (url) => new Promise((resolve, reject) => {
-  https.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
-    let data = '';
-    res.on('data', (chunk) => { data += chunk; });
-    res.on('end', () => {
-      try {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(JSON.parse(data));
-        } else {
-          reject(new Error(`HTTP ${res.statusCode}`));
-        }
-      } catch (err) {
-        reject(new Error('Invalid JSON response'));
+// Helper: fetch a URL via https, follow redirects, and return parsed JSON
+const fetchJson = (url, maxRedirects = 3) => new Promise((resolve, reject) => {
+  const follow = (currentUrl, redirectsLeft) => {
+    https.get(currentUrl, { headers: { 'Accept': 'application/json, text/html', 'User-Agent': 'GamePilot/1.0' } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirectsLeft > 0) {
+        const nextUrl = new URL(res.headers.location, currentUrl).toString();
+        follow(nextUrl, redirectsLeft - 1);
+        return;
       }
-    });
-  }).on('error', reject);
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(JSON.parse(data));
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}`));
+          }
+        } catch (err) {
+          reject(new Error('Invalid JSON response'));
+        }
+      });
+    }).on('error', reject);
+  };
+  follow(url, maxRedirects);
 });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

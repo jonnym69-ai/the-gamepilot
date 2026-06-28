@@ -1047,20 +1047,27 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input
                             type="text"
-                            placeholder="Paste your Steam64 ID..."
+                            placeholder="Paste your Steam64 ID or profile URL..."
                             value={steamId}
                             onChange={(e) => {
-                              setSteamId(e.target.value);
-                              SteamWishlistService.setSteamId(e.target.value);
+                              const next = e.target.value;
+                              setSteamId(next);
+                              SteamWishlistService.setSteamId(next);
+                            }}
+                            onBlur={() => {
+                              const normalized = SteamWishlistService.getSteamId();
+                              setSteamId(normalized);
                             }}
                             style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
                           />
                           <button
                             className="export-button"
-                            disabled={!steamId.trim() || steamWishlistSyncing}
+                            disabled={!SteamWishlistService.getSteamId() || steamWishlistSyncing}
                             onClick={async () => {
                               setSteamWishlistSyncing(true);
                               try {
+                                const normalized = SteamWishlistService.getSteamId();
+                                setSteamId(normalized);
                                 const result = await SteamWishlistService.sync();
                                 setSteamWishlistLastResult(result);
                                 if (result.success) {

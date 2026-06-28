@@ -19,7 +19,14 @@ const parseStoredValue = (value, fallback) => {
 
 const normalizeSteamId = (id) => {
   if (!id) return '';
-  return String(id).trim();
+  let raw = String(id).trim();
+  // Accept full Steam profile URLs like https://steamcommunity.com/profiles/76561199057118227
+  const profileMatch = raw.match(/(?:steamcommunity\.com\/profiles\/|\/profiles\/)(\d{17})/);
+  if (profileMatch) return profileMatch[1];
+  // Also accept raw 17-digit Steam64 IDs
+  const numericMatch = raw.match(/^(\d{17})$/);
+  if (numericMatch) return numericMatch[1];
+  return raw;
 };
 
 const readLastSync = () => {
