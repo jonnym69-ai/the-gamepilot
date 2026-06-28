@@ -1156,10 +1156,15 @@ ipcMain.handle('steam-news', async (_event, payload) => {
 
 // ---------------------------------------------------------------------------
 // Steam Wishlist Import (anonymous, no API key).
-// Fetches the public wishlist JSON from store.steampowered.com and enriches
-// each item with genres/header_image via appdetails. All data is returned to
-// the renderer and stored locally; GamePilot does not send the wishlist to any
+// Fetches the public wishlist from store.steampowered.com and enriches each
+// item with genres/header_image via appdetails. All data is returned to the
+// renderer and stored locally; GamePilot does not send the wishlist to any
 // third-party server.
+//
+// Steam sometimes serves the direct JSON endpoint a bot-challenge / login page,
+// so we use a hidden BrowserWindow (real Chromium) as the primary fetch path.
+// That shares the same session/cookies as the main app and is far less likely
+// to be blocked.
 // ---------------------------------------------------------------------------
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -1185,7 +1190,110 @@ const parseWishlistFromHtml = (html) => {
   }
 };
 
-const fetchSteamWishlist = async (steamId) => {
+const fetchSteamWishlistViaWindow = async (steamId) => {
+  const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
+  if (!cleanId) return [];
+  const url = `https://store.steampowered.com/wishlist/profiles/${cleanId}/`;
+
+  return new Promise((resolve, reject) => {
+    const win = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true
+      }
+    });
+
+    const timeout = setTimeout(() => {
+      try { win.destroy(); } catch {}
+      reject(new Error('Steam wishlist page took too long to load.'));
+    }, 30_000);
+
+    const finish = (items) => {
+      clearTimeout(timeout);
+      try { win.destroy(); } catch {}
+      resolve(items);
+    };
+
+    const fail = (err) => {
+      clearTimeout(timeout);
+      try { win.destroy(); } catch {}
+      reject(err);
+    };
+
+    const extractWishlist = () => win.webContents.executeJavaScript(`
+      (function() {
+        if (typeof g_rgWishlistData !== 'undefined' && g_rgWishlistData) {
+          return g_rgWishlistData;
+        }
+        const scripts = Array.from(document.querySelectorAll('script'));
+        for (const s of scripts) {
+          const m = s.textContent.match(/g_rgWishlistData\\s*=\\s*({.*?}|\\[.*?\\]);/s);
+          if (m) {
+            try { return JSON.parse(m[1]); } catch (e) {}
+          }
+        }
+        return null;
+      })()
+    `);
+
+    win.webContents.on('did-finish-load', async () => {
+      try {
+        const pageUrl = win.webContents.getURL();
+        const pageTitle = await win.webContents.executeJavaScript('document.title');
+        console.log('[SteamWishlist] BrowserWindow loaded:', pageUrl, '-', pageTitle);
+
+        // Steam loads wishlist data dynamically; give it a few seconds
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await sleep(1000);
+          const data = await extractWishlist();
+          if (data && typeof data === 'object') {
+            console.log('[SteamWishlist] Found wishlist data after', attempt + 1, 'attempt(s)');
+            if (Array.isArray(data)) {
+              return finish(data.map((item) => ({
+                appid: String(item?.appid || item?.id || ''),
+                name: item?.name || ''
+              })).filter((item) => item.name && item.appid));
+            }
+            return finish(Object.entries(data).map(([appid, item]) => ({
+              appid: String(appid),
+              name: item?.name || ''
+            })).filter((item) => item.name));
+          }
+        }
+
+        // Try parsing the full HTML source as a last resort
+        const fullHtml = await win.webContents.executeJavaScript(`
+          document.documentElement ? document.documentElement.outerHTML : ''
+        `);
+        const fromHtml = parseWishlistFromHtml(fullHtml);
+        if (fromHtml && fromHtml.length > 0) {
+          console.log('[SteamWishlist] Parsed wishlist from full HTML source');
+          return finish(fromHtml);
+        }
+
+        const htmlSnippet = fullHtml ? fullHtml.slice(0, 800) : '';
+        console.warn('[SteamWishlist] No g_rgWishlistData found. Page snippet:', htmlSnippet.replace(/\s+/g, ' '));
+        fail(new Error('Steam wishlist page loaded but no wishlist data was found. Make sure your wishlist is public and not empty.'));
+      } catch (err) {
+        fail(err);
+      }
+    });
+
+    win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+      fail(new Error(`Failed to load Steam wishlist page: ${errorDescription} (${errorCode})`));
+    });
+
+    win.loadURL(url, {
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36'
+    });
+  });
+};
+
+const fetchSteamWishlistDirect = async (steamId) => {
   const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
   if (!cleanId) return [];
   const baseUrl = `https://store.steampowered.com/wishlist/profiles/${cleanId}/wishlistdata/`;
@@ -1196,7 +1304,6 @@ const fetchSteamWishlist = async (steamId) => {
   });
   if (res.status !== 200) throw new Error(`steam-wishlist-http-${res.status}`);
   const body = res.body || '';
-  // If Steam returns HTML, try to parse the embedded wishlist data first
   if (body.trim().startsWith('<')) {
     const fromHtml = parseWishlistFromHtml(body);
     if (fromHtml) return fromHtml;
@@ -1211,6 +1318,18 @@ const fetchSteamWishlist = async (steamId) => {
     appid: String(appid),
     name: item?.name || ''
   })).filter((item) => item.name);
+};
+
+const fetchSteamWishlist = async (steamId) => {
+  try {
+    const items = await fetchSteamWishlistViaWindow(steamId);
+    console.log('[SteamWishlist] BrowserWindow fetch returned', items.length, 'item(s)');
+    return items;
+  } catch (windowErr) {
+    console.warn('[SteamWishlist] BrowserWindow fetch failed:', windowErr.message);
+    console.log('[SteamWishlist] Falling back to direct fetch');
+    return fetchSteamWishlistDirect(steamId);
+  }
 };
 
 const enrichWishlistItems = async (items) => {
