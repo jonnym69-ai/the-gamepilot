@@ -1163,16 +1163,49 @@ ipcMain.handle('steam-news', async (_event, payload) => {
 // ---------------------------------------------------------------------------
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const parseWishlistFromHtml = (html) => {
+  // Steam's wishlist HTML embeds the data in g_rgWishlistData (object or array)
+  const match = html.match(/g_rgWishlistData\s*=\s*(\{.*?\}|\[.*?\]);/s);
+  if (!match) return null;
+  try {
+    const raw = JSON.parse(match[1]);
+    if (Array.isArray(raw)) {
+      return raw.map((item) => ({
+        appid: String(item?.appid || item?.id || ''),
+        name: item?.name || ''
+      })).filter((item) => item.name && item.appid);
+    }
+    if (!raw || typeof raw !== 'object') return null;
+    return Object.entries(raw).map(([appid, item]) => ({
+      appid: String(appid),
+      name: item?.name || ''
+    })).filter((item) => item.name);
+  } catch {
+    return null;
+  }
+};
+
 const fetchSteamWishlist = async (steamId) => {
   const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
   if (!cleanId) return [];
-  const url = `https://store.steampowered.com/wishlist/profiles/${cleanId}/wishlistdata/?p=0`;
-  const res = await httpsRequest(url, null, {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GamePilot/1.4',
-    'Accept': 'application/json, text/html'
+  const baseUrl = `https://store.steampowered.com/wishlist/profiles/${cleanId}/wishlistdata/`;
+  const res = await httpsRequest(`${baseUrl}?p=0`, null, {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 GamePilot/1.4',
+    'Accept': 'application/json, text/html',
+    'Referer': `https://store.steampowered.com/wishlist/profiles/${cleanId}/`
   });
   if (res.status !== 200) throw new Error(`steam-wishlist-http-${res.status}`);
-  const raw = JSON.parse(res.body);
+  const body = res.body || '';
+  // If Steam returns HTML, try to parse the embedded wishlist data first
+  if (body.trim().startsWith('<')) {
+    const fromHtml = parseWishlistFromHtml(body);
+    if (fromHtml) return fromHtml;
+    const isPrivate = /private|sign in|login|agecheck|denied|not available/i.test(body);
+    throw new Error(isPrivate
+      ? 'Steam returned a web page instead of the wishlist. Make sure your Steam profile and wishlist are public.'
+      : 'Steam returned an unexpected HTML page. The wishlist may be private or temporarily unavailable.');
+  }
+  const raw = JSON.parse(body);
   if (!raw || typeof raw !== 'object') return [];
   return Object.entries(raw).map(([appid, item]) => ({
     appid: String(appid),
