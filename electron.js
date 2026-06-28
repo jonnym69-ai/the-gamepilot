@@ -1155,6 +1155,84 @@ ipcMain.handle('steam-news', async (_event, payload) => {
 });
 
 // ---------------------------------------------------------------------------
+// Steam Wishlist Import (anonymous, no API key).
+// Fetches the public wishlist JSON from store.steampowered.com and enriches
+// each item with genres/header_image via appdetails. All data is returned to
+// the renderer and stored locally; GamePilot does not send the wishlist to any
+// third-party server.
+// ---------------------------------------------------------------------------
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchSteamWishlist = async (steamId) => {
+  const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
+  if (!cleanId) return [];
+  const url = `https://store.steampowered.com/wishlist/profiles/${cleanId}/wishlistdata/?p=0`;
+  const res = await httpsRequest(url, null, {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GamePilot/1.4',
+    'Accept': 'application/json, text/html'
+  });
+  if (res.status !== 200) throw new Error(`steam-wishlist-http-${res.status}`);
+  const raw = JSON.parse(res.body);
+  if (!raw || typeof raw !== 'object') return [];
+  return Object.entries(raw).map(([appid, item]) => ({
+    appid: String(appid),
+    name: item?.name || ''
+  })).filter((item) => item.name);
+};
+
+const enrichWishlistItems = async (items) => {
+  const enriched = [];
+  const batchSize = 5;
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const appids = batch.map((item) => item.appid).join(',');
+    try {
+      const details = await steamHttpsGet(
+        'store.steampowered.com',
+        `/api/appdetails?appids=${appids}`
+      );
+      for (const item of batch) {
+        const info = details?.[item.appid]?.data;
+        enriched.push({
+          appid: item.appid,
+          name: item.name,
+          genres: Array.isArray(info?.genres) ? info.genres.map((g) => g.description) : [],
+          image: info?.header_image || null,
+          isFree: info?.is_free || false
+        });
+      }
+    } catch (err) {
+      console.warn('[SteamWishlist] Failed to enrich wishlist batch:', err.message);
+      for (const item of batch) {
+        enriched.push({ appid: item.appid, name: item.name, genres: [], image: null, isFree: false });
+      }
+    }
+    if (i + batchSize < items.length) await sleep(500);
+  }
+  return enriched;
+};
+
+ipcMain.handle('steam-wishlist', async (_event, steamId) => {
+  try {
+    const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
+    if (!cleanId) {
+      return { success: false, error: 'A valid Steam64 ID is required.', items: [] };
+    }
+    console.log('[SteamWishlist] Fetching wishlist for', cleanId);
+    const items = await fetchSteamWishlist(cleanId);
+    if (items.length === 0) {
+      return { success: true, count: 0, items: [], error: null };
+    }
+    const enriched = await enrichWishlistItems(items);
+    console.log(`[SteamWishlist] Enriched ${enriched.length} item(s)`);
+    return { success: true, count: enriched.length, items: enriched, error: null };
+  } catch (err) {
+    console.error('[SteamWishlist] Error:', err.message);
+    return { success: false, error: err.message || 'Could not fetch Steam wishlist.', items: [] };
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Disk Usage & Uninstall Coach
 //
 // disk-folder-size: recursively walks a directory and returns total bytes +
