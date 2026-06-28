@@ -101,7 +101,15 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
 
   const handleAddFromSearch = (result) => {
     if (isWishlisted(result.name)) return;
-    const added = WishlistService.addGame({ name: result.name }, { threshold: null });
+    // If this result matches a game in the local library, carry its genres and
+    // platform so Buy Recommendations can rank it against the player's taste.
+    const libGame = (library || []).find(
+      (g) => (g.name || g.title || '').toLowerCase() === (result.name || '').toLowerCase()
+    );
+    const added = WishlistService.addGame(
+      { name: result.name, platform: result.platform || libGame?.platform || '' },
+      { threshold: null, genres: Array.isArray(libGame?.genres) ? libGame.genres : null }
+    );
     if (!added) return;
     setJustAdded(result.name);
     loadItems();

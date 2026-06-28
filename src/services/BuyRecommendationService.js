@@ -1,5 +1,6 @@
 import StorageService from './StorageService';
 import { RecommendationEngine } from './RecommendationEngine';
+import { getGameGenres } from '../GameGenreDatabase';
 
 const SETTINGS_KEY = 'buyRecommendationsEnabled';
 const MAX_RESULTS = 3;
@@ -87,12 +88,22 @@ class BuyRecommendationService {
     const entries = candidates
       .filter((item) => item?.name && !ownedNames.has(normalizeName(item.name)))
       .map((item) => {
+        let itemGenres = Array.isArray(item.genres) ? item.genres.filter(Boolean) : [];
+        if (itemGenres.length === 0) {
+          // Legacy items (added before genres were stored) get genres derived
+          // from their title so they can still be ranked against taste signals.
+          try {
+            itemGenres = getGameGenres(item.name) || [];
+          } catch {
+            itemGenres = [];
+          }
+        }
         const gameLike = {
           name: item.name,
           title: item.name,
           appid: item.appid || item.key,
           platform: item.platform || 'Wishlist',
-          genres: Array.isArray(item.genres) ? item.genres : [],
+          genres: itemGenres,
           time_played: 0
         };
         const genres = getGenres(gameLike);

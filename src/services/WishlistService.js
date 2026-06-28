@@ -4,6 +4,7 @@
 // IsThereAnyDeal public API with 24h caching. No user data leaves the device.
 
 import StorageService from './StorageService';
+import { getGameGenres } from '../GameGenreDatabase';
 
 const WISHLIST_KEY = 'wishlistItemsV1';
 const PRICE_CACHE_KEY = 'wishlistPriceCacheV1';
@@ -129,16 +130,32 @@ class WishlistService {
     return Array.isArray(items) && items.some((item) => item.key === key);
   }
 
-  static addGame(game, { threshold = null, notes = '' } = {}) {
+  static addGame(game, { threshold = null, notes = '', genres = null } = {}) {
     const key = slug(game.name || game.title || '');
     if (!key) return null;
     const items = readWishlist();
     if (items.some((item) => item.key === key)) return null;
+    const name = game.name || game.title || '';
+    // Resolve genres so Buy Recommendations can rank this item against the
+    // player's taste profile. Prefer explicit genres (e.g. from a matched
+    // library game), then any genres on the passed object, then derive them
+    // from the title via the local genre database.
+    let resolvedGenres = Array.isArray(genres) && genres.length > 0
+      ? genres
+      : (Array.isArray(game.genres) && game.genres.length > 0 ? game.genres : null);
+    if (!resolvedGenres) {
+      try {
+        resolvedGenres = getGameGenres(name);
+      } catch {
+        resolvedGenres = [];
+      }
+    }
     const entry = {
       key,
-      name: game.name || game.title || '',
+      name,
       platform: game.platform || '',
       appid: game.appid || '',
+      genres: Array.isArray(resolvedGenres) ? resolvedGenres : [],
       addedAt: Date.now(),
       threshold: typeof threshold === 'number' ? threshold : null,
       notes,
