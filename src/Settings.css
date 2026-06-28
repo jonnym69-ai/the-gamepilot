@@ -177,26 +177,33 @@
   position: absolute;
 }
 
+/* The slider fills the whole track; a circular knob (::after) slides across it,
+   and the ON/OFF label (::before) sits on the opposite side of the knob. */
 .toggle-switch .toggle-slider {
   position: absolute;
-  top: 3px;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  transition: background 0.3s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Sliding knob */
+.toggle-switch .toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
   left: 3px;
-  right: 3px;
-  bottom: 3px;
-  background: linear-gradient(135deg, #e0e0e0, #c0c0c0);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s ease;
 }
 
-/* OFF State - Clear Visual */
-.toggle-switch input:not(:checked) + .toggle-slider {
-  background: linear-gradient(135deg, #e0e0e0, #c0c0c0);
-  transform: translateX(0);
-}
-
+/* OFF State */
 .toggle-switch input:not(:checked) + .toggle-slider::before {
   content: 'OFF';
   position: absolute;
@@ -204,19 +211,20 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
-  font-weight: 600;
-  color: #666;
+  font-weight: 700;
+  color: var(--text-secondary, #9aa3b2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-/* ON State - Clear Visual */
+/* ON State */
 .toggle-switch input:checked + .toggle-slider {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  transform: translateX(28px);
-  box-shadow: 
-    0 2px 8px rgba(var(--accent-primary), 0.3),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, var(--accent-primary, #ff6b35), var(--accent-secondary, #ff8c42));
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider::after {
+  transform: translate(28px, -50%);
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
@@ -226,7 +234,7 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2132,56 +2140,10 @@
   color: var(--text) !important;
 }
 
-/* Toggle Switches */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 65px;
-  height: 36px;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 36px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 24px;
-  width: 24px;
-  left: 4px;
-  bottom: 4px;
-  background: linear-gradient(135deg, #ffffff, #f8f9fa);
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-input:checked + .toggle-slider {
-  background: linear-gradient(135deg, var(--accent-primary, #ff6b35), var(--accent-secondary, #ff8c42));
-  border-color: var(--accent-primary, #ff6b35);
-  box-shadow: 0 0 15px rgba(255, 107, 53, 0.3);
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(27px);
-  background: white;
-}
+/* NOTE: The toggle switch styles are defined once near the top of this file
+   (.toggle-switch / .toggle-slider with a sliding knob). A duplicate block that
+   previously lived here conflicted with those rules and broke the visuals, so
+   it has been removed. */
 
 /* Data Management Section */
 .data-settings {
