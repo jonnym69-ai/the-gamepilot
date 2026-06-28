@@ -1560,6 +1560,16 @@ function Home({
             {renderDiscoveryContent()}
           </HomeSection>
 
+          <HomeSection
+            className="home-wishlist-section"
+            eyebrow="Your Wishlist"
+            title="Track What to Buy Next"
+            copy="Add games you're considering. GamePilot ranks them by what you actually play and watches for price drops."
+            compact
+          >
+            <WishlistSection library={library} platformIcons={platformIcons} onLaunchGame={onLaunchGame} />
+          </HomeSection>
+
           {hasWidgetPack && (
             <HomeSection
               className="home-widgets-section"
