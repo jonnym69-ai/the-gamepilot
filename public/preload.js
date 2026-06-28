@@ -15,6 +15,7 @@ window.electronAPI = {
   steamGlobalAchievements: (appid) => ipcRenderer.invoke('steam-global-achievements', appid),
   steamPersonalAchievementsPreflight: (payload) => ipcRenderer.invoke('steam-personal-achievements-preflight', payload),
   steamNews: (payload) => ipcRenderer.invoke('steam-news', payload),
+  steamWishlist: (steamId) => ipcRenderer.invoke('steam-wishlist', steamId),
   diskFolderSize: (payload) => ipcRenderer.invoke('disk-folder-size', payload),
   saveLocationStatus: (payload) => ipcRenderer.invoke('save-location-status', payload),
   openSaveLocation: (payload) => ipcRenderer.invoke('open-save-location', payload),

@@ -16,6 +16,7 @@ import SteamNewsService from './services/SteamNewsService';
 import DiskUsageService from './services/DiskUsageService';
 import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
+import SteamWishlistService from './services/SteamWishlistService';
 import EntitlementService from './services/EntitlementService';
 import TrialService from './services/TrialService';
 import { LibraryExportService } from './services/LibraryExportService';
@@ -40,6 +41,10 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [diskUsageEnabled, setDiskUsageEnabled] = useState(() => DiskUsageService.isEnabled());
   const [wishlistEnabled, setWishlistEnabled] = useState(() => WishlistService.isEnabled());
   const [buyRecommendationsEnabled, setBuyRecommendationsEnabled] = useState(() => BuyRecommendationService.isEnabled());
+  const [steamWishlistEnabled, setSteamWishlistEnabled] = useState(() => SteamWishlistService.isEnabled());
+  const [steamId, setSteamId] = useState(() => SteamWishlistService.getSteamId());
+  const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
+  const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [gameLaunchNotifications, setGameLaunchNotifications] = useState(true);
   const [dailySummaryNotifications, setDailySummaryNotifications] = useState(false);
@@ -1016,6 +1021,72 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <p className="setting-description">
                       Off by default. Ranks your local Wishlist using owned-library taste signals and cached price context. This first scaffold does not call external catalog APIs, open stores, purchase anything, or send your play history anywhere.
                     </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Steam Wishlist Import</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={steamWishlistEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setSteamWishlistEnabled(next);
+                          SteamWishlistService.setEnabled(next);
+                          success(`Steam Wishlist import ${next ? 'enabled' : 'disabled'}.`);
+                        }}
+                        id="steam-wishlist-enabled"
+                      />
+                      <label htmlFor="steam-wishlist-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      Off by default. Import your public Steam wishlist using your Steam64 ID. Adds those games to GamePilot's local Wishlist so Buy Recommendations can rank what to buy next. Your ID and wishlist data stay on-device.
+                    </p>
+                    {steamWishlistEnabled && (
+                      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            placeholder="Paste your Steam64 ID..."
+                            value={steamId}
+                            onChange={(e) => {
+                              setSteamId(e.target.value);
+                              SteamWishlistService.setSteamId(e.target.value);
+                            }}
+                            style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                          />
+                          <button
+                            className="export-button"
+                            disabled={!steamId.trim() || steamWishlistSyncing}
+                            onClick={async () => {
+                              setSteamWishlistSyncing(true);
+                              try {
+                                const result = await SteamWishlistService.sync();
+                                setSteamWishlistLastResult(result);
+                                if (result.success) {
+                                  success(`Synced ${result.count} game${result.count === 1 ? '' : 's'} from Steam wishlist.`);
+                                } else {
+                                  const msg = result.error || 'Steam wishlist sync failed.';
+                                  console.warn('[Settings] Steam wishlist sync:', msg);
+                                }
+                              } finally {
+                                setSteamWishlistSyncing(false);
+                              }
+                            }}
+                            style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}
+                          >
+                            {steamWishlistSyncing ? 'Syncing...' : 'Sync Now'}
+                          </button>
+                        </div>
+                        {steamWishlistLastResult?.fetchedAt && (
+                          <p className="setting-description" style={{ margin: '4px 0 0' }}>
+                            {steamWishlistLastResult.success
+                              ? `Last sync: ${steamWishlistLastResult.count} new game${steamWishlistLastResult.count === 1 ? '' : 's'} added from ${steamWishlistLastResult.totalFetched} fetched.`
+                              : `Last sync failed: ${steamWishlistLastResult.error}`}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {startupLaunchSupported && (

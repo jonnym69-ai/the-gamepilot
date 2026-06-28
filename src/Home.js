@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import NavBar from './NavBar';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { DiscoveryService } from './services/DiscoveryService';
+import BuyRecommendationService from './services/BuyRecommendationService';
+import WishlistService from './services/WishlistService';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import CollapsibleSection from './components/CollapsibleSection';
 import { Library, SlidersHorizontal, Sparkles } from 'lucide-react';
@@ -186,6 +188,8 @@ function Home({
   const [discoveryRecommendations, setDiscoveryRecommendations] = useState([]);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [wishlistVersion, setWishlistVersion] = useState(0);
+  const [buyRecommendations, setBuyRecommendations] = useState(null);
+  const [buyRecommendationsLoading, setBuyRecommendationsLoading] = useState(false);
 
   const recentGames = useMemo(() => {
     return library
@@ -274,6 +278,18 @@ function Home({
       });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setBuyRecommendationsLoading(true);
+    const wishlist = WishlistService.getWishlist();
+    const snapshot = BuyRecommendationService.getSnapshot(library, wishlist);
+    if (!cancelled) {
+      setBuyRecommendations(snapshot);
+      setBuyRecommendationsLoading(false);
+    }
+    return () => { cancelled = true; };
+  }, [library, wishlistVersion]);
 
   useEffect(() => {
     const savedUsername = localStorage.getItem('gamepilot-profileUsername') || localStorage.getItem('profileUsername') || '';
@@ -1025,6 +1041,82 @@ function Home({
     </>
   );
 
+  const renderBuyRecommendations = () => {
+    if (buyRecommendationsLoading) {
+      return (
+        <div className="discovery-skeleton-grid">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="discovery-skeleton-card" />
+          ))}
+        </div>
+      );
+    }
+
+    if (!buyRecommendations?.enabled) {
+      return (
+        <div className="discovery-empty">
+          <Sparkles size={28} />
+          <p>Buy recommendations are off.</p>
+          <span>Enable them in Settings to rank your wishlist by your local taste signals.</span>
+        </div>
+      );
+    }
+
+    const entries = buyRecommendations.entries || [];
+    if (entries.length === 0) {
+      return (
+        <div className="discovery-empty">
+          <Sparkles size={28} />
+          <p>No buy recommendations yet.</p>
+          <span>{buyRecommendations.message || 'Add games to your wishlist or import your Steam wishlist.'}</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="discovery-grid">
+        {entries.map((entry) => {
+          const game = entry.game || {};
+          const meta = entry.meta || {};
+          const price = meta.wishlistItem?.currentPrice;
+          return (
+            <article key={entry.id || game.name} className="discovery-card">
+              <div className="discovery-card-badge">
+                <span>{meta.buyScore || 0}% match</span>
+              </div>
+              <h4>{game.name}</h4>
+              <div className="discovery-card-meta">
+                <span className="discovery-genres">{game.genres.slice(0, 2).join(' · ')}</span>
+              </div>
+              <div className="discovery-card-reasons">
+                {(meta.buyReasons || []).slice(0, 2).map((reason, i) => (
+                  <span key={i}>{reason}</span>
+                ))}
+              </div>
+              <div className="discovery-card-price">
+                {price ? (
+                  <span className="discovery-price">{price.priceFormatted || `$${price.price}`}</span>
+                ) : (
+                  <span className="discovery-price">Price unavailable</span>
+                )}
+              </div>
+              <div className="discovery-card-actions">
+                <a
+                  href={game.appid ? `https://store.steampowered.com/app/${game.appid}` : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.name)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="discovery-link"
+                >
+                  View on Steam
+                </a>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div
       className={`home-page ${theme}`}
@@ -1247,6 +1339,16 @@ function Home({
             defaultOpen={false}
           >
             {renderDiscoveryContent()}
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Buy Next"
+            subtitle="Your wishlist ranked by what you actually play."
+            icon={<Sparkles size={18} />}
+            className="home-buy-next-section"
+            defaultOpen={false}
+          >
+            {renderBuyRecommendations()}
           </CollapsibleSection>
 
           <CollapsibleSection

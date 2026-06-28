@@ -46,6 +46,7 @@ export const resolveGameArtwork = (game = {}, options = {}) => {
   const surface = options.surface || 'library_card';
 
   const candidates = [
+    game.coverArtOverride,
     game.header_image,
     game.headerImage,
     game.image,

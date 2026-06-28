@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const { spawn, exec } = require('child_process');
 const si = require('systeminformation');
 const isDev = process.env.NODE_ENV === 'development';
@@ -414,6 +415,85 @@ ipcMain.handle('get-system-info', async () => {
   } catch (error) {
     console.error('[Electron] Error getting system info:', error);
     throw error;
+  }
+});
+
+// Helper: fetch a URL via https and return parsed JSON
+const fetchJson = (url) => new Promise((resolve, reject) => {
+  https.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
+    let data = '';
+    res.on('data', (chunk) => { data += chunk; });
+    res.on('end', () => {
+      try {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(JSON.parse(data));
+        } else {
+          reject(new Error(`HTTP ${res.statusCode}`));
+        }
+      } catch (err) {
+        reject(new Error('Invalid JSON response'));
+      }
+    });
+  }).on('error', reject);
+});
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchSteamWishlist = async (steamId) => {
+  const url = `https://store.steampowered.com/wishlist/profiles/${encodeURIComponent(steamId)}/wishlistdata/?p=0`;
+  const raw = await fetchJson(url);
+  if (!raw || typeof raw !== 'object') return [];
+  return Object.entries(raw).map(([appid, item]) => ({
+    appid: String(appid),
+    name: item?.name || ''
+  })).filter((item) => item.name);
+};
+
+const enrichWishlistItems = async (items) => {
+  const enriched = [];
+  const batchSize = 5;
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const appids = batch.map((item) => item.appid).join(',');
+    try {
+      const details = await fetchJson(`https://store.steampowered.com/api/appdetails?appids=${appids}`);
+      for (const item of batch) {
+        const info = details?.[item.appid]?.data;
+        enriched.push({
+          appid: item.appid,
+          name: item.name,
+          genres: Array.isArray(info?.genres) ? info.genres.map((g) => g.description) : [],
+          image: info?.header_image || null,
+          isFree: info?.is_free || false
+        });
+      }
+    } catch (err) {
+      console.warn('[Electron] Failed to enrich wishlist batch:', err.message);
+      for (const item of batch) {
+        enriched.push({ appid: item.appid, name: item.name, genres: [], image: null, isFree: false });
+      }
+    }
+    if (i + batchSize < items.length) await sleep(500);
+  }
+  return enriched;
+};
+
+// IPC Handler for importing a Steam wishlist
+ipcMain.handle('steam-wishlist', async (event, steamId) => {
+  try {
+    if (!steamId || typeof steamId !== 'string') {
+      return { success: false, error: 'A valid Steam ID is required.', items: [] };
+    }
+    console.log('[Electron] Fetching Steam wishlist for', steamId);
+    const items = await fetchSteamWishlist(steamId);
+    if (items.length === 0) {
+      return { success: true, count: 0, items: [], error: null };
+    }
+    const enriched = await enrichWishlistItems(items);
+    return { success: true, count: enriched.length, items: enriched, error: null };
+  } catch (err) {
+    console.error('[Electron] Steam wishlist error:', err.message);
+    return { success: false, error: err.message || 'Could not fetch Steam wishlist.', items: [] };
   }
 });
 
