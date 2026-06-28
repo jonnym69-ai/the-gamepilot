@@ -1,6 +1,6 @@
 {
   "name": "gamepilot",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "A local-first PC gaming library manager and launcher.",
   "private": true,
   "main": "electron.js",

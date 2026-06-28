@@ -2,12 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Gift, Wand2, Heart, Link2, Trophy, Download, Target, HardDrive, Gauge, Monitor, Sparkles, Compass } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
+import LabsService from '../services/LabsService';
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [labsEnabled, setLabsEnabled] = useState(LabsService.isEnabled());
   const location = useLocation();
   const dropdownRef = useRef(null);
   const { bigScreenMode, toggleBigScreenMode } = useTheme();
+
+  // Keep the nav in sync when Labs is toggled from Settings.
+  useEffect(() => LabsService.subscribe(setLabsEnabled), []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -74,12 +79,9 @@ function HybridNavBar() {
         {isDropdownOpen && (
           <div className="dropdown-menu">
             <div className="dropdown-section">
-              <div className="dropdown-section-title">Tools</div>
+              <div className="dropdown-section-title">Decide what to play</div>
               <Link to="/recommendations" className="dropdown-item" onClick={closeDropdown} title="Discover games with different recommendation styles">
                 <Compass size={16} className="dropdown-item-icon" /> Recommendations
-              </Link>
-              <Link to="/free-games" className="dropdown-item" onClick={closeDropdown} title="Browse free-to-keep game giveaways">
-                <Gift size={16} className="dropdown-item-icon" /> Free Games
               </Link>
               <Link to="/swipe-deck" className="dropdown-item" onClick={closeDropdown} title="Swipe through your library to build a shortlist">
                 <Sparkles size={16} className="dropdown-item-icon" /> Swipe Deck
@@ -87,43 +89,51 @@ function HybridNavBar() {
               <Link to="/library-intelligence" className="dropdown-item" onClick={closeDropdown} title="Compare games and surface backlog priorities">
                 <Scale size={16} className="dropdown-item-icon" /> Library Intelligence
               </Link>
-              <Link to="/habits" className="dropdown-item" onClick={closeDropdown} title="Track gaming habits and goals">
-                <Calendar size={16} className="dropdown-item-icon" /> Habits
-              </Link>
-              <Link to="/achievements" className="dropdown-item" onClick={closeDropdown} title="View your achievements and rolling assignments">
-                <Trophy size={16} className="dropdown-item-icon" /> Achievements
-              </Link>
-              <Link to="/challenge-board" className="dropdown-item" onClick={closeDropdown} title="Gaming challenges and quests">
-                <Target size={16} className="dropdown-item-icon" /> Challenge Board
-              </Link>
-              <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Your yearly gaming recap">
-                <BarChart3 size={16} className="dropdown-item-icon" /> Year in Review
-              </Link>
-              <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="Unlockable customization earned through your habits">
-                <Gift size={16} className="dropdown-item-icon" /> Rewards
-              </Link>
-              <Link to="/gaming-links" className="dropdown-item" onClick={closeDropdown} title="Your personal collection of gaming sites and resources">
-                <Link2 size={16} className="dropdown-item-icon" /> Gaming Links
-              </Link>
               <Link to="/export-hub" className="dropdown-item" onClick={closeDropdown} title="Export and backup your GamePilot data">
                 <Download size={16} className="dropdown-item-icon" /> Export Hub
-              </Link>
-              <Link to="/storage-manager" className="dropdown-item" onClick={closeDropdown} title="Find cold games and reclaim disk space">
-                <HardDrive size={16} className="dropdown-item-icon" /> Library Reclaimer
-              </Link>
-              <Link to="/performance-cockpit" className="dropdown-item" onClick={closeDropdown} title="Hardware analysis and game compatibility">
-                <Gauge size={16} className="dropdown-item-icon" /> Performance Cockpit
-              </Link>
-              <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Founder Lounge, Patreon support, and unlock codes">
-                <Heart size={16} className="dropdown-item-icon" /> Founder Lounge
               </Link>
               <Link to="/themes" className="dropdown-item" onClick={closeDropdown} title="Switch mood themes">
                 <Palette size={16} className="dropdown-item-icon" /> Themes
               </Link>
-              <Link to="/theme-builder" className="dropdown-item" onClick={closeDropdown} title="Build custom themes with colors and effects">
-                <Wand2 size={16} className="dropdown-item-icon" /> Theme Builder
-              </Link>
             </div>
+            {labsEnabled && (
+              <div className="dropdown-section">
+                <div className="dropdown-section-title">Labs (experimental)</div>
+                <Link to="/free-games" className="dropdown-item" onClick={closeDropdown} title="Browse free-to-keep game giveaways">
+                  <Gift size={16} className="dropdown-item-icon" /> Free Games
+                </Link>
+                <Link to="/habits" className="dropdown-item" onClick={closeDropdown} title="Track gaming habits and goals">
+                  <Calendar size={16} className="dropdown-item-icon" /> Habits
+                </Link>
+                <Link to="/achievements" className="dropdown-item" onClick={closeDropdown} title="View your achievements and rolling assignments">
+                  <Trophy size={16} className="dropdown-item-icon" /> Achievements
+                </Link>
+                <Link to="/challenge-board" className="dropdown-item" onClick={closeDropdown} title="Gaming challenges and quests">
+                  <Target size={16} className="dropdown-item-icon" /> Challenge Board
+                </Link>
+                <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Your yearly gaming recap">
+                  <BarChart3 size={16} className="dropdown-item-icon" /> Year in Review
+                </Link>
+                <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="Unlockable customization earned through your habits">
+                  <Gift size={16} className="dropdown-item-icon" /> Rewards
+                </Link>
+                <Link to="/gaming-links" className="dropdown-item" onClick={closeDropdown} title="Your personal collection of gaming sites and resources">
+                  <Link2 size={16} className="dropdown-item-icon" /> Gaming Links
+                </Link>
+                <Link to="/storage-manager" className="dropdown-item" onClick={closeDropdown} title="Find cold games and reclaim disk space">
+                  <HardDrive size={16} className="dropdown-item-icon" /> Library Reclaimer
+                </Link>
+                <Link to="/performance-cockpit" className="dropdown-item" onClick={closeDropdown} title="Hardware analysis and game compatibility">
+                  <Gauge size={16} className="dropdown-item-icon" /> Performance Cockpit
+                </Link>
+                <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Founder Lounge, Patreon support, and unlock codes">
+                  <Heart size={16} className="dropdown-item-icon" /> Founder Lounge
+                </Link>
+                <Link to="/theme-builder" className="dropdown-item" onClick={closeDropdown} title="Build custom themes with colors and effects">
+                  <Wand2 size={16} className="dropdown-item-icon" /> Theme Builder
+                </Link>
+              </div>
+            )}
             <div className="dropdown-section">
               <div className="dropdown-section-title">View</div>
               <button

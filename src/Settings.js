@@ -17,6 +17,7 @@ import DiskUsageService from './services/DiskUsageService';
 import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
+import LabsService from './services/LabsService';
 import EntitlementService from './services/EntitlementService';
 import TrialService from './services/TrialService';
 import { LibraryExportService } from './services/LibraryExportService';
@@ -45,6 +46,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [steamId, setSteamId] = useState(() => SteamWishlistService.getSteamId());
   const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
+  const [labsEnabled, setLabsEnabled] = useState(() => LabsService.isEnabled());
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [gameLaunchNotifications, setGameLaunchNotifications] = useState(true);
   const [dailySummaryNotifications, setDailySummaryNotifications] = useState(false);
@@ -420,6 +422,26 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       <option value="BRL">BRL - Brazilian Real (R$)</option>
                       <option value="RUB">RUB - Russian Ruble (₽)</option>
                     </select>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Labs (experimental features)</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={labsEnabled}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setLabsEnabled(next);
+                          LabsService.setEnabled(next);
+                        }}
+                        id="labs-enabled"
+                      />
+                      <label htmlFor="labs-enabled" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      Off by default. GamePilot focuses on the essentials: your library and deciding what to play or buy next. Turn this on to reveal experimental and secondary features (Habits, Achievements, Challenges, Rewards, Year in Review, Performance Cockpit, and more) in the “More” menu. Nothing is deleted when this is off — it just keeps the interface focused.
+                    </p>
                   </div>
                   </div>
                 </div>
