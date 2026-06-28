@@ -3,6 +3,7 @@ import LazyImage from './LazyImage';
 import EmptyState from './EmptyState';
 import { resolveGameArtwork, getGameArtworkPlaceholder } from '../services/GameArtworkService';
 import WishlistService from '../services/WishlistService';
+import BuyRecommendationService from '../services/BuyRecommendationService';
 
 export default function WishlistSection({ library = [], platformIcons, onLaunchGame }) {
   const [items, setItems] = React.useState([]);
@@ -14,6 +15,21 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
   const [justAdded, setJustAdded] = React.useState(null);
   const [alertSummary, setAlertSummary] = React.useState(() => WishlistService.getAlertSummary());
   const [backgroundChecking, setBackgroundChecking] = React.useState(false);
+  const [buyEnabled] = React.useState(() => BuyRecommendationService.isEnabled());
+  const [filterGenre, setFilterGenre] = React.useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = React.useState('');
+
+  // Genre + Price suggestions. Mood is intentionally excluded — it can't be
+  // known for a game you don't own yet.
+  const buySnapshot = React.useMemo(() => {
+    if (!buyEnabled) return null;
+    const maxPrice = filterMaxPrice ? parseFloat(filterMaxPrice) : null;
+    return BuyRecommendationService.getSnapshot(library, WishlistService.getWishlist(), {
+      genre: filterGenre || null,
+      maxPrice: typeof maxPrice === 'number' && !Number.isNaN(maxPrice) ? maxPrice : null
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buyEnabled, library, filterGenre, filterMaxPrice, items]);
 
   const loadItems = React.useCallback(() => {
     const wishlist = WishlistService.getWishlist();
@@ -179,6 +195,79 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
               ? `${drops[0].name} is at or below your alert threshold.`
               : `${historicalDeals[0]?.name || 'A watched game'} is matching its known low price.`}
           </span>
+        </div>
+      )}
+
+      {buyEnabled && items.length > 0 && (
+        <div className="wishlist-suggestions">
+          <div className="wishlist-suggestions-header">
+            <span className="wishlist-suggestions-title">What to buy next</span>
+            <div className="wishlist-suggestions-filters">
+              <select
+                className="wishlist-filter-select"
+                value={filterGenre}
+                onChange={(e) => setFilterGenre(e.target.value)}
+                title="Filter suggestions by genre"
+              >
+                <option value="">Any genre</option>
+                {(buySnapshot?.availableGenres || []).map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+              <div className="wishlist-filter-price">
+                <span>Max $</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="wishlist-filter-price-input"
+                  value={filterMaxPrice}
+                  onChange={(e) => setFilterMaxPrice(e.target.value)}
+                  placeholder="Any"
+                  title="Only suggest games at or below this price"
+                />
+              </div>
+              {(filterGenre || filterMaxPrice) && (
+                <button
+                  type="button"
+                  className="wishlist-filter-clear"
+                  onClick={() => { setFilterGenre(''); setFilterMaxPrice(''); }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+          {(buySnapshot?.entries || []).length === 0 ? (
+            <p className="wishlist-suggestions-empty">{buySnapshot?.message || 'No suggestions yet.'}</p>
+          ) : (
+            <div className="wishlist-suggestions-list">
+              {buySnapshot.entries.map((entry) => {
+                const g = entry.game || {};
+                const m = entry.meta || {};
+                const reason = (m.buyReasons || [])[0];
+                const price = m.wishlistItem?.currentPrice;
+                const steamUrl = g.appid
+                  ? `https://store.steampowered.com/app/${g.appid}`
+                  : `https://store.steampowered.com/search/?term=${encodeURIComponent(g.name)}`;
+                return (
+                  <div key={entry.id || g.name} className="wishlist-suggestion">
+                    <div className="wishlist-suggestion-main">
+                      <span className="wishlist-suggestion-score">{m.buyScore || 0}%</span>
+                      <div className="wishlist-suggestion-text">
+                        <span className="wishlist-suggestion-name">{g.name}</span>
+                        {reason && <span className="wishlist-suggestion-reason">{reason}</span>}
+                      </div>
+                    </div>
+                    <div className="wishlist-suggestion-side">
+                      {price && <span className="wishlist-suggestion-price">{price.priceFormatted || `$${price.price}`}</span>}
+                      <a href={steamUrl} target="_blank" rel="noopener noreferrer" className="wishlist-search-add">View</a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

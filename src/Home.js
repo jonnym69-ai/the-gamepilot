@@ -1117,78 +1117,8 @@ function Home({
     );
   };
 
-  const renderTonightDecision = () => {
-    const playReasons = tonightPickEntry?.explanation?.reasons || [];
-    const playReason = playReasons[0] || null;
-    const buyEntry = buyRecommendations?.enabled ? (buyRecommendations.entries || [])[0] : null;
-    const buyGame = buyEntry?.game || null;
-    const buyMeta = buyEntry?.meta || {};
-    const buyReason = (buyMeta.buyReasons || [])[0] || null;
-
-    // Nothing confident to show yet — stay quiet rather than show empty boxes.
-    if (!tonightPickGame && !buyGame) {
-      return null;
-    }
-
-    return (
-      <div className="tonight-decision">
-        {tonightPickGame && (
-          <article className="decision-card decision-play">
-            <span className="decision-eyebrow">Play this next</span>
-            <div className="decision-body">
-              <div
-                className="decision-art"
-                style={tonightPickArtwork ? { backgroundImage: `url(${tonightPickArtwork})` } : undefined}
-                aria-hidden="true"
-              >
-                {!tonightPickArtwork && <span className="decision-art-fallback">{tonightPickPlaceholder}</span>}
-              </div>
-              <div className="decision-info">
-                <h3>{tonightPickGame.name}</h3>
-                {Array.isArray(tonightPickGame.genres) && tonightPickGame.genres.length > 0 && (
-                  <p className="decision-genres">{tonightPickGame.genres.slice(0, 2).join(' · ')}</p>
-                )}
-                {playReason && <p className="decision-reason">{playReason}</p>}
-                <button type="button" className="decision-action" onClick={launchTonightPick}>
-                  Play now
-                </button>
-              </div>
-            </div>
-          </article>
-        )}
-
-        {buyGame && (
-          <article className="decision-card decision-buy">
-            <span className="decision-eyebrow">Buy this next</span>
-            <div className="decision-body">
-              <div
-                className="decision-art"
-                style={buyMeta.image ? { backgroundImage: `url(${buyMeta.image})` } : undefined}
-                aria-hidden="true"
-              >
-                {!buyMeta.image && <span className="decision-art-fallback">{(buyGame.name || '?').charAt(0)}</span>}
-              </div>
-              <div className="decision-info">
-                <h3>{buyGame.name}</h3>
-                {typeof buyMeta.buyScore === 'number' && (
-                  <p className="decision-genres">{buyMeta.buyScore}% match for your taste</p>
-                )}
-                {buyReason && <p className="decision-reason">{buyReason}</p>}
-                <a
-                  className="decision-action decision-action-secondary"
-                  href={buyGame.appid ? `https://store.steampowered.com/app/${buyGame.appid}` : `https://store.steampowered.com/search/?term=${encodeURIComponent(buyGame.name)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View on Steam
-                </a>
-              </div>
-            </div>
-          </article>
-        )}
-      </div>
-    );
-  };
+  // The single best buy recommendation, surfaced as a shelf inside Library Today.
+  const buyShelfEntry = buyRecommendations?.enabled ? (buyRecommendations.entries || [])[0] || null : null;
 
   return (
     <div
@@ -1272,8 +1202,6 @@ function Home({
           </div>
         </div>
       </div>
-
-      {renderTonightDecision()}
 
       {isDashboard ? (
         <>
@@ -1473,6 +1401,7 @@ function Home({
               onLaunchFavorite={launchFavoriteShelf}
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
+              buyEntry={buyShelfEntry}
             />
           </HomeSection>
 

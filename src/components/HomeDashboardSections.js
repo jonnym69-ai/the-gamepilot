@@ -188,6 +188,58 @@ export function CuratedShelfCard({
   );
 }
 
+export function BuyShelfCard({ entry, platformIcons = {} }) {
+  if (!entry || !entry.game) {
+    return null;
+  }
+  const game = entry.game;
+  const meta = entry.meta || {};
+  const reason = (meta.buyReasons || [])[0] || null;
+  const price = meta.wishlistItem?.currentPrice;
+  const steamUrl = game.appid
+    ? `https://store.steampowered.com/app/${game.appid}`
+    : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.name)}`;
+
+  return (
+    <div className="game-card curated-shelf-card buy-shelf-card fade-in" style={{ maxWidth: '400px', width: '100%' }}>
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.7, marginBottom: '4px' }}>
+          Buy this next
+        </div>
+        <div style={{ fontSize: '0.95rem', opacity: 0.85 }}>
+          The best value pick from your wishlist, matched to what you actually play.
+        </div>
+      </div>
+      <div className="game-card-image-wrapper">
+        {meta.image ? (
+          <LazyImage src={meta.image} alt={game.name} className="game-image" />
+        ) : (
+          <div className="game-placeholder">
+            <div className="platform-icon">{platformIcons[game.platform] || '🛒'}</div>
+          </div>
+        )}
+      </div>
+      <h4 className="game-name">{game.name}</h4>
+      <div className="game-info">
+        {typeof meta.buyScore === 'number' && (
+          <span className="game-genre">{meta.buyScore}% match</span>
+        )}
+        {price && (
+          <span className="game-playtime">{price.priceFormatted || `$${price.price}`}</span>
+        )}
+      </div>
+      {reason && (
+        <p style={{ fontSize: '0.85rem', opacity: 0.8, margin: '8px 0 0' }}>{reason}</p>
+      )}
+      <div className="game-actions">
+        <a href={steamUrl} target="_blank" rel="noopener noreferrer" className="game-launch-button primary">
+          🛒 View on Steam
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function ContinuePlayingSection({
   game,
   entry,
@@ -1400,7 +1452,8 @@ export function LibraryTodaySection({
   onLaunchRediscover,
   onLaunchFavorite,
   formatLastPlayed,
-  formatPlaytime
+  formatPlaytime,
+  buyEntry
 }) {
   if (!homeShelfCards) {
     return (
@@ -1504,6 +1557,9 @@ export function LibraryTodaySection({
                 </div>
               </div>
             </CuratedShelfCard>
+          )}
+          {buyEntry && (
+            <BuyShelfCard entry={buyEntry} platformIcons={platformIcons} />
           )}
         </div>
       </div>
