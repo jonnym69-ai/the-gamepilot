@@ -3363,3 +3363,130 @@ body.big-screen-mode .home-section-title.selected {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Tonight's Decision hero — the two core choices: play next & buy next.
+--------------------------------------------------------------------------- */
+.tonight-decision {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  max-width: 1100px;
+  margin: 0 auto 28px;
+  padding: 0 24px;
+}
+
+.decision-card {
+  position: relative;
+  border-radius: var(--radius-lg, 16px);
+  padding: 20px;
+  background: var(--card-bg, rgba(22, 26, 38, 0.7));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.decision-play {
+  border-top: 3px solid var(--accent, #6c8cff);
+}
+
+.decision-buy {
+  border-top: 3px solid var(--success, #4caf82);
+}
+
+.decision-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #9aa3b2);
+  margin-bottom: 14px;
+}
+
+.decision-body {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.decision-art {
+  flex: 0 0 96px;
+  width: 96px;
+  min-height: 128px;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.decision-art-fallback {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-secondary, #9aa3b2);
+  text-transform: uppercase;
+}
+
+.decision-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.decision-info h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--text-primary, #fff);
+  word-break: break-word;
+}
+
+.decision-genres {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9aa3b2);
+}
+
+.decision-reason {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary, #c2c9d6);
+}
+
+.decision-action {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-block;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent, #6c8cff);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.decision-action:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.decision-action-secondary {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.2));
+  color: var(--text-primary, #fff);
+}
+
+@media (max-width: 640px) {
+  .tonight-decision {
+    grid-template-columns: 1fr;
+  }
+}
