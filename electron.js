@@ -1275,8 +1275,11 @@ const fetchSteamWishlistViaWindow = async (steamId) => {
           return finish(fromHtml);
         }
 
-        const htmlSnippet = fullHtml ? fullHtml.slice(0, 800) : '';
-        console.warn('[SteamWishlist] No g_rgWishlistData found. Page snippet:', htmlSnippet.replace(/\s+/g, ' '));
+        const bodyText = await win.webContents.executeJavaScript(`
+          document.body ? document.body.innerText.slice(0, 2000) : ''
+        `);
+        console.warn('[SteamWishlist] No g_rgWishlistData found. Page title:', pageTitle);
+        console.warn('[SteamWishlist] Page body text:', bodyText.replace(/\s+/g, ' '));
         fail(new Error('Steam wishlist page loaded but no wishlist data was found. Make sure your wishlist is public and not empty.'));
       } catch (err) {
         fail(err);
