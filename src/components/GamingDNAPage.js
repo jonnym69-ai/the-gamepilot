@@ -9,7 +9,9 @@ import {
   Gamepad2,
   Award,
   Zap,
-  ChevronRight
+  ChevronRight,
+  Flame,
+  Target
 } from 'lucide-react';
 import { GamingIdentity } from '../GamingIdentity';
 import { IdentityShareCard } from './IdentityShareCard';
@@ -144,6 +146,10 @@ export default function GamingDNAPage({ library = [] }) {
   const stats = useMemo(() => profile?.stats || {}, [profile?.stats]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const persona = useMemo(() => profile?.persona || {}, [profile?.persona]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const signatureGames = useMemo(() => profile?.signatureGames || [], [profile?.signatureGames]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const tasteClusters = useMemo(() => profile?.tasteClusters || [], [profile?.tasteClusters]);
 
   const handleCopyImage = useCallback(async () => {
     const blob = await generateShareCardBlob();
@@ -302,6 +308,68 @@ export default function GamingDNAPage({ library = [] }) {
           subtitle="where you spend time"
         />
       </div>
+
+      {signatureGames.length > 0 && (
+        <div className="dna-signature-games-section">
+          <h3>
+            <Flame size={18} />
+            Signature Games
+          </h3>
+          <p className="dna-section-description">The titles that define your taste — ranked by playtime, ratings, and engagement.</p>
+          <div className="dna-signature-games-list">
+            {signatureGames.map((game, idx) => (
+              <div key={game.appid || game.name || idx} className="dna-signature-game">
+                <span className="dna-signature-game-rank">#{idx + 1}</span>
+                <div className="dna-signature-game-info">
+                  <span className="dna-signature-game-name">{game.name}</span>
+                  <span className="dna-signature-game-meta">
+                    {game.playtimeHours > 0 && `${game.playtimeHours}h played`}
+                    {game.playtimeHours > 0 && game.rating > 0 && ' · '}
+                    {game.rating > 0 && `${game.rating}/10`}
+                    {game.wouldReplay === true && ' · would replay'}
+                  </span>
+                  {game.genres && game.genres.length > 0 && (
+                    <span className="dna-signature-game-genres">{game.genres.join(' · ')}</span>
+                  )}
+                </div>
+                <span className="dna-signature-game-score">{game.score}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {signatureGames.length === 0 && tasteClusters.length === 0 && (stats.totalPlayTime || 0) === 0 && (
+        <div className="dna-onboarding-nudge">
+          <div className="dna-onboarding-icon">
+            <Gamepad2 size={32} />
+          </div>
+          <h3>Play to unlock your taste profile</h3>
+          <p>Launch a few games from your library and GamePilot will identify your signature titles, detect your taste clusters, and start serving personalized recommendations.</p>
+        </div>
+      )}
+
+      {tasteClusters.length > 0 && (
+        <div className="dna-taste-clusters-section">
+          <h3>
+            <Target size={18} />
+            Taste Clusters
+          </h3>
+          <p className="dna-section-description">Emergent patterns from your play history that go beyond single-genre tags.</p>
+          <div className="dna-taste-clusters-list">
+            {tasteClusters.map((cluster) => (
+              <div key={cluster.id} className="dna-taste-cluster">
+                <div className="dna-taste-cluster-header">
+                  <span className="dna-taste-cluster-label">{cluster.label}</span>
+                  <span className="dna-taste-cluster-count">{cluster.matchCount} signature games</span>
+                </div>
+                <span className="dna-taste-cluster-description">{cluster.description}</span>
+                <span className="dna-taste-cluster-games">{cluster.gameNames.join(', ')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {snapshots && snapshots.length >= 2 && (
         <div className="dna-evolution-section">

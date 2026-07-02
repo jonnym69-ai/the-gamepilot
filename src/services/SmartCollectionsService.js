@@ -82,13 +82,11 @@ export class SmartCollectionsService {
       this.buildHiddenGems,
       this.buildDeepDives,
       this.buildOneMoreRun,
-      this.buildWeekendReady,
       this.buildQuickFix,
       this.buildMoodMatch,
       this.buildGenreGaps,
       this.buildAbandonedEarly,
-      this.buildRecentlyCompleted,
-      this.buildDiscovery
+      this.buildRecentlyCompleted
     ];
 
     const collections = builders
@@ -363,36 +361,6 @@ export class SmartCollectionsService {
     };
   }
 
-  /** Long-session games not played recently — weekend candidates */
-  static buildWeekendReady(library, sessionHistory, profile, persona) {
-    const games = library
-      .filter((g) => {
-        const estimated = PersonaPerformanceInsights.estimateSessionMinutes(g);
-        const days = daysSince(getLastPlayedTimestamp(g));
-        return estimated && estimated >= 180 && days > 7;
-      })
-      .sort((a, b) => {
-        const aScore = PersonaPerformanceInsights.estimateSessionMinutes(a) || 0;
-        const bScore = PersonaPerformanceInsights.estimateSessionMinutes(b) || 0;
-        return bScore - aScore;
-      })
-      .slice(0, 10);
-
-    if (games.length === 0) return null;
-
-    return {
-      id: 'weekend-ready',
-      title: 'Weekend Ready',
-      subtitle: 'Epic games waiting for a free afternoon',
-      icon: 'calendar',
-      color: '#f87171',
-      games,
-      relevanceScore: 78,
-      actionLabel: 'Plan',
-      insight: 'Block out time — these deserve your full attention.'
-    };
-  }
-
   /** Short games matching current time/mood context */
   static buildQuickFix(library, sessionHistory, profile, persona) {
     const avgSession = profile?.playstylePatterns?.avgSessionLength || 0;
@@ -567,44 +535,6 @@ export class SmartCollectionsService {
       relevanceScore: 75,
       actionLabel: 'Celebrate',
       insight: 'Fresh completions — your backlog is shrinking!'
-    };
-  }
-
-  /** Unplayed games that match behavior profile strongly */
-  static buildDiscovery(library, sessionHistory, profile, persona) {
-    const dominantGenre = persona?.dominantGenre;
-    const dominantMood = persona?.dominantMood;
-
-    const games = library
-      .filter((g) => {
-        const noPlaytime = !g?.time_played || g.time_played === 0;
-        const noLaunches = !g?.launch_count || g.launch_count === 0;
-        return noPlaytime && noLaunches;
-      })
-      .map((g) => {
-        const score = RecommendationEngine.scoreGameByBehavior(
-          g,
-          dominantMood,
-          dominantGenre,
-          null
-        );
-        return { ...g, _smartScore: score };
-      })
-      .sort((a, b) => b._smartScore - a._smartScore)
-      .slice(0, 8);
-
-    if (games.length === 0) return null;
-
-    return {
-      id: 'discovery',
-      title: 'Discovery',
-      subtitle: 'Unplayed games that match your taste',
-      icon: 'sparkles',
-      color: '#a5f3fc',
-      games,
-      relevanceScore: 70,
-      actionLabel: 'Discover',
-      insight: 'Hidden in your own library — waiting to be tried.'
     };
   }
 

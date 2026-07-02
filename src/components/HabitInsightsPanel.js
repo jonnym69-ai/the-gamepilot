@@ -14,6 +14,7 @@ import {
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
 import { GameCurationService } from '../services/GameCurationService';
+import { GamingIdentity } from '../GamingIdentity';
 import './HabitInsightsPanel.css';
 
 const InsightCard = ({ icon: Icon, title, value, subtitle, tone = 'neutral' }) => (
@@ -47,6 +48,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
     const allTime = dashboard?.periods?.all;
     const habit = allTime?.habitInsights;
     const enrichedLibrary = GameCurationService.enrichLibrary(library);
+    const tasteClusters = GamingIdentity.detectTasteClusters(GamingIdentity.getSignatureGames(5));
 
     // Abandonment analysis
     const abandonedCount = enrichedLibrary.filter((g) => {
@@ -93,7 +95,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
     // Mood consistency
     const topMoods = UserBehaviorProfile.getTopMoods(3);
     const moodConsistency = topMoods.length > 0
-      ? `${topMoods[0].mood} (${topMoods[0].count} picks)`
+      ? topMoods.map((m) => `${m.mood} (${m.count} sessions)`).join(' · ')
       : 'Still learning';
 
     // Backlog health
@@ -170,7 +172,8 @@ const HabitInsightsPanel = ({ library = [] }) => {
       totalHours: allTime?.playtimeHours || 0,
       heatmap,
       sessionTrendRaw,
-      genrePhaseSorted
+      genrePhaseSorted,
+      tasteClusters
     };
   }, [library]);
 
@@ -201,7 +204,8 @@ const HabitInsightsPanel = ({ library = [] }) => {
     totalHours,
     heatmap,
     sessionTrendRaw,
-    genrePhaseSorted
+    genrePhaseSorted,
+    tasteClusters
   } = insights;
 
   const trendIcon = sessionTrend === 'increasing'
@@ -371,6 +375,27 @@ const HabitInsightsPanel = ({ library = [] }) => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {tasteClusters && tasteClusters.length > 0 && (
+        <div className="habit-viz-section">
+          <h4>
+            <Target size={16} />
+            Detected Taste Clusters
+          </h4>
+          <div className="viz-taste-clusters">
+            {tasteClusters.map((cluster) => (
+              <div key={cluster.id} className="viz-taste-cluster">
+                <div className="viz-taste-cluster-header">
+                  <span className="viz-taste-cluster-label">{cluster.label}</span>
+                  <span className="viz-taste-cluster-count">{cluster.matchCount} signature games</span>
+                </div>
+                <span className="viz-taste-cluster-description">{cluster.description}</span>
+                <span className="viz-taste-cluster-games">{cluster.gameNames.join(', ')}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

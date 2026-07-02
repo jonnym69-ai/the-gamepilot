@@ -18,7 +18,6 @@ export class RecommendationExplainer {
     const personaSnapshot = UserBehaviorProfile.getPersonaSnapshot();
     const startupSeed = StartupPersonalizationService.getSeededRecommendationContext();
     const startupInfluence = UserBehaviorProfile.getStartupInfluenceSummary();
-    const compatibility = PersonaPerformanceInsights.getCompatibility(game);
     const normalizedTimeAvailable = UserBehaviorProfile.normalizeTimeAvailable(timeAvailable);
 
     // Get base reasoning from behavior profile
@@ -44,50 +43,100 @@ export class RecommendationExplainer {
 
     reasons.push(...this.getLocalSignalReasoning(game, recommendationType));
 
-    // Hardware readiness reasoning
-    const hardwareReason = PersonaPerformanceInsights.describeCompatibility(compatibility);
-    if (hardwareReason) {
-      reasons.push(hardwareReason);
+    // Signature game + taste cluster reasoning
+    const signatureReason = this.getSignatureGameReasoning(game);
+    if (signatureReason) {
+      reasons.push(signatureReason);
     }
 
-    // Add type-specific reasoning
-    switch (recommendationType) {
-      case 'perfect-play':
-        reasons.push(this.getPerfectPlayReasoning(game, mood, genre, normalizedTimeAvailable, profile));
-        break;
-      case 'surprise-me':
-        reasons.push(this.getSurpriseMeReasoning(game, profile));
-        break;
-      case 'rediscover':
-        reasons.push(this.getRediscoverReasoning(game, profile));
-        break;
-      case 'continue-playing':
-        reasons.push(this.getContinuePlayingReasoning(game, profile));
-        break;
-      case 'favorite-anchor':
-        reasons.push(this.getFavoriteAnchorReasoning(game));
-        break;
-      default:
-        break;
-    }
+    // Generate the two-tier card-intent hooks separately from the detail list.
+    const cardIntent = this.getCardIntent(recommendationType);
+    const { global: globalHook, gameSpecific: gameSpecificHook } = this.generateCardIntentReasons(cardIntent, game, profile);
 
-    const uniqueReasons = [...new Set(reasons.filter(Boolean))];
+    let uniqueReasons = [...new Set(reasons.filter(Boolean))];
+
+    // Inject the two-tier hooks at the front so they dominate the preview.
+    if (globalHook && !uniqueReasons.includes(globalHook)) uniqueReasons.unshift(globalHook);
+    if (gameSpecificHook && !uniqueReasons.includes(gameSpecificHook)) uniqueReasons.unshift(gameSpecificHook);
+
+    // Classify familiarity for this game
+    let familiarityLabel = null;
+    let familiarityReason = null;
+    try {
+      const classification = GamingIdentity.classifyFamiliarity(game);
+      familiarityLabel = classification.label;
+      if (classification.reasons.length > 0) {
+        familiarityReason = classification.label === 'familiar'
+          ? `Familiar territory — ${classification.reasons.join(', ')}`
+          : `Fresh pick — outside your usual rotation`;
+      } else {
+        familiarityReason = classification.label === 'familiar'
+          ? 'Familiar territory — matches your proven tastes'
+          : 'Fresh pick — new territory for you';
+      }
+      uniqueReasons.push(familiarityReason);
+    } catch { /* optional */ }
+
+    const prioritizedReasons = this.prioritizeReasons(uniqueReasons, game);
+    const previewReasons = prioritizedReasons.slice(0, 3);
 
     return {
       game: game.name,
       recommendationType,
-      reasons: uniqueReasons,
-      confidence: this.calculateConfidence(game, mood, genre, profile, compatibility, personaSnapshot),
-      matchScore: this.calculateMatchScore(game, mood, genre, profile, compatibility, personaSnapshot),
+      reasons: prioritizedReasons,
+      previewReasons,
+      globalHook,
+      gameSpecificHook,
+      familiarity: familiarityLabel,
+      confidence: this.calculateConfidence(game, mood, genre, profile, personaSnapshot),
+      matchScore: this.calculateMatchScore(game, mood, genre, profile, personaSnapshot),
       personaIdentity: personaSnapshot?.personaIdentity || null,
       startupSeed,
       startupInfluence,
-      hardwareSummary: compatibility ? {
-        settingsLevel: compatibility.settingsLevel,
-        fps: compatibility.estimatedFPS,
-        bottlenecks: compatibility.bottlenecks || []
-      } : null
+      hardwareSummary: null
     };
+  }
+
+  static getSignatureGameReasoning(game) {
+    try {
+      const identity = GamingIdentity.getProfile();
+      const sigGames = identity?.signatureGames || [];
+      const clusters = identity?.tasteClusters || [];
+      const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+      const reasons = [];
+
+      // Check taste cluster membership first — this is the strongest signal
+      if (clusters.length > 0) {
+        const topCluster = clusters[0];
+        const clusterGenres = new Set(
+          topCluster.gameNames
+            .map((n) => sigGames.find((s) => s.name === n)?.genres || [])
+            .flat()
+        );
+        const genreOverlap = gameGenres.filter((g) => clusterGenres.has(g)).length;
+        if (genreOverlap > 0) {
+          reasons.push(
+            `Shares your ${topCluster.label} taste — your signature includes ${topCluster.gameNames.slice(0, 2).join(' and ')}`
+          );
+        }
+      }
+
+      // Check direct genre overlap with signature games
+      if (sigGames.length > 0 && reasons.length === 0) {
+        const sigGenres = new Set(sigGames.flatMap((s) => s.genres || []));
+        const overlap = gameGenres.filter((g) => sigGenres.has(g));
+        if (overlap.length >= 2) {
+          const topSig = sigGames[0];
+          reasons.push(
+            `Overlaps with ${overlap.length} genres from your signature game ${topSig.name} (${topSig.playtimeHours}h played)`
+          );
+        }
+      }
+
+      return reasons.length > 0 ? reasons[0] : null;
+    } catch {
+      return null;
+    }
   }
 
   static getPersonaReasoning(personaSnapshot, mood, genre) {
@@ -106,7 +155,7 @@ export class RecommendationExplainer {
       return `${personaIdentity.label} thrives when ${genre} adventures appear`;
     }
 
-    return `${personaIdentity.label}: ${personaIdentity.description}`;
+    return null;
   }
 
   static getIdentityReasoning(game, mood, genre) {
@@ -137,10 +186,6 @@ export class RecommendationExplainer {
         } else if (id.playStyle === 'Strategic' && estimated >= 60 && estimated <= 180) {
           reasons.push('Matches your strategic session pace');
         }
-      }
-
-      if (id.archetype) {
-        reasons.push(`Aligned with your ${id.archetype} identity`);
       }
 
       return reasons.length > 0 ? reasons[0] : null;
@@ -196,12 +241,7 @@ export class RecommendationExplainer {
     const reasons = [];
     const playtimeMinutes = Number(game?.time_played || 0);
     const launchCount = Number(game?.launch_count || game?.launchCount || 0);
-    const userRating = Number(game?.userRating || 0);
     const lastPlayedTime = game?.last_played ? new Date(game.last_played).getTime() : 0;
-
-    if (userRating > 0) {
-      reasons.push(`You rated this ${userRating}/10, so it stays close to your taste profile`);
-    }
 
     if (playtimeMinutes > 0) {
       reasons.push(`Your local history already has ${this.formatDuration(playtimeMinutes)} logged here`);
@@ -226,127 +266,262 @@ export class RecommendationExplainer {
   }
 
   /**
-   * Get Perfect Play specific reasoning
+   * Map the internal recommendation type to a card intent for reasoning.
+   */
+  static getCardIntent(recommendationType) {
+    switch (recommendationType) {
+      case 'perfect-play':
+      case 'favorite-anchor':
+        return 'tonight';
+      case 'continue-playing':
+        return 'continue';
+      case 'rediscover':
+        return 'rediscover';
+      case 'surprise-me':
+        return 'surprise';
+      case 'buy':
+        return 'buy';
+      default:
+        return 'tonight';
+    }
+  }
+
+  /**
+   * Build a context object from local-only telemetry so templates can fill in
+   * game-specific and player-specific metrics without reaching for external APIs.
+   */
+  static buildCardReasonContext(game, profile) {
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const hour = now.getHours();
+    const currentTime = hour < 6 ? 'night' : hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : hour < 22 ? 'evening' : 'night';
+
+    const playtimeMinutes = Number(game?.time_played || game?.timePlayedMinutes || 0);
+    const launchCount = Number(game?.launch_count || game?.launchCount || 0);
+    const lastPlayedAt = game?.last_played ? new Date(game.last_played) : null;
+    let daysSince = null;
+    let lastPlayedText = '';
+    if (lastPlayedAt && Number.isFinite(lastPlayedAt.getTime())) {
+      const msSince = Date.now() - lastPlayedAt.getTime();
+      daysSince = Math.max(0, Math.floor(msSince / (1000 * 60 * 60 * 24)));
+      if (daysSince === 0) {
+        const hoursSince = Math.max(0, Math.floor(msSince / (1000 * 60 * 60)));
+        if (hoursSince === 0) {
+          const minutesSince = Math.max(0, Math.floor(msSince / (1000 * 60)));
+          lastPlayedText = minutesSince <= 1 ? 'just now' : `${minutesSince} minutes ago`;
+        } else {
+          lastPlayedText = `${hoursSince} hour${hoursSince === 1 ? '' : 's'} ago`;
+        }
+      } else {
+        lastPlayedText = `${daysSince} day${daysSince === 1 ? '' : 's'} ago`;
+      }
+    }
+    const gameAvgSession = launchCount > 0 ? Math.round(playtimeMinutes / launchCount) : 0;
+
+    const avgSession = Number(profile?.playstylePatterns?.avgSessionLength || 0);
+
+    const genrePreferences = profile?.genrePreferences || {};
+    const topGenre = Object.entries(genrePreferences)
+      .sort((a, b) => {
+        const scoreA = (Number(a[1].totalPlaytime || 0) + (Number(a[1].count || 0) * 60));
+        const scoreB = (Number(b[1].totalPlaytime || 0) + (Number(b[1].count || 0) * 60));
+        return scoreB - scoreA;
+      })
+      .map(([genre]) => genre)[0] || '';
+
+    const genres = Array.isArray(game?.genres) ? game.genres : [];
+    const genreA = genres[0] || '';
+    const genreB = genres[1] || genreA;
+
+    const playStyle = avgSession > 120 ? 'marathon' : avgSession < 45 ? 'bursts' : 'mixed';
+
+    const timeSlotPreferences = profile?.timeSlotPreferences || {};
+    const preferredTime = Object.entries(timeSlotPreferences)
+      .sort((a, b) => (Number(b[1].count || 0) - Number(a[1].count || 0)))
+      .map(([slot]) => slot)[0] || currentTime;
+
+    return {
+      gameName: game?.name || 'this game',
+      genreA,
+      genreB,
+      avgSession: avgSession > 0 ? this.formatDuration(avgSession) : '',
+      gameAvgSession: gameAvgSession > 0 ? this.formatDuration(gameAvgSession) : '',
+      daysSince: lastPlayedText || '',
+      lastPlayedText: lastPlayedText || '',
+      timePlayed: playtimeMinutes > 0 ? this.formatDuration(playtimeMinutes) : '',
+      launchCount: launchCount > 0 ? String(launchCount) : '',
+      currentDay,
+      currentTime,
+      preferredTime,
+      topGenre,
+      playStyle
+    };
+  }
+
+  static safeTemplate(value, fallback = '') {
+    return value !== undefined && value !== null && value !== '' ? value : fallback;
+  }
+
+  static fillTemplate(template, context) {
+    return template
+      .replace(/\{gameName\}/g, this.safeTemplate(context.gameName))
+      .replace(/\{genreA\}/g, this.safeTemplate(context.genreA))
+      .replace(/\{genreB\}/g, this.safeTemplate(context.genreB, this.safeTemplate(context.genreA, 'Gaming')))
+      .replace(/\{avgSession\}/g, this.safeTemplate(context.avgSession))
+      .replace(/\{gameAvgSession\}/g, this.safeTemplate(context.gameAvgSession))
+      .replace(/\{daysSince\}/g, this.safeTemplate(context.lastPlayedText, this.safeTemplate(context.daysSince)))
+      .replace(/\{lastPlayedText\}/g, this.safeTemplate(context.lastPlayedText))
+      .replace(/\{timePlayed\}/g, this.safeTemplate(context.timePlayed))
+      .replace(/\{launchCount\}/g, this.safeTemplate(context.launchCount))
+      .replace(/\{currentDay\}/g, this.safeTemplate(context.currentDay))
+      .replace(/\{currentTime\}/g, this.safeTemplate(context.currentTime))
+      .replace(/\{preferredTime\}/g, this.safeTemplate(context.preferredTime))
+      .replace(/\{topGenre\}/g, this.safeTemplate(context.topGenre))
+      .replace(/\{playStyle\}/g, this.safeTemplate(context.playStyle));
+  }
+
+  static extractPlaceholders(template) {
+    const matches = template.match(/\{(\w+)\}/g) || [];
+    return [...new Set(matches.map((m) => m.slice(1, -1)))];
+  }
+
+  static sharesHook(globalTemplate, gameTemplate) {
+    const metrics = ['avgSession', 'gameAvgSession', 'launchCount', 'daysSince', 'lastPlayedText', 'timePlayed', 'genreA', 'genreB', 'topGenre', 'playStyle'];
+    const globalPlaceholders = this.extractPlaceholders(globalTemplate);
+    const gamePlaceholders = this.extractPlaceholders(gameTemplate);
+    return metrics.some((m) => globalPlaceholders.includes(m) && gamePlaceholders.includes(m));
+  }
+
+  static pickRandom(items) {
+    if (!Array.isArray(items) || items.length === 0) return null;
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
+  static getCardIntentTemplates(intent) {
+    const templates = {
+      tonight: {
+        global: [
+          { text: 'Your {currentDay} {currentTime} window is your most active launch slot, averaging {avgSession}.', weight: 1, condition: (ctx) => ctx.avgSession && ctx.currentDay && ctx.currentTime },
+          { text: 'You lean into {topGenre} during {currentTime} sessions more than any other time.', weight: 1, condition: (ctx) => ctx.topGenre && ctx.currentTime },
+          { text: 'Your play style is {playStyle}, so tonight\'s pick should match your typical {avgSession} burst.', weight: 1, condition: (ctx) => ctx.playStyle && ctx.avgSession }
+        ],
+        game: [
+          { text: '{gameName}\'s average session length is {gameAvgSession}, matching your {currentDay} {currentTime} window.', weight: 1, condition: (ctx) => ctx.gameAvgSession && ctx.currentDay && ctx.currentTime },
+          { text: 'Your {currentTime} launches often include {genreA}; {gameName} fits that pattern.', weight: 1, condition: (ctx) => ctx.currentTime && ctx.genreA },
+          { text: '{gameName} is a {genreA}/{genreB} blend, which aligns with your {currentTime} genre rotation.', weight: 1, condition: (ctx) => ctx.genreA && ctx.genreB && ctx.currentTime && ctx.genreB !== ctx.genreA },
+          { text: 'With a {gameAvgSession} average, {gameName} won\'t overrun your typical {avgSession} session.', weight: 1, condition: (ctx) => ctx.gameAvgSession && ctx.avgSession }
+        ]
+      },
+      continue: {
+        global: [
+          { text: 'You tend to return to games within a few days of your last session.', weight: 1, condition: () => true },
+          { text: 'Your average session length is {avgSession}, and you tend to chain sessions on the same game.', weight: 1, condition: (ctx) => ctx.avgSession },
+          { text: 'You prefer {playStyle} sessions, which makes this a natural continuation.', weight: 1, condition: (ctx) => ctx.playStyle }
+        ],
+        game: [
+          { text: 'You logged {launchCount} sessions in {gameName}.', weight: 1, condition: (ctx) => ctx.launchCount && ctx.gameName },
+          { text: 'Last played {gameName} {lastPlayedText} — jump back in before the rhythm fades.', weight: 1, condition: (ctx) => ctx.gameName && ctx.lastPlayedText },
+          { text: 'Your {gameName} sessions average {gameAvgSession}, close to your overall {avgSession} average.', weight: 1, condition: (ctx) => ctx.gameAvgSession && ctx.avgSession },
+          { text: 'You have {timePlayed} in {gameName}; one more session keeps it fresh.', weight: 1, condition: (ctx) => ctx.timePlayed && ctx.gameName }
+        ]
+      },
+      rediscover: {
+        global: [
+          { text: 'You have several high-investment games that went cold after a strong start.', weight: 1, condition: () => true },
+          { text: 'Your library has games with long playtime but no recent launch.', weight: 1, condition: () => true },
+          { text: 'You often abandon games after {playStyle} bursts; this one had staying power before it dropped off.', weight: 1, condition: (ctx) => ctx.playStyle }
+        ],
+        game: [
+          { text: 'You played {gameName} for {timePlayed} across {launchCount} sessions, then stopped {lastPlayedText}.', weight: 1, condition: (ctx) => ctx.gameName && ctx.timePlayed && ctx.launchCount && ctx.lastPlayedText },
+          { text: '{gameName} has {timePlayed} on record but no launch since {lastPlayedText}.', weight: 1, condition: (ctx) => ctx.gameName && ctx.timePlayed && ctx.lastPlayedText },
+          { text: 'You used to play {gameName} in {gameAvgSession} bursts; it\'s been quiet since {lastPlayedText}.', weight: 1, condition: (ctx) => ctx.gameName && ctx.gameAvgSession && ctx.lastPlayedText },
+          { text: '{gameName} was one of your more-played {genreA} titles before it dropped off your rotation.', weight: 1, condition: (ctx) => ctx.gameName && ctx.genreA && ctx.timePlayed }
+        ]
+      },
+      surprise: {
+        global: [
+          { text: 'A random pick from your wishlist that still fits your local taste profile.', weight: 1, condition: () => true },
+          { text: 'A change of pace from your usual top recommendation.', weight: 1, condition: () => true }
+        ],
+        game: [
+          { text: '{gameName} sits in your wishlist with {genreA} tags that match your {topGenre} history.', weight: 1, condition: (ctx) => ctx.gameName && ctx.genreA && ctx.topGenre },
+          { text: '{gameName} is a {genreA}/{genreB} pick that fits your {playStyle} pattern.', weight: 1, condition: (ctx) => ctx.gameName && ctx.genreA && ctx.genreB && ctx.playStyle && ctx.genreB !== ctx.genreA },
+          { text: 'A {genreA} title from your wishlist to consider alongside your current rotation.', weight: 1, condition: (ctx) => ctx.genreA }
+        ]
+      },
+      buy: {
+        global: [
+          { text: 'This buy recommendation aligns with your {topGenre} play history.', weight: 1, condition: (ctx) => ctx.topGenre },
+          { text: 'Your wishlist picks lean toward {playStyle} sessions like your library average.', weight: 1, condition: (ctx) => ctx.playStyle }
+        ],
+        game: [
+          { text: '{gameName} is a {genreA} title that fits your {playStyle} pattern.', weight: 1, condition: (ctx) => ctx.gameName && ctx.genreA && ctx.playStyle },
+          { text: '{gameName} adds a {genreA} option to your {topGenre}-heavy rotation.', weight: 1, condition: (ctx) => ctx.gameName && ctx.genreA && ctx.topGenre }
+        ]
+      }
+    };
+    return templates[intent] || templates.tonight;
+  }
+
+  /**
+   * Generate a two-tier reason for a given card intent using only local telemetry.
+   * Returns { global: string, gameSpecific: string }.
+   */
+  static generateCardIntentReasons(intent, game, profile) {
+    const ctx = this.buildCardReasonContext(game, profile);
+    const templates = this.getCardIntentTemplates(intent);
+
+    const validGlobal = templates.global.filter((t) => t.condition(ctx));
+    const validGame = templates.game.filter((t) => t.condition(ctx));
+
+    let globalTemplate = this.pickRandom(validGlobal);
+    let gameTemplate = this.pickRandom(validGame);
+
+    // Avoid the same telemetry hook appearing in both tiers.
+    if (globalTemplate && gameTemplate && this.sharesHook(globalTemplate.text, gameTemplate.text)) {
+      const alternative = validGame.find((t) => !this.sharesHook(globalTemplate.text, t.text));
+      if (alternative) gameTemplate = alternative;
+    }
+
+    const global = globalTemplate ? this.fillTemplate(globalTemplate.text, ctx) : null;
+    const gameSpecific = gameTemplate ? this.fillTemplate(gameTemplate.text, ctx) : null;
+
+    return { global, gameSpecific };
+  }
+
+  /**
+   * Get Perfect Play specific reasoning (Tonight's Best Pick)
    */
   static getPerfectPlayReasoning(game, mood, genre, timeAvailable, profile) {
-    const reasons = [];
-    const estimatedSessionMinutes = PersonaPerformanceInsights.estimateSessionMinutes(game);
-
-    // Time match
-    if (timeAvailable && estimatedSessionMinutes) {
-      if (estimatedSessionMinutes <= timeAvailable) {
-        reasons.push(`Fits within your ${this.formatDuration(timeAvailable)} time window (estimated ${this.formatDuration(estimatedSessionMinutes)})`);
-      } else if (estimatedSessionMinutes <= timeAvailable * 1.5) {
-        reasons.push(`Close to your ${this.formatDuration(timeAvailable)} session target (estimated ${this.formatDuration(estimatedSessionMinutes)})`);
-      }
-    }
-
-    // Mood match with completion data
-    if (mood) {
-      const moodData = profile.moodPreferences[mood];
-      if (moodData && moodData.count > 0) {
-        const completionRate = Math.round((moodData.completedCount / moodData.count) * 100);
-        if (completionRate > 70) {
-          reasons.push(`You consistently complete ${mood} games (${completionRate}% success rate)`);
-        }
-      }
-    }
-
-    // Genre match with completion data
-    if (genre) {
-      const genreData = profile.genrePreferences[genre];
-      if (genreData && genreData.count > 0) {
-        const completionRate = Math.round((genreData.completedCount / genreData.count) * 100);
-        if (completionRate > 60) {
-          reasons.push(`Strong match with your ${genre} preferences (${completionRate}% completion)`);
-        }
-      }
-    }
-
-    return reasons.join(' • ');
+    const { global, gameSpecific } = this.generateCardIntentReasons('tonight', game, profile);
+    return [global, gameSpecific].filter(Boolean).join(' ');
   }
 
   /**
    * Get Surprise Me specific reasoning
    */
   static getSurpriseMeReasoning(game, profile) {
-    const reasons = [];
-    const estimatedSessionMinutes = PersonaPerformanceInsights.estimateSessionMinutes(game);
-
-    // Check if it matches user's typical playstyle
-    const avgSession = Math.round(profile.playstylePatterns.avgSessionLength);
-    if (avgSession > 0 && estimatedSessionMinutes) {
-      if (Math.abs(estimatedSessionMinutes - avgSession) <= 30) {
-        reasons.push(`Matches your typical session length`);
-      }
-    }
-
-    // Check if it's from a genre they play
-    if (game.genres && game.genres.length > 0) {
-      const playedGenres = Object.keys(profile.genrePreferences);
-      const matchedGenre = game.genres.find(g => playedGenres.includes(g));
-      if (matchedGenre) {
-        reasons.push(`From a genre you enjoy (${matchedGenre})`);
-      }
-    }
-
-    if (reasons.length === 0) {
-      reasons.push(`Randomly selected from your library`);
-    }
-
-    return reasons.join(' • ');
+    const { global, gameSpecific } = this.generateCardIntentReasons('surprise', game, profile);
+    return [global, gameSpecific].filter(Boolean).join(' ');
   }
 
   /**
    * Get Rediscover specific reasoning
    */
   static getRediscoverReasoning(game, profile) {
-    const reasons = [];
-
-    // Check if they've played it before
-    if (game.time_played && game.time_played > 0) {
-      reasons.push(`You've spent ${Math.round(game.time_played / 60)} hours on this game`);
-    }
-
-    // Check if it's from a genre they complete
-    if (game.genres && game.genres.length > 0) {
-      const topGenres = UserBehaviorProfile.getTopGenres(5);
-      const matchedGenre = topGenres.find(tg => game.genres.includes(tg.genre));
-      if (matchedGenre) {
-        reasons.push(`From your favorite genre (${matchedGenre.genre})`);
-      }
-    }
-
-    if (reasons.length === 0) {
-      reasons.push(`Time to revisit this gem`);
-    }
-
-    return reasons.join(' • ');
+    const { global, gameSpecific } = this.generateCardIntentReasons('rediscover', game, profile);
+    return [global, gameSpecific].filter(Boolean).join(' ');
   }
 
   /**
    * Get Continue Playing specific reasoning
    */
   static getContinuePlayingReasoning(game, profile) {
-    const reasons = [];
-
-    if (game.time_played && game.time_played > 0) {
-      reasons.push(`You've already invested ${Math.round(game.time_played / 60)} hours`);
-    }
-
-    if (!game.completed) {
-      reasons.push(`Game not yet completed - pick up where you left off`);
-    }
-
-    return reasons.join(' • ');
+    const { global, gameSpecific } = this.generateCardIntentReasons('continue', game, profile);
+    return [global, gameSpecific].filter(Boolean).join(' ');
   }
 
   static getFavoriteAnchorReasoning(game) {
-    const rating = Number(game?.userRating || 0);
-    if (rating > 0) {
-      return `Kept close because your own ${rating}/10 rating is one of the clearest local taste signals`;
-    }
-
     if (game?.time_played > 0) {
       return `Kept close because your local play history shows this is already part of your identity`;
     }
@@ -357,7 +532,7 @@ export class RecommendationExplainer {
   /**
    * Calculate confidence score (0-100)
    */
-  static calculateConfidence(game, mood, genre, profile, compatibility, personaSnapshot) {
+  static calculateConfidence(game, mood, genre, profile, personaSnapshot) {
     let confidence = 50; // Base confidence
 
     // Mood match bonus
@@ -392,8 +567,6 @@ export class RecommendationExplainer {
       confidence += Math.min(15, personaAlignment * 0.15);
     }
 
-    confidence += PersonaPerformanceInsights.getHardwareConfidenceBoost(compatibility);
-
     if (personaSnapshot?.personaIdentity && personaSnapshot.personaIdentity.completionSignal > 0) {
       confidence += Math.min(10, personaSnapshot.personaIdentity.completionSignal * 0.1);
     }
@@ -404,7 +577,7 @@ export class RecommendationExplainer {
   /**
    * Calculate match score (0-100) based on how well game matches user profile
    */
-  static calculateMatchScore(game, mood, genre, profile, compatibility, personaSnapshot) {
+  static calculateMatchScore(game, mood, genre, profile, personaSnapshot) {
     let score = 0;
     let factors = 0;
     const estimatedSessionMinutes = PersonaPerformanceInsights.estimateSessionMinutes(game);
@@ -445,12 +618,6 @@ export class RecommendationExplainer {
       factors++;
     }
 
-    const hardwareMatch = PersonaPerformanceInsights.getHardwareMatchContribution(compatibility);
-    if (hardwareMatch) {
-      score += hardwareMatch;
-      factors++;
-    }
-
     if (personaSnapshot?.personaIdentity?.anchors?.length) {
       score += 80;
       factors++;
@@ -477,14 +644,96 @@ export class RecommendationExplainer {
   }
 
   /**
+   * Score how game-specific a reason is. Higher means more distinctive to this game,
+   * lower means it could be copy-pasted onto almost any recommendation.
+   */
+  static scoreReasonDistinctiveness(reason, gameName) {
+    if (!reason) return 0;
+    let score = 0;
+    const lower = reason.toLowerCase();
+
+    // Mentions the actual game name -> very distinctive.
+    if (gameName && lower.includes(gameName.toLowerCase())) score += 5;
+
+    // References concrete, game-specific signals.
+    if (/estimated \d+ min/i.test(reason)) score += 2;
+    if (/you rated this/i.test(reason)) score += 2;
+    if (/last played/i.test(reason)) score += 2;
+    if (/you('ve| have) (spent|invested|already|launched)/i.test(reason)) score += 2;
+    if (/shares your .* taste/i.test(reason)) score += 2;
+    if (/signature/i.test(reason)) score += 1;
+    if (/unplayed in your local history/i.test(reason)) score += 1;
+    if (/fits within your/i.test(reason)) score += 1;
+
+    // Generic profile boilerplate that repeats across every card.
+    if (/peak gaming time/i.test(reason)) score -= 3;
+    if (/average session length/i.test(reason)) score -= 3;
+    if (/comfort zone$/i.test(reason)) score -= 2;
+    if (/aligned with your/i.test(reason)) score -= 2;
+    if (/startup seed/i.test(reason)) score -= 2;
+    if (/recommended based on your gaming profile/i.test(reason)) score -= 2;
+
+    return score;
+  }
+
+  /**
+   * Reorder reasons so the most distinctive ones surface first, then rotate ties
+   * by a per-game daily seed so each card shows a different mix.
+   */
+  static prioritizeReasons(reasons, game) {
+    if (!Array.isArray(reasons) || reasons.length === 0) return reasons;
+
+    const gameName = game?.name || '';
+    const daySeed = new Date().toISOString().slice(0, 10);
+    const baseSeed = gameName.split('').reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0)
+      + daySeed.split('').reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
+
+    const scored = reasons.map((reason, index) => ({
+      reason,
+      index,
+      score: this.scoreReasonDistinctiveness(reason, gameName)
+    }));
+
+    // Group by score so we can rotate within ties without changing relative priority.
+    const groups = [];
+    scored.forEach((item) => {
+      const last = groups[groups.length - 1];
+      if (last && last[0].score === item.score) {
+        last.push(item);
+      } else {
+        groups.push([item]);
+      }
+    });
+
+    groups.sort((a, b) => b[0].score - a[0].score);
+
+    const rotated = groups.flatMap((group, groupIndex) => {
+      if (group.length <= 1) return group;
+      const offset = Math.abs(baseSeed + groupIndex) % group.length;
+      return [...group.slice(offset), ...group.slice(0, offset)];
+    });
+
+    // Preserve original order for ties that don't get rotated (defensive).
+    rotated.sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score;
+      return a.index - b.index;
+    });
+
+    return rotated.map((item) => item.reason);
+  }
+
+  /**
    * Get detailed explanation for display
    */
   static getDetailedExplanation(game, mood, genre, timeAvailable, recommendationType = 'perfect-play') {
     const explanation = this.explainRecommendation(game, mood, genre, timeAvailable, recommendationType);
-    
+    const headlineReason = explanation.previewReasons?.[0]
+      || explanation.reasons?.[0]
+      || 'Recommended for you';
+
     return {
       ...explanation,
-      summary: `${explanation.confidence}% confident match - ${explanation.reasons[0] || 'Recommended for you'}`,
+      summary: `${explanation.confidence}% confident match - ${headlineReason}`,
       fullExplanation: explanation.reasons.join('\n')
     };
   }

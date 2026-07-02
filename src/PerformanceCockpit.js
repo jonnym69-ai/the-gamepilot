@@ -24,6 +24,7 @@ import { GameRequirements } from "./services/GameRequirements";
 import { HardwareDetector } from "./services/HardwareDetector";
 import { HardwareScoring } from "./services/HardwareScoring";
 import { PersonaPerformanceInsights } from "./services/PersonaPerformanceInsights";
+import { PersonaPerformanceCompatibility } from "./services/PersonaPerformanceCompatibility";
 import { UserBehaviorProfile } from "./services/UserBehaviorProfile";
 import { StorageDriveMapper } from "./services/StorageDriveMapper";
 import DiskUsageService, { formatBytes } from "./services/DiskUsageService";
@@ -129,7 +130,7 @@ function PerformanceCockpit({
         ? library.filter(Boolean)
         : [];
 
-      PersonaPerformanceInsights.setSystemInfo(enrichedInfo);
+      PersonaPerformanceCompatibility.setSystemInfo(enrichedInfo);
       setSystemInfo(enrichedInfo);
 
       // Ensure the lazy-loaded requirements DB is in memory before analyzing
@@ -152,7 +153,7 @@ function PerformanceCockpit({
               .map((game) => {
                 if (!game) return null;
                 const compatibility =
-                  PersonaPerformanceInsights.getCompatibility(
+                  PersonaPerformanceCompatibility.getCompatibility(
                     game,
                     enrichedInfo,
                   );
@@ -179,7 +180,7 @@ function PerformanceCockpit({
                 }
 
                 const hardwareMatch =
-                  PersonaPerformanceInsights.getHardwareMatchContribution(
+                  PersonaPerformanceCompatibility.getHardwareMatchContribution(
                     compatibility,
                   ) || 0;
                 const compositeScore = alignment * 0.6 + hardwareMatch * 0.4;
@@ -805,7 +806,7 @@ function PerformanceCockpit({
                         </span>
                       </div>
                       <p className="synergy-reason">
-                        {PersonaPerformanceInsights.describeCompatibility(
+                        {PersonaPerformanceCompatibility.describeCompatibility(
                           item.compatibility,
                         )}
                       </p>

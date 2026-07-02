@@ -150,11 +150,14 @@ class WishlistService {
         resolvedGenres = [];
       }
     }
+    const steamAppID = game.steamAppID || game.steam_appid || (game.appid && /^\d+$/.test(String(game.appid)) ? String(game.appid) : '');
     const entry = {
       key,
       name,
       platform: game.platform || '',
       appid: game.appid || '',
+      steamAppID: steamAppID || '',
+      thumb: game.thumb || '',
       genres: Array.isArray(resolvedGenres) ? resolvedGenres : [],
       addedAt: Date.now(),
       threshold: typeof threshold === 'number' ? threshold : null,
@@ -174,6 +177,36 @@ class WishlistService {
     const items = readWishlist().filter((item) => item.key !== key);
     writeWishlist(items);
     buildAlertSummary(items);
+  }
+
+  /**
+   * Remove wishlist items that the user now owns in their library.
+   * Matches by normalized name or by Steam/app id.
+   */
+  static removeOwnedItems(library = []) {
+    const safeLibrary = Array.isArray(library) ? library : [];
+    const librarySlugs = new Set(safeLibrary.map((g) => slug(g?.name || g?.title || '')));
+    const libraryAppIds = new Set(
+      safeLibrary
+        .map((g) => String(g?.appid || g?.steamAppID || g?.steam_appid || '').trim())
+        .filter(Boolean)
+    );
+
+    const items = readWishlist();
+    const before = items.length;
+    const remaining = items.filter((item) => {
+      const itemAppId = String(item?.appid || item?.steamAppID || '').trim();
+      const nameMatch = librarySlugs.has(slug(item?.name || ''));
+      const appIdMatch = itemAppId && libraryAppIds.has(itemAppId);
+      return !nameMatch && !appIdMatch;
+    });
+
+    if (remaining.length !== before) {
+      writeWishlist(remaining);
+      buildAlertSummary(remaining);
+    }
+
+    return { removed: before - remaining.length, remaining: remaining.length };
   }
 
   static setThreshold(gameName, threshold) {

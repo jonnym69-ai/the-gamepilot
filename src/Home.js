@@ -9,6 +9,7 @@ import CollapsibleSection from './components/CollapsibleSection';
 import { Library, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { GamingIdentity } from './GamingIdentity';
+import { getFamiliarityBias, setFamiliarityBias } from './services/RecommendationWeights';
 import { RetentionQuestService } from './services/RetentionQuestService';
 import EntitlementService from './services/EntitlementService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
@@ -35,6 +36,7 @@ import {
   WeeklyPlaySnapshot,
   HabitGoalsMiniCard,
   BecauseYouAreSection,
+  FamiliarOrFreshNudge,
 } from './components/HomeDashboardSections';
 import {
   DashboardWidgetGrid,
@@ -171,6 +173,7 @@ function Home({
   const [perfectPlayResult, setPerfectPlayResult] = useState(null);
   const [surpriseGameResult, setSurpriseGameResult] = useState(null);
   const [rediscoverGameResult, setRediscoverGameResult] = useState(null);
+  const [homeFamiliarityBias, setHomeFamiliarityBias] = useState(() => getFamiliarityBias());
   const [showGettingStarted, setShowGettingStarted] = useState(() => {
     const preferences = readGettingStartedPreferences();
     return !preferences.hasSeen && !preferences.hidden;
@@ -283,13 +286,14 @@ function Home({
     let cancelled = false;
     setBuyRecommendationsLoading(true);
     const wishlist = WishlistService.getWishlist();
-    const snapshot = BuyRecommendationService.getSnapshot(library, wishlist);
+    const snapshot = BuyRecommendationService.getSnapshot(library, wishlist, { familiarityBias: homeFamiliarityBias });
     if (!cancelled) {
       setBuyRecommendations(snapshot);
       setBuyRecommendationsLoading(false);
     }
     return () => { cancelled = true; };
-  }, [library, wishlistVersion]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [library, wishlistVersion, homeFamiliarityBias]);
 
   useEffect(() => {
     const savedUsername = localStorage.getItem('gamepilot-profileUsername') || localStorage.getItem('profileUsername') || '';
@@ -354,6 +358,11 @@ function Home({
     }
   };
 
+  const handleFamiliarityChange = (bias) => {
+    setFamiliarityBias(bias);
+    setHomeFamiliarityBias(bias);
+  };
+
   const handlePerfectPlaySearch = () => {
     clearResults();
     const result = RecommendationEngine.getPerfectPlayResult(
@@ -415,6 +424,15 @@ function Home({
 
   const launchFavoriteShelf = () => {
     onLaunchGame(favoriteShelfGame);
+  };
+
+  const launchSurpriseShelf = () => {
+    const item = surpriseShelfEntry?.meta?.wishlistItem || {};
+    const steamAppId = item.steamAppID || surpriseShelfGame?.appid || null;
+    const steamUrl = steamAppId
+      ? `https://store.steampowered.com/app/${steamAppId}`
+      : `https://store.steampowered.com/search/?term=${encodeURIComponent(surpriseShelfGame?.name || '')}`;
+    window.open(steamUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleSurpriseSearch = () => {
@@ -718,6 +736,16 @@ function Home({
   const continuePlayingArtwork = continuePlayingGame ? resolveGameArtwork(continuePlayingGame, { surface: 'recommendation_card' }) : null;
   const continuePlayingPlaceholder = continuePlayingGame ? getGameArtworkPlaceholder({ game: continuePlayingGame, surface: 'recommendation_card' }) : null;
   const perfectPlayEntries = perfectPlayResult?.entries || [];
+  // Auto-computed pick that powers "Your Library Today" when the user hasn't
+  // run a manual Perfect Play search. It goes through scoreGameByBehavior,
+  // which honours the Familiar/Fresh bias, so toggling the bias re-picks the
+  // tonight shelf. Recomputes whenever the bias changes.
+  const autoTonightResult = React.useMemo(() => {
+    if (!Array.isArray(library) || library.length === 0) return null;
+    return RecommendationEngine.getPerfectPlayResult(library, recommendationMood, selectedGenre || null, time || null, 4);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [library, recommendationMood, selectedGenre, time, homeFamiliarityBias]);
+  const autoTonightEntries = autoTonightResult?.entries || [];
   const surpriseEntry = surpriseGameResult?.primaryEntry || null;
   const surpriseGame = surpriseEntry?.game || surpriseGameResult?.primaryGame || null;
   const surpriseGameArtwork = surpriseGame ? resolveGameArtwork(surpriseGame, { surface: 'recommendation_card' }) : null;
@@ -745,7 +773,11 @@ function Home({
   const gamePilotPicksResult = hasWidgetPack ? retentionSnapshot?.gamePilotPicks || null : null;
   const gamePilotPickEntries = gamePilotPicksResult?.entries || [];
   const trackedRetentionPicksKeyRef = React.useRef('');
-  const tonightPickEntry = perfectPlayEntries[0] || gamePilotPickEntries[0] || null;
+  const tonightPickEntry = perfectPlayEntries[0]
+    || (homeFamiliarityBias ? autoTonightEntries[0] : null)
+    || gamePilotPickEntries[0]
+    || autoTonightEntries[0]
+    || null;
   const tonightPickGame = tonightPickEntry?.game || null;
   const tonightPickArtwork = tonightPickGame ? resolveGameArtwork(tonightPickGame, { surface: 'recommendation_card' }) : null;
   const tonightPickPlaceholder = tonightPickGame ? getGameArtworkPlaceholder({ game: tonightPickGame, surface: 'recommendation_card' }) : null;
@@ -765,23 +797,44 @@ function Home({
       return gameKey && !excludedKeys.has(gameKey);
     });
 
-    // Prefer games with some playtime, sorted by least recently played first
-    const withPlaytime = candidates.filter((g) => (g.time_played || 0) > 0);
-    const pool = withPlaytime.length > 0 ? withPlaytime : candidates;
+    if (candidates.length === 0) {
+      return null;
+    }
 
-    return pool
-      .sort((left, right) => {
-        const leftLastPlayed = left.last_played ? new Date(left.last_played).getTime() : 0;
-        const rightLastPlayed = right.last_played ? new Date(right.last_played).getTime() : 0;
-        if (leftLastPlayed !== rightLastPlayed) {
-          return leftLastPlayed - rightLastPlayed;
-        }
-        return (right.time_played || 0) - (left.time_played || 0);
-      })[0] || null;
+    const now = Date.now();
+    const scored = candidates.map((game) => {
+      const timePlayed = game.time_played || 0;
+      const lastPlayed = game.last_played ? new Date(game.last_played).getTime() : 0;
+      const daysSinceLastPlayed = lastPlayed > 0
+        ? Math.max(0, (now - lastPlayed) / (1000 * 60 * 60 * 24))
+        : 365;
+      return { game, timePlayed, daysSinceLastPlayed };
+    });
+
+    const maxDays = Math.max(...scored.map((s) => s.daysSinceLastPlayed), 1);
+    const maxPlaytime = Math.max(...scored.map((s) => s.timePlayed), 1);
+
+    const ranked = scored
+      .map(({ game, timePlayed, daysSinceLastPlayed }) => {
+        const recencyScore = daysSinceLastPlayed / maxDays;
+        const lowPlaytimeScore = 1 - Math.min(timePlayed / maxPlaytime, 1);
+        const score = recencyScore * 0.5 + lowPlaytimeScore * 0.5;
+        return { game, score };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    // Rotate the top pick daily so the same game doesn't sit on the shelf forever.
+    const topPool = ranked.slice(0, Math.min(8, ranked.length));
+    const daySeed = new Date().toISOString().slice(0, 10);
+    const seedNumber = Array.from(daySeed).reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
+    const pickIndex = Math.abs(seedNumber) % topPool.length;
+
+    return topPool[pickIndex]?.game || null;
   }, [continuePlayingGame, getHomeShelfGameKey, library, tonightPickGame]);
   const rediscoverShelfGame = rediscoverShelfEntry?.game || rediscoverShelfFallback || null;
   const rediscoverShelfArtwork = rediscoverShelfGame ? resolveGameArtwork(rediscoverShelfGame, { surface: 'recommendation_card' }) : null;
   const rediscoverShelfPlaceholder = rediscoverShelfGame ? getGameArtworkPlaceholder({ game: rediscoverShelfGame, surface: 'recommendation_card' }) : null;
+
   const favoriteShelfFallback = useMemo(() => {
     const excludedKeys = new Set([
       getHomeShelfGameKey(tonightPickGame),
@@ -1118,7 +1171,58 @@ function Home({
   };
 
   // The single best buy recommendation, surfaced as a shelf inside Library Today.
-  const buyShelfEntry = buyRecommendations?.enabled ? (buyRecommendations.entries || [])[0] || null : null;
+  // Default to a daily-rotated pick, but allow the user to manually cycle
+  // through all ranked wishlist entries.
+  const buyEntries = useMemo(() => {
+    return buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
+  }, [buyRecommendations]);
+
+  const getDailyBuyIndex = useCallback((count) => {
+    if (count <= 0) return 0;
+    const daySeed = new Date().toISOString().slice(0, 10);
+    const seedNumber = Array.from(daySeed).reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
+    return Math.abs(seedNumber) % count;
+  }, []);
+
+  const [buyShelfIndex, setBuyShelfIndex] = useState(() => getDailyBuyIndex(buyEntries.length));
+
+  useEffect(() => {
+    setBuyShelfIndex(getDailyBuyIndex(buyEntries.length));
+  }, [buyEntries.length, getDailyBuyIndex]);
+
+  const buyShelfEntry = useMemo(() => {
+    if (buyEntries.length === 0) return null;
+    const index = Math.max(0, Math.min(buyShelfIndex, buyEntries.length - 1));
+    return buyEntries[index] || null;
+  }, [buyEntries, buyShelfIndex]);
+
+  const handleNextBuy = useCallback(() => {
+    setBuyShelfIndex((prev) => (buyEntries.length > 0 ? (prev + 1) % buyEntries.length : 0));
+  }, [buyEntries.length]);
+
+  const handlePrevBuy = useCallback(() => {
+    setBuyShelfIndex((prev) => (buyEntries.length > 0 ? (prev - 1 + buyEntries.length) % buyEntries.length : 0));
+  }, [buyEntries.length]);
+
+  // Random wishlist pick for the "Surprise me" shelf, avoiding the game
+  // currently shown in the Buy This Next shelf.
+  const surpriseShelfEntry = React.useMemo(() => {
+    const entries = buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
+    if (entries.length === 0) return null;
+    if (entries.length === 1) return entries[0];
+
+    const currentBuyKey = getHomeShelfGameKey(buyShelfEntry?.game);
+    const candidates = entries.filter((entry) => getHomeShelfGameKey(entry?.game) !== currentBuyKey);
+    const pool = candidates.length > 0 ? candidates : entries;
+
+    const daySeed = new Date().toISOString().slice(0, 10);
+    const seedNumber = Array.from(daySeed).reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
+    const pickIndex = Math.abs(seedNumber) % pool.length;
+    return pool[pickIndex] || null;
+  }, [buyRecommendations, buyShelfEntry, getHomeShelfGameKey]);
+  const surpriseShelfGame = surpriseShelfEntry?.game || null;
+  const surpriseShelfArtwork = surpriseShelfGame ? resolveGameArtwork(surpriseShelfGame, { surface: 'recommendation_card' }) : null;
+  const surpriseShelfPlaceholder = surpriseShelfGame ? getGameArtworkPlaceholder({ game: surpriseShelfGame, surface: 'recommendation_card' }) : null;
 
   return (
     <div
@@ -1240,13 +1344,25 @@ function Home({
               favoriteShelfGame={favoriteShelfGame}
               favoriteShelfArtwork={favoriteShelfArtwork}
               favoriteShelfPlaceholder={favoriteShelfPlaceholder}
+              surpriseShelfGame={surpriseShelfGame}
+              surpriseShelfEntry={surpriseShelfEntry}
+              surpriseShelfArtwork={surpriseShelfArtwork}
+              surpriseShelfPlaceholder={surpriseShelfPlaceholder}
               platformIcons={platformIcons}
               onLaunchTonightPick={launchTonightPick}
               onLaunchContinuePlaying={launchContinuePlaying}
               onLaunchRediscover={launchRediscoverShelf}
               onLaunchFavorite={launchFavoriteShelf}
+              onLaunchSurpriseShelf={launchSurpriseShelf}
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
+              familiarityBias={homeFamiliarityBias}
+              onFamiliarityChange={handleFamiliarityChange}
+              buyEntry={buyShelfEntry}
+              buyEntryIndex={buyShelfIndex}
+              buyEntryCount={buyEntries.length}
+              onBuyNext={handleNextBuy}
+              onBuyPrev={handlePrevBuy}
               libraryStoryItems={libraryStoryItems}
               shouldShowLegacyContinueSection={shouldShowLegacyContinueSection}
               continuePlayingMessage={continuePlayingResult?.message}
@@ -1263,6 +1379,13 @@ function Home({
               handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
             />
           </CollapsibleSection>
+
+          <FamiliarOrFreshNudge
+            library={library}
+            onLaunchGame={onLaunchGame}
+            formatPlaytime={formatPlaytime}
+            formatLastPlayed={formatLastPlayed}
+          />
 
           <CollapsibleSection
             title="Identity & Habits"
@@ -1394,14 +1517,25 @@ function Home({
               favoriteShelfGame={favoriteShelfGame}
               favoriteShelfArtwork={favoriteShelfArtwork}
               favoriteShelfPlaceholder={favoriteShelfPlaceholder}
+              surpriseShelfGame={surpriseShelfGame}
+              surpriseShelfEntry={surpriseShelfEntry}
+              surpriseShelfArtwork={surpriseShelfArtwork}
+              surpriseShelfPlaceholder={surpriseShelfPlaceholder}
               platformIcons={platformIcons}
               onLaunchTonightPick={launchTonightPick}
               onLaunchContinuePlaying={launchContinuePlaying}
               onLaunchRediscover={launchRediscoverShelf}
               onLaunchFavorite={launchFavoriteShelf}
+              onLaunchSurpriseShelf={launchSurpriseShelf}
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
+              familiarityBias={homeFamiliarityBias}
+              onFamiliarityChange={handleFamiliarityChange}
               buyEntry={buyShelfEntry}
+              buyEntryIndex={buyShelfIndex}
+              buyEntryCount={buyEntries.length}
+              onBuyNext={handleNextBuy}
+              onBuyPrev={handlePrevBuy}
             />
           </HomeSection>
 

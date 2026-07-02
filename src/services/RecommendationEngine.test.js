@@ -7,9 +7,7 @@ import { invalidateRecommendationWeightsCache } from './RecommendationWeights';
 
 jest.mock('./PersonaPerformanceInsights', () => ({
   PersonaPerformanceInsights: {
-    estimateSessionMinutes: jest.fn(() => null),
-    getCompatibility: jest.fn(() => null),
-    getHardwareScoreBonus: jest.fn(() => 0)
+    estimateSessionMinutes: jest.fn(() => null)
   }
 }));
 
@@ -33,8 +31,6 @@ describe('RecommendationEngine', () => {
   beforeEach(() => {
     localStorage.clear();
     PersonaPerformanceInsights.estimateSessionMinutes.mockReturnValue(null);
-    PersonaPerformanceInsights.getCompatibility.mockReturnValue(null);
-    PersonaPerformanceInsights.getHardwareScoreBonus.mockReturnValue(0);
     jest.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
@@ -50,11 +46,6 @@ describe('RecommendationEngine', () => {
     });
 
     test('clamps result to 0-100', () => {
-      PersonaPerformanceInsights.getCompatibility.mockReturnValue({
-        canRun: false,
-        settingsLevel: 'cannot_run'
-      });
-      PersonaPerformanceInsights.getHardwareScoreBonus.mockReturnValue(-25);
       const score = RecommendationEngine.scoreGameByBehavior(baseGame(), null, null, null);
       expect(score).toBeGreaterThanOrEqual(0);
       expect(score).toBeLessThanOrEqual(100);
@@ -77,19 +68,6 @@ describe('RecommendationEngine', () => {
       PersonaPerformanceInsights.estimateSessionMinutes.mockReturnValue(360);
       const mismatched = RecommendationEngine.scoreGameByBehavior(baseGame(), 'Focused', 'Strategy', null);
       expect(matching).toBeGreaterThan(mismatched);
-    });
-
-    test('hardware ultra bonus boosts score; cannot_run subtracts 35', () => {
-      PersonaPerformanceInsights.getCompatibility.mockReturnValue({ canRun: true, settingsLevel: 'ultra' });
-      PersonaPerformanceInsights.getHardwareScoreBonus.mockReturnValue(18);
-      const ultra = RecommendationEngine.scoreGameByBehavior(baseGame(), null, null, null);
-
-      PersonaPerformanceInsights.getCompatibility.mockReturnValue({ canRun: false, settingsLevel: 'cannot_run' });
-      PersonaPerformanceInsights.getHardwareScoreBonus.mockReturnValue(-25);
-      const cannotRun = RecommendationEngine.scoreGameByBehavior(baseGame(), null, null, null);
-
-      expect(ultra).toBeGreaterThan(cannotRun);
-      expect(cannotRun).toBeLessThanOrEqual(10);
     });
 
     test('replay intent active is preferred over finished', () => {
@@ -351,28 +329,6 @@ describe('RecommendationEngine', () => {
       expect(fullScore).toBeGreaterThan(librarianScore);
     });
 
-    test('Librarian punishes "cannot run" games harder than Full / Balanced', () => {
-      PersonaPerformanceInsights.getCompatibility.mockReturnValue({
-        canRun: false,
-        settingsLevel: 'cannot_run'
-      });
-      PersonaPerformanceInsights.getHardwareScoreBonus.mockReturnValue(-25);
-
-      setMode('librarian');
-      const librarianScore = RecommendationEngine.scoreGameByBehavior(baseGame(), null, null, null);
-
-      setMode('balanced');
-      const balancedScore = RecommendationEngine.scoreGameByBehavior(baseGame(), null, null, null);
-
-      setMode('full');
-      const fullScore = RecommendationEngine.scoreGameByBehavior(baseGame(), null, null, null);
-
-      // Librarian's bigger cannot-run penalty pushes its score lower; clamping to
-      // 0 may make ties at the floor, so we just assert it's not higher.
-      expect(librarianScore).toBeLessThanOrEqual(balancedScore);
-      expect(librarianScore).toBeLessThanOrEqual(fullScore);
-    });
-
     test('Balanced mode produces the same score as the unset default', () => {
       const game = baseGame({ time_played: 50, last_played: Date.now() - 1000 * 60 * 60 * 24 * 30 });
 
@@ -506,19 +462,5 @@ describe('RecommendationEngine', () => {
       expect(result[2].name).toBe('Hybrid Discovery');
     });
 
-    test('respects explorationRequireRunnable when hardware says cannot_run', () => {
-      setMode('full');
-      PersonaPerformanceInsights.getCompatibility.mockReturnValue({ canRun: false, settingsLevel: 'cannot_run' });
-      const lib = library();
-      const result = RecommendationEngine.getPerfectPlayRecommendations(lib, null, null, null, 3);
-      // Exploration pick should NOT be an unrunnable game; so if all unplayed are
-      // unrunnable, no swap happens and we get 3 standard picks.
-      const names = result.map((g) => g.name);
-      // Ensure we still got 3 results even though exploration couldn't find a runnable unplayed
-      expect(result).toHaveLength(3);
-      // None should be the unplayed ones (they are all unrunnable in this mock)
-      expect(names).not.toContain('Puzzle Surprise');
-      expect(names).not.toContain('Action Unplayed');
-    });
   });
 });

@@ -4,7 +4,7 @@ import { StartupPersonalizationService } from './StartupPersonalizationService';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import { RecommendationExplainer } from './RecommendationExplainer';
-import { getActiveRecommendationWeights } from './RecommendationWeights';
+import { getActiveRecommendationWeights, getFamiliarityBias } from './RecommendationWeights';
 import { mapGameGenresToValid, getMoodScoresForGame } from '../constants/GenresMoods';
 import { GamingIdentity } from '../GamingIdentity';
 import { RecommendationTuningService } from './RecommendationTuningService';
@@ -216,14 +216,8 @@ export class RecommendationEngine {
       // Identity data optional; ignore errors
     }
 
-    // Hardware readiness bonus/penalty
-    const compatibility = PersonaPerformanceInsights.getCompatibility(game);
-    if (compatibility) {
-      score += PersonaPerformanceInsights.getHardwareScoreBonus(compatibility);
-      if (!compatibility.canRun || compatibility.settingsLevel === 'cannot_run') {
-        score -= w.hardwareCannotRunPenalty;
-      }
-    }
+    // Hardware readiness removed from core scoring to keep the main bundle
+    // lightweight. Compatibility checks remain available in Performance Cockpit.
 
     // Unplayed games bonus - encourage discovery
     if (!game.time_played || game.time_played === 0) {
@@ -304,6 +298,38 @@ export class RecommendationEngine {
       const gameTags = Array.isArray(rating?.tags) ? rating.tags.filter(Boolean) : [];
       const ratingBoost = UserBehaviorProfile.getRatingPreferenceBoost(game?.mood || null, gameGenres, gameTags);
       score += Math.round(ratingBoost * (w.ratingPreferenceMultiplier || 0.25));
+    }
+
+    // Signature game genre overlap — games sharing genres with the player's
+    // most-played/rated titles get a taste-anchored boost.
+    try {
+      const sigGames = GamingIdentity.getSignatureGames(3);
+      if (sigGames.length > 0) {
+        const sigGenres = new Set(sigGames.flatMap((s) => s.genres || []));
+        const gameGenreList = Array.isArray(game?.genres) ? game.genres : [];
+        const sigOverlap = gameGenreList.filter((g) => sigGenres.has(g)).length;
+        if (sigOverlap > 0) {
+          score += Math.min(15, sigOverlap * 6);
+        }
+      }
+    } catch { /* signature games optional */ }
+
+    // Familiarity bias — adjusts score based on whether the user wants
+    // familiar (comfort zone) or fresh (new territory) picks.
+    const familiarityBias = getFamiliarityBias();
+    if (familiarityBias) {
+      const classification = GamingIdentity.classifyFamiliarity(game);
+      if (familiarityBias === 'familiar' && classification.label === 'familiar') {
+        score += w.familiarityFamiliarBonus || 12;
+      } else if (familiarityBias === 'fresh' && classification.label === 'fresh') {
+        score += w.familiarityFreshBonus || 12;
+      }
+      // Apply a mild penalty to the opposite side so the bias actually shifts rankings
+      if (familiarityBias === 'familiar' && classification.label === 'fresh') {
+        score -= Math.round((w.familiarityFreshBonus || 12) * 0.5);
+      } else if (familiarityBias === 'fresh' && classification.label === 'familiar') {
+        score -= Math.round((w.familiarityFamiliarBonus || 12) * 0.5);
+      }
     }
 
     return Math.max(w.scoreMin, Math.min(w.scoreMax, score));
@@ -439,7 +465,7 @@ export class RecommendationEngine {
         availableMinutes,
         recommendationType
       ),
-      ...metadata
+      meta: { ...metadata }
     };
   }
 
@@ -685,10 +711,6 @@ export class RecommendationEngine {
     const candidates = library
       .filter((game) => {
         if (!game || seenNames.has(game.name) || recentNames.has(game.name)) return false;
-        if (w.explorationRequireRunnable) {
-          const compat = PersonaPerformanceInsights.getCompatibility(game);
-          if (compat && compat.canRun === false) return false;
-        }
         return true;
       })
       .map((game) => {

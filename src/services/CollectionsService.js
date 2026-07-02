@@ -4,34 +4,11 @@
  */
 
 import { ProgressionUnlockService } from './ProgressionUnlockService';
-import { 
-  MUSIC_PACK_LIBRARY, 
-  AMBIENT_PACK_LIBRARY, 
-  BUTTON_SFX_LIBRARY,
-  BUTTON_SYNTH_PRESETS 
-} from './AudioRewardCatalog';
 import { AchievementTracker } from '../AchievementSystem';
 import StorageService from './StorageService';
 
 // Collection definitions with themed groups of rewards
 const COLLECTION_DEFINITIONS = Object.freeze([
-  {
-    id: 'audio_master',
-    name: 'Audio Master',
-    description: 'Collect every atmosphere, music, and button sound pack.',
-    category: 'audio',
-    icon: '🎵',
-    rewards: {
-      setBonusXP: 1500,
-      exclusiveTitle: 'Soundweaver',
-      exclusiveBadge: 'audio-master-badge'
-    },
-    requirements: {
-      ambientPacks: Object.keys(AMBIENT_PACK_LIBRARY),
-      musicPacks: Object.keys(MUSIC_PACK_LIBRARY),
-      buttonPacks: [...Object.keys(BUTTON_SFX_LIBRARY), ...Object.keys(BUTTON_SYNTH_PRESETS)]
-    }
-  },
   {
     id: 'profile_perfectionist',
     name: 'Profile Perfectionist',
@@ -98,48 +75,6 @@ const COLLECTION_DEFINITIONS = Object.freeze([
     },
     requirements: {
       completeAllCollections: true
-    }
-  },
-  {
-    id: 'button_maestro',
-    name: 'Button Maestro',
-    description: 'Collect all button sound packs, both sample and synth.',
-    category: 'audio',
-    icon: '🔘',
-    rewards: {
-      setBonusXP: 800,
-      exclusiveButtonPack: 'maestro-signature'
-    },
-    requirements: {
-      buttonPacks: [...Object.keys(BUTTON_SFX_LIBRARY), ...Object.keys(BUTTON_SYNTH_PRESETS)]
-    }
-  },
-  {
-    id: 'atmospheric_wanderer',
-    name: 'Atmospheric Wanderer',
-    description: 'Collect all ambient atmosphere packs.',
-    category: 'audio',
-    icon: '🌊',
-    rewards: {
-      setBonusXP: 600,
-      exclusiveTitle: 'World Listener'
-    },
-    requirements: {
-      ambientPacks: Object.keys(AMBIENT_PACK_LIBRARY)
-    }
-  },
-  {
-    id: 'melody_seeker',
-    name: 'Melody Seeker',
-    description: 'Collect all background music packs.',
-    category: 'audio',
-    icon: '🎼',
-    rewards: {
-      setBonusXP: 700,
-      exclusiveTitle: 'Music Collector'
-    },
-    requirements: {
-      musicPacks: Object.keys(MUSIC_PACK_LIBRARY)
     }
   }
 ]);

@@ -4,6 +4,8 @@ import EmptyState from './EmptyState';
 import { resolveGameArtwork, getGameArtworkPlaceholder } from '../services/GameArtworkService';
 import WishlistService from '../services/WishlistService';
 import BuyRecommendationService from '../services/BuyRecommendationService';
+import { getFamiliarityBias, setFamiliarityBias } from '../services/RecommendationWeights';
+import { formatPrice, getCurrentCurrency, getCurrencySymbol, convertToUSD } from '../CurrencyConverter';
 
 export default function WishlistSection({ library = [], platformIcons, onLaunchGame }) {
   const [items, setItems] = React.useState([]);
@@ -18,18 +20,23 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
   const [buyEnabled] = React.useState(() => BuyRecommendationService.isEnabled());
   const [filterGenre, setFilterGenre] = React.useState('');
   const [filterMaxPrice, setFilterMaxPrice] = React.useState('');
+  const [familiarityBias, setFamiliarityBiasState] = React.useState(() => getFamiliarityBias());
 
   // Genre + Price suggestions. Mood is intentionally excluded — it can't be
   // known for a game you don't own yet.
   const buySnapshot = React.useMemo(() => {
     if (!buyEnabled) return null;
-    const maxPrice = filterMaxPrice ? parseFloat(filterMaxPrice) : null;
+    const localMax = filterMaxPrice ? parseFloat(filterMaxPrice) : null;
+    // Cached prices are in USD; convert the user's local-currency budget to USD.
+    const maxPrice = typeof localMax === 'number' && !Number.isNaN(localMax)
+      ? convertToUSD(localMax)
+      : null;
     return BuyRecommendationService.getSnapshot(library, WishlistService.getWishlist(), {
       genre: filterGenre || null,
-      maxPrice: typeof maxPrice === 'number' && !Number.isNaN(maxPrice) ? maxPrice : null
+      maxPrice
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buyEnabled, library, filterGenre, filterMaxPrice, items]);
+  }, [buyEnabled, library, filterGenre, filterMaxPrice, items, familiarityBias]);
 
   const loadItems = React.useCallback(() => {
     const wishlist = WishlistService.getWishlist();
@@ -123,7 +130,13 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
       (g) => (g.name || g.title || '').toLowerCase() === (result.name || '').toLowerCase()
     );
     const added = WishlistService.addGame(
-      { name: result.name, platform: result.platform || libGame?.platform || '' },
+      {
+        name: result.name,
+        platform: result.platform || libGame?.platform || '',
+        appid: libGame?.appid || result.steamAppID || '',
+        steamAppID: result.steamAppID || '',
+        thumb: result.thumb || ''
+      },
       { threshold: null, genres: Array.isArray(libGame?.genres) ? libGame.genres : null }
     );
     if (!added) return;
@@ -148,11 +161,24 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
   const alertCount = alertSummary?.count || 0;
   const historicalDeals = Array.isArray(alertSummary?.deals) ? alertSummary.deals : [];
 
-  const artworkForGame = (game) => {
-    if (!game) return null;
-    const art = resolveGameArtwork(game);
-    if (art && typeof art === 'string' && art.startsWith('http')) return art;
-    return getGameArtworkPlaceholder(game.platform);
+  const currency = getCurrentCurrency();
+
+  // Resolve artwork for a wishlist item: prefer matched library game art,
+  // then a Steam header image built from the appid, then the cheapshark thumb.
+  const artworkForItem = (item) => {
+    const game = item?.libraryGame;
+    if (game) {
+      const art = resolveGameArtwork(game);
+      if (art && typeof art === 'string' && art.startsWith('http')) return art;
+    }
+    const steamId = item?.steamAppID || (item?.appid && /^\d+$/.test(String(item.appid)) ? item.appid : null);
+    if (steamId) {
+      return `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamId}/header.jpg`;
+    }
+    if (item?.thumb && typeof item.thumb === 'string' && item.thumb.startsWith('http')) {
+      return item.thumb;
+    }
+    return null;
   };
 
   return (
@@ -215,7 +241,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                 ))}
               </select>
               <div className="wishlist-filter-price">
-                <span>Max $</span>
+                <span>Max {getCurrencySymbol(getCurrentCurrency())}</span>
                 <input
                   type="number"
                   min="0"
@@ -236,6 +262,28 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                   Clear
                 </button>
               )}
+              <div className="familiarity-toggle-group">
+                <div className="familiarity-toggle-buttons">
+                  <button
+                    className={`familiarity-btn ${familiarityBias === 'familiar' ? 'selected' : ''}`}
+                    onClick={() => { setFamiliarityBias('familiar'); setFamiliarityBiasState('familiar'); }}
+                  >
+                    Familiar
+                  </button>
+                  <button
+                    className={`familiarity-btn ${familiarityBias === null ? 'selected' : ''}`}
+                    onClick={() => { setFamiliarityBias(null); setFamiliarityBiasState(null); }}
+                  >
+                    Balanced
+                  </button>
+                  <button
+                    className={`familiarity-btn ${familiarityBias === 'fresh' ? 'selected' : ''}`}
+                    onClick={() => { setFamiliarityBias('fresh'); setFamiliarityBiasState('fresh'); }}
+                  >
+                    Fresh
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           {(buySnapshot?.entries || []).length === 0 ? (
@@ -255,12 +303,19 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                     <div className="wishlist-suggestion-main">
                       <span className="wishlist-suggestion-score">{m.buyScore || 0}%</span>
                       <div className="wishlist-suggestion-text">
-                        <span className="wishlist-suggestion-name">{g.name}</span>
+                        <span className="wishlist-suggestion-name">
+                          {g.name}
+                          {buySnapshot?.familiarityBias && (
+                            <span className={`familiarity-badge ${buySnapshot.familiarityBias}`}>
+                              {buySnapshot.familiarityBias}
+                            </span>
+                          )}
+                        </span>
                         {reason && <span className="wishlist-suggestion-reason">{reason}</span>}
                       </div>
                     </div>
                     <div className="wishlist-suggestion-side">
-                      {price && <span className="wishlist-suggestion-price">{price.priceFormatted || `$${price.price}`}</span>}
+                      {price && <span className="wishlist-suggestion-price">{formatPrice(price.price, currency)}</span>}
                       <a href={steamUrl} target="_blank" rel="noopener noreferrer" className="wishlist-search-add">View</a>
                     </div>
                   </div>
@@ -327,13 +382,14 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           {items.map((item) => {
             const game = item.libraryGame;
             const placeholder = getGameArtworkPlaceholder(game?.platform);
+            const artwork = artworkForItem(item);
             const currentPrice = item.currentPrice;
             const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;
             return (
               <div key={item.name} className={`wishlist-card ${hasDrop ? 'wishlist-card--drop' : ''}`}>
                 <div className="wishlist-card-art">
-                  {game ? (
-                    <LazyImage src={artworkForGame(game)} alt={item.name} placeholder={placeholder} className="game-image" />
+                  {artwork ? (
+                    <LazyImage src={artwork} alt={item.name} placeholder={placeholder} className="game-image" />
                   ) : (
                     <div className="game-placeholder"><div className="platform-icon">🎮</div></div>
                   )}
@@ -347,7 +403,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                   </div>
                   {currentPrice ? (
                     <div className="wishlist-card-price">
-                      <span className="wishlist-price-current">{currentPrice.priceFormatted || `$${currentPrice.price}`}</span>
+                      <span className="wishlist-price-current">{formatPrice(currentPrice.price, currency)}</span>
                       {currentPrice.store && <span className="wishlist-price-store">{currentPrice.store}</span>}
                     </div>
                   ) : (

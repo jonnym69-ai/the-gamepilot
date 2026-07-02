@@ -440,7 +440,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       <label htmlFor="labs-enabled" className="toggle-slider"></label>
                     </div>
                     <p className="setting-description">
-                      Off by default. GamePilot focuses on the essentials: your library and deciding what to play or buy next. Turn this on to reveal experimental and secondary features (Habits, Achievements, Challenges, Rewards, Year in Review, Performance Cockpit, and more) in the “More” menu. Nothing is deleted when this is off — it just keeps the interface focused.
+                      On by default. Reveals secondary features (Habits, Achievements, Library Reclaimer, Year in Review, Performance Cockpit, and more) in the “More” menu. Turn this off to keep the interface focused on the essentials — your library and deciding what to play or buy next.
                     </p>
                   </div>
                   </div>

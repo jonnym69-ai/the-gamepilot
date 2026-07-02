@@ -26,9 +26,11 @@ const LabsService = {
   isEnabled() {
     if (!isBrowser()) return false;
     try {
-      return window.localStorage.getItem(STORAGE_KEY) === 'true';
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      // Default to true so secondary features are visible by default.
+      return stored === null ? true : stored === 'true';
     } catch {
-      return false;
+      return true;
     }
   },
 

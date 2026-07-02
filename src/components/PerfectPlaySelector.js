@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { MOODS, GENRES, getGenresForMood } from '../constants/GenresMoods';
 import { RecommendationEngine } from '../services/RecommendationEngine';
 import { RecommendationTuningService } from '../services/RecommendationTuningService';
+import { getFamiliarityBias, setFamiliarityBias } from '../services/RecommendationWeights';
 import { RecommendationReasonChip } from './RecommendationReasonChip';
 import '../styles/PerfectPlaySelector.css';
 
@@ -11,6 +12,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
   const [availableMinutes, setAvailableMinutes] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [tuning, setTuning] = useState(() => RecommendationTuningService.getTuning());
+  const [familiarityBias, setFamiliarityBiasState] = useState(() => getFamiliarityBias());
 
   const updateTuning = (patch) => {
     const next = RecommendationTuningService.setTuning({ ...tuning, ...patch });
@@ -50,7 +52,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
       10
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [library, selectedMoods, selectedGenres, availableMinutes, tuning]);
+  }, [library, selectedMoods, selectedGenres, availableMinutes, tuning, familiarityBias]);
 
   const matchingGames = recommendationResult?.games || [];
   const matchingEntries = recommendationResult?.entries || [];
@@ -205,6 +207,29 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
             >
               {tuning.explorationEnabled ? 'Exploration slot on' : 'Exploration slot off'}
             </button>
+          </div>
+          <div className="familiarity-toggle-group">
+            <label className="familiarity-toggle-label">Taste</label>
+            <div className="familiarity-toggle-buttons">
+              <button
+                className={`familiarity-btn ${familiarityBias === 'familiar' ? 'selected' : ''}`}
+                onClick={() => { setFamiliarityBias('familiar'); setFamiliarityBiasState('familiar'); }}
+              >
+                Familiar
+              </button>
+              <button
+                className={`familiarity-btn ${familiarityBias === null ? 'selected' : ''}`}
+                onClick={() => { setFamiliarityBias(null); setFamiliarityBiasState(null); }}
+              >
+                Balanced
+              </button>
+              <button
+                className={`familiarity-btn ${familiarityBias === 'fresh' ? 'selected' : ''}`}
+                onClick={() => { setFamiliarityBias('fresh'); setFamiliarityBiasState('fresh'); }}
+              >
+                Fresh
+              </button>
+            </div>
           </div>
         </div>
 

@@ -183,6 +183,49 @@
   color: white;
 }
 
+/* Familiarity Toggle */
+.familiarity-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.familiarity-toggle-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary, #e8e8e8);
+  min-width: 50px;
+}
+
+.familiarity-toggle-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.familiarity-btn {
+  padding: 8px 18px;
+  background: var(--card-bg-hover, rgba(255,255,255,0.06));
+  border: 2px solid var(--border-color, rgba(255,255,255,0.06));
+  border-radius: 8px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.familiarity-btn:hover {
+  border-color: var(--accent-primary, #ff8c42);
+  background: rgba(255, 140, 66, 0.12);
+}
+
+.familiarity-btn.selected {
+  background: var(--accent-primary, #ff8c42);
+  border-color: var(--accent-primary, #ff8c42);
+  color: white;
+}
+
 /* Time Selection */
 .time-selection {
   display: flex;

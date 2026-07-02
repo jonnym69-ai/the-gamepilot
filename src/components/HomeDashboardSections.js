@@ -88,35 +88,45 @@ export function RecommendationReasoning({ entry }) {
 
   const confidence = Number(explanation.confidence || 0);
   const matchScore = Number(explanation.matchScore || 0);
-  const reasons = Array.isArray(explanation.reasons) && explanation.reasons.length > 0
+  const allReasons = Array.isArray(explanation.reasons) && explanation.reasons.length > 0
     ? explanation.reasons
     : ['Recommended for you'];
+  const globalHook = explanation.globalHook || null;
+  const gameSpecificHook = explanation.gameSpecificHook || null;
+  const gameKey = entry?.game?.appid || entry?.game?.name || 'recommendation';
+  // The main card face only shows the two-tier hooks. All other reasons live in the collapsible.
+  const detailReasons = allReasons.filter((reason) => reason !== globalHook && reason !== gameSpecificHook);
 
   return (
     <>
       <div className="recommendation-badge-container">
-        <div className="confidence-badge" title={`${confidence}% confident match`}>
-          {confidence}%
-        </div>
-        <div className="match-score" title={`${matchScore}/100 match score`}>
-          ⭐ {matchScore}
+        <div className="confidence-badge" title={`${confidence}% confident match · ${matchScore}/100 match score`}>
+          {Math.round(confidence)}% match
         </div>
       </div>
       <div className="recommendation-reasoning">
-        <details className="reasoning-details">
-          <summary>
-            <span className="reasoning-summary-label">💡 Why this game?</span>
-            <span className="reasoning-summary-hint">{reasons.length} reason{reasons.length === 1 ? '' : 's'}</span>
-          </summary>
-          <div className="reasoning-content">
-            {reasons.map((reason, index) => (
-              <div key={`${entry?.game?.appid || entry?.game?.name || 'recommendation'}-${index}`} className="reasoning-item">
-                <span className="reason-bullet">✓</span>
-                <span className="reason-text">{reason}</span>
-              </div>
-            ))}
-          </div>
-        </details>
+        {globalHook && (
+          <div className="reasoning-global-hook">{globalHook}</div>
+        )}
+        {gameSpecificHook && (
+          <div className="reasoning-game-hook">{gameSpecificHook}</div>
+        )}
+        {detailReasons.length > 0 && (
+          <details className="reasoning-details">
+            <summary>
+              <span className="reasoning-summary-label">💡 Why this game?</span>
+              <span className="reasoning-summary-hint">{detailReasons.length} more reason{detailReasons.length === 1 ? '' : 's'}</span>
+            </summary>
+            <div className="reasoning-content">
+              {detailReasons.map((reason, index) => (
+                <div key={`${gameKey}-${index}`} className="reasoning-item">
+                  <span className="reason-bullet">✓</span>
+                  <span className="reason-text">{reason}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     </>
   );
@@ -188,31 +198,58 @@ export function CuratedShelfCard({
   );
 }
 
-export function BuyShelfCard({ entry, platformIcons = {} }) {
+export function BuyShelfCard({
+  entry,
+  platformIcons = {},
+  index = 0,
+  count = 1,
+  onNext,
+  onPrev
+}) {
   if (!entry || !entry.game) {
     return null;
   }
   const game = entry.game;
   const meta = entry.meta || {};
-  const reason = (meta.buyReasons || [])[0] || null;
-  const price = meta.wishlistItem?.currentPrice;
-  const steamUrl = game.appid
-    ? `https://store.steampowered.com/app/${game.appid}`
+  const item = meta.wishlistItem || {};
+  const price = item.currentPrice;
+  const hasCycle = count > 1 && typeof onNext === 'function' && typeof onPrev === 'function';
+
+  const steamAppId = item.steamAppID || game.appid || null;
+  const steamUrl = steamAppId
+    ? `https://store.steampowered.com/app/${steamAppId}`
     : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.name)}`;
+
+  let artwork = null;
+  if (steamAppId) {
+    artwork = `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/header.jpg`;
+  } else if (item.thumb && /^https?:\/\//i.test(item.thumb)) {
+    artwork = item.thumb;
+  } else if (game.header_image && /^https?:\/\//i.test(game.header_image)) {
+    artwork = game.header_image;
+  }
 
   return (
     <div className="game-card curated-shelf-card buy-shelf-card fade-in" style={{ maxWidth: '400px', width: '100%' }}>
       <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.7, marginBottom: '4px' }}>
-          Buy this next
+        <div className="buy-shelf-header">
+          <span>Buy this next</span>
+          {hasCycle && (
+            <span className="buy-shelf-counter">
+              <button onClick={onPrev} className="buy-shelf-arrow" aria-label="Previous wishlist pick">‹</button>
+              <span>{index + 1} / {count}</span>
+              <button onClick={onNext} className="buy-shelf-arrow" aria-label="Next wishlist pick">›</button>
+            </span>
+          )}
         </div>
         <div style={{ fontSize: '0.95rem', opacity: 0.85 }}>
           The best value pick from your wishlist, matched to what you actually play.
         </div>
       </div>
+      <RecommendationReasoning entry={entry} />
       <div className="game-card-image-wrapper">
-        {meta.image ? (
-          <LazyImage src={meta.image} alt={game.name} className="game-image" />
+        {artwork ? (
+          <LazyImage src={artwork} alt={game.name} className="game-image" />
         ) : (
           <div className="game-placeholder">
             <div className="platform-icon">{platformIcons[game.platform] || '🛒'}</div>
@@ -228,9 +265,6 @@ export function BuyShelfCard({ entry, platformIcons = {} }) {
           <span className="game-playtime">{price.priceFormatted || `$${price.price}`}</span>
         )}
       </div>
-      {reason && (
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, margin: '8px 0 0' }}>{reason}</p>
-      )}
       <div className="game-actions">
         <a href={steamUrl} target="_blank" rel="noopener noreferrer" className="game-launch-button primary">
           🛒 View on Steam
@@ -751,7 +785,7 @@ export function TopRatedSection({
               <div key={game.appid || game.name || `top-rated-${index}`} className={getGameCardClass(index)}>
                 <div className="recommendation-badge-container">
                   <div className="match-score" title={`Rated ${game.userRating}/10`}>
-                    ⭐ {game.userRating}/10
+                    ★ {game.userRating}
                   </div>
                 </div>
                 <div className="game-card-image-wrapper">
@@ -1317,13 +1351,25 @@ export function HomeGuidedContent({
   favoriteShelfGame,
   favoriteShelfArtwork,
   favoriteShelfPlaceholder,
+  surpriseShelfGame,
+  surpriseShelfEntry,
+  surpriseShelfArtwork,
+  surpriseShelfPlaceholder,
   platformIcons,
   onLaunchTonightPick,
   onLaunchContinuePlaying,
   onLaunchRediscover,
   onLaunchFavorite,
+  onLaunchSurpriseShelf,
   formatLastPlayed,
   formatPlaytime,
+  familiarityBias,
+  onFamiliarityChange,
+  buyEntry,
+  buyEntryIndex,
+  buyEntryCount,
+  onBuyNext,
+  onBuyPrev,
   libraryStoryItems,
   shouldShowLegacyContinueSection,
   continuePlayingMessage,
@@ -1371,13 +1417,25 @@ export function HomeGuidedContent({
               favoriteShelfGame={favoriteShelfGame}
               favoriteShelfArtwork={favoriteShelfArtwork}
               favoriteShelfPlaceholder={favoriteShelfPlaceholder}
+              surpriseShelfGame={surpriseShelfGame}
+              surpriseShelfEntry={surpriseShelfEntry}
+              surpriseShelfArtwork={surpriseShelfArtwork}
+              surpriseShelfPlaceholder={surpriseShelfPlaceholder}
               platformIcons={platformIcons}
               onLaunchTonightPick={onLaunchTonightPick}
               onLaunchContinuePlaying={onLaunchContinuePlaying}
               onLaunchRediscover={onLaunchRediscover}
               onLaunchFavorite={onLaunchFavorite}
+              onLaunchSurpriseShelf={onLaunchSurpriseShelf}
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
+              familiarityBias={familiarityBias}
+              onFamiliarityChange={onFamiliarityChange}
+              buyEntry={buyEntry}
+              buyEntryIndex={buyEntryIndex}
+              buyEntryCount={buyEntryCount}
+              onBuyNext={onBuyNext}
+              onBuyPrev={onBuyPrev}
             />
 
             <LibraryStoryCard items={libraryStoryItems} />
@@ -1446,14 +1504,25 @@ export function LibraryTodaySection({
   favoriteShelfGame,
   favoriteShelfArtwork,
   favoriteShelfPlaceholder,
+  surpriseShelfGame,
+  surpriseShelfEntry,
+  surpriseShelfArtwork,
+  surpriseShelfPlaceholder,
   platformIcons,
   onLaunchTonightPick,
   onLaunchContinuePlaying,
   onLaunchRediscover,
   onLaunchFavorite,
+  onLaunchSurpriseShelf,
   formatLastPlayed,
   formatPlaytime,
-  buyEntry
+  familiarityBias,
+  onFamiliarityChange,
+  buyEntry,
+  buyEntryIndex,
+  buyEntryCount,
+  onBuyNext,
+  onBuyPrev
 }) {
   if (!homeShelfCards) {
     return (
@@ -1473,9 +1542,36 @@ export function LibraryTodaySection({
   return (
     <div className="results-section">
       <div className="result-card">
-        <h3 className="result-title">
-          📚 Your Library Today
-        </h3>
+        <div className="library-today-header">
+          <h3 className="result-title">
+            📚 Your Library Today
+          </h3>
+          {onFamiliarityChange && (
+            <div className="familiarity-toggle-buttons library-today-familiarity">
+              <button
+                className={`familiarity-btn ${familiarityBias === 'familiar' ? 'selected' : ''}`}
+                onClick={() => onFamiliarityChange('familiar')}
+                title="Lean toward games you already know and love"
+              >
+                Familiar
+              </button>
+              <button
+                className={`familiarity-btn ${!familiarityBias ? 'selected' : ''}`}
+                onClick={() => onFamiliarityChange(null)}
+                title="A balanced mix"
+              >
+                Balanced
+              </button>
+              <button
+                className={`familiarity-btn ${familiarityBias === 'fresh' ? 'selected' : ''}`}
+                onClick={() => onFamiliarityChange('fresh')}
+                title="Lean toward fresh, less-played games"
+              >
+                Fresh
+              </button>
+            </div>
+          )}
+        </div>
         <p style={{ color: 'var(--text)', opacity: 0.8, marginBottom: '10px' }}>
           Start with a few thoughtful shelves instead of a blank choice. One strong pick for tonight, one easy comeback, one game worth rediscovering, and one favourite to keep close.
         </p>
@@ -1553,13 +1649,34 @@ export function LibraryTodaySection({
             >
               <div className="recommendation-badge-container">
                 <div className="match-score" title={`Rated ${favoriteShelfGame.userRating}/10`}>
-                  ⭐ {favoriteShelfGame.userRating}/10
+                  ★ {favoriteShelfGame.userRating}
                 </div>
               </div>
             </CuratedShelfCard>
           )}
           {buyEntry && (
-            <BuyShelfCard entry={buyEntry} platformIcons={platformIcons} />
+            <BuyShelfCard
+              entry={buyEntry}
+              platformIcons={platformIcons}
+              index={buyEntryIndex}
+              count={buyEntryCount}
+              onNext={onBuyNext}
+              onPrev={onBuyPrev}
+            />
+          )}
+          {surpriseShelfGame && (
+            <CuratedShelfCard
+              title="Surprise me"
+              subtitle="A random pick from your wishlist so you don't always see the same top recommendation."
+              game={surpriseShelfGame}
+              entry={surpriseShelfEntry}
+              artwork={surpriseShelfArtwork}
+              placeholder={surpriseShelfPlaceholder}
+              platformIcons={platformIcons}
+              onLaunch={onLaunchSurpriseShelf}
+              actionLabel="🛒 View on Steam"
+              formatPlaytime={formatPlaytime}
+            />
           )}
         </div>
       </div>
@@ -1896,3 +2013,71 @@ export function BecauseYouAreSection({
   }
 }
 
+export function FamiliarOrFreshNudge({ library, onLaunchGame, formatPlaytime, formatLastPlayed }) {
+  if (!Array.isArray(library) || library.length === 0) return null;
+
+  let familiarGame = null;
+  let freshGame = null;
+
+  try {
+    const profiles = GamingIdentity.getFamiliarityProfiles();
+
+    familiarGame = (profiles.familiarGames || [])
+      .filter((g) => g.last_played)
+      .sort((a, b) => new Date(b.last_played).getTime() - new Date(a.last_played).getTime())[0] || null;
+
+    freshGame = (profiles.freshGames || [])
+      .sort((a, b) => {
+        const aTime = a.date_added ? new Date(a.date_added).getTime() : 0;
+        const bTime = b.date_added ? new Date(b.date_added).getTime() : 0;
+        return bTime - aTime;
+      })[0] || null;
+
+    if (!familiarGame && profiles.familiarGames.length > 0) {
+      familiarGame = profiles.familiarGames
+        .sort((a, b) => Number(b.time_played || 0) - Number(a.time_played || 0))[0] || null;
+    }
+
+    if (!freshGame) {
+      freshGame = library.find((g) => !g.time_played || Number(g.time_played) === 0) || null;
+    }
+  } catch {
+    return null;
+  }
+
+  if (!familiarGame && !freshGame) return null;
+
+  return (
+    <div className="familiar-fresh-nudge">
+      <div className="familiar-fresh-header">
+        <h3>What's it going to be?</h3>
+        <p>Continue something you know, or start something new.</p>
+      </div>
+      <div className="familiar-fresh-cards">
+        {familiarGame && (
+          <div className="familiar-fresh-card familiar" onClick={() => onLaunchGame && onLaunchGame(familiarGame)}>
+            <div className="familiar-fresh-label">Familiar</div>
+            <div className="familiar-fresh-game-name">{familiarGame.name}</div>
+            <div className="familiar-fresh-detail">
+              {familiarGame.time_played > 0 && `${formatPlaytime ? formatPlaytime(familiarGame.time_played) : `${Math.round(familiarGame.time_played / 60)}h`} played`}
+              {familiarGame.last_played && formatLastPlayed && ` · ${formatLastPlayed(familiarGame.last_played)}`}
+            </div>
+            <div className="familiar-fresh-action">Continue</div>
+          </div>
+        )}
+        {freshGame && (
+          <div className="familiar-fresh-card fresh" onClick={() => onLaunchGame && onLaunchGame(freshGame)}>
+            <div className="familiar-fresh-label">Fresh</div>
+            <div className="familiar-fresh-game-name">{freshGame.name}</div>
+            <div className="familiar-fresh-detail">
+              {freshGame.time_played > 0
+                ? `${formatPlaytime ? formatPlaytime(freshGame.time_played) : `${Math.round(freshGame.time_played / 60)}h`} — barely touched`
+                : 'Unplayed — waiting for you'}
+            </div>
+            <div className="familiar-fresh-action">Start fresh</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

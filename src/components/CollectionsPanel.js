@@ -1,10 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Trophy, 
-  Lock, 
-  Star, 
-  Music, 
-  Palette, 
+  Trophy,
+  Lock,
+  Star,
+  Palette,
   Crown,
   CheckCircle2,
   Circle,
@@ -15,14 +14,10 @@ import CollectionsService from '../services/CollectionsService';
 
 const CollectionIcon = ({ icon, category }) => {
   const iconMap = {
-    '🎵': <Music size={20} />,
     '✨': <Star size={20} />,
     '🎨': <Palette size={20} />,
     '🚀': <Zap size={20} />,
-    '👑': <Crown size={20} />,
-    '🔘': <Circle size={20} />,
-    '🌊': <Trophy size={20} />,
-    '🎼': <Music size={20} />
+    '👑': <Crown size={20} />
   };
   
   return (

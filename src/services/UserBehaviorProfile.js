@@ -5,6 +5,7 @@
  */
 
 import StorageService from './StorageService';
+import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 
 const MOOD_PERSONA_IDENTITIES = {
   Relaxed: {
@@ -785,6 +786,8 @@ export class UserBehaviorProfile {
     }
 
     const weights = {};
+    const genreHours = {};
+    const genreGameCounts = {};
     let hasPlaytime = false;
 
     library.forEach((game) => {
@@ -793,31 +796,49 @@ export class UserBehaviorProfile {
       if (genres.length === 0) return;
 
       const minutes = Number(game.time_played || 0);
+      const hours = minutes / 60;
       if (minutes > 0) hasPlaytime = true;
       // Ownership = 1; playtime amplifies but is capped so a single game can't dominate.
-      const weight = 1 + Math.min(minutes / 60, 50) * 0.5;
+      const weight = 1 + Math.min(hours, 50) * 0.5;
 
       genres.forEach((rawGenre) => {
         const genre = typeof rawGenre === 'string' ? rawGenre.trim() : '';
         if (!genre) return;
         weights[genre] = (weights[genre] || 0) + weight;
+        genreHours[genre] = (genreHours[genre] || 0) + hours;
+        genreGameCounts[genre] = (genreGameCounts[genre] || 0) + 1;
       });
     });
 
     const ranked = Object.entries(weights)
-      .map(([genre, weight]) => ({ genre, weight: Math.round(weight * 10) / 10 }))
+      .map(([genre, weight]) => ({
+        genre,
+        weight: Math.round(weight * 10) / 10,
+        hours: Math.round(genreHours[genre] || 0),
+        gameCount: genreGameCounts[genre] || 0
+      }))
       .sort((a, b) => b.weight - a.weight);
 
     const dominantGenre = ranked[0]?.genre || null;
     const secondaryGenre = ranked[1]?.genre || null;
 
+    // Top played games overall — used to anchor the identity description
+    const topGames = library
+      .filter((g) => Number(g?.time_played || 0) > 0)
+      .sort((a, b) => Number(b.time_played || 0) - Number(a.time_played || 0))
+      .slice(0, 3)
+      .map((g) => ({ name: g.name || g.title || 'Unknown', hours: Math.round(Number(g.time_played || 0) / 60) }));
+
     return {
       totalGames: library.length,
       topGenres: ranked.slice(0, 5),
       dominantGenre,
+      dominantGenreData: ranked[0] || null,
       secondaryGenre,
+      secondaryGenreData: ranked[1] || null,
       inferredMood: dominantGenre ? (GENRE_MOOD_MAP[dominantGenre] || null) : null,
-      hasPlaytime
+      hasPlaytime,
+      topGames
     };
   }
 
@@ -910,7 +931,8 @@ export class UserBehaviorProfile {
       moodsForIdentity,
       genresForIdentity,
       sessionPref.bucket,
-      peakHour?.timeOfDay || null
+      peakHour?.timeOfDay || null,
+      libraryProfile
     );
 
     const personaTags = [];
@@ -1040,32 +1062,68 @@ export class UserBehaviorProfile {
   }
 
   /**
-   * Build persona identity metadata from the top moods
+   * Build persona identity metadata from actual play data and library composition.
+   * When there is enough real playtime, the label is grounded in the dominant genre,
+   * its game count, and total hours rather than a fixed mood archetype.
    */
-  static buildPersonaIdentity(topMoods = [], topGenres = [], sessionBucket = null, peakTimeOfDay = null) {
-    if (!Array.isArray(topMoods) || topMoods.length === 0) {
-      return null;
-    }
-
+  static buildPersonaIdentity(topMoods = [], topGenres = [], sessionBucket = null, peakTimeOfDay = null, libraryProfile = null) {
+    const hasLibrary = libraryProfile && libraryProfile.totalGames > 0;
+    const dominantGenreData = libraryProfile?.dominantGenreData || null;
+    const hasPlaytime = libraryProfile?.hasPlaytime && dominantGenreData && dominantGenreData.hours > 0;
     const primary = topMoods[0];
     const secondary = topMoods[1];
-    const moodMeta = MOOD_PERSONA_IDENTITIES[primary.mood] || {
-      label: `${primary.mood} Specialist`,
-      description: `Primarily drawn to ${primary.mood.toLowerCase()} sessions.`
-    };
-
-    // Blend genre identity when available
     const primaryGenre = topGenres[0];
-    let label = moodMeta.label;
-    let description = moodMeta.description;
 
-    if (primaryGenre) {
-      const genreMeta = GENRE_PERSONA_IDENTITIES[primaryGenre.genre] || {
-        label: `${primaryGenre.genre} Specialist`,
-        description: `Frequently plays ${primaryGenre.genre.toLowerCase()} titles.`
+    let label;
+    let description;
+    let anchors = [];
+
+    if (hasPlaytime) {
+      // Grounded identity: "Strategy Main · 12 games · 240h"
+      const genre = dominantGenreData.genre;
+      const genreMeta = GENRE_PERSONA_IDENTITIES[genre] || { label: `${genre} Specialist` };
+      label = `${genre} Main`;
+      anchors.push(genre);
+      if (primary) anchors.push(primary.mood);
+      if (secondary) anchors.push(secondary.mood);
+
+      const topGames = libraryProfile.topGames || [];
+      const topGamesText = topGames.length > 0
+        ? `Top games: ${topGames.map((g) => `${g.name} (${g.hours}h)`).join(', ')}.`
+        : '';
+      const secondaryText = libraryProfile?.secondaryGenre
+        ? ` Also dips into ${libraryProfile.secondaryGenre}.`
+        : '';
+
+      description = `${genreMeta.label} — ${dominantGenreData.gameCount} ${genre} games, ${dominantGenreData.hours}h played.${secondaryText} ${topGamesText}`.trim();
+    } else if (Array.isArray(topMoods) && topMoods.length > 0) {
+      // Fallback to the original mood-driven identity when no real playtime exists
+      const moodMeta = MOOD_PERSONA_IDENTITIES[primary.mood] || {
+        label: `${primary.mood} Specialist`,
+        description: `Primarily drawn to ${primary.mood.toLowerCase()} sessions.`
       };
-      label = `${moodMeta.label} · ${genreMeta.label}`;
-      description = `${moodMeta.description} Also ${genreMeta.description.toLowerCase()}`;
+      label = moodMeta.label;
+      description = moodMeta.description;
+      anchors = [primary.mood, secondary?.mood].filter(Boolean);
+
+      if (primaryGenre) {
+        const genreMeta = GENRE_PERSONA_IDENTITIES[primaryGenre.genre] || {
+          label: `${primaryGenre.genre} Specialist`,
+          description: `Frequently plays ${primaryGenre.genre.toLowerCase()} titles.`
+        };
+        label = `${moodMeta.label} · ${genreMeta.label}`;
+        description = `${moodMeta.description} Also ${genreMeta.description.toLowerCase()}`;
+        anchors.push(primaryGenre.genre);
+      }
+    } else if (hasLibrary && libraryProfile.dominantGenre) {
+      // Cold-start identity from library alone
+      const genre = libraryProfile.dominantGenre;
+      const genreMeta = GENRE_PERSONA_IDENTITIES[genre] || { label: `${genre} Specialist` };
+      label = `${genre} Library`;
+      description = `${genreMeta.label} — ${libraryProfile.totalGames} games in library, strongest in ${genre}.`;
+      anchors.push(genre);
+    } else {
+      return null;
     }
 
     // Blend session pattern into description
@@ -1086,11 +1144,11 @@ export class UserBehaviorProfile {
     return {
       label,
       description,
-      anchors: [primary.mood, secondary?.mood, primaryGenre?.genre].filter(Boolean),
+      anchors,
       sessionPattern: sessionBucket,
       peakTimeOfDay,
-      completionSignal: primary.completionRate,
-      selectionWeight: primary.count
+      completionSignal: primary?.completionRate || 0,
+      selectionWeight: primary?.count || 0
     };
   }
 
@@ -1140,40 +1198,43 @@ export class UserBehaviorProfile {
   static getRecommendationReasoning(game, mood, genre) {
     const profile = this.getProfile();
     const reasons = [];
+    const gameName = game?.name || 'this game';
+    const estimatedSession = PersonaPerformanceInsights.estimateSessionMinutes(game);
+    const avgSession = Math.round(profile.playstylePatterns.avgSessionLength || 0);
 
-    // Check mood match
+    // Check mood match — tie it to the specific game so it doesn't read identically for every title.
     if (mood) {
       const moodRate = this.getMoodCompletionRate(mood);
       if (moodRate > 70) {
-        reasons.push(`You enjoy ${moodRate}% of your ${mood} sessions - strong match for this mood`);
+        reasons.push(`You finish ${moodRate}% of your ${mood} games — ${gameName} sits in that lane`);
       } else if (moodRate > 50) {
-        reasons.push(`You usually have a good time with ${mood} picks`);
+        reasons.push(`${mood} is a comfortable lane for you, and ${gameName} fits there`);
       }
     }
 
-    // Check genre match
+    // Check genre match — reference the actual game name.
     if (genre) {
       const genreRate = this.getGenreCompletionRate(genre);
       if (genreRate > 70) {
-        reasons.push(`You enjoy ${genreRate}% of your ${genre} sessions - strong preference`);
+        reasons.push(`You finish ${genreRate}% of your ${genre} games — ${gameName} carries that DNA`);
       } else if (genreRate > 50) {
-        reasons.push(`Your recent ${genre} sessions tend to land well`);
+        reasons.push(`${genre} tends to land well for you, and ${gameName} is in that space`);
       }
     }
 
-    // Check playtime match
-    const avgSession = Math.round(profile.playstylePatterns.avgSessionLength);
-    if (avgSession > 0) {
-      reasons.push(`Matches your average session length of ${avgSession} minutes`);
+    // Session-length comparison specific to this game instead of a global average stat.
+    if (avgSession > 0 && estimatedSession > 0) {
+      const diff = Math.abs(estimatedSession - avgSession);
+      if (diff <= 15) {
+        reasons.push(`${gameName}'s estimated ${estimatedSession} min session lines up with your ${avgSession} min average`);
+      } else if (estimatedSession < avgSession) {
+        reasons.push(`${gameName} is estimated at ${estimatedSession} min — a quick hit against your ${avgSession} min average`);
+      } else {
+        reasons.push(`${gameName} is estimated at ${estimatedSession} min — longer than your ${avgSession} min average, good when you have time`);
+      }
     }
 
-    // Check peak hours
-    const peakHours = this.getPeakPlayHours(1);
-    if (peakHours.length > 0) {
-      reasons.push(`Recommended during your peak gaming time (${peakHours[0].timeOfDay})`);
-    }
-
-    return reasons.length > 0 ? reasons : ['Recommended based on your gaming profile'];
+    return reasons.length > 0 ? reasons : [`${gameName} matched your current filters and library signals`];
   }
 
   /**

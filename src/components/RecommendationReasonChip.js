@@ -15,6 +15,11 @@ export function RecommendationReasonChip({ game, mood, genre, timeAvailable, rec
       <span className="recommendation-reason-confidence">
         {Math.round(explanation.confidence)}% match
       </span>
+      {explanation.familiarity && (
+        <span className={`familiarity-chip ${explanation.familiarity}`}>
+          {explanation.familiarity}
+        </span>
+      )}
       <span className="recommendation-reason-text">
         {explanation.reasons[0]}
       </span>

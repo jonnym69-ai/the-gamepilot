@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Gift, Wand2, Heart, Link2, Trophy, Download, Target, HardDrive, Gauge, Monitor, Sparkles, Compass } from 'lucide-react';
+import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Wand2, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import LabsService from '../services/LabsService';
 
@@ -99,23 +99,14 @@ function HybridNavBar() {
             {labsEnabled && (
               <div className="dropdown-section">
                 <div className="dropdown-section-title">Labs (experimental)</div>
-                <Link to="/free-games" className="dropdown-item" onClick={closeDropdown} title="Browse free-to-keep game giveaways">
-                  <Gift size={16} className="dropdown-item-icon" /> Free Games
-                </Link>
                 <Link to="/habits" className="dropdown-item" onClick={closeDropdown} title="Track gaming habits and goals">
                   <Calendar size={16} className="dropdown-item-icon" /> Habits
                 </Link>
                 <Link to="/achievements" className="dropdown-item" onClick={closeDropdown} title="View your achievements and rolling assignments">
                   <Trophy size={16} className="dropdown-item-icon" /> Achievements
                 </Link>
-                <Link to="/challenge-board" className="dropdown-item" onClick={closeDropdown} title="Gaming challenges and quests">
-                  <Target size={16} className="dropdown-item-icon" /> Challenge Board
-                </Link>
                 <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Your yearly gaming recap">
                   <BarChart3 size={16} className="dropdown-item-icon" /> Year in Review
-                </Link>
-                <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="Unlockable customization earned through your habits">
-                  <Gift size={16} className="dropdown-item-icon" /> Rewards
                 </Link>
                 <Link to="/gaming-links" className="dropdown-item" onClick={closeDropdown} title="Your personal collection of gaming sites and resources">
                   <Link2 size={16} className="dropdown-item-icon" /> Gaming Links

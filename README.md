@@ -2,7 +2,7 @@
 
 ### Your library. Your stats. Your machine.
 
-**Version 1.5.0** | **Copyright © 2026 Moz** | **MIT License** | **Local-first · Private · Open source**
+**Version 1.7.0** | **Copyright © 2026 Moz** | **MIT License** | **Local-first · Private · Open source**
 
 GamePilot is a local-first desktop app that unifies your game library across every launcher, tracks your playtime (even offline), and turns your collection into a private, gamified dashboard — without accounts, cloud sync, or telemetry of any kind.
 
@@ -196,7 +196,16 @@ For issues, questions, or suggestions, contact the author directly.
 
 ## Changelog
 
-### v1.5.0 (Current)
+### v1.7.0 (Current)
+- ✅ Gaming identity now grounded in real play data — dominant genre, game count, hours played, and top games
+- ✅ Home page Habit Insights shows taste clusters (Souls-like, Roguelike, Platformer, etc.) based on signature games
+- ✅ Insights mood display now shows top 3 moods with accurate "sessions" labelling
+- ✅ Removed duplicate smart shelves (Discovery, Weekend Ready) for cleaner home page
+- ✅ Audio reward catalog and bundled audio assets removed to reduce install size
+- ✅ Core recommendation path decoupled from heavy hardware database
+- ✅ Secondary and Labs routes lazy-loaded for faster startup
+
+### v1.5.0
 - ✅ Fixed Steam playtime import in packaged builds (resilient scanner loading)
 - ✅ Imported Steam lifetime playtime now surfaced on the All Time view, separate from tracked sessions
 - ✅ Most Played Games can switch between GamePilot-tracked and Steam-imported rankings

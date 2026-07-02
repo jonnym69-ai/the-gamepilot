@@ -111,7 +111,16 @@ export const DEFAULT_RECOMMENDATION_WEIGHTS = Object.freeze({
   // Multiplier on "how rarely you play this genre" (0..1) -> bonus points
   explorationGenreNoveltyWeight: 35,
   // Hardware floor — never surface a totally-unrunnable exploration pick
-  explorationRequireRunnable: 1
+  explorationRequireRunnable: 1,
+
+  // Familiarity bias — adjusts scoring based on whether the user wants
+  // games in their comfort zone ('familiar') or new territory ('fresh').
+  // A bias of 0 means neutral (no adjustment). Positive boosts familiar,
+  // negative boosts fresh. The engine reads the user's preference from
+  // storage and applies these as additive score adjustments.
+  familiarityFamiliarBonus: 12,
+  familiarityFreshBonus: 12,
+  familiarityFreshPlaytimeThreshold: 300  // minutes — under this = fresh candidate
 });
 
 /**
@@ -198,3 +207,24 @@ if (typeof window !== 'undefined') {
 }
 
 export const RECOMMENDATION_WEIGHT_PRESETS = PRESETS;
+
+/**
+ * Read the user's familiarity bias preference from storage.
+ * Returns 'familiar', 'fresh', or null (neutral / not set).
+ */
+export function getFamiliarityBias() {
+  return StorageService.get('familiarityBias', null);
+}
+
+/**
+ * Set the user's familiarity bias preference.
+ * @param {'familiar'|'fresh'|null} bias
+ */
+export function setFamiliarityBias(bias) {
+  if (bias === 'familiar' || bias === 'fresh') {
+    StorageService.set('familiarityBias', bias);
+  } else {
+    StorageService.set('familiarityBias', null);
+  }
+  invalidateRecommendationWeightsCache();
+}

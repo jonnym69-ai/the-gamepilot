@@ -269,6 +269,193 @@
   color: var(--text, #fff);
 }
 
+/* Signature Games Section */
+.dna-signature-games-section {
+  background: var(--card, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+
+/* Onboarding Nudge */
+.dna-onboarding-nudge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 36px 28px;
+  margin-bottom: 24px;
+  background: var(--card, #1a1a2e);
+  border: 1px dashed var(--border-color, rgba(255,255,255,0.12));
+  border-radius: 20px;
+}
+
+.dna-onboarding-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 107, 53, 0.1);
+  color: var(--accent-color, #ff6b35);
+}
+
+.dna-onboarding-nudge h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text, #fff);
+  margin: 0;
+}
+
+.dna-onboarding-nudge p {
+  font-size: 0.88rem;
+  color: var(--text-muted, #8892a0);
+  max-width: 420px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.dna-signature-games-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text, #fff);
+  margin-bottom: 8px;
+}
+
+.dna-section-description {
+  font-size: 0.85rem;
+  color: var(--text-muted, #8892a0);
+  margin: 0 0 16px 0;
+}
+
+.dna-signature-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dna-signature-game {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border-radius: 14px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.04));
+}
+
+.dna-signature-game-rank {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-color, #ff6b35);
+  min-width: 28px;
+}
+
+.dna-signature-game-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dna-signature-game-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.dna-signature-game-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted, #8892a0);
+}
+
+.dna-signature-game-genres {
+  font-size: 0.72rem;
+  color: var(--text-muted, #8892a0);
+  opacity: 0.7;
+}
+
+.dna-signature-game-score {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-color, #ff6b35);
+  background: rgba(255, 107, 53, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+/* Taste Clusters Section */
+.dna-taste-clusters-section {
+  background: var(--card, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+
+.dna-taste-clusters-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text, #fff);
+  margin-bottom: 8px;
+}
+
+.dna-taste-clusters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dna-taste-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border-radius: 14px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.04));
+}
+
+.dna-taste-cluster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dna-taste-cluster-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.dna-taste-cluster-count {
+  font-size: 0.72rem;
+  color: var(--text-muted, #8892a0);
+  white-space: nowrap;
+}
+
+.dna-taste-cluster-description {
+  font-size: 0.82rem;
+  color: var(--text-muted, #8892a0);
+}
+
+.dna-taste-cluster-games {
+  font-size: 0.75rem;
+  color: var(--text-muted, #8892a0);
+  opacity: 0.7;
+}
+
 .dna-badges-section {
   margin-bottom: 24px;
 }

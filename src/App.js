@@ -1,28 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
-import Home from './Home';
-import Library from './Library';
-import Stats from './Stats';
-import Settings from './Settings';
-import Profile from './Profile';
-import YearInReview from './YearInReview';
-import Donate from './Donate';
-import GamingLinks from './GamingLinks';
-import LibraryIntelligence from './LibraryIntelligence';
-import StartupQuestionnaire from './components/StartupQuestionnaire';
-import Themes from './Themes';
-import Habits from './Habits';
-import Rewards from './Rewards';
-import ThemeBuilder from './ThemeBuilder';
-import Achievements from './Achievements';
-import ExportHub from './ExportHub';
-import ChallengeBoard from './ChallengeBoard';
-import StorageManager from './StorageManager';
-import PerformanceCockpit from './PerformanceCockpit';
-import SwipeDeck from './SwipeDeck';
-import Recommendations from './Recommendations';
-import FreeGames from './FreeGames';
 import moodThemes from './themes/moodThemes.json';
 import { ThemeProvider } from './ThemeContext';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
@@ -45,7 +23,6 @@ import { ToastProvider, useToast } from './components/Toast';
 import LevelUpToast from './components/LevelUpToast';
 import WeeklySummaryToast from './components/WeeklySummaryToast';
 import CaptainLogModal from './components/CaptainLogModal';
-import GamingDNAPage from './components/GamingDNAPage';
 import { DailyEngagementService } from './services/DailyEngagementService';
 import { AchievementTracker } from './AchievementSystem';
 import { EasterEggService } from './services/EasterEggService';
@@ -56,6 +33,7 @@ import { GameRatingService } from './services/GameRatingService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import StorageService from './services/StorageService';
+import WishlistService from './services/WishlistService';
 import { assignMoodToGame as importedAssignMoodToGame } from './services/MoodAssignmentService';
 import { resolveGameArtwork } from './services/GameArtworkService';
 import DynamicBackdropService from './services/DynamicBackdropService';
@@ -64,6 +42,30 @@ import CommandPalette from './components/CommandPalette';
 import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
 import FirstRunWalkthrough, { shouldShowFirstRunWalkthrough } from './components/FirstRunWalkthrough';
+
+// Core pages loaded eagerly.
+const Home = lazy(() => import('./Home'));
+const Library = lazy(() => import('./Library'));
+
+// Secondary pages loaded on demand.
+const Stats = lazy(() => import('./Stats'));
+const Settings = lazy(() => import('./Settings'));
+const Profile = lazy(() => import('./Profile'));
+const YearInReview = lazy(() => import('./YearInReview'));
+const Donate = lazy(() => import('./Donate'));
+const GamingLinks = lazy(() => import('./GamingLinks'));
+const LibraryIntelligence = lazy(() => import('./LibraryIntelligence'));
+const StartupQuestionnaire = lazy(() => import('./components/StartupQuestionnaire'));
+const Themes = lazy(() => import('./Themes'));
+const Habits = lazy(() => import('./Habits'));
+const ThemeBuilder = lazy(() => import('./ThemeBuilder'));
+const Achievements = lazy(() => import('./Achievements'));
+const ExportHub = lazy(() => import('./ExportHub'));
+const StorageManager = lazy(() => import('./StorageManager'));
+const PerformanceCockpit = lazy(() => import('./PerformanceCockpit'));
+const SwipeDeck = lazy(() => import('./SwipeDeck'));
+const Recommendations = lazy(() => import('./Recommendations'));
+const GamingDNAPage = lazy(() => import('./components/GamingDNAPage'));
 
 // One-time migration: copy legacy 'gameLibrary' key to prefixed 'gamepilot-library'
 StorageService.migrate();
@@ -441,6 +443,7 @@ function AppContent() {
     try {
       const normalizedLibraryData = normalizeLibraryData(libraryData);
       StorageService.set('library', normalizedLibraryData);
+      WishlistService.removeOwnedItems(normalizedLibraryData);
     } catch (err) {
       console.error(' Error saving library:', err);
     }
@@ -479,6 +482,8 @@ function AppContent() {
         if (JSON.stringify(parsedLibrary) !== JSON.stringify(normalizedLibrary)) {
           StorageService.set('library', normalizedLibrary);
         }
+
+        WishlistService.removeOwnedItems(normalizedLibrary);
       } catch (error) {
         console.error('Error loading saved library:', error);
       }
@@ -1097,6 +1102,7 @@ function AppContent() {
         </div>
       )}
       <ErrorBoundary>
+      <Suspense fallback={<div className="page-loading-fallback" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-secondary)' }}>Loading...</div>}>
       <Routes>
         <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
         <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
@@ -1105,7 +1111,6 @@ function AppContent() {
         <Route path="/gaming-dna" element={<GamingDNAPage library={library} />} />
         <Route path="/themes" element={<Themes />} />
         <Route path="/habits" element={<Habits library={library} />} />
-        <Route path="/rewards" element={<Rewards />} />
         <Route path="/theme-builder" element={<ThemeBuilder />} />
         <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} library={library} dynamicCoverBg={dynamicCoverBg} setDynamicCoverBg={setDynamicCoverBg} minimizeOnLaunch={minimizeOnLaunch} setMinimizeOnLaunch={setMinimizeOnLaunch} />} />
         <Route path="/profile" element={<Profile library={library} />} />
@@ -1115,14 +1120,13 @@ function AppContent() {
         <Route path="/library-intelligence" element={<LibraryIntelligence library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/achievements" element={<Achievements theme={theme} library={library} />} />
         <Route path="/export-hub" element={<ExportHub library={library} />} />
-        <Route path="/challenge-board" element={<ChallengeBoard library={library} />} />
         <Route path="/storage-manager" element={<StorageManager library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />
         <Route path="/swipe-deck" element={<SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />} />
         <Route path="/recommendations" element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />} />
-        <Route path="/free-games" element={<FreeGames />} />
         <Route path="/startup-questionnaire" element={<StartupQuestionnaire isOpen founderTier={false} onComplete={() => {}} onSkip={() => {}} />} />
       </Routes>
+      </Suspense>
       </ErrorBoundary>
     </div>
   );

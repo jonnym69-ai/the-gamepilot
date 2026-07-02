@@ -334,3 +334,55 @@
   text-align: right;
   flex-shrink: 0;
 }
+
+/* Taste Clusters */
+.viz-taste-clusters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.viz-taste-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  border-left: 3px solid var(--accent, #3dd9ff);
+}
+
+.viz-taste-cluster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.viz-taste-cluster-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.viz-taste-cluster-count {
+  font-size: 0.7rem;
+  color: var(--text-tertiary, #64748b);
+  white-space: nowrap;
+}
+
+.viz-taste-cluster-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+}
+
+.viz-taste-cluster-games {
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #64748b);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
