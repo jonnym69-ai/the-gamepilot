@@ -29,6 +29,9 @@ This release focuses on polishing the home page, making the gaming identity feel
   - Core recommendation path no longer depends on the heavy hardware database.
   - Secondary and Labs routes are lazy-loaded for faster initial startup.
 
+- **Restored**
+  - Rewards page is back — view unlocked card styles, themes, layouts, personas, and progression rewards.
+
 ## Removed
 
 - Audio Reward Catalog (`src/services/AudioRewardCatalog.js`)
