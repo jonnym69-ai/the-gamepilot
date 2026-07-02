@@ -1592,7 +1592,7 @@ export function LibraryTodaySection({
             <strong>{recentLibraryActivity} recent game{recentLibraryActivity === 1 ? '' : 's'}</strong>
           </div>
         </div>
-        <div className="game-grid" style={{ alignItems: 'stretch' }}>
+        <div className="game-grid library-today-grid" style={{ alignItems: 'stretch' }}>
           {tonightPickGame && (
             <CuratedShelfCard
               title="Tonight's best pick"

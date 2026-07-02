@@ -30,6 +30,7 @@ Differentiator vs Playnite: Playnite is a library manager. GamePilot is a person
 - **Smart Shelves** — auto-curated collections: Continue This, Backlog Rediscovery, Comfort Picks, Hidden Gems, Deep Dives, One More Run, Quick Fix, Mood Match, Abandoned Early, Recently Completed.
 - **Habit Insights** — peak play time, session trends, mood distribution, library health, time-of-day heatmap.
 - **Year in Review** — available every day, not just once a year.
+- **Rewards** — view unlocked card styles, themes, layouts, and progression rewards.
 - **Performance Cockpit** — Labs feature for hardware compatibility and bottleneck analysis.
 - **Local-first backup / restore** — your data stays on your machine.
 
@@ -37,7 +38,6 @@ Differentiator vs Playnite: Playnite is a library manager. GamePilot is a person
 
 - Audio Reward Catalog / bundled audio rewards
 - Audio-themed collections
-- Rewards page
 - Free Games standalone page
 - Challenge Board
 

@@ -1209,6 +1209,23 @@
   margin-bottom: 25px;
 }
 
+/* Library Today section: 3x2 grid layout */
+.library-today-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .library-today-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .library-today-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .game-card {
   text-align: center;
   padding: 24px;
