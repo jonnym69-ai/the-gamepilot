@@ -143,6 +143,7 @@ export function CuratedShelfCard({
   onLaunch,
   actionLabel = 'Launch',
   formatPlaytime,
+  cycling = false,
   children
 }) {
   if (!game) {
@@ -150,7 +151,7 @@ export function CuratedShelfCard({
   }
 
   return (
-    <div className="game-card curated-shelf-card fade-in" style={{ maxWidth: '400px', width: '100%' }}>
+    <div className={`game-card curated-shelf-card fade-in ${cycling ? 'cycling' : ''}`} style={{ maxWidth: '400px', width: '100%' }}>
       <div style={{ marginBottom: '12px' }}>
         <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.7, marginBottom: '4px' }}>
           {title}
@@ -204,7 +205,8 @@ export function BuyShelfCard({
   index = 0,
   count = 1,
   onNext,
-  onPrev
+  onPrev,
+  title = 'Buy this next'
 }) {
   if (!entry || !entry.game) {
     return null;
@@ -233,7 +235,7 @@ export function BuyShelfCard({
     <div className="game-card curated-shelf-card buy-shelf-card fade-in" style={{ maxWidth: '400px', width: '100%' }}>
       <div style={{ marginBottom: '12px' }}>
         <div className="buy-shelf-header">
-          <span>Buy this next</span>
+          <span>{title}</span>
           {hasCycle && (
             <span className="buy-shelf-counter">
               <button onClick={onPrev} className="buy-shelf-arrow" aria-label="Previous wishlist pick">‹</button>
@@ -1355,6 +1357,7 @@ export function HomeGuidedContent({
   surpriseShelfEntry,
   surpriseShelfArtwork,
   surpriseShelfPlaceholder,
+  surpriseCycling,
   platformIcons,
   onLaunchTonightPick,
   onLaunchContinuePlaying,
@@ -1366,11 +1369,7 @@ export function HomeGuidedContent({
   formatPlaytime,
   familiarityBias,
   onFamiliarityChange,
-  buyEntry,
-  buyEntryIndex,
-  buyEntryCount,
-  onBuyNext,
-  onBuyPrev,
+  buyEntries,
   libraryStoryItems,
   shouldShowLegacyContinueSection,
   continuePlayingMessage,
@@ -1422,6 +1421,7 @@ export function HomeGuidedContent({
               surpriseShelfEntry={surpriseShelfEntry}
               surpriseShelfArtwork={surpriseShelfArtwork}
               surpriseShelfPlaceholder={surpriseShelfPlaceholder}
+              surpriseCycling={surpriseCycling}
               platformIcons={platformIcons}
               onLaunchTonightPick={onLaunchTonightPick}
               onLaunchContinuePlaying={onLaunchContinuePlaying}
@@ -1433,11 +1433,7 @@ export function HomeGuidedContent({
               formatPlaytime={formatPlaytime}
               familiarityBias={familiarityBias}
               onFamiliarityChange={onFamiliarityChange}
-              buyEntry={buyEntry}
-              buyEntryIndex={buyEntryIndex}
-              buyEntryCount={buyEntryCount}
-              onBuyNext={onBuyNext}
-              onBuyPrev={onBuyPrev}
+              buyEntries={buyEntries}
             />
 
             <LibraryStoryCard items={libraryStoryItems} />
@@ -1510,6 +1506,7 @@ export function LibraryTodaySection({
   surpriseShelfEntry,
   surpriseShelfArtwork,
   surpriseShelfPlaceholder,
+  surpriseCycling,
   platformIcons,
   onLaunchTonightPick,
   onLaunchContinuePlaying,
@@ -1521,11 +1518,7 @@ export function LibraryTodaySection({
   formatPlaytime,
   familiarityBias,
   onFamiliarityChange,
-  buyEntry,
-  buyEntryIndex,
-  buyEntryCount,
-  onBuyNext,
-  onBuyPrev
+  buyEntries
 }) {
   if (!homeShelfCards) {
     return (
@@ -1657,16 +1650,16 @@ export function LibraryTodaySection({
               </div>
             </CuratedShelfCard>
           )}
-          {buyEntry && (
+          {Array.isArray(buyEntries) && buyEntries.slice(0, 3).map((entry, index) => (
             <BuyShelfCard
-              entry={buyEntry}
+              key={entry?.game?.appid || entry?.game?.name || `buy-${index}`}
+              entry={entry}
               platformIcons={platformIcons}
-              index={buyEntryIndex}
-              count={buyEntryCount}
-              onNext={onBuyNext}
-              onPrev={onBuyPrev}
+              index={index}
+              count={1}
+              title={index === 0 ? 'Buy this next' : `Buy this next #${index + 1}`}
             />
-          )}
+          ))}
           {surpriseShelfGame && (
             <CuratedShelfCard
               title="Surprise me"
@@ -1679,6 +1672,7 @@ export function LibraryTodaySection({
               onLaunch={onLaunchSurpriseShelf}
               actionLabel="🎲 Surprise me"
               formatPlaytime={formatPlaytime}
+              cycling={surpriseCycling}
             >
               {onViewSurpriseShelfStore && (
                 <div className="game-actions" style={{ marginTop: '8px', marginBottom: '8px' }}>

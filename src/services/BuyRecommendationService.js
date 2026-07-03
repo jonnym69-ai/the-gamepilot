@@ -426,15 +426,16 @@ class BuyRecommendationService {
       return entry;
     });
 
-    const finalEntries = diversified
-      .sort((left, right) => Number(right.meta?.buyScore || 0) - Number(left.meta?.buyScore || 0))
-      .slice(0, MAX_RESULTS);
+    const allEntries = diversified
+      .sort((left, right) => Number(right.meta?.buyScore || 0) - Number(left.meta?.buyScore || 0));
+    const finalEntries = allEntries.slice(0, MAX_RESULTS);
 
     const hasActiveFilter = Boolean(genreFilter || maxPrice);
 
     return {
       enabled,
       entries: finalEntries,
+      allEntries,
       candidateCount: candidates.length,
       availableGenres,
       appliedFilters: { genre: genreFilter, maxPrice },

@@ -194,6 +194,7 @@ function Home({
   const [buyRecommendations, setBuyRecommendations] = useState(null);
   const [buyRecommendationsLoading, setBuyRecommendationsLoading] = useState(false);
   const [surpriseShelfIndex, setSurpriseShelfIndex] = useState(null);
+  const [surpriseCycling, setSurpriseCycling] = useState(false);
 
   const recentGames = useMemo(() => {
     return library
@@ -426,12 +427,6 @@ function Home({
   const launchFavoriteShelf = () => {
     onLaunchGame(favoriteShelfGame);
   };
-
-  const launchSurpriseShelf = useCallback(() => {
-    const entries = buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
-    if (entries.length === 0) return;
-    setSurpriseShelfIndex(Math.floor(Math.random() * entries.length));
-  }, [buyRecommendations]);
 
   const handleSurpriseSearch = () => {
     clearResults();
@@ -1175,41 +1170,16 @@ function Home({
     return buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
   }, [buyRecommendations]);
 
-  const getDailyBuyIndex = useCallback((count) => {
-    if (count <= 0) return 0;
-    const daySeed = new Date().toISOString().slice(0, 10);
-    const seedNumber = Array.from(daySeed).reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
-    return Math.abs(seedNumber) % count;
-  }, []);
-
-  const [buyShelfIndex, setBuyShelfIndex] = useState(() => getDailyBuyIndex(buyEntries.length));
-
-  useEffect(() => {
-    setBuyShelfIndex(getDailyBuyIndex(buyEntries.length));
-  }, [buyEntries.length, getDailyBuyIndex]);
-
-  const buyShelfEntry = useMemo(() => {
-    if (buyEntries.length === 0) return null;
-    const index = Math.max(0, Math.min(buyShelfIndex, buyEntries.length - 1));
-    return buyEntries[index] || null;
-  }, [buyEntries, buyShelfIndex]);
-
-  const handleNextBuy = useCallback(() => {
-    setBuyShelfIndex((prev) => (buyEntries.length > 0 ? (prev + 1) % buyEntries.length : 0));
-  }, [buyEntries.length]);
-
-  const handlePrevBuy = useCallback(() => {
-    setBuyShelfIndex((prev) => (buyEntries.length > 0 ? (prev - 1 + buyEntries.length) % buyEntries.length : 0));
-  }, [buyEntries.length]);
-
-  // Random wishlist pick for the "Surprise me" shelf.
+  // Random wishlist pick for the "Surprise me" shelf, drawn from all wishlist entries.
+  const surpriseShelfEntries = React.useMemo(() => {
+    return buyRecommendations?.enabled ? (buyRecommendations.allEntries || []) : [];
+  }, [buyRecommendations]);
   const surpriseShelfEntry = React.useMemo(() => {
-    const entries = buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
-    if (entries.length === 0) return null;
-    if (entries.length === 1) return entries[0];
-    const index = surpriseShelfIndex !== null ? Math.max(0, Math.min(surpriseShelfIndex, entries.length - 1)) : Math.floor(Math.random() * entries.length);
-    return entries[index] || null;
-  }, [buyRecommendations, surpriseShelfIndex]);
+    if (surpriseShelfEntries.length === 0) return null;
+    if (surpriseShelfEntries.length === 1) return surpriseShelfEntries[0];
+    const index = surpriseShelfIndex !== null ? Math.max(0, Math.min(surpriseShelfIndex, surpriseShelfEntries.length - 1)) : Math.floor(Math.random() * surpriseShelfEntries.length);
+    return surpriseShelfEntries[index] || null;
+  }, [surpriseShelfEntries, surpriseShelfIndex]);
   const surpriseShelfGame = surpriseShelfEntry?.game || null;
   const surpriseShelfArtwork = React.useMemo(() => {
     if (!surpriseShelfEntry) return null;
@@ -1234,6 +1204,25 @@ function Home({
       : `https://store.steampowered.com/search/?term=${encodeURIComponent(surpriseShelfGame?.name || '')}`;
     window.open(steamUrl, '_blank', 'noopener,noreferrer');
   }, [surpriseShelfEntry, surpriseShelfGame]);
+
+  const launchSurpriseShelf = useCallback(() => {
+    if (surpriseShelfEntries.length === 0) return;
+    if (surpriseShelfEntries.length === 1) {
+      setSurpriseShelfIndex(0);
+      return;
+    }
+    setSurpriseCycling(true);
+    let steps = 0;
+    const maxSteps = 10;
+    const interval = setInterval(() => {
+      setSurpriseShelfIndex(Math.floor(Math.random() * surpriseShelfEntries.length));
+      steps += 1;
+      if (steps >= maxSteps) {
+        clearInterval(interval);
+        setSurpriseCycling(false);
+      }
+    }, 80);
+  }, [surpriseShelfEntries]);
 
   return (
     <div
@@ -1359,6 +1348,7 @@ function Home({
               surpriseShelfEntry={surpriseShelfEntry}
               surpriseShelfArtwork={surpriseShelfArtwork}
               surpriseShelfPlaceholder={surpriseShelfPlaceholder}
+              surpriseCycling={surpriseCycling}
               platformIcons={platformIcons}
               onLaunchTonightPick={launchTonightPick}
               onLaunchContinuePlaying={launchContinuePlaying}
@@ -1370,11 +1360,7 @@ function Home({
               formatPlaytime={formatPlaytime}
               familiarityBias={homeFamiliarityBias}
               onFamiliarityChange={handleFamiliarityChange}
-              buyEntry={buyShelfEntry}
-              buyEntryIndex={buyShelfIndex}
-              buyEntryCount={buyEntries.length}
-              onBuyNext={handleNextBuy}
-              onBuyPrev={handlePrevBuy}
+              buyEntries={buyEntries}
               libraryStoryItems={libraryStoryItems}
               shouldShowLegacyContinueSection={shouldShowLegacyContinueSection}
               continuePlayingMessage={continuePlayingResult?.message}
@@ -1533,6 +1519,7 @@ function Home({
               surpriseShelfEntry={surpriseShelfEntry}
               surpriseShelfArtwork={surpriseShelfArtwork}
               surpriseShelfPlaceholder={surpriseShelfPlaceholder}
+              surpriseCycling={surpriseCycling}
               platformIcons={platformIcons}
               onLaunchTonightPick={launchTonightPick}
               onLaunchContinuePlaying={launchContinuePlaying}
@@ -1544,11 +1531,7 @@ function Home({
               formatPlaytime={formatPlaytime}
               familiarityBias={homeFamiliarityBias}
               onFamiliarityChange={handleFamiliarityChange}
-              buyEntry={buyShelfEntry}
-              buyEntryIndex={buyShelfIndex}
-              buyEntryCount={buyEntries.length}
-              onBuyNext={handleNextBuy}
-              onBuyPrev={handlePrevBuy}
+              buyEntries={buyEntries}
             />
           </HomeSection>
 
