@@ -1369,7 +1369,11 @@ export function HomeGuidedContent({
   formatPlaytime,
   familiarityBias,
   onFamiliarityChange,
-  buyEntries,
+  buyEntry,
+  buyEntryIndex,
+  buyEntryCount,
+  onBuyNext,
+  onBuyPrev,
   libraryStoryItems,
   shouldShowLegacyContinueSection,
   continuePlayingMessage,
@@ -1433,7 +1437,11 @@ export function HomeGuidedContent({
               formatPlaytime={formatPlaytime}
               familiarityBias={familiarityBias}
               onFamiliarityChange={onFamiliarityChange}
-              buyEntries={buyEntries}
+              buyEntry={buyEntry}
+              buyEntryIndex={buyEntryIndex}
+              buyEntryCount={buyEntryCount}
+              onBuyNext={onBuyNext}
+              onBuyPrev={onBuyPrev}
             />
 
             <LibraryStoryCard items={libraryStoryItems} />
@@ -1518,7 +1526,11 @@ export function LibraryTodaySection({
   formatPlaytime,
   familiarityBias,
   onFamiliarityChange,
-  buyEntries
+  buyEntry,
+  buyEntryIndex,
+  buyEntryCount,
+  onBuyNext,
+  onBuyPrev
 }) {
   if (!homeShelfCards) {
     return (
@@ -1650,16 +1662,17 @@ export function LibraryTodaySection({
               </div>
             </CuratedShelfCard>
           )}
-          {Array.isArray(buyEntries) && buyEntries.slice(0, 3).map((entry, index) => (
+          {buyEntry && (
             <BuyShelfCard
-              key={entry?.game?.appid || entry?.game?.name || `buy-${index}`}
-              entry={entry}
+              entry={buyEntry}
               platformIcons={platformIcons}
-              index={index}
-              count={1}
-              title={index === 0 ? 'Buy this next' : `Buy this next #${index + 1}`}
+              index={buyEntryIndex}
+              count={buyEntryCount}
+              onNext={onBuyNext}
+              onPrev={onBuyPrev}
+              title="Buy this next"
             />
-          ))}
+          )}
           {surpriseShelfGame && (
             <CuratedShelfCard
               title="Surprise me"

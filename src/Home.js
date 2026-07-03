@@ -1170,6 +1170,32 @@ function Home({
     return buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
   }, [buyRecommendations]);
 
+  const [buyShelfIndex, setBuyShelfIndex] = useState(() => {
+    const count = buyEntries.length;
+    if (count <= 0) return 0;
+    const daySeed = new Date().toISOString().slice(0, 10);
+    const seedNumber = Array.from(daySeed).reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
+    return Math.abs(seedNumber) % count;
+  });
+
+  useEffect(() => {
+    const count = buyEntries.length;
+    setBuyShelfIndex((prev) => (count > 0 ? Math.min(prev, count - 1) : 0));
+  }, [buyEntries.length]);
+
+  const buyShelfEntry = useMemo(() => {
+    if (buyEntries.length === 0) return null;
+    return buyEntries[Math.max(0, Math.min(buyShelfIndex, buyEntries.length - 1))] || null;
+  }, [buyEntries, buyShelfIndex]);
+
+  const handleNextBuy = useCallback(() => {
+    setBuyShelfIndex((prev) => (buyEntries.length > 0 ? (prev + 1) % buyEntries.length : 0));
+  }, [buyEntries.length]);
+
+  const handlePrevBuy = useCallback(() => {
+    setBuyShelfIndex((prev) => (buyEntries.length > 0 ? (prev - 1 + buyEntries.length) % buyEntries.length : 0));
+  }, [buyEntries.length]);
+
   // Random wishlist pick for the "Surprise me" shelf, drawn from all wishlist entries.
   const surpriseShelfEntries = React.useMemo(() => {
     return buyRecommendations?.enabled ? (buyRecommendations.allEntries || []) : [];
@@ -1360,7 +1386,11 @@ function Home({
               formatPlaytime={formatPlaytime}
               familiarityBias={homeFamiliarityBias}
               onFamiliarityChange={handleFamiliarityChange}
-              buyEntries={buyEntries}
+              buyEntry={buyShelfEntry}
+              buyEntryIndex={buyShelfIndex}
+              buyEntryCount={buyEntries.length}
+              onBuyNext={handleNextBuy}
+              onBuyPrev={handlePrevBuy}
               libraryStoryItems={libraryStoryItems}
               shouldShowLegacyContinueSection={shouldShowLegacyContinueSection}
               continuePlayingMessage={continuePlayingResult?.message}
@@ -1531,7 +1561,11 @@ function Home({
               formatPlaytime={formatPlaytime}
               familiarityBias={homeFamiliarityBias}
               onFamiliarityChange={handleFamiliarityChange}
-              buyEntries={buyEntries}
+              buyEntry={buyShelfEntry}
+              buyEntryIndex={buyShelfIndex}
+              buyEntryCount={buyEntries.length}
+              onBuyNext={handleNextBuy}
+              onBuyPrev={handlePrevBuy}
             />
           </HomeSection>
 
