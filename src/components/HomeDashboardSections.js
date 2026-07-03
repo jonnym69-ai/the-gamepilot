@@ -1361,6 +1361,7 @@ export function HomeGuidedContent({
   onLaunchRediscover,
   onLaunchFavorite,
   onLaunchSurpriseShelf,
+  onViewSurpriseShelfStore,
   formatLastPlayed,
   formatPlaytime,
   familiarityBias,
@@ -1427,6 +1428,7 @@ export function HomeGuidedContent({
               onLaunchRediscover={onLaunchRediscover}
               onLaunchFavorite={onLaunchFavorite}
               onLaunchSurpriseShelf={onLaunchSurpriseShelf}
+              onViewSurpriseShelfStore={onViewSurpriseShelfStore}
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
               familiarityBias={familiarityBias}
@@ -1514,6 +1516,7 @@ export function LibraryTodaySection({
   onLaunchRediscover,
   onLaunchFavorite,
   onLaunchSurpriseShelf,
+  onViewSurpriseShelfStore,
   formatLastPlayed,
   formatPlaytime,
   familiarityBias,
@@ -1674,9 +1677,17 @@ export function LibraryTodaySection({
               placeholder={surpriseShelfPlaceholder}
               platformIcons={platformIcons}
               onLaunch={onLaunchSurpriseShelf}
-              actionLabel="🛒 View on Steam"
+              actionLabel="🎲 Surprise me"
               formatPlaytime={formatPlaytime}
-            />
+            >
+              {onViewSurpriseShelfStore && (
+                <div className="game-actions" style={{ marginTop: '8px', marginBottom: '8px' }}>
+                  <button onClick={onViewSurpriseShelfStore} className="game-launch-button secondary">
+                    🛒 View on Steam
+                  </button>
+                </div>
+              )}
+            </CuratedShelfCard>
           )}
         </div>
       </div>

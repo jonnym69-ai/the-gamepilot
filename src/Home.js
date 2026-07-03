@@ -193,6 +193,7 @@ function Home({
   const [wishlistVersion, setWishlistVersion] = useState(0);
   const [buyRecommendations, setBuyRecommendations] = useState(null);
   const [buyRecommendationsLoading, setBuyRecommendationsLoading] = useState(false);
+  const [surpriseShelfIndex, setSurpriseShelfIndex] = useState(null);
 
   const recentGames = useMemo(() => {
     return library
@@ -426,14 +427,11 @@ function Home({
     onLaunchGame(favoriteShelfGame);
   };
 
-  const launchSurpriseShelf = () => {
-    const item = surpriseShelfEntry?.meta?.wishlistItem || {};
-    const steamAppId = item.steamAppID || surpriseShelfGame?.appid || null;
-    const steamUrl = steamAppId
-      ? `https://store.steampowered.com/app/${steamAppId}`
-      : `https://store.steampowered.com/search/?term=${encodeURIComponent(surpriseShelfGame?.name || '')}`;
-    window.open(steamUrl, '_blank', 'noopener,noreferrer');
-  };
+  const launchSurpriseShelf = useCallback(() => {
+    const entries = buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
+    if (entries.length === 0) return;
+    setSurpriseShelfIndex(Math.floor(Math.random() * entries.length));
+  }, [buyRecommendations]);
 
   const handleSurpriseSearch = () => {
     clearResults();
@@ -1204,25 +1202,38 @@ function Home({
     setBuyShelfIndex((prev) => (buyEntries.length > 0 ? (prev - 1 + buyEntries.length) % buyEntries.length : 0));
   }, [buyEntries.length]);
 
-  // Random wishlist pick for the "Surprise me" shelf, avoiding the game
-  // currently shown in the Buy This Next shelf.
+  // Random wishlist pick for the "Surprise me" shelf.
   const surpriseShelfEntry = React.useMemo(() => {
     const entries = buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
     if (entries.length === 0) return null;
     if (entries.length === 1) return entries[0];
-
-    const currentBuyKey = getHomeShelfGameKey(buyShelfEntry?.game);
-    const candidates = entries.filter((entry) => getHomeShelfGameKey(entry?.game) !== currentBuyKey);
-    const pool = candidates.length > 0 ? candidates : entries;
-
-    const daySeed = new Date().toISOString().slice(0, 10);
-    const seedNumber = Array.from(daySeed).reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
-    const pickIndex = Math.abs(seedNumber) % pool.length;
-    return pool[pickIndex] || null;
-  }, [buyRecommendations, buyShelfEntry, getHomeShelfGameKey]);
+    const index = surpriseShelfIndex !== null ? Math.max(0, Math.min(surpriseShelfIndex, entries.length - 1)) : Math.floor(Math.random() * entries.length);
+    return entries[index] || null;
+  }, [buyRecommendations, surpriseShelfIndex]);
   const surpriseShelfGame = surpriseShelfEntry?.game || null;
-  const surpriseShelfArtwork = surpriseShelfGame ? resolveGameArtwork(surpriseShelfGame, { surface: 'recommendation_card' }) : null;
+  const surpriseShelfArtwork = React.useMemo(() => {
+    if (!surpriseShelfEntry) return null;
+    const game = surpriseShelfGame;
+    const item = surpriseShelfEntry?.meta?.wishlistItem || {};
+    const steamAppId = item.steamAppID || game?.appid || game?.app_id || game?.steamAppId || null;
+    if (steamAppId) {
+      return `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/header.jpg`;
+    }
+    if (item.thumb && /^https?:\/\//i.test(item.thumb)) {
+      return item.thumb;
+    }
+    return resolveGameArtwork(game, { surface: 'recommendation_card' });
+  }, [surpriseShelfEntry, surpriseShelfGame]);
   const surpriseShelfPlaceholder = surpriseShelfGame ? getGameArtworkPlaceholder({ game: surpriseShelfGame, surface: 'recommendation_card' }) : null;
+
+  const openSurpriseShelfOnSteam = useCallback(() => {
+    const item = surpriseShelfEntry?.meta?.wishlistItem || {};
+    const steamAppId = item.steamAppID || surpriseShelfGame?.appid || null;
+    const steamUrl = steamAppId
+      ? `https://store.steampowered.com/app/${steamAppId}`
+      : `https://store.steampowered.com/search/?term=${encodeURIComponent(surpriseShelfGame?.name || '')}`;
+    window.open(steamUrl, '_blank', 'noopener,noreferrer');
+  }, [surpriseShelfEntry, surpriseShelfGame]);
 
   return (
     <div
@@ -1354,6 +1365,7 @@ function Home({
               onLaunchRediscover={launchRediscoverShelf}
               onLaunchFavorite={launchFavoriteShelf}
               onLaunchSurpriseShelf={launchSurpriseShelf}
+              onViewSurpriseShelfStore={openSurpriseShelfOnSteam}
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
               familiarityBias={homeFamiliarityBias}
@@ -1527,6 +1539,7 @@ function Home({
               onLaunchRediscover={launchRediscoverShelf}
               onLaunchFavorite={launchFavoriteShelf}
               onLaunchSurpriseShelf={launchSurpriseShelf}
+              onViewSurpriseShelfStore={openSurpriseShelfOnSteam}
               formatLastPlayed={formatLastPlayed}
               formatPlaytime={formatPlaytime}
               familiarityBias={homeFamiliarityBias}
