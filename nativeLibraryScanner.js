@@ -71,6 +71,34 @@ if (typeof getSteamPlaytimeMap !== 'function') {
   getSteamPlaytimeMap = () => ({});
 }
 
+// GOG Galaxy playtime reader (galaxy-2.0.db) - shared util, dev/prod paths.
+let getGogGalaxyPlaytimeMap;
+let applyGogGalaxyPlaytime;
+const GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES = [
+  path.join(__dirname, 'src', 'services', 'scanner', 'scannerUtils'),
+  path.join(__dirname, 'scannerUtils'),
+  './src/services/scanner/scannerUtils',
+  './scannerUtils'
+];
+
+for (const candidate of GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES) {
+  try {
+    ({ getGogGalaxyPlaytimeMap, applyGogGalaxyPlaytime } = require(candidate));
+    if (typeof getGogGalaxyPlaytimeMap === 'function' && typeof applyGogGalaxyPlaytime === 'function') {
+      console.log('[Scanner] GOG Galaxy playtime reader loaded from:', candidate);
+      break;
+    }
+  } catch (error) {
+    console.warn('[Scanner] Could not load GOG Galaxy playtime reader from', candidate, '-', error.message);
+  }
+}
+
+if (typeof getGogGalaxyPlaytimeMap !== 'function') {
+  console.warn('[Scanner] GOG Galaxy playtime reader unavailable. Install GOG Galaxy and connect platforms to import historical playtime.');
+  getGogGalaxyPlaytimeMap = async () => ({});
+  applyGogGalaxyPlaytime = (games) => games;
+}
+
 // Import genre database for game classification
 // Handle both development and production paths
 let getGameGenres;
@@ -1825,7 +1853,7 @@ const safeRunPlatformScanner = (label, scanner) => {
   }
 };
 
-const scanAllLibraries = () => {
+const scanAllLibraries = async () => {
   scannerDebug('[Scanner] Starting scanAllLibraries...');
 
   scannerDebug('[Scanner] Testing getGameGenres function...');
@@ -1983,7 +2011,19 @@ const scanAllLibraries = () => {
   // Then dedupe within same platform
   const deduped = dedupeGames(crossPlatformFiltered);
   scannerDebug('[Scanner] Total games after dedupe:', deduped.length);
-  
+
+  // Apply GOG Galaxy playtime for any platforms the user has connected in GOG Galaxy
+  try {
+    const gogPlaytimeMap = await getGogGalaxyPlaytimeMap();
+    const enriched = applyGogGalaxyPlaytime(deduped, gogPlaytimeMap);
+    const gogEnrichedCount = enriched.filter((g) => g.playtimeSource === 'gog-galaxy').length;
+    if (gogEnrichedCount > 0) {
+      console.log(`[Scanner] GOG Galaxy playtime applied to ${gogEnrichedCount} games`);
+    }
+  } catch (error) {
+    console.warn('[Scanner] GOG Galaxy playtime enrichment failed:', error.message);
+  }
+
   // Store debug info globally so we can access it from renderer
   const platformStatus = buildPlatformStatusMap(platformEntries);
   const successfulPlatformCount = Object.values(platformStatus).filter((entry) => entry.scanStatus === 'found').length;

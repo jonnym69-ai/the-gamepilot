@@ -495,6 +495,189 @@ const getSteamPlaytimeMap = (steamAppsPaths = []) => {
   return playtimeMap;
 };
 
+const getGogGalaxyInstallPaths = () => {
+  const paths = [];
+  getActiveDrives().forEach((drive) => {
+    addUniquePath(paths, `${drive}:\\ProgramData\\GOG.com\\Galaxy\\storage\\galaxy-2.0.db`);
+    addUniquePath(paths, `${drive}:\\ProgramData\\GOG.com\\Galaxy\\storage\\galaxy-2.0.db-wal`);
+  });
+  // Prefer the main DB file (not WAL)
+  return paths.filter((p) => p.endsWith('.db'));
+};
+
+let sqlJsPromise = null;
+const getSqlJs = () => {
+  if (!sqlJsPromise) {
+    sqlJsPromise = new Promise((resolve, reject) => {
+      try {
+        const initSqlJs = require('sql.js');
+        initSqlJs().then(resolve).catch(reject);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  return sqlJsPromise;
+};
+
+const queryAllRows = (db, sql) => {
+  try {
+    const result = db.exec(sql);
+    if (!result || !result[0] || !result[0].values) return [];
+    const columns = result[0].columns;
+    return result[0].values.map((row) => {
+      const obj = {};
+      columns.forEach((col, index) => {
+        obj[col] = row[index];
+      });
+      return obj;
+    });
+  } catch (error) {
+    scannerDebug('[Scanner] GOG Galaxy query failed:', sql, error.message);
+    return [];
+  }
+};
+
+const getGamePieceTypeId = (db, typeName) => {
+  const rows = queryAllRows(
+    db,
+    `SELECT id FROM GamePieceTypes WHERE type = '${typeName}' LIMIT 1`
+  );
+  return rows[0]?.id || null;
+};
+
+const getGogGalaxyPlaytimeMap = async () => {
+  const dbPaths = getGogGalaxyInstallPaths();
+  if (dbPaths.length === 0) return {};
+
+  let SQL;
+  try {
+    SQL = await getSqlJs();
+  } catch (error) {
+    scannerDebug('[Scanner] sql.js not available for GOG Galaxy playtime:', error.message);
+    return {};
+  }
+
+  const playtimeMap = {};
+
+  for (const dbPath of dbPaths) {
+    try {
+      const fileBuffer = fs.readFileSync(dbPath);
+      const db = new SQL.Database(fileBuffer);
+
+      const titleTypeId = getGamePieceTypeId(db, 'title');
+      const titleRows = titleTypeId
+        ? queryAllRows(
+            db,
+            `SELECT releaseKey, value AS title FROM GamePieces WHERE gamePieceTypeId = ${titleTypeId}`
+          )
+        : [];
+      const titleByReleaseKey = {};
+      titleRows.forEach((row) => {
+        if (row.releaseKey && row.title) {
+          titleByReleaseKey[row.releaseKey] = String(row.title);
+        }
+      });
+
+      const timeRows = queryAllRows(
+        db,
+        'SELECT releaseKey, minutesInGame FROM GAMETIMES'
+      );
+      timeRows.forEach((row) => {
+        if (!row.releaseKey || typeof row.minutesInGame !== 'number') return;
+        playtimeMap[row.releaseKey] = {
+          minutes: row.minutesInGame,
+          title: titleByReleaseKey[row.releaseKey] || null,
+          lastPlayedMs: null
+        };
+      });
+
+      const lastPlayedRows = queryAllRows(
+        db,
+        'SELECT gameReleaseKey AS releaseKey, lastPlayedDate FROM LASTPLAYEDDATES'
+      );
+      lastPlayedRows.forEach((row) => {
+        if (!row.releaseKey || !playtimeMap[row.releaseKey]) return;
+        const lastPlayedSeconds = Number(row.lastPlayedDate) || 0;
+        if (lastPlayedSeconds > 0) {
+          playtimeMap[row.releaseKey].lastPlayedMs = lastPlayedSeconds * 1000;
+        }
+      });
+
+      db.close();
+      scannerDebug('[Scanner] GOG Galaxy playtime loaded from:', dbPath, Object.keys(playtimeMap).length, 'entries');
+      break;
+    } catch (error) {
+      scannerDebug('[Scanner] Failed to read GOG Galaxy database:', dbPath, error.message);
+    }
+  }
+
+  return playtimeMap;
+};
+
+const normalizeGameNameForMatch = (name) =>
+  String(name || '')
+    .toLowerCase()
+    .replace(/[\s\-_:.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9 ]/g, '')
+    .trim();
+
+const applyGogGalaxyPlaytime = (games, gogMap) => {
+  if (!Array.isArray(games) || !gogMap || Object.keys(gogMap).length === 0) {
+    return games;
+  }
+
+  const nameIndex = new Map();
+  games.forEach((game) => {
+    if (!game || !game.name) return;
+    const normalized = normalizeGameNameForMatch(game.name);
+    if (!normalized) return;
+    if (!nameIndex.has(normalized)) {
+      nameIndex.set(normalized, game);
+    }
+  });
+
+  const appIdIndex = new Map();
+  games.forEach((game) => {
+    if (!game || !game.appid) return;
+    appIdIndex.set(String(game.appid), game);
+  });
+
+  Object.entries(gogMap).forEach(([releaseKey, data]) => {
+    const [prefix, rawId] = releaseKey.split('_');
+    let targetGame = null;
+
+    if (prefix === 'steam' && rawId) {
+      targetGame = appIdIndex.get(rawId);
+    }
+
+    if (!targetGame && data.title) {
+      targetGame = nameIndex.get(normalizeGameNameForMatch(data.title));
+    }
+
+    if (!targetGame) return;
+
+    const gogMinutes = Number(data.minutes) || 0;
+    if (gogMinutes <= 0) return;
+
+    const currentMinutes = Number(targetGame.time_played) || 0;
+    if (gogMinutes > currentMinutes) {
+      targetGame.time_played = gogMinutes;
+      targetGame.playtime = targetGame.playtime || {};
+      targetGame.playtime.total = gogMinutes;
+      targetGame.importedPlaytimeMinutes = gogMinutes;
+      targetGame.playtimeSource = 'gog-galaxy';
+    }
+
+    if (data.lastPlayedMs && data.lastPlayedMs > (targetGame.last_played || 0)) {
+      targetGame.last_played = data.lastPlayedMs;
+    }
+  });
+
+  return games;
+};
+
 const getActiveDrives = () => {
   const logicalDiskOutput = runCommand('powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType | ConvertTo-Json -Compress"');
   let activeDrives = [];
@@ -558,5 +741,7 @@ module.exports = {
   addGameIfUnique,
   getActiveDrives,
   parseVdf,
-  getSteamPlaytimeMap
+  getSteamPlaytimeMap,
+  getGogGalaxyPlaytimeMap,
+  applyGogGalaxyPlaytime
 };

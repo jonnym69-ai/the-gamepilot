@@ -661,7 +661,7 @@ ipcMain.handle('scan-game-libraries', async (_event, options = {}) => {
 
     console.log('[Electron] Starting game library scan...');
     const { scanAllLibraries } = require('./nativeLibraryScanner');
-    const games = scanAllLibraries();
+    const games = await scanAllLibraries();
     const debug = global.lastScanDebug || null;
     console.log(`[Electron] Scan complete: found ${games.length} games`);
     return { games, debug };
