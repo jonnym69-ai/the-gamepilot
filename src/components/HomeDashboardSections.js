@@ -236,13 +236,6 @@ export function BuyShelfCard({
       <div style={{ marginBottom: '12px' }}>
         <div className="buy-shelf-header">
           <span>{title}</span>
-          {hasCycle && (
-            <span className="buy-shelf-counter">
-              <button onClick={onPrev} className="buy-shelf-arrow" aria-label="Previous wishlist pick">‹</button>
-              <span>{index + 1} / {count}</span>
-              <button onClick={onNext} className="buy-shelf-arrow" aria-label="Next wishlist pick">›</button>
-            </span>
-          )}
         </div>
         <div style={{ fontSize: '0.95rem', opacity: 0.85 }}>
           The best value pick from your wishlist, matched to what you actually play.
@@ -267,6 +260,13 @@ export function BuyShelfCard({
           <span className="game-playtime">{price.priceFormatted || `$${price.price}`}</span>
         )}
       </div>
+      {hasCycle && (
+        <div className="buy-shelf-counter">
+          <button onClick={onPrev} className="buy-shelf-arrow" aria-label="Previous wishlist pick">‹</button>
+          <span className="buy-shelf-counter-text">{index + 1} / {count}</span>
+          <button onClick={onNext} className="buy-shelf-arrow" aria-label="Next wishlist pick">›</button>
+        </div>
+      )}
       <div className="game-actions">
         <a href={steamUrl} target="_blank" rel="noopener noreferrer" className="game-launch-button primary">
           🛒 View on Steam

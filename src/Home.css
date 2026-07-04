@@ -2709,13 +2709,21 @@ body.big-screen-mode .home-section-title.selected {
 }
 
 .buy-shelf-counter {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 10px;
   font-size: 0.75rem;
   text-transform: none;
   letter-spacing: 0;
   opacity: 0.9;
+  margin: 10px 0 6px;
+  width: 100%;
+}
+
+.buy-shelf-counter-text {
+  min-width: 2.2em;
+  text-align: center;
 }
 
 .buy-shelf-arrow {
