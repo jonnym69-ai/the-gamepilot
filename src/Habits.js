@@ -535,7 +535,7 @@ const Habits = ({ library = [] }) => {
         {/* Mood Log */}
         {moodLog.length > 0 && (
           <div className="habits-section">
-            <h2>Recent Sessions</h2>
+            <h2>Mood Log</h2>
             <div className="habits-mood-log">
               {moodLog.slice().reverse().map((entry, i) => (
                 <div key={i} className="habits-mood-entry">

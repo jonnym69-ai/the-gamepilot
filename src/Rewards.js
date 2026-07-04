@@ -4,8 +4,7 @@ import { useToast } from './components/Toast';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { PersonaService } from './services/PersonaService';
 import { SpecialEventsService } from './services/SpecialEventsService';
-import EntitlementService from './services/EntitlementService';
-import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper, ShoppingBag, Filter, Image as ImageIcon } from 'lucide-react';
+import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper } from 'lucide-react';
 import './Rewards.css';
 
 // Sample game card for preview
@@ -230,175 +229,116 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
   </div>
 );
 
-const UNLOCK_BENEFITS = {
-  gamepilot_pro: 'Everything is included free: Theme Builder, Layout Pack, Widget Pack, Power Tools, and Premium Themes.',
-  advanced_theme_builder: 'Use the Advanced Theme Builder with extra polish options and future builder upgrades.',
-  layout_pack: 'Premium layout and presentation packs for the Library and dashboard.',
-  widget_pack: 'Weekly retention quests and GamePilot Picks widgets on the Home dashboard.',
-  power_tools: 'Bulk Mode + Library Analytics + Recommendation Engine Tuner with tunable weights.',
-  premium_theme_pack: 'Premium theme drops and exclusive colour palettes.',
+// Combined Gaming Links Panel
+const GamingLinksPanel = ({ features, layouts, selectedFeatureId, selectedLayoutId, onSelectFeature, onSelectLayout }) => {
+  const totalUnlocked = features.filter((f) => f.unlocked).length + layouts.filter((l) => l.unlocked).length;
+  const total = features.length + layouts.length;
+  return (
+    <div className="rewards-panel">
+      <div className="rewards-panel-header">
+        <h2>Gaming Links</h2>
+        <p>Visual upgrades and layouts for your Gaming Links page. {totalUnlocked}/{total} unlocked.</p>
+      </div>
+      <div className="rewards-card-grid">
+        {features.map((feature) => (
+          <div
+            key={feature.id}
+            className={`rewards-card-item ${selectedFeatureId === feature.id ? 'active' : ''} ${!feature.unlocked ? 'locked' : ''}`}
+            onClick={() => feature.unlocked && onSelectFeature(feature.id)}
+          >
+            <div
+              className="reward-animation-preview"
+              style={{
+                position: 'relative',
+                overflow: 'hidden',
+                padding: '28px 20px',
+                textAlign: 'center',
+                borderRadius: feature.id === '3d_transforms' ? '18px' : '12px',
+                border: selectedFeatureId === feature.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                background: feature.accentColor
+                  ? `linear-gradient(135deg, ${feature.accentColor}33, rgba(15, 23, 42, 0.42))`
+                  : 'linear-gradient(135deg, rgba(255, 107, 53, 0.16), rgba(15, 23, 42, 0.34))',
+                boxShadow: feature.id === 'neon_glow' ? `0 0 22px ${feature.accentColor || '#3dd9ff'}55` : undefined,
+                transform: feature.id === '3d_transforms' ? 'perspective(600px) rotateX(4deg) rotateY(-5deg)' : undefined
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+                <Link2 size={24} />
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px' }}>{feature.name}</div>
+              <div className="reward-recommendation-tags" style={{ justifyContent: 'center' }}>
+                {(feature.features || []).slice(0, 3).map((tag) => (
+                  <span key={tag}>{tag.replaceAll('-', ' ')}</span>
+                ))}
+              </div>
+              {selectedFeatureId === feature.id && (
+                <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                  <Check size={14} />
+                </div>
+              )}
+              {!feature.unlocked && (
+                <div className="reward-locked-overlay">
+                  <div className="reward-lock-icon">🔒</div>
+                  <span>Unlocks at {feature.requiredXP?.toLocaleString()} XP</span>
+                </div>
+              )}
+            </div>
+            <div className="rewards-card-info">
+              <h3>{feature.name}</h3>
+              <p>{feature.description}</p>
+            </div>
+          </div>
+        ))}
+        {layouts.map((layout) => (
+          <div
+            key={layout.id}
+            className={`rewards-card-item ${selectedLayoutId === layout.id ? 'active' : ''} ${!layout.unlocked ? 'locked' : ''}`}
+            onClick={() => layout.unlocked && onSelectLayout(layout.id)}
+          >
+            <div
+              className="reward-library-preview"
+              style={{
+                position: 'relative',
+                overflow: 'hidden',
+                padding: '30px 20px',
+                textAlign: 'center',
+                borderRadius: '12px',
+                border: selectedLayoutId === layout.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                background: layout.preview
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                <Link2 size={18} />
+                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{layout.name}</span>
+              </div>
+              <div className="reward-library-grid">
+                <div className="reward-library-card" />
+                <div className="reward-library-card" />
+                <div className="reward-library-card" />
+                <div className="reward-library-card" />
+              </div>
+              {selectedLayoutId === layout.id && (
+                <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                  <Check size={14} />
+                </div>
+              )}
+              {!layout.unlocked && (
+                <div className="reward-locked-overlay">
+                  <div className="reward-lock-icon">🔒</div>
+                  <span>Unlocks at {layout.requiredXP?.toLocaleString()} XP</span>
+                </div>
+              )}
+            </div>
+            <div className="rewards-card-info">
+              <h3>{layout.name}</h3>
+              <p>{layout.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
-
-// Feature Catalogue — everything is now free
-const PremiumUnlocksPanel = ({ catalog }) => (
-  <div className="rewards-panel">
-    <div className="rewards-panel-header">
-      <h2>Feature Catalogue</h2>
-      <p>Every feature pack is included for free. No unlocks, no purchases.</p>
-    </div>
-    <div className="rewards-card-grid">
-      {catalog.map((product) => (
-        <div
-          key={product.id}
-          className={`rewards-card-item ${product.unlocked ? 'unlocked' : 'locked'}`}
-        >
-          <div
-            className="reward-library-preview"
-            style={{
-              position: 'relative',
-              overflow: 'hidden',
-              padding: '30px 20px',
-              textAlign: 'center',
-              borderRadius: '12px',
-              border: product.unlocked ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
-              background: product.unlocked
-                ? 'linear-gradient(135deg, rgba(0,210,211,0.12), rgba(0,180,148,0.08))'
-                : 'var(--bg-secondary)'
-            }}
-          >
-            <ShoppingBag size={22} style={{ opacity: 0.7, marginBottom: '8px' }} />
-            <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{product.name}</div>
-            <div style={{ fontSize: '0.8rem', opacity: 0.75, lineHeight: 1.3 }}>{product.description}</div>
-            <div style={{ fontSize: '0.75rem', opacity: 0.9, marginTop: '8px', padding: '6px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)' }}>
-              {UNLOCK_BENEFITS[product.id] || 'Permanent unlock.'}
-            </div>
-            <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
-              Included
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-// Gaming Links Layout Panel - earnable layouts/box styles for Gaming Links page
-const GamingLinksLayoutPanel = ({ layouts, selectedId, onSelect }) => (
-  <div className="rewards-panel">
-    <div className="rewards-panel-header">
-      <h2>Gaming Links Layouts</h2>
-      <p>Unlock new layouts and box shapes for your Gaming Links page.</p>
-    </div>
-    <div className="rewards-card-grid">
-      {layouts.map((layout) => (
-        <div
-          key={layout.id}
-          className={`rewards-card-item ${selectedId === layout.id ? 'active' : ''} ${!layout.unlocked ? 'locked' : ''}`}
-          onClick={() => layout.unlocked && onSelect(layout.id)}
-        >
-          <div
-            className="reward-library-preview"
-            style={{
-              position: 'relative',
-              overflow: 'hidden',
-              padding: '30px 20px',
-              textAlign: 'center',
-              borderRadius: '12px',
-              border: selectedId === layout.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
-              background: layout.preview
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-              <Link2 size={18} />
-              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{layout.name}</span>
-            </div>
-            <div className="reward-library-grid">
-              <div className="reward-library-card" />
-              <div className="reward-library-card" />
-              <div className="reward-library-card" />
-              <div className="reward-library-card" />
-            </div>
-            {selectedId === layout.id && (
-              <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                <Check size={14} />
-              </div>
-            )}
-            {!layout.unlocked && (
-              <div className="reward-locked-overlay">
-                <div className="reward-lock-icon">🔒</div>
-                <span>Unlocks at {layout.requiredXP?.toLocaleString()} XP</span>
-              </div>
-            )}
-          </div>
-          <div className="rewards-card-info">
-            <h3>{layout.name}</h3>
-            <p>{layout.description}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const GamingLinksFeaturesPanel = ({ features, selectedId, onSelect }) => (
-  <div className="rewards-panel">
-    <div className="rewards-panel-header">
-      <h2>Gaming Links Rewards</h2>
-      <p>Base and premium visual upgrades for your Gaming Links cards.</p>
-    </div>
-    <div className="rewards-card-grid">
-      {features.map((feature) => (
-        <div
-          key={feature.id}
-          className={`rewards-card-item ${selectedId === feature.id ? 'active' : ''} ${!feature.unlocked ? 'locked' : ''}`}
-          onClick={() => feature.unlocked && onSelect(feature.id)}
-        >
-          <div
-            className="reward-animation-preview"
-            style={{
-              position: 'relative',
-              overflow: 'hidden',
-              padding: '28px 20px',
-              textAlign: 'center',
-              borderRadius: feature.id === '3d_transforms' ? '18px' : '12px',
-              border: selectedId === feature.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
-              background: feature.accentColor
-                ? `linear-gradient(135deg, ${feature.accentColor}33, rgba(15, 23, 42, 0.42))`
-                : 'linear-gradient(135deg, rgba(255, 107, 53, 0.16), rgba(15, 23, 42, 0.34))',
-              boxShadow: feature.id === 'neon_glow' ? `0 0 22px ${feature.accentColor || '#3dd9ff'}55` : undefined,
-              transform: feature.id === '3d_transforms' ? 'perspective(600px) rotateX(4deg) rotateY(-5deg)' : undefined
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-              <Link2 size={24} />
-            </div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px' }}>{feature.name}</div>
-            <div className="reward-recommendation-tags" style={{ justifyContent: 'center' }}>
-              {(feature.features || []).slice(0, 3).map((tag) => (
-                <span key={tag}>{tag.replaceAll('-', ' ')}</span>
-              ))}
-            </div>
-            {selectedId === feature.id && (
-              <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                <Check size={14} />
-              </div>
-            )}
-            {!feature.unlocked && (
-              <div className="reward-locked-overlay">
-                <div className="reward-lock-icon">🔒</div>
-                <span>Unlocks at {feature.requiredXP?.toLocaleString()} XP</span>
-              </div>
-            )}
-          </div>
-          <div className="rewards-card-info">
-            <h3>{feature.name}</h3>
-            <p>{feature.description}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
 
 // Special Events Panel - upcoming/active time-based reward events
 const EVENT_ICON_MAP = {
@@ -696,114 +636,6 @@ const RecommendationPackPanel = ({ packs, selectedId, onSelect }) => (
   </div>
 );
 
-const ExportFiltersPanel = ({ filters, selectedId, onSelect }) => (
-  <div className="rewards-panel">
-    <div className="rewards-panel-header">
-      <h2>Export Filters</h2>
-      <p>Unlock smarter ways to export and share your library data.</p>
-    </div>
-    <div className="rewards-grid">
-      {filters.map((filter) => (
-        <div
-          key={filter.id}
-          className={`reward-card ${filter.id === selectedId ? 'selected' : ''} ${!filter.unlocked ? 'locked' : ''}`}
-          onClick={() => onSelect(filter.id)}
-        >
-          <div className="rewards-card-status">
-            {filter.unlocked ? (
-              <span className="rewards-unlocked-badge"><Check size={14} /> Unlocked</span>
-            ) : (
-              <div className="rewards-lock-info">
-                <span className="rewards-lock-icon">🔒</span>
-                <span>Unlocks at {filter.requiredXP?.toLocaleString()} XP</span>
-              </div>
-            )}
-          </div>
-          <div className="rewards-card-info">
-            <h3>{filter.name}</h3>
-            <p>{filter.description}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const RecapThemesPanel = ({ themes, selectedId, onSelect }) => (
-  <div className="rewards-panel">
-    <div className="rewards-panel-header">
-      <h2>Recap Themes</h2>
-      <p>Customize the look of your shareable library recap cards.</p>
-    </div>
-    <div className="rewards-card-grid">
-      {themes.map((theme) => {
-        const palette = theme.palette || {};
-        return (
-          <div
-            key={theme.id}
-            className={`rewards-card-item ${selectedId === theme.id ? 'active' : ''} ${!theme.unlocked ? 'locked' : ''}`}
-            onClick={() => theme.unlocked && onSelect(theme.id)}
-          >
-            <div
-              style={{
-                position: 'relative',
-                overflow: 'hidden',
-                padding: '30px 20px',
-                borderRadius: '12px',
-                border: selectedId === theme.id ? `2px solid ${palette.accent || 'var(--accent-primary)'}` : '1px solid var(--border-color)',
-                background: palette.background || 'linear-gradient(135deg, #0d1224, #111827)',
-                minHeight: '140px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '12px'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  background: palette.surface || 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${palette.surfaceBorder || 'rgba(255,255,255,0.1)'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <ImageIcon size={20} style={{ color: palette.accent || '#fff' }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: palette.text || '#fff' }}>{theme.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: palette.muted || '#94a3b8' }}>Recap Theme</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: palette.accent || '#fff' }} />
-                <span style={{ fontSize: '0.75rem', color: palette.muted || '#94a3b8' }}>Accent color</span>
-              </div>
-              {selectedId === theme.id && (
-                <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                  <Check size={14} />
-                </div>
-              )}
-              {!theme.unlocked && (
-                <div className="reward-locked-overlay">
-                  <div className="reward-lock-icon">🔒</div>
-                  <span>Unlocks at {theme.requiredXP?.toLocaleString()} XP</span>
-                </div>
-              )}
-            </div>
-            <div className="rewards-card-info">
-              <h3>{theme.name}</h3>
-              <p>{theme.description}</p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-);
-
 function Rewards() {
   const [activeSection, setActiveSection] = useState('cardStyles');
   const { success, error: toastError } = useToast();
@@ -816,9 +648,6 @@ function Rewards() {
   const [recommendationPacks, setRecommendationPacks] = useState(() => ProgressionUnlockService.getRecommendationPacks());
   const [gamingLinksFeatures, setGamingLinksFeatures] = useState(() => ProgressionUnlockService.getGamingLinksFeatures());
   const [gamingLinksLayouts, setGamingLinksLayouts] = useState(() => ProgressionUnlockService.getGamingLinksLayouts());
-  const [exportFilters, setExportFilters] = useState(() => ProgressionUnlockService.getExportFilters());
-  const [recapThemes, setRecapThemes] = useState(() => ProgressionUnlockService.getRecapThemes());
-  const [premiumCatalog, setPremiumCatalog] = useState(() => EntitlementService.getCatalog());
   const [personas, setPersonas] = useState(() => PersonaService.getPersonas());
   const [specialEvents, setSpecialEvents] = useState(() => SpecialEventsService.getUpcomingEvents());
   const [presentationCustomization, setPresentationCustomization] = useState(() => ProgressionUnlockService.getRewardPresentationCustomization());
@@ -852,9 +681,6 @@ function Rewards() {
     setRecommendationPacks(ProgressionUnlockService.getRecommendationPacks());
     setGamingLinksFeatures(ProgressionUnlockService.getGamingLinksFeatures());
     setGamingLinksLayouts(ProgressionUnlockService.getGamingLinksLayouts());
-    setExportFilters(ProgressionUnlockService.getExportFilters());
-    setRecapThemes(ProgressionUnlockService.getRecapThemes());
-    setPremiumCatalog(EntitlementService.getCatalog());
     setPersonas(PersonaService.getPersonas());
     setSpecialEvents(SpecialEventsService.getUpcomingEvents());
     setPresentationCustomization(ProgressionUnlockService.getRewardPresentationCustomization());
@@ -879,21 +705,9 @@ function Rewards() {
         current: recommendationPacks.filter(p => p.unlocked).length, 
         total: recommendationPacks.length 
       },
-      gamingLinksFeatures: {
-        current: gamingLinksFeatures.filter(f => f.unlocked).length,
-        total: gamingLinksFeatures.length
-      },
-      gamingLinksLayouts: {
-        current: gamingLinksLayouts.filter(l => l.unlocked).length,
-        total: gamingLinksLayouts.length
-      },
-      exportFilters: {
-        current: exportFilters.filter(f => f.unlocked).length,
-        total: exportFilters.length
-      },
-      recapThemes: {
-        current: recapThemes.filter(t => t.unlocked).length,
-        total: recapThemes.length
+      gamingLinks: {
+        current: gamingLinksFeatures.filter(f => f.unlocked).length + gamingLinksLayouts.filter(l => l.unlocked).length,
+        total: gamingLinksFeatures.length + gamingLinksLayouts.length
       },
       personas: {
         current: personas.filter(p => p.fullyUnlocked).length,
@@ -903,13 +717,9 @@ function Rewards() {
         current: specialEvents.filter(e => e.active).length,
         total: specialEvents.length
       },
-      logoAnimation: { current: availableAnims, total: logoAnimations.length },
-      premiumUnlocks: {
-        current: premiumCatalog.filter((p) => p.unlocked).length,
-        total: premiumCatalog.length
-      }
+      logoAnimation: { current: availableAnims, total: logoAnimations.length }
     };
-  }, [cardStyles, gamingLinksFeatures, gamingLinksLayouts, homeLayouts, libraryVariants, logoAnimations, personas, recommendationPacks, specialEvents, premiumCatalog, exportFilters, recapThemes]);
+  }, [cardStyles, gamingLinksFeatures, gamingLinksLayouts, homeLayouts, libraryVariants, logoAnimations, personas, recommendationPacks, specialEvents]);
 
   const handleSelectAnimation = useCallback((id) => {
     const result = ProgressionUnlockService.selectLogoAnimation(id);
@@ -981,26 +791,6 @@ function Rewards() {
     }
   }, [success, toastError, refreshPresentationRewards]);
 
-  const handleSelectExportFilter = useCallback((filterId) => {
-    const result = ProgressionUnlockService.selectExportFilterPreset(filterId);
-    if (result.success) {
-      success(result.message);
-      refreshPresentationRewards();
-    } else {
-      toastError(result.message);
-    }
-  }, [success, toastError, refreshPresentationRewards]);
-
-  const handleSelectRecapTheme = useCallback((themeId) => {
-    const result = ProgressionUnlockService.selectRecapTheme(themeId);
-    if (result.success) {
-      success(result.message);
-      refreshPresentationRewards();
-    } else {
-      toastError(result.message);
-    }
-  }, [success, toastError, refreshPresentationRewards]);
-
   const handleApplyPersona = useCallback((personaId) => {
     const result = PersonaService.applyPersona(personaId);
     if (result.success) {
@@ -1033,29 +823,14 @@ function Rewards() {
           selectedId={presentationCustomization?.selectedRecommendationPack}
           onSelect={handleSelectRecommendationPack}
         />;
-      case 'gamingLinksFeatures':
-        return <GamingLinksFeaturesPanel
+      case 'gamingLinks':
+        return <GamingLinksPanel
           features={gamingLinksFeatures}
-          selectedId={presentationCustomization?.selectedGamingLinksFeatures}
-          onSelect={handleSelectGamingLinksFeature}
-        />;
-      case 'gamingLinksLayouts':
-        return <GamingLinksLayoutPanel
           layouts={gamingLinksLayouts}
-          selectedId={presentationCustomization?.selectedGamingLinksLayout}
-          onSelect={handleSelectGamingLinksLayout}
-        />;
-      case 'exportFilters':
-        return <ExportFiltersPanel
-          filters={exportFilters}
-          selectedId={presentationCustomization?.selectedExportFilter || 'basic_export'}
-          onSelect={handleSelectExportFilter}
-        />;
-      case 'recapThemes':
-        return <RecapThemesPanel
-          themes={recapThemes}
-          selectedId={presentationCustomization?.selectedRecapTheme || 'nebula'}
-          onSelect={handleSelectRecapTheme}
+          selectedFeatureId={presentationCustomization?.selectedGamingLinksFeatures}
+          selectedLayoutId={presentationCustomization?.selectedGamingLinksLayout}
+          onSelectFeature={handleSelectGamingLinksFeature}
+          onSelectLayout={handleSelectGamingLinksLayout}
         />;
       case 'personas':
         return <PilotPersonasPanel personas={personas} onApply={handleApplyPersona} />;
@@ -1063,8 +838,6 @@ function Rewards() {
         return <SpecialEventsPanel events={specialEvents} />;
       case 'logoAnimation':
         return <LogoAnimationPanel animations={logoAnimations} selectedAnimation={resolvedSelectedAnimation} onSelect={handleSelectAnimation} />;
-      case 'premiumUnlocks':
-        return <PremiumUnlocksPanel catalog={premiumCatalog} />;
       default:
         return <CardStylesPanel styles={cardStyles} selectedCardStyle={resolvedSelectedCardStyle} onSelect={handleSelectCardStyle} />;
     }
@@ -1132,12 +905,8 @@ function Rewards() {
               { id: 'libraryView', label: 'Library View', icon: Library },
               { id: 'homeLayout', label: 'Home Layout', icon: LayoutGrid },
               { id: 'recommendationStyle', label: 'Recommendation Style', icon: Zap },
-              { id: 'gamingLinksFeatures', label: 'Gaming Links Rewards', icon: Link2 },
-              { id: 'gamingLinksLayouts', label: 'Gaming Links Layouts', icon: LayoutGrid },
-              { id: 'exportFilters', label: 'Export Filters', icon: Filter },
-              { id: 'recapThemes', label: 'Recap Themes', icon: ImageIcon },
-              { id: 'logoAnimation', label: 'Logo Animation', icon: PlayCircle },
-              { id: 'premiumUnlocks', label: 'Feature Catalogue', icon: ShoppingBag }
+              { id: 'gamingLinks', label: 'Gaming Links', icon: Link2 },
+              { id: 'logoAnimation', label: 'Logo Animation', icon: PlayCircle }
             ].map((section) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;

@@ -339,7 +339,7 @@ function LibraryIntelligence({ library = [], onLaunchGame }) {
             <BacklogShareCard
               backlogStats={backlogStats}
               backlogPriorities={backlogPriorities}
-              username="Pilot"
+              username={ProfileService.getCurrentUsername()}
             />
           </div>
         </div>
