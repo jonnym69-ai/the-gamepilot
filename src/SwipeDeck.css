@@ -77,6 +77,13 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.swipe-shortlist-toggle.active,
+.swipe-shortlist-toggle:hover {
+  background: rgba(255, 105, 180, 0.25);
+  border-color: rgba(255, 105, 180, 0.45);
 }
 
 /* Filter Card */
@@ -510,18 +517,70 @@
 .swipe-shortlist-panel {
   width: 100%;
   max-width: 720px;
-  margin-top: 24px;
+  margin-top: 16px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease, margin-top 0.35s ease;
 }
 
-.swipe-shortlist-panel h3 {
-  margin: 0 0 14px 0;
-  font-size: 1.1rem;
+.swipe-shortlist-panel.open {
+  max-height: 420px;
+  opacity: 1;
+  overflow-y: auto;
+}
+
+.swipe-shortlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.swipe-shortlist-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.swipe-shortlist-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-shortlist-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.swipe-shortlist-empty {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
 }
 
 .swipe-shortlist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 14px;
+}
+
+.swipe-finished-shortlist-wrapper .swipe-shortlist-panel {
+  max-height: none;
+  opacity: 1;
+  overflow: visible;
+  margin-top: 24px;
 }
 
 .swipe-shortlist-item {

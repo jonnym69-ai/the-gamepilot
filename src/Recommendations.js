@@ -8,8 +8,6 @@ import {
   RotateCcw,
   Compass,
   Heart,
-  Disc,
-  Clock,
   Target,
   Music,
   ListMusic,
@@ -38,7 +36,6 @@ function formatPlaytime(minutes) {
 }
 
 const PLAYLIST_KEY = 'recommendationsPlaylist';
-const WEEKLY_DISCOVERY_KEY = 'weeklyDiscoveryDate';
 
 function loadPlaylist() {
   return StorageService.get(PLAYLIST_KEY, []);
@@ -118,30 +115,6 @@ function getMoodColor(mood) {
   return map[mood] || '#6366f1';
 }
 
-function getTimeCapsule(library, identity) {
-  if (!library?.length) return null;
-
-  // Find games that were first played a long time ago but haven't been touched recently
-  const joinDate = identity?.joinDate ? new Date(identity.joinDate) : new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
-  const sixMonthsAgo = Date.now() - 180 * 24 * 60 * 60 * 1000;
-
-  const candidates = library.filter((game) => {
-    const lastPlayed = game.last_played ? new Date(game.last_played).getTime() : 0;
-    const added = game.date_added ? new Date(game.date_added).getTime() : joinDate.getTime();
-    // Added a while ago, played before, but not recently
-    return added < sixMonthsAgo && lastPlayed > 0 && lastPlayed < sixMonthsAgo;
-  });
-
-  if (candidates.length < 3) return null;
-
-  const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-  return {
-    title: 'Time Capsule',
-    subtitle: 'Games from your past waiting to be rediscovered',
-    games: shuffled.slice(0, 5)
-  };
-}
-
 function getRabbitHole(library, identity) {
   if (!library?.length) return null;
 
@@ -180,58 +153,6 @@ function getRabbitHole(library, identity) {
     subtitle: `Because you played ${seedGame.name}`,
     seedGame,
     games: similar.map((e) => e.game)
-  };
-}
-
-function getWeeklyDiscovery(library) {
-  if (!library?.length) return null;
-
-  // Check if we should refresh
-  const lastRefresh = StorageService.getString(WEEKLY_DISCOVERY_KEY);
-  const now = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-
-  let games;
-  const cached = StorageService.get('weeklyDiscoveryGames');
-  if (lastRefresh === now && cached?.length) {
-    games = cached;
-  } else {
-    // Unplayed or very low playtime games, sorted by interesting attributes
-    const candidates = library.filter((g) => !g.time_played || g.time_played < 30);
-    const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-    games = shuffled.slice(0, 5);
-    StorageService.set('weeklyDiscoveryGames', games);
-    StorageService.setString(WEEKLY_DISCOVERY_KEY, now);
-  }
-
-  if (!games?.length) return null;
-
-  return {
-    title: 'Weekly Discovery',
-    subtitle: 'Fresh picks refreshed every week',
-    games
-  };
-}
-
-function getOppositeAttraction(library, identity) {
-  if (!library?.length) return null;
-
-  const favoriteMood = identity?.identity?.favoriteMood;
-  const favoriteGenre = identity?.identity?.favoriteGenre;
-
-  const candidates = library.filter((game) => {
-    const genres = Array.isArray(game.genres) ? game.genres : [];
-    const moodDiff = favoriteMood && game.mood !== favoriteMood;
-    const genreDiff = favoriteGenre && !genres.includes(favoriteGenre);
-    return moodDiff || genreDiff;
-  });
-
-  if (candidates.length < 3) return null;
-
-  const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-  return {
-    title: 'Opposite Attraction',
-    subtitle: 'Break out of your comfort zone',
-    games: shuffled.slice(0, 5)
   };
 }
 
@@ -412,32 +333,11 @@ export default function Recommendations({ library, onLaunchGame }) {
       color: '#9b59b6'
     },
     {
-      id: 'time-capsule',
-      title: 'Time Capsule',
-      description: 'Blast from your gaming past',
-      icon: Clock,
-      color: '#e67e22'
-    },
-    {
       id: 'rabbit-hole',
       title: 'Rabbit Hole',
       description: 'If you liked this, you will love these',
       icon: Compass,
       color: '#1abc9c'
-    },
-    {
-      id: 'weekly-discovery',
-      title: 'Weekly Discovery',
-      description: 'Fresh rotation refreshed every Monday',
-      icon: Disc,
-      color: '#f39c12'
-    },
-    {
-      id: 'opposite-attraction',
-      title: 'Opposite Attraction',
-      description: 'Break out of your comfort zone',
-      icon: Shuffle,
-      color: '#2c3e50'
     },
     {
       id: 'session-playlist',
@@ -470,24 +370,9 @@ export default function Recommendations({ library, onLaunchGame }) {
     return getMoodMixes(library, identity);
   }, [activeStyle, library, identity]);
 
-  const timeCapsule = useMemo(() => {
-    if (activeStyle !== 'time-capsule') return null;
-    return getTimeCapsule(library, identity);
-  }, [activeStyle, library, identity]);
-
   const rabbitHole = useMemo(() => {
     if (activeStyle !== 'rabbit-hole') return null;
     return getRabbitHole(library, identity);
-  }, [activeStyle, library, identity]);
-
-  const weeklyDiscovery = useMemo(() => {
-    if (activeStyle !== 'weekly-discovery') return null;
-    return getWeeklyDiscovery(library);
-  }, [activeStyle, library]);
-
-  const oppositeAttraction = useMemo(() => {
-    if (activeStyle !== 'opposite-attraction') return null;
-    return getOppositeAttraction(library, identity);
   }, [activeStyle, library, identity]);
 
   const sessionCandidates = useMemo(() => {
@@ -757,61 +642,10 @@ export default function Recommendations({ library, onLaunchGame }) {
           </>
         )}
 
-        {activeStyle === 'time-capsule' && (
-          <>
-            {renderStyleHeader('Time Capsule', 'Blast from your gaming past')}
-            {!timeCapsule ? (
-              <div className="rec-empty">
-                <Clock size={48} />
-                <p>No nostalgic picks found yet. Keep playing!</p>
-              </div>
-            ) : (
-              <>
-                <p className="rec-payload-message">{timeCapsule.subtitle}</p>
-                {renderGameList(timeCapsule.games)}
-              </>
-            )}
-          </>
-        )}
-
         {activeStyle === 'rabbit-hole' && (
           <>
             {renderStyleHeader('Rabbit Hole', 'Start from one game, find more')}
             {renderRabbitHole()}
-          </>
-        )}
-
-        {activeStyle === 'weekly-discovery' && (
-          <>
-            {renderStyleHeader('Weekly Discovery', 'Fresh rotation this week')}
-            {!weeklyDiscovery ? (
-              <div className="rec-empty">
-                <Disc size={48} />
-                <p>No fresh picks this week.</p>
-              </div>
-            ) : (
-              <>
-                <p className="rec-payload-message">{weeklyDiscovery.subtitle}</p>
-                {renderGameList(weeklyDiscovery.games)}
-              </>
-            )}
-          </>
-        )}
-
-        {activeStyle === 'opposite-attraction' && (
-          <>
-            {renderStyleHeader('Opposite Attraction', 'Break out of your comfort zone')}
-            {!oppositeAttraction ? (
-              <div className="rec-empty">
-                <Shuffle size={48} />
-                <p>Your library is too focused. Add more variety!</p>
-              </div>
-            ) : (
-              <>
-                <p className="rec-payload-message">{oppositeAttraction.subtitle}</p>
-                {renderGameList(oppositeAttraction.games)}
-              </>
-            )}
           </>
         )}
 

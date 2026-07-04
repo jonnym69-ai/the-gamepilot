@@ -171,6 +171,7 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
   const [shortlist, setShortlist] = useState(() => loadShortlist());
   const [, setDismissedCount] = useState(0);
   const [swipeDir, setSwipeDir] = useState(null);
+  const [showShortlistDrawer, setShowShortlistDrawer] = useState(false);
   const cardRef = useRef(null);
   const startX = useRef(0);
   const currentX = useRef(0);
@@ -313,6 +314,52 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
   }, [onUpdateRating]);
 
   const whyText = currentGame ? getWhyThisText(currentGame, identity) : null;
+
+  const renderShortlistPanel = (forceOpen = false) => (
+    <div className={`swipe-shortlist-panel ${(showShortlistDrawer || forceOpen) ? 'open' : ''}`}>
+      <div className="swipe-shortlist-header">
+        <h3><Heart size={18} fill="currentColor" /> Your Shortlist ({shortlist.length})</h3>
+        <button
+          className="swipe-shortlist-close"
+          onClick={() => setShowShortlistDrawer(false)}
+          title="Close"
+        >
+          <X size={18} />
+        </button>
+      </div>
+      <div className="swipe-shortlist-grid">
+        {shortlist.length === 0 ? (
+          <p className="swipe-shortlist-empty">Swipe right on games to add them here.</p>
+        ) : (
+          shortlist.map((game) => (
+            <div key={game.appid || game.name} className="swipe-shortlist-item">
+              <div className="swipe-shortlist-artwork">
+                <LazyImage
+                  src={resolveGameArtwork(game, { surface: 'recommendation_card' })}
+                  alt={game.name}
+                  placeholder={getGameArtworkPlaceholder({ game, surface: 'recommendation_card' })}
+                />
+              </div>
+              <span className="swipe-shortlist-name">{game.name}</span>
+              <HalfStarRating
+                value={game.userRating || 0}
+                onChange={(rating) => handleRateGame(game, rating)}
+                size={16}
+              />
+              <div className="swipe-shortlist-actions">
+                <button onClick={() => onLaunchGame && onLaunchGame(game)} title="Launch">
+                  <Play size={14} />
+                </button>
+                <button onClick={() => removeFromShortlist(game)} title="Remove">
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 
   if (phase === 'filter') {
     return (
@@ -462,35 +509,8 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
         </div>
 
         {shortlist.length > 0 && (
-          <div className="swipe-shortlist-panel">
-            <h3>Your Shortlist</h3>
-            <div className="swipe-shortlist-grid">
-              {shortlist.map((game) => (
-                <div key={game.appid || game.name} className="swipe-shortlist-item">
-                  <div className="swipe-shortlist-artwork">
-                    <LazyImage
-                      src={resolveGameArtwork(game, { surface: 'recommendation_card' })}
-                      alt={game.name}
-                      placeholder={getGameArtworkPlaceholder({ game, surface: 'recommendation_card' })}
-                    />
-                  </div>
-                  <span className="swipe-shortlist-name">{game.name}</span>
-                  <HalfStarRating
-                    value={game.userRating || 0}
-                    onChange={(rating) => handleRateGame(game, rating)}
-                    size={16}
-                  />
-                  <div className="swipe-shortlist-actions">
-                    <button onClick={() => onLaunchGame && onLaunchGame(game)} title="Launch">
-                      <Play size={14} />
-                    </button>
-                    <button onClick={() => removeFromShortlist(game)} title="Remove">
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="swipe-finished-shortlist-wrapper">
+            {renderShortlistPanel(true)}
           </div>
         )}
       </div>
@@ -509,13 +529,15 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
           {currentIndex + 1} / {deck.length}
         </span>
         <button
-          className="swipe-shortlist-toggle"
-          onClick={() => { /* toggle shortlist drawer */ }}
+          className={`swipe-shortlist-toggle ${showShortlistDrawer ? 'active' : ''}`}
+          onClick={() => setShowShortlistDrawer((s) => !s)}
           title={`Shortlist (${shortlist.length})`}
         >
           <Heart size={18} /> {shortlist.length}
         </button>
       </div>
+
+      {showShortlistDrawer && renderShortlistPanel()}
 
       <div className="swipe-card-area">
         {currentGame && (
