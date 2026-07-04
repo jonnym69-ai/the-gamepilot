@@ -1462,7 +1462,10 @@ function Library({
         </div>
       )}
 
-      <div className="export-section">
+      <div className="library-control-panel">
+        <div className="library-control-panel-header">
+          <span className="library-control-panel-label">Library Control Panel</span>
+        </div>
         <div className="library-action-group">
           <select
             className="export-button library-share-period-select"
@@ -1509,7 +1512,6 @@ function Library({
             onShareToMessenger={handleShareToMessenger}
             onDownloadText={handleDownloadShareText}
             onNativeShare={handleNativeShareLibraryCard}
-            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod))}
           />
           <ShareMenu
             imageAvailable={library.length > 0}
@@ -1534,20 +1536,18 @@ function Library({
             </button>
           )}
           <button onClick={handleScanLibrary} className="export-button" disabled={loading}>
-            {loading ? '⏳ Scanning Library...' : '🔄 Scan Library'}
+            {loading ? '⏳ Scanning...' : '🔄 Scan'}
           </button>
-        </div>
-        <div className="library-action-group library-action-group-accent">
-          <button 
-            onClick={handlePickForMe} 
+          <button
+            onClick={handlePickForMe}
             className="export-button export-button-recommend"
             disabled={filteredAndSortedGames.length === 0}
             title="Smart recommendation from your filtered games"
           >
             <Sparkles size={16} /> Pick For Me
           </button>
-          <button 
-            onClick={handleFeelingLucky} 
+          <button
+            onClick={handleFeelingLucky}
             className="export-button export-button-lucky"
             disabled={filteredAndSortedGames.length === 0 || isLuckyAnimating}
             title="Random game from your library"
@@ -1558,7 +1558,7 @@ function Library({
             onClick={toggleBulkMode}
             className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
           >
-            {bulkMode ? 'Exit Bulk Mode' : 'Bulk Mode'}
+            {bulkMode ? 'Exit Bulk' : 'Bulk Mode'}
           </button>
           {bulkMode && (
             <div className="library-bulk-status" role="status" aria-live="polite">
@@ -1571,7 +1571,7 @@ function Library({
               onClick={bulkMarkCompleted}
               className="export-button"
             >
-              Mark {selectedGames.size} Completed
+              Mark {selectedGames.size} Done
             </button>
           )}
           {bulkMode && selectedGames.size > 0 && (
@@ -1593,7 +1593,6 @@ function Library({
           )}
         </div>
       </div>
-
       {/* Library Analytics Modal */}
       {showAnalytics && (
         <div className="library-analytics-overlay" onClick={() => setShowAnalytics(false)}>

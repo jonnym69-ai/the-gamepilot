@@ -1,37 +1,126 @@
 /* Library.css - Game Library Styles */
 
-/* Export Section */
-.export-section {
+/* Library Control Panel */
+.library-control-panel {
   display: flex;
-  gap: 14px;
-
+  flex-direction: column;
+  gap: 10px;
   margin: 0 20px 16px;
   padding: 14px;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.022));
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
 }
 
-.library-share-period-select {
-  appearance: auto;
+.library-control-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.library-control-panel-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.62));
+}
+
+.library-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.library-control-panel .export-button {
+  padding: 8px 14px;
+  min-height: 36px;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text, #f8fafc);
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.library-control-panel .export-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.library-control-panel .library-share-period-select {
+  min-width: 140px;
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text, #f8fafc);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  min-width: 150px;
 }
 
-.library-share-period-select:focus {
+.library-control-panel .library-share-period-select:focus {
   outline: 2px solid var(--accent-color, #ff6b35);
   outline-offset: 2px;
+}
+
+.library-control-panel .bulk-mode-btn {
+  padding: 8px 14px;
+  min-height: 36px;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text, #f8fafc);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.library-control-panel .bulk-mode-btn.active {
+  background: rgba(255, 107, 53, 0.18);
+  border-color: rgba(255, 107, 53, 0.45);
+  color: #ff6b35;
+}
+
+.library-control-panel .bulk-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.library-control-panel .library-bulk-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+@media (max-width: 768px) {
+  .library-control-panel {
+    padding: 12px;
+  }
+
+  .library-action-group {
+    justify-content: flex-start;
+  }
+
+  .library-control-panel .export-button,
+  .library-control-panel .bulk-mode-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+    justify-content: center;
+  }
 }
 
 /* Library Header */
