@@ -2,13 +2,12 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
-import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal, BookOpen } from 'lucide-react';
+import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, BookOpen } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
 import EmptyState from './components/EmptyState';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { StatsAggregationService } from './services/StatsAggregationService';
-import { MilestoneService } from './services/MilestoneService';
 import StorageService from './services/StorageService';
 import { DailyEngagementService } from './services/DailyEngagementService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
@@ -18,13 +17,10 @@ import StatsBackbonePanel from './components/StatsBackbonePanel';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
 import TimeOfDayHeatmap from './components/TimeOfDayHeatmap';
 import CollapsibleSection from './components/CollapsibleSection';
-import { RecapStoryService } from './services/RecapStoryService';
-import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { ProfileService } from './services/ProfileService';
 import { LocalShareService } from './services/LocalShareService';
 import { useToast } from './components/Toast';
 import ShareMenu from './components/ShareMenu';
-import StoryShareCard, { STORY_SHARE_CARD_SIZE_PX } from './components/StoryShareCard';
 import { HabitsShareCard } from './components/HabitsShareCard';
 import { PersonaShareCard } from './components/PersonaShareCard';
 import StatsDrivenStory from './components/StatsDrivenStory';
@@ -47,16 +43,12 @@ const formatRelativeTime = (timestamp) => {
 
 function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 'USD' }) {
   const { success } = useToast();
-  const [recapCustomization] = useState(() => ProgressionUnlockService.getRecapCustomization());
   const [progressionData, setProgressionData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [libraryStats, setLibraryStats] = useState(null);
   const [personaData, setPersonaData] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('all');
-  const weeklyStoryCardRef = useRef(null);
-  const monthlyStoryCardRef = useRef(null);
-  const [isCapturingStory, setIsCapturingStory] = useState(false);
   const habitsCardRef = useRef(null);
   const [isCapturingHabits, setIsCapturingHabits] = useState(false);
   const personaCardRef = useRef(null);
@@ -320,26 +312,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     return labels[bucket] || bucket;
   };
 
-  const generateStoryCardBlob = useCallback(async (period) => {
-    const ref = period === 'weekly' ? weeklyStoryCardRef : monthlyStoryCardRef;
-    if (!ref.current) return null;
-    setIsCapturingStory(true);
-    try {
-      const canvas = await html2canvas(ref.current, {
-        scale: 2,
-        backgroundColor: null,
-        useCORS: true,
-        logging: false
-      });
-      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-    } catch (err) {
-      console.error('Failed to generate story share card:', err);
-      return null;
-    } finally {
-      setIsCapturingStory(false);
-    }
-  }, []);
-
   if (isLoading) {
     return (
       <div className={`App ${theme}`}>
@@ -379,6 +351,61 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             )}
           </div>
         </div>
+
+        {library.length > 0 && (
+          <div className="stats-summary-grid">
+            <div className="stats-summary-card">
+              <span className="stats-summary-label">Games</span>
+              <strong className="stats-summary-value">{library.length}</strong>
+              <span className="stats-summary-detail">{libraryStats?.uniquePlatforms || 0} platforms</span>
+            </div>
+            <div className="stats-summary-card">
+              <span className="stats-summary-label">Total Playtime</span>
+              <strong className="stats-summary-value">
+                {(() => {
+                  const totalHours = library.reduce((sum, g) => sum + (g.time_played || 0), 0) / 60;
+                  if (totalHours >= 1000) return `${(totalHours / 1000).toFixed(1)}k`;
+                  return `${Math.round(totalHours)}`;
+                })()}h
+              </strong>
+              <span className="stats-summary-detail">across your library</span>
+            </div>
+            <div className="stats-summary-card">
+              <span className="stats-summary-label">Completed</span>
+              <strong className="stats-summary-value">
+                {(() => {
+                  const completed = library.filter((g) => g.completed || g.completionStatus === 'completed').length;
+                  const rate = library.length ? Math.round((completed / library.length) * 100) : 0;
+                  return `${rate}%`;
+                })()}
+              </strong>
+              <span className="stats-summary-detail">
+                {library.filter((g) => g.completed || g.completionStatus === 'completed').length} games done
+              </span>
+            </div>
+            <div className="stats-summary-card">
+              <span className="stats-summary-label">Top Platform</span>
+              <strong className="stats-summary-value">{libraryStats?.mostCommonPlatform || '—'}</strong>
+              <span className="stats-summary-detail">
+                {libraryStats?.mostCommonPlatform ? `${Math.round((libraryStats.platformCounts[libraryStats.mostCommonPlatform] / library.length) * 100)}% of library` : ''}
+              </span>
+            </div>
+            <div className="stats-summary-card">
+              <span className="stats-summary-label">Top Genre</span>
+              <strong className="stats-summary-value">{libraryStats?.mostCommonGenre || '—'}</strong>
+              <span className="stats-summary-detail">
+                {libraryStats?.mostCommonGenre ? `${Math.round((libraryStats.genreCounts[libraryStats.mostCommonGenre] / library.length) * 100)}% of library` : ''}
+              </span>
+            </div>
+            <div className="stats-summary-card">
+              <span className="stats-summary-label">Best Streak</span>
+              <strong className="stats-summary-value">
+                {dashboardData?.periods?.all?.bestStreak || 0}d
+              </strong>
+              <span className="stats-summary-detail">consecutive days</span>
+            </div>
+          </div>
+        )}
 
         <CollapsibleSection
           title="Playtime Heatmap"
@@ -660,143 +687,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             />
           </div>
         </div>
-
-        <CollapsibleSection
-          title="Story Highlights"
-          subtitle="Weekly and monthly narrative snippets from your play history."
-          icon={<BookOpen size={18} />}
-          className="stats-section stats-story-highlights"
-          defaultOpen={false}
-        >
-          <div className="story-highlights-grid">
-            {['weekly', 'monthly'].map((period) => {
-              const periodSnapshot = dashboardData?.periods?.[period];
-              const packageData = RecapStoryService.buildPeriodStories(
-                periodSnapshot,
-                period,
-                ProfileService.getCurrentUsername()
-              );
-              const buildCaption = () => ProfileService.appendSocialLinksToShareText(
-                RecapStoryService.buildShareText(periodSnapshot, period, ProfileService.getCurrentUsername())
-              );
-
-              const handleCopyStory = async () => {
-                const text = buildCaption();
-                const copied = await LocalShareService.copyTextToClipboard(text);
-                success(copied ? 'Story copied to clipboard.' : 'Could not copy story.');
-                return copied;
-              };
-
-              const handleDownloadStoryText = () => {
-                const text = buildCaption();
-                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
-                const safeFilename = filename.replace('.png', '.txt');
-                LocalShareService.downloadShareText(text, safeFilename);
-                success('Story downloaded.');
-              };
-
-              const handleShareStoryToChannel = async (channel, text = null) => {
-                const shareText = text || buildCaption();
-                const result = await LocalShareService.openShareIntent(channel, shareText);
-                success(result.success ? `Opened ${result.label}.` : result.message || 'Could not open share.');
-              };
-
-              const handleDownloadStoryCard = async () => {
-                const blob = await generateStoryCardBlob(period);
-                if (!blob) {
-                  success('Could not generate story card.');
-                  return;
-                }
-                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                success('Story card saved.');
-              };
-
-              const handleCopyStoryCard = async () => {
-                const blob = await generateStoryCardBlob(period);
-                if (!blob) {
-                  success('Could not generate story card.');
-                  return false;
-                }
-                const copied = await LocalShareService.copyImageToClipboard(blob);
-                success(copied ? 'Story card copied to clipboard.' : 'Could not copy story card.');
-                return copied;
-              };
-
-              const handleNativeShareStoryCard = async () => {
-                const blob = await generateStoryCardBlob(period);
-                if (!blob) {
-                  success('Could not generate story card.');
-                  return;
-                }
-                const { title, filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
-                const file = new File([blob], filename, { type: 'image/png' });
-                const result = await LocalShareService.shareWithNativeShare({
-                  title,
-                  text: buildCaption(),
-                  files: [file]
-                });
-                success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
-              };
-
-              const handleShareStoryToDiscord = async (text = null) => {
-                const shareText = text || buildCaption();
-                const blob = await generateStoryCardBlob(period);
-                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
-                const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
-                success(result.success ? 'Discord opened with story card.' : result.message || 'Could not share to Discord.');
-              };
-
-              const handleShareStoryToMessenger = async (text = null) => {
-                const shareText = text || buildCaption();
-                const blob = await generateStoryCardBlob(period);
-                const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(periodSnapshot, period, ProfileService.getCurrentUsername());
-                const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
-                success(result.success ? 'Messenger opened with story card.' : result.message || 'Could not share to Messenger.');
-              };
-
-              return (
-                <div key={period} className="story-highlight-card">
-                  <div className="story-highlight-header">
-                    <strong>{period === 'weekly' ? 'This Week' : 'This Month'}</strong>
-                    <div className="story-highlight-actions">
-                      <span>{periodSnapshot?.rangeLabel || packageData.periodLabel}</span>
-                      <ShareMenu
-                        imageAvailable
-                        onCopyText={handleCopyStory}
-                        onCopyImage={handleCopyStoryCard}
-                        onSaveImage={handleDownloadStoryCard}
-                        onShareText={handleShareStoryToChannel}
-                        onShareToDiscord={handleShareStoryToDiscord}
-                        onShareToMessenger={handleShareStoryToMessenger}
-                        onDownloadText={handleDownloadStoryText}
-                        onNativeShare={handleNativeShareStoryCard}
-                        buildCaption={buildCaption}
-                        disabled={isCapturingStory}
-                        triggerLabel="Share"
-                      />
-                    </div>
-                  </div>
-                  <ul className="story-highlight-list">
-                    {packageData.stories.map((story, index) => (
-                      <li key={index} className="story-highlight-item">
-                        <span className="story-highlight-bullet" />
-                        <span>{story}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
 
         <CollapsibleSection
           title="Flight Persona Snapshot"
@@ -1137,108 +1027,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           )}
         </CollapsibleSection>
 
-        <CollapsibleSection
-          title="Milestones & Prestige"
-          subtitle="Track your major XP milestones and prestige progress."
-          icon={<Medal size={18} />}
-          className="stats-section"
-        >
-          <div className="milestones-container" style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-            gap: '15px',
-            marginTop: '20px'
-          }}>
-            {MilestoneService.getAllMilestones().map((milestone) => (
-              <div 
-                key={milestone.id}
-                className={`milestone-card ${milestone.achieved ? 'achieved' : ''}`}
-                style={{
-                  padding: '15px',
-                  borderRadius: '12px',
-                  background: milestone.achieved 
-                    ? 'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,140,0,0.15) 100%)'
-                    : 'var(--card-bg)',
-                  border: `2px solid ${milestone.achieved ? '#ffd700' : 'var(--border-color)'}`,
-                  opacity: milestone.achieved ? 1 : 0.7,
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>{milestone.icon}</div>
-                <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem' }}>{milestone.name}</h3>
-                <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8 }}>{milestone.description}</p>
-                <div style={{ marginTop: '10px' }}>
-                  <div style={{ 
-                    height: '6px', 
-                    background: 'rgba(255,255,255,0.1)', 
-                    borderRadius: '3px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${milestone.progressPercent}%`,
-                      height: '100%',
-                      background: milestone.achieved ? '#ffd700' : 'var(--accent-primary)',
-                      transition: 'width 0.3s ease'
-                    }} />
-                  </div>
-                  <p style={{ margin: '5px 0 0 0', fontSize: '0.75rem', opacity: 0.6 }}>
-                    {milestone.achieved 
-                      ? `Achieved! (${milestone.xp.toLocaleString()} XP)` 
-                      : `${milestone.xpRemaining.toLocaleString()} XP remaining`}
-                  </p>
-                </div>
-                {milestone.achieved && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: '#ffd700',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '14px'
-                  }}>✓</div>
-                )}
-              </div>
-            ))}
-          </div>
-          
-          {/* Prestige Status */}
-          {(() => {
-            const prestige = MilestoneService.getPrestigeStatus();
-            return prestige.prestigeLevel > 0 ? (
-              <div className="prestige-banner" style={{
-                marginTop: '25px',
-                padding: '20px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
-                border: '2px solid rgba(147, 51, 234, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '20px'
-              }}>
-                <div style={{ fontSize: '3rem' }}>✨</div>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: '0 0 5px 0' }}>Prestige Level {prestige.prestigeLevel}</h3>
-                  <p style={{ margin: 0, opacity: 0.8 }}>
-                    {prestige.xpMultiplier}% XP bonus active • {prestige.exclusiveRewards.length} exclusive rewards unlocked
-                  </p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#a855f7' }}>
-                    +{prestige.xpMultiplier}%
-                  </div>
-                  <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>XP Boost</div>
-                </div>
-              </div>
-            ) : null;
-          })()}
-        </CollapsibleSection>
-
         {library.length === 0 && habitProgress.totalSessions === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
           <EmptyState
             icon="📈"
@@ -1247,61 +1035,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           />
         )}
 
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            top: -10000,
-            left: -10000,
-            width: STORY_SHARE_CARD_SIZE_PX,
-            height: STORY_SHARE_CARD_SIZE_PX,
-            pointerEvents: 'none',
-            zIndex: -1
-          }}
-        >
-          <div ref={weeklyStoryCardRef}>
-            <StoryShareCard
-              period="weekly"
-              username={ProfileService.getCurrentUsername()}
-              watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
-              stories={(() => {
-                const snapshot = dashboardData?.periods?.weekly;
-                const data = RecapStoryService.buildPeriodStories(snapshot, 'weekly', ProfileService.getCurrentUsername());
-                return data.stories;
-              })()}
-              totalPlaytime={dashboardData?.periods?.weekly?.playtimeMinutes || 0}
-              topGame={dashboardData?.periods?.weekly?.topGames?.[0] || null}
-            />
-          </div>
-        </div>
-
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            top: -10000,
-            left: -10000,
-            width: STORY_SHARE_CARD_SIZE_PX,
-            height: STORY_SHARE_CARD_SIZE_PX,
-            pointerEvents: 'none',
-            zIndex: -1
-          }}
-        >
-          <div ref={monthlyStoryCardRef}>
-            <StoryShareCard
-              period="monthly"
-              username={ProfileService.getCurrentUsername()}
-              watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
-              stories={(() => {
-                const snapshot = dashboardData?.periods?.monthly;
-                const data = RecapStoryService.buildPeriodStories(snapshot, 'monthly', ProfileService.getCurrentUsername());
-                return data.stories;
-              })()}
-              totalPlaytime={dashboardData?.periods?.monthly?.playtimeMinutes || 0}
-              topGame={dashboardData?.periods?.monthly?.topGames?.[0] || null}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
