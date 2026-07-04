@@ -43,23 +43,41 @@
   width: 100%;
   overflow: hidden;
   background: var(--bg-secondary, #16213e);
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
 }
 
 .gaming-story-cover {
-  position: absolute;
-  inset: 0;
   background-size: cover;
   background-position: center;
-  opacity: 0.55;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
-  transition: opacity 0.4s ease;
+  border-radius: 10px;
+  opacity: 0.85;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.gaming-story-cover:first-child {
+  grid-row: 1 / -1;
+  grid-column: 1;
+  opacity: 1;
+}
+
+.gaming-story-cover:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.gaming-story-cover:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .gaming-story-cover-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 0%, var(--bg-primary, #1a1a2e) 95%);
+  background: linear-gradient(to bottom, transparent 0%, var(--bg-primary, #1a1a2e) 85%);
 }
 
 .gaming-story-content {

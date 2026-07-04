@@ -63,7 +63,7 @@ export const GamingStoryService = {
       return null;
     }
 
-    const topGames = getTopGames(library, 5);
+    const topGames = getTopGames(library, 3);
     if (topGames.length === 0) {
       return null;
     }
