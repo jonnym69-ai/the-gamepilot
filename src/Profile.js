@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
-import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon, Sparkles, Award, Share2, Dna } from 'lucide-react';
+import { Clock, Download, Upload, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Lock, Image as ImageIcon, Sparkles, Award, Share2, Dna, BookOpen } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
 import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
@@ -24,6 +24,8 @@ import CinematicExport from './components/CinematicExport';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
 import PersonaEvolutionCard from './components/PersonaEvolutionCard';
 import { IdentityShareCard, IDENTITY_SHARE_CARD_SIZE_PX } from './components/IdentityShareCard';
+import GamingStoryPanel from './components/GamingStoryPanel';
+import { GamingStoryService } from './services/GamingStoryService';
 import { YearInReviewService } from './services/YearInReviewService';
 import { LocalShareService } from './services/LocalShareService';
 import CollectionsPanel from './components/CollectionsPanel';
@@ -112,6 +114,8 @@ const Profile = ({ theme, library = [] }) => {
   const [socialLinks, setSocialLinks] = useState([]);
   const [tempSocialLinks, setTempSocialLinks] = useState([]);
   const [gamingIdentity, setGamingIdentity] = useState(null);
+  const [gamingStory, setGamingStory] = useState(() => GamingStoryService.getCurrentStory());
+  const [periodStory, setPeriodStory] = useState(() => GamingStoryService.getPeriodStory());
   const identityShareCardRef = useRef(null);
   const [isCapturingIdentity, setIsCapturingIdentity] = useState(false);
   const [xpStats, setXpStats] = useState(null);
@@ -752,6 +756,8 @@ const Profile = ({ theme, library = [] }) => {
 
     const identity = GamingIdentity.getProfile();
     setGamingIdentity(identity);
+    setGamingStory(GamingStoryService.updateStory(library));
+    setPeriodStory(GamingStoryService.updatePeriodStory(GamingStoryService.getStoryFrequency()));
     setStartupPersonalization(StartupPersonalizationService.getProfile());
     setStartupDraft(StartupPersonalizationService.getProfile());
 
@@ -1531,6 +1537,31 @@ const Profile = ({ theme, library = [] }) => {
               </div>
               </div>
             </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Gaming Story Section */}
+        <CollapsibleSection
+          title="Gaming Story"
+          subtitle="How your identity has formed from your top games and sessions."
+          badge={gamingStory?.chapter === 'identity' ? 'Evolving' : 'Anchor'}
+          icon={<BookOpen size={18} />}
+          className={getSectionClass(14)}
+        >
+          <GamingStoryPanel story={gamingStory} />
+        </CollapsibleSection>
+
+        {/* Recent Story Section */}
+        {GamingStoryService.getStoryFrequency() !== 'off' && (
+          <CollapsibleSection
+            title="Recent Story"
+            subtitle="A themed recap of your most recent play period."
+            badge={periodStory?.period || 'Generating...'}
+            icon={<Clock size={18} />}
+            className={getSectionClass(15)}
+            defaultOpen={Boolean(periodStory)}
+          >
+            <GamingStoryPanel story={periodStory} />
           </CollapsibleSection>
         )}
 

@@ -542,12 +542,10 @@ function AppContent() {
       setLibrary(curatedMerged);
       saveLibrary(curatedMerged);
 
-      if (GamingStoryService.shouldShowFirstStory() && curatedMerged.length > 0) {
-        const story = GamingStoryService.generateFirstScanStory(curatedMerged);
-        if (story) {
-          setGamingStory(story);
-          GamingStoryService.markFirstStoryShown();
-        }
+      const story = GamingStoryService.updateStory(curatedMerged);
+      if (story && GamingStoryService.shouldShowFirstStory()) {
+        setGamingStory(story);
+        GamingStoryService.markFirstStoryShown();
       }
 
       window.dispatchEvent(new CustomEvent('gamepilot:scan-complete', {

@@ -64,6 +64,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [shortcutSettings, setShortcutSettings] = useState(() => KeyboardShortcuts.getSettings());
   const [shortcutEntries, setShortcutEntries] = useState(() => KeyboardShortcuts.getShortcutList());
   const [recommendationStyle, setRecommendationStyle] = useState(() => StorageService.getString('recommendationStyle', 'balanced'));
+  const [storyFrequency, setStoryFrequency] = useState(() => StorageService.getString('gamingStoryFrequency', 'weekly'));
   const { success, error: toastError } = useToast();
 
   const refreshShortcutSettings = useCallback(() => {
@@ -85,6 +86,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     setScanCompleteNotifications(StorageService.getString('scanCompleteNotifications', 'true') === 'true');
     setBackupReminders(StorageService.getString('backupReminders') === 'true');
     setSelectedCurrency(StorageService.getString('selectedCurrency', 'USD'));
+    setStoryFrequency(StorageService.getString('gamingStoryFrequency', 'weekly'));
 
     // Load custom background settings
     setCustomBgImage(StorageService.getString('customBgImage', ''));
@@ -216,7 +218,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     StorageService.setString('dailySummaryNotifications', dailySummaryNotifications ? 'true' : 'false');
     StorageService.setString('scanCompleteNotifications', scanCompleteNotifications ? 'true' : 'false');
     StorageService.setString('backupReminders', backupReminders ? 'true' : 'false');
-    
+    StorageService.setString('gamingStoryFrequency', storyFrequency);
+
     success('Settings saved successfully!');
   };
 
@@ -309,6 +312,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
       setDailySummaryNotifications(false);
       setScanCompleteNotifications(true);
       setBackupReminders(false);
+      setStoryFrequency('weekly');
       if (startupLaunchSupported) {
         setLaunchOnStartup(false);
         handleStartupLaunchToggle(false);
@@ -867,6 +871,25 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       />
                       <label htmlFor="cache" className="toggle-slider"></label>
                     </div>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Gaming story frequency</label>
+                    <select
+                      value={storyFrequency}
+                      onChange={(e) => setStoryFrequency(e.target.value)}
+                      className="settings-select"
+                      aria-label="Gaming story frequency"
+                    >
+                      <option value="off">Off</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                    <p className="setting-description">
+                      How often GamePilot generates a themed recap of your recent play.
+                    </p>
                   </div>
 
                   <div className="setting-item">

@@ -1,0 +1,209 @@
+.gaming-story-panel {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-primary, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  display: flex;
+  flex-direction: column;
+}
+
+.gaming-story-panel.empty {
+  padding: 24px;
+  min-height: 120px;
+  justify-content: center;
+  align-items: center;
+}
+
+.gaming-story-panel-empty {
+  margin: 0;
+  opacity: 0.65;
+  text-align: center;
+}
+
+.gaming-story-panel-covers {
+  position: relative;
+  height: 140px;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg-secondary, #16213e);
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+}
+
+.gaming-story-panel-cover {
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+  opacity: 0.85;
+}
+
+.gaming-story-panel-cover:first-child {
+  grid-row: 1 / -1;
+  grid-column: 1;
+  opacity: 1;
+}
+
+.gaming-story-panel-cover:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.gaming-story-panel-cover:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.gaming-story-panel-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 0%, var(--bg-primary, #1a1a2e) 85%);
+}
+
+.gaming-story-panel-content {
+  padding: 20px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gaming-story-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gaming-story-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary, #00d2d3);
+  background: rgba(0, 210, 211, 0.1);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.gaming-story-panel-identity {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.gaming-story-panel h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+}
+
+.gaming-story-panel-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  color: var(--text-secondary, #e5e5e5);
+}
+
+.gaming-story-panel-narrative {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-secondary, #e5e5e5);
+}
+
+.gaming-story-panel-narrative strong {
+  color: var(--text-primary, #ffffff);
+  font-weight: 600;
+}
+
+.gaming-story-panel-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.gaming-story-panel-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.gaming-story-panel-stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-primary, #00d2d3);
+}
+
+.gaming-story-panel-stat-label {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.gaming-story-panel-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gaming-story-panel-genre {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  color: var(--text-secondary, #e5e5e5);
+}
+
+.gaming-story-panel-clusters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.gaming-story-panel-clusters-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--text-secondary, #e5e5e5);
+}
+
+.gaming-story-panel-cluster {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+@media (max-width: 520px) {
+  .gaming-story-panel-covers {
+    height: 120px;
+  }
+
+  .gaming-story-panel-content {
+    padding: 16px 18px 18px;
+  }
+}

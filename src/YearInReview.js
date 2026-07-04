@@ -12,6 +12,8 @@ import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInRe
 import { YearInReviewStoryShareCard } from './components/YearInReviewStoryShareCard';
 import ShareMenu from './components/ShareMenu';
 import { formatPlaytime } from './utils/formatPlaytime';
+import { GamingStoryService } from './services/GamingStoryService';
+import GamingStoryPanel from './components/GamingStoryPanel';
 import './YearInReview.css';
 
 const COLOR_FUNCTION_PATTERN = /\b(color\(|color-mix\()/i;
@@ -141,6 +143,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
   const [isCapturingStory, setIsCapturingStory] = useState(false);
   const availableYears = useMemo(() => YearInReviewService.getAvailableYears(library || []), [library]);
   const [selectedYear, setSelectedYear] = useState(() => availableYears[0] || new Date().getFullYear());
+  const yearlyStory = useMemo(() => GamingStoryService.generatePeriodStory('yearly'), []);
   const recapCustomization = useMemo(() => ProgressionUnlockService.getRecapCustomization(), []);
   const [statusMessage, setStatusMessage] = useState('');
   const [isExportingImage, setIsExportingImage] = useState(false);
@@ -574,6 +577,14 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         )}
                       </article>
                     ))}
+                  </div>
+                </section>
+              )}
+
+              {yearlyStory && (
+                <section className="year-review-highlights-row">
+                  <div style={{ width: '100%' }}>
+                    <GamingStoryPanel story={yearlyStory} />
                   </div>
                 </section>
               )}

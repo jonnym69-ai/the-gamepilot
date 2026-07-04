@@ -54,7 +54,12 @@ function GamingStoryCard({ story, onContinue }) {
             </div>
           )}
 
-          <p className="gaming-story-narrative" dangerouslySetInnerHTML={{ __html: narrative }} />
+          <p
+          className="gaming-story-narrative"
+          dangerouslySetInnerHTML={{
+            __html: narrative.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          }}
+        />
 
           <div className="gaming-story-note">
             <BookOpen size={14} />
