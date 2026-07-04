@@ -1124,24 +1124,30 @@ export class RecommendationEngine {
     return games[Math.floor(Math.random() * games.length)];
   }
 
-  // Get Rediscover recommendation (least played games from mood)
+  // Get Rediscover recommendation (least recently played games from mood)
   static getRediscoverRecommendation(library, mood, availableMinutes = null) {
     if (!GenreMoodMapper.isValidMood(mood)) {
       console.warn(`Invalid mood: ${mood}`);
       return null;
     }
 
-    const games = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes);
-    
+    const games = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes)
+      .filter((game) => (
+        Number(game?.time_played || 0) > 0
+        || Number(game?.launch_count || 0) > 0
+        || getLastPlayedTimestamp(game?.last_played) > 0
+      ));
+
     if (games.length === 0) {
       return null;
     }
 
-    // Sort by play count (least played first)
+    // Sort by last played (least recent first)
     const sorted = games.sort((a, b) => {
-      const aPlayCount = a.launch_count || 0;
-      const bPlayCount = b.launch_count || 0;
-      return aPlayCount - bPlayCount;
+      const aLastPlayed = getLastPlayedTimestamp(a.last_played);
+      const bLastPlayed = getLastPlayedTimestamp(b.last_played);
+      if (aLastPlayed !== bLastPlayed) return aLastPlayed - bLastPlayed;
+      return (a.launch_count || 0) - (b.launch_count || 0);
     });
 
     return sorted[0];
@@ -1187,21 +1193,26 @@ export class RecommendationEngine {
         }
         break;
       case 'rediscover':
-        // Get least played games that haven't been played recently
-        const rediscoverGames = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes);
+        // Get played games that haven't been played recently
+        const rediscoverGames = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes)
+          .filter((game) => (
+            Number(game?.time_played || 0) > 0
+            || Number(game?.launch_count || 0) > 0
+            || getLastPlayedTimestamp(game?.last_played) > 0
+          ));
         const sorted = rediscoverGames.sort((a, b) => {
           const aPlayCount = a.launch_count || 0;
           const bPlayCount = b.launch_count || 0;
           const aLastPlayed = getLastPlayedTimestamp(a.last_played);
           const bLastPlayed = getLastPlayedTimestamp(b.last_played);
-          
-          // Primary sort: least played first
-          if (aPlayCount !== bPlayCount) {
-            return aPlayCount - bPlayCount;
+
+          // Primary sort: least recently played first
+          if (aLastPlayed !== bLastPlayed) {
+            return aLastPlayed - bLastPlayed;
           }
-          
-          // Secondary sort: least recently played (for games with same play count)
-          return aLastPlayed - bLastPlayed;
+
+          // Secondary sort: least played (for games played at the same time)
+          return aPlayCount - bPlayCount;
         });
         recommendations.push(...sorted.slice(0, count));
         break;

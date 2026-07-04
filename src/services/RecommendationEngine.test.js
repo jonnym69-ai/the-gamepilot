@@ -270,7 +270,7 @@ describe('RecommendationEngine', () => {
     });
 
     test('getRediscoverResult uses fallback when no engine matches', () => {
-      const library = [baseGame({ appid: '1', name: 'Untyped', genres: [] })];
+      const library = [baseGame({ appid: '1', name: 'Untyped', genres: [], time_played: 60, launch_count: 1 })];
       const result = RecommendationEngine.getRediscoverResult(library, null, null, 1);
       expect(result).not.toBe(null);
       expect(result.entries).toHaveLength(1);
