@@ -27,6 +27,7 @@ import ShareMenu from './components/ShareMenu';
 import StoryShareCard, { STORY_SHARE_CARD_SIZE_PX } from './components/StoryShareCard';
 import { HabitsShareCard } from './components/HabitsShareCard';
 import { PersonaShareCard } from './components/PersonaShareCard';
+import StatsDrivenStory from './components/StatsDrivenStory';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
@@ -395,6 +396,16 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           className="stats-section"
         >
           <TimeOfDayHeatmap library={library} />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Stats Driven Story"
+          subtitle="Insights pulled straight from your library, playtime, and habits."
+          icon={<BookOpen size={18} />}
+          className="stats-section"
+          defaultOpen
+        >
+          <StatsDrivenStory library={library} libraryStats={libraryStats} />
         </CollapsibleSection>
 
         <CollapsibleSection
