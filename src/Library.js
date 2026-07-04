@@ -1,13 +1,10 @@
 import React, { useState, useMemo, useContext, useEffect, useCallback, useRef } from 'react';
 import html2canvas from 'html2canvas';
-import { Search, Download, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye, DollarSign } from 'lucide-react';
+import { Search, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
 import GameModal from './components/GameModal';
-import ExportModal from './components/ExportModal';
-import CinematicExport from './components/CinematicExport';
 import LibraryAnalyticsPanel from './components/LibraryAnalyticsPanel';
-import LibraryValueModal from './components/LibraryValueModal';
 import LibraryShareCard, { LIBRARY_SHARE_CARD_SIZE_PX } from './components/LibraryShareCard';
 import TopRatedShareCard, { TOP_RATED_SHARE_CARD_SIZE_PX } from './components/TopRatedShareCard';
 import RecapCustomizeModal from './components/RecapCustomizeModal';
@@ -243,9 +240,6 @@ function Library({
       return [];
     }
   });
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
-  const [isLibraryValueModalOpen, setIsLibraryValueModalOpen] = useState(false);
   const [isRecapCustomizeOpen, setIsRecapCustomizeOpen] = useState(false);
   const [sharePeriod, setSharePeriod] = useState('all');
   const [recapCustomization, setRecapCustomization] = useState(
@@ -1470,19 +1464,6 @@ function Library({
 
       <div className="export-section">
         <div className="library-action-group">
-          <button onClick={() => setIsExportModalOpen(true)} className="export-button">
-            <Download size={16} /> Export Data
-          </button>
-          <button onClick={() => setIsCinematicExportOpen(true)} className="export-button">
-            <Grid size={16} /> Cinematic Poster
-          </button>
-          <button
-            onClick={() => setIsLibraryValueModalOpen(true)}
-            className="export-button"
-            title="See and share the estimated value of your library"
-          >
-            <DollarSign size={16} /> Library Value
-          </button>
           <select
             className="export-button library-share-period-select"
             value={sharePeriod}
@@ -2171,14 +2152,6 @@ function Library({
 
       {/* Modals */}
       {isModalOpen && <GameModal game={selectedModalGame} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onTogglePin={handleTogglePin} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} />}
-      {isExportModalOpen && <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} library={library} />}
-      {isCinematicExportOpen && <CinematicExport isOpen={isCinematicExportOpen} onClose={() => setIsCinematicExportOpen(false)} library={library} />}
-      <LibraryValueModal
-        library={library}
-        isOpen={isLibraryValueModalOpen}
-        onClose={() => setIsLibraryValueModalOpen(false)}
-        username={username}
-      />
       <RecapCustomizeModal
         isOpen={isRecapCustomizeOpen}
         onClose={() => setIsRecapCustomizeOpen(false)}

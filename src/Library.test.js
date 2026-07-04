@@ -200,15 +200,6 @@ describe('Library Component', () => {
     expect(screen.getByText('The Witcher 3: Wild Hunt')).toBeInTheDocument();
   });
 
-  test('shows export modal when export button is clicked', async () => {
-    await renderLibrary();
-
-    const exportButton = screen.getByText('Export Data');
-    fireEvent.click(exportButton);
-
-    expect(screen.getByTestId('export-modal')).toBeInTheDocument();
-  });
-
   test('triggers scan callback from scan library action', async () => {
     const onScanLibrary = jest.fn();
     await renderLibrary({ onScanLibrary });
