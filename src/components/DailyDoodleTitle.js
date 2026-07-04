@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
-import { GamingIdentity } from '../GamingIdentity';
 import StorageService from '../services/StorageService';
 import './DailyDoodleTitle.css';
 
@@ -288,7 +287,6 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const [doodleWordmark, setDoodleWordmark] = useState(
     () => StorageService.getString('doodleWordmark', DEFAULT_WORDMARK)
   );
-  const [identity, setIdentity] = useState(() => GamingIdentity.getProfile());
   const doodleEnabled = StorageService.getString('enableDailyDoodle') !== 'false';
   const preferredTimeZone = StorageService.getString('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const resolvedLogoAnimation = selectedLogoAnimation || 'synthwave-runway';
@@ -325,7 +323,6 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
 
     const handleProfileUpdated = () => {
       setProfileCustomization(ProgressionUnlockService.getProfileCustomization());
-      setIdentity(GamingIdentity.getProfile());
     };
 
     const handleDoodleStyleUpdated = () => {
@@ -458,29 +455,8 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     };
   }, [profileCustomization.selectedFrame, profileCustomization.selectedBanner]);
 
-  const equippedTitle = useMemo(() => {
-    const titles = ProgressionUnlockService.getProfileTitles();
-    return titles.find((t) => t.id === profileCustomization.selectedTitle);
-  }, [profileCustomization.selectedTitle]);
-
-  // Gaming identity greeting / tagline
-  const identityGreeting = useMemo(() => {
-    if (!username) return 'Welcome to GamePilot';
-    const sig = identity?.identity?.signature || identity?.signature;
-    if (sig) return sig;
-    const desc = identity?.identity?.description;
-    if (desc) return desc;
-    return `Welcome back, ${username}!`;
-  }, [username, identity]);
-
-  const identityTagline = useMemo(() => {
-    if (welcomeMessage) return welcomeMessage;
-    const desc = identity?.identity?.description;
-    if (desc && desc !== identityGreeting) return desc;
-    return null;
-  }, [welcomeMessage, identity, identityGreeting]);
-
-  const greeting = username ? identityGreeting : 'Welcome to GamePilot';
+  // Minimal greeting and message
+  const greeting = username ? `Welcome back, ${username}` : 'Welcome to GamePilot';
   const avatarSrc = profilePic || LOGO_SRC;
   const avatarAlt = profilePic ? `${username || 'Player'} avatar` : 'GamePilot logo';
 
@@ -535,18 +511,13 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
               {letters}
             </div>
           </div>
-          {equippedTitle?.name && (
-            <div className="doodle-title-badge" style={{ '--title-accent': equippedTitle.accentColor || 'var(--accent)' }}>
-              {equippedTitle.name}
-            </div>
-          )}
         </div>
-        <div className="doodle-meta" style={{ ...doodle.metaStyle, '--identity-accent': equippedTitle?.accentColor || 'var(--accent)', ...(isLight ? { color: 'rgba(30,20,10,0.85)', textShadow: '0 1px 3px rgba(255,255,255,0.5)' } : {}) }}>
+        <div className="doodle-meta" style={{ ...doodle.metaStyle, '--identity-accent': 'var(--accent)', ...(isLight ? { color: 'rgba(30,20,10,0.85)', textShadow: '0 1px 3px rgba(255,255,255,0.5)' } : {}) }}>
           <span className="doodle-meta-label">{doodle.name} — {dayLabel}</span>
           <span className="doodle-meta-datetime">{timeLabel} <span className="doodle-meta-timezone">{timeZoneLabel}</span></span>
           <span className="doodle-meta-greeting">{greeting}</span>
-          {identityTagline && (
-            <span className="doodle-meta-tagline">{identityTagline}</span>
+          {welcomeMessage && (
+            <span className="doodle-meta-tagline">{welcomeMessage}</span>
           )}
         </div>
       </div>
