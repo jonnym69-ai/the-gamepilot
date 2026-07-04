@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
-import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal, Zap, BookOpen } from 'lucide-react';
+import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, Medal, BookOpen } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
 import EmptyState from './components/EmptyState';
@@ -18,9 +18,6 @@ import StatsBackbonePanel from './components/StatsBackbonePanel';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
 import TimeOfDayHeatmap from './components/TimeOfDayHeatmap';
 import CollapsibleSection from './components/CollapsibleSection';
-import PowerStatsDeepDive from './components/PowerStatsDeepDive';
-import { LibraryAnalyticsService } from './services/LibraryAnalyticsService';
-import AdvancedAnalyticsDashboard from './components/AdvancedAnalyticsDashboard';
 import { RecapStoryService } from './services/RecapStoryService';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { ProfileService } from './services/ProfileService';
@@ -63,7 +60,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const [isCapturingHabits, setIsCapturingHabits] = useState(false);
   const personaCardRef = useRef(null);
   const [isCapturingPersona, setIsCapturingPersona] = useState(false);
-  const analytics = useMemo(() => LibraryAnalyticsService.getFullAnalytics(library), [library]);
 
   const calculateProgressionData = useCallback((dashboardSnapshot = null) => {
     const unlockedAchievements = [];
@@ -1230,32 +1226,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               </div>
             ) : null;
           })()}
-        </CollapsibleSection>
-
-        {/* Power Stats Deep-Dive */}
-        {analytics && (
-          <CollapsibleSection
-            title="Power Stats Deep-Dive"
-            subtitle="Advanced library analytics, diversity scores, and backlog intelligence."
-            icon={<Zap size={18} />}
-            className="stats-section power-tools-deep-stats"
-          >
-            <PowerStatsDeepDive analytics={analytics} username={ProfileService.getCurrentUsername()} />
-          </CollapsibleSection>
-        )}
-
-        {/* Advanced Analytics Dashboard */}
-        <CollapsibleSection
-          title="Advanced Analytics Dashboard"
-          subtitle="Developer, publisher, price tier, value-per-hour, completion, and genre evolution breakdowns."
-          icon={<BarChart3 size={18} />}
-          className="stats-section advanced-analytics-section"
-          defaultOpen={false}
-        >
-          <AdvancedAnalyticsDashboard
-            library={library}
-            username={StorageService.getString('profileUsername', '') || 'Gamer'}
-          />
         </CollapsibleSection>
 
         {library.length === 0 && habitProgress.totalSessions === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
