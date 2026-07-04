@@ -136,7 +136,7 @@
 
 .game-modal-layout {
   display: grid;
-  grid-template-columns: 1.3fr 1.08fr;
+  grid-template-columns: 1fr 1fr;
   gap: 30px;
   align-items: start;
 }

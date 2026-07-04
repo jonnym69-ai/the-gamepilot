@@ -587,6 +587,12 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                     <p className="game-description">{gameDetails.developers.join(', ')}</p>
                   </div>
                 )}
+
+                <SteamSnapshot game={game} />
+
+                <PatchNewsPanel game={game} />
+
+                <LibrariansNotes game={game} />
               </div>
 
               <div className="game-modal-secondary">
@@ -808,12 +814,6 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                     )}
                   </div>
                 </div>
-
-                <SteamSnapshot game={game} />
-
-                <PatchNewsPanel game={game} />
-
-                <LibrariansNotes game={game} />
 
                 <SaveBackupPanel game={game} />
 
