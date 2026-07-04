@@ -2,9 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Trash2 } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
-import { GameRequirements } from '../services/GameRequirements';
 import { openExternalUrl } from '../services/ElectronBridge';
-import { HardwareDetector } from '../services/HardwareDetector';
 import { LocalShareService } from '../services/LocalShareService';
 import ProfileService from '../services/ProfileService';
 import { GameCurationService } from '../services/GameCurationService';
@@ -43,9 +41,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const [loading, setLoading] = useState(false);
   const [screenshots, setScreenshots] = useState([]);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
-  const [systemInfo, setSystemInfo] = useState(null);
   const [showUninstall, setShowUninstall] = useState(false);
-  const [compatibility, setCompatibility] = useState(null);
   const [rating, setRating] = useState(game?.userRating || 0);
   const [replayIntent, setReplayIntent] = useState(game?.replayIntent || 'none');
   const [wouldReplay, setWouldReplay] = useState(null);
@@ -129,51 +125,6 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
       || tagsChanged
     );
   }, [game, rating, replayIntent, wouldReplay, tags]);
-
-  // Get system info on component mount
-  useEffect(() => {
-    const getSystemInfo = async () => {
-      try {
-        const info = await HardwareDetector.getCachedSystemInfo();
-        setSystemInfo(info);
-      } catch (error) {
-        console.error('Failed to get system info:', error);
-      }
-    };
-    getSystemInfo();
-  }, []);
-
-  // Completion status already synced from game prop in the sync effect below
-
-
-  // Calculate compatibility when systemInfo or game changes
-  useEffect(() => {
-    if (!systemInfo || !game) {
-      setCompatibility(null);
-      return undefined;
-    }
-
-    let cancelled = false;
-    // Render an immediate (possibly estimate-based) result, then refine once the
-    // lazy-loaded requirements DB is in memory.
-    try {
-      setCompatibility(GameRequirements.checkGameCompatibility(game, systemInfo));
-    } catch (error) {
-      console.error('Failed to calculate compatibility:', error);
-    }
-    GameRequirements.ensureDatabaseLoaded()
-      .then(() => {
-        if (cancelled) return;
-        try {
-          setCompatibility(GameRequirements.checkGameCompatibility(game, systemInfo));
-        } catch (error) {
-          console.error('Failed to refine compatibility after DB load:', error);
-        }
-      })
-      .catch(() => { /* keep the estimate */ });
-
-    return () => { cancelled = true; };
-  }, [systemInfo, game]);
 
   useEffect(() => {
     if (!game) {
@@ -496,7 +447,6 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const platformLabel = game.brandPlatform || game.platform || 'Unknown Platform';
   const genreLabels = gameDetails?.genres?.map((entry) => entry.description).filter(Boolean)
     || (Array.isArray(game.genres) ? game.genres.filter(Boolean) : []);
-  const compatibilityLabel = compatibility ? GameRequirements.getSettingsLabel(compatibility.settingsLevel) : null;
   const fallbackOverview = `${game.name} is tracked in your ${platformLabel} library${game.mood ? ` and tagged for ${String(game.mood).toLowerCase()} sessions` : ''}.`;
   const playtimeHours = ((game.time_played || 0) / 60).toFixed(1);
   const ratingPercent = Math.max(0, Math.min(100, ((rating || 0) / 10) * 100));
@@ -976,74 +926,6 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                   </div>
                 )}
 
-                {compatibility && compatibilityLabel && (
-                  <div className="game-info-panel">
-                    <h3>System Compatibility</h3>
-                    <div className="compatibility-info">
-                      <div className="compatibility-status">
-                        <div className="status-badge" style={{ backgroundColor: compatibilityLabel.color }}>
-                          {`${compatibilityLabel.emoji} ${compatibilityLabel.text} • ${compatibility.estimatedFPS} FPS`}
-                        </div>
-                      </div>
-
-                      {compatibility.isEstimate && (
-                        <p className="compatibility-note">
-                          This is an estimated result based on your current hardware because this game does not have a verified requirements profile in the local database yet.
-                        </p>
-                      )}
-
-                      {compatibility.requirements && (
-                        <div className="requirements-grid">
-                          <div className="requirement-level">
-                            <h4>Minimum Requirements</h4>
-                            <ul>
-                              <li>CPU Score: {compatibility.requirements.minimum.cpuScore}</li>
-                              <li>GPU Score: {compatibility.requirements.minimum.gpuScore}</li>
-                              <li>RAM: {compatibility.requirements.minimum.ram}GB</li>
-                              <li>Storage: {compatibility.requirements.minimum.storage}GB</li>
-                              {compatibility.requirements.minimum.requiresSSD && <li>⚠️ Requires SSD</li>}
-                            </ul>
-                          </div>
-
-                          <div className="requirement-level">
-                            <h4>Recommended Requirements</h4>
-                            <ul>
-                              <li>CPU Score: {compatibility.requirements.recommended.cpuScore}</li>
-                              <li>GPU Score: {compatibility.requirements.recommended.gpuScore}</li>
-                              <li>RAM: {compatibility.requirements.recommended.ram}GB</li>
-                              <li>Storage: {compatibility.requirements.recommended.storage}GB</li>
-                              {compatibility.requirements.recommended.requiresSSD && <li>⚠️ Requires SSD</li>}
-                            </ul>
-                          </div>
-
-                          <div className="requirement-level">
-                            <h4>Ultra Requirements</h4>
-                            <ul>
-                              <li>CPU Score: {compatibility.requirements.ultra.cpuScore}</li>
-                              <li>GPU Score: {compatibility.requirements.ultra.gpuScore}</li>
-                              <li>RAM: {compatibility.requirements.ultra.ram}GB</li>
-                              <li>Storage: {compatibility.requirements.ultra.storage}GB</li>
-                              {compatibility.requirements.ultra.requiresSSD && <li>⚠️ Requires SSD</li>}
-                            </ul>
-                          </div>
-                        </div>
-                      )}
-
-                      {compatibility.bottlenecks && compatibility.bottlenecks.length > 0 && (
-                        <div className="bottlenecks-section">
-                          <h4>⚡ Potential Bottlenecks</h4>
-                          <ul>
-                            {compatibility.bottlenecks.map((bottleneck, idx) => (
-                              <li key={idx} className={`bottleneck-item ${bottleneck.impact}`}>
-                                {bottleneck.component}: {bottleneck.message}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
