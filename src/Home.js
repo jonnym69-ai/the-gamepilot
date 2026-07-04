@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import NavBar from './NavBar';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
-import { DiscoveryService } from './services/DiscoveryService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import WishlistService from './services/WishlistService';
 import { HabitTrackerService } from './services/HabitTrackerService';
@@ -41,7 +40,6 @@ import {
   DashboardWidgetGrid,
   MiniStatsWidget,
   MiniQuestWidget,
-  MiniNextUpWidget,
   MiniBacklogWidget,
 } from './components/DashboardWidgets';
 
@@ -187,9 +185,6 @@ function Home({
   const [goalProgress, setGoalProgress] = useState({ weekly: [], monthly: [] });
   const [streaks, setStreaks] = useState({ current: 0, longest: 0 });
   const [weeklyHabitStats, setWeeklyHabitStats] = useState({ totalHours: 0, sessions: 0, daysPlayed: 0, uniqueGames: 0 });
-  const [discoveryRecommendations, setDiscoveryRecommendations] = useState([]);
-  const [discoveryLoading, setDiscoveryLoading] = useState(false);
-  const [wishlistVersion, setWishlistVersion] = useState(0);
   const [buyRecommendations, setBuyRecommendations] = useState(null);
   const [buyRecommendationsLoading, setBuyRecommendationsLoading] = useState(false);
   const [surpriseShelfIndex, setSurpriseShelfIndex] = useState(null);
@@ -269,22 +264,6 @@ function Home({
 
   useEffect(() => {
     let cancelled = false;
-    setDiscoveryLoading(true);
-    DiscoveryService.getRecommendations({ limit: 6 })
-      .then((recs) => {
-        if (!cancelled) setDiscoveryRecommendations(recs);
-      })
-      .catch(() => {
-        if (!cancelled) setDiscoveryRecommendations([]);
-      })
-      .finally(() => {
-        if (!cancelled) setDiscoveryLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
     setBuyRecommendationsLoading(true);
     const wishlist = WishlistService.getWishlist();
     const snapshot = BuyRecommendationService.getSnapshot(library, wishlist, { familiarityBias: homeFamiliarityBias });
@@ -294,7 +273,7 @@ function Home({
     }
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [library, wishlistVersion, homeFamiliarityBias]);
+  }, [library, homeFamiliarityBias]);
 
   useEffect(() => {
     const savedUsername = localStorage.getItem('gamepilot-profileUsername') || localStorage.getItem('profileUsername') || '';
@@ -995,96 +974,6 @@ function Home({
     };
   }, [library]);
 
-  const renderDiscoveryContent = () => (
-    <>
-      {discoveryLoading ? (
-        <div className="discovery-skeleton-grid">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="discovery-skeleton-card" />
-          ))}
-        </div>
-      ) : discoveryRecommendations.length > 0 ? (
-        <div className="discovery-grid">
-          <div className="discovery-header">
-            <span>Matched to {personaSnapshot?.personaIdentity?.label || 'your playstyle'}</span>
-            <button
-              className="discovery-refresh-btn"
-              disabled={discoveryLoading}
-              onClick={() => {
-                setDiscoveryLoading(true);
-                DiscoveryService.clearCache();
-                DiscoveryService.getRecommendations({ limit: 6, forceRefresh: true })
-                  .then((recs) => setDiscoveryRecommendations(recs))
-                  .catch(() => setDiscoveryRecommendations([]))
-                  .finally(() => setDiscoveryLoading(false));
-              }}
-              title="Refresh recommendations"
-            >
-              {discoveryLoading ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-          <div className="discovery-cards" key={wishlistVersion}>
-            {discoveryRecommendations.map((game) => (
-              <article key={game.id} className="discovery-card">
-                <div className="discovery-card-badge">
-                  <span>{personaSnapshot?.source === 'empty' ? (game.matchReasons?.[0] || 'Popular') : `${game.matchScore}% match`}</span>
-                </div>
-                <h4>{game.name}</h4>
-                <div className="discovery-card-meta">
-                  <span className="discovery-genres">{game.genres.slice(0, 2).join(' · ')}</span>
-                  <span className="discovery-rating">{game.rating}%</span>
-                </div>
-                <div className="discovery-card-reasons">
-                  {game.matchReasons.slice(0, 2).map((reason, i) => (
-                    <span key={i}>{reason}</span>
-                  ))}
-                </div>
-                <div className="discovery-card-price">
-                  {game.priceFormatted.original && (
-                    <span className="discovery-original">{game.priceFormatted.original}</span>
-                  )}
-                  <span className="discovery-price">{game.priceFormatted.display}</span>
-                  {game.priceFormatted.discount > 0 && (
-                    <span className="discovery-discount">-{game.priceFormatted.discount}%</span>
-                  )}
-                </div>
-                <div className="discovery-card-actions">
-                  <a
-                    href={`https://store.steampowered.com/search/?term=${encodeURIComponent(game.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="discovery-link"
-                  >
-                    View on Steam
-                  </a>
-                  <button
-                    className="discovery-wishlist-btn"
-                    onClick={() => {
-                      if (DiscoveryService.isInWishlist(game.id)) {
-                        DiscoveryService.removeFromWishlist(game.id);
-                      } else {
-                        DiscoveryService.addToWishlist(game);
-                      }
-                      setWishlistVersion((v) => v + 1);
-                    }}
-                  >
-                    {DiscoveryService.isInWishlist(game.id) ? 'Saved' : 'Wishlist'}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="discovery-empty">
-          <Sparkles size={28} />
-          <p>No recommendations yet.</p>
-          <span>Play a few sessions and we’ll surface games that match your vibe.</span>
-        </div>
-      )}
-    </>
-  );
-
   const renderBuyRecommendations = () => {
     if (buyRecommendationsLoading) {
       return (
@@ -1484,16 +1373,6 @@ function Home({
           </CollapsibleSection>
 
           <CollapsibleSection
-            title="Discover Games"
-            subtitle="Games that match your vibe, pulled from Steam and beyond."
-            icon={<Sparkles size={18} />}
-            className="home-discovery-section"
-            defaultOpen={false}
-          >
-            {renderDiscoveryContent()}
-          </CollapsibleSection>
-
-          <CollapsibleSection
             title="Buy Next"
             subtitle="Your wishlist ranked by what you actually play."
             icon={<Sparkles size={18} />}
@@ -1642,16 +1521,6 @@ function Home({
           </HomeSection>
 
           <HomeSection
-            className="home-discovery-section"
-            eyebrow="Discover"
-            title="Games to Buy"
-            copy="Persona-matched picks from Steam and beyond."
-            compact
-          >
-            {renderDiscoveryContent()}
-          </HomeSection>
-
-          <HomeSection
             className="home-wishlist-section"
             eyebrow="Your Wishlist"
             title="Track What to Buy Next"
@@ -1677,14 +1546,6 @@ function Home({
                 <MiniQuestWidget
                   weeklyQuest={weeklyQuest}
                   handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
-                />
-                <MiniNextUpWidget
-                  game={tonightPickGame}
-                  entry={tonightPickEntry}
-                  artwork={tonightPickArtwork}
-                  placeholder={tonightPickPlaceholder}
-                  platformIcons={platformIcons}
-                  onLaunch={launchTonightPick}
                 />
                 <MiniBacklogWidget
                   libraryCount={library?.length || 0}
