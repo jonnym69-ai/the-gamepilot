@@ -36,13 +36,6 @@ import {
   BecauseYouAreSection,
   FamiliarOrFreshNudge,
 } from './components/HomeDashboardSections';
-import {
-  DashboardWidgetGrid,
-  MiniStatsWidget,
-  MiniQuestWidget,
-  MiniBacklogWidget,
-} from './components/DashboardWidgets';
-
 const GETTING_STARTED_PREFERENCE_KEY = 'gettingStartedPreferences';
 
 const readGettingStartedPreferences = () => {
@@ -1530,29 +1523,6 @@ function Home({
             <WishlistSection library={library} platformIcons={platformIcons} onLaunchGame={onLaunchGame} />
           </HomeSection>
 
-          <HomeSection
-            className="home-widgets-section"
-            eyebrow="Widgets"
-            title="At a Glance"
-            copy="Quick stats and updates from your library."
-            compact
-          >
-              <DashboardWidgetGrid>
-                <MiniStatsWidget
-                  weeklyPlayDays={weeklyPlayDays}
-                  weeklyPlaytimeHours={weeklyPlaytimeHours}
-                  libraryCount={library?.length || 0}
-                />
-                <MiniQuestWidget
-                  weeklyQuest={weeklyQuest}
-                  handleWeeklyQuestPinToggle={handleWeeklyQuestPinToggle}
-                />
-                <MiniBacklogWidget
-                  libraryCount={library?.length || 0}
-                  completedCount={library?.filter(g => g?.status === 'completed' || g?.completed).length || 0}
-                />
-              </DashboardWidgetGrid>
-          </HomeSection>
         </>
       )}
 
