@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, X, Play, RotateCcw, Sparkles } from 'lucide-react';
+import { ArrowLeft, Heart, X, Play, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
 import NavBar from './NavBar';
 import LazyImage from './components/LazyImage';
 import { GamingIdentity } from './GamingIdentity';
@@ -446,13 +446,13 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
           </button>
 
           {shortlist.length > 0 && (
-            <div className="swipe-existing-shortlist">
-              <span>You have {shortlist.length} game{shortlist.length !== 1 ? 's' : ''} in your shortlist</span>
+            <div className="swipe-filter-shortlist">
+              {renderShortlistPanel(true)}
               <button
                 className="swipe-clear-shortlist-btn"
                 onClick={() => { saveShortlist([]); setShortlist([]); }}
               >
-                Clear
+                <Trash2 size={14} /> Clear Shortlist
               </button>
             </div>
           )}
@@ -537,7 +537,7 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
         </button>
       </div>
 
-      {showShortlistDrawer && renderShortlistPanel()}
+      {renderShortlistPanel()}
 
       <div className="swipe-card-area">
         {currentGame && (
