@@ -33,7 +33,8 @@ class TrialService {
   }
 
   static isTrialActive(productId) {
-    return this.getTrialState(productId).active;
+    // Trials are no longer needed; all features are free
+    return true;
   }
 
   static startTrial(productId) {

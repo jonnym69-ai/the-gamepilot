@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Palette, Sparkles, Wand2, Trash2, Square, Type, Zap, FolderOpen, Layers } from 'lucide-react';
 import NavBar from './NavBar';
-import { useTheme } from './ThemeContext';
 import StorageService from './services/StorageService';
-import EntitlementService from './services/EntitlementService';
 import './ThemeBuilder.css';
 
 function hexToRgb(hex) {
@@ -29,9 +27,9 @@ const EFFECTS = [
   { id: 'none', name: 'None' },
   { id: 'snow', name: 'Snow' },
   { id: 'pulse', name: 'Subtle Pulse' },
-  { id: 'particles', name: 'Floating Particles', premium: true },
-  { id: 'starfield', name: 'Starfield', premium: true },
-  { id: 'aurora', name: 'Aurora Glow', premium: true },
+  { id: 'particles', name: 'Floating Particles' },
+  { id: 'starfield', name: 'Starfield' },
+  { id: 'aurora', name: 'Aurora Glow' },
 ];
 
 const ACCENT_PRESETS = [
@@ -40,8 +38,6 @@ const ACCENT_PRESETS = [
 
 export default function ThemeBuilder() {
   const navigate = useNavigate();
-  const { hasPatreonAccess } = useTheme();
-  const hasAdvancedBuilder = hasPatreonAccess() || EntitlementService.hasEntitlement('advanced_theme_builder');
 
   const [bgType, setBgType] = useState('solid');
   const [solidColor, setSolidColor] = useState('#0f172a');
@@ -87,8 +83,6 @@ export default function ThemeBuilder() {
 
   const [previewActive, setPreviewActive] = useState(false);
 
-  const isPremiumEffect = (fxId) => EFFECTS.find((f) => f.id === fxId)?.premium ?? false;
-
   useEffect(() => {
     const saved = StorageService.get('themeBuilderConfig', null);
     if (saved) {
@@ -98,7 +92,7 @@ export default function ThemeBuilder() {
       setGradientTo(saved.gradientTo || '#00d2d3');
       setGradientAngle(saved.gradientAngle || 135);
       const loadedEffect = saved.effect || 'none';
-      setEffect(isPremiumEffect(loadedEffect) && !hasAdvancedBuilder ? 'none' : loadedEffect);
+      setEffect(loadedEffect);
       setAccent(saved.accent || '#00d2d3');
       setCardRadius(saved.cardRadius ?? 12);
       setCardBlur(saved.cardBlur ?? 12);
@@ -118,7 +112,7 @@ export default function ThemeBuilder() {
     }
     setDoodleStyle(StorageService.getString('doodleStyleOverride') || 'auto');
     setDoodleWordmark(StorageService.getString('doodleWordmark', 'GamePilot'));
-  }, [hasAdvancedBuilder]);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -312,16 +306,6 @@ export default function ThemeBuilder() {
         </p>
       </div>
 
-      {!hasAdvancedBuilder && (
-        <div className="builder-upgrade-banner">
-          <span className="builder-upgrade-badge">Pro</span>
-          <span>Unlock advanced atmosphere controls, neon glow, save slots, and premium effects.</span>
-          <button className="builder-upgrade-btn" onClick={() => navigate('/donate')}>
-            Unlock Advanced Theme Builder
-          </button>
-        </div>
-      )}
-
       <div className="theme-builder-grid">
         {/* Left Panel — Controls */}
         <div className="theme-builder-panel">
@@ -419,23 +403,16 @@ export default function ThemeBuilder() {
           <section className="builder-section">
             <h3><Sparkles size={18} /> Effect</h3>
             <div className="builder-options">
-              {EFFECTS.map((fx) => {
-                const locked = fx.premium && !hasAdvancedBuilder;
-                return (
-                  <button
-                    key={fx.id}
-                    className={`builder-option ${effect === fx.id ? 'active' : ''} ${locked ? 'locked' : ''}`}
-                    onClick={() => {
-                      if (locked) return;
-                      setEffect(fx.id);
-                    }}
-                    title={locked ? 'Unlock Advanced Theme Builder to use this effect' : fx.name}
-                  >
-                    {fx.name}
-                    {locked && <span className="builder-lock-icon">🔒</span>}
-                  </button>
-                );
-              })}
+              {EFFECTS.map((fx) => (
+                <button
+                  key={fx.id}
+                  className={`builder-option ${effect === fx.id ? 'active' : ''}`}
+                  onClick={() => setEffect(fx.id)}
+                  title={fx.name}
+                >
+                  {fx.name}
+                </button>
+              ))}
             </div>
             {effect !== 'none' && (
               <>
@@ -477,52 +454,42 @@ export default function ThemeBuilder() {
             )}
           </section>
 
-          {hasAdvancedBuilder ? (
-            <section className="builder-section">
-              <h3><Sparkles size={18} /> Atmosphere</h3>
-              <div className="builder-row">
-                <label className="builder-label">Vignette: {vignette}%</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="35"
-                  value={vignette}
-                  onChange={(e) => setVignette(parseInt(e.target.value))}
-                  className="builder-slider"
-                />
-              </div>
-              <div className="builder-row">
-                <label className="builder-label">Grain: {grain}%</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="25"
-                  value={grain}
-                  onChange={(e) => setGrain(parseInt(e.target.value))}
-                  className="builder-slider"
-                />
-              </div>
-              <div className="builder-row">
-                <label className="builder-label">Bloom: {bloom}%</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="35"
-                  value={bloom}
-                  onChange={(e) => setBloom(parseInt(e.target.value))}
-                  className="builder-slider"
-                />
-              </div>
-            </section>
-          ) : (
-            <section className="builder-section builder-section-locked">
-              <h3><Sparkles size={18} /> Atmosphere <span className="builder-premium-badge">Pro</span></h3>
-              <p className="builder-locked-text">Vignette, film grain, and bloom controls are part of the Advanced Theme Builder.</p>
-              <button className="builder-inline-unlock" onClick={() => navigate('/donate')}>
-                Unlock
-              </button>
-            </section>
-          )}
+          <section className="builder-section">
+            <h3><Sparkles size={18} /> Atmosphere</h3>
+            <div className="builder-row">
+              <label className="builder-label">Vignette: {vignette}%</label>
+              <input
+                type="range"
+                min="0"
+                max="35"
+                value={vignette}
+                onChange={(e) => setVignette(parseInt(e.target.value))}
+                className="builder-slider"
+              />
+            </div>
+            <div className="builder-row">
+              <label className="builder-label">Grain: {grain}%</label>
+              <input
+                type="range"
+                min="0"
+                max="25"
+                value={grain}
+                onChange={(e) => setGrain(parseInt(e.target.value))}
+                className="builder-slider"
+              />
+            </div>
+            <div className="builder-row">
+              <label className="builder-label">Bloom: {bloom}%</label>
+              <input
+                type="range"
+                min="0"
+                max="35"
+                value={bloom}
+                onChange={(e) => setBloom(parseInt(e.target.value))}
+                className="builder-slider"
+              />
+            </div>
+          </section>
 
           <section className="builder-section">
             <h3><Wand2 size={18} /> Accent</h3>
@@ -640,31 +607,21 @@ export default function ThemeBuilder() {
             </div>
           </section>
 
-          {hasAdvancedBuilder ? (
-            <section className="builder-section">
-              <h3><Zap size={18} /> Glow</h3>
-              <div className="builder-row">
-                <label className="builder-label">Neon Accent Glow</label>
-                <div className="builder-toggle">
-                  <input
-                    type="checkbox"
-                    checked={neonGlow}
-                    onChange={(e) => setNeonGlow(e.target.checked)}
-                    id="neon-glow-toggle"
-                  />
-                  <label htmlFor="neon-glow-toggle" className="builder-toggle-slider" />
-                </div>
+          <section className="builder-section">
+            <h3><Zap size={18} /> Glow</h3>
+            <div className="builder-row">
+              <label className="builder-label">Neon Accent Glow</label>
+              <div className="builder-toggle">
+                <input
+                  type="checkbox"
+                  checked={neonGlow}
+                  onChange={(e) => setNeonGlow(e.target.checked)}
+                  id="neon-glow-toggle"
+                />
+                <label htmlFor="neon-glow-toggle" className="builder-toggle-slider" />
               </div>
-            </section>
-          ) : (
-            <section className="builder-section builder-section-locked">
-              <h3><Zap size={18} /> Glow <span className="builder-premium-badge">Pro</span></h3>
-              <p className="builder-locked-text">Neon accent glow for cards and buttons.</p>
-              <button className="builder-inline-unlock" onClick={() => navigate('/donate')}>
-                Unlock
-              </button>
-            </section>
-          )}
+            </div>
+          </section>
 
           {effect === 'particles' && (
             <section className="builder-section">
@@ -694,71 +651,61 @@ export default function ThemeBuilder() {
             </section>
           )}
 
-          {hasAdvancedBuilder ? (
-            <section className="builder-section">
-              <h3><FolderOpen size={18} /> Save Slots</h3>
-              <div className="builder-row">
-                <input
-                  type="text"
-                  placeholder="Slot name (e.g. Sunset Vibe)"
-                  value={slotName}
-                  onChange={(e) => setSlotName(e.target.value)}
-                  className="builder-input"
-                  style={{ flex: 1 }}
-                />
-                <button
-                  className="builder-option"
-                  onClick={() => {
-                    if (!slotName.trim()) return;
-                    const config = StorageService.get('themeBuilderConfig', {});
-                    const slots = StorageService.get('themeBuilderSlots', {});
-                    slots[slotName.trim()] = { ...config, savedAt: Date.now() };
-                    StorageService.set('themeBuilderSlots', slots);
-                    setSlotName('');
-                  }}
-                >
-                  Save
-                </button>
-              </div>
-              <div className="builder-slot-list">
-                {Object.entries(StorageService.get('themeBuilderSlots', {})).map(([name, data]) => (
-                  <div key={name} className="builder-slot-chip">
-                    <span className="builder-slot-name">{name}</span>
-                    <div className="builder-slot-actions">
-                      <button
-                        className="builder-slot-btn"
-                        onClick={() => {
-                          StorageService.set('themeBuilderConfig', data);
-                          window.location.reload();
-                        }}
-                      >
-                        Load
-                      </button>
-                      <button
-                        className="builder-slot-btn builder-slot-delete"
-                        onClick={() => {
-                          const slots = StorageService.get('themeBuilderSlots', {});
-                          delete slots[name];
-                          StorageService.set('themeBuilderSlots', slots);
-                          window.location.reload();
-                        }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ) : (
-            <section className="builder-section builder-section-locked">
-              <h3><FolderOpen size={18} /> Save Slots <span className="builder-premium-badge">Pro</span></h3>
-              <p className="builder-locked-text">Save and load unlimited theme presets.</p>
-              <button className="builder-inline-unlock" onClick={() => navigate('/donate')}>
-                Unlock
+          <section className="builder-section">
+            <h3><FolderOpen size={18} /> Save Slots</h3>
+            <div className="builder-row">
+              <input
+                type="text"
+                placeholder="Slot name (e.g. Sunset Vibe)"
+                value={slotName}
+                onChange={(e) => setSlotName(e.target.value)}
+                className="builder-input"
+                style={{ flex: 1 }}
+              />
+              <button
+                className="builder-option"
+                onClick={() => {
+                  if (!slotName.trim()) return;
+                  const config = StorageService.get('themeBuilderConfig', {});
+                  const slots = StorageService.get('themeBuilderSlots', {});
+                  slots[slotName.trim()] = { ...config, savedAt: Date.now() };
+                  StorageService.set('themeBuilderSlots', slots);
+                  setSlotName('');
+                }}
+              >
+                Save
               </button>
-            </section>
-          )}
+            </div>
+            <div className="builder-slot-list">
+              {Object.entries(StorageService.get('themeBuilderSlots', {})).map(([name, data]) => (
+                <div key={name} className="builder-slot-chip">
+                  <span className="builder-slot-name">{name}</span>
+                  <div className="builder-slot-actions">
+                    <button
+                      className="builder-slot-btn"
+                      onClick={() => {
+                        StorageService.set('themeBuilderConfig', data);
+                        window.location.reload();
+                      }}
+                    >
+                      Load
+                    </button>
+                    <button
+                      className="builder-slot-btn builder-slot-delete"
+                      onClick={() => {
+                        const slots = StorageService.get('themeBuilderSlots', {});
+                        delete slots[name];
+                        StorageService.set('themeBuilderSlots', slots);
+                        window.location.reload();
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <section className="builder-section">
             <h3><Layers size={18} /> Doodle Style</h3>

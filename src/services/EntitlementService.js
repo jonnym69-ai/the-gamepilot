@@ -127,7 +127,8 @@ export class EntitlementService {
   }
 
   static hasEntitlement(productId) {
-    return Boolean(this.getEntitlements()[productId]);
+    // All features are free; payment gates removed
+    return true;
   }
 
   static unlockProduct(productId, source = 'manual', code = null) {

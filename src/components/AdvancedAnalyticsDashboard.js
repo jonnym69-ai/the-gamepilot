@@ -10,7 +10,6 @@ import {
   DollarSign,
   Gamepad2,
   Layers,
-  Lock,
   PieChart as PieChartIcon,
   Target,
   TrendingUp,
@@ -61,7 +60,7 @@ const InsightCard = ({ insight }) => (
   </div>
 );
 
-export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro = false }) {
+export function AdvancedAnalyticsDashboard({ library, username = 'Gamer' }) {
   const analytics = useMemo(() => AdvancedAnalyticsService.getFullAdvancedAnalytics(library), [library]);
   const cardRef = useRef(null);
 
@@ -71,22 +70,6 @@ export function AdvancedAnalyticsDashboard({ library, username = 'Gamer', isPro 
       <div className="aad-empty">
         <Brain size={32} />
         <p>Add games to your library to unlock advanced analytics.</p>
-      </div>
-    );
-  }
-
-  if (!isPro) {
-    return (
-      <div className="aad-locked">
-        <div className="aad-locked-content">
-          <Lock size={40} />
-          <h3>Advanced Analytics is a Pro feature</h3>
-          <p>
-            Unlock deep breakdowns by developer, publisher, price tier, value-per-hour, completion rates,
-            genre evolution, and backlog investments.
-          </p>
-          <span className="aad-locked-code">Use unlock code: GP-PRO-FOUNDERS-2026</span>
-        </div>
       </div>
     );
   }

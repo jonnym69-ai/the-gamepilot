@@ -231,20 +231,20 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
 );
 
 const UNLOCK_BENEFITS = {
-  gamepilot_pro: 'Unlocks everything: Theme Builder, Layout Pack, Widget Pack, Power Tools, and Premium Themes.',
-  advanced_theme_builder: 'Access the Advanced Theme Builder with extra polish options and future builder upgrades.',
-  layout_pack: 'Unlock premium layout and presentation packs for the Library and dashboard.',
-  widget_pack: 'Unlocks weekly retention quests and GamePilot Picks widgets on the Home dashboard.',
-  power_tools: 'Unlocks Bulk Mode + Library Analytics + Recommendation Engine Tuner with tunable weights for power users.',
-  premium_theme_pack: 'Unlocks premium theme drops and exclusive colour palettes.',
+  gamepilot_pro: 'Everything is included free: Theme Builder, Layout Pack, Widget Pack, Power Tools, and Premium Themes.',
+  advanced_theme_builder: 'Use the Advanced Theme Builder with extra polish options and future builder upgrades.',
+  layout_pack: 'Premium layout and presentation packs for the Library and dashboard.',
+  widget_pack: 'Weekly retention quests and GamePilot Picks widgets on the Home dashboard.',
+  power_tools: 'Bulk Mode + Library Analytics + Recommendation Engine Tuner with tunable weights.',
+  premium_theme_pack: 'Premium theme drops and exclusive colour palettes.',
 };
 
-// Premium Unlocks Panel — discover one-off store purchases
-const PremiumUnlocksPanel = ({ catalog, onNavigate }) => (
+// Feature Catalogue — everything is now free
+const PremiumUnlocksPanel = ({ catalog }) => (
   <div className="rewards-panel">
     <div className="rewards-panel-header">
-      <h2>Premium Unlocks</h2>
-      <p>Permanent one-off upgrades that support GamePilot development.</p>
+      <h2>Feature Catalogue</h2>
+      <p>Every feature pack is included for free. No unlocks, no purchases.</p>
     </div>
     <div className="rewards-card-grid">
       {catalog.map((product) => (
@@ -272,25 +272,10 @@ const PremiumUnlocksPanel = ({ catalog, onNavigate }) => (
             <div style={{ fontSize: '0.75rem', opacity: 0.9, marginTop: '8px', padding: '6px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)' }}>
               {UNLOCK_BENEFITS[product.id] || 'Permanent unlock.'}
             </div>
-            {product.unlocked ? (
-              <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                Owned
-              </div>
-            ) : (
-              <div className="reward-locked-overlay" style={{ opacity: 0.55 }}>
-                <div className="reward-lock-icon">🔒</div>
-              </div>
-            )}
+            <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+              Included
+            </div>
           </div>
-          {!product.unlocked && (
-            <button
-              className="action-button primary"
-              style={{ marginTop: '10px', width: '100%', padding: '8px', fontSize: '13px' }}
-              onClick={onNavigate}
-            >
-              Open Founder Lounge
-            </button>
-          )}
         </div>
       ))}
     </div>
@@ -1079,7 +1064,7 @@ function Rewards() {
       case 'logoAnimation':
         return <LogoAnimationPanel animations={logoAnimations} selectedAnimation={resolvedSelectedAnimation} onSelect={handleSelectAnimation} />;
       case 'premiumUnlocks':
-        return <PremiumUnlocksPanel catalog={premiumCatalog} onNavigate={() => window.location.hash = '#/donate'} />;
+        return <PremiumUnlocksPanel catalog={premiumCatalog} />;
       default:
         return <CardStylesPanel styles={cardStyles} selectedCardStyle={resolvedSelectedCardStyle} onSelect={handleSelectCardStyle} />;
     }
@@ -1152,7 +1137,7 @@ function Rewards() {
               { id: 'exportFilters', label: 'Export Filters', icon: Filter },
               { id: 'recapThemes', label: 'Recap Themes', icon: ImageIcon },
               { id: 'logoAnimation', label: 'Logo Animation', icon: PlayCircle },
-              { id: 'premiumUnlocks', label: 'Premium Unlocks', icon: ShoppingBag }
+              { id: 'premiumUnlocks', label: 'Feature Catalogue', icon: ShoppingBag }
             ].map((section) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;

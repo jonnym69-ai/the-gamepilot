@@ -6,7 +6,6 @@ import CollapsibleSection from './components/CollapsibleSection';
 import PatreonTiersPanel from './components/PatreonTiersPanel';
 import { openExternalUrl } from './services/ElectronBridge';
 import StorageService from './services/StorageService';
-import EntitlementService from './services/EntitlementService';
 import './Donate.css';
 
 const TIER_LABEL_MAP = {
@@ -46,11 +45,6 @@ function Donate({ theme }) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
   const [validationSuccess, setValidationSuccess] = useState(false);
-  const [storeCode, setStoreCode] = useState('');
-  const [storeMessage, setStoreMessage] = useState('');
-  const [storeSuccess, setStoreSuccess] = useState(false);
-  const [storeCatalog, setStoreCatalog] = useState(() => EntitlementService.getCatalog());
-
   // Unified code redemption
   const [unifiedCode, setUnifiedCode] = useState('');
   const [unifiedMessage, setUnifiedMessage] = useState('');
@@ -319,17 +313,6 @@ function Donate({ theme }) {
     }
   };
 
-  const redeemStoreUnlock = () => {
-    const result = EntitlementService.redeemCode(storeCode);
-    setStoreMessage(result.message);
-    setStoreSuccess(result.success);
-
-    if (result.success) {
-      setStoreCode('');
-      setStoreCatalog(EntitlementService.getCatalog());
-    }
-  };
-
   const redeemUnifiedCode = () => {
     const code = unifiedCode.trim().toUpperCase();
     if (!code) {
@@ -342,18 +325,6 @@ function Donate({ theme }) {
     setUnifiedMessage('');
 
     setTimeout(() => {
-      // 1. Try store unlock codes first
-      const storeResult = EntitlementService.redeemCode(code);
-      if (storeResult.success) {
-        setUnifiedMessage(storeResult.message);
-        setUnifiedSuccess(true);
-        setUnifiedCode('');
-        setStoreCatalog(EntitlementService.getCatalog());
-        setIsValidating(false);
-        return;
-      }
-
-      // 2. Try Patreon / founder codes
       const codeData = validPatreonCodes[code];
       if (codeData) {
         const existingFounders = StorageService.get('userFounders', []);
@@ -492,11 +463,11 @@ function Donate({ theme }) {
         <section className="founder-hero">
           <div className="hero-text">
             <div className="hero-badge">
-              <Sparkles size={16} /> Founder Lounge
+              <Sparkles size={16} /> Supporter Lounge
             </div>
-            <h1>The private lounge for the players helping build GamePilot.</h1>
+            <h1>GamePilot is free. Your support keeps it going.</h1>
             <p>
-              The Founder Lounge is where supporter identity, founder cosmetics, premium recap style, and your support timeline come together. Everyone still progresses through play. Founders just get a more personal cockpit layer.
+              Every feature, theme, and tool is unlocked for everyone. The Supporter Lounge is a thank-you space for people who choose to back development — with founder recognition, cosmetic perks, and an XP boost.
             </p>
             <div className="hero-actions">
               <button className="hero-primary" onClick={scrollToCodeForm}>
@@ -668,16 +639,16 @@ function Donate({ theme }) {
         {/* Unified Code Redemption */}
         <div ref={codeFormRef}>
           <CollapsibleSection
-            title="Redeem a Code"
-            subtitle="Enter any GamePilot code — store unlock, Patreon tier, or founder code — and we'll handle the rest."
-            badge="One box"
+            title="Redeem a Patreon Code"
+            subtitle="Enter your Patreon or founder code to activate your supporter tier and XP boost."
+            badge="Patreon"
             icon={<Key size={18} />}
             className="donate-folder"
           >
             <div className="become-founder-section">
-              <h2><Key size={24} /> Redeem Any Code</h2>
+              <h2><Key size={24} /> Redeem a Patreon Code</h2>
               <p className="founder-signup-intro">
-                One field for every code type. Paste your unlock code, Patreon tier code, or founder code here and GamePilot will sort it out automatically.
+                Paste your Patreon supporter code here to unlock the lounge, add your name to the founders wall, and activate any included XP boost.
               </p>
 
               <div className="unified-code-form">
@@ -715,96 +686,8 @@ function Donate({ theme }) {
                 )}
 
                 <div className="unified-code-hints">
-                  <span><Key size={12} /> Store codes unlock product packs</span>
                   <span><Star size={12} /> Founder codes activate supporter perks</span>
                 </div>
-              </div>
-            </div>
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="One-Off Store Unlocks"
-            subtitle="Redeem permanent GamePilot unlocks bought through Patreon shop products or supporter drops."
-            badge={storeCatalog.filter((product) => product.unlocked).length ? `${storeCatalog.filter((product) => product.unlocked).length} unlocked` : 'Store codes'}
-            icon={<Sparkles size={18} />}
-            className="donate-folder"
-          >
-            <div className="become-founder-section">
-              <h2><Sparkles size={24} /> Permanent Unlocks</h2>
-              <p className="founder-signup-intro">
-                One-off unlocks are separate from monthly XP boosts. Buy once, redeem once, and keep the feature pack permanently on this device.
-              </p>
-
-              <div className="store-unlock-grid">
-                {storeCatalog.map((product) => {
-                  const entitlement = product.unlocked ? EntitlementService.getEntitlements()[product.id] : null;
-                  const hasPro = EntitlementService.hasEntitlement('gamepilot_pro');
-                  const includedInPro = product.id !== 'gamepilot_pro' && hasPro;
-                  return (
-                    <div key={product.id} className={`store-unlock-card ${product.unlocked ? 'unlocked' : ''}`}>
-                      <div className="store-unlock-meta">
-                        <span className="store-unlock-type">{product.type}</span>
-                        {product.unlocked && (
-                          <span className="store-unlock-owned"><Check size={14} /> Owned</span>
-                        )}
-                        {!product.unlocked && includedInPro && (
-                          <span className="store-unlock-included"><Check size={14} /> In Pro</span>
-                        )}
-                      </div>
-                      <h3>{product.name}</h3>
-                      <p>{product.description}</p>
-                      {!product.unlocked && !includedInPro && (
-                        <div className="store-unlock-price">
-                          <span className="price-gbp">£{product.priceGBP}</span>
-                          <span className="price-usd">${product.priceUSD}</span>
-                          {product.id !== 'gamepilot_pro' && (
-                            <span className="price-bundle-note">or Pro bundle</span>
-                          )}
-                        </div>
-                      )}
-                      {entitlement?.unlockedAt && (
-                        <span className="store-unlock-date">
-                          Unlocked {new Date(entitlement.unlockedAt).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="code-entry-form store-code-form">
-                <div className="code-input-group">
-                  <label htmlFor="store-code">One-Off Unlock Code</label>
-                  <div className="code-input-wrapper">
-                    <input
-                      id="store-code"
-                      type="text"
-                      value={storeCode}
-                      onChange={(e) => {
-                        setStoreCode(e.target.value.toUpperCase());
-                        setStoreMessage('');
-                        setStoreSuccess(false);
-                      }}
-                      placeholder="Enter your unlock code"
-                      className="code-input"
-                      maxLength={40}
-                    />
-                    <button
-                      onClick={redeemStoreUnlock}
-                      disabled={!storeCode.trim()}
-                      className="validate-button"
-                    >
-                      Redeem Unlock
-                    </button>
-                  </div>
-                </div>
-
-                {storeMessage && (
-                  <div className={`validation-message ${storeSuccess ? 'success' : 'error'}`}>
-                    {storeSuccess ? <Check size={16} /> : <AlertCircle size={16} />}
-                    <span>{storeMessage}</span>
-                  </div>
-                )}
               </div>
             </div>
           </CollapsibleSection>

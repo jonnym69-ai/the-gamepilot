@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, Unlock, SlidersHorizontal, Archive, Sparkles as SparklesIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, SlidersHorizontal, Archive, Sparkles as SparklesIcon } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
@@ -18,8 +18,6 @@ import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
 import LabsService from './services/LabsService';
-import EntitlementService from './services/EntitlementService';
-import TrialService from './services/TrialService';
 import { LibraryExportService } from './services/LibraryExportService';
 import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
@@ -57,8 +55,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [startupLaunchLoading, setStartupLaunchLoading] = useState(false);
   const [patreonCode, setPatreonCode] = useState('');
   const [activationResult, setActivationResult] = useState(null);
-  const [storeCode, setStoreCode] = useState('');
-  const [storeCodeResult, setStoreCodeResult] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [previewTheme] = useState(currentTheme);
   const [showLegalModal, setShowLegalModal] = useState(null);
@@ -301,25 +297,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     }
   };
 
-  const handleStoreCodeSubmit = () => {
-    if (!storeCode.trim()) {
-      toastError('Please enter an unlock code');
-      return;
-    }
-
-    const result = EntitlementService.redeemCode(storeCode.trim());
-    setStoreCodeResult(result);
-
-    if (result.success) {
-      success(result.message);
-      setStoreCode('');
-      setTimeout(() => setStoreCodeResult(null), 5000);
-    } else {
-      toastError(result.message);
-      setTimeout(() => setStoreCodeResult(null), 5000);
-    }
-  };
-
   const resetSettings = () => {
     const confirmReset = window.confirm('Are you sure you want to reset all settings to defaults?');
     if (confirmReset) {
@@ -516,12 +493,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                               position: 'relative'
                             }}
                           >
-                            {availableThemes[previewTheme]?.patreonExclusive && !hasPatreonAccess() && (
-                              <div className="theme-wheel-lock-overlay">
-                                <Heart size={20} />
-                                <div className="theme-wheel-lock-text">Patreon Exclusive</div>
-                              </div>
-                            )}
                           </div>
                         </div>
 
@@ -1258,43 +1229,33 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                 </div>
               </CollapsibleSection>
 
-              {/* Backup & Restore — Pro / Power Tools exclusive */}
-              {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')) && (
-                <CollapsibleSection
-                  title="Backup & Restore"
-                  subtitle="Export and import your complete GamePilot data."
-                  badge="Pro"
-                  icon={<Archive size={18} />}
-                  className="settings-folder"
-                  defaultOpen={false}
-                >
-                  <BackupRestoreDashboard
-                    isPro={EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')}
-                  />
-                </CollapsibleSection>
-              )}
+              {/* Backup & Restore */}
+              <CollapsibleSection
+                title="Backup & Restore"
+                subtitle="Export and import your complete GamePilot data."
+                icon={<Archive size={18} />}
+                className="settings-folder"
+                defaultOpen={false}
+              >
+                <BackupRestoreDashboard />
+              </CollapsibleSection>
 
-              {/* Dynamic Backdrop Studio — Pro / Power Tools exclusive */}
-              {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')) && (
-                <CollapsibleSection
-                  title="Dynamic Backdrop Studio"
-                  subtitle="Animated, color-reactive backgrounds from your last played cover art."
-                  badge="Pro"
-                  icon={<SparklesIcon size={18} />}
-                  className="settings-folder"
-                  defaultOpen={false}
-                >
-                  <DynamicBackdropStudio
-                    isPro={EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')}
-                  />
-                </CollapsibleSection>
-              )}
+              {/* Dynamic Backdrop Studio */}
+              <CollapsibleSection
+                title="Dynamic Backdrop Studio"
+                subtitle="Animated, color-reactive backgrounds from your last played cover art."
+                icon={<SparklesIcon size={18} />}
+                className="settings-folder"
+                defaultOpen={false}
+              >
+                <DynamicBackdropStudio />
+              </CollapsibleSection>
 
-              {/* Patreon Supporter Section */}
+              {/* Support Section */}
               <CollapsibleSection
                 title="Support GamePilot"
-                subtitle="Cosmetic supporter extras — all progression rewards unlock free through gameplay."
-                badge={hasPatreonAccess() ? 'Supporter' : 'Themes +'}
+                subtitle="Optional donations help keep development going."
+                badge={hasPatreonAccess() ? 'Supporter' : 'Donate'}
                 icon={<Heart size={18} />}
                 className="settings-folder"
               >
@@ -1305,8 +1266,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                   </div>
                   <div className="patreon-section">
                   <div className="patreon-info">
-                    <p>Every reward, theme, and feature in GamePilot unlocks free through gameplay and XP progression.</p>
-                    <p>Supporters get cosmetic extras — bonus themes, a theme builder with colors and effects, accent colors, and an XP boost — as a thank you for backing development.</p>
+                    <p>Every feature, theme, and tool in GamePilot is now free. No unlocks, no trials, no paid tiers.</p>
+                    <p>If you find the app useful, you can support continued development on Patreon. Supporters get a small XP boost and a thank-you badge as a token of appreciation.</p>
                   </div>
                   <div className="activation-code-section">
                     <div className="setting-item">
@@ -1360,108 +1321,27 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     </div>
                   </div>
 
-                  {/* Store Unlock Code Section */}
-                  <div className="activation-code-section">
-                    <div className="setting-item">
-                      <label>Store Unlock Code <span style={{ fontSize: '12px', opacity: 0.7 }}>(itch.io / one-time)</span></label>
-                      <div className="activation-input-group">
-                        <input
-                          type="text"
-                          placeholder="Enter your store unlock code"
-                          value={storeCode}
-                          onChange={(e) => setStoreCode(e.target.value)}
-                          className="activation-input"
-                          style={{
-                            flex: 1,
-                            padding: '8px 12px',
-                            border: '1px solid var(--border-primary)',
-                            borderRadius: '4px',
-                            backgroundColor: 'var(--bg-secondary)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                        <button
-                          onClick={handleStoreCodeSubmit}
-                          className="activation-button"
-                          style={{
-                            marginLeft: '8px',
-                            padding: '8px 16px',
-                            backgroundColor: 'var(--button-primary-bg)',
-                            color: 'var(--button-primary-text)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          <Unlock size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-                          Redeem
-                        </button>
-                      </div>
-                      {storeCodeResult && (
-                        <div className={`activation-result ${storeCodeResult.success ? 'success' : 'error'}`} style={{
-                          marginTop: '8px',
-                          padding: '8px 12px',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          backgroundColor: storeCodeResult.success ? 'var(--success-bg, #d4edda)' : 'var(--error-bg, #f8d7da)',
-                          color: storeCodeResult.success ? 'var(--success-text, #155724)' : 'var(--error-text, #721c24)',
-                          border: `1px solid ${storeCodeResult.success ? 'var(--success-border, #c3e6cb)' : 'var(--error-border, #f5c6cb)'}`
-                        }}>
-                          {storeCodeResult.message}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="patreon-links">
-                    {(hasPatreonAccess() || EntitlementService.hasEntitlement('advanced_theme_builder') || EntitlementService.hasEntitlement('gamepilot_pro') || TrialService.isTrialActive('advanced_theme_builder')) && (
-                      <button
-                        onClick={() => navigate('/theme-builder')}
-                        className="patreon-button"
-                        style={{
-                          backgroundColor: 'var(--accent-primary)',
-                          color: '#0f172a',
-                          border: 'none',
-                          borderRadius: '8px',
-                          padding: '12px 24px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          fontSize: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                      >
-                        <Palette size={16} />
-                        Open Theme Builder
-                        {TrialService.isTrialActive('advanced_theme_builder') && !EntitlementService.hasEntitlement('advanced_theme_builder') && !EntitlementService.hasEntitlement('gamepilot_pro') && (
-                          <span className="trial-badge">Trial</span>
-                        )}
-                      </button>
-                    )}
-                    {!hasPatreonAccess() && !EntitlementService.hasEntitlement('advanced_theme_builder') && !EntitlementService.hasEntitlement('gamepilot_pro') && !TrialService.isTrialActive('advanced_theme_builder') && (
-                      <button
-                        onClick={() => {
-                          const result = TrialService.startTrial('advanced_theme_builder');
-                          alert(result.message);
-                        }}
-                        className="patreon-button trial-btn"
-                        style={{
-                          borderRadius: '8px',
-                          padding: '12px 24px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          fontSize: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                      >
-                        <Palette size={16} />
-                        Try Theme Builder
-                      </button>
-                    )}
+                    <button
+                      onClick={() => navigate('/theme-builder')}
+                      className="patreon-button"
+                      style={{
+                        backgroundColor: 'var(--accent-primary)',
+                        color: '#0f172a',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '12px 24px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <Palette size={16} />
+                      Open Theme Builder
+                    </button>
                     <button
                       onClick={() => window.open('https://www.patreon.com/cw/GamePilot', '_blank')}
                       className="patreon-button"
@@ -1489,22 +1369,19 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
             </div>
           </div>
 
-          {/* Recommendation Engine Tuner — Power Tools exclusive */}
-          {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro')) && (
-            <div className="settings-section-wrapper">
-              <div className="settings-folder-content">
-                <CollapsibleSection
-                  title="Recommendation Engine Tuner"
-                  subtitle="Fine-tune how GamePilot scores and ranks game recommendations."
-                  badge="Power Tools"
-                  icon={<SlidersHorizontal size={18} />}
-                  className="settings-folder power-tools-folder"
-                >
-                  <RecommendationTunerPanel />
-                </CollapsibleSection>
-              </div>
+          {/* Recommendation Engine Tuner */}
+          <div className="settings-section-wrapper">
+            <div className="settings-folder-content">
+              <CollapsibleSection
+                title="Recommendation Engine Tuner"
+                subtitle="Fine-tune how GamePilot scores and ranks game recommendations."
+                icon={<SlidersHorizontal size={18} />}
+                className="settings-folder power-tools-folder"
+              >
+                <RecommendationTunerPanel />
+              </CollapsibleSection>
             </div>
-          )}
+          </div>
 
           {/* Save Settings */}
           <div className="settings-actions">

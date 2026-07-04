@@ -11,7 +11,6 @@ import { RecommendationEngine } from './services/RecommendationEngine';
 import { GamingIdentity } from './GamingIdentity';
 import { getFamiliarityBias, setFamiliarityBias } from './services/RecommendationWeights';
 import { RetentionQuestService } from './services/RetentionQuestService';
-import EntitlementService from './services/EntitlementService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
@@ -753,8 +752,7 @@ function Home({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [library, retentionRefreshKey]);
-  const hasWidgetPack = EntitlementService.hasEntitlement('widget_pack') || EntitlementService.hasEntitlement('gamepilot_pro');
-  const weeklyQuest = hasWidgetPack ? (retentionSnapshot?.weeklyQuest || {
+  const weeklyQuest = retentionSnapshot?.weeklyQuest || {
     quests: [],
     primaryQuest: null,
     weeklyStats: null,
@@ -762,8 +760,8 @@ function Home({
     totalCount: 0,
     label: 'This Week',
     periodKey: null
-  }) : null;
-  const gamePilotPicksResult = hasWidgetPack ? retentionSnapshot?.gamePilotPicks || null : null;
+  };
+  const gamePilotPicksResult = retentionSnapshot?.gamePilotPicks || null;
   const gamePilotPickEntries = gamePilotPicksResult?.entries || [];
   const trackedRetentionPicksKeyRef = React.useRef('');
   const tonightPickEntry = perfectPlayEntries[0]
@@ -1663,14 +1661,13 @@ function Home({
             <WishlistSection library={library} platformIcons={platformIcons} onLaunchGame={onLaunchGame} />
           </HomeSection>
 
-          {hasWidgetPack && (
-            <HomeSection
-              className="home-widgets-section"
-              eyebrow="Widgets"
-              title="At a Glance"
-              copy="Quick stats and updates from your library."
-              compact
-            >
+          <HomeSection
+            className="home-widgets-section"
+            eyebrow="Widgets"
+            title="At a Glance"
+            copy="Quick stats and updates from your library."
+            compact
+          >
               <DashboardWidgetGrid>
                 <MiniStatsWidget
                   weeklyPlayDays={weeklyPlayDays}
@@ -1694,8 +1691,7 @@ function Home({
                   completedCount={library?.filter(g => g?.status === 'completed' || g?.completed).length || 0}
                 />
               </DashboardWidgetGrid>
-            </HomeSection>
-          )}
+          </HomeSection>
         </>
       )}
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Droplet,
-  Lock,
   Monitor,
   Moon,
   Palette,
@@ -28,7 +27,7 @@ const PREVIEW_URLS = [
   'https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg'
 ];
 
-export function DynamicBackdropStudio({ isPro = false }) {
+export function DynamicBackdropStudio() {
   const [settings, setSettings] = useState(() => DynamicBackdropService.getSettings());
   const [palette, setPalette] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -63,21 +62,6 @@ export function DynamicBackdropStudio({ isPro = false }) {
     if (!palette || !settings.enabled) return {};
     return DynamicBackdropService.generateBackdropCSS(palette, settings);
   }, [palette, settings]);
-
-  if (!isPro) {
-    return (
-      <div className="dbs-locked">
-        <div className="dbs-locked-content">
-          <Lock size={40} />
-          <h3>Dynamic Backdrop Studio is a Pro feature</h3>
-          <p>
-            Transform your GamePilot background with live colors extracted from your last played game cover art.
-          </p>
-          <span className="dbs-locked-code">Use unlock code: GP-PRO-FOUNDERS-2026</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="dynamic-backdrop-studio">

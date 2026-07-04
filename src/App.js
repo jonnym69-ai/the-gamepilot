@@ -37,11 +37,12 @@ import WishlistService from './services/WishlistService';
 import { assignMoodToGame as importedAssignMoodToGame } from './services/MoodAssignmentService';
 import { resolveGameArtwork } from './services/GameArtworkService';
 import DynamicBackdropService from './services/DynamicBackdropService';
-import EntitlementService from './services/EntitlementService';
 import CommandPalette from './components/CommandPalette';
 import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
 import FirstRunWalkthrough, { shouldShowFirstRunWalkthrough } from './components/FirstRunWalkthrough';
+import GamingStoryCard from './components/GamingStoryCard';
+import { GamingStoryService } from './services/GamingStoryService';
 
 // Core pages loaded eagerly.
 const Home = lazy(() => import('./Home'));
@@ -157,6 +158,7 @@ function AppContent() {
   const [stillPlayingDeadlines, setStillPlayingDeadlines] = useState({});
   const [captainLogPrompt, setCaptainLogPrompt] = useState(null);
   const [showFirstRunWalkthrough, setShowFirstRunWalkthrough] = useState(() => shouldShowFirstRunWalkthrough());
+  const [gamingStory, setGamingStory] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(() => StorageService.getString('minimizeOnLaunch') === 'true');
   const { success: toastSuccess, error: toastError } = useToast();
@@ -540,6 +542,14 @@ function AppContent() {
       setLibrary(curatedMerged);
       saveLibrary(curatedMerged);
 
+      if (GamingStoryService.shouldShowFirstStory() && curatedMerged.length > 0) {
+        const story = GamingStoryService.generateFirstScanStory(curatedMerged);
+        if (story) {
+          setGamingStory(story);
+          GamingStoryService.markFirstStoryShown();
+        }
+      }
+
       window.dispatchEvent(new CustomEvent('gamepilot:scan-complete', {
         detail: { scanReport, gameCount: curatedMerged.length }
       }));
@@ -700,12 +710,11 @@ function AppContent() {
     }
   }, [dynamicCoverBg, lastPlayedGame]);
 
-  // Pro: animated dynamic backdrop extracted from the last played cover art.
+  // Animated dynamic backdrop extracted from the last played cover art.
   useEffect(() => {
-    const isPro = EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro');
     const settings = DynamicBackdropService.getSettings();
     const root = document.documentElement;
-    if (!isPro || !settings.enabled || !lastPlayedGame) {
+    if (!settings.enabled || !lastPlayedGame) {
       document.body.classList.remove('dynamic-backdrop-active');
       root.style.removeProperty('--dynamic-backdrop');
       return undefined;
@@ -1044,6 +1053,12 @@ function AppContent() {
           }, 0);
         }}
       />
+      {gamingStory && (
+        <GamingStoryCard
+          story={gamingStory}
+          onContinue={() => setGamingStory(null)}
+        />
+      )}
       <LevelUpToast 
         show={showLevelUp} 
         level={currentLevel} 

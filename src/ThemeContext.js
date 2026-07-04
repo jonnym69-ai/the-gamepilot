@@ -3,7 +3,6 @@ import moodThemes from './themes/moodThemes.json';
 import { AchievementTracker } from './AchievementSystem';
 import StorageService from './services/StorageService';
 import InterfacePreferencesService from './services/InterfacePreferencesService';
-import EntitlementService from './services/EntitlementService';
 
 // Helper function to determine if text should be white or based on theme color
 const getContrastColor = (bgColor) => {
@@ -296,11 +295,8 @@ export const ThemeProvider = ({ children }) => {
     };
   };
 
-  // Check if a theme requires Patreon (exclusive themes)
-  const isPatreonTheme = (themeId) => {
-    const theme = moodThemes.find((t) => t.id === themeId);
-    return theme?.patreonExclusive === true;
-  };
+  // All themes are free; Patreon is now donation-only
+  const isPatreonTheme = () => false;
 
   // Check if user has an active Patreon boost (any tier)
   const hasPatreonAccess = useCallback(() => {
@@ -308,8 +304,8 @@ export const ThemeProvider = ({ children }) => {
     return Boolean(profile?.code) && profile.tier !== null && profile.tier !== 'none';
   }, []);
 
-  // Check premium access (Patreon or store purchase)
-  const hasPremiumAccess = useCallback(() => hasPatreonAccess() || EntitlementService.hasEntitlement('premium_theme_pack') || EntitlementService.hasEntitlement('gamepilot_pro'), [hasPatreonAccess]);
+  // All themes are freely available
+  const hasPremiumAccess = useCallback(() => true, []);
 
   // Get all available themes
   const getAvailableThemes = () => {

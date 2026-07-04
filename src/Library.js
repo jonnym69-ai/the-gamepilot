@@ -32,8 +32,6 @@ import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
-import EntitlementService from './services/EntitlementService';
-import TrialService from './services/TrialService';
 import { GameCurationService } from './services/GameCurationService';
 import EmulatorLibraryService from './services/EmulatorLibraryService';
 import { mergeLibraryUpdates } from './services/LibraryDataService';
@@ -1575,22 +1573,12 @@ function Library({
           >
             <Dices size={16} /> {isLuckyAnimating ? 'Drawing...' : 'Feeling Lucky'}
           </button>
-          {EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro') ? (
-            <button
-              onClick={toggleBulkMode}
-              className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
-            >
-              {bulkMode ? 'Exit Bulk Mode' : 'Bulk Mode'}
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate('/donate')}
-              className="bulk-mode-btn locked"
-              title="Unlock Power Tools to use Bulk Mode"
-            >
-              Bulk Mode 🔒
-            </button>
-          )}
+          <button
+            onClick={toggleBulkMode}
+            className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
+          >
+            {bulkMode ? 'Exit Bulk Mode' : 'Bulk Mode'}
+          </button>
           {bulkMode && (
             <div className="library-bulk-status" role="status" aria-live="polite">
               <span>Bulk Mode</span>
@@ -1613,31 +1601,13 @@ function Library({
               <Trash2 size={16} /> Remove {selectedGames.size}
             </button>
           )}
-          {(EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro') || TrialService.isTrialActive('power_tools')) && !bulkMode && (
+          {!bulkMode && (
             <button
-              onClick={() => {
-                TrialService.recordTrialUse('power_tools');
-                setShowAnalytics(true);
-              }}
+              onClick={() => setShowAnalytics(true)}
               className="export-button"
               title="Open Library Analytics"
             >
               <BarChart3 size={16} /> Analytics
-              {TrialService.isTrialActive('power_tools') && !EntitlementService.hasEntitlement('power_tools') && !EntitlementService.hasEntitlement('gamepilot_pro') && (
-                <span className="trial-badge">Trial</span>
-              )}
-            </button>
-          )}
-          {!EntitlementService.hasEntitlement('power_tools') && !EntitlementService.hasEntitlement('gamepilot_pro') && !TrialService.isTrialActive('power_tools') && !bulkMode && (
-            <button
-              onClick={() => {
-                const result = TrialService.startTrial('power_tools');
-                success(result.message);
-              }}
-              className="export-button trial-btn"
-              title="Try Library Analytics for free"
-            >
-              <BarChart3 size={16} /> Try Analytics
             </button>
           )}
         </div>

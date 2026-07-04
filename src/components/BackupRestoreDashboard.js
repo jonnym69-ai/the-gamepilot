@@ -5,7 +5,6 @@ import {
   ArrowUp,
   Check,
   Database,
-  Lock,
   RefreshCw,
   Save,
   Shield,
@@ -15,29 +14,13 @@ import {
 import BackupService from '../services/BackupService';
 import './BackupRestoreDashboard.css';
 
-export function BackupRestoreDashboard({ isPro = false }) {
+export function BackupRestoreDashboard() {
   const fileRef = useRef(null);
   const [backup, setBackup] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [overwrite, setOverwrite] = useState(false);
-
-  if (!isPro) {
-    return (
-      <div className="brd-locked">
-        <div className="brd-locked-content">
-          <Lock size={40} />
-          <h3>Backup & Restore is a Pro feature</h3>
-          <p>
-            Export your full GamePilot library, sessions, settings, and progress to a JSON file, or restore
-            from a previous backup.
-          </p>
-          <span className="brd-locked-code">Use unlock code: GP-PRO-FOUNDERS-2026</span>
-        </div>
-      </div>
-    );
-  }
 
   const handleCreateBackup = () => {
     setLoading(true);

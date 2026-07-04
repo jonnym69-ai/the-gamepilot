@@ -20,7 +20,6 @@ import CollapsibleSection from './components/CollapsibleSection';
 import PowerStatsDeepDive from './components/PowerStatsDeepDive';
 import { LibraryAnalyticsService } from './services/LibraryAnalyticsService';
 import AdvancedAnalyticsDashboard from './components/AdvancedAnalyticsDashboard';
-import EntitlementService from './services/EntitlementService';
 import { RecapStoryService } from './services/RecapStoryService';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { ProfileService } from './services/ProfileService';
@@ -63,8 +62,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const [isCapturingHabits, setIsCapturingHabits] = useState(false);
   const personaCardRef = useRef(null);
   const [isCapturingPersona, setIsCapturingPersona] = useState(false);
-  const hasPowerTools = EntitlementService.hasEntitlement('power_tools') || EntitlementService.hasEntitlement('gamepilot_pro');
-  const analytics = useMemo(() => (hasPowerTools ? LibraryAnalyticsService.getFullAnalytics(library) : null), [library, hasPowerTools]);
+  const analytics = useMemo(() => LibraryAnalyticsService.getFullAnalytics(library), [library]);
 
   const calculateProgressionData = useCallback((dashboardSnapshot = null) => {
     const unlockedAchievements = [];
@@ -1232,12 +1230,11 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           })()}
         </CollapsibleSection>
 
-        {/* Power Tools — Deep Stats */}
-        {hasPowerTools && analytics && (
+        {/* Power Stats Deep-Dive */}
+        {analytics && (
           <CollapsibleSection
             title="Power Stats Deep-Dive"
             subtitle="Advanced library analytics, diversity scores, and backlog intelligence."
-            badge="Power Tools"
             icon={<Zap size={18} />}
             className="stats-section power-tools-deep-stats"
           >
@@ -1246,22 +1243,18 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
         )}
 
         {/* Advanced Analytics Dashboard */}
-        {hasPowerTools && (
-          <CollapsibleSection
-            title="Advanced Analytics Dashboard"
-            subtitle="Developer, publisher, price tier, value-per-hour, completion, and genre evolution breakdowns."
-            badge="Pro"
-            icon={<BarChart3 size={18} />}
-            className="stats-section advanced-analytics-section"
-            defaultOpen={false}
-          >
-            <AdvancedAnalyticsDashboard
-              library={library}
-              username={StorageService.getString('profileUsername', '') || 'Gamer'}
-              isPro={hasPowerTools}
-            />
-          </CollapsibleSection>
-        )}
+        <CollapsibleSection
+          title="Advanced Analytics Dashboard"
+          subtitle="Developer, publisher, price tier, value-per-hour, completion, and genre evolution breakdowns."
+          icon={<BarChart3 size={18} />}
+          className="stats-section advanced-analytics-section"
+          defaultOpen={false}
+        >
+          <AdvancedAnalyticsDashboard
+            library={library}
+            username={StorageService.getString('profileUsername', '') || 'Gamer'}
+          />
+        </CollapsibleSection>
 
         {library.length === 0 && habitProgress.totalSessions === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
           <EmptyState

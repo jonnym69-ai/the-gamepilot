@@ -4,7 +4,6 @@ import { useTheme } from './ThemeContext';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
 import StorageService from './services/StorageService';
-import EntitlementService from './services/EntitlementService';
 import moodThemes from './themes/moodThemes.json';
 import './Home.css';
 
@@ -81,11 +80,8 @@ function Themes() {
   const {
     currentTheme,
     setTheme,
-    availableThemes,
-    hasPatreonAccess
+    availableThemes
   } = useTheme();
-
-  const hasPremiumAccess = React.useCallback(() => hasPatreonAccess() || EntitlementService.hasEntitlement('premium_theme_pack') || EntitlementService.hasEntitlement('gamepilot_pro'), [hasPatreonAccess]);
 
   const [autoSeasonal, setAutoSeasonal] = useState(() => {
     return StorageService.getString('autoSeasonalTheme') !== 'false';
@@ -136,28 +132,15 @@ function Themes() {
       isCore: false
     }));
 
-    const patreonThemeCards = moodThemes
-      .filter((themeMeta) => themeMeta.patreonExclusive === true)
-      .map((themeMeta) => ({
-        id: themeMeta.id,
-        name: themeMeta.name,
-        description: themeMeta.description || 'Patreon-exclusive supporter theme.',
-        preview: themeMeta.palette?.background || `linear-gradient(135deg, ${themeMeta.palette?.primary || '#ff6b35'}, ${themeMeta.palette?.accent || '#f093fb'})`,
-        unlocked: hasPremiumAccess(),
-        requiredXP: 0,
-        isCore: false,
-        patreonExclusive: true
-      }));
-
     const seen = new Set();
-    return [...coreThemes, ...unlockableThemeCards, ...patreonThemeCards].filter((themeMeta) => {
+    return [...coreThemes, ...unlockableThemeCards].filter((themeMeta) => {
       if (seen.has(themeMeta.id)) {
         return false;
       }
       seen.add(themeMeta.id);
       return true;
     });
-  }, [availableThemes, unlockableThemes, hasPremiumAccess]);
+  }, [availableThemes, unlockableThemes]);
 
   return (
     <div className="themes-page" style={pageStyle}>
@@ -268,19 +251,18 @@ function Themes() {
                   </div>
                   <div className="theme-gallery-badges">
                     {themeMeta.isCore && <span className="confidence-badge theme-gallery-badge">Core</span>}
-                    {themeMeta.patreonExclusive && <span className="confidence-badge theme-gallery-badge supporter">Patreon</span>}
                     {isCurrent && <span className="confidence-badge theme-gallery-badge active">Active</span>}
                   </div>
                 </div>
                 <p className={`theme-gallery-status ${themeMeta.unlocked ? 'unlocked' : 'locked'}`}>
-                  {themeMeta.unlocked ? 'Unlocked' : themeMeta.patreonExclusive ? 'Patreon Exclusive' : `Unlocks at ${themeMeta.requiredXP} XP`}
+                  {themeMeta.unlocked ? 'Unlocked' : `Unlocks at ${themeMeta.requiredXP} XP`}
                 </p>
                 <button
                   className={`action-button primary theme-gallery-action ${isLocked ? 'locked' : ''}`}
                   disabled={isLocked || isCurrent}
                   onClick={() => setTheme(themeMeta.id)}
                 >
-                  {isCurrent ? 'Currently Active' : themeMeta.unlocked ? 'Apply Theme' : themeMeta.patreonExclusive ? 'Supporter Only' : 'Locked'}
+                  {isCurrent ? 'Currently Active' : themeMeta.unlocked ? 'Apply Theme' : 'Locked'}
                 </button>
               </div>
             );
