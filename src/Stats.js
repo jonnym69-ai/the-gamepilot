@@ -12,6 +12,7 @@ import { MilestoneService } from './services/MilestoneService';
 import StorageService from './services/StorageService';
 import { DailyEngagementService } from './services/DailyEngagementService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
+import { getMoodForGame } from './constants/GenresMoods';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
@@ -147,10 +148,11 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       platformCounts[platform] = (platformCounts[platform] || 0) + 1;
     });
 
-    // Mood distribution
+    // Mood distribution (derive from genres if stored mood is missing)
     const moodCounts = {};
     library.forEach(game => {
-      const mood = game.mood || 'Unknown';
+      const mood = game.mood || getMoodForGame(game.genres);
+      if (!mood) return;
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
     });
 
