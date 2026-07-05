@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Sparkles, Eye, SlidersHorizontal, Archive, Sparkles as SparklesIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Eye, SlidersHorizontal, Archive } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
@@ -22,12 +22,11 @@ import { LibraryExportService } from './services/LibraryExportService';
 import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
 import BackupRestoreDashboard from './components/BackupRestoreDashboard';
-import DynamicBackdropStudio from './components/DynamicBackdropStudio';
 import './Settings.css';
 
 function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
   const navigate = useNavigate();
-  const { currentTheme, setTheme, availableThemes, validatePatreonCode, hasPatreonAccess, bigScreenMode, toggleBigScreenMode, autoTheme, toggleAutoTheme } = useTheme();
+  const { currentTheme, setTheme, availableThemes, bigScreenMode, toggleBigScreenMode, autoTheme, toggleAutoTheme } = useTheme();
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [timeFormat, setTimeFormat] = useState('24-hour');
   const [timezone, setTimezone] = useState('UTC');
@@ -53,11 +52,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
   const [startupLaunchSupported, setStartupLaunchSupported] = useState(false);
   const [startupLaunchLoading, setStartupLaunchLoading] = useState(false);
-  const [patreonCode, setPatreonCode] = useState('');
-  const [activationResult, setActivationResult] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [previewTheme] = useState(currentTheme);
-  const [showLegalModal, setShowLegalModal] = useState(null);
   const [customBgImage, setCustomBgImage] = useState('');
   const [customBgOverlay, setCustomBgOverlay] = useState(30);
   const [customBgPreview, setCustomBgPreview] = useState('');
@@ -279,25 +275,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     StorageService.remove('customBgImage');
     StorageService.remove('customBgOverlay');
     success('Custom background cleared!');
-  };
-
-  const handlePatreonCodeSubmit = () => {
-    if (!patreonCode.trim()) {
-      toastError('Please enter a Patreon code');
-      return;
-    }
-
-    const result = validatePatreonCode(patreonCode.trim());
-    setActivationResult(result);
-
-    if (result.success) {
-      success(result.message);
-      setPatreonCode(''); // Clear the input after successful activation
-      setTimeout(() => setActivationResult(null), 5000); // Clear result message after 5 seconds
-    } else {
-      toastError(result.message);
-      setTimeout(() => setActivationResult(null), 5000); // Clear error message after 5 seconds
-    }
   };
 
   const resetSettings = () => {
@@ -597,44 +574,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                 </div>
               </CollapsibleSection>
 
-              {/* Recommendation Style Section */}
-              <CollapsibleSection
-                title="Recommendation Style"
-                subtitle="Choose how GamePilot suggests games to you."
-                badge={recommendationStyle === 'balanced' ? 'Balanced' : recommendationStyle}
-                icon={<Sparkles size={18} />}
-                className="settings-folder"
-              >
-                <div className="settings-section">
-                  <div className="section-header">
-                    <Sparkles size={20} />
-                    <h2>Recommendation Style</h2>
-                  </div>
-                  <div className="settings-group">
-                    <div className="setting-item">
-                      <label>Recommendation Style</label>
-                      <p className="setting-description">
-                        Choose how GamePilot prioritizes game suggestions in the Home page and Librarian features.
-                      </p>
-                      <select 
-                        value={recommendationStyle} 
-                        onChange={(e) => {
-                          setRecommendationStyle(e.target.value);
-                          StorageService.setString('recommendationStyle', e.target.value);
-                        }}
-                        className="settings-select"
-                        style={{ marginTop: '8px' }}
-                      >
-                        <option value="balanced">Balanced - Mix of favorites and discoveries</option>
-                        <option value="discovery">Discovery - Prioritize unplayed and hidden gems</option>
-                        <option value="comfort">Comfort - Stick to your favorites and most-played</option>
-                        <option value="nostalgia">Nostalgia - Bring back games you haven't played in a while</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleSection>
-
               {/* Custom Background Section */}
               <CollapsibleSection
                 title="Custom Background"
@@ -803,7 +742,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                   {notificationsEnabled && (
                     <>
                       <div className="notification-section">
-                        <h4>Notification Types</h4>
+                        <h4 style={{ marginTop: '16px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Notifications</h4>
 
                         <div className="setting-item">
                           <label>🎮 Game launched successfully</label>
@@ -860,6 +799,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     </>
                   )}
 
+                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Local Storage & Recaps</h4>
+
                   <div className="setting-item">
                     <label>Enable local cache</label>
                     <div className="toggle-switch">
@@ -891,6 +832,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       How often GamePilot generates a themed recap of your recent play.
                     </p>
                   </div>
+
+                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Data Sources</h4>
 
                   <div className="setting-item">
                     <label>HowLongToBeat lookups</label>
@@ -996,6 +939,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       On by default. GamePilot walks each game's install folder locally to measure disk usage and powers the Library Reclaimer page + size chips on Library cards. Everything stays on-device — no data leaves your machine. Folder walks are throttled and bounded so they cannot hang the app.
                   </p>
                   </div>
+
+                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Discovery & Buying</h4>
 
                   <div className="setting-item">
                     <label>Wishlist & Price Alerts</label>
@@ -1111,6 +1056,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       </div>
                     )}
                   </div>
+
+                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>System</h4>
 
                   {startupLaunchSupported && (
                     <div className="setting-item">
@@ -1263,22 +1210,11 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                 <BackupRestoreDashboard />
               </CollapsibleSection>
 
-              {/* Dynamic Backdrop Studio */}
-              <CollapsibleSection
-                title="Dynamic Backdrop Studio"
-                subtitle="Animated, color-reactive backgrounds from your last played cover art."
-                icon={<SparklesIcon size={18} />}
-                className="settings-folder"
-                defaultOpen={false}
-              >
-                <DynamicBackdropStudio />
-              </CollapsibleSection>
-
               {/* Support Section */}
               <CollapsibleSection
                 title="Support GamePilot"
                 subtitle="Optional donations help keep development going."
-                badge={hasPatreonAccess() ? 'Supporter' : 'Donate'}
+                badge="Donate"
                 icon={<Heart size={18} />}
                 className="settings-folder"
               >
@@ -1288,85 +1224,11 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>Support GamePilot</h2>
                   </div>
                   <div className="patreon-section">
-                  <div className="patreon-info">
-                    <p>Every feature, theme, and tool in GamePilot is now free. No unlocks, no trials, no paid tiers.</p>
-                    <p>If you find the app useful, you can support continued development on Patreon. Supporters get a small XP boost and a thank-you badge as a token of appreciation.</p>
-                  </div>
-                  <div className="activation-code-section">
-                    <div className="setting-item">
-                      <label>Patreon Code</label>
-                      <div className="activation-input-group">
-                        <input
-                          type="text"
-                          placeholder="Enter your Patreon activation code"
-                          value={patreonCode}
-                          onChange={(e) => setPatreonCode(e.target.value)}
-                          className="activation-input"
-                          style={{
-                            flex: 1,
-                            padding: '8px 12px',
-                            border: '1px solid var(--border-primary)',
-                            borderRadius: '4px',
-                            backgroundColor: 'var(--bg-secondary)',
-                            color: 'var(--text-primary)'
-                          }}
-                        />
-                        <button
-                          onClick={handlePatreonCodeSubmit}
-                          className="activation-button"
-                          style={{
-                            marginLeft: '8px',
-                            padding: '8px 16px',
-                            backgroundColor: 'var(--button-primary-bg)',
-                            color: 'var(--button-primary-text)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          Activate
-                        </button>
-                      </div>
-                      {activationResult && (
-                        <div className={`activation-result ${activationResult.success ? 'success' : 'error'}`} style={{
-                          marginTop: '8px',
-                          padding: '8px 12px',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          backgroundColor: activationResult.success ? 'var(--success-bg, #d4edda)' : 'var(--error-bg, #f8d7da)',
-                          color: activationResult.success ? 'var(--success-text, #155724)' : 'var(--error-text, #721c24)',
-                          border: `1px solid ${activationResult.success ? 'var(--success-border, #c3e6cb)' : 'var(--error-border, #f5c6cb)'}`
-                        }}>
-                          {activationResult.message}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="patreon-links">
+                    <p>
+                      GamePilot is free and local-first. If you want to support development, visit the Founders Lounge for patron options and founder perks.
+                    </p>
                     <button
-                      onClick={() => navigate('/theme-builder')}
-                      className="patreon-button"
-                      style={{
-                        backgroundColor: 'var(--accent-primary)',
-                        color: '#0f172a',
-                        border: 'none',
-                        borderRadius: '8px',
-                        padding: '12px 24px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        fontSize: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <Palette size={16} />
-                      Open Theme Builder
-                    </button>
-                    <button
-                      onClick={() => window.open('https://www.patreon.com/cw/GamePilot', '_blank')}
+                      onClick={() => navigate('/donate')}
                       className="patreon-button"
                       style={{
                         backgroundColor: '#ff424d',
@@ -1377,15 +1239,15 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                         cursor: 'pointer',
                         fontWeight: 'bold',
                         fontSize: '16px',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '8px',
+                        marginTop: '12px'
                       }}
                     >
                       <Heart size={16} />
-                      Support on Patreon
+                      Open Founders Lounge
                     </button>
-                  </div>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1401,6 +1263,30 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                 icon={<SlidersHorizontal size={18} />}
                 className="settings-folder power-tools-folder"
               >
+                <div className="settings-section" style={{ marginBottom: '16px' }}>
+                  <div className="settings-group">
+                    <div className="setting-item">
+                      <label>Recommendation Style</label>
+                      <p className="setting-description">
+                        Choose how GamePilot prioritizes game suggestions in the Home page and Librarian features.
+                      </p>
+                      <select
+                        value={recommendationStyle}
+                        onChange={(e) => {
+                          setRecommendationStyle(e.target.value);
+                          StorageService.setString('recommendationStyle', e.target.value);
+                        }}
+                        className="settings-select"
+                        style={{ marginTop: '8px' }}
+                      >
+                        <option value="balanced">Balanced - Mix of favorites and discoveries</option>
+                        <option value="discovery">Discovery - Prioritize unplayed and hidden gems</option>
+                        <option value="comfort">Comfort - Stick to your favorites and most-played</option>
+                        <option value="nostalgia">Nostalgia - Bring back games you haven't played in a while</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
                 <RecommendationTunerPanel />
               </CollapsibleSection>
             </div>
@@ -1414,133 +1300,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
             </button>
           </div>
 
-          {/* Legal & Disclaimer Section */}
-          <CollapsibleSection
-            title="Legal & Disclaimer"
-            subtitle="License, privacy, terms, and local-first usage notes."
-            badge="Local-first"
-            icon={<AlertCircle size={18} />}
-            className="settings-folder legal-folder"
-          >
-            <div className="settings-section legal-section">
-              <div className="section-header">
-                <AlertCircle size={20} />
-                <h2>Legal & Disclaimer</h2>
-              </div>
-              <div className="legal-settings">
-              <div className="legal-content">
-                <h3>GamePilot Disclaimer</h3>
-                <div className="legal-text">
-                  <p><strong>Software License:</strong> GamePilot is provided "as is" without warranties of any kind.</p>
-                  <p><strong>Game Detection:</strong> GamePilot only reads game metadata from existing installations. No game files are modified.</p>
-                  <p><strong>Third-Party Content:</strong> Game images and metadata are sourced from public APIs. All trademarks belong to respective owners.</p>
-                  <p><strong>Privacy:</strong> All data is stored locally on your device. No data is transmitted to external servers.</p>
-                  <p><strong>Usage:</strong> Users are responsible for complying with game license terms and applicable laws.</p>
-                  <p><strong>Legal Protection:</strong> GamePilot operates under fair use principles for library management and does not circumvent DRM or modify game files.</p>
-                </div>
-                
-                <div className="legal-links">
-                  <button onClick={() => setShowLegalModal('license')} className="legal-button">
-                    View Full License
-                  </button>
-                  <button onClick={() => setShowLegalModal('privacy')} className="legal-button">
-                    Privacy Policy
-                  </button>
-                  <button onClick={() => setShowLegalModal('terms')} className="legal-button">
-                    Terms of Service
-                  </button>
-                </div>
-                
-                <div className="copyright-notice">
-                  <p><strong>Copyright Notice:</strong></p>
-                  <p> 2026 Moz. All rights reserved.</p>
-                  <p>GamePilot is not affiliated with Steam, Epic Games, Microsoft, Sony, Nintendo, or any game publishers.</p>
-                  <p>All game titles, logos, and images are trademarks of their respective owners.</p>
-                </div>
-              </div>
-              </div>
-            </div>
-          </CollapsibleSection>
         </div>
       </div>
-
-      {/* Legal Modal */}
-      {showLegalModal && (
-        <div className="legal-modal-overlay" onClick={() => setShowLegalModal(null)}>
-          <div className="legal-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="legal-modal-header">
-              <h2>{showLegalModal === 'license' ? 'Software License' : showLegalModal === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}</h2>
-              <button onClick={() => setShowLegalModal(null)} className="close-legal-modal">×</button>
-            </div>
-            <div className="legal-modal-body">
-              {showLegalModal === 'license' && (
-                <div className="legal-content-full">
-                  <h3>MIT License</h3>
-                  <p>Copyright (c) 2026 Moz</p>
-                  <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
-                  <p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
-                  <p><strong>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</strong></p>
-                </div>
-              )}
-              {showLegalModal === 'privacy' && (
-                <div className="legal-content-full">
-                  <h3>Privacy Policy</h3>
-                  <p><strong>Last Updated:</strong> March 2026</p>
-                  <h4>Data Collection</h4>
-                  <p>GamePilot does NOT collect, transmit, or store any personal data on external servers. All data is stored locally on your device using browser localStorage.</p>
-                  <h4>Local Data Storage</h4>
-                  <p>The following data is stored locally on your device:</p>
-                  <ul>
-                    <li>Game library information (titles, platforms, playtime)</li>
-                    <li>Achievement progress and statistics</li>
-                    <li>User preferences and settings</li>
-                    <li>Profile information (username, avatar)</li>
-                    <li>Calendar events and reminders</li>
-                  </ul>
-                  <h4>Third-Party Services</h4>
-                  <p>GamePilot may access public APIs for game metadata and images. No personal information is transmitted to these services.</p>
-                  <h4>Data Security</h4>
-                  <p>Your data remains on your device and is never transmitted to external servers. You can export, backup, or delete your data at any time from the Profile page.</p>
-                  <h4>Changes to Privacy Policy</h4>
-                  <p>We may update this policy from time to time. Continued use of GamePilot constitutes acceptance of any changes.</p>
-                </div>
-              )}
-              {showLegalModal === 'terms' && (
-                <div className="legal-content-full">
-                  <h3>Terms of Service</h3>
-                  <p><strong>Last Updated:</strong> March 2026</p>
-                  <h4>Acceptance of Terms</h4>
-                  <p>By using GamePilot, you agree to these Terms of Service. If you do not agree, please do not use the software.</p>
-                  <h4>License Grant</h4>
-                  <p>GamePilot is licensed under the MIT License. You are free to use, modify, and distribute the software in accordance with the license terms.</p>
-                  <h4>Permitted Use</h4>
-                  <p>GamePilot is designed for personal game library management. You may:</p>
-                  <ul>
-                    <li>Scan and organize your legally owned games</li>
-                    <li>Track playtime and achievements</li>
-                    <li>Use mood-based game recommendations</li>
-                    <li>Export and backup your data</li>
-                  </ul>
-                  <h4>Prohibited Use</h4>
-                  <p>You may NOT:</p>
-                  <ul>
-                    <li>Use GamePilot to circumvent DRM or copy protection</li>
-                    <li>Modify or distribute pirated games</li>
-                    <li>Use the software for any illegal purposes</li>
-                    <li>Claim ownership of GamePilot or its components</li>
-                  </ul>
-                  <h4>Disclaimer</h4>
-                  <p>GamePilot is provided "AS IS" without warranties. We are not responsible for any damages arising from use of the software.</p>
-                  <h4>Third-Party Content</h4>
-                  <p>GamePilot is not affiliated with Steam, Epic Games, Microsoft, Sony, Nintendo, or any game publishers. All game titles, logos, and trademarks belong to their respective owners.</p>
-                  <h4>Limitation of Liability</h4>
-                  <p>In no event shall the developers be liable for any damages arising from the use or inability to use GamePilot.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
