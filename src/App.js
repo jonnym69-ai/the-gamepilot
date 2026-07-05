@@ -1132,7 +1132,7 @@ function AppContent() {
         <Route path="/gaming-links" element={<GamingLinks theme={theme} />} />
         <Route path="/donate" element={<Donate theme={theme} />} />
         <Route path="/library-intelligence" element={<LibraryIntelligence library={library} onLaunchGame={handleLaunchGame} />} />
-        <Route path="/achievements" element={<Achievements theme={theme} library={library} />} />
+        <Route path="/achievements" element={<Achievements theme={theme} />} />
         <Route path="/export-hub" element={<ExportHub library={library} />} />
         <Route path="/storage-manager" element={<StorageManager library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />

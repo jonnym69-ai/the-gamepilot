@@ -5,7 +5,6 @@ import NavBar from './NavBar';
 import { YearInReviewService } from './services/YearInReviewService';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
-import StorageService from './services/StorageService';
 import { LocalShareService } from './services/LocalShareService';
 import ProfileService from './services/ProfileService';
 import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
@@ -175,7 +174,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     [library, selectedYear]
   );
 
-  const pilotName = useMemo(() => StorageService.getString('profileUsername', '') || 'Pilot', []);
+  const pilotName = useMemo(() => ProfileService.getCurrentUsername() || 'Pilot', []);
 
   const maxMonthlyHours = useMemo(() => {
     const values = Object.values(snapshot.monthly?.playtimeHours || {});

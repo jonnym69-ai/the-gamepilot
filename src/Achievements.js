@@ -5,9 +5,7 @@ import { ACHIEVEMENTS, AchievementTracker } from './AchievementSystem';
 import { RollingAchievementsTracker } from './services/RollingAchievementsTracker';
 import NavBar from './NavBar';
 import StorageService from './services/StorageService';
-import SteamAchievementAggregationService from './services/SteamAchievementAggregationService';
 import './Achievements.css';
-import './FounderAchievement.css';
 
 const getSessionStartTimestamp = (sessionEntry) => {
   if (!sessionEntry) {
@@ -29,20 +27,13 @@ const getSessionStartTimestamp = (sessionEntry) => {
   return Number.isNaN(parsedStartTime) ? null : parsedStartTime;
 };
 
-function Achievements({ theme, library = [] }) {
+function Achievements({ theme }) {
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const [allAchievements, setAllAchievements] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [recentlyUnlocked, setRecentlyUnlocked] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
-  const [steamAggregation, setSteamAggregation] = useState(() => SteamAchievementAggregationService.getCachedSnapshot());
-  const [steamAggregationLoading, setSteamAggregationLoading] = useState(false);
-  const [steamAggregationEnabled, setSteamAggregationEnabled] = useState(() => SteamAchievementAggregationService.isEnabled());
-
-  // Statistics dashboard state
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [rarestAchievement, setRarestAchievement] = useState(null);
   const [recentUnlocks, setRecentUnlocks] = useState([]);
   const [activeAssignments, setActiveAssignments] = useState({
     daily: [],
@@ -56,16 +47,6 @@ function Achievements({ theme, library = [] }) {
       (Array.isArray(definitions) ? definitions : []).map(definition => ({ ...definition, category }))
     )
   ), []);
-
-  const getRarityWeight = (rarity) => {
-    const weights = {
-      'COMMON': 1,
-      'RARE': 2,
-      'EPIC': 3,
-      'LEGENDARY': 4
-    };
-    return weights[rarity] || 0;
-  };
 
   const getRarityColor = (rarity) => {
     const colors = {
@@ -99,22 +80,6 @@ function Achievements({ theme, library = [] }) {
       return `${(current / 60).toFixed(1)}h / ${(target / 60).toFixed(1)}h`;
     }
     return `${current} / ${target}`;
-  };
-
-  const formatSteamPercent = (value) => {
-    if (value === null || value === undefined) return '—';
-    const numeric = Number(value);
-    if (Number.isNaN(numeric)) return '—';
-    return `${numeric.toFixed(numeric < 10 ? 2 : 1)}%`;
-  };
-
-  const openSteamAchievements = (url) => {
-    if (!url) return;
-    if (window.electronAPI?.openExternal) {
-      window.electronAPI.openExternal(url);
-    } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
   };
 
   // Progress hints for locked achievements
@@ -352,46 +317,11 @@ function Achievements({ theme, library = [] }) {
     return 'Keep playing games to unlock this achievement!';
   };
 
+  // Load recent unlocks when achievements change
   useEffect(() => {
-    setSteamAggregation(SteamAchievementAggregationService.getCachedSnapshot(library));
-  }, [library]);
-
-  const refreshSteamAggregation = async () => {
-    setSteamAggregationLoading(true);
-    try {
-      const snapshot = await SteamAchievementAggregationService.refreshSnapshot(library);
-      setSteamAggregation(snapshot);
-    } finally {
-      setSteamAggregationLoading(false);
-    }
-  };
-
-  // Calculate statistics when achievements change
-  useEffect(() => {
-    let points = 0;
-    unlockedAchievements.forEach(achievementId => {
-      points += getRewardPoints(achievementId) || 0;
-    });
-
-    let rarest = null;
-    let highestRarityWeight = 0;
-    unlockedAchievements.forEach(achievementId => {
-      const achievement = achievementCatalog.find(a => a.id === achievementId);
-      if (achievement && achievement.rarity) {
-        const rarityWeight = getRarityWeight(achievement.rarity);
-        if (rarityWeight > highestRarityWeight) {
-          highestRarityWeight = rarityWeight;
-          rarest = achievement;
-        }
-      }
-    });
-
-    setTotalPoints(points);
-    setRarestAchievement(rarest);
-
     const recent = AchievementTracker.getRecentlyUnlocked() || [];
     setRecentUnlocks(recent.slice(0, 5));
-  }, [achievementCatalog, unlockedAchievements]);
+  }, [unlockedAchievements]);
 
   // Load rolling achievements data
   useEffect(() => {
@@ -1312,11 +1242,7 @@ function Achievements({ theme, library = [] }) {
     { id: 'mood', name: 'Mood', icon: '😌' },
     { id: 'features', name: 'Features', icon: '✨' },
     { id: 'genres', name: 'Genres', icon: '🎭' },
-    { id: 'uniqueGames', name: 'Unique Games', icon: '🧭' },
-    { id: 'daily', name: 'Daily', icon: '🌅' },
-    { id: 'weekly', name: 'Weekly', icon: '📅' },
-    { id: 'monthly', name: 'Monthly', icon: '📆' },
-    { id: 'yearly', name: 'Yearly', icon: '🎊' }
+    { id: 'uniqueGames', name: 'Unique Games', icon: '🧭' }
   ];
 
   const unlockedCount = unlockedAchievements.length;
@@ -1342,138 +1268,6 @@ function Achievements({ theme, library = [] }) {
               <div className="summary-label">Recent</div>
             </div>
           </div>
-        </div>
-
-        {/* Statistics Dashboard */}
-        <div className="statistics-dashboard">
-          <h2>📊 Achievement Statistics</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">⭐</div>
-              <div className="stat-content">
-                <div className="stat-number">{totalPoints.toLocaleString()}</div>
-                <div className="stat-label">Total Points</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">🎯</div>
-              <div className="stat-content">
-                <div className="stat-number">{unlockedCount}</div>
-                <div className="stat-label">Unlocked Locally</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">💎</div>
-              <div className="stat-content">
-                <div className="stat-number" style={{ color: getRarityColor(rarestAchievement?.rarity) }}>
-                  {rarestAchievement?.name || 'None'}
-                </div>
-                <div className="stat-label">Rarest Achievement</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">🔥</div>
-              <div className="stat-content">
-                <div className="stat-number">{recentUnlocks.length}</div>
-                <div className="stat-label">Recent Unlocks</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="steam-achievement-aggregation">
-            <div className="steam-achievement-aggregation-header">
-              <div>
-                <h3>Steam public rarity preview</h3>
-                <p>Anonymous global achievement data for owned Steam games. This does not read your Steam account or personal unlocks.</p>
-              </div>
-              <div className="steam-achievement-actions">
-                {!steamAggregationEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      SteamAchievementAggregationService.setEnabled(true);
-                      setSteamAggregationEnabled(true);
-                    }}
-                  >
-                    Enable Steam public data
-                  </button>
-                )}
-                <button type="button" onClick={refreshSteamAggregation} disabled={!steamAggregationEnabled || steamAggregationLoading}>
-                  {steamAggregationLoading ? 'Refreshing…' : 'Refresh preview'}
-                </button>
-              </div>
-            </div>
-            <div className="steam-achievement-summary-grid">
-              <div>
-                <span>Steam games</span>
-                <strong>{steamAggregation.steamGameCount || 0}</strong>
-              </div>
-              <div>
-                <span>With cached rarity</span>
-                <strong>{steamAggregation.gamesWithAchievements || 0}</strong>
-              </div>
-              <div>
-                <span>Known achievements</span>
-                <strong>{steamAggregation.totalAchievements || 0}</strong>
-              </div>
-              <div>
-                <span>Avg unlock rate</span>
-                <strong>{formatSteamPercent(steamAggregation.averageUnlockRate || 0)}</strong>
-              </div>
-            </div>
-            {steamAggregation.rarest ? (
-              <div className="steam-achievement-rarest-card">
-                <span>Rarest known achievement source</span>
-                <strong>{steamAggregation.rarest.gameName}</strong>
-                <p>Only {formatSteamPercent(steamAggregation.rarest.percent)} of Steam players have its rarest public achievement.</p>
-                {steamAggregation.rarest.achievementsUrl && (
-                  <button type="button" onClick={() => openSteamAchievements(steamAggregation.rarest.achievementsUrl)}>
-                    Open Steam achievements
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="steam-achievement-empty">
-                {steamAggregation.steamGameCount > 0
-                  ? 'No cached Steam achievement rarity yet. Refresh the preview to fetch a small local batch.'
-                  : 'No owned Steam games are currently available for aggregation.'}
-              </div>
-            )}
-            {steamAggregation.rows?.length > 0 && (
-              <div className="steam-achievement-row-list">
-                {steamAggregation.rows.slice(0, 5).map((row) => (
-                  <div key={row.appid} className="steam-achievement-row">
-                    <strong>{row.gameName}</strong>
-                    <span>{row.achievementTotal} achievements • avg {formatSteamPercent(row.averagePercent)} unlocked globally</span>
-                    <em>Rarest: {formatSteamPercent(row.rarestPercent)}</em>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* Recent Unlocks Showcase */}
-          {recentUnlocks.length > 0 && (
-            <div className="recent-unlocks">
-              <h3>🎉 Recent Unlocks</h3>
-              <div className="recent-unlocks-grid">
-                {recentUnlocks.map((achievement, index) => (
-                  <div key={achievement.id} className="recent-unlock-card">
-                    <div className="recent-unlock-icon">{achievement.icon}</div>
-                    <div className="recent-unlock-info">
-                      <div className="recent-unlock-name">{achievement.name}</div>
-                      <div className="recent-unlock-rarity" style={{ color: getRarityColor(achievement.rarity) }}>
-                        {achievement.rarity}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {closeToUnlocking.length > 0 && (
@@ -1644,29 +1438,6 @@ function Achievements({ theme, library = [] }) {
                     {recentlyUnlocked.rarity || 'Unlocked'}
                   </span>
                   <span className="notification-points">+{getRewardPoints(recentlyUnlocked.id)} pts</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Founder Achievement - properly integrated */}
-        {AchievementTracker.isAchievementUnlocked('patreon_supporter') && (
-          <div className="founder-achievement">
-            <div className="achievement-card unlocked">
-              <div className="achievement-icon">
-                <span className="icon-emoji">🌟</span>
-              </div>
-              <div className="achievement-info">
-                <h3>Founder Status</h3>
-                <p>Congratulations on your Patreon support! You've unlocked Founder recognition, and supporter tiers now boost future XP instead of granting instant XP.</p>
-                <div className="achievement-reward">
-                  <Star size={16} />
-                  <span className="reward-points">Founder recognition + optional XP multiplier</span>
-                </div>
-                <div className="achievement-date">
-                  <Trophy size={12} />
-                  <span>Unlocked - Thank you for supporting GamePilot!</span>
                 </div>
               </div>
             </div>
