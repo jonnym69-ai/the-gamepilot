@@ -8,16 +8,14 @@ import {
   MemoryStick,
   Sparkles,
   TrendingUp,
-  User,
   Zap,
-  Disc3,
-  ThermometerSnowflake,
-  FolderArchive,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LazyImage from "./components/LazyImage";
+import { Link } from "react-router-dom";
 import { formatPrice, getCurrentCurrency, getCurrencySymbol, convertToUSD } from "./CurrencyConverter";
 import NavBar from "./NavBar";
+import SpecCard from "./components/SpecCard";
 import "./PerformanceCockpit.css";
 import { BottleneckAnalyzer } from "./services/BottleneckAnalyzer";
 import { GameRequirements } from "./services/GameRequirements";
@@ -26,8 +24,6 @@ import { HardwareScoring } from "./services/HardwareScoring";
 import { PersonaPerformanceInsights } from "./services/PersonaPerformanceInsights";
 import { PersonaPerformanceCompatibility } from "./services/PersonaPerformanceCompatibility";
 import { UserBehaviorProfile } from "./services/UserBehaviorProfile";
-import { StorageDriveMapper } from "./services/StorageDriveMapper";
-import DiskUsageService, { formatBytes } from "./services/DiskUsageService";
 
 const getFallbackSystemInfo = () => ({
   cpu: { model: "Unknown CPU", brand: "Unknown CPU", cores: 0, speed: 0 },
@@ -87,6 +83,7 @@ function PerformanceCockpit({
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [compatibilitySort, setCompatibilitySort] = useState("issue-severity");
+  const [compatibilityPage, setCompatibilityPage] = useState(1);
   const [error, setError] = useState(null);
   const [personaProfile, setPersonaProfile] = useState(null);
   const [personaSynergy, setPersonaSynergy] = useState([]);
@@ -247,17 +244,11 @@ function PerformanceCockpit({
   };
 
   const getScoreLabel = (score) => {
-    if (score >= 95) return "🔥 Beast";
-    if (score >= 90) return "💎 Excellent";
-    if (score >= 80) return "⚡ Great";
-    if (score >= 70) return "🎮 Very Good";
-    if (score >= 60) return "👍 Good";
-    if (score >= 50) return "🎯 Decent";
-    if (score >= 40) return "📊 Budget";
-    if (score >= 30) return "🕹️ Retro";
-    if (score >= 20) return "🎲 Classic";
-    if (score >= 10) return "💪 Brave";
-    return "🦖 Vintage";
+    if (score >= 90) return "🔥 Beast";
+    if (score >= 75) return "💎 Excellent";
+    if (score >= 60) return "🎮 Good";
+    if (score >= 40) return "🎯 Budget";
+    return "🦖 Weak";
   };
 
   const getPriorityColor = (priority) => {
@@ -402,102 +393,15 @@ function PerformanceCockpit({
     return matrix;
   }, [analysis?.compatibilityMatrix, compatibilitySort]);
 
-  const sessionBucketLabels = {
-    "0-30": "Sprint Sessions",
-    "30-60": "Focused Runs",
-    "60-120": "Extended Flights",
-    "120+": "Marathon Missions",
-  };
-
-  // System drive capacity analytics (from HardwareDetector / si.fsSize)
-  const driveCapacities = useMemo(() => {
-    const logicalDrives = systemInfo?.logicalDrives || [];
-    const driveTypeMap = systemInfo?.driveTypeMap || {};
-    return logicalDrives.map((ld) => {
-      const mount = ld.mount?.toUpperCase() || '';
-      const typeInfo = driveTypeMap[mount];
-      const totalGB = ld.sizeGB || 0;
-      const usedGB = ld.usedGB || 0;
-      const freeGB = ld.freeGB || 0;
-      const usePercent = totalGB > 0 ? Math.round((usedGB / totalGB) * 100) : 0;
-      const isNVMe = typeInfo?.isNVMe || false;
-      const isSSD = typeInfo?.isSSD || false;
-      return {
-        name: typeInfo?.name || typeInfo?.model || mount,
-        mount,
-        typeLabel: isNVMe ? 'NVMe' : isSSD ? 'SSD' : 'HDD',
-        isNVMe,
-        isSSD,
-        totalGB,
-        usedGB,
-        freeGB,
-        usePercent
-      };
-    });
-  }, [systemInfo?.logicalDrives, systemInfo?.driveTypeMap]);
-
-  // Storage Cockpit library analytics
-  const storageAnalytics = useMemo(() => {
-    const installed = (library || []).filter((g) => g && g.installDir);
-    let totalBytes = 0;
-    let nvmeBytes = 0;
-    let ssdBytes = 0;
-    let hddBytes = 0;
-    let nvmeGames = 0;
-    let ssdGames = 0;
-    let hddGames = 0;
-    let fastDriveColdBytes = 0;
-    let fastDriveColdCount = 0;
-    let hasSizeData = false;
-
-    for (const game of installed) {
-      const bytes = DiskUsageService.getCachedBytes(game) || 0;
-      if (bytes > 0) {
-        totalBytes += bytes;
-        hasSizeData = true;
-      }
-      const driveInfo = StorageDriveMapper.resolve(game);
-      if (driveInfo.drive) {
-        if (driveInfo.drive.isNVMe) { nvmeBytes += bytes; nvmeGames += 1; }
-        else if (driveInfo.drive.isSSD) { ssdBytes += bytes; ssdGames += 1; }
-        else { hddBytes += bytes; hddGames += 1; }
-
-        // Cold on fast drives (60+ days or never played)
-        const isFast = driveInfo.drive.isNVMe || driveInfo.drive.isSSD;
-        if (isFast && bytes > 0) {
-          const lp = game.last_played;
-          const isCold = !lp || (() => {
-            const ms = new Date(lp).getTime();
-            return Number.isFinite(ms) && ms > 0 && (Date.now() - ms) / 86400000 >= 60;
-          })();
-          if (isCold) {
-            fastDriveColdBytes += bytes;
-            fastDriveColdCount += 1;
-          }
-        }
-      }
-    }
-
-    return {
-      totalGames: installed.length,
-      measuredGames: nvmeGames + ssdGames + hddGames,
-      hasSizeData,
-      totalBytes,
-      nvmeBytes, ssdBytes, hddBytes,
-      nvmeGames, ssdGames, hddGames,
-      fastDriveColdBytes, fastDriveColdCount
-    };
-  }, [library]);
-
-  const formatSessionBucket = (bucket) => {
-    if (!bucket) return "Flexible sessions";
-    return sessionBucketLabels[bucket] || bucket;
-  };
-
-  const formatMinutes = (minutes) => {
-    if (!minutes || Number.isNaN(minutes)) return "—";
-    return `${Math.round(minutes)} min`;
-  };
+  const matrixPageSize = 20;
+  const matrixTotalPages = Math.max(
+    1,
+    Math.ceil((sortedCompatibilityMatrix.length || 0) / matrixPageSize),
+  );
+  const paginatedMatrix = useMemo(() => {
+    const start = (compatibilityPage - 1) * matrixPageSize;
+    return sortedCompatibilityMatrix.slice(start, start + matrixPageSize);
+  }, [sortedCompatibilityMatrix, compatibilityPage]);
 
   if (loading) {
     return (
@@ -554,10 +458,10 @@ function PerformanceCockpit({
           </p>
         </div>
 
-        {/* Flight Readiness Score */}
+        {/* System Readiness Score */}
         <div className="readiness-section">
           <div className="readiness-card">
-            <h2>Flight Readiness</h2>
+            <h2>System Readiness</h2>
             <div className="readiness-gauge">
               <div className="gauge-circle">
                 <svg viewBox="0 0 200 200">
@@ -596,34 +500,19 @@ function PerformanceCockpit({
             <p className="readiness-description">
               <strong>{systemInfo.scores.tier}</strong> Gaming PC
               <br />
-              {readinessScore >= 95 &&
-                "🚀 Beast mode activated! Your PC laughs at system requirements."}
               {readinessScore >= 90 &&
-                readinessScore < 95 &&
-                "💎 Top-tier rig! Handles any game at maximum settings."}
-              {readinessScore >= 80 &&
+                "🚀 Beast mode. Your PC laughs at system requirements."}
+              {readinessScore >= 75 &&
                 readinessScore < 90 &&
-                "⚡ Excellent system! Great performance in all modern games."}
-              {readinessScore >= 70 &&
-                readinessScore < 80 &&
-                "🎮 Strong system! Runs most games on high settings."}
+                "💎 Top-tier rig. Handles any game at maximum settings."}
               {readinessScore >= 60 &&
-                readinessScore < 70 &&
-                "👍 Solid system! Good performance on medium-high settings."}
-              {readinessScore >= 50 &&
-                readinessScore < 60 &&
-                "🎯 Capable system! Entry-level gaming performance."}
+                readinessScore < 75 &&
+                "🎮 Strong system. Runs most games on high settings."}
               {readinessScore >= 40 &&
-                readinessScore < 50 &&
-                "📊 Budget warrior! Minecraft and indie games are your friends."}
-              {readinessScore >= 30 &&
-                readinessScore < 40 &&
-                "🕹️ Retro champion! Perfect for games from 2015 and earlier."}
-              {readinessScore >= 20 &&
-                readinessScore < 30 &&
-                "🎲 Minesweeper master! Also great for Solitaire and older titles."}
-              {readinessScore < 20 &&
-                "💪 Your PC has character! Stick to browser games and 2D classics."}
+                readinessScore < 60 &&
+                "🎯 Capable system. Entry-level gaming performance."}
+              {readinessScore < 40 &&
+                "� Budget warrior. Stick to lighter games and older titles."}
             </p>
           </div>
 
@@ -695,72 +584,6 @@ function PerformanceCockpit({
 
         {personaProfile && (
           <div className="persona-section">
-            <div className="persona-card">
-              <div className="persona-header">
-                <h2>
-                  <User size={22} /> Flight Persona
-                </h2>
-                <span className="persona-identity">
-                  {personaProfile.personaIdentity?.label || "Persona Signal"}
-                </span>
-              </div>
-              <p className="persona-description">
-                {personaProfile.personaIdentity?.description ||
-                  "We analyze your local habits to tailor recommendations that feel native to you."}
-              </p>
-
-              {personaProfile.personaTags?.length > 0 && (
-                <div className="persona-tags">
-                  {personaProfile.personaTags.map((tag) => (
-                    <span key={tag} className="persona-tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="persona-meta-grid">
-                <div className="persona-meta">
-                  <span>Dominant Mood</span>
-                  <strong>
-                    {personaProfile.dominantMood || "Calibrating"}
-                  </strong>
-                </div>
-                <div className="persona-meta">
-                  <span>Preferred Sessions</span>
-                  <strong>
-                    {formatSessionBucket(personaProfile.preferredSessionBucket)}
-                  </strong>
-                </div>
-                <div className="persona-meta">
-                  <span>Avg Session Length</span>
-                  <strong>
-                    {formatMinutes(personaProfile.avgSessionLength)}
-                  </strong>
-                </div>
-                <div className="persona-meta">
-                  <span>Peak Play Window</span>
-                  <strong>{personaProfile.peakPlayWindow || "Anytime"}</strong>
-                </div>
-              </div>
-
-              <div className="persona-progress">
-                <span>Completion Confidence</span>
-                <div className="persona-progress-bar">
-                  <div
-                    className="persona-progress-fill"
-                    style={{
-                      width: `${personaProfile.overallCompletionRate || 0}%`,
-                    }}
-                  />
-                </div>
-                <small>
-                  {personaProfile.overallCompletionRate || 0}% of tracked
-                  sessions reach completion
-                </small>
-              </div>
-            </div>
-
             <div className="persona-synergy-card">
               <div className="persona-header">
                 <h2>
@@ -822,118 +645,62 @@ function PerformanceCockpit({
         <div className="system-overview">
           <h2>System Specifications</h2>
           <div className="spec-grid">
-            <div className="spec-card">
-              <div className="spec-header">
-                <Cpu size={24} />
-                <h3>CPU</h3>
-              </div>
-              <p className="spec-model">{systemInfo.cpu.model}</p>
-              <div className="spec-details">
-                <span>
-                  {systemInfo.cpu.cores} Cores @ {systemInfo.cpu.speed} GHz
-                </span>
-              </div>
-              <div
-                className="tier-badge"
-                style={{ background: getScoreColor(systemInfo.scores.cpu) }}
-              >
-                {getScoreLabel(systemInfo.scores.cpu)}
-              </div>
-              <div className="spec-score">
-                <div className="score-bar">
-                  <div
-                    className="score-fill"
-                    style={{
-                      width: `${systemInfo.scores.cpu}%`,
-                      background: getScoreColor(systemInfo.scores.cpu),
-                    }}
-                  />
-                </div>
-                <span>{systemInfo.scores.cpu}/100</span>
-              </div>
-            </div>
+            <SpecCard
+              icon={Cpu}
+              title="CPU"
+              model={systemInfo.cpu.model}
+              details={`${systemInfo.cpu.cores} Cores @ ${systemInfo.cpu.speed} GHz`}
+              badgeText={getScoreLabel(systemInfo.scores.cpu)}
+              badgeColor={getScoreColor(systemInfo.scores.cpu)}
+              score={systemInfo.scores.cpu}
+              scoreColor={getScoreColor(systemInfo.scores.cpu)}
+            />
 
-            <div className="spec-card">
-              <div className="spec-header">
-                <Gauge size={24} />
-                <h3>GPU</h3>
-              </div>
-              <p className="spec-model">{systemInfo.gpu.model}</p>
-              <div className="spec-details">
-                <span>{systemInfo.gpu.vramGB}GB VRAM</span>
-              </div>
-              <div
-                className="tier-badge"
-                style={{ background: getScoreColor(systemInfo.scores.gpu) }}
-              >
-                {getScoreLabel(systemInfo.scores.gpu)}
-              </div>
-              <div className="spec-score">
-                <div className="score-bar">
-                  <div
-                    className="score-fill"
-                    style={{
-                      width: `${systemInfo.scores.gpu}%`,
-                      background: getScoreColor(systemInfo.scores.gpu),
-                    }}
-                  />
-                </div>
-                <span>{systemInfo.scores.gpu}/100</span>
-              </div>
-            </div>
+            <SpecCard
+              icon={Gauge}
+              title="GPU"
+              model={systemInfo.gpu.model}
+              details={`${systemInfo.gpu.vramGB}GB VRAM`}
+              badgeText={getScoreLabel(systemInfo.scores.gpu)}
+              badgeColor={getScoreColor(systemInfo.scores.gpu)}
+              score={systemInfo.scores.gpu}
+              scoreColor={getScoreColor(systemInfo.scores.gpu)}
+            />
 
-            <div className="spec-card">
-              <div className="spec-header">
-                <MemoryStick size={24} />
-                <h3>RAM</h3>
-              </div>
-              <p className="spec-model">
-                {systemInfo.ram.total}GB {systemInfo.ram.type}
-              </p>
-              <div className="spec-details">
-                <span>
-                  {systemInfo.ram.speed > 0
-                    ? `${systemInfo.ram.speed} MHz • `
-                    : ""}
-                  {systemInfo.ram.used}GB Used / {systemInfo.ram.free}GB Free
-                </span>
-              </div>
-              <div
-                className="tier-badge"
-                style={{ background: getScoreColor(systemInfo.scores.ram) }}
-              >
-                {getScoreLabel(systemInfo.scores.ram)}
-              </div>
-              <div className="spec-score">
-                <div className="score-bar">
-                  <div
-                    className="score-fill"
-                    style={{
-                      width: `${systemInfo.scores.ram}%`,
-                      background: getScoreColor(systemInfo.scores.ram),
-                    }}
-                  />
-                </div>
-                <span>{systemInfo.scores.ram}/100</span>
-              </div>
-            </div>
+            <SpecCard
+              icon={MemoryStick}
+              title="RAM"
+              model={`${systemInfo.ram.total}GB ${systemInfo.ram.type}`}
+              details={
+                `${systemInfo.ram.speed > 0 ? `${systemInfo.ram.speed} MHz • ` : ""}` +
+                `${systemInfo.ram.used}GB Used / ${systemInfo.ram.free}GB Free`
+              }
+              badgeText={getScoreLabel(systemInfo.scores.ram)}
+              badgeColor={getScoreColor(systemInfo.scores.ram)}
+              score={systemInfo.scores.ram}
+              scoreColor={getScoreColor(systemInfo.scores.ram)}
+            />
 
-            {/* Storage - show all drives */}
             {systemInfo.storage &&
-              systemInfo.storage.map((drive, index) => (
-                <div key={index} className="spec-card">
-                  <div className="spec-header">
-                    <HardDrive size={24} />
-                    <h3>
-                      Storage{" "}
-                      {systemInfo.storage.length > 1 ? `#${index + 1}` : ""}
-                    </h3>
-                  </div>
-                  <p className="spec-model">{drive.name}</p>
-                  <div className="spec-details">
-                    <span>
-                      {drive.type} • {drive.size}GB Physical
-                    </span>
+              systemInfo.storage.map((drive, index) => {
+                const driveColor = drive.isNVMe
+                  ? "#00e676"
+                  : drive.isSSD
+                    ? "#4caf50"
+                    : "#ff9800";
+                const driveScore = drive.isNVMe ? 100 : drive.isSSD ? 90 : 50;
+                return (
+                  <SpecCard
+                    key={index}
+                    icon={HardDrive}
+                    title={`Storage${systemInfo.storage.length > 1 ? ` #${index + 1}` : ""}`}
+                    model={drive.name}
+                    details={`${drive.type} • ${drive.size}GB Physical`}
+                    badgeText={drive.isNVMe ? "NVMe" : drive.isSSD ? "SSD" : "HDD"}
+                    badgeColor={driveColor}
+                    score={driveScore}
+                    scoreColor={driveColor}
+                  >
                     {drive.partitions && drive.partitions.length > 0 && (
                       <div style={{ marginTop: "8px", fontSize: "0.9em" }}>
                         {drive.partitions.map((partition, pIndex) => (
@@ -945,170 +712,21 @@ function PerformanceCockpit({
                         ))}
                       </div>
                     )}
-                  </div>
-                  <div
-                    className="tier-badge"
-                    style={{
-                      background: drive.isNVMe
-                        ? "#00e676"
-                        : drive.isSSD
-                          ? "#4caf50"
-                          : "#ff9800",
-                    }}
-                  >
-                    {drive.isNVMe ? "NVMe" : drive.isSSD ? "SSD" : "HDD"}
-                  </div>
-                  <div className="spec-score">
-                    <div className="score-bar">
-                      <div
-                        className="score-fill"
-                        style={{
-                          width: drive.isNVMe
-                            ? "100%"
-                            : drive.isSSD
-                              ? "90%"
-                              : "50%",
-                          background: drive.isNVMe
-                            ? "#00e676"
-                            : drive.isSSD
-                              ? "#4caf50"
-                              : "#ff9800",
-                        }}
-                      />
-                    </div>
-                    <span>
-                      {drive.isNVMe ? "100" : drive.isSSD ? "90" : "50"}/100
-                    </span>
-                  </div>
-                </div>
-              ))}
+                  </SpecCard>
+                );
+              })}
           </div>
         </div>
 
-        {/* Storage Cockpit */}
+        {/* Storage link */}
         <div className="storage-cockpit-section">
-          <h2>
-            <FolderArchive size={24} /> Storage Cockpit
-          </h2>
+          <h2>Storage</h2>
           <p className="storage-cockpit-subtitle">
-            Drive capacities and library space breakdown
+            Drive capacities and library space breakdown are handled in the Library Reclaimer.
           </p>
-
-          {/* Drive capacity bars */}
-          {driveCapacities.length > 0 && (
-            <div className="storage-cockpit-drives">
-              {driveCapacities.map((drive, idx) => (
-                <div key={idx} className="storage-cockpit-drive-bar">
-                  <div className="storage-cockpit-drive-bar-header">
-                    <span className={`drive-type-tag ${drive.isNVMe ? 'nvme' : drive.isSSD ? 'ssd' : 'hdd'}`}>
-                      {drive.typeLabel}
-                    </span>
-                    <span className="drive-letter">{drive.mount}</span>
-                    <span className="drive-name" title={drive.name}>{drive.name}</span>
-                    <span className="drive-free">
-                      {drive.freeGB} GB free / {drive.totalGB} GB
-                    </span>
-                  </div>
-                  <div className="storage-cockpit-drive-bar-track">
-                    <div
-                      className="storage-cockpit-drive-bar-fill"
-                      style={{ width: `${Math.min(drive.usePercent, 100)}%` }}
-                    />
-                  </div>
-                  <div className="storage-cockpit-drive-bar-meta">
-                    <span>{drive.usePercent}% used</span>
-                    <span>{drive.usedGB} GB used</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Library breakdown */}
-          {library && library.length > 0 && (
-            <>
-              <h3 className="storage-cockpit-library-heading">Library Breakdown</h3>
-              <div className="storage-cockpit-grid">
-                <div className="storage-cockpit-card total">
-                  <div className="storage-cockpit-card-header">
-                    <HardDrive size={20} />
-                    <span>Library Total</span>
-                  </div>
-                  <strong>
-                    {storageAnalytics.hasSizeData
-                      ? formatBytes(storageAnalytics.totalBytes)
-                      : '—'}
-                  </strong>
-                  <em>
-                    {storageAnalytics.measuredGames} of {storageAnalytics.totalGames} games measured
-                    {!storageAnalytics.hasSizeData && ' · run Library Reclaimer scan'}
-                  </em>
-                </div>
-
-                <div className="storage-cockpit-card nvme">
-                  <div className="storage-cockpit-card-header">
-                    <Zap size={20} />
-                    <span>NVMe</span>
-                  </div>
-                  <strong>
-                    {storageAnalytics.hasSizeData
-                      ? formatBytes(storageAnalytics.nvmeBytes)
-                      : '—'}
-                  </strong>
-                  <em>{storageAnalytics.nvmeGames} games</em>
-                </div>
-
-                <div className="storage-cockpit-card ssd">
-                  <div className="storage-cockpit-card-header">
-                    <Disc3 size={20} />
-                    <span>SSD</span>
-                  </div>
-                  <strong>
-                    {storageAnalytics.hasSizeData
-                      ? formatBytes(storageAnalytics.ssdBytes)
-                      : '—'}
-                  </strong>
-                  <em>{storageAnalytics.ssdGames} games</em>
-                </div>
-
-                <div className="storage-cockpit-card hdd">
-                  <div className="storage-cockpit-card-header">
-                    <HardDrive size={20} />
-                    <span>HDD</span>
-                  </div>
-                  <strong>
-                    {storageAnalytics.hasSizeData
-                      ? formatBytes(storageAnalytics.hddBytes)
-                      : '—'}
-                  </strong>
-                  <em>{storageAnalytics.hddGames} games</em>
-                </div>
-
-                <div className="storage-cockpit-card cold">
-                  <div className="storage-cockpit-card-header">
-                    <ThermometerSnowflake size={20} />
-                    <span>Cold on Fast Drives</span>
-                  </div>
-                  <strong>
-                    {storageAnalytics.hasSizeData
-                      ? formatBytes(storageAnalytics.fastDriveColdBytes)
-                      : '—'}
-                  </strong>
-                  <em>{storageAnalytics.fastDriveColdCount} games unplayed 60+ days</em>
-                </div>
-              </div>
-
-              {storageAnalytics.fastDriveColdBytes > 0 && storageAnalytics.hasSizeData && (
-                <div className="storage-cockpit-insight">
-                  <AlertTriangle size={18} />
-                  <p>
-                    You have <strong>{formatBytes(storageAnalytics.fastDriveColdBytes)}</strong> of cold storage sitting on fast drives (NVMe/SSD).
-                    These games haven't been played in 60+ days — consider moving them to free up premium space for active titles.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
+          <Link to="/storage-manager" className="storage-cockpit-link">
+            Open Library Reclaimer
+          </Link>
         </div>
 
         {/* Upgrade Recommendations */}
@@ -1133,12 +751,6 @@ function PerformanceCockpit({
                   placeholder="e.g. 500"
                   className="budget-input"
                 />
-                <button
-                  className="budget-btn"
-                  onClick={() => handleBudgetChange(budget)}
-                >
-                  Find Best Upgrade
-                </button>
               </div>
               {budgetRec && (
                 <div className={`budget-result ${budgetRec.withinBudget ? 'in-budget' : 'over-budget'}`}>
@@ -1212,7 +824,10 @@ function PerformanceCockpit({
                 <select
                   id="compatibility-sort"
                   value={compatibilitySort}
-                  onChange={(e) => setCompatibilitySort(e.target.value)}
+                  onChange={(e) => {
+                    setCompatibilitySort(e.target.value);
+                    setCompatibilityPage(1);
+                  }}
                 >
                   <option value="issue-severity">Problem Severity</option>
                   <option value="performance">Performance Level</option>
@@ -1234,7 +849,7 @@ function PerformanceCockpit({
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedCompatibilityMatrix.slice(0, 20).map((item, index) => (
+                  {paginatedMatrix.map((item, index) => (
                     <tr key={index}>
                       <td
                         className="game-cover"
@@ -1295,10 +910,28 @@ function PerformanceCockpit({
                 </tbody>
               </table>
             </div>
-            {sortedCompatibilityMatrix.length > 20 && (
-              <p className="table-note">
-                Showing 20 of {sortedCompatibilityMatrix.length} games
-              </p>
+            {sortedCompatibilityMatrix.length > matrixPageSize && (
+              <div className="compatibility-pagination">
+                <button
+                  type="button"
+                  className="pagination-button"
+                  disabled={compatibilityPage <= 1}
+                  onClick={() => setCompatibilityPage((p) => p - 1)}
+                >
+                  Previous
+                </button>
+                <span className="pagination-info">
+                  Page {compatibilityPage} of {matrixTotalPages}
+                </span>
+                <button
+                  type="button"
+                  className="pagination-button"
+                  disabled={compatibilityPage >= matrixTotalPages}
+                  onClick={() => setCompatibilityPage((p) => p + 1)}
+                >
+                  Next
+                </button>
+              </div>
             )}
           </div>
         )}

@@ -1143,3 +1143,54 @@
   letter-spacing: 0.06em;
   font-weight: 600;
 }
+
+.storage-cockpit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(33, 150, 243, 0.15);
+  color: #2196f3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 8px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.storage-cockpit-link:hover {
+  background: rgba(33, 150, 243, 0.25);
+}
+
+.compatibility-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.compatibility-pagination .pagination-button {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.compatibility-pagination .pagination-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.compatibility-pagination .pagination-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.compatibility-pagination .pagination-info {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #94a3b8);
+}
