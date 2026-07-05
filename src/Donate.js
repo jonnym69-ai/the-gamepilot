@@ -3,7 +3,6 @@ import { Heart, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
-import PatreonTiersPanel from './components/PatreonTiersPanel';
 import { openExternalUrl } from './services/ElectronBridge';
 import StorageService from './services/StorageService';
 import './Donate.css';
@@ -40,13 +39,9 @@ const LEGACY_PATREON_CODES = {
 };
 
 function Donate({ theme }) {
-  const [patreonCode, setPatreonCode] = useState('');
-  const [founderName, setFounderName] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const [validationMessage, setValidationMessage] = useState('');
-  const [validationSuccess, setValidationSuccess] = useState(false);
-  // Unified code redemption
   const [unifiedCode, setUnifiedCode] = useState('');
+  const [founderName, setFounderName] = useState('');
   const [unifiedMessage, setUnifiedMessage] = useState('');
   const [unifiedSuccess, setUnifiedSuccess] = useState(false);
   const codeFormRef = useRef(null);
@@ -378,84 +373,6 @@ function Donate({ theme }) {
     }, 800);
   };
 
-  // Function to validate Patreon code and add founder
-  const validateAndAddFounder = () => {
-    if (!patreonCode.trim()) {
-      setValidationMessage('Please enter a Patreon code');
-      setValidationSuccess(false);
-      return;
-    }
-
-    if (!founderName.trim()) {
-      setValidationMessage('Please enter your display name');
-      setValidationSuccess(false);
-      return;
-    }
-
-    setIsValidating(true);
-    setValidationMessage('');
-
-    // Simulate API call delay
-    setTimeout(() => {
-      const normalizedCode = patreonCode.toUpperCase().trim();
-      const codeData = validPatreonCodes[normalizedCode];
-      
-      if (codeData) {
-        // Check if this code has already been used
-        const existingFounders = StorageService.get('userFounders', []);
-        const codeAlreadyUsed = existingFounders.some(founder => 
-          founder.code === normalizedCode
-        );
-        
-        if (codeAlreadyUsed) {
-          setValidationMessage('This code has already been used!');
-          setValidationSuccess(false);
-        } else {
-          const boostMeta = AchievementTracker.validatePatreonBoostCode(normalizedCode);
-          let boostMessage = '';
-
-          if (boostMeta) {
-            const boostResult = AchievementTracker.activatePatreonXPBoost(normalizedCode);
-            if (boostResult.success) {
-              boostMessage = ` XP boost ${boostResult.multiplierLabel || `${boostResult.multiplier}x`} activated.`;
-            } else {
-              boostMessage = ` ${boostResult.message}`;
-            }
-          } else {
-            boostMessage = ' Legacy founder code redeemed for Hall of Fame recognition.';
-          }
-
-          // Add user as founder with custom name
-          const newFounder = {
-            name: founderName.trim(),
-            tier: codeData.tier,
-            date: new Date().toISOString().split('T')[0],
-            contribution: codeData.contribution,
-            code: normalizedCode
-          };
-          
-          existingFounders.push(newFounder);
-          StorageService.set('userFounders', existingFounders);
-          
-          setValidationMessage(`Welcome to the founders club! You've been added as a ${codeData.tier} founder.${boostMessage}`);
-          setValidationSuccess(true);
-          setPatreonCode('');
-          setFounderName('');
-          
-          // Trigger page refresh to show new founder
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-        }
-      } else {
-        setValidationMessage('Invalid Patreon code. Please check your welcome message and try again.');
-        setValidationSuccess(false);
-      }
-      
-      setIsValidating(false);
-    }, 1000);
-  };
-
   return (
     <div className={`App ${theme}`}>
       <NavBar />
@@ -653,6 +570,20 @@ function Donate({ theme }) {
 
               <div className="unified-code-form">
                 <div className="code-input-group">
+                  <label htmlFor="founder-name">Display Name</label>
+                  <input
+                    id="founder-name"
+                    type="text"
+                    value={founderName}
+                    onChange={(e) => setFounderName(e.target.value)}
+                    placeholder="Your display name for the Founders Wall"
+                    className="code-input"
+                    disabled={isValidating}
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="code-input-group">
                   <label htmlFor="unified-code">Your Code</label>
                   <div className="code-input-wrapper">
                     <input
@@ -686,93 +617,7 @@ function Donate({ theme }) {
                 )}
 
                 <div className="unified-code-hints">
-                  <span><Star size={12} /> Founder codes activate supporter perks</span>
-                </div>
-              </div>
-            </div>
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Patreon Monthly Tiers"
-            subtitle="Support ongoing development with a monthly subscription and unlock rotating exclusive perks."
-            badge="Monthly"
-            icon={<Heart size={18} />}
-            className="donate-folder patreon-tiers-folder"
-          >
-            <PatreonTiersPanel />
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Unlock Your Founder Lounge"
-            subtitle="Redeem your founder code to activate your supporter tier, founder recognition, and any included XP multiplier."
-            badge={validationSuccess ? 'Code accepted' : 'Redeem code'}
-            icon={<Key size={18} />}
-            className="donate-folder"
-          >
-            <div className="become-founder-section">
-              <h2><Key size={24} /> Unlock Your Founder Lounge</h2>
-              <p className="founder-signup-intro">
-                Redeem your founder code to unlock the lounge, add your display name to the founders wall,
-                and activate any included XP multiplier.
-              </p>
-
-              <div className="code-entry-form">
-                <div className="code-input-group">
-                  <label htmlFor="founder-name">Display Name</label>
-                  <input
-                    id="founder-name"
-                    type="text"
-                    value={founderName}
-                    onChange={(e) => setFounderName(e.target.value)}
-                    placeholder="Your display name"
-                    className="code-input"
-                    disabled={isValidating}
-                    maxLength={30}
-                  />
-                </div>
-
-                <div className="code-input-group">
-                  <label htmlFor="patreon-code">Patreon Code</label>
-                  <div className="code-input-wrapper">
-                    <input
-                      id="patreon-code"
-                      type="text"
-                      value={patreonCode}
-                      onChange={(e) => {
-                        setPatreonCode(e.target.value.toUpperCase());
-                        setValidationMessage('');
-                        setValidationSuccess(false);
-                      }}
-                      placeholder="Enter your Patreon code"
-                      className="code-input"
-                      disabled={isValidating}
-                      maxLength={30}
-                    />
-                    <button
-                      onClick={validateAndAddFounder}
-                      disabled={isValidating || !patreonCode.trim() || !founderName.trim()}
-                      className="validate-button"
-                    >
-                      {isValidating ? 'Validating...' : 'Validate Code'}
-                    </button>
-                  </div>
-                </div>
-
-                {validationMessage && (
-                  <div className={`validation-message ${validationSuccess ? 'success' : 'error'}`}>
-                    {validationSuccess ? <Check size={16} /> : <AlertCircle size={16} />}
-                    <span>{validationMessage}</span>
-                  </div>
-                )}
-
-                <div className="code-info">
-                  <h4>How to get your code:</h4>
-                  <ol>
-                    <li>Subscribe to our <a href="https://www.patreon.com/cw/GamePilot" target="_blank" rel="noopener noreferrer">Patreon</a></li>
-                    <li>Check your welcome email/message for your unique founder code</li>
-                    <li>Enter your display name and code above</li>
-                    <li>Click "Validate Code" to unlock your Founder Lounge access and activate XP boosts (if included)</li>
-                  </ol>
+                  <span><Star size={12} /> Founder codes activate supporter perks and add your name to the Founders Wall</span>
                 </div>
               </div>
             </div>

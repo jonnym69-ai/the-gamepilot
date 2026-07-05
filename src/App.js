@@ -59,7 +59,6 @@ const LibraryIntelligence = lazy(() => import('./LibraryIntelligence'));
 const StartupQuestionnaire = lazy(() => import('./components/StartupQuestionnaire'));
 const Themes = lazy(() => import('./Themes'));
 const Habits = lazy(() => import('./Habits'));
-const ThemeBuilder = lazy(() => import('./ThemeBuilder'));
 const Achievements = lazy(() => import('./Achievements'));
 const ExportHub = lazy(() => import('./ExportHub'));
 const StorageManager = lazy(() => import('./StorageManager'));
@@ -1125,7 +1124,6 @@ function AppContent() {
         <Route path="/gaming-dna" element={<GamingDNAPage library={library} />} />
         <Route path="/themes" element={<Themes />} />
         <Route path="/habits" element={<Habits library={library} />} />
-        <Route path="/theme-builder" element={<ThemeBuilder />} />
         <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} library={library} dynamicCoverBg={dynamicCoverBg} setDynamicCoverBg={setDynamicCoverBg} minimizeOnLaunch={minimizeOnLaunch} setMinimizeOnLaunch={setMinimizeOnLaunch} />} />
         <Route path="/profile" element={<Profile library={library} />} />
         <Route path="/year-in-review" element={<YearInReview library={library} />} />

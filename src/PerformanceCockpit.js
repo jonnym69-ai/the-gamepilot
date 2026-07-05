@@ -13,7 +13,6 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LazyImage from "./components/LazyImage";
 import { Link } from "react-router-dom";
-import { formatPrice, getCurrentCurrency, getCurrencySymbol, convertToUSD } from "./CurrencyConverter";
 import NavBar from "./NavBar";
 import SpecCard from "./components/SpecCard";
 import "./PerformanceCockpit.css";
@@ -87,9 +86,6 @@ function PerformanceCockpit({
   const [error, setError] = useState(null);
   const [personaProfile, setPersonaProfile] = useState(null);
   const [personaSynergy, setPersonaSynergy] = useState([]);
-  const [budget, setBudget] = useState('');
-  const [budgetRec, setBudgetRec] = useState(null);
-  const [activeCurrency, setActiveCurrency] = useState(getCurrentCurrency());
 
   const analyzeSystem = useCallback(async () => {
     try {
@@ -218,9 +214,6 @@ function PerformanceCockpit({
       ) {
         analyzeSystem();
       }
-      if (event && event.key === "selectedCurrency") {
-        setActiveCurrency(getCurrentCurrency());
-      }
     };
 
     const handleFocus = () => {
@@ -249,71 +242,6 @@ function PerformanceCockpit({
     if (score >= 60) return "🎮 Good";
     if (score >= 40) return "🎯 Budget";
     return "🦖 Weak";
-  };
-
-  const getPriorityColor = (priority) => {
-    if (priority === "high") return "#f44336";
-    if (priority === "medium") return "#ff9800";
-    return "#4caf50";
-  };
-
-  const handleBudgetChange = (value) => {
-    const num = parseInt(value, 10);
-    if (isNaN(num) || num <= 0) {
-      setBudget('');
-      setBudgetRec(null);
-      return;
-    }
-    setBudget(num);
-    if (analysis && systemInfo) {
-      const usdBudget = convertToUSD(num, activeCurrency);
-      const rec = BottleneckAnalyzer.getBudgetRecommendation(
-        usdBudget,
-        analysis.bottlenecks,
-        systemInfo,
-        analysis.stats
-      );
-      setBudgetRec(rec);
-    }
-  };
-
-  const convertCostString = (costString) => {
-    if (typeof costString !== "string") {
-      return "$0";
-    }
-
-    // Parse cost string like "$250-350" or "$50-150"
-    const match = costString.match(/\$(\d+)-(\d+)/);
-    if (!match) return costString;
-
-    const minCost = parseInt(match[1]);
-    const maxCost = parseInt(match[2]);
-    const currency = activeCurrency;
-
-    const minConverted = formatPrice(minCost, currency);
-    const maxConverted = formatPrice(maxCost, currency);
-
-    // Extract just the numeric part and currency symbol
-    const minNum = minConverted.replace(/[^\d.]/g, "");
-    const maxNum = maxConverted.replace(/[^\d.]/g, "");
-
-    // Get currency symbol
-    const symbols = {
-      USD: "$",
-      EUR: "€",
-      GBP: "£",
-      JPY: "¥",
-      CAD: "C$",
-      AUD: "A$",
-      CHF: "CHF",
-      CNY: "¥",
-      INR: "₹",
-      BRL: "R$",
-      RUB: "₽",
-    };
-    const symbol = symbols[currency] || "$";
-
-    return `${symbol}${minNum}-${maxNum}`;
   };
 
   const getPerformanceLabel = (level) => {
@@ -728,79 +656,6 @@ function PerformanceCockpit({
             Open Library Reclaimer
           </Link>
         </div>
-
-        {/* Upgrade Recommendations */}
-        {analysis.recommendations.length > 0 && (
-          <div className="recommendations-section">
-            <h2>
-              <AlertTriangle size={24} /> Upgrade Recommendations
-            </h2>
-
-            {/* Budget-based upgrade picker */}
-            <div className="budget-upgrade-card">
-              <h3>💰 Set Your Upgrade Budget</h3>
-              <p className="budget-copy">
-                Enter how much you're willing to spend and we'll tell you the best component to upgrade.
-              </p>
-              <div className="budget-input-row">
-                <span className="budget-prefix">{getCurrencySymbol(activeCurrency)}</span>
-                <input
-                  type="number"
-                  value={budget || ''}
-                  onChange={(e) => handleBudgetChange(e.target.value)}
-                  placeholder="e.g. 500"
-                  className="budget-input"
-                />
-              </div>
-              {budgetRec && (
-                <div className={`budget-result ${budgetRec.withinBudget ? 'in-budget' : 'over-budget'}`}>
-                  <div className="budget-result-header">
-                    <span className="budget-result-component">{budgetRec.component.toUpperCase()}</span>
-                    <span className="budget-result-cost">{convertCostString(budgetRec.estimatedCost)}</span>
-                  </div>
-                  <p className="budget-result-suggestion">{budgetRec.suggestion}</p>
-                  <div className="budget-result-meta">
-                    {budgetRec.fpsGain && (
-                      <span className="budget-result-gain">{budgetRec.fpsGain}</span>
-                    )}
-                    <span className="budget-result-games">
-                      Impacts {budgetRec.gamesAffected} game{budgetRec.gamesAffected !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="recommendations-grid">
-              {analysis.recommendations.map((rec, index) => (
-                <div key={index} className="recommendation-card">
-                  <div className="rec-header">
-                    <h3>{rec.component}</h3>
-                    <span
-                      className="priority-badge"
-                      style={{ background: getPriorityColor(rec.priority) }}
-                    >
-                      {rec.priority} priority
-                    </span>
-                  </div>
-                  <p className="rec-impact">{rec.impact}</p>
-                  <div className="rec-suggestion">
-                    <strong>💡 Suggestion:</strong>
-                    <p>{rec.suggestion}</p>
-                  </div>
-                  <div className="rec-footer">
-                    <span className="rec-cost">
-                      {convertCostString(rec.estimatedCost)}
-                    </span>
-                    <span className="rec-games">
-                      {rec.gamesAffected} games affected
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Game Compatibility Matrix */}
         {analysis.compatibilityMatrix.length > 0 && (
