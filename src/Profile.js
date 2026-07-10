@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
-import { Clock, Download, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Image as ImageIcon, Sparkles, Award, Dna, BookOpen } from 'lucide-react';
+import { Clock, Download, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Image as ImageIcon, Sparkles, Award, Dna, BookOpen, Dices } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
 import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
@@ -14,6 +14,7 @@ import { StartupPersonalizationService } from './services/StartupPersonalization
 import CalendarXPService from './services/CalendarXPService';
 import NavBar from './NavBar';
 import { GamingIdentity } from './GamingIdentity';
+import GamingPersonaService from './services/GamingPersonaService';
 import GameCalendar from './components/GameCalendar';
 import EmptyState from './components/EmptyState';
 import ExportModal from './components/ExportModal';
@@ -21,6 +22,7 @@ import CinematicExport from './components/CinematicExport';
 import PersonaEvolutionCard from './components/PersonaEvolutionCard';
 import { IdentityShareCard, IDENTITY_SHARE_CARD_SIZE_PX } from './components/IdentityShareCard';
 import GamingStoryPanel from './components/GamingStoryPanel';
+import TasteFingerprint from './components/TasteFingerprint';
 import { GamingStoryService } from './services/GamingStoryService';
 import { YearInReviewService } from './services/YearInReviewService';
 import { LocalShareService } from './services/LocalShareService';
@@ -82,6 +84,32 @@ const Profile = ({ theme, library = [] }) => {
   const [socialLinks, setSocialLinks] = useState([]);
   const [tempSocialLinks, setTempSocialLinks] = useState([]);
   const [gamingIdentity, setGamingIdentity] = useState(null);
+  const [personaSeed, setPersonaSeed] = useState(null);
+  const [showPersonaDebug, setShowPersonaDebug] = useState(false);
+  const [personaVariant, setPersonaVariant] = useState('primary');
+  const [personaWindow, setPersonaWindow] = useState('all'); // 'all' | 'recent'
+  const displayedPersona = useMemo(
+    () => {
+      if (!gamingIdentity) return null;
+      const windowDays = personaWindow === 'recent' ? 90 : null;
+      // Use the cached all-time persona only when no reroll/window override is active.
+      if (personaSeed === null && windowDays === null) return gamingIdentity.gamingPersona || null;
+      return GamingPersonaService.getPersona(null, personaSeed, { windowDays });
+    },
+    [gamingIdentity, personaSeed, personaWindow]
+  );
+  const activePersona = useMemo(
+    () => {
+      if (!displayedPersona) return null;
+      return personaVariant === 'secondary' && displayedPersona.secondaryPersona
+        ? displayedPersona.secondaryPersona
+        : displayedPersona.primaryPersona;
+    },
+    [displayedPersona, personaVariant]
+  );
+  const handleRerollPersona = useCallback(() => {
+    setPersonaSeed(Date.now() + Math.floor(Math.random() * 1000));
+  }, []);
   const [gamingStory, setGamingStory] = useState(() => GamingStoryService.getCurrentStory());
   const [periodStory, setPeriodStory] = useState(() => GamingStoryService.getPeriodStory());
   const identityShareCardRef = useRef(null);
@@ -461,7 +489,9 @@ const Profile = ({ theme, library = [] }) => {
     const identity = GamingIdentity.getProfile();
     setGamingIdentity(identity);
     setGamingStory(GamingStoryService.updateStory(library));
-    setPeriodStory(GamingStoryService.updatePeriodStory(GamingStoryService.getStoryFrequency()));
+    // Generate the period story using the persona variant the user has selected
+    // so the weekly/monthly recap reads with the same voice as the persona card.
+    setPeriodStory(GamingStoryService.updatePeriodStory(GamingStoryService.getStoryFrequency(), activePersona));
     setStartupPersonalization(StartupPersonalizationService.getProfile());
     setStartupDraft(StartupPersonalizationService.getProfile());
 
@@ -469,7 +499,22 @@ const Profile = ({ theme, library = [] }) => {
     setXpStats(xpData);
     setXpBoost(AchievementTracker.getPatreonBoostProfile());
     refreshRewardCatalog();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [library, refreshRewardCatalog]);
+
+  // Re-voice the current period story when the user switches persona variant
+  // or window, so the weekly/monthly recap stays aligned with the card.
+  useEffect(() => {
+    if (!gamingIdentity) return;
+    const period = GamingStoryService.getStoryFrequency();
+    if (period === 'off') return;
+    const previousStory = GamingStoryService.getPeriodStory();
+    const story = GamingStoryService.generatePeriodStory(period, previousStory, activePersona);
+    if (story) {
+      GamingStoryService.savePeriodStory(story);
+      setPeriodStory(story);
+    }
+  }, [activePersona, gamingIdentity]);
 
   useEffect(() => {
     const handleStartupQuestionnaireCompleted = (event) => {
@@ -900,6 +945,106 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="welcome-message-display">
                   <p>"{welcomeMessage}"</p>
                 </div>
+
+                {displayedPersona && (
+                  <div className="gaming-persona-card">
+                    <div className="gaming-persona-card-header">
+                      <Sparkles size={18} />
+                      <span>Your Gaming Persona</span>
+                      <div className="gaming-persona-window-switch">
+                        <button
+                          type="button"
+                          className={personaWindow === 'all' ? 'active' : ''}
+                          onClick={() => setPersonaWindow('all')}
+                        >
+                          All-time
+                        </button>
+                        <button
+                          type="button"
+                          className={personaWindow === 'recent' ? 'active' : ''}
+                          onClick={() => setPersonaWindow('recent')}
+                        >
+                          Recent
+                        </button>
+                      </div>
+                      <button
+                        onClick={handleRerollPersona}
+                        className="gaming-persona-reroll"
+                        title="Reroll roast"
+                        type="button"
+                      >
+                        <Dices size={14} />
+                        Reroll roast
+                      </button>
+                    </div>
+                    {displayedPersona.secondaryPersona && (
+                      <div className="gaming-persona-variant-switch">
+                        <button
+                          type="button"
+                          className={personaVariant === 'primary' ? 'active' : ''}
+                          onClick={() => setPersonaVariant('primary')}
+                        >
+                          {displayedPersona.primaryPersona?.label?.replace(/^The /, '') || 'Main'}
+                        </button>
+                        <button
+                          type="button"
+                          className={personaVariant === 'secondary' ? 'active' : ''}
+                          onClick={() => setPersonaVariant('secondary')}
+                        >
+                          {displayedPersona.secondaryPersona?.label?.replace(/^The /, '') || 'Alt'}
+                        </button>
+                      </div>
+                    )}
+                    {(() => {
+                      const isSecondary = personaVariant === 'secondary' && displayedPersona.secondaryPersona;
+                      const active = isSecondary ? displayedPersona.secondaryPersona : displayedPersona.primaryPersona;
+                      const roast = isSecondary ? active?.roast : displayedPersona.summaryRoast;
+                      return (
+                        <div className="gaming-persona-primary">
+                          <h3>{active?.label || 'Gamer in Progress'}</h3>
+                          <p className="gaming-persona-roast">{roast}</p>
+                          {active?.basedOnGame && (
+                            <span className="gaming-persona-basis">Based on your time in {active.basedOnGame}</span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {displayedPersona.subTraits.length > 0 && (
+                      <div className="gaming-persona-traits">
+                        {displayedPersona.subTraits.map((trait) => (
+                          <span key={trait.id} className="gaming-persona-trait" title={trait.description}>
+                            {trait.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {displayedPersona.confidence === 'low' && (
+                      <p className="gaming-persona-confidence">
+                        Play a few more games and GamePilot will sharpen this roast.
+                      </p>
+                    )}
+                    <button
+                      onClick={() => setShowPersonaDebug((prev) => !prev)}
+                      className="gaming-persona-debug-toggle"
+                      type="button"
+                    >
+                      {showPersonaDebug ? 'Hide debug' : 'Debug persona'}
+                    </button>
+                    {showPersonaDebug && (
+                      <div className="gaming-persona-debug">
+                        <div className="gaming-persona-debug-section">
+                          <strong>Signals</strong>
+                          <pre>{JSON.stringify(displayedPersona.signals, null, 2)}</pre>
+                        </div>
+                        <div className="gaming-persona-debug-section">
+                          <strong>Archetype scores</strong>
+                          <pre>{JSON.stringify(displayedPersona.allArchetypes, null, 2)}</pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="profile-equipped-meta">
                   {isFounder && founderTier && <span>Founder Status: {founderTier} Lounge</span>}
                   <span>Frame: {selectedProfileFrame?.name || 'Starter Halo'}</span>
@@ -1152,16 +1297,28 @@ const Profile = ({ theme, library = [] }) => {
         {/* Gaming Story Section */}
         <CollapsibleSection
           title="Gaming Story"
-          subtitle="Your identity story and recent recap."
+          subtitle="Your latest chapter, taste fingerprint, and identity story."
           badge={periodStory?.period || gamingStory?.chapter || 'Anchor'}
           icon={<BookOpen size={18} />}
           className={getSectionClass(14)}
         >
-          <GamingStoryPanel story={gamingStory} />
-          {GamingStoryService.getStoryFrequency() !== 'off' && periodStory && (
+          {/* Latest weekly chapter leads when available */}
+          {GamingStoryService.getStoryFrequency() !== 'off' && periodStory ? (
+            <GamingStoryPanel story={periodStory} />
+          ) : (
+            <GamingStoryPanel story={gamingStory} />
+          )}
+
+          {/* Identity-derived taste fingerprint */}
+          <div style={{ marginTop: '20px' }}>
+            <TasteFingerprint />
+          </div>
+
+          {/* Identity story kept as the anchor chapter below the weekly recap */}
+          {GamingStoryService.getStoryFrequency() !== 'off' && periodStory && gamingStory && (
             <div style={{ marginTop: '20px' }}>
-              <h4 style={{ marginBottom: '12px', fontSize: '14px', opacity: 0.8 }}>Recent Story</h4>
-              <GamingStoryPanel story={periodStory} />
+              <h4 style={{ marginBottom: '12px', fontSize: '14px', opacity: 0.8 }}>Identity Story</h4>
+              <GamingStoryPanel story={gamingStory} />
             </div>
           )}
         </CollapsibleSection>

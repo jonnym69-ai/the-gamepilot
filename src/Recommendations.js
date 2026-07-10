@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Play,
   Plus,
-  Trash2
+  Trash2,
+  Fingerprint
 } from 'lucide-react';
 import NavBar from './NavBar';
 import LazyImage from './components/LazyImage';
@@ -22,6 +23,7 @@ import { PerfectPlaySelector } from './components/PerfectPlaySelector';
 import { GamingIdentity } from './GamingIdentity';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { RecommendationReasonChip } from './components/RecommendationReasonChip';
+import WishlistService from './services/WishlistService';
 import StorageService from './services/StorageService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import './Recommendations.css';
@@ -305,6 +307,13 @@ export default function Recommendations({ library, onLaunchGame }) {
 
   const recommendationStyles = useMemo(() => [
     {
+      id: 'identity-picks',
+      title: 'Identity Picks',
+      description: 'Curated from your gaming identity and taste',
+      icon: Fingerprint,
+      color: '#f39c12'
+    },
+    {
       id: 'perfect-play',
       title: 'Perfect Play',
       description: 'Best match for your current mood and time',
@@ -354,6 +363,20 @@ export default function Recommendations({ library, onLaunchGame }) {
       color: '#ec4899'
     }
   ], []);
+
+  const identityPicksResult = useMemo(() => {
+    if (activeStyle !== 'identity-picks') return null;
+    return RecommendationEngine.getIdentityPicks(library, identity, 5);
+  }, [activeStyle, library, identity]);
+
+  const wishlistIdentityPicks = useMemo(() => {
+    if (activeStyle !== 'identity-picks') return null;
+    try {
+      return RecommendationEngine.getWishlistIdentityPicks(WishlistService.getWishlist(), identity, 3);
+    } catch {
+      return null;
+    }
+  }, [activeStyle, identity]);
 
   const rediscoverResult = useMemo(() => {
     if (activeStyle !== 'rediscover') return null;
@@ -577,6 +600,46 @@ export default function Recommendations({ library, onLaunchGame }) {
     );
   };
 
+  const renderWishlistIdentityPicks = () => {
+    if (!wishlistIdentityPicks?.items?.length) return null;
+    return (
+      <div className="rec-wishlist-identity">
+        <h3 className="rec-section-title">From your wishlist</h3>
+        {wishlistIdentityPicks.message && (
+          <p className="rec-payload-message">{wishlistIdentityPicks.message}</p>
+        )}
+        <div className="rec-wishlist-identity-list">
+          {wishlistIdentityPicks.items.map((item) => (
+            <div key={item.key || item.name} className="rec-wishlist-identity-row">
+              <div className="rec-wishlist-identity-artwork">
+                <LazyImage
+                  src={resolveGameArtwork(item)}
+                  alt={item.name}
+                  placeholder={getGameArtworkPlaceholder(item)}
+                />
+              </div>
+              <div className="rec-wishlist-identity-info">
+                <span className="rec-wishlist-identity-title">{item.name}</span>
+                {item.identityReasons?.length > 0 && (
+                  <span className="rec-wishlist-identity-reason">
+                    {item.identityReasons[0].replace(/\*\*/g, '')}
+                  </span>
+                )}
+                {item.currentPrice?.price != null && (
+                  <span className={`rec-wishlist-identity-price ${item.priceStatus || ''}`}>
+                    {item.currentPrice.formatted || `${item.currentPrice.price}`}
+                    {item.priceStatus === 'below-threshold' && ' · below your target'}
+                    {item.priceStatus === 'historical-low' && ' · historical low'}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderTopNav = () => (
     <div className="rec-top-nav">
       <div className="rec-top-nav-left">
@@ -602,6 +665,14 @@ export default function Recommendations({ library, onLaunchGame }) {
       {renderTopNav()}
       <div className="rec-content">
         {activeStyle === 'hub' && renderHub()}
+
+        {activeStyle === 'identity-picks' && (
+          <>
+            {renderStyleHeader('Identity Picks', 'Curated from your gaming identity and taste')}
+            {renderPayload(identityPicksResult, 'identity-picks')}
+            {renderWishlistIdentityPicks()}
+          </>
+        )}
 
         {activeStyle === 'perfect-play' && (
           <>

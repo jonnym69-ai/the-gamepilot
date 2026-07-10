@@ -90,6 +90,22 @@ class DiskUsageService {
     if (!force && cached && isFresh(cached)) return cached;
     if (inflight.has(key)) return inflight.get(key);
 
+    const knownInstallSize = typeof game?.installSize === 'number' && game.installSize > 0 ? game.installSize : null;
+    if (knownInstallSize !== null) {
+      const entry = {
+        ok: true,
+        bytes: knownInstallSize,
+        files: 0,
+        dirs: 0,
+        truncated: false,
+        durationMs: 0,
+        fetchedAt: Date.now()
+      };
+      const next = { ...readCache(), [key]: entry };
+      writeCache(next);
+      return entry;
+    }
+
     const api = window.electronAPI?.diskFolderSize;
     if (!api) return cached || null;
 

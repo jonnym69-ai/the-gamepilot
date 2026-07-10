@@ -2,6 +2,13 @@ import { resolveGameArtwork } from './GameArtworkService';
 import StorageService from './StorageService';
 import { GamingIdentity } from '../GamingIdentity';
 import { StatsAggregationService } from './StatsAggregationService';
+import { UserBehaviorProfile } from './UserBehaviorProfile';
+import StoryArchiveService from './StoryArchiveService';
+import { GamingPersonaService, DEFAULT_VOICE } from './GamingPersonaService';
+
+// Minimum engagement before a full narrative chapter is generated. Below this
+// we render a short "quiet week" card instead of forcing a story.
+const QUIET_PERIOD_MIN_HOURS = 2;
 
 const FIRST_STORY_SHOWN_KEY = 'firstGamingStoryShown';
 const GAMING_STORY_KEY = 'gamingStory';
@@ -89,18 +96,101 @@ const GENRE_TEMPLATES = {
   'Platformer': {
     lead: 'leaping through danger',
     hook: 'You spent {period} leaping through danger'
+  },
+  'Indie': {
+    lead: 'championing the underdogs',
+    hook: 'You spent {period} championing indie underdogs'
+  },
+  'Roguelike': {
+    lead: 'dying and trying again',
+    hook: 'You spent {period} dying, learning, and running it back'
+  },
+  'Roguelite': {
+    lead: 'dying and trying again',
+    hook: 'You spent {period} dying, learning, and running it back'
+  },
+  'Metroidvania': {
+    lead: 'unlocking the map one ability at a time',
+    hook: 'You spent {period} unlocking the map one ability at a time'
+  },
+  'Sandbox': {
+    lead: 'building your own fun',
+    hook: 'You spent {period} building your own fun'
+  },
+  'Crafting': {
+    lead: 'gathering, building, repeating',
+    hook: 'You spent {period} gathering, building, and repeating'
+  },
+  'MMO': {
+    lead: 'grinding with the crowd',
+    hook: 'You spent {period} grinding alongside thousands of others'
+  },
+  'MMORPG': {
+    lead: 'grinding with the crowd',
+    hook: 'You spent {period} grinding alongside thousands of others'
+  },
+  'MOBA': {
+    lead: 'chasing the perfect teamfight',
+    hook: 'You spent {period} chasing the perfect teamfight'
+  },
+  'Battle Royale': {
+    lead: 'dropping in for the last-one-standing rush',
+    hook: 'You spent {period} chasing that last-one-standing rush'
+  },
+  'Multiplayer': {
+    lead: 'squadding up',
+    hook: 'You spent {period} squadding up with the crew'
+  },
+  'Co-op': {
+    lead: 'watching each other\'s backs',
+    hook: 'You spent {period} watching each other\'s backs'
+  },
+  'Stealth': {
+    lead: 'staying in the shadows',
+    hook: 'You spent {period} staying in the shadows'
+  },
+  'Card Game': {
+    lead: 'building the perfect deck',
+    hook: 'You spent {period} building the perfect deck'
+  },
+  'Deckbuilder': {
+    lead: 'building the perfect deck',
+    hook: 'You spent {period} building the perfect deck'
+  },
+  'Fighting Game': {
+    lead: 'settling scores in the arena',
+    hook: 'You spent {period} settling scores in the arena'
+  },
+  'Action-Adventure': {
+    lead: 'exploring unknown worlds',
+    hook: 'You spent {period} exploring unknown worlds'
+  },
+  'Sci-Fi': {
+    lead: 'chasing the stars',
+    hook: 'You spent {period} chasing the stars'
+  },
+  'Fantasy': {
+    lead: 'living out a legend',
+    hook: 'You spent {period} living out a fantasy legend'
   }
 };
 
-const DEFAULT_TEMPLATE = {
-  lead: 'gaming',
-  hook: 'You spent {period} deep in the game'
-};
+// Rotating fallbacks so unmapped genres don't all read identically.
+const DEFAULT_TEMPLATES = [
+  { lead: 'deep in the game', hook: 'You spent {period} deep in the game' },
+  { lead: 'locked in', hook: 'You spent {period} locked in' },
+  { lead: 'chasing the next session', hook: 'You spent {period} chasing the next session' },
+  { lead: 'lost in the grind', hook: 'You spent {period} lost in the grind' }
+];
 
 const getTemplateForGenre = (genre) => {
-  if (!genre) return DEFAULT_TEMPLATE;
+  if (!genre) return DEFAULT_TEMPLATES[0];
   const normalized = String(genre).trim();
-  return GENRE_TEMPLATES[normalized] || DEFAULT_TEMPLATE;
+  const exact = GENRE_TEMPLATES[normalized];
+  if (exact) return exact;
+  // Rotate fallback by genre name so unmapped genres don't all read the same.
+  const hash = normalized.split('').reduce((h, c) => h + c.charCodeAt(0), 0);
+  return DEFAULT_TEMPLATES[hash % DEFAULT_TEMPLATES.length];
 };
 
 const getPeriodTopGames = (periodData, limit = 3) => {
@@ -164,6 +254,149 @@ const formatList = (items) => {
   if (items.length === 1) return items[0];
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+};
+
+const normName = (value) => (value ? String(value).trim().toLowerCase() : '');
+
+const ordinal = (n) => {
+  const num = Number(n) || 0;
+  const rem10 = num % 10;
+  const rem100 = num % 100;
+  if (rem10 === 1 && rem100 !== 11) return `${num}st`;
+  if (rem10 === 2 && rem100 !== 12) return `${num}nd`;
+  if (rem10 === 3 && rem100 !== 13) return `${num}rd`;
+  return `${num}th`;
+};
+
+// Singular noun for a period, used in continuity copy ("3rd week running").
+const PERIOD_NOUN = {
+  daily: 'day',
+  weekly: 'week',
+  monthly: 'month',
+  yearly: 'year'
+};
+
+// "last week" / "last month" phrasing for deltas.
+const PERIOD_PREVIOUS = {
+  daily: 'yesterday',
+  weekly: 'last week',
+  monthly: 'last month',
+  yearly: 'last year'
+};
+
+const getStoryDominantGenre = (story) => {
+  if (!story) return null;
+  if (Array.isArray(story.genreFingerprint) && story.genreFingerprint.length > 0) {
+    return story.genreFingerprint[0].genre || null;
+  }
+  const top = Array.isArray(story.topGames) ? story.topGames[0] : null;
+  return top?.genre || null;
+};
+
+// Resolve the narrative voice to use for story copy. If a caller passes a
+// persona object, use its voice; otherwise fetch the current primary persona.
+const getVoiceForStory = (persona) => {
+  if (persona?.voice) return persona.voice;
+  try {
+    return GamingPersonaService.getPrimaryPersona()?.voice || DEFAULT_VOICE;
+  } catch {
+    return DEFAULT_VOICE;
+  }
+};
+
+// Simple template substitution for voice strings. Undefined vars become ''.
+const fillVoiceTemplate = (template, vars) => {
+  if (!template) return '';
+  return Object.entries(vars).reduce((str, [key, value]) => {
+    const safe = value === undefined || value === null ? '' : String(value);
+    return str.replace(new RegExp(`\\{${key}\\}`, 'g'), safe);
+  }, template);
+};
+
+/**
+ * Derive week-to-week narrative deltas by comparing the current period summary
+ * against the previous chapter of the same cadence. This is what turns a stats
+ * snapshot into a story with an arc. Returns narrative lines plus a streak count
+ * that carries forward on the saved chapter.
+ *
+ * When a voice is supplied, continuity lines are flavored by the player's
+ * persona so the arc reads like the same narrator wrote the whole book.
+ */
+const computeContinuity = (period, current, previous, voice = DEFAULT_VOICE) => {
+  const noun = PERIOD_NOUN[period] || 'period';
+  const lastWord = PERIOD_PREVIOUS[period] || 'last time';
+  const lines = [];
+  const curTop = (current.topGames || [])[0] || null;
+  const prevActive = previous && !previous.isQuiet ? previous : null;
+  const prevTop = prevActive ? (prevActive.topGames || [])[0] || null : null;
+
+  let topGameStreak = 1;
+
+  const continuityVoice = voice.continuity || DEFAULT_VOICE.continuity;
+
+  // Top-game continuity: same anchor (streak) or a new #1 dethroning the old.
+  if (curTop && prevTop) {
+    if (normName(curTop.name) === normName(prevTop.name)) {
+      const prevStreak = Number(prevActive?.continuity?.topGameStreak) || 1;
+      topGameStreak = prevStreak + 1;
+      if (topGameStreak >= 3) {
+        lines.push(fillVoiceTemplate(continuityVoice.streak, {
+          GAME: curTop.name,
+          ORDINAL: ordinal(topGameStreak),
+          PERIOD: noun
+        }));
+      } else {
+        lines.push(`**${curTop.name}** kept its grip on the top spot from ${lastWord}.`);
+      }
+    } else {
+      lines.push(fillVoiceTemplate(continuityVoice.dethroned, {
+        GAME: curTop.name,
+        PREVGAME: prevTop.name
+      }));
+    }
+  }
+
+  // Comeback after a quiet stretch.
+  if (previous?.isQuiet && !current.isQuiet) {
+    lines.push(fillVoiceTemplate(continuityVoice.comeback, { PERIOD: noun }));
+  }
+
+  // Genre shift in taste.
+  const curGenre = getStoryDominantGenre(current);
+  const prevGenre = prevActive ? getStoryDominantGenre(prevActive) : null;
+  if (curGenre && prevGenre && normName(curGenre) !== normName(prevGenre)) {
+    lines.push(fillVoiceTemplate(continuityVoice.genreShift, {
+      PREVGENRE: prevGenre,
+      GENRE: curGenre
+    }));
+  }
+
+  // New games breaking into the rotation.
+  if (prevActive && Array.isArray(prevActive.topGames)) {
+    const prevNames = new Set(prevActive.topGames.map((g) => normName(g.name)));
+    const fresh = (current.topGames || []).filter((g) => g.name && !prevNames.has(normName(g.name)));
+    if (fresh.length > 0 && prevTop) {
+      lines.push(fillVoiceTemplate(continuityVoice.newRotation, {
+        FRESH: formatList(fresh.map((g) => `**${g.name}**`))
+      }));
+    }
+  }
+
+  // Playtime delta versus the previous chapter.
+  if (prevActive && Number.isFinite(prevActive.totalHours)) {
+    const delta = Math.round((current.totalHours || 0) - prevActive.totalHours);
+    if (delta >= 3) {
+      lines.push(`That's **${delta}h** more than ${lastWord}.`);
+    } else if (delta <= -3) {
+      lines.push(`That's **${Math.abs(delta)}h** less than ${lastWord}.`);
+    }
+  }
+
+  return {
+    lines,
+    topGameStreak,
+    comparedTo: previous?.generatedAt || null
+  };
 };
 
 export const GamingStoryService = {
@@ -252,8 +485,10 @@ export const GamingStoryService = {
     }
 
     const totalHours = Math.round((stats.totalPlayTime || 0) / 60);
-    const identityLabel = persona?.personaIdentity?.label || identity?.personality || 'Gamer';
-    const identityDescription = persona?.personaIdentity?.description || identity?.description || '';
+    const gamingPersona = GamingPersonaService.getPersona();
+    const primary = gamingPersona?.primaryPersona;
+    const identityLabel = primary?.label || identity?.personality || 'Gamer';
+    const identityDescription = gamingPersona?.summaryRoast || primary?.roast || identity?.description || '';
     const tasteClusters = profile?.tasteClusters || identity?.tasteClusters || [];
     const dominantGenre = persona?.dominantGenre || identity?.dominantGenre || stats?.favoriteGenre || null;
     const sessionPattern = persona?.sessionPatternLabel || identity?.sessionPattern || null;
@@ -383,25 +618,108 @@ export const GamingStoryService = {
     return new Date(d.setDate(diff)).toDateString();
   },
 
-  generatePeriodStory(period) {
+  /**
+   * Compute the start timestamp (ms) for the current instance of a period.
+   * Used to scope recommendation outcomes to the story's timeframe.
+   */
+  getPeriodStartTimestamp(period) {
+    const now = new Date();
+    if (period === 'daily') {
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    }
+    if (period === 'weekly') {
+      return new Date(this.getWeekStart(now)).getTime();
+    }
+    if (period === 'monthly') {
+      return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    }
+    if (period === 'yearly') {
+      return new Date(now.getFullYear(), 0, 1).getTime();
+    }
+    return null;
+  },
+
+  /**
+   * Build a short "quiet period" card when engagement is below threshold.
+   * Tone adapts to the user's identity persona so it still feels personal.
+   */
+  buildQuietPeriodStory(period, totalHours = 0, previousStory = null, persona = null) {
+    const username = StorageService.getString('profileUsername', '') || 'you';
+    let identityPersonality = null;
+    try {
+      identityPersonality = GamingIdentity.getProfile()?.identity?.personality || null;
+    } catch {
+      identityPersonality = null;
+    }
+
+    const voice = getVoiceForStory(persona);
+    const periodLabel = PERIOD_LABELS[period] || 'period';
+
+    // Continuity: acknowledge stepping back after an active chapter.
+    const usablePrevious = previousStory && previousStory.period === period ? previousStory : null;
+    const prevTop = usablePrevious && !usablePrevious.isQuiet
+      ? (usablePrevious.topGames || [])[0]
+      : null;
+    let narrative = fillVoiceTemplate(voice.quiet || DEFAULT_VOICE.quiet, { PERIOD: periodLabel });
+    if (prevTop) {
+      narrative += ` A change of pace after **${prevTop.name}** dominated ${PERIOD_PREVIOUS[period] || 'last time'}.`;
+    }
+
+    return {
+      chapter: 'quiet',
+      period,
+      isQuiet: true,
+      title: `A quiet ${periodLabel} for ${username}`,
+      subtitle: totalHours > 0 ? `${totalHours}h logged` : 'No sessions tracked',
+      totalHours,
+      gameCount: 0,
+      topGames: [],
+      genreFingerprint: [],
+      moodFingerprint: [],
+      recommendationOutcomes: null,
+      narrative,
+      identityLabel: persona?.label || identityPersonality,
+      tasteClusters: [],
+      continuity: { lines: [], topGameStreak: 0, comparedTo: usablePrevious?.generatedAt || null }
+    };
+  },
+
+  generatePeriodStory(period, previousStory = null, persona = null) {
     const dashboard = StatsAggregationService.getDashboardData();
     const periodData = dashboard?.periods?.[period];
-    if (!periodData) return null;
+    if (!periodData) {
+      return this.buildQuietPeriodStory(period, 0, previousStory, persona);
+    }
 
     const topGames = getPeriodTopGames(periodData, 3);
-    if (topGames.length === 0) return null;
-
     const totalHours = Math.round((periodData.playtimeMinutes || 0) / 60);
+
+    // Quiet-period fallback: not enough playtime or no tracked games.
+    if (topGames.length === 0 || totalHours < QUIET_PERIOD_MIN_HOURS) {
+      return this.buildQuietPeriodStory(period, totalHours, previousStory, persona);
+    }
+
+    const voice = getVoiceForStory(persona);
+    const periodLabel = PERIOD_LABELS[period] || 'this period';
     const leadingGame = topGames[0];
     const leadingTemplate = getTemplateForGenre(leadingGame.genre);
 
     const secondaryGames = topGames.slice(1, 3);
     const secondaryLines = secondaryGames.map((game) => {
       const template = getTemplateForGenre(game.genre);
-      return `with a taste of **${template.lead}** in **${game.name}** (${game.hours}h)`;
+      return fillVoiceTemplate(voice.secondary || DEFAULT_VOICE.secondary, {
+        LEAD: template.lead,
+        GAME: game.name,
+        HOURS: game.hours
+      });
     });
 
-    let narrative = `${leadingTemplate.hook.replace('{period}', PERIOD_LABELS[period])} in **${leadingGame.name}** (${leadingGame.hours}h).`;
+    let narrative = fillVoiceTemplate(voice.periodHook || DEFAULT_VOICE.periodHook, {
+      PERIOD: periodLabel,
+      LEAD: leadingTemplate.lead,
+      GAME: leadingGame.name,
+      HOURS: leadingGame.hours
+    });
 
     if (secondaryLines.length > 0) {
       narrative += ` ${formatList(secondaryLines)}.`;
@@ -413,28 +731,89 @@ export const GamingStoryService = {
       .map((g) => ({ genre: g.genre || 'Unknown', hours: g.hours, count: 1 }))
       .filter((entry) => entry.genre !== 'Unknown');
 
+    // Continuity: compare against the previous chapter of the same cadence and
+    // weave the deltas (new #1, streaks, comebacks, genre shifts) into the story.
+    const usablePrevious = previousStory && previousStory.period === period ? previousStory : null;
+    const continuity = computeContinuity(
+      period,
+      { topGames, genreFingerprint, totalHours, isQuiet: false },
+      usablePrevious,
+      voice
+    );
+    if (continuity.lines.length > 0) {
+      narrative += ` ${continuity.lines.join(' ')}`;
+    }
+
+    // Taste fingerprint — top moods learned from actual behavior.
+    let moodFingerprint = [];
+    try {
+      moodFingerprint = (UserBehaviorProfile.getTopMoods(3) || [])
+        .map((entry) => ({ mood: entry.mood, count: entry.count }));
+    } catch {
+      moodFingerprint = [];
+    }
+
+    // Recommendation outcomes scoped to this period — how the user engaged
+    // with the recommendations they were shown.
+    let recommendationOutcomes = null;
+    try {
+      const since = this.getPeriodStartTimestamp(period);
+      const outcomes = UserBehaviorProfile.getRecommendationOutcomes(since);
+      recommendationOutcomes = {
+        accepted: outcomes.acceptedCount,
+        ignored: outcomes.ignoredCount
+      };
+      if (outcomes.acceptedCount > 0) {
+        narrative += ` You followed **${outcomes.acceptedCount}** recommendation${outcomes.acceptedCount === 1 ? '' : 's'} ${PERIOD_LABELS[period]}.`;
+      } else if (outcomes.ignoredCount > 0) {
+        narrative += ` You forged your own path, passing on ${outcomes.ignoredCount} suggestion${outcomes.ignoredCount === 1 ? '' : 's'}.`;
+      }
+    } catch {
+      recommendationOutcomes = null;
+    }
+
     return {
       chapter: 'period',
       period,
+      isQuiet: false,
       title: `Your ${PERIOD_LABELS[period]} story`,
       subtitle: `${totalHours} hours · ${topGames.length} games`,
       totalHours,
       gameCount: topGames.length,
       topGames,
       genreFingerprint,
+      moodFingerprint,
+      recommendationOutcomes,
       narrative,
-      identityLabel: null,
-      tasteClusters: []
+      identityLabel: persona?.label || null,
+      tasteClusters: [],
+      continuity
     };
   },
 
-  updatePeriodStory(period) {
+  updatePeriodStory(period, persona = null) {
     if (!this.shouldGeneratePeriodStory(period)) {
       return this.getPeriodStory();
     }
-    const story = this.generatePeriodStory(period);
+    // Capture the previous chapter before we overwrite it, so the new chapter
+    // can reference week-to-week changes.
+    const previousStory = this.getPeriodStory();
+    const story = this.generatePeriodStory(period, previousStory, persona);
     if (story) {
       this.savePeriodStory(story);
+      // Archive weekly chapters so they can be assembled into the Year in
+      // Review book (52 / 12 / 4 layouts). Only weekly chapters are archived;
+      // monthly/seasonal digests are derived on demand from these.
+      if (period === 'weekly') {
+        try {
+          StoryArchiveService.recordWeeklyChapter({
+            ...story,
+            generatedAt: story.generatedAt || new Date().toISOString()
+          });
+        } catch (err) {
+          console.warn('[GamingStory] failed to archive weekly chapter:', err);
+        }
+      }
     }
     return story;
   }

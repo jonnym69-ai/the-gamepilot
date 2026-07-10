@@ -211,6 +211,32 @@ export class RecommendationEngine {
             score += w.identityArchetypeMatchBonus || 12;
           }
         }
+
+        // Memeish gaming persona affinity bonus
+        if (id.gamingPersona?.primaryPersona) {
+          const personaGenreMap = {
+            backlog_archaeologist: ['Adventure', 'RPG', 'Strategy', 'Puzzle'],
+            credit_roll_dodger: ['Roguelike', 'Sandbox', 'Multiplayer', 'Survival', 'Arcade'],
+            frame_data_masochist: ['Action', 'Fighting', 'Roguelike', 'Platformer', 'Metroidvania', 'Bullet Hell', 'Souls-like'],
+            spreadsheet_tactician: ['Strategy', 'Simulation', 'Management', 'Grand Strategy', '4X', 'City Builder', 'Tycoon'],
+            story_diver: ['RPG', 'Adventure', 'Visual Novel', 'Interactive Fiction', 'Story Rich'],
+            comfort_replay_junkie: ['Cozy', 'Casual', 'Simulation', 'Life Sim', 'Farming Sim'],
+            night_owl: ['Atmospheric', 'Immersive Sim', 'RPG', 'Adventure'],
+            indie_curator: ['Indie'],
+            franchise_loyalist: ['Action-Adventure', 'RPG', 'Action'],
+            retro_futurist: ['Retro', 'Pixel Graphics', 'Arcade', 'Classic'],
+            bleeding_edge: ['Early Access'],
+            completionist: ['RPG', 'Adventure', 'Platformer', 'Metroidvania', 'Collectathon'],
+            roamer: ['Open World', 'Exploration', 'Sandbox', 'Adventure'],
+            social_drop_in: ['Multiplayer', 'Co-op', 'Online Co-Op', 'Party'],
+            jank_enjoyer: ['Early Access', 'Indie', 'Experimental']
+          };
+          const affinityGenres = personaGenreMap[id.gamingPersona.primaryPersona.id] || [];
+          const matchCount = gameGenres.filter((g) => affinityGenres.includes(g)).length;
+          if (matchCount > 0) {
+            score += Math.min(w.gamingPersonaMatchBonus || 14, matchCount * 7);
+          }
+        }
       }
     } catch {
       // Identity data optional; ignore errors
@@ -708,9 +734,19 @@ export class RecommendationEngine {
     const seenNames = new Set(finalRecommendations.map((g) => g?.name).filter(Boolean));
     const recentNames = new Set(validRecent.map((e) => e?.name).filter(Boolean));
 
+    const isUnrunnable = (game) => {
+      if (!w.explorationRequireRunnable) return false;
+      const compat = game?.compatibility || game?.hardwareCompatibility;
+      if (!compat) return false;
+      if (compat === 'cannot_run') return true;
+      if (compat.settingsLevel === 'cannot_run') return true;
+      if (compat.canRun === false) return true;
+      return false;
+    };
+
     const candidates = library
       .filter((game) => {
-        if (!game || seenNames.has(game.name) || recentNames.has(game.name)) return false;
+        if (!game || seenNames.has(game.name) || recentNames.has(game.name) || isUnrunnable(game)) return false;
         return true;
       })
       .map((game) => {
@@ -1052,6 +1088,204 @@ export class RecommendationEngine {
         ? `A few ${effectiveMood.toLowerCase()} picks from your backlog that deserve another run.`
         : REDISCOVER_MESSAGES[Math.floor(Math.random() * REDISCOVER_MESSAGES.length)]
     });
+  }
+
+  /**
+   * Identity Picks — recommendations driven primarily by the user's gaming
+   * identity (favorite genre, favorite mood, archetype, and emergent taste
+   * clusters) rather than an ad-hoc mood/time filter. This is the core of the
+   * "identity loop": identity shapes the picks the user sees.
+   *
+   * @param {Array} library - the user's game library
+   * @param {object} [identity] - optional pre-fetched GamingIdentity profile
+   * @param {number} [count] - number of picks to return
+   */
+  static getIdentityPicks(library, identity = null, count = 5) {
+    if (!Array.isArray(library) || library.length === 0) {
+      return null;
+    }
+
+    const profile = identity || GamingIdentity.getProfile();
+    const favoriteGenre = profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
+      ? profile.identity.favoriteGenre
+      : null;
+    const favoriteMood = profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
+      ? profile.identity.favoriteMood
+      : null;
+    const archetype = profile?.identity?.archetype || profile?.archetype?.name || null;
+    const tasteClusters = Array.isArray(profile?.tasteClusters) ? profile.tasteClusters : [];
+
+    // Build a set of game names that belong to the user's taste clusters so we
+    // can boost games from those emergent taste groups.
+    const clusterGameNames = new Set(
+      tasteClusters.flatMap((cluster) => (Array.isArray(cluster?.gameNames) ? cluster.gameNames : []))
+        .map((name) => String(name || '').toLowerCase())
+    );
+
+    const scored = library
+      .map((game) => {
+        if (!game) return null;
+
+        const normalizedGenres = mapGameGenresToValid(game?.genres);
+        let score = this.scoreGameByBehavior(game, favoriteMood, favoriteGenre || this.getPrimaryGenre(game), null);
+        const reasons = [];
+
+        if (favoriteGenre && normalizedGenres.includes(favoriteGenre)) {
+          score += 30;
+          reasons.push(`Matches your favorite genre **${favoriteGenre}**`);
+        }
+
+        if (favoriteMood && Number(getMoodScoresForGame(game?.genres)?.[favoriteMood] || 0) > 0) {
+          score += 22;
+          reasons.push(`Fits your **${favoriteMood}** mood`);
+        }
+
+        const gameNameLower = String(game?.name || '').toLowerCase();
+        if (clusterGameNames.has(gameNameLower)) {
+          score += 26;
+          const owningCluster = tasteClusters.find((cluster) => (
+            Array.isArray(cluster?.gameNames)
+            && cluster.gameNames.some((name) => String(name || '').toLowerCase() === gameNameLower)
+          ));
+          if (owningCluster?.label) {
+            reasons.push(`Part of your **${owningCluster.label}** taste`);
+          }
+        }
+
+        return { game, score, reasons };
+      })
+      .filter(Boolean)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, count);
+
+    if (scored.length === 0) {
+      return null;
+    }
+
+    const reasonByName = new Map(
+      scored.map((entry) => [String(entry.game?.name || '').toLowerCase(), entry.reasons])
+    );
+
+    const identityDescriptor = archetype
+      ? `your **${archetype}** identity`
+      : (favoriteGenre ? `your love of **${favoriteGenre}**` : 'your gaming identity');
+
+    return this.buildRecommendationPayload('identity-picks', scored.map((entry) => entry.game), {
+      mood: favoriteMood || null,
+      genre: favoriteGenre || null,
+      message: `Picked for ${identityDescriptor}.`,
+      entryContextResolver: (game) => {
+        const identityReasons = reasonByName.get(String(game?.name || '').toLowerCase()) || [];
+        return {
+          metadata: {
+            identityReasons,
+            favoriteGenre,
+            favoriteMood,
+            archetype
+          }
+        };
+      }
+    });
+  }
+
+  /**
+   * Wishlist Identity Picks — rank the user's wishlist by how well each item
+   * matches their gaming identity (favorite genre / mood / taste clusters),
+   * with a bonus for active price drops. This fuses the identity loop with the
+   * wishlist so "what to buy next" is grounded in who the player actually is.
+   *
+   * @param {Array} wishlist - wishlist items (from WishlistService.getWishlist)
+   * @param {object} [identity] - optional pre-fetched GamingIdentity profile
+   * @param {number} [count] - number of picks to return
+   */
+  static getWishlistIdentityPicks(wishlist, identity = null, count = 3) {
+    if (!Array.isArray(wishlist) || wishlist.length === 0) {
+      return null;
+    }
+
+    const profile = identity || GamingIdentity.getProfile();
+    const favoriteGenre = profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
+      ? profile.identity.favoriteGenre
+      : null;
+    const favoriteMood = profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
+      ? profile.identity.favoriteMood
+      : null;
+    const tasteClusters = Array.isArray(profile?.tasteClusters) ? profile.tasteClusters : [];
+    const clusterGameNames = new Set(
+      tasteClusters.flatMap((cluster) => (Array.isArray(cluster?.gameNames) ? cluster.gameNames : []))
+        .map((name) => String(name || '').toLowerCase())
+    );
+
+    const scored = wishlist
+      .map((item) => {
+        if (!item) return null;
+
+        const normalizedGenres = mapGameGenresToValid(item?.genres);
+        let score = 0;
+        const reasons = [];
+
+        if (favoriteGenre && normalizedGenres.includes(favoriteGenre)) {
+          score += 30;
+          reasons.push(`Matches your favorite genre **${favoriteGenre}**`);
+        }
+
+        if (favoriteMood && Number(getMoodScoresForGame(item?.genres)?.[favoriteMood] || 0) > 0) {
+          score += 20;
+          reasons.push(`Fits your **${favoriteMood}** mood`);
+        }
+
+        const itemNameLower = String(item?.name || '').toLowerCase();
+        if (clusterGameNames.has(itemNameLower)) {
+          score += 24;
+          const owningCluster = tasteClusters.find((cluster) => (
+            Array.isArray(cluster?.gameNames)
+            && cluster.gameNames.some((name) => String(name || '').toLowerCase() === itemNameLower)
+          ));
+          if (owningCluster?.label) {
+            reasons.push(`Part of your **${owningCluster.label}** taste`);
+          }
+        }
+
+        // Price signals — reward active drops and historical lows.
+        const currentPrice = Number(item?.currentPrice?.price);
+        const threshold = Number(item?.threshold);
+        const historicalLow = Number(item?.historicalLow?.price);
+        let priceStatus = null;
+        if (Number.isFinite(currentPrice) && Number.isFinite(threshold) && currentPrice <= threshold) {
+          score += 18;
+          priceStatus = 'below-threshold';
+          reasons.push('Now below your price threshold');
+        } else if (Number.isFinite(currentPrice) && Number.isFinite(historicalLow) && currentPrice <= historicalLow) {
+          score += 14;
+          priceStatus = 'historical-low';
+          reasons.push('At its historical low price');
+        }
+
+        return { item, score, reasons, priceStatus };
+      })
+      .filter(Boolean)
+      .filter((entry) => entry.score > 0)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, count);
+
+    if (scored.length === 0) {
+      return null;
+    }
+
+    const identityDescriptor = favoriteGenre
+      ? `your love of **${favoriteGenre}**`
+      : 'your gaming identity';
+
+    return {
+      recommendationType: 'wishlist-identity',
+      message: `Wishlist games picked for ${identityDescriptor}.`,
+      items: scored.map((entry) => ({
+        ...entry.item,
+        identityReasons: entry.reasons,
+        identityScore: entry.score,
+        priceStatus: entry.priceStatus
+      }))
+    };
   }
 
   static getContinuePlayingResult(library, mood = null, timeConstraint = null, lastPlayedGame = null) {

@@ -673,7 +673,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
                         <option value="none">Not Planned</option>
                         <option value="soon">Playing Soon</option>
                         <option value="active">Currently Playing</option>
-                        <option value="finished">Finished/Done</option>
+                        <option value="finished">On hold / Shelved</option>
                         <option value="endless">Endless/Ongoing</option>
                       </select>
                     </div>
@@ -817,28 +817,30 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
 
                 <SaveBackupPanel game={game} />
 
-                <div className="game-info-panel">
-                  <h3>Collections</h3>
-                  <div className="collection-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {collections.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => handleCollectionToggle(c.id)}
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                          border: '1px solid ' + (selectedCollections.includes(c.id) ? c.color : 'var(--border)'),
-                          background: selectedCollections.includes(c.id) ? c.color + '33' : 'transparent',
-                          color: 'var(--text)',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
-                      >
-                        {selectedCollections.includes(c.id) ? '✓ ' : ''}{c.name}
-                      </button>
-                    ))}
+                {collections.some((c) => !c.locked) && (
+                  <div className="game-info-panel">
+                    <h3>Collections</h3>
+                    <div className="collection-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {collections.filter((c) => !c.locked).map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => handleCollectionToggle(c.id)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            border: '1px solid ' + (selectedCollections.includes(c.id) ? c.color : 'var(--border)'),
+                            background: selectedCollections.includes(c.id) ? c.color + '33' : 'transparent',
+                            color: 'var(--text)',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          {selectedCollections.includes(c.id) ? '✓ ' : ''}{c.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="game-info-panel">
                   <h3>Completion Status</h3>

@@ -4,7 +4,6 @@
  */
 
 import { AchievementTracker } from '../AchievementSystem';
-import { DailyEngagementService } from './DailyEngagementService';
 import StorageService from './StorageService';
 
 // Storage keys (now using StorageService with prefixes)
@@ -40,7 +39,7 @@ const BIRTHDAY_REWARDS = {
 
 const CHRISTMAS_REWARDS = {
   xp: 650,
-  spins: 5
+  bonusXP: 350
 };
 
 const SEASONAL_EVENTS = {
@@ -325,22 +324,21 @@ class CalendarXPService {
       };
     }
 
+    const totalChristmasXP = CHRISTMAS_REWARDS.xp + CHRISTMAS_REWARDS.bonusXP;
+
     if (typeof AchievementTracker?.grantXP === 'function') {
-      AchievementTracker.grantXP('christmas_bonus', CHRISTMAS_REWARDS.xp, {
-        spinsGranted: CHRISTMAS_REWARDS.spins
+      AchievementTracker.grantXP('christmas_bonus', totalChristmasXP, {
+        bonusXP: CHRISTMAS_REWARDS.bonusXP
       });
     }
-
-    const spinResult = DailyEngagementService.grantBonusSpins(CHRISTMAS_REWARDS.spins, 'Christmas Day');
 
     StorageService.setString(claimKey, new Date().toISOString());
 
     return {
       success: true,
-      xpEarned: CHRISTMAS_REWARDS.xp,
-      spinsGranted: CHRISTMAS_REWARDS.spins,
-      spinMessage: spinResult.message,
-      message: `🎄 Christmas Day bonus! +${CHRISTMAS_REWARDS.xp} XP and ${CHRISTMAS_REWARDS.spins} free spins!`
+      xpEarned: totalChristmasXP,
+      bonusXP: CHRISTMAS_REWARDS.bonusXP,
+      message: `🎄 Christmas Day bonus! +${totalChristmasXP} XP!`
     };
   }
 

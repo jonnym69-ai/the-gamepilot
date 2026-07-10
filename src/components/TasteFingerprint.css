@@ -1,0 +1,83 @@
+.taste-fingerprint {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--card-bg, rgba(17, 24, 39, 0.5));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+}
+
+.taste-fingerprint--empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.9rem;
+}
+
+.taste-fingerprint-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.taste-fingerprint-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.taste-fingerprint-column h5 {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.taste-fingerprint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.taste-fingerprint-label {
+  flex: 0 0 84px;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taste-fingerprint-bar-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+}
+
+.taste-fingerprint-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.taste-fingerprint-bar--genre {
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+}
+
+.taste-fingerprint-bar--mood {
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.taste-fingerprint-count {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #94a3b8);
+  min-width: 18px;
+  text-align: right;
+}

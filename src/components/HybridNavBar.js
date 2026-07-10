@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Wand2, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass, Gift } from 'lucide-react';
+import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass, Gift, Map } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import LabsService from '../services/LabsService';
 
@@ -101,6 +101,9 @@ function HybridNavBar() {
               <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="View unlocked rewards and customization options">
                 <Gift size={16} className="dropdown-item-icon" /> Rewards
               </Link>
+              <Link to="/roadmap" className="dropdown-item" onClick={closeDropdown} title="Community roadmap and upcoming goals">
+                <Map size={16} className="dropdown-item-icon" /> Roadmap
+              </Link>
             </div>
             {labsEnabled && (
               <div className="dropdown-section">
@@ -125,9 +128,6 @@ function HybridNavBar() {
                 </Link>
                 <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Founder Lounge, Patreon support, and unlock codes">
                   <Heart size={16} className="dropdown-item-icon" /> Founder Lounge
-                </Link>
-                <Link to="/theme-builder" className="dropdown-item" onClick={closeDropdown} title="Build custom themes with colors and effects">
-                  <Wand2 size={16} className="dropdown-item-icon" /> Theme Builder
                 </Link>
               </div>
             )}

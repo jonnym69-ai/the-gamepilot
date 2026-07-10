@@ -3807,6 +3807,221 @@ body.big-screen-mode .profile-section.selected {
   margin: 0;
 }
 
+/* Gaming Persona Card */
+.gaming-persona-card {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.12) 0%, rgba(240, 147, 251, 0.1) 100%);
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin: 16px 0 20px;
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+}
+
+.gaming-persona-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary, #ff6b35);
+  margin-bottom: 10px;
+}
+
+.gaming-persona-card-header svg {
+  color: var(--accent-primary, #ff6b35);
+}
+
+.gaming-persona-window-switch {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 3px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.gaming-persona-window-switch button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #9aa0a6);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gaming-persona-window-switch button.active {
+  background: var(--accent-primary, #ff6b35);
+  color: #fff;
+}
+
+.gaming-persona-reroll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #9aa0a6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gaming-persona-reroll:hover {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: rgba(255, 107, 53, 0.3);
+  color: var(--accent-primary, #ff6b35);
+}
+
+.gaming-persona-variant-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.gaming-persona-variant-switch button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #9aa0a6);
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gaming-persona-variant-switch button.active {
+  background: var(--accent-primary, #ff6b35);
+  color: #fff;
+}
+
+.gaming-persona-basis {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-secondary, #9aa0a6);
+}
+
+.gaming-persona-primary h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: var(--text-primary, #e8eaed);
+  line-height: 1.2;
+}
+
+.gaming-persona-roast {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #9aa0a6);
+  margin: 0;
+  font-style: italic;
+}
+
+.gaming-persona-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.gaming-persona-trait {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary, #e8eaed);
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.gaming-persona-trait:hover {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: rgba(255, 107, 53, 0.3);
+}
+
+.gaming-persona-confidence {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #9aa0a6);
+  margin: 12px 0 0;
+  opacity: 0.8;
+}
+
+.gaming-persona-debug-toggle {
+  margin-top: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary, #9aa0a6);
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.gaming-persona-debug-toggle:hover {
+  opacity: 1;
+  color: var(--accent-primary, #ff6b35);
+}
+
+.gaming-persona-debug {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.gaming-persona-debug-section {
+  margin-bottom: 12px;
+}
+
+.gaming-persona-debug-section:last-child {
+  margin-bottom: 0;
+}
+
+.gaming-persona-debug-section strong {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary, #ff6b35);
+  margin-bottom: 6px;
+}
+
+.gaming-persona-debug-section pre {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #9aa0a6);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 768px) {
   .profile-achievement-summary {
     grid-template-columns: 1fr;

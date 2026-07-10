@@ -370,7 +370,7 @@ export const HabitTrackerService = {
     const longestStreak = this.getStreaks().longest || 0;
 
     const DAY_XP = 60;
-    const SESSION_XP = 40;
+    const SESSION_XP = 65;
     const COMPLETION_XP = 400;
     const STREAK_XP = 50;
 

@@ -280,7 +280,30 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const resetSettings = () => {
     const confirmReset = window.confirm('Are you sure you want to reset all settings to defaults?');
     if (confirmReset) {
-      localStorage.clear();
+      const settingsKeys = [
+        'themeMode',
+        'dateFormat',
+        'timeFormat',
+        'timezone',
+        'autoTheme',
+        'cacheEnabled',
+        'theme',
+        'selectedCurrency',
+        'notificationsEnabled',
+        'gameLaunchNotifications',
+        'dailySummaryNotifications',
+        'scanCompleteNotifications',
+        'backupReminders',
+        'gamingStoryFrequency',
+        'customBgImage',
+        'customBgOverlay',
+        'dynamicCoverBg',
+        'minimizeOnLaunch',
+        'recommendationStyle',
+        'launchOnStartup',
+        'bigScreenMode'
+      ];
+      settingsKeys.forEach((key) => StorageService.remove(key));
       setDateFormat('DD/MM/YYYY');
       setTimeFormat('24-hour');
       setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);

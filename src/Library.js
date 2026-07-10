@@ -1425,8 +1425,8 @@ function Library({
         <div className="free-games-section">
           <div className="free-games-header">
             <div>
-              <h3>🆓 Weekly Free Games</h3>
-              <p>Optional radar from Epic Games Store — auto-refreshes hourly.</p>
+              <h3>🆓 Epic Free Games</h3>
+              <p>Optional radar from the Epic Games Store — auto-refreshes hourly.</p>
             </div>
             <div className="free-games-controls">
               <button onClick={refreshFreeGames} disabled={loadingFreeGames}>Refresh</button>

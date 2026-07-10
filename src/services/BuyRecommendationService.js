@@ -33,6 +33,9 @@ const scoreBuyReason = (reason, gameName) => {
   // Mentions the actual game -> very distinctive.
   if (lower.includes(gameNameLower)) score += 4;
 
+  // Persona/taste reasons -> highly distinctive and characterful.
+  if (/matches your .* tastes|fits your .* vibe|your .* side loves|your .* instincts|your .* eye spots|your .* dna|your .* energy|your .* habits|approved for this mood|friendly for this mood/i.test(lower)) score += 5;
+
   // Concrete value signals -> distinctive.
   if (/threshold|historical low|budget|alert/i.test(lower)) score += 3;
   if (/fits your .* pattern/i.test(lower)) score += 2;
@@ -334,6 +337,38 @@ class BuyRecommendationService {
         if (completionBoostGenres.length > 0) buyScore += 10; // you finish games in this genre
         if (ratedGenreMatches.length > 0) buyScore += 8; // you rate games in this genre highly
         if (familiarityMatch) buyScore += 28; // strong preference for familiar/fresh genre matches
+
+        // Memeish gaming persona affinity boost
+        let personaReason = null;
+        try {
+          const persona = GamingIdentity.getProfile().gamingPersona?.primaryPersona;
+          if (persona) {
+            const personaGenreMap = {
+              backlog_archaeologist: ['Adventure', 'RPG', 'Strategy', 'Puzzle'],
+              credit_roll_dodger: ['Roguelike', 'Sandbox', 'Multiplayer', 'Survival', 'Arcade'],
+              frame_data_masochist: ['Action', 'Fighting', 'Roguelike', 'Platformer', 'Metroidvania', 'Bullet Hell', 'Souls-like'],
+              spreadsheet_tactician: ['Strategy', 'Simulation', 'Management', 'Grand Strategy', '4X', 'City Builder', 'Tycoon'],
+              story_diver: ['RPG', 'Adventure', 'Visual Novel', 'Interactive Fiction', 'Story Rich'],
+              comfort_replay_junkie: ['Cozy', 'Casual', 'Simulation', 'Life Sim', 'Farming Sim'],
+              night_owl: ['Atmospheric', 'Immersive Sim', 'RPG', 'Adventure'],
+              indie_curator: ['Indie'],
+              franchise_loyalist: ['Action-Adventure', 'RPG', 'Action'],
+              retro_futurist: ['Retro', 'Pixel Graphics', 'Arcade', 'Classic'],
+              bleeding_edge: ['Early Access'],
+              completionist: ['RPG', 'Adventure', 'Platformer', 'Metroidvania', 'Collectathon'],
+              roamer: ['Open World', 'Exploration', 'Sandbox', 'Adventure'],
+              social_drop_in: ['Multiplayer', 'Co-op', 'Online Co-Op', 'Party'],
+              jank_enjoyer: ['Early Access', 'Indie', 'Experimental']
+            };
+            const affinityGenres = personaGenreMap[persona.id] || [];
+            const personaMatches = genres.filter((g) => affinityGenres.includes(g));
+            if (personaMatches.length > 0) {
+              buyScore += Math.min(12, personaMatches.length * 6);
+              personaReason = `${item.name} matches your ${persona.label.toLowerCase()} tastes (${personaMatches.join(', ')})`;
+            }
+          }
+        } catch { /* persona optional */ }
+
         buyScore = Math.max(0, Math.min(100, buyScore));
 
         const gameName = item.name;
@@ -365,6 +400,7 @@ class BuyRecommendationService {
             ? `${gameName} matches your strongest local genre signals: ${genreMatches.join(', ')}`
             : null,
           platformMatch ? `${gameName} is on ${gameLike.platform}, a launcher you use often` : null,
+          personaReason ? personaReason : null,
           item.notes ? `You left a note for ${gameName}` : null
         ].filter(Boolean);
 

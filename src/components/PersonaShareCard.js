@@ -1,13 +1,21 @@
 import React from 'react';
 import { User, Trophy, TrendingUp, Calendar, Gamepad2 } from 'lucide-react';
 import { ShareCardWatermark } from './ShareCardWatermark';
+import GamingPersonaService from '../services/GamingPersonaService';
 import './PersonaShareCard.css';
 
 export const PERSONA_SHARE_CARD_SIZE_PX = 1080;
 
 export function PersonaShareCard({ persona = {}, username = 'Pilot', streaks = {} }) {
   const snapshot = persona?.snapshot || {};
-  const identity = snapshot.personaIdentity || {};
+  const baseIdentity = snapshot.personaIdentity || {};
+  const gamingPersona = GamingPersonaService.getPersona();
+  const primary = gamingPersona?.primaryPersona;
+  const identity = {
+    ...baseIdentity,
+    label: primary?.label || baseIdentity.label || 'Calibrating Persona',
+    description: gamingPersona?.summaryRoast || primary?.roast || baseIdentity.description || ''
+  };
   const preferredBucket = persona?.preferredBucket || '';
   const currentStreak = streaks?.current || 0;
   const bestStreak = streaks?.best || 0;

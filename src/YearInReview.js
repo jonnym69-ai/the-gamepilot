@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
-import { Award, BookOpen, Calendar, Clock, Download, Gamepad2, Target, TrendingUp, Trophy } from 'lucide-react';
+import { Award, BookOpen, Calendar, Download, Target, TrendingUp, Trophy } from 'lucide-react';
 import NavBar from './NavBar';
 import { YearInReviewService } from './services/YearInReviewService';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
@@ -11,8 +11,6 @@ import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInRe
 import { YearInReviewStoryShareCard } from './components/YearInReviewStoryShareCard';
 import ShareMenu from './components/ShareMenu';
 import { formatPlaytime } from './utils/formatPlaytime';
-import { GamingStoryService } from './services/GamingStoryService';
-import GamingStoryPanel from './components/GamingStoryPanel';
 import './YearInReview.css';
 
 const COLOR_FUNCTION_PATTERN = /\b(color\(|color-mix\()/i;
@@ -142,7 +140,6 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
   const [isCapturingStory, setIsCapturingStory] = useState(false);
   const availableYears = useMemo(() => YearInReviewService.getAvailableYears(library || []), [library]);
   const [selectedYear, setSelectedYear] = useState(() => availableYears[0] || new Date().getFullYear());
-  const yearlyStory = useMemo(() => GamingStoryService.generatePeriodStory('yearly'), []);
   const recapCustomization = useMemo(() => ProgressionUnlockService.getRecapCustomization(), []);
   const [statusMessage, setStatusMessage] = useState('');
   const [isExportingImage, setIsExportingImage] = useState(false);
@@ -339,6 +336,23 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     showStatus(success ? 'Caption downloaded.' : 'Could not download caption.');
   }, [snapshot, selectedYear, showStatus]);
 
+  const buildStoryCaption = useCallback(() => {
+    if (!snapshot?.seasonalStory) return '';
+    const lines = [];
+    lines.push(`The Story of My ${selectedYear} Gaming Year`);
+    lines.push(snapshot.seasonalStory.arc);
+    snapshot.seasonalStory.chapters.forEach((chapter) => {
+      if (chapter.hasData) {
+        lines.push(`${chapter.season}: ${chapter.headline}`);
+        if (chapter.stats) {
+          lines.push(`  ${chapter.stats.playtimeHours}h · ${chapter.stats.sessions} sessions${chapter.stats.topGame ? ` · Top: ${chapter.stats.topGame.name}` : ''}`);
+        }
+      }
+    });
+    lines.push('Powered by GamePilot');
+    return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+  }, [snapshot.seasonalStory, selectedYear]);
+
   return (
     <div className="year-review-page">
       <NavBar />
@@ -430,23 +444,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                       triggerLabel="Share Story"
                       imageAvailable
                       disabled={isCapturingStory}
-                      onCopyText={async () => {
-                        const lines = [];
-                        lines.push(`The Story of My ${selectedYear} Gaming Year`);
-                        lines.push(snapshot.seasonalStory.arc);
-                        snapshot.seasonalStory.chapters.forEach((chapter) => {
-                          if (chapter.hasData) {
-                            lines.push(`${chapter.season}: ${chapter.headline}`);
-                            if (chapter.stats) {
-                              lines.push(`  ${chapter.stats.playtimeHours}h · ${chapter.stats.sessions} sessions${chapter.stats.topGame ? ` · Top: ${chapter.stats.topGame.name}` : ''}`);
-                            }
-                          }
-                        });
-                        lines.push('Powered by GamePilot');
-                        const text = lines.join('\n');
-                        const copied = await LocalShareService.copyTextToClipboard(ProfileService.appendSocialLinksToShareText(text));
-                        return copied;
-                      }}
+                      onCopyText={async () => LocalShareService.copyTextToClipboard(buildStoryCaption())}
                       onCopyImage={async () => {
                         if (!storyShareCardRef.current) return false;
                         setIsCapturingStory(true);
@@ -477,56 +475,12 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         } catch (err) { console.error(err); showStatus('Could not generate story card.'); }
                         finally { setIsCapturingStory(false); }
                       }}
-                      onShareText={async (channel) => {
-                        const lines = [];
-                        lines.push(`The Story of My ${selectedYear} Gaming Year`);
-                        lines.push(snapshot.seasonalStory.arc);
-                        snapshot.seasonalStory.chapters.forEach((chapter) => {
-                          if (chapter.hasData) {
-                            lines.push(`${chapter.season}: ${chapter.headline}`);
-                            if (chapter.stats) {
-                              lines.push(`  ${chapter.stats.playtimeHours}h · ${chapter.stats.sessions} sessions${chapter.stats.topGame ? ` · Top: ${chapter.stats.topGame.name}` : ''}`);
-                            }
-                          }
-                        });
-                        lines.push('Powered by GamePilot');
-                        const text = lines.join('\n');
-                        const result = await LocalShareService.openShareIntent(channel, ProfileService.appendSocialLinksToShareText(text));
-                        return result;
-                      }}
+                      onShareText={async (channel) => LocalShareService.openShareIntent(channel, buildStoryCaption())}
                       onDownloadText={() => {
-                        const lines = [];
-                        lines.push(`The Story of My ${selectedYear} Gaming Year`);
-                        lines.push(snapshot.seasonalStory.arc);
-                        snapshot.seasonalStory.chapters.forEach((chapter) => {
-                          if (chapter.hasData) {
-                            lines.push(`${chapter.season}: ${chapter.headline}`);
-                            if (chapter.stats) {
-                              lines.push(`  ${chapter.stats.playtimeHours}h · ${chapter.stats.sessions} sessions${chapter.stats.topGame ? ` · Top: ${chapter.stats.topGame.name}` : ''}`);
-                            }
-                          }
-                        });
-                        lines.push('Powered by GamePilot');
-                        const text = lines.join('\n');
-                        LocalShareService.downloadShareText(ProfileService.appendSocialLinksToShareText(text), `story-of-${selectedYear}.txt`);
+                        LocalShareService.downloadShareText(buildStoryCaption(), `story-of-${selectedYear}.txt`);
                         showStatus('Story caption downloaded.');
                       }}
-                      buildCaption={() => {
-                        const lines = [];
-                        lines.push(`The Story of My ${selectedYear} Gaming Year`);
-                        lines.push(snapshot.seasonalStory.arc);
-                        snapshot.seasonalStory.chapters.forEach((chapter) => {
-                          if (chapter.hasData) {
-                            lines.push(`${chapter.season}: ${chapter.headline}`);
-                            if (chapter.stats) {
-                              lines.push(`  ${chapter.stats.playtimeHours}h · ${chapter.stats.sessions} sessions${chapter.stats.topGame ? ` · Top: ${chapter.stats.topGame.name}` : ''}`);
-                            }
-                          }
-                        });
-                        lines.push('Powered by GamePilot');
-                        const text = lines.join('\n');
-                        return ProfileService.appendSocialLinksToShareText(text);
-                      }}
+                      buildCaption={buildStoryCaption}
                       onNativeShare={async () => {
                         if (!storyShareCardRef.current) return;
                         setIsCapturingStory(true);
@@ -579,45 +533,6 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                   </div>
                 </section>
               )}
-
-              {yearlyStory && (
-                <section className="year-review-highlights-row">
-                  <div style={{ width: '100%' }}>
-                    <GamingStoryPanel story={yearlyStory} />
-                  </div>
-                </section>
-              )}
-
-              <section className="year-review-highlights-row">
-                <article className="year-review-mini-card">
-                  <Clock size={18} />
-                  <div>
-                    <span>Playtime</span>
-                    <strong>{formatPlaytime(snapshot.summary.playtimeMinutes)}</strong>
-                  </div>
-                </article>
-                <article className="year-review-mini-card">
-                  <Gamepad2 size={18} />
-                  <div>
-                    <span>Sessions</span>
-                    <strong>{snapshot.summary.sessions}</strong>
-                  </div>
-                </article>
-                <article className="year-review-mini-card">
-                  <Calendar size={18} />
-                  <div>
-                    <span>Session days</span>
-                    <strong>{snapshot.summary.activeDays}</strong>
-                  </div>
-                </article>
-                <article className="year-review-mini-card">
-                  <Calendar size={18} />
-                  <div>
-                    <span>Daily visits</span>
-                    <strong>{snapshot.engagement.totalLogins}</strong>
-                  </div>
-                </article>
-              </section>
 
               <section className="year-review-deep-stats-grid">
                 <article className="year-review-deep-stat-card year-review-deep-stat-featured">
@@ -812,44 +727,6 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         </div>
                       );
                     })}
-                  </div>
-                </article>
-
-                <article className="year-review-panel year-review-progression-panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h2><Calendar size={20} /> Daily Engagement</h2>
-                      <p>Check-in streaks and visit cadence tracked by your daily login flow.</p>
-                    </div>
-                  </div>
-                  <div className="progression-headline">
-                    <div>
-                      <span>Current streak</span>
-                      <strong>{snapshot.engagement.currentStreak}</strong>
-                    </div>
-                    <div>
-                      <span>Best streak</span>
-                      <strong>{snapshot.engagement.longestStreak}</strong>
-                    </div>
-                    <div>
-                      <span>Total visits</span>
-                      <strong>{snapshot.engagement.totalLogins}</strong>
-                    </div>
-                  </div>
-                  <div className="mix-columns">
-                    <div>
-                      <span>Recap note</span>
-                      <ul>
-                        <li>
-                          <strong>Session days</strong>
-                          <span>Days where you completed tracked play sessions this year.</span>
-                        </li>
-                        <li>
-                          <strong>Daily visits</strong>
-                          <span>Total check-ins recorded by the daily engagement system.</span>
-                        </li>
-                      </ul>
-                    </div>
                   </div>
                 </article>
               </section>

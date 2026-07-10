@@ -723,6 +723,11 @@ const scanSteamLibrary = () => {
 
         // Get genres from database for better Perfect Play recommendations
         const detectedGenres = getGameGenres(gameName);
+        const installDirMatch = content.match(/"installdir"\s+"([^"]+)"/);
+        const sizeOnDiskMatch = content.match(/"SizeOnDisk"\s+"(\d+)"/);
+        const installDirName = installDirMatch ? installDirMatch[1] : gameName;
+        const gamePath = path.join(steamPath, 'common', installDirName);
+        const installSize = sizeOnDiskMatch ? Number(sizeOnDiskMatch[1]) || null : null;
 
         const tracked = createTrackedDefaults();
         const playtime = playtimeMap[appId];
@@ -742,6 +747,8 @@ const scanSteamLibrary = () => {
           iconUrl: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_231x87.jpg`,
           icon: '',
           executable: `steam://run/${appId}`,
+          installDir: gamePath,
+          installSize,
           ...tracked
         });
         scannerDebug('[Scanner] Added Steam game:', gameName);
@@ -870,8 +877,7 @@ const getEpicManifestPaths = () => {
 
   addUniqueValues(paths, [
     `${process.env.ProgramData || 'C:\\ProgramData'}\\Epic\\EpicGamesLauncher\\Data\\Manifests`,
-    `${process.env.ProgramData || 'C:\\ProgramData'}\\Epic\\UnrealEngineLauncher\\LauncherInstalled.dat`,
-    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\EpicGamesLauncher\\Saved\\Logs`
+    `${process.env.ProgramData || 'C:\\ProgramData'}\\Epic\\UnrealEngineLauncher\\LauncherInstalled.dat`
   ]);
 
   getActiveDrives().forEach((drive) => {
@@ -885,8 +891,82 @@ const getEpicManifestPaths = () => {
   return paths.filter((entry) => String(entry).toLowerCase().endsWith('manifests'));
 };
 
+const getEpicLogPaths = () => {
+  const paths = [];
+
+  addUniqueValues(paths, [
+    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\EpicGamesLauncher\\Saved\\Logs`
+  ]);
+
+  return paths.filter((entry) => String(entry).toLowerCase().endsWith('logs') && fs.existsSync(entry));
+};
+
+const parseEpicLogTimestamp = (line) => {
+  const match = line.match(/\[(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})\.(\d{2}):\d+\]/);
+  if (!match) return null;
+  const [year, month, day, hour, minute, second] = match.slice(1);
+  try {
+    return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`).getTime();
+  } catch {
+    return null;
+  }
+};
+
+const isLikelyEpicLaunchLine = (line, appName) => {
+  if (!appName || !line) return false;
+  const lowerLine = line.toLowerCase();
+  const lowerAppName = appName.toLowerCase();
+  if (!lowerLine.includes(lowerAppName)) return false;
+  return (
+    lowerLine.includes('launch') ||
+    lowerLine.includes('starting app') ||
+    lowerLine.includes('running app') ||
+    lowerLine.includes('execute app') ||
+    lowerLine.includes('app launch') ||
+    lowerLine.includes('begin launch')
+  );
+};
+
+const getEpicLaunchHistory = (appNames = []) => {
+  const history = new Map();
+  const normalizedAppNames = appNames.filter(Boolean).map((name) => String(name).trim());
+  normalizedAppNames.forEach((appName) => {
+    history.set(appName, { launchCount: 0, lastPlayedMs: null });
+  });
+
+  const logPaths = getEpicLogPaths();
+  logPaths.forEach((logsPath) => {
+    safeReadDir(logsPath)
+      .filter((fileName) => fileName.endsWith('.log'))
+      .forEach((logFile) => {
+        try {
+          const content = fs.readFileSync(path.join(logsPath, logFile), 'utf8');
+          const lines = content.split(/\r?\n/);
+          lines.forEach((line) => {
+            const timestamp = parseEpicLogTimestamp(line);
+            if (!timestamp) return;
+
+            normalizedAppNames.forEach((appName) => {
+              if (isLikelyEpicLaunchLine(line, appName)) {
+                const entry = history.get(appName);
+                entry.launchCount += 1;
+                if (timestamp > (entry.lastPlayedMs || 0)) {
+                  entry.lastPlayedMs = timestamp;
+                }
+              }
+            });
+          });
+        } catch (error) {
+          // Ignore unreadable log files
+        }
+      });
+  });
+
+  return history;
+};
+
 const scanEpicLibrary = () => {
-  const games = [];
+  const rawGames = [];
   const paths = getEpicManifestPaths();
 
   paths.forEach((manifestsPath) => {
@@ -898,18 +978,34 @@ const scanEpicLibrary = () => {
           const manifest = JSON.parse(content);
           if (!manifest?.DisplayName) return;
 
-          // Get genres from database for better Perfect Play recommendations
+          const appName = manifest.AppName || manifest.CatalogItemId || '';
           const detectedGenres = getGameGenres(manifest.DisplayName);
-          
-          games.push({
-            name: manifest.DisplayName,
-            platform: 'Epic',
-            genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
-            iconUrl: '',
-            icon: '',
-            launchId: manifest.CatalogItemId || manifest.AppName || '',
-            executable: `com.epicgames.launcher://apps/${manifest.CatalogItemId || manifest.AppName || ''}?action=launch&silent=true`,
-            ...createTrackedDefaults()
+          const installLocation = manifest.InstallLocation ? String(manifest.InstallLocation).trim() : '';
+          const installSize = typeof manifest.InstallSize === 'number' && manifest.InstallSize > 0
+            ? manifest.InstallSize
+            : null;
+          const launchId = manifest.CatalogItemId || manifest.AppName || '';
+          const mainGameAppName = manifest.MainGameAppName ? String(manifest.MainGameAppName).trim() : null;
+          const launchExecutable = manifest.LaunchExecutable ? String(manifest.LaunchExecutable).trim() : null;
+          const launchCommand = manifest.LaunchCommand ? String(manifest.LaunchCommand).trim() : null;
+
+          rawGames.push({
+            appName,
+            manifest: {
+              name: manifest.DisplayName,
+              platform: 'Epic',
+              appid: manifest.CatalogItemId || manifest.AppName || null,
+              genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
+              iconUrl: '',
+              icon: '',
+              launchId,
+              executable: `com.epicgames.launcher://apps/${launchId}?action=launch&silent=true`,
+              installDir: installLocation || undefined,
+              installSize,
+              launchExecutable: launchExecutable || undefined,
+              launchCommand: launchCommand || undefined,
+              mainGameAppName: mainGameAppName || undefined
+            }
           });
         } catch (error) {
           // Ignore malformed Epic manifest
@@ -917,7 +1013,18 @@ const scanEpicLibrary = () => {
       });
   });
 
-  return games;
+  const appNames = rawGames.map((entry) => entry.appName).filter(Boolean);
+  const launchHistory = getEpicLaunchHistory(appNames);
+
+  return rawGames.map((entry) => {
+    const history = launchHistory.get(entry.appName);
+    const tracked = createTrackedDefaults();
+    if (history && history.lastPlayedMs) {
+      tracked.last_played = history.lastPlayedMs;
+      tracked.launch_count = history.launchCount || 0;
+    }
+    return { ...entry.manifest, ...tracked };
+  });
 };
 
 const scanUbisoftLibrary = () => {

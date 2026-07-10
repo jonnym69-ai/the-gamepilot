@@ -40,7 +40,6 @@ import DynamicBackdropService from './services/DynamicBackdropService';
 import CommandPalette from './components/CommandPalette';
 import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
-import FirstRunWalkthrough, { shouldShowFirstRunWalkthrough } from './components/FirstRunWalkthrough';
 import GamingStoryCard from './components/GamingStoryCard';
 import { GamingStoryService } from './services/GamingStoryService';
 
@@ -67,6 +66,7 @@ const SwipeDeck = lazy(() => import('./SwipeDeck'));
 const Recommendations = lazy(() => import('./Recommendations'));
 const GamingDNAPage = lazy(() => import('./components/GamingDNAPage'));
 const Rewards = lazy(() => import('./Rewards'));
+const Roadmap = lazy(() => import('./Roadmap'));
 
 // One-time migration: copy legacy 'gameLibrary' key to prefixed 'gamepilot-library'
 StorageService.migrate();
@@ -131,6 +131,18 @@ export default function App() {
   );
 }
 
+function StartupQuestionnaireRoute() {
+  const navigate = useNavigate();
+  return (
+    <StartupQuestionnaire
+      isOpen
+      founderTier={false}
+      onComplete={() => navigate('/')}
+      onSkip={() => navigate('/')}
+    />
+  );
+}
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -156,7 +168,6 @@ function AppContent() {
   const [stillPlayingPrompt, setStillPlayingPrompt] = useState(null);
   const [stillPlayingDeadlines, setStillPlayingDeadlines] = useState({});
   const [captainLogPrompt, setCaptainLogPrompt] = useState(null);
-  const [showFirstRunWalkthrough, setShowFirstRunWalkthrough] = useState(() => shouldShowFirstRunWalkthrough());
   const [gamingStory, setGamingStory] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(() => StorageService.getString('minimizeOnLaunch') === 'true');
@@ -1038,18 +1049,6 @@ function AppContent() {
       <ControllerSupport />
       <CommandPalette />
       <QuickLaunchHotbar library={library} />
-      <FirstRunWalkthrough
-        isOpen={showFirstRunWalkthrough}
-        onClose={() => setShowFirstRunWalkthrough(false)}
-        onOpenLibrary={() => navigate('/library')}
-        onOpenSettings={() => navigate('/settings')}
-        onStartScan={() => {
-          navigate('/');
-          window.setTimeout(() => {
-            scanLocalLibrary();
-          }, 0);
-        }}
-      />
       {gamingStory && (
         <GamingStoryCard
           story={gamingStory}
@@ -1137,7 +1136,8 @@ function AppContent() {
         <Route path="/swipe-deck" element={<SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />} />
         <Route path="/recommendations" element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/rewards" element={<Rewards />} />
-        <Route path="/startup-questionnaire" element={<StartupQuestionnaire isOpen founderTier={false} onComplete={() => {}} onSkip={() => {}} />} />
+        <Route path="/roadmap" element={<Roadmap />} />
+        <Route path="/startup-questionnaire" element={<StartupQuestionnaireRoute />} />
       </Routes>
       </Suspense>
       </ErrorBoundary>

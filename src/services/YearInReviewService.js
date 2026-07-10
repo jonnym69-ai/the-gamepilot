@@ -3,6 +3,7 @@ import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { DailyEngagementService } from './DailyEngagementService';
 import { getDateKey } from './DateKeyService';
 import { ProgressionUnlockService } from './ProgressionUnlockService';
+import GamingPersonaService from './GamingPersonaService';
 
 const MONTH_LABELS = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 const SESSION_BUCKET_LABELS = Object.freeze({
@@ -31,6 +32,16 @@ const buildRankedList = (counts = {}, limit = 5) => {
   return sortCounts(safeCounts)
     .slice(0, safeLimit)
     .map(([label, count]) => ({ label, count }));
+};
+
+const getPersonaVoice = () => {
+  const persona = GamingPersonaService.getPersona();
+  const primary = persona?.primaryPersona;
+  return {
+    label: primary?.label || null,
+    roast: persona?.summaryRoast || primary?.roast || null,
+    voice: primary?.voice || null
+  };
 };
 
 const buildMonthlyBreakdown = (sessions = []) => {
@@ -173,6 +184,14 @@ const getSessionStyleDescriptor = (bucket) => {
 };
 
 const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSessionBucket, peakPlayWindow }) => {
+  const gamingPersona = getPersonaVoice();
+  if (gamingPersona.label) {
+    return {
+      label: gamingPersona.label,
+      description: gamingPersona.roast || 'Your gaming identity, sharpened from real play data.'
+    };
+  }
+
   if (!dominantMood && !dominantGenre && !preferredSessionBucket) {
     return {
       label: 'Adaptive Pilot',
@@ -180,15 +199,11 @@ const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSes
     };
   }
 
-  const moodIdentity = dominantMood
-    ? UserBehaviorProfile.buildPersonaIdentity([{ mood: dominantMood, count: 1, completionRate: 0 }])
-    : null;
-  const moodLabel = moodIdentity?.label || (dominantMood ? `${dominantMood} Pilot` : 'Adaptive Pilot');
   const styleDescriptor = getSessionStyleDescriptor(preferredSessionBucket);
-  const genreDescriptor = dominantGenre ? `${dominantGenre} leaning` : 'wide-angle';
-  const label = dominantMood
-    ? `${moodLabel} · ${genreDescriptor}`
-    : `${genreDescriptor} ${styleDescriptor} player`;
+  // Keep the label clean: never combine mood + genre with a separator, and never use 'leaning'.
+  const label = dominantGenre
+    ? `${dominantGenre} ${styleDescriptor} player`
+    : (dominantMood ? `${dominantMood} Pilot` : `${styleDescriptor} player`);
 
   const descriptionParts = [];
   if (dominantMood) {
@@ -396,9 +411,12 @@ const buildSeasonalChapter = (season, seasonSessions, prevSeason) => {
 
   // Build narrative body
   const bodyParts = [];
+  const gamingPersona = getPersonaVoice();
   bodyParts.push(`You logged ${Math.round(totalMinutes / 60)} hours across ${seasonSessions.length} sessions${uniqueGames > 1 ? ` and ${uniqueGames} games` : ''}.`);
 
-  if (persona.dominantMood && persona.dominantGenre) {
+  if (gamingPersona.roast) {
+    bodyParts.push(gamingPersona.roast);
+  } else if (persona.dominantMood && persona.dominantGenre) {
     bodyParts.push(`${persona.identityLabel} — ${persona.dominantMood.toLowerCase()} energy, ${persona.dominantGenre.toLowerCase()} focus.`);
   } else if (persona.dominantMood) {
     bodyParts.push(`${persona.identityLabel} — a ${persona.dominantMood.toLowerCase()} stretch.`);
@@ -475,9 +493,15 @@ const buildSeasonalStory = (sessions = [], selectedYear) => {
 
   // Build overall narrative arc
   const activeSeasons = chapters.filter(c => c.hasData);
+  const gamingPersona = getPersonaVoice();
+  const totalHours = Math.round(yearSessions.reduce((sum, s) => sum + s.playtimeMinutes, 0) / 60);
+  const uniqueGames = new Set(yearSessions.map((s) => String(s.gameId || s.gameName))).size;
+  const sessionCount = yearSessions.length;
   let arc = '';
   if (activeSeasons.length === 0) {
     arc = 'A quiet year. The controller gathered dust.';
+  } else if (gamingPersona.roast) {
+    arc = `This year you logged ${totalHours} hours across ${uniqueGames} games and ${sessionCount} sessions. ${gamingPersona.label || 'Your gaming persona'}: ${gamingPersona.roast}`;
   } else if (activeSeasons.length === 1) {
     arc = `${activeSeasons[0].season} was your season. Everything else was filler.`;
   } else {
@@ -548,6 +572,7 @@ const buildEngagementSummary = () => {
 };
 
 const buildSummaryCards = ({ year, summary, topGames, persona, distributions, habits, deepStats, engagement }) => {
+  const gamingPersona = getPersonaVoice();
   const topGame = topGames[0] || null;
   const topPlatform = distributions.topPlatforms[0] || null;
   const topMood = distributions.topMoods[0] || null;
@@ -575,8 +600,8 @@ const buildSummaryCards = ({ year, summary, topGames, persona, distributions, ha
     {
       id: 'persona',
       title: 'Player Identity',
-      value: persona.identityLabel,
-      detail: persona.dominantMood ? `${persona.dominantMood} mood · ${persona.preferredSessionLabel}` : 'Build your local play profile'
+      value: gamingPersona.label || persona.identityLabel,
+      detail: gamingPersona.roast || (persona.dominantMood ? `${persona.dominantMood} mood · ${persona.preferredSessionLabel}` : 'Build your local play profile')
     },
     {
       id: 'platform',
@@ -651,7 +676,13 @@ export class YearInReviewService {
       };
       const distributions = buildDistributionSummary(sessions);
       const topGames = buildTopGames(sessions, 6);
-      const persona = buildPersonaFromSessions(sessions);
+      const basePersona = buildPersonaFromSessions(sessions);
+      const gamingPersona = getPersonaVoice();
+      const persona = {
+        ...basePersona,
+        identityLabel: gamingPersona.label || basePersona.identityLabel,
+        identityDescription: gamingPersona.roast || basePersona.identityDescription
+      };
       const habits = buildHabitSummary(safeYear, sessions);
       const engagement = buildEngagementSummary();
       const monthly = buildMonthlyBreakdown(sessions);

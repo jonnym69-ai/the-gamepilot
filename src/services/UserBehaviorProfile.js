@@ -25,7 +25,7 @@ const MOOD_PERSONA_IDENTITIES = {
     description: 'Finds flow in tight puzzles, tactical battles, and deliberate pacing.'
   },
   Escapist: {
-    label: 'Story Diver',
+    label: 'Storyseeker',
     description: 'Loses hours to expansive narratives and atmospheric journeys.'
   },
 };
@@ -95,7 +95,7 @@ const GENRE_MOOD_MAP = Object.freeze({
 
 const SESSION_PATTERN_IDENTITIES = {
   '0-30': { label: 'Quick Bite Player', description: 'Prefers short, focused bursts over long marathons.' },
-  '30-60': { label: 'Snack Sessioner', description: 'Squeezes in satisfying hour-long play windows.' },
+  '30-60': { label: 'Hour Blitz', description: 'Squeezes in satisfying hour-long play windows.' },
   '60-120': { label: 'Deep Diver', description: 'Commits to medium-length sessions that dig into the meat of a game.' },
   '120+': { label: 'Marathon Runner', description: 'Settles in for long, uninterrupted play marathons.' },
 };
@@ -700,6 +700,65 @@ export class UserBehaviorProfile {
   }
 
   /**
+   * Summarize recommendation outcomes since a given timestamp. Reads the
+   * existing selectionHistory and classifies each recommendation entry as
+   * "accepted" (a recommended game was launched) or "ignored" (recommendations
+   * were surfaced but none launched). Used by the story engine to narrate how
+   * the user engaged with their recommendations.
+   *
+   * @param {number|Date|string|null} since - only include entries at/after this time
+   * @returns {{ accepted: Array, ignored: Array, acceptedCount: number, ignoredCount: number }}
+   */
+  static getRecommendationOutcomes(since = null) {
+    const profile = this.getProfile();
+    const history = Array.isArray(profile.selectionHistory) ? profile.selectionHistory : [];
+    const sinceMs = since ? new Date(since).getTime() : null;
+
+    const accepted = [];
+    const ignored = [];
+
+    history.forEach((entry) => {
+      if (!entry?.recommendationType) return;
+
+      const entryTimeRaw = entry?.launchedAt || entry?.timestamp;
+      const entryMs = entryTimeRaw ? new Date(entryTimeRaw).getTime() : null;
+      if (sinceMs !== null && (entryMs === null || entryMs < sinceMs)) {
+        return;
+      }
+
+      const recommendedGameIds = Array.isArray(entry?.recommendedGameIds)
+        ? entry.recommendedGameIds.filter(Boolean)
+        : [];
+      const launchedGameId = entry?.launchedGameId || entry?.selectedGameId || null;
+
+      if (launchedGameId) {
+        accepted.push({
+          recommendationType: entry.recommendationType,
+          gameId: String(launchedGameId),
+          mood: entry.mood || null,
+          genre: entry.genre || null,
+          at: entryTimeRaw || null
+        });
+      } else if (recommendedGameIds.length > 0) {
+        ignored.push({
+          recommendationType: entry.recommendationType,
+          recommendedGameIds,
+          mood: entry.mood || null,
+          genre: entry.genre || null,
+          at: entryTimeRaw || null
+        });
+      }
+    });
+
+    return {
+      accepted,
+      ignored,
+      acceptedCount: accepted.length,
+      ignoredCount: ignored.length
+    };
+  }
+
+  /**
    * Get top moods by selection count
    */
   static getTopMoods(limit = 3) {
@@ -1111,7 +1170,8 @@ export class UserBehaviorProfile {
           label: `${primaryGenre.genre} Specialist`,
           description: `Frequently plays ${primaryGenre.genre.toLowerCase()} titles.`
         };
-        label = `${moodMeta.label} · ${genreMeta.label}`;
+        // Use a clean genre-driven label instead of the bland mood · genre combo.
+        label = genreMeta.label;
         description = `${moodMeta.description} Also ${genreMeta.description.toLowerCase()}`;
         anchors.push(primaryGenre.genre);
       }

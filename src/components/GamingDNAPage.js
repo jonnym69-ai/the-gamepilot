@@ -14,6 +14,7 @@ import {
   Target
 } from 'lucide-react';
 import { GamingIdentity } from '../GamingIdentity';
+import GamingPersonaService from '../services/GamingPersonaService';
 import { IdentityShareCard } from './IdentityShareCard';
 import { ShareMenu } from './ShareMenu';
 import { useToast } from './Toast';
@@ -147,6 +148,9 @@ export default function GamingDNAPage({ library = [] }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const persona = useMemo(() => profile?.persona || {}, [profile?.persona]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  const gamingPersona = useMemo(() => GamingPersonaService.getPersona(), []);
+  const primary = gamingPersona?.primaryPersona;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const signatureGames = useMemo(() => profile?.signatureGames || [], [profile?.signatureGames]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const tasteClusters = useMemo(() => profile?.tasteClusters || [], [profile?.tasteClusters]);
@@ -262,8 +266,8 @@ export default function GamingDNAPage({ library = [] }) {
       <div className="dna-hero">
         <div className="dna-identity-badge">
           <span className="dna-title-badge">{profile?.title || 'Gamer'}</span>
-          <h2>{identity.personality || persona?.personaIdentity?.label || 'Uncharted Pilot'}</h2>
-          <p>{identity.description || persona?.personaIdentity?.description || 'Your gaming identity is still forming.'}</p>
+          <h2>{identity.personality || primary?.label || persona?.personaIdentity?.label || 'Uncharted Pilot'}</h2>
+          <p>{identity.description || gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || 'Your gaming identity is still forming.'}</p>
         </div>
       </div>
 

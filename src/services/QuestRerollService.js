@@ -1,6 +1,6 @@
 // QuestRerollService.js - manages quest reroll tokens (local-first)
 // Stores a simple integer counter in StorageService under the key 'questRerollTokens'.
-// Provides helpers to add, spend and query tokens so other services (DailyEngagementService, UI) stay decoupled.
+// Provides helpers to add, spend and query tokens so quest-related UI stays decoupled from token storage.
 
 import StorageService from './StorageService';
 

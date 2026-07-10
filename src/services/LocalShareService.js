@@ -4,6 +4,7 @@ import { LibraryValueService } from './LibraryValueService';
 import { StatsAggregationService } from './StatsAggregationService';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import { GamingIdentity } from '../GamingIdentity';
+import GamingPersonaService from './GamingPersonaService';
 import { RecapStoryService } from './RecapStoryService';
 import { YearInReviewService } from './YearInReviewService';
 
@@ -77,7 +78,9 @@ export class LocalShareService {
   static buildYearInReviewShareText(snapshot = {}, selectedYear = new Date().getFullYear()) {
     const summary = snapshot?.summary || {};
     const topGames = Array.isArray(snapshot?.topGames) ? snapshot.topGames.slice(0, 3) : [];
-    const persona = snapshot?.persona?.identityLabel || 'Player';
+    const gamingPersona = GamingPersonaService.getPersona();
+    const primary = gamingPersona?.primaryPersona;
+    const persona = primary?.label || snapshot?.persona?.identityLabel || 'Player';
     const totalMinutes = Math.max(0, Math.round(Number(summary.playtimeMinutes || 0)));
     const playtimeLabel = formatPlaytime(totalMinutes);
 
@@ -501,11 +504,12 @@ export class LocalShareService {
     const safeProfile = profile || {};
     const identity = safeProfile.identity || {};
     const stats = safeProfile.stats || {};
-    const persona = safeProfile.persona || {};
     const displayName = safeProfile.username || username || 'Pilot';
 
-    const identityLabel = identity.personality || persona?.personaIdentity?.label || 'Uncharted Pilot';
-    const description = identity.description || persona?.personaIdentity?.description || 'My gaming identity';
+    const gamingPersona = GamingPersonaService.getPersona();
+    const primary = gamingPersona?.primaryPersona;
+    const identityLabel = identity.personality || primary?.label || 'Uncharted Pilot';
+    const description = identity.description || gamingPersona?.summaryRoast || primary?.roast || 'My gaming identity';
     const title = safeProfile.title || 'Newbie';
     const level = safeProfile.level || 1;
     const totalPlaytime = stats.totalPlayTime || 0;

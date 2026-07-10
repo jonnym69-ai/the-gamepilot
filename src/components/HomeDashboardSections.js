@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import LazyImage from './LazyImage';
 import EmptyState from './EmptyState';
 import { GamingIdentity } from '../GamingIdentity';
+import GamingPersonaService from '../services/GamingPersonaService';
+import { StartupPersonalizationService } from '../services/StartupPersonalizationService';
 
 function MiniProgressRing({ percent, size = 36, stroke = 4, color = '#8ab4f8' }) {
   const radius = (size - stroke) / 2;
@@ -1756,12 +1759,23 @@ const formatSessionStyle = (bucket) => {
 };
 
 export function IdentitySnapshotCard({ persona }) {
+  const navigate = useNavigate();
   if (!persona) return null;
-  const identity = persona.personaIdentity;
-  const tags = persona.personaTags || [];
+  const gamingPersona = GamingPersonaService.getPersona();
+  const primary = gamingPersona?.primaryPersona;
+  const baseIdentity = persona.personaIdentity;
+  const identity = baseIdentity
+    ? {
+        ...baseIdentity,
+        label: primary?.label || baseIdentity.label,
+        description: gamingPersona?.summaryRoast || primary?.roast || baseIdentity.description
+      }
+    : null;
+  const tags = (gamingPersona?.subTraits || []).map((trait) => trait.label).concat(persona.personaTags || []);
   const source = persona.source || (identity ? 'history' : 'empty');
   const confidence = persona.confidence || 'none';
   const isEmpty = source === 'empty' || (!identity && tags.length === 0);
+  const canTune = !StartupPersonalizationService.hasCompletedOnboarding();
 
   const confidenceMeta = {
     confirmed: { label: 'Confirmed', className: 'is-confirmed' },
@@ -1773,7 +1787,9 @@ export function IdentitySnapshotCard({ persona }) {
     ? `Inferred from your ${persona.totalLibraryGames || ''} installed games — we'll sharpen this as you play.`.replace('  ', ' ')
     : source === 'seed'
       ? "Based on your onboarding picks — we'll refine this as you play."
-      : null;
+      : canTune
+        ? "Still learning your tastes — answer a few quick questions to sharpen recommendations."
+        : null;
 
   if (isEmpty) {
     return (
@@ -1808,7 +1824,30 @@ export function IdentitySnapshotCard({ persona }) {
             </div>
           )}
           {provisionalNote && (
-            <p className="identity-provisional-note">{provisionalNote}</p>
+            <p className="identity-provisional-note">
+              {provisionalNote}
+              {canTune && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="identity-tune-link"
+                    onClick={() => navigate('/startup-questionnaire')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: 'var(--button-primary-bg)',
+                      font: 'inherit',
+                      textDecoration: 'underline',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Tune recommendations →
+                  </button>
+                </>
+              )}
+            </p>
           )}
           <div className="identity-tags">
             {tags.map((tag, i) => (
@@ -1974,7 +2013,8 @@ export function BecauseYouAreSection({
     if (matchedGames.length === 0) return null;
 
     const parts = [];
-    if (id.archetype) parts.push(id.archetype);
+    if (id.personality) parts.push(id.personality);
+    else if (id.archetype) parts.push(id.archetype);
     else if (id.favoriteGenre) parts.push(`${id.favoriteGenre} specialist`);
     else if (id.favoriteMood) parts.push(`${id.favoriteMood} seeker`);
 

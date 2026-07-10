@@ -7,6 +7,7 @@ import { getEnhancedIdentity } from './services/GamingIdentityEnhancements';
 import { GameRatingService } from './services/GameRatingService';
 import StorageService from './services/StorageService';
 import { getGameGenres } from './GameGenreDatabase';
+import GamingPersonaService from './services/GamingPersonaService';
 
 const IDENTITY_SNAPSHOTS_KEY = 'identitySnapshots';
 const IDENTITY_REWARDS_KEY = 'identityRewards';
@@ -40,6 +41,8 @@ export class GamingIdentity {
     const enhanced = getEnhancedIdentity();
     const behaviorPersona = UserBehaviorProfile.getPersonaSnapshot();
 
+    const gamingPersona = GamingPersonaService.getPersona();
+
     const profile = {
       username: StorageService.getString('profileUsername', 'Gamer'),
       profilePic: StorageService.getString('profilePic', ''),
@@ -59,6 +62,8 @@ export class GamingIdentity {
       archetype: enhanced.archetype,
       // Behavioral persona learned from actual play patterns
       persona: behaviorPersona,
+      // Memeish data-backed gaming persona (primary + sub-traits + roast)
+      gamingPersona,
       // Signature games + emergent taste clusters (derived from actual play data)
       signatureGames: identity?.signatureGames || [],
       tasteClusters: identity?.tasteClusters || []
@@ -200,50 +205,50 @@ export class GamingIdentity {
     const habits = this.determineHabits(stats);
 
     // Mood persona is canonical; gamer type / archetype are secondary
-    const personaLabel = behaviorPersona?.personaIdentity?.label || null;
+    const behaviorLabel = behaviorPersona?.personaIdentity?.label || null;
     const dominantMood = behaviorPersona?.dominantMood || stats.favoriteMood || 'None';
     const dominantGenre = behaviorPersona?.dominantGenre || stats.favoriteGenre || null;
+
+    // Use the roast-backed persona service as the primary public voice.
+    // It produces punchier labels (e.g. "The Backlog Archaeologist") and roasts.
+    const gamingPersona = GamingPersonaService.getPersona();
+    const primaryPersona = gamingPersona?.primaryPersona;
+    const personaLabel = primaryPersona?.label || behaviorLabel;
 
     const { GenreArchetypes } = require('./services/GamingIdentityEnhancements');
     const genreStats = dominantGenre && dominantGenre !== 'None' ? { [dominantGenre]: stats.totalPlayTime || 0 } : {};
     const archetype = GenreArchetypes.getArchetype(genreStats, stats);
 
-    // Build description: lead with mood persona, then gamer type, then genre/archetype
-    const descriptionParts = [personaLabel || `${habits.frequency} ${gamerType} gamer`];
-    if (personaLabel) {
-      descriptionParts.push(`— ${gamerType.toLowerCase()} playstyle`);
-    }
-    const playStyleLower = playStyle.toLowerCase();
-    const sessionsSuffix = playStyleLower.endsWith('sessions') ? '' : ' sessions';
-    descriptionParts.push(`with ${playStyleLower}${sessionsSuffix}`);
-    if (archetype?.name && archetype.name !== 'Gamer') {
-      descriptionParts.push(`• ${archetype.name}`);
-    } else if (dominantGenre && dominantGenre !== 'None') {
-      descriptionParts.push(`• ${dominantGenre} specialist`);
-    }
-
     const signatureGames = this.getSignatureGames();
     const tasteClusters = this.detectTasteClusters(signatureGames);
 
-    // Enrich description with signature games when available
+    // Build a concise, punchy description: persona label + roast + anchors.
+    const descriptionParts = [];
+    if (personaLabel) {
+      descriptionParts.push(personaLabel);
+    }
+    if (gamingPersona?.summaryRoast) {
+      descriptionParts.push(gamingPersona.summaryRoast);
+    } else if (primaryPersona?.roast) {
+      descriptionParts.push(primaryPersona.roast);
+    } else if (behaviorPersona?.personaIdentity?.description) {
+      descriptionParts.push(behaviorPersona.personaIdentity.description);
+    }
     if (signatureGames.length > 0) {
       const topNames = signatureGames.slice(0, 3).map((g) => g.name).join(', ');
-      descriptionParts.push(`• Anchored by ${topNames}`);
-    }
-    if (tasteClusters.length > 0) {
-      descriptionParts.push(`• ${tasteClusters[0].label} tendency`);
+      descriptionParts.push(`Anchored by ${topNames}.`);
     }
 
     return {
       personality: personaLabel || gamerType,
-      playStyle: playStyle,
+      playStyle,
       favoriteMood: dominantMood,
       favoriteGenre: dominantGenre,
       archetype: archetype?.name || null,
-      description: descriptionParts.join(' '),
-      preferences: preferences,
-      habits: habits,
-      signature: this.generateGamerSignature(stats, { personaLabel, gamerType, playStyle }),
+      description: descriptionParts.join(' ') || `${habits.frequency} ${gamerType} gamer with ${playStyle.toLowerCase()} playstyle`,
+      preferences,
+      habits,
+      signature: this.generateGamerSignature(stats, { personaLabel: primaryPersona?.label || behaviorLabel, gamerType, playStyle }),
       personaTags: behaviorPersona?.personaTags || [],
       signatureGames,
       tasteClusters

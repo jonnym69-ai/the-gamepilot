@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Home, Library as LibraryIcon, BarChart3, User, Settings as SettingsIcon, Palette, Gift, Eye, Scale, Calendar, Link2, Heart, Wand2, Trophy, Download, Target, HardDrive, Gauge } from 'lucide-react';
+import { Search, Home, Library as LibraryIcon, BarChart3, User, Settings as SettingsIcon, Palette, Gift, Eye, Scale, Calendar, Link2, Heart, Trophy, Download, Target, HardDrive, Gauge, Map } from 'lucide-react';
 import StorageService from '../services/StorageService';
 import InterfacePreferencesService from '../services/InterfacePreferencesService';
 import { getLaunchSources } from '../services/LibraryDataService';
@@ -16,8 +16,8 @@ const NAV_COMMANDS = [
   { id: 'nav-profile', label: 'Go to Profile', icon: User, path: '/profile', keywords: 'profile identity' },
   { id: 'nav-settings', label: 'Go to Settings', icon: SettingsIcon, path: '/settings', keywords: 'settings preferences config' },
   { id: 'nav-themes', label: 'Go to Themes', icon: Palette, path: '/themes', keywords: 'themes appearance' },
-  { id: 'nav-theme-builder', label: 'Go to Theme Builder', icon: Wand2, path: '/theme-builder', keywords: 'theme builder custom colors effects' },
   { id: 'nav-rewards', label: 'Go to Rewards', icon: Gift, path: '/rewards', keywords: 'rewards unlocks' },
+  { id: 'nav-roadmap', label: 'Go to Roadmap', icon: Map, path: '/roadmap', keywords: 'roadmap goals community future plans' },
   { id: 'nav-habits', label: 'Go to Habits', icon: Calendar, path: '/habits', keywords: 'habits goals tracker' },
   { id: 'nav-achievements', label: 'Go to Achievements', icon: Trophy, path: '/achievements', keywords: 'achievements trophies assignments' },
   { id: 'nav-challenge-board', label: 'Go to Challenge Board', icon: Target, path: '/challenge-board', keywords: 'challenges quests board' },

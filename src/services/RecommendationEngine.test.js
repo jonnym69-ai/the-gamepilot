@@ -462,5 +462,21 @@ describe('RecommendationEngine', () => {
       expect(result[2].name).toBe('Hybrid Discovery');
     });
 
+    test('does not inject an unrunnable game as the exploration pick', () => {
+      setMode('full');
+      const lib = [
+        baseGame({ appid: '1', name: 'RPG Heavy', genres: ['RPG'], time_played: 600, last_played: Date.now() - 1000 * 60 * 60 * 24 * 30, replayIntent: 'active' }),
+        baseGame({ appid: '2', name: 'RPG Lite',  genres: ['RPG'], time_played: 120, last_played: Date.now() - 1000 * 60 * 60 * 24 * 10, replayIntent: 'active' }),
+        baseGame({ appid: '3', name: 'Strategy X', genres: ['Strategy'], time_played: 300, last_played: Date.now() - 1000 * 60 * 60 * 24 * 5, replayIntent: 'active' }),
+        baseGame({ appid: '4', name: 'Puzzle Surprise', genres: ['Puzzle'], time_played: 0, last_played: null, hardwareCompatibility: 'cannot_run' }),
+        baseGame({ appid: '5', name: 'Action Unplayed', genres: ['Action'], time_played: 0, last_played: null, hardwareCompatibility: 'cannot_run' }),
+      ];
+      const result = RecommendationEngine.getPerfectPlayRecommendations(lib, null, null, null, 3);
+      const names = result.map((g) => g.name);
+      expect(result).toHaveLength(3);
+      expect(names).not.toContain('Puzzle Surprise');
+      expect(names).not.toContain('Action Unplayed');
+    });
+
   });
 });

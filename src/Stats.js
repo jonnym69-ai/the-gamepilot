@@ -24,6 +24,7 @@ import ShareMenu from './components/ShareMenu';
 import { HabitsShareCard } from './components/HabitsShareCard';
 import { PersonaShareCard } from './components/PersonaShareCard';
 import StatsDrivenStory from './components/StatsDrivenStory';
+import GamingPersonaService from './services/GamingPersonaService';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
@@ -184,7 +185,21 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   }, [library, currency]);
 
   const calculatePersonaData = useCallback((dashboardSnapshot = null) => {
-    const snapshot = UserBehaviorProfile.getPersonaSnapshot();
+    const baseSnapshot = UserBehaviorProfile.getPersonaSnapshot();
+    const gamingPersona = GamingPersonaService.getPersona();
+    const primary = gamingPersona?.primaryPersona;
+    const snapshot = {
+      ...baseSnapshot,
+      personaIdentity: baseSnapshot?.personaIdentity
+        ? {
+            ...baseSnapshot.personaIdentity,
+            label: primary?.label || baseSnapshot.personaIdentity.label,
+            description: gamingPersona?.summaryRoast || primary?.roast || baseSnapshot.personaIdentity.description
+          }
+        : (primary
+          ? { label: primary.label, description: gamingPersona?.summaryRoast || primary.roast || '', anchors: [] }
+          : null)
+    };
     const allPeriodStats = dashboardSnapshot?.periods?.all || {};
     const moodUsage = Object.entries(allPeriodStats.moodCounts || {})
       .map(([mood, data]) => ({

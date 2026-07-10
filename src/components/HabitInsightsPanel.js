@@ -15,6 +15,7 @@ import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
 import { GameCurationService } from '../services/GameCurationService';
 import { GamingIdentity } from '../GamingIdentity';
+import GamingPersonaService from '../services/GamingPersonaService';
 import './HabitInsightsPanel.css';
 
 const InsightCard = ({ icon: Icon, title, value, subtitle, tone = 'neutral' }) => (
@@ -44,6 +45,8 @@ const HabitInsightsPanel = ({ library = [] }) => {
     }
 
     const persona = UserBehaviorProfile.getPersonaSnapshot();
+    const gamingPersona = GamingPersonaService.getPersona();
+    const primary = gamingPersona?.primaryPersona;
     const dashboard = StatsAggregationService.getDashboardData(library);
     const allTime = dashboard?.periods?.all;
     const habit = allTime?.habitInsights;
@@ -156,6 +159,8 @@ const HabitInsightsPanel = ({ library = [] }) => {
 
     return {
       persona,
+      gamingPersona,
+      primary,
       habit,
       abandonmentRate,
       genreCount,
@@ -188,6 +193,8 @@ const HabitInsightsPanel = ({ library = [] }) => {
 
   const {
     persona,
+    gamingPersona,
+    primary,
     habit,
     abandonmentRate,
     genreCount,
@@ -227,8 +234,8 @@ const HabitInsightsPanel = ({ library = [] }) => {
         <InsightCard
           icon={Gamepad2}
           title="Gaming Identity"
-          value={persona?.personaIdentity?.label || 'Explorer'}
-          subtitle={persona?.personaIdentity?.description || 'Still forming your profile'}
+          value={primary?.label || persona?.personaIdentity?.label || 'Explorer'}
+          subtitle={gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || 'Still forming your profile'}
           tone="highlight"
         />
         <InsightCard

@@ -11,7 +11,6 @@ import { GamingIdentity } from './GamingIdentity';
 import { getFamiliarityBias, setFamiliarityBias } from './services/RecommendationWeights';
 import { RetentionQuestService } from './services/RetentionQuestService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
-import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
 import './Home.css';
 import './LibraryValue.css';
@@ -79,10 +78,13 @@ const formatPlaytime = (minutes) => {
 
 // ... (rest of the code remains the same)
 
-function GettingStartedModal({ isOpen, onClose, onHidePermanently, theme }) {
+function GettingStartedModal({ isOpen, onClose, onHidePermanently, onScan, theme }) {
   if (!isOpen) return null;
 
-  const searchShortcut = KeyboardShortcuts.getShortcutForAction('focus_search') || 'Ctrl+K';
+  const handleScan = () => {
+    onScan?.();
+    onClose();
+  };
 
   return (
     <div className="modal-overlay">
@@ -93,29 +95,13 @@ function GettingStartedModal({ isOpen, onClose, onHidePermanently, theme }) {
         >
           ×
         </button>
-        <h2 className={`modal-title ${theme}`}>Welcome to GamePilot</h2>
+        <h2 className={`modal-title ${theme}`}>Your gaming librarian</h2>
         <p style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
-          Your personal gaming mission control. Three steps to get started:
-        </p>
-        <div className="getting-started-steps" style={{ textAlign: 'left', marginBottom: '24px' }}>
-          <ol style={{ paddingLeft: '20px', margin: 0 }}>
-            <li style={{ marginBottom: '12px', lineHeight: 1.5 }}>
-              <strong>Scan your games</strong> — Auto-detects Steam, Epic, Xbox, GOG, and more
-            </li>
-            <li style={{ marginBottom: '12px', lineHeight: 1.5 }}>
-              <strong>Launch & play</strong> — Click any game to start. Playtime tracks automatically
-            </li>
-            <li style={{ lineHeight: 1.5 }}>
-              <strong>Find your next game</strong> — Use mood and time filters for recommendations
-            </li>
-          </ol>
-        </div>
-        <p style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '24px' }}>
-          Tip: Press <strong>{searchShortcut}</strong> anytime to search your library
+          GamePilot reads your libraries, builds a living persona from how you play, and recommends your next session — with a roast on the side.
         </p>
         <div className="getting-started-actions">
-          <button onClick={onClose} className="getting-started-primary">Let's Go</button>
-          <button onClick={onHidePermanently} className="getting-started-secondary">Don't show again</button>
+          <button onClick={handleScan} className="getting-started-primary">Scan my games</button>
+          <button onClick={onHidePermanently} className="getting-started-secondary">Skip for now</button>
         </div>
       </div>
     </div>
@@ -253,6 +239,21 @@ function Home({
     }
     setRetentionRefreshKey((current) => current + 1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const handleQuestionnaireCompleted = () => {
+      try {
+        setPersonaSnapshot(UserBehaviorProfile.getPersonaSnapshot());
+      } catch (e) {
+        console.error('Home: failed to refresh persona snapshot after questionnaire', e);
+      }
+      const savedMessage = localStorage.getItem('gamepilot-welcomeMessage') || localStorage.getItem('welcomeMessage') || 'Ready to find your perfect play?';
+      setWelcomeMessage(savedMessage);
+    };
+
+    window.addEventListener('gamepilot:startup-questionnaire-completed', handleQuestionnaireCompleted);
+    return () => window.removeEventListener('gamepilot:startup-questionnaire-completed', handleQuestionnaireCompleted);
   }, []);
 
   useEffect(() => {
@@ -1145,7 +1146,9 @@ function Home({
           themeId={theme}
         />
         <p className="home-subtitle">
-          {username ? 'Your personalized gaming mission control' : 'Your Smart Gaming Library Manager'}
+          {username
+            ? 'Your gaming librarian — building a persona from your play and pointing you to your next session'
+            : 'Your gaming librarian — scan your libraries, build your persona, get roasted, find your next game'}
         </p>
 
         <p className="home-hero-summary">
@@ -1526,10 +1529,11 @@ function Home({
         </>
       )}
 
-      <GettingStartedModal 
-        isOpen={showGettingStarted} 
+      <GettingStartedModal
+        isOpen={showGettingStarted}
         onClose={closeGettingStarted}
         onHidePermanently={hideGettingStartedPermanently}
+        onScan={onScan}
         theme={theme}
       />
 

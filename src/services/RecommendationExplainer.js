@@ -7,6 +7,7 @@ import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import { StartupPersonalizationService } from './StartupPersonalizationService';
 import { GamingIdentity } from '../GamingIdentity';
+import { GamingPersonaService } from './GamingPersonaService';
 
 export class RecommendationExplainer {
   /**
@@ -24,13 +25,7 @@ export class RecommendationExplainer {
     const behaviorReasons = UserBehaviorProfile.getRecommendationReasoning(game, mood, genre);
     reasons.push(...behaviorReasons);
 
-    // Persona identity reasoning
-    const personaReason = this.getPersonaReasoning(personaSnapshot, mood, genre);
-    if (personaReason) {
-      reasons.push(personaReason);
-    }
-
-    // Gaming Identity reasoning
+    // Gaming Identity reasoning (factual stats)
     const identityReason = this.getIdentityReasoning(game, mood, genre);
     if (identityReason) {
       reasons.push(identityReason);
@@ -59,6 +54,12 @@ export class RecommendationExplainer {
     if (globalHook && !uniqueReasons.includes(globalHook)) uniqueReasons.unshift(globalHook);
     if (gameSpecificHook && !uniqueReasons.includes(gameSpecificHook)) uniqueReasons.unshift(gameSpecificHook);
 
+    // One archetype roast per game, placed at the very front as the headline
+    const archetypeRoast = this.getArchetypePersonaReasoning(game, mood, genre);
+    if (archetypeRoast && !uniqueReasons.includes(archetypeRoast)) {
+      uniqueReasons.unshift(archetypeRoast);
+    }
+
     // Classify familiarity for this game
     let familiarityLabel = null;
     let familiarityReason = null;
@@ -78,12 +79,14 @@ export class RecommendationExplainer {
     } catch { /* optional */ }
 
     const prioritizedReasons = this.prioritizeReasons(uniqueReasons, game);
-    const previewReasons = prioritizedReasons.slice(0, 3);
+    // Limit to 5 unique reasons for library recs to avoid overwhelming the user
+    const limitedReasons = prioritizedReasons.slice(0, 5);
+    const previewReasons = limitedReasons.slice(0, 5);
 
     return {
       game: game.name,
       recommendationType,
-      reasons: prioritizedReasons,
+      reasons: limitedReasons,
       previewReasons,
       globalHook,
       gameSpecificHook,
@@ -144,18 +147,58 @@ export class RecommendationExplainer {
       return null;
     }
 
+    const gamingPersona = GamingPersonaService.getPersona();
     const { personaIdentity } = personaSnapshot;
+    const label = gamingPersona?.primaryPersona?.label || personaIdentity.label;
     const anchors = personaIdentity.anchors?.filter(Boolean) || [];
     const anchorText = anchors.length ? anchors.join(' + ') : null;
     if (anchorText && mood && anchors.includes(mood)) {
-      return `${personaIdentity.label} pick — ${anchorText} moods are your comfort zone`;
+      return `${label} pick — ${anchorText} moods are your comfort zone`;
     }
 
     if (anchorText && genre) {
-      return `${personaIdentity.label} thrives when ${genre} adventures appear`;
+      return `${label} thrives when ${genre} adventures appear`;
     }
 
     return null;
+  }
+
+  static getArchetypePersonaReasoning(game, mood, genre) {
+    try {
+      const persona = GamingPersonaService.getPersona();
+      if (!persona?.primaryPersona) return null;
+
+      const archetype = persona.primaryPersona;
+      const gameName = game?.name || 'this game';
+      const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+      const gameHours = game?.time_played ? Math.round(game.time_played / 60) : 0;
+
+      // Build signals object for template filling
+      const signals = {
+        GAME: gameName,
+        HOURS: gameHours,
+        GENRE: gameGenres[0] || genre || 'gaming'
+      };
+
+      // Pick a context roast if available, otherwise fall back to generic roast
+      // Use game name hash for consistent selection per game
+      const seed = gameName.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      const roastPool = archetype.contextRoasts && archetype.contextRoasts.length > 0
+        ? archetype.contextRoasts
+        : archetype.roasts || [];
+      const roastIndex = seed % roastPool.length;
+      const roastTemplate = roastPool[roastIndex];
+
+      // Fill template with game-specific details
+      const filledRoast = roastTemplate
+        .replace(/\{GAME\}/g, signals.GAME)
+        .replace(/\{HOURS\}/g, signals.HOURS)
+        .replace(/\{GENRE\}/g, signals.GENRE);
+
+      return filledRoast || null;
+    } catch {
+      return null;
+    }
   }
 
   static getIdentityReasoning(game, mood, genre) {

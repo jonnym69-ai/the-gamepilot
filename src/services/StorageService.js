@@ -142,7 +142,6 @@ const LEGACY_KEYS = {
   'unlockedAchievements': 'unlockedAchievements',
   'xp': 'xp',
   'calendarXP': 'calendarXP',
-  'dailySpin': 'dailySpin',
   'userSettings': 'userSettings',
   'playtimeHistory': 'playtimeHistory',
   'gameLaunchData': 'gameLaunchData',

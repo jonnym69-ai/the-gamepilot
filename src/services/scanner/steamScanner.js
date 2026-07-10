@@ -128,7 +128,11 @@ const scanSteamLibrary = () => {
         }
 
         const detectedGenres = getGameGenres(gameName);
-        const gamePath = path.join(steamPath, 'common', gameName);
+        const installDirMatch = content.match(/"installdir"\s+"([^"]+)"/);
+        const sizeOnDiskMatch = content.match(/"SizeOnDisk"\s+"(\d+)"/);
+        const installDirName = installDirMatch ? installDirMatch[1] : gameName;
+        const gamePath = path.join(steamPath, 'common', installDirName);
+        const installSize = sizeOnDiskMatch ? Number(sizeOnDiskMatch[1]) || null : null;
 
         const tracked = createTrackedDefaults();
         const playtime = playtimeMap[appId];
@@ -149,6 +153,7 @@ const scanSteamLibrary = () => {
           icon: '',
           executablePath: gamePath,
           installDir: gamePath,
+          installSize,
           launchId: appId,
           ...tracked
         });

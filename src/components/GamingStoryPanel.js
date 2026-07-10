@@ -14,20 +14,26 @@ function GamingStoryPanel({ story }) {
     );
   }
 
-  const { title, subtitle, period, identityLabel, topGames, genreFingerprint, tasteClusters, narrative, totalHours } = story;
+  const { title, subtitle, period, identityLabel, topGames, genreFingerprint, moodFingerprint, tasteClusters, narrative, totalHours } = story;
   const isIdentity = story.chapter === 'identity';
   const isPeriod = story.chapter === 'period';
+  const isDigest = story.chapter === 'digest';
+  const isQuiet = story.chapter === 'quiet' || story.isQuiet;
+  const safeTopGames = Array.isArray(topGames) ? topGames : [];
+  const safeGenreFingerprint = Array.isArray(genreFingerprint) ? genreFingerprint : [];
+  const safeMoodFingerprint = Array.isArray(moodFingerprint) ? moodFingerprint : [];
+  const safeTasteClusters = Array.isArray(tasteClusters) ? tasteClusters : [];
 
   return (
     <div className="gaming-story-panel">
       <div className="gaming-story-panel-covers">
-        {topGames.map((game, index) => (
+        {safeTopGames.map((game, index) => (
           <div
             key={game.name}
             className="gaming-story-panel-cover"
             style={{
               backgroundImage: `url(${game.coverUrl})`,
-              zIndex: topGames.length - index
+              zIndex: safeTopGames.length - index
             }}
             aria-hidden="true"
           />
@@ -38,11 +44,11 @@ function GamingStoryPanel({ story }) {
       <div className="gaming-story-panel-content">
         <div className="gaming-story-panel-header">
           <div className="gaming-story-panel-badge">
-            {isIdentity ? <TrendingUp size={14} /> : isPeriod ? <Clock size={14} /> : <Sparkles size={14} />}
-            {isIdentity ? 'Evolving identity' : isPeriod ? `${period} recap` : 'First chapter'}
+            {isIdentity ? <TrendingUp size={14} /> : isDigest ? <BookOpen size={14} /> : isPeriod ? <Clock size={14} /> : <Sparkles size={14} />}
+            {isQuiet ? `Quiet ${period || 'week'}` : isIdentity ? 'Evolving identity' : isDigest ? `${period} digest` : isPeriod ? `${period} recap` : 'First chapter'}
           </div>
-          {isIdentity && identityLabel && (
-            <div className="gaming-story-panel-identity">{identityLabel}</div>
+          {identityLabel && (
+            <div className="gaming-story-panel-identity" title="Narrative voice">{identityLabel}</div>
           )}
         </div>
 
@@ -61,9 +67,9 @@ function GamingStoryPanel({ story }) {
             <span className="gaming-story-panel-stat-value">{formatPlaytime(totalHours * 60)}</span>
             <span className="gaming-story-panel-stat-label">tracked</span>
           </div>
-          {genreFingerprint.length > 0 && (
+          {safeGenreFingerprint.length > 0 && (
             <div className="gaming-story-panel-genres">
-              {genreFingerprint.map((entry) => (
+              {safeGenreFingerprint.map((entry) => (
                 <span key={entry.genre} className="gaming-story-panel-genre">
                   {entry.genre}
                 </span>
@@ -72,13 +78,23 @@ function GamingStoryPanel({ story }) {
           )}
         </div>
 
-        {tasteClusters.length > 0 && (
+        {safeMoodFingerprint.length > 0 && (
+          <div className="gaming-story-panel-moods">
+            {safeMoodFingerprint.map((entry) => (
+              <span key={entry.mood} className="gaming-story-panel-mood">
+                {entry.mood}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {safeTasteClusters.length > 0 && (
           <div className="gaming-story-panel-clusters">
             <span className="gaming-story-panel-clusters-label">
               <BookOpen size={14} />
               Taste clusters
             </span>
-            {tasteClusters.map((cluster) => (
+            {safeTasteClusters.map((cluster) => (
               <span key={cluster?.label || cluster} className="gaming-story-panel-cluster">
                 {cluster?.label || cluster}
               </span>

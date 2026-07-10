@@ -3,6 +3,7 @@ import { Gamepad2, User, TrendingUp, Award, Clock, Zap } from 'lucide-react';
 import { resolveGameArtwork } from '../services/GameArtworkService';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import { ShareCardWatermark } from './ShareCardWatermark';
+import GamingPersonaService from '../services/GamingPersonaService';
 import './IdentityShareCard.css';
 
 export const IDENTITY_SHARE_CARD_SIZE_PX = 1080;
@@ -12,13 +13,15 @@ export function buildIdentityShareData(profile = {}, evolution = null) {
   const identity = safeProfile.identity || {};
   const stats = safeProfile.stats || {};
   const persona = safeProfile.persona || {};
+  const gamingPersona = GamingPersonaService.getPersona();
+  const primary = gamingPersona?.primaryPersona;
 
   return {
     username: safeProfile.username || 'Pilot',
     title: safeProfile.title || 'Newbie',
     level: safeProfile.level || 1,
-    identityLabel: identity.personality || persona?.personaIdentity?.label || 'Uncharted Pilot',
-    identityDescription: identity.description || persona?.personaIdentity?.description || 'Your gaming identity is still forming.',
+    identityLabel: identity.personality || primary?.label || persona?.personaIdentity?.label || 'Uncharted Pilot',
+    identityDescription: identity.description || gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || 'Your gaming identity is still forming.',
     playStyle: identity.playStyle || 'Balanced',
     favoriteMood: identity.favoriteMood || persona?.dominantMood || '—',
     favoriteGenre: identity.favoriteGenre || persona?.dominantGenre || '—',

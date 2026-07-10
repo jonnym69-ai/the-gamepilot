@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
+import GamingPersonaService from '../services/GamingPersonaService';
 import './GamerIdentityCard.css';
 
 const StatPill = ({ icon: Icon, label, value }) => (
@@ -30,7 +31,7 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
       return null;
     }
 
-    const persona = UserBehaviorProfile.getPersonaSnapshot();
+    const persona = GamingPersonaService.getPersona();
     const dashboard = StatsAggregationService.getDashboardData(library);
     const allTime = dashboard?.periods?.all;
 
@@ -39,9 +40,9 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
     const peakHours = UserBehaviorProfile.getPeakPlayHours(1);
 
     return {
-      label: persona?.personaIdentity?.label || 'Gaming Explorer',
-      description: persona?.personaIdentity?.description || 'Building your gaming identity one session at a time.',
-      tags: persona?.personaTags || [],
+      label: persona?.primaryPersona?.label || 'Gamer in Progress',
+      description: persona?.summaryRoast || persona?.primaryPersona?.roast || 'Building your gaming identity one session at a time.',
+      tags: persona?.subTraits?.map((trait) => trait.label) || [],
       totalGames: library.length,
       totalHours: Math.round(allTime?.playtimeHours || 0),
       totalSessions: allTime?.sessions || 0,
