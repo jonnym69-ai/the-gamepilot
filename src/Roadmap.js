@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Heart, Github, MessageSquare, Send, Map, Twitter, MessageCircle, Check, Youtube, Gamepad2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Heart, Github, MessageSquare, Send, Map, Twitter, MessageCircle, Check, Youtube, Gamepad2, Lightbulb } from 'lucide-react';
 import NavBar from './NavBar';
 import StorageService from './services/StorageService';
 import './Roadmap.css';
@@ -100,8 +100,15 @@ const ROADMAP_PHASES = [
   },
   {
     id: 'phase-6',
-    status: 'planned',
+    status: 'complete',
     label: 'Phase 6',
+    title: 'Identity & story archive',
+    description: 'GamingPersonaService, StoryArchive, TasteFingerprint, StoryBookPanel, and the public Roadmap page bring your gaming identity to life.'
+  },
+  {
+    id: 'phase-7',
+    status: 'planned',
+    label: 'Phase 7',
     title: 'Leanback / controller TV mode',
     description: 'A big-screen, controller-friendly toggle for couch gaming so GamePilot works away from the desk.'
   },
@@ -272,11 +279,15 @@ function Roadmap() {
             Pick the features you want, add a quick note, and send it straight to the developer.
             No export needed — just a pre-filled post you can send on X or paste into Discord.
           </p>
+          <div className="roadmap-feedback-prompt">
+            <Lightbulb size={16} />
+            <span>What would you like to see in GamePilot?</span>
+          </div>
           <textarea
             className="roadmap-feedback-note"
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            placeholder="What would make GamePilot better for you? (optional)"
+            placeholder="Describe your idea — features, fixes, or anything you wish GamePilot did..."
             rows={3}
           />
           <div className="roadmap-feedback-actions">

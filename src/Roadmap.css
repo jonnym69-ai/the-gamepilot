@@ -233,6 +233,20 @@
   border-color: var(--accent-primary, #7c5cff);
 }
 
+.roadmap-feedback-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid rgba(124, 92, 255, 0.25);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-primary, #a78bfa);
+  margin-bottom: 12px;
+}
+
 .roadmap-feedback-actions {
   display: flex;
   flex-wrap: wrap;
