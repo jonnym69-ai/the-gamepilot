@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass, Gift, Map } from 'lucide-react';
+import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass, Gift } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import LabsService from '../services/LabsService';
 
@@ -100,9 +100,6 @@ function HybridNavBar() {
               <div className="dropdown-section-title">Progression</div>
               <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="View unlocked rewards and customization options">
                 <Gift size={16} className="dropdown-item-icon" /> Rewards
-              </Link>
-              <Link to="/roadmap" className="dropdown-item" onClick={closeDropdown} title="Community roadmap and upcoming goals">
-                <Map size={16} className="dropdown-item-icon" /> Roadmap
               </Link>
             </div>
             {labsEnabled && (
