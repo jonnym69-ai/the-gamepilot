@@ -66,6 +66,7 @@ const SwipeDeck = lazy(() => import('./SwipeDeck'));
 const Recommendations = lazy(() => import('./Recommendations'));
 const GamingDNAPage = lazy(() => import('./components/GamingDNAPage'));
 const Rewards = lazy(() => import('./Rewards'));
+const Feedback = lazy(() => import('./Feedback'));
 
 // One-time migration: copy legacy 'gameLibrary' key to prefixed 'gamepilot-library'
 StorageService.migrate();
@@ -1135,6 +1136,7 @@ function AppContent() {
         <Route path="/swipe-deck" element={<SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />} />
         <Route path="/recommendations" element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/rewards" element={<Rewards />} />
+        <Route path="/feedback" element={<Feedback />} />
         <Route path="/startup-questionnaire" element={<StartupQuestionnaireRoute />} />
       </Routes>
       </Suspense>

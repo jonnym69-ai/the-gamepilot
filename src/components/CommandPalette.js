@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Home, Library as LibraryIcon, BarChart3, User, Settings as SettingsIcon, Palette, Gift, Eye, Scale, Calendar, Link2, Heart, Trophy, Download, Target, HardDrive, Gauge } from 'lucide-react';
+import { Search, Home, Library as LibraryIcon, BarChart3, User, Settings as SettingsIcon, Palette, Gift, Eye, Scale, Calendar, Link2, Heart, Trophy, Download, Target, HardDrive, Gauge, MessageSquarePlus } from 'lucide-react';
 import StorageService from '../services/StorageService';
 import InterfacePreferencesService from '../services/InterfacePreferencesService';
 import { getLaunchSources } from '../services/LibraryDataService';
@@ -25,7 +25,8 @@ const NAV_COMMANDS = [
   { id: 'nav-export-hub', label: 'Go to Export Hub', icon: Download, path: '/export-hub', keywords: 'export backup data' },
   { id: 'nav-storage-manager', label: 'Go to Library Reclaimer', icon: HardDrive, path: '/storage-manager', keywords: 'storage disk space uninstall reclaim cold games' },
   { id: 'nav-performance-cockpit', label: 'Go to Performance Cockpit', icon: Gauge, path: '/performance-cockpit', keywords: 'performance hardware compatibility fps' },
-  { id: 'nav-donate', label: 'Go to Founder Lounge', icon: Heart, path: '/donate', keywords: 'donate patreon founder support unlock' }
+  { id: 'nav-donate', label: 'Go to Founder Lounge', icon: Heart, path: '/donate', keywords: 'donate patreon founder support unlock' },
+  { id: 'nav-feedback', label: 'Send Feedback', icon: MessageSquarePlus, path: '/feedback', keywords: 'feedback suggest feature idea request bug report' }
 ];
 
 const ACTION_COMMANDS = [

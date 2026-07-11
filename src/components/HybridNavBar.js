@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass, Gift } from 'lucide-react';
+import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass, Gift, MessageSquarePlus } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import LabsService from '../services/LabsService';
 
@@ -142,6 +142,12 @@ function HybridNavBar() {
                 <Monitor size={16} className="dropdown-item-icon" />
                 {bigScreenMode ? 'Exit TV Mode' : 'TV Mode'}
               </button>
+            </div>
+            <div className="dropdown-section">
+              <div className="dropdown-section-title">Community</div>
+              <Link to="/feedback" className="dropdown-item" onClick={closeDropdown} title="Suggest features and share feedback">
+                <MessageSquarePlus size={16} className="dropdown-item-icon" /> Feedback
+              </Link>
             </div>
           </div>
         )}
