@@ -342,23 +342,29 @@ const HabitInsightsPanel = ({ library = [] }) => {
             <BarChart3 size={16} />
             Session Trend (Last {sessionTrendRaw.length})
           </h4>
-          <div className="viz-trend">
-            {sessionTrendRaw.map((s) => {
-              const maxMin = Math.max(...sessionTrendRaw.map((x) => x.minutes), 1);
-              return (
-                <div key={s.index} className="viz-trend-cell" title={`${s.game}: ${s.minutes}m`}>
-                  <div
-                    className="viz-trend-bar"
-                    style={{ height: `${(s.minutes / maxMin) * 100}%` }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-          <div className="viz-trend-axis">
-            <span>Older</span>
-            <span>Newer</span>
-          </div>
+          {sessionTrendRaw.every((s) => (s.minutes || 0) === 0) ? (
+            <p className="habit-viz-empty">Session durations unavailable for these records.</p>
+          ) : (
+            <>
+              <div className="viz-trend">
+                {sessionTrendRaw.map((s) => {
+                  const maxMin = Math.max(...sessionTrendRaw.map((x) => x.minutes), 1);
+                  return (
+                    <div key={s.index} className="viz-trend-cell" title={`${s.game}: ${s.minutes}m`}>
+                      <div
+                        className="viz-trend-bar"
+                        style={{ height: `${(s.minutes / maxMin) * 100}%` }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="viz-trend-axis">
+                <span>Older</span>
+                <span>Newer</span>
+              </div>
+            </>
+          )}
         </div>
       )}
 

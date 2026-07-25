@@ -117,7 +117,8 @@ const normalizeSession = (session, libraryIndex) => {
     return null;
   }
 
-  const playtimeMinutes = Math.max(0, Math.round(Number(session?.playtimeMinutes) || 0));
+  const rawMinutes = session?.playtimeMinutes ?? session?.playtime ?? session?.duration ?? session?.minutes ?? session?.elapsedMinutes ?? session?.actualElapsedMinutes ?? 0;
+  const playtimeMinutes = Math.max(0, Math.round(Number(rawMinutes) || 0));
   const game = findMatchingGame(session, libraryIndex);
   const sessionGenres = Array.isArray(session?.genres) ? session.genres.filter(Boolean) : [];
   const libraryGenres = Array.isArray(game?.genres) ? game.genres.filter(Boolean) : [];
@@ -135,6 +136,7 @@ const normalizeSession = (session, libraryIndex) => {
     mood,
     genres,
     primaryGenre,
+    coverUrl: game?.headerImage || game?.coverUrl || game?.capsule || '',
     playtimeMinutes,
     timestamp,
     launchMethod: session?.launchMethod || null
@@ -311,6 +313,9 @@ const buildTopGames = (sessions) => {
         id: key,
         name: session.gameName,
         platform: session.platform,
+        genre: session.primaryGenre || null,
+        genres: session.genres || [],
+        coverUrl: session.coverUrl || '',
         totalPlaytime: 0,
         sessions: 0,
         playCount: 0,
@@ -323,6 +328,8 @@ const buildTopGames = (sessions) => {
     entry.totalPlaytime += session.playtimeMinutes;
     entry.sessions += 1;
     entry.playCount += 1;
+    if (!entry.genre && session.primaryGenre) entry.genre = session.primaryGenre;
+    if (!entry.coverUrl && session.coverUrl) entry.coverUrl = session.coverUrl;
     if (!entry.lastPlayed || session.timestamp > entry.lastPlayed) {
       entry.lastPlayed = session.timestamp;
     }

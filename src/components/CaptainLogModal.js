@@ -16,7 +16,6 @@ const QUICK_TAGS = [
 
 const MOOD_OPTIONS = [
   'Relaxed',
-  'Escapist',
   'Competitive',
   'Creative',
   'Nostalgic',

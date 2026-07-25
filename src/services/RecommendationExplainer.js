@@ -46,7 +46,7 @@ export class RecommendationExplainer {
 
     // Generate the two-tier card-intent hooks separately from the detail list.
     const cardIntent = this.getCardIntent(recommendationType);
-    const { global: globalHook, gameSpecific: gameSpecificHook } = this.generateCardIntentReasons(cardIntent, game, profile);
+    const { global: globalHook, gameSpecific: gameSpecificHook } = this.generateCardIntentReasons(cardIntent, game, profile, mood, genre, timeAvailable);
 
     let uniqueReasons = [...new Set(reasons.filter(Boolean))];
 
@@ -54,10 +54,14 @@ export class RecommendationExplainer {
     if (globalHook && !uniqueReasons.includes(globalHook)) uniqueReasons.unshift(globalHook);
     if (gameSpecificHook && !uniqueReasons.includes(gameSpecificHook)) uniqueReasons.unshift(gameSpecificHook);
 
-    // One archetype roast per game, placed at the very front as the headline
+    // Persona voice first: roast headline, then structured persona reason.
     const archetypeRoast = this.getArchetypePersonaReasoning(game, mood, genre);
     if (archetypeRoast && !uniqueReasons.includes(archetypeRoast)) {
       uniqueReasons.unshift(archetypeRoast);
+    }
+    const personaReason = this.getPersonaReasoning(personaSnapshot, mood, genre);
+    if (personaReason && !uniqueReasons.includes(personaReason)) {
+      uniqueReasons.splice(1, 0, personaReason);
     }
 
     // Classify familiarity for this game
@@ -181,8 +185,9 @@ export class RecommendationExplainer {
       };
 
       // Pick a context roast if available, otherwise fall back to generic roast
-      // Use game name hash for consistent selection per game
-      const seed = gameName.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      // Use game name hash + daily offset for consistent selection per game but different day-to-day
+      const dayOffset = new Date().getDate(); // 1-31
+      const seed = gameName.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) + dayOffset;
       const roastPool = archetype.contextRoasts && archetype.contextRoasts.length > 0
         ? archetype.contextRoasts
         : archetype.roasts || [];
@@ -333,7 +338,7 @@ export class RecommendationExplainer {
    * Build a context object from local-only telemetry so templates can fill in
    * game-specific and player-specific metrics without reaching for external APIs.
    */
-  static buildCardReasonContext(game, profile) {
+  static buildCardReasonContext(game, profile, selectedMood = null, selectedGenre = null, selectedTime = null) {
     const now = new Date();
     const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
     const hour = now.getHours();
@@ -383,6 +388,8 @@ export class RecommendationExplainer {
       .sort((a, b) => (Number(b[1].count || 0) - Number(a[1].count || 0)))
       .map(([slot]) => slot)[0] || currentTime;
 
+    const normSelectedTime = UserBehaviorProfile.normalizeTimeAvailable(selectedTime);
+
     return {
       gameName: game?.name || 'this game',
       genreA,
@@ -397,7 +404,11 @@ export class RecommendationExplainer {
       currentTime,
       preferredTime,
       topGenre,
-      playStyle
+      playStyle,
+      userRating: typeof game?.userRating === 'number' ? game.userRating : null,
+      selectedMood,
+      selectedGenre,
+      selectedTimeText: normSelectedTime ? this.formatDuration(normSelectedTime) : ''
     };
   }
 
@@ -420,7 +431,11 @@ export class RecommendationExplainer {
       .replace(/\{currentTime\}/g, this.safeTemplate(context.currentTime))
       .replace(/\{preferredTime\}/g, this.safeTemplate(context.preferredTime))
       .replace(/\{topGenre\}/g, this.safeTemplate(context.topGenre))
-      .replace(/\{playStyle\}/g, this.safeTemplate(context.playStyle));
+      .replace(/\{playStyle\}/g, this.safeTemplate(context.playStyle))
+      .replace(/\{userRating\}/g, context.userRating !== null ? String(context.userRating) : '')
+      .replace(/\{selectedMood\}/g, this.safeTemplate(context.selectedMood))
+      .replace(/\{selectedGenre\}/g, this.safeTemplate(context.selectedGenre))
+      .replace(/\{selectedTimeText\}/g, this.safeTemplate(context.selectedTimeText));
   }
 
   static extractPlaceholders(template) {
@@ -440,15 +455,22 @@ export class RecommendationExplainer {
     return items[Math.floor(Math.random() * items.length)];
   }
 
-  static getCardIntentTemplates(intent) {
+  static getCardIntentTemplates(intent, selectedMood = null, selectedGenre = null, selectedTimeText = null) {
     const templates = {
       tonight: {
         global: [
+          { text: 'Seeking a {selectedMood} session? Here is a prime choice for your tonight shelf.', weight: 3, condition: (ctx) => ctx.selectedMood },
+          { text: 'Sized perfectly for a {selectedTimeText} session tonight.', weight: 3, condition: (ctx) => ctx.selectedTimeText },
+          { text: 'A handpicked {selectedMood} experience tailored to fit your time available.', weight: 3, condition: (ctx) => ctx.selectedMood && ctx.selectedTimeText },
           { text: 'Your {currentDay} {currentTime} window is your most active launch slot, averaging {avgSession}.', weight: 1, condition: (ctx) => ctx.avgSession && ctx.currentDay && ctx.currentTime },
           { text: 'You lean into {topGenre} during {currentTime} sessions more than any other time.', weight: 1, condition: (ctx) => ctx.topGenre && ctx.currentTime },
           { text: 'Your play style is {playStyle}, so tonight\'s pick should match your typical {avgSession} burst.', weight: 1, condition: (ctx) => ctx.playStyle && ctx.avgSession }
         ],
         game: [
+          { text: '{gameName} matches your requested {selectedMood} mood with genres like {genreA}.', weight: 3, condition: (ctx) => ctx.selectedMood && ctx.genreA },
+          { text: '{gameName}\'s estimated {gameAvgSession} session fits smoothly into your {selectedTimeText} window.', weight: 3, condition: (ctx) => ctx.selectedTimeText && ctx.gameAvgSession },
+          { text: 'You rated {gameName} a brilliant {userRating}/10, making it a stellar candidate to boot up again.', weight: 1.5, condition: (ctx) => ctx.userRating !== null && ctx.userRating >= 8 },
+          { text: 'You have rated {gameName} {userRating}/10, so it remains a highly regarded choice.', weight: 1, condition: (ctx) => ctx.userRating !== null && ctx.userRating >= 6 },
           { text: '{gameName}\'s average session length is {gameAvgSession}, matching your {currentDay} {currentTime} window.', weight: 1, condition: (ctx) => ctx.gameAvgSession && ctx.currentDay && ctx.currentTime },
           { text: 'Your {currentTime} launches often include {genreA}; {gameName} fits that pattern.', weight: 1, condition: (ctx) => ctx.currentTime && ctx.genreA },
           { text: '{gameName} is a {genreA}/{genreB} blend, which aligns with your {currentTime} genre rotation.', weight: 1, condition: (ctx) => ctx.genreA && ctx.genreB && ctx.currentTime && ctx.genreB !== ctx.genreA },
@@ -462,6 +484,7 @@ export class RecommendationExplainer {
           { text: 'You prefer {playStyle} sessions, which makes this a natural continuation.', weight: 1, condition: (ctx) => ctx.playStyle }
         ],
         game: [
+          { text: 'You recently rated {gameName} {userRating}/10 — keep that high-quality momentum going!', weight: 1.5, condition: (ctx) => ctx.userRating !== null && ctx.userRating >= 8 },
           { text: 'You logged {launchCount} sessions in {gameName}.', weight: 1, condition: (ctx) => ctx.launchCount && ctx.gameName },
           { text: 'Last played {gameName} {lastPlayedText} — jump back in before the rhythm fades.', weight: 1, condition: (ctx) => ctx.gameName && ctx.lastPlayedText },
           { text: 'Your {gameName} sessions average {gameAvgSession}, close to your overall {avgSession} average.', weight: 1, condition: (ctx) => ctx.gameAvgSession && ctx.avgSession },
@@ -475,6 +498,7 @@ export class RecommendationExplainer {
           { text: 'You often abandon games after {playStyle} bursts; this one had staying power before it dropped off.', weight: 1, condition: (ctx) => ctx.playStyle }
         ],
         game: [
+          { text: 'You rated {gameName} a stellar {userRating}/10 but haven\'t launched it since {lastPlayedText}. Let\'s fix that.', weight: 1.5, condition: (ctx) => ctx.userRating !== null && ctx.userRating >= 8 && ctx.lastPlayedText },
           { text: 'You played {gameName} for {timePlayed} across {launchCount} sessions, then stopped {lastPlayedText}.', weight: 1, condition: (ctx) => ctx.gameName && ctx.timePlayed && ctx.launchCount && ctx.lastPlayedText },
           { text: '{gameName} has {timePlayed} on record but no launch since {lastPlayedText}.', weight: 1, condition: (ctx) => ctx.gameName && ctx.timePlayed && ctx.lastPlayedText },
           { text: 'You used to play {gameName} in {gameAvgSession} bursts; it\'s been quiet since {lastPlayedText}.', weight: 1, condition: (ctx) => ctx.gameName && ctx.gameAvgSession && ctx.lastPlayedText },
@@ -510,19 +534,35 @@ export class RecommendationExplainer {
    * Generate a two-tier reason for a given card intent using only local telemetry.
    * Returns { global: string, gameSpecific: string }.
    */
-  static generateCardIntentReasons(intent, game, profile) {
-    const ctx = this.buildCardReasonContext(game, profile);
-    const templates = this.getCardIntentTemplates(intent);
+  static generateCardIntentReasons(intent, game, profile, selectedMood = null, selectedGenre = null, selectedTime = null) {
+    const ctx = this.buildCardReasonContext(game, profile, selectedMood, selectedGenre, selectedTime);
+    const templates = this.getCardIntentTemplates(intent, selectedMood, selectedGenre, ctx.selectedTimeText);
 
     const validGlobal = templates.global.filter((t) => t.condition(ctx));
     const validGame = templates.game.filter((t) => t.condition(ctx));
 
-    let globalTemplate = this.pickRandom(validGlobal);
-    let gameTemplate = this.pickRandom(validGame);
+    // Sort by weight descending
+    validGlobal.sort((a, b) => (b.weight || 1) - (a.weight || 1));
+    validGame.sort((a, b) => (b.weight || 1) - (a.weight || 1));
+
+    // Seed using game name + day of the month for high variety
+    const gameName = game?.name || '';
+    const dayOffset = new Date().getDate(); // 1-31
+    const baseSeed = gameName.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) + dayOffset;
+
+    // Filter to only consider the highest weight available to make reasoning highly relevant
+    const maxGlobalWeight = validGlobal.length > 0 ? Math.max(...validGlobal.map(t => t.weight || 1)) : 1;
+    const topGlobal = validGlobal.filter(t => (t.weight || 1) === maxGlobalWeight);
+
+    const maxGameWeight = validGame.length > 0 ? Math.max(...validGame.map(t => t.weight || 1)) : 1;
+    const topGame = validGame.filter(t => (t.weight || 1) === maxGameWeight);
+
+    let globalTemplate = topGlobal.length > 0 ? topGlobal[baseSeed % topGlobal.length] : null;
+    let gameTemplate = topGame.length > 0 ? topGame[(baseSeed + 3) % topGame.length] : null;
 
     // Avoid the same telemetry hook appearing in both tiers.
     if (globalTemplate && gameTemplate && this.sharesHook(globalTemplate.text, gameTemplate.text)) {
-      const alternative = validGame.find((t) => !this.sharesHook(globalTemplate.text, t.text));
+      const alternative = topGame.find((t) => !this.sharesHook(globalTemplate.text, t.text));
       if (alternative) gameTemplate = alternative;
     }
 
@@ -536,7 +576,7 @@ export class RecommendationExplainer {
    * Get Perfect Play specific reasoning (Tonight's Best Pick)
    */
   static getPerfectPlayReasoning(game, mood, genre, timeAvailable, profile) {
-    const { global, gameSpecific } = this.generateCardIntentReasons('tonight', game, profile);
+    const { global, gameSpecific } = this.generateCardIntentReasons('tonight', game, profile, mood, genre, timeAvailable);
     return [global, gameSpecific].filter(Boolean).join(' ');
   }
 

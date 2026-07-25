@@ -1,20 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Palette, Calendar, Scale, BarChart3, Heart, Link2, Trophy, Download, HardDrive, Gauge, Monitor, Sparkles, Compass, Gift, MessageSquarePlus } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Menu, X, Search, BookOpen, MessageSquarePlus, Monitor, Palette } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
-import LabsService from '../services/LabsService';
+
+// Phase 0.5 product IA — only these destinations are linked in the UI:
+// Home · Library · Recommendations · Stats · Profile · Settings · Year in Review · Feedback
+// Everything else stays mounted by URL if needed, but is not advertised.
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [labsEnabled, setLabsEnabled] = useState(LabsService.isEnabled());
   const location = useLocation();
   const dropdownRef = useRef(null);
   const { bigScreenMode, toggleBigScreenMode } = useTheme();
 
-  // Keep the nav in sync when Labs is toggled from Settings.
-  useEffect(() => LabsService.subscribe(setLabsEnabled), []);
-
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -22,13 +20,20 @@ function HybridNavBar() {
       }
     };
 
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, []);
 
-  // Close dropdown when navigating to a new page
   useEffect(() => {
     setIsDropdownOpen(false);
   }, [location]);
@@ -43,7 +48,6 @@ function HybridNavBar() {
 
   return (
     <nav className="navbar">
-      {/* Primary Navigation - Always Visible */}
       <div className="navbar-primary">
         <button
           type="button"
@@ -56,80 +60,47 @@ function HybridNavBar() {
           <span className="nav-search-pill-label">Search</span>
           <kbd className="nav-search-pill-kbd">/</kbd>
         </button>
-        <Link to="/" className="nav-link" title="Home — recommendations and dashboard">Home</Link>
-        <Link to="/library" className="nav-link" title="Browse and manage your game libraries">Library</Link>
-        <Link to="/stats" className="nav-link" title="Playtime stats and session history">Stats</Link>
-        <Link to="/profile" className="nav-link" title="Your gaming identity and profile">Profile</Link>
-        <Link to="/settings" className="nav-link" title="Preferences, themes, and configuration">Settings</Link>
+        <NavLink to="/" end className="nav-link" title="Home — next pick and persona">Home</NavLink>
+        <NavLink to="/library" className="nav-link" title="Browse and manage your game libraries">Library</NavLink>
+        <NavLink to="/recommendations" className="nav-link" title="Playstyle recommendations">Recs</NavLink>
+        <NavLink to="/stats" className="nav-link" title="Light local stats that feed your story">Stats</NavLink>
+        <NavLink to="/profile" className="nav-link" title="Your gaming persona and roasts">Profile</NavLink>
+        <NavLink to="/settings" className="nav-link" title="Preferences and configuration">Settings</NavLink>
       </div>
 
-      {/* Dropdown Menu for Secondary Items */}
       <div className="navbar-dropdown" ref={dropdownRef}>
-        <button 
+        <button
           className="dropdown-toggle"
           onClick={toggleDropdown}
           aria-label="More navigation options"
           aria-expanded={isDropdownOpen}
-          title="More pages and tools"
+          aria-controls="gamepilot-more-navigation"
+          aria-haspopup="true"
+          title="Story and feedback"
         >
           {isDropdownOpen ? <X size={20} /> : <Menu size={20} />}
           <span>More</span>
         </button>
 
         {isDropdownOpen && (
-          <div className="dropdown-menu">
+          <div className="dropdown-menu" id="gamepilot-more-navigation" aria-label="More pages">
             <div className="dropdown-section">
-              <div className="dropdown-section-title">Decide what to play</div>
-              <Link to="/recommendations" className="dropdown-item" onClick={closeDropdown} title="Discover games with different recommendation styles">
-                <Compass size={16} className="dropdown-item-icon" /> Recommendations
-              </Link>
-              <Link to="/swipe-deck" className="dropdown-item" onClick={closeDropdown} title="Swipe through your library to build a shortlist">
-                <Sparkles size={16} className="dropdown-item-icon" /> Swipe Deck
-              </Link>
-              <Link to="/library-intelligence" className="dropdown-item" onClick={closeDropdown} title="Compare games and surface backlog priorities">
-                <Scale size={16} className="dropdown-item-icon" /> Library Intelligence
-              </Link>
-              <Link to="/export-hub" className="dropdown-item" onClick={closeDropdown} title="Export and backup your GamePilot data">
-                <Download size={16} className="dropdown-item-icon" /> Export Hub
-              </Link>
-              <Link to="/themes" className="dropdown-item" onClick={closeDropdown} title="Switch mood themes">
-                <Palette size={16} className="dropdown-item-icon" /> Themes
+              <div className="dropdown-section-title">Story</div>
+              <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Your yearly gaming story arc">
+                <BookOpen size={16} className="dropdown-item-icon" /> Year in Review
               </Link>
             </div>
             <div className="dropdown-section">
-              <div className="dropdown-section-title">Progression</div>
-              <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="View unlocked rewards and customization options">
-                <Gift size={16} className="dropdown-item-icon" /> Rewards
+              <div className="dropdown-section-title">Community</div>
+              <Link to="/feedback" className="dropdown-item" onClick={closeDropdown} title="Suggest features and share feedback">
+                <MessageSquarePlus size={16} className="dropdown-item-icon" /> Feedback
               </Link>
             </div>
-            {labsEnabled && (
-              <div className="dropdown-section">
-                <div className="dropdown-section-title">Labs (experimental)</div>
-                <Link to="/habits" className="dropdown-item" onClick={closeDropdown} title="Track gaming habits and goals">
-                  <Calendar size={16} className="dropdown-item-icon" /> Habits
-                </Link>
-                <Link to="/achievements" className="dropdown-item" onClick={closeDropdown} title="View your achievements and rolling assignments">
-                  <Trophy size={16} className="dropdown-item-icon" /> Achievements
-                </Link>
-                <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Your yearly gaming recap">
-                  <BarChart3 size={16} className="dropdown-item-icon" /> Year in Review
-                </Link>
-                <Link to="/gaming-links" className="dropdown-item" onClick={closeDropdown} title="Your personal collection of gaming sites and resources">
-                  <Link2 size={16} className="dropdown-item-icon" /> Gaming Links
-                </Link>
-                <Link to="/storage-manager" className="dropdown-item" onClick={closeDropdown} title="Find cold games and reclaim disk space">
-                  <HardDrive size={16} className="dropdown-item-icon" /> Library Reclaimer
-                </Link>
-                <Link to="/performance-cockpit" className="dropdown-item" onClick={closeDropdown} title="Hardware analysis and game compatibility">
-                  <Gauge size={16} className="dropdown-item-icon" /> Performance Cockpit
-                </Link>
-                <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Founder Lounge, Patreon support, and unlock codes">
-                  <Heart size={16} className="dropdown-item-icon" /> Founder Lounge
-                </Link>
-              </div>
-            )}
             <div className="dropdown-section">
               <div className="dropdown-section-title">View</div>
+              <Link to="/themes" className="dropdown-item" onClick={closeDropdown} title="Change mood themes and seasonal looks">
+                <Palette size={16} className="dropdown-item-icon" /> Themes
+              </Link>
               <button
                 type="button"
                 className="dropdown-item"
@@ -142,12 +113,6 @@ function HybridNavBar() {
                 <Monitor size={16} className="dropdown-item-icon" />
                 {bigScreenMode ? 'Exit TV Mode' : 'TV Mode'}
               </button>
-            </div>
-            <div className="dropdown-section">
-              <div className="dropdown-section-title">Community</div>
-              <Link to="/feedback" className="dropdown-item" onClick={closeDropdown} title="Suggest features and share feedback">
-                <MessageSquarePlus size={16} className="dropdown-item-icon" /> Feedback
-              </Link>
             </div>
           </div>
         )}

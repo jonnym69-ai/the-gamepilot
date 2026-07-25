@@ -147,7 +147,7 @@
   border: none;
   border-radius: var(--radius-pill, 999px);
   cursor: pointer;
-  transition: transform var(--transition-base, 0.25s ease), box-shadow var(--transition-base, 0.25s ease);
+  transition: transform var(--transition-base, 0.25s ease), box-shadow var(--transition-base, 0.25s ease), opacity var(--transition-base, 0.25s ease);
   min-width: 200px;
   position: relative;
   z-index: 1;
@@ -156,19 +156,27 @@
   letter-spacing: 0.04em;
 }
 
-.scan-button:hover {
+.scan-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
 }
 
-.scan-button:active {
+.scan-button:active:not(:disabled) {
   transform: translateY(-1px);
 }
 
+.scan-button:disabled,
 .scan-button.loading {
-  opacity: 0.8;
+  opacity: 0.65;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+  filter: saturate(0.8);
+}
+
+.scan-button:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 3px;
 }
 
 .scan-description {
@@ -339,6 +347,7 @@
   flex-wrap: wrap;
   gap: 10px;
   font-size: 0.85rem;
+  justify-content: center;
 }
 
 .launcher-badge {
@@ -353,6 +362,20 @@
   gap: 6px;
   transition: all 0.3s ease;
   font-size: 0.8rem;
+}
+
+.launcher-badge:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.launcher-badge.detected {
+  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.35);
+}
+
+.launcher-badge:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .launcher-badge.detected {
@@ -2135,36 +2158,53 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .home-hero {
-    padding: 46px 15px 34px;
+    padding: 32px 16px 26px;
+    border-radius: 0 0 var(--radius-lg, 16px) var(--radius-lg, 16px);
+    gap: 10px;
   }
 
   .home-hero-summary {
-    margin-top: -12px;
-    font-size: 0.92rem;
+    margin-top: 0;
+    font-size: 0.9rem;
   }
 
   .home-subtitle {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+    max-width: 100%;
   }
 
   .scan-button {
-    padding: 14px 30px;
-    font-size: 1rem;
+    padding: 12px 28px;
+    font-size: 0.95rem;
     min-width: 180px;
+  }
+
+  .scan-description {
+    font-size: 0.9rem;
+    margin-top: 14px;
+  }
+
+  .launcher-status {
+    padding: 14px;
   }
 
   .launcher-grid {
     gap: 8px;
     font-size: 0.75rem;
+    justify-content: center;
   }
 
   .launcher-status-header {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .launcher-status-pill {
-    align-items: flex-start;
+    align-self: flex-start;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
   }
 
   .launcher-badge {

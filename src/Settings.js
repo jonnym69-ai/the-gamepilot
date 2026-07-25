@@ -18,6 +18,7 @@ import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
 import LabsService from './services/LabsService';
+import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
 import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
@@ -44,6 +45,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
   const [labsEnabled, setLabsEnabled] = useState(() => LabsService.isEnabled());
+  const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [gameLaunchNotifications, setGameLaunchNotifications] = useState(true);
   const [dailySummaryNotifications, setDailySummaryNotifications] = useState(false);
@@ -591,6 +593,26 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     </div>
                     <p className="setting-description">
                       Automatically minimize GamePilot to the taskbar when you launch a game, and restore the window when the session ends.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Welcome back pop-up</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={welcomeBackEnabled}
+                        onChange={() => {
+                          const next = !welcomeBackEnabled;
+                          setWelcomeBackEnabled(next);
+                          SessionService.setWelcomeBackOptedOut(!next);
+                        }}
+                        id="welcome-back-toggle"
+                      />
+                      <label htmlFor="welcome-back-toggle" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      When you open GamePilot for the first time in a session, show a pop-up with a game recommendation based on what you've been playing — served with your persona roast.
                     </p>
                   </div>
                   </div>

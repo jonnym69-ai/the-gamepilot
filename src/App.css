@@ -167,6 +167,49 @@ body.has-user-accent {
   --nav-active: var(--user-accent) !important;
 }
 
+.page-loading-fallback {
+  min-height: calc(100vh - var(--app-navbar-offset));
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.72));
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--accent-primary, #ff6b35) 9%, transparent), transparent 38%);
+}
+
+.page-loading-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  color: var(--button-primary-text, #fff);
+  background: linear-gradient(135deg, var(--accent-primary, #ff6b35), var(--accent-secondary, #ff8c42));
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--accent-primary, #ff6b35) 28%, transparent);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.page-loading-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(255, 255, 255, 0.14);
+  border-top-color: var(--accent-primary, #ff6b35);
+  border-radius: 50%;
+  animation: page-loading-spin 0.8s linear infinite;
+}
+
+.page-loading-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@keyframes page-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Basic body styling */
 body {
   background: var(--bg-primary);
@@ -584,7 +627,7 @@ body.big-screen-mode .controller-focus-scope {
 /* ===== FOCUSED THEME ===== */
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
-/* ===== ESCAPIST THEME ===== */
+/* ===== COMPETITIVE THEME ===== */
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
 /* Cards and containers */
@@ -1055,14 +1098,14 @@ a:hover {
   box-shadow: 0 12px 25px rgba(3, 169, 244, 0.2);
 }
 
-/* ===== ESCAPIST THEME - Volcanic Heat ===== */
-.escapist .card,
-.escapist .modal,
-.escapist .game-card,
-.escapist .stat-card,
-.escapist .settings-section,
-.escapist .profile-card,
-.escapist .achievement-counters-grid .counter-card {
+/* ===== COMPETITIVE THEME - Volcanic Heat ===== */
+.competitive .card,
+.competitive .modal,
+.competitive .game-card,
+.competitive .stat-card,
+.competitive .settings-section,
+.competitive .profile-card,
+.competitive .achievement-counters-grid .counter-card {
   border-radius: 18px;
   box-shadow: 0 18px 45px rgba(255, 87, 34, 0.3);
   border: 2px solid rgba(255, 87, 34, 0.25);
@@ -1072,12 +1115,12 @@ a:hover {
   font-family: 'Impact', 'Arial Black', sans-serif;
 }
 
-.escapist .card::before,
-.escapist .modal::before,
-.escapist .game-card::before,
-.escapist .stat-card::before,
-.escapist .settings-section::before,
-.escapist .profile-card::before {
+.competitive .card::before,
+.competitive .modal::before,
+.competitive .game-card::before,
+.competitive .stat-card::before,
+.competitive .settings-section::before,
+.competitive .profile-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1085,18 +1128,18 @@ a:hover {
   width: 100%;
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 87, 34, 0.1), rgba(0, 229, 255, 0.1), transparent);
-  animation: escapist-sweep 4s ease-in-out infinite;
+  animation: competitive-sweep 4s ease-in-out infinite;
   pointer-events: none;
   z-index: -1;
 }
 
-@keyframes escapist-sweep {
+@keyframes competitive-sweep {
   0% { left: -100%; }
   50% { left: 100%; }
   100% { left: -100%; }
 }
 
-.escapist button {
+.competitive button {
   border-radius: 18px;
   font-weight: 900;
   text-transform: uppercase;
@@ -1105,11 +1148,11 @@ a:hover {
   z-index: 10;
 }
 
-.escapist button,
-.escapist a,
-.escapist input,
-.escapist select,
-.escapist .clickable {
+.competitive button,
+.competitive a,
+.competitive input,
+.competitive select,
+.competitive .clickable {
   position: relative;
   z-index: 10;
 }
@@ -3277,4 +3320,213 @@ h6 { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-s
 @keyframes builderAppPulse {
   0%, 100% { transform: scale(1); opacity: 0.35; }
   50% { transform: scale(1.08); opacity: 0.75; }
+}
+
+:root {
+  --surface-hairline: rgba(255, 255, 255, 0.08);
+  --surface-highlight: rgba(255, 255, 255, 0.055);
+  --surface-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
+  --surface-shadow-hover: 0 24px 58px rgba(0, 0, 0, 0.28);
+  --page-inline-padding: clamp(16px, 3vw, 32px);
+}
+
+.App,
+.home-page,
+.library-page,
+.recommendations-page,
+.stats-page,
+.profile-page,
+.rewards-page {
+  isolation: isolate;
+}
+
+.home-page > :not(.navbar),
+.library-page > :not(.navbar),
+.recommendations-page > :not(.navbar),
+.profile-page > :not(.navbar),
+.rewards-page > :not(.navbar),
+.App > .stats-page {
+  animation: gamepilot-page-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes gamepilot-page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.navbar {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent) !important;
+}
+
+.navbar-primary {
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.navbar a.active,
+.navbar .nav-link.active {
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 53, 0.18), 0 8px 20px rgba(0, 0, 0, 0.14) !important;
+}
+
+.dropdown-menu {
+  padding: 6px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42) !important;
+}
+
+.dropdown-item {
+  border-radius: 9px !important;
+}
+
+button:disabled,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.52;
+  filter: saturate(0.72);
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+button:not(:disabled):active,
+[role="button"][aria-disabled="false"]:active {
+  transform: translateY(0) scale(0.975);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+body.compact-mode .empty-library-state {
+  padding: 24px 16px;
+}
+
+body.compact-mode .empty-library-header {
+  margin-bottom: 28px;
+}
+
+body.compact-mode .empty-library-icon {
+  width: 56px;
+  height: 56px;
+}
+
+body.compact-mode .empty-library-header h1 {
+  font-size: 1.5rem;
+}
+
+body.compact-mode .empty-library-header p {
+  font-size: 0.95rem;
+}
+
+.card,
+.modal,
+.settings-section,
+.stat-card,
+.profile-card,
+.rewards-card-item,
+.rec-style-card,
+.stats-summary-card {
+  border-color: var(--surface-hairline);
+}
+
+.card:hover,
+.settings-section:hover,
+.stat-card:hover,
+.rewards-card-item:not(.locked):hover,
+.rec-style-card:hover,
+.stats-summary-card:hover {
+  border-color: rgba(255, 107, 53, 0.3);
+}
+
+.modal-overlay {
+  padding: clamp(16px, 4vw, 40px);
+  background: rgba(5, 8, 16, 0.72);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  backdrop-filter: blur(14px) saturate(130%);
+}
+
+.modal-content {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: gamepilot-dialog-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes gamepilot-dialog-enter {
+  from { opacity: 0; transform: translateY(12px) scale(0.975); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+:is(.home-hero, .library-header, .stats-header, .profile-header, .rewards-header, .rec-hub-header) h1 {
+  max-width: 100%;
+  letter-spacing: -0.035em;
+}
+
+
+:is(.scan-button, .library-launch-button, .rec-row-launch, .action-button.primary, .getting-started-primary) {
+  box-shadow: 0 10px 26px rgba(255, 107, 53, 0.2);
+}
+
+:is(.scan-button, .library-launch-button, .rec-row-launch, .action-button.primary, .getting-started-primary):not(:disabled):hover {
+  box-shadow: 0 14px 34px rgba(255, 107, 53, 0.3);
+}
+
+@media (max-width: 900px) {
+  .navbar {
+    justify-content: space-between !important;
+    padding-inline: 12px !important;
+  }
+
+  .navbar-primary {
+    max-width: calc(100vw - 92px);
+    overflow-x: auto;
+  }
+
+  .navbar-primary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navbar a,
+  .navbar .nav-link {
+    padding-inline: 11px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --app-navbar-offset: 64px;
+  }
+
+  .nav-search-pill-kbd,
+  .navbar-primary .nav-link:nth-of-type(n + 4) {
+    display: none;
+  }
+
+  .modal-content {
+    width: min(100%, 560px);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page > :not(.navbar),
+  .library-page > :not(.navbar),
+  .recommendations-page > :not(.navbar),
+  .profile-page > :not(.navbar),
+  .rewards-page > :not(.navbar),
+  .App > .stats-page,
+  .modal-content {
+    animation: none;
+  }
 }

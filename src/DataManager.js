@@ -37,10 +37,20 @@ const JSON_STORAGE_DEFAULTS = Object.freeze({
   rollingAchievements: {},
   timeStats: {},
   launchRewardStats: { totalXP: 0, launches: 0 },
+  gameRatings: {},
   profileCustomization: {},
   rewardPresentationCustomization: {},
   exportFilterCustomization: {},
-  retentionQuestPreferences: {}
+  retentionQuestPreferences: {},
+  completionHistoryV1: {},
+  userCollectionsV1: [],
+  collectionAssignmentsV1: {},
+  hiddenGamesV1: [],
+  librarianNotesV1: {},
+  coverArtOverridesV1: {},
+  sessionNotesV1: {},
+  duplicateMergesV1: {},
+  scanTimestampsV1: {}
 });
 
 const STRING_STORAGE_KEYS = Object.freeze([

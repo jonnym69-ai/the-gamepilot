@@ -15,7 +15,7 @@ const GENRE_OPTIONS = [
   'MMO', 'Visual Novel', 'Management'
 ];
 
-const MOOD_OPTIONS = ['Relaxed', 'Escapist', 'Competitive', 'Creative', 'Nostalgic', 'Excited', 'Focused'];
+const MOOD_OPTIONS = ['Relaxed', 'Competitive', 'Creative', 'Nostalgic', 'Excited', 'Focused'];
 const PLATFORM_OPTIONS = ['Steam', 'Epic', 'GOG', 'EA', 'Uplay', 'Battle.net', 'Xbox', 'PlayStation', 'Rockstar', 'Riot', 'Manual'];
 const COMPLETION_OPTIONS = [
   { value: '', label: 'Any status' },

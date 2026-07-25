@@ -372,134 +372,29 @@ export function MomentumSection({
   renderEndSessionButton,
   handleWeeklyQuestPinToggle
 }) {
-  if (!weeklyQuest?.primaryQuest && (!Array.isArray(gamePilotPickEntries) || gamePilotPickEntries.length === 0)) {
+  // Phase 0: hide weekly quest / XP chore UI. Keep playstyle picks only.
+  void weeklyQuest;
+  void handleWeeklyQuestPinToggle;
+
+  if (!Array.isArray(gamePilotPickEntries) || gamePilotPickEntries.length === 0) {
     return null;
   }
 
   return (
     <HomeSection
       className="home-guided-section-secondary"
-      eyebrow="Momentum"
-      title="Keep the week moving"
+      eyebrow="For you"
+      title="Playstyle picks"
       compact
     >
       <div className="retention-section">
         <div className="retention-grid">
-          <div className="retention-panel weekly-quest-panel">
-            <div className="retention-panel-header">
-              <div>
-                <p className="retention-eyebrow">Weekly Focus</p>
-                <h3 className="retention-title">🧭 This Week&apos;s Quest</h3>
-              </div>
-              <div className="retention-summary-badge">
-                {weeklyQuest.completedCount} of {weeklyQuest.totalCount || 0} done
-              </div>
-            </div>
-
-            <p className="retention-panel-copy">
-              Keep your momentum going with one featured goal and a few bonus targets.
-            </p>
-
-            <div className="retention-meta-strip">
-              <span>{weeklyQuest.label || 'This Week'}</span>
-              <span>{weeklyQuest.weeklyStats?.activeDays || 0} play days</span>
-              <span>{weeklyQuest.weeklyStats?.playtimeHours || 0}h logged</span>
-            </div>
-
-            {weeklyQuest.primaryQuest ? (
-              <div className={`weekly-quest-feature ${weeklyQuest.primaryQuest.completed ? 'is-complete' : ''}`}>
-                <div className="weekly-quest-feature-header">
-                  <span className="weekly-quest-rarity">{weeklyQuest.primaryQuest.rarity}</span>
-                  <span className="weekly-quest-xp">+{weeklyQuest.primaryQuest.xpReward} XP</span>
-                </div>
-                <h4 className="weekly-quest-feature-title">
-                  <span>{weeklyQuest.primaryQuest.icon}</span>
-                  <span>{weeklyQuest.primaryQuest.name}</span>
-                </h4>
-                <p className="weekly-quest-feature-desc">{weeklyQuest.primaryQuest.desc}</p>
-                <p className="weekly-quest-feature-requirement">{weeklyQuest.primaryQuest.requirementLabel}</p>
-                <div className="weekly-quest-progress-meta">
-                  <span>{weeklyQuest.primaryQuest.progressLabel}</span>
-                  <span>
-                    {weeklyQuest.primaryQuest.completed
-                      ? (weeklyQuest.primaryQuest.permanentlyUnlocked ? 'Completed this week' : 'Unlocked now')
-                      : weeklyQuest.primaryQuest.remainingLabel}
-                  </span>
-                </div>
-                <div className="weekly-quest-progress-bar">
-                  <span style={{ width: `${weeklyQuest.primaryQuest.progressPercent}%` }} />
-                </div>
-                <div className="weekly-quest-feature-actions">
-                  <button
-                    onClick={() => handleWeeklyQuestPinToggle(weeklyQuest.primaryQuest)}
-                    className={`weekly-quest-pin-button ${weeklyQuest.primaryQuest.isPinned ? 'is-active' : ''}`}
-                  >
-                    {weeklyQuest.primaryQuest.isPinned ? 'Focused Goal' : 'Focus This'}
-                  </button>
-                  <span className={`weekly-quest-status ${weeklyQuest.primaryQuest.completed ? 'is-complete' : ''}`}>
-                    {weeklyQuest.primaryQuest.completed ? 'Completed' : 'In Progress'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="retention-empty-state">
-                Your weekly lineup will show up as soon as fresh goals are ready.
-              </div>
-            )}
-
-            {weeklyQuest.quests.length > 0 && (
-              <div className="weekly-quest-list">
-                {weeklyQuest.quests.map((quest) => (
-                  <div
-                    key={quest.id}
-                    className={`weekly-quest-card ${quest.isPinned ? 'is-pinned' : ''} ${quest.completed ? 'is-complete' : ''}`}
-                  >
-                    <div className="weekly-quest-card-top">
-                      <div>
-                        <p className="weekly-quest-card-metric">{quest.metricTitle}</p>
-                        <h4 className="weekly-quest-card-title">
-                          <span>{quest.icon}</span>
-                          <span>{quest.name}</span>
-                        </h4>
-                      </div>
-                      <button
-                        onClick={() => handleWeeklyQuestPinToggle(quest)}
-                        className={`weekly-quest-card-pin ${quest.isPinned ? 'is-active' : ''}`}
-                      >
-                        {quest.isPinned ? 'Focused' : 'Focus'}
-                      </button>
-                    </div>
-                    <p className="weekly-quest-card-desc">{quest.desc}</p>
-                    <p className="weekly-quest-card-requirement">{quest.requirementLabel}</p>
-                    <div className="weekly-quest-progress-meta">
-                      <span>{quest.progressLabel}</span>
-                      <span>
-                        {quest.completed
-                          ? (quest.permanentlyUnlocked ? 'Completed this week' : 'Unlocked now')
-                          : quest.remainingLabel}
-                      </span>
-                    </div>
-                    <div className="weekly-quest-progress-bar">
-                      <span style={{ width: `${quest.progressPercent}%` }} />
-                    </div>
-                    <div className="weekly-quest-card-footer">
-                      <span className="weekly-quest-card-reward">+{quest.xpReward} XP</span>
-                      <span className={`weekly-quest-status ${quest.completed ? 'is-complete' : ''}`}>
-                        {quest.completed ? 'Complete' : 'In Progress'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {gamePilotPickEntries.length > 0 && (
             <div className="retention-panel retention-picks-panel">
               <div className="retention-panel-header">
                 <div>
                   <p className="retention-eyebrow">Picked for You</p>
-                  <h3 className="retention-title">✨ GamePilot Picks</h3>
+                  <h3 className="retention-title">GamePilot Picks</h3>
                 </div>
                 <div className="retention-summary-badge">
                   {gamePilotPicksResult?.usedFallback ? 'Fresh mix' : 'Dialed in'}
@@ -596,10 +491,10 @@ export function MatchMyMoodSection({
   const quickVibes = [
     { id: 'stress_relief', label: 'Stress Relief', icon: '🧘', mood: 'Relaxed' },
     { id: 'feel_powerful', label: 'Feel Powerful', icon: '💪', mood: 'Social' },
-    { id: 'mindless_fun', label: 'Mindless Fun', icon: '🎮', mood: 'Escapist' },
+    { id: 'mindless_fun', label: 'Mindless Fun', icon: '🎮', mood: 'Relaxed' },
     { id: 'play_with_friends', label: 'Play With Friends', icon: '👥', mood: 'Social' },
     { id: 'get_creative', label: 'Get Creative', icon: '🎨', mood: 'Creative' },
-    { id: 'epic_escape', label: 'Epic Escape', icon: '🏔️', mood: 'Escapist' },
+    { id: 'epic_escape', label: 'Epic Escape', icon: '🏔️', mood: 'Creative' },
     { id: 'test_my_skills', label: 'Test My Skills', icon: '🎯', mood: 'Focused' },
     { id: 'nostalgia_trip', label: 'Nostalgia Trip', icon: '🕹️', mood: 'Relaxed' }
   ];
@@ -1760,46 +1655,53 @@ const formatSessionStyle = (bucket) => {
 
 export function IdentitySnapshotCard({ persona }) {
   const navigate = useNavigate();
-  if (!persona) return null;
-  const gamingPersona = GamingPersonaService.getPersona();
-  const primary = gamingPersona?.primaryPersona;
-  const baseIdentity = persona.personaIdentity;
-  const identity = baseIdentity
-    ? {
-        ...baseIdentity,
-        label: primary?.label || baseIdentity.label,
-        description: gamingPersona?.summaryRoast || primary?.roast || baseIdentity.description
-      }
-    : null;
-  const tags = (gamingPersona?.subTraits || []).map((trait) => trait.label).concat(persona.personaTags || []);
-  const source = persona.source || (identity ? 'history' : 'empty');
-  const confidence = persona.confidence || 'none';
-  const isEmpty = source === 'empty' || (!identity && tags.length === 0);
+  let publicIdentity = null;
+  try {
+    publicIdentity = GamingPersonaService.getPublicIdentity();
+  } catch {
+    publicIdentity = null;
+  }
+
+  const primary = publicIdentity?.primary || null;
+  const roast = publicIdentity?.roast || null;
+  const label = publicIdentity?.label || persona?.personaIdentity?.label || null;
+  const tags = [
+    ...(publicIdentity?.subTraits || []).map((trait) => trait.label),
+    ...(persona?.personaTags || [])
+  ].filter(Boolean);
+  const source = persona?.source || (label ? 'history' : 'empty');
+  const confidence = publicIdentity?.confidence || persona?.confidence || 'none';
+  const isEmpty = !label && tags.length === 0 && !roast;
   const canTune = !StartupPersonalizationService.hasCompletedOnboarding();
+  const topGenre = publicIdentity?.dominantGenre || persona?.dominantGenre || null;
+  const topGameName = publicIdentity?.topGameName || null;
 
   const confidenceMeta = {
-    confirmed: { label: 'Confirmed', className: 'is-confirmed' },
+    high: { label: 'Locked in', className: 'is-confirmed' },
+    medium: { label: 'Learning', className: 'is-growing' },
+    low: { label: 'Early read', className: 'is-provisional' },
+    confirmed: { label: 'Locked in', className: 'is-confirmed' },
     growing: { label: 'Learning', className: 'is-growing' },
-    provisional: { label: 'Provisional', className: 'is-provisional' }
+    provisional: { label: 'Early read', className: 'is-provisional' }
   }[confidence] || null;
 
   const provisionalNote = source === 'library'
-    ? `Inferred from your ${persona.totalLibraryGames || ''} installed games — we'll sharpen this as you play.`.replace('  ', ' ')
+    ? `Inferred from your ${persona?.totalLibraryGames || ''} installed games — sharpens every session.`.replace('  ', ' ')
     : source === 'seed'
-      ? "Based on your onboarding picks — we'll refine this as you play."
+      ? 'Seeded from onboarding — real play will overwrite this roast.'
       : canTune
-        ? "Still learning your tastes — answer a few quick questions to sharpen recommendations."
+        ? 'Still learning your tastes — a quick tune-up sharpens recommendations.'
         : null;
 
   if (isEmpty) {
     return (
       <div className="results-section">
         <div className="result-card identity-card">
-          <h3 className="result-title">🎭 Your Gaming Persona</h3>
+          <h3 className="result-title">Your Gaming Persona</h3>
           <div className="identity-empty">
             <span className="identity-empty-icon">🧭</span>
             <p className="identity-empty-text">
-              Scan your library to generate your starting persona — it sharpens every time you play.
+              Scan your library and play a few sessions — GamePilot will build a roast-backed persona from how you actually play.
             </p>
           </div>
         </div>
@@ -1811,18 +1713,26 @@ export function IdentitySnapshotCard({ persona }) {
     <div className="results-section">
       <div className="result-card identity-card">
         <div className="identity-title-row">
-          <h3 className="result-title">🎭 Your Gaming Persona</h3>
+          <h3 className="result-title">Your Gaming Persona</h3>
           {confidenceMeta && (
             <span className={`identity-confidence-badge ${confidenceMeta.className}`}>{confidenceMeta.label}</span>
           )}
         </div>
         <div className="identity-body">
-          {identity && (
-            <div className="identity-header">
-              <span className="identity-label">{identity.label}</span>
-              <p className="identity-description">{identity.description}</p>
-            </div>
-          )}
+          <div className="identity-header">
+            <span className="identity-label">{label || 'Gamer in progress'}</span>
+            {primary?.description && (
+              <p className="identity-description" style={{ opacity: 0.75, marginBottom: 6 }}>{primary.description}</p>
+            )}
+            {roast && (
+              <p className="identity-description">{roast}</p>
+            )}
+            {topGameName && (
+              <p className="identity-provisional-note" style={{ marginTop: 4 }}>
+                Built from your play — currently led by {topGameName}.
+              </p>
+            )}
+          </div>
           {provisionalNote && (
             <p className="identity-provisional-note">
               {provisionalNote}
@@ -1832,7 +1742,7 @@ export function IdentitySnapshotCard({ persona }) {
                   <button
                     type="button"
                     className="identity-tune-link"
-                    onClick={() => navigate('/startup-questionnaire')}
+                    onClick={() => navigate('/profile')}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -1855,31 +1765,25 @@ export function IdentitySnapshotCard({ persona }) {
             ))}
           </div>
           <div className="identity-metrics">
-            {persona.dominantMood && (
-              <div className="identity-metric">
-                <span className="identity-metric-label">Dominant Mood</span>
-                <span className="identity-metric-value">{persona.dominantMood}</span>
-              </div>
-            )}
-            {persona.dominantGenre && (
+            {topGenre && (
               <div className="identity-metric">
                 <span className="identity-metric-label">Top Genre</span>
-                <span className="identity-metric-value">{persona.dominantGenre}</span>
+                <span className="identity-metric-value">{topGenre}</span>
               </div>
             )}
-            {persona.preferredSessionBucket && (
+            {persona?.preferredSessionBucket && (
               <div className="identity-metric">
                 <span className="identity-metric-label">Typical Session</span>
                 <span className="identity-metric-value">{formatSessionStyle(persona.preferredSessionBucket)}</span>
               </div>
             )}
-            {persona.peakPlayWindow && (
+            {persona?.peakPlayWindow && (
               <div className="identity-metric">
                 <span className="identity-metric-label">Peak Window</span>
                 <span className="identity-metric-value">{persona.peakPlayWindow}</span>
               </div>
             )}
-            {persona.avgSessionLength > 0 && (
+            {persona?.avgSessionLength > 0 && (
               <div className="identity-metric">
                 <span className="identity-metric-label">Avg Session</span>
                 <span className="identity-metric-value">{persona.avgSessionLength}m</span>
@@ -1972,62 +1876,28 @@ export function BecauseYouAreSection({
   getGameCardClass
 }) {
   try {
-    const identity = React.useMemo(() => {
-      try { return GamingIdentity.getProfile(); } catch { return null; }
+    const publicIdentity = React.useMemo(() => {
+      try { return GamingPersonaService.getPublicIdentity(); } catch { return null; }
     }, []);
-    if (!identity?.identity) return null;
+    if (!publicIdentity?.label) return null;
 
-    const id = identity.identity;
-    if (!id.favoriteMood && !id.favoriteGenre && !id.archetype) return null;
-
-    const matchedGames = library.filter((game) => {
-      if (!game) return false;
-      const genres = Array.isArray(game.genres) ? game.genres : [];
-      const mood = game.mood || null;
-
-      if (id.favoriteMood && mood === id.favoriteMood) return true;
-      if (id.favoriteGenre && genres.includes(id.favoriteGenre)) return true;
-      if (id.archetype) {
-        const archetypeGenreMap = {
-          'RPG Connoisseur': ['RPG'],
-          'Strategy Sage': ['Strategy', 'Management'],
-          'Shooter Specialist': ['Shooter', 'FPS', 'Action'],
-          'Adventure Seeker': ['Adventure', 'Exploration'],
-          'Puzzle Master': ['Puzzle', 'Logic'],
-          'Indie Explorer': ['Indie'],
-          'Horror Enthusiast': ['Horror'],
-          'Sports Fanatic': ['Sports', 'Racing'],
-          'Sandbox Architect': ['Simulation', 'Sandbox', 'Survival'],
-          'MOBA Strategist': ['MOBA', 'Strategy'],
-          'Fighting Veteran': ['Fighting'],
-          'MMO Devotee': ['MMO', 'RPG'],
-          'Narrative Lover': ['Adventure', 'RPG', 'Visual Novel'],
-          'Completionist': ['RPG', 'Adventure', 'Platformer']
-        };
-        const affinities = archetypeGenreMap[id.archetype] || [];
-        if (affinities.some((ag) => genres.includes(ag))) return true;
-      }
-      return false;
-    }).slice(0, 2);
+    const matchedGames = (Array.isArray(library) ? library : [])
+      .filter((game) => game && GamingPersonaService.gameMatchesPersona(game, publicIdentity.primary?.id))
+      .sort((a, b) => (Number(b.time_played) || 0) - (Number(a.time_played) || 0))
+      .slice(0, 2);
 
     if (matchedGames.length === 0) return null;
-
-    const parts = [];
-    if (id.personality) parts.push(id.personality);
-    else if (id.archetype) parts.push(id.archetype);
-    else if (id.favoriteGenre) parts.push(`${id.favoriteGenre} specialist`);
-    else if (id.favoriteMood) parts.push(`${id.favoriteMood} seeker`);
-
-    const identityLabel = parts.join(' ');
 
     return (
       <div className="results-section">
         <div className="result-card because-you-are-card">
           <h3 className="result-title">
-            🎭 Because you&apos;re a {identityLabel}
+            {publicIdentity.becauseYouAre}
           </h3>
           <p style={{ color: 'var(--text)', opacity: 0.7, marginBottom: '16px', fontSize: '0.9rem' }}>
-            Games that fit your gaming identity.
+            {publicIdentity.roast
+              ? `${publicIdentity.roast} Here are library picks that fit that voice.`
+              : 'Library picks that match how you actually play.'}
           </p>
           <div className="game-grid">
             {matchedGames.map((game, index) => {

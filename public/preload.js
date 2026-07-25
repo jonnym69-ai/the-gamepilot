@@ -1,7 +1,11 @@
-const { ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
-// When contextIsolation is false, we can expose directly to window
-window.electronAPI = {
+const electronAPI = {
+  sessionStoreInitialize: (payload) => ipcRenderer.invoke('session-store-initialize', payload),
+  sessionStoreSaveActive: (sessions) => ipcRenderer.invoke('session-store-save-active', sessions),
+  sessionStoreSettle: (payload) => ipcRenderer.invoke('session-store-settle', payload),
+  sessionStoreReplaceHistory: (history) => ipcRenderer.invoke('session-store-replace-history', history),
+  sessionStoreClear: () => ipcRenderer.invoke('session-store-clear'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   launchGame: (game) => ipcRenderer.invoke('launch-game', game),
   scanGameLibraries: (options = {}) => ipcRenderer.invoke('scan-game-libraries', options),
@@ -55,3 +59,5 @@ window.electronAPI = {
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   restoreWindow: () => ipcRenderer.invoke('restore-window')
 };
+
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);

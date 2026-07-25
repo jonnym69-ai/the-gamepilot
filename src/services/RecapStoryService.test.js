@@ -23,7 +23,7 @@ describe('RecapStoryService', () => {
         userRating: 9
       }
     ],
-    moodCounts: { Escapist: 5, Focused: 2 },
+    moodCounts: { Competitive: 5, Focused: 2 },
     genreCounts: { RPG: 5, Simulation: 2 },
     longestSessionMinutes: 180,
     avgSessionMinutes: 90,
@@ -39,7 +39,7 @@ describe('RecapStoryService', () => {
 
   test('includes mood and genre stories', () => {
     const result = RecapStoryService.buildWeeklyStories(buildWeeklySnapshot(), 'Pilot');
-    expect(result.stories.some((story) => story.includes('Escapist'))).toBe(true);
+    expect(result.stories.some((story) => story.includes('Competitive'))).toBe(true);
     expect(result.stories.some((story) => story.includes('RPG'))).toBe(true);
   });
 

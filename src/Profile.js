@@ -7,6 +7,7 @@ import { useToast } from './components/Toast';
 import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
 import StorageService from './services/StorageService';
+import SessionRepository from './services/SessionRepository';
 import ProfileService, { SOCIAL_PLATFORMS } from './services/ProfileService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
@@ -58,7 +59,7 @@ const getSessionStartTime = (sessionEntry) => {
   return null;
 };
 
-const readActiveSessions = () => StorageService.get('activeGameSessions', {});
+const readActiveSessions = () => SessionRepository.getActiveSessions();
 
 const dispatchProfileUpdatedEvent = (detail = {}) => {
   if (typeof window === 'undefined') {
@@ -73,10 +74,11 @@ const dispatchProfileUpdatedEvent = (detail = {}) => {
 const Profile = ({ theme, library = [] }) => {
   const navigate = useNavigate();
   const { success, error } = useToast();
+  const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
   const [tempUsername, setTempUsername] = useState('');
   const personaEvolution = useMemo(
-    () => YearInReviewService.getLifetimePersonaEvolution(library),
-    [library]
+    () => YearInReviewService.getLifetimePersonaEvolution(safeLibrary),
+    [safeLibrary]
   );
   const [tempMessage, setTempMessage] = useState('Ready to find your perfect play?');
   const [tempBirthdayMonth, setTempBirthdayMonth] = useState('');
@@ -88,6 +90,8 @@ const Profile = ({ theme, library = [] }) => {
   const [showPersonaDebug, setShowPersonaDebug] = useState(false);
   const [personaVariant, setPersonaVariant] = useState('primary');
   const [personaWindow, setPersonaWindow] = useState('all'); // 'all' | 'recent'
+  const [showPersonaPicker, setShowPersonaPicker] = useState(false);
+  const [pinnedPersonaId, setPinnedPersonaId] = useState(() => GamingPersonaService.getPinnedPersonaId());
   const displayedPersona = useMemo(
     () => {
       if (!gamingIdentity) return null;
@@ -109,6 +113,16 @@ const Profile = ({ theme, library = [] }) => {
   );
   const handleRerollPersona = useCallback(() => {
     setPersonaSeed(Date.now() + Math.floor(Math.random() * 1000));
+  }, []);
+  const handlePinPersona = useCallback((id) => {
+    GamingPersonaService.setPinnedPersonaId(id);
+    setPinnedPersonaId(id);
+    setPersonaSeed(null);
+  }, []);
+  const handleUnpinPersona = useCallback(() => {
+    GamingPersonaService.clearPinnedPersona();
+    setPinnedPersonaId(null);
+    setPersonaSeed(null);
   }, []);
   const [gamingStory, setGamingStory] = useState(() => GamingStoryService.getCurrentStory());
   const [periodStory, setPeriodStory] = useState(() => GamingStoryService.getPeriodStory());
@@ -194,31 +208,47 @@ const Profile = ({ theme, library = [] }) => {
       return false;
     }
     const copied = await LocalShareService.copyImageToClipboard(blob);
-    success(copied ? 'Identity card copied to clipboard.' : 'Could not copy identity card.');
+    if (copied) {
+      success('Identity card copied to clipboard.');
+    } else {
+      error('Could not copy identity card.');
+    }
     return copied;
   }, [generateIdentityShareCardBlob, success, error]);
 
   const handleShareIdentityToChannel = useCallback(async (channel, text = null) => {
     const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
     const result = await LocalShareService.openShareIntent(channel, shareText);
-    success(result.success ? `Opened ${result.label}.` : result.message || 'Could not open share.');
-  }, [gamingIdentity, username, success]);
+    if (result.success) {
+      success(`Opened ${result.label}.`);
+    } else {
+      error(result.message || 'Could not open share.');
+    }
+  }, [error, gamingIdentity, username, success]);
 
   const handleShareIdentityToDiscord = useCallback(async (text = null) => {
     const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
     const blob = await generateIdentityShareCardBlob();
     const { filename } = LocalShareService.buildIdentityShareCardPackage(gamingIdentity, username);
     const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
-    success(result.success ? 'Discord opened with identity card.' : result.message || 'Could not share to Discord.');
-  }, [generateIdentityShareCardBlob, gamingIdentity, username, success]);
+    if (result.success) {
+      success('Discord opened with identity card.');
+    } else {
+      error(result.message || 'Could not share to Discord.');
+    }
+  }, [error, generateIdentityShareCardBlob, gamingIdentity, username, success]);
 
   const handleShareIdentityToMessenger = useCallback(async (text = null) => {
     const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildIdentityShareText(gamingIdentity, username));
     const blob = await generateIdentityShareCardBlob();
     const { filename } = LocalShareService.buildIdentityShareCardPackage(gamingIdentity, username);
     const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
-    success(result.success ? 'Messenger opened with identity card.' : result.message || 'Could not share to Messenger.');
-  }, [generateIdentityShareCardBlob, gamingIdentity, username, success]);
+    if (result.success) {
+      success('Messenger opened with identity card.');
+    } else {
+      error(result.message || 'Could not share to Messenger.');
+    }
+  }, [error, generateIdentityShareCardBlob, gamingIdentity, username, success]);
 
   const handleNativeShareIdentityCard = useCallback(async (text = null) => {
     const blob = await generateIdentityShareCardBlob();
@@ -234,9 +264,103 @@ const Profile = ({ theme, library = [] }) => {
       text: shareText,
       files: [file]
     });
-    success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+    if (result.success) {
+      success('Native share opened.');
+    } else {
+      error(result.message || 'Could not share.');
+    }
   }, [generateIdentityShareCardBlob, gamingIdentity, username, success, error]);
 
+  const handleCopyPersonaShareText = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildPersonaShareText(displayedPersona, username));
+    const copied = await LocalShareService.copyTextToClipboard(shareText);
+    if (copied) {
+      success('Persona share text copied to clipboard.');
+    } else {
+      error('Could not copy persona text.');
+    }
+    return copied;
+  }, [displayedPersona, username, success, error]);
+
+  const handleSharePersonaToChannel = useCallback(async (channel, text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildPersonaShareText(displayedPersona, username));
+    const result = await LocalShareService.openShareIntent(channel, shareText);
+    if (result.success) {
+      success(`Opened ${result.label}.`);
+    } else {
+      error(result.message || 'Could not open share.');
+    }
+  }, [displayedPersona, username, success, error])
+
+  const handleSharePersonaToDiscord = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildPersonaShareText(displayedPersona, username));
+    const blob = await generateIdentityShareCardBlob();
+    const { filename } = LocalShareService.buildPersonaShareCardPackage(displayedPersona, username);
+    const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
+    if (result.success) {
+      success('Discord opened with persona card.');
+    } else {
+      error(result.message || 'Could not share to Discord.');
+    }
+  }, [displayedPersona, username, generateIdentityShareCardBlob, success, error]);
+
+  const handleSharePersonaToMessenger = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildPersonaShareText(displayedPersona, username));
+    const blob = await generateIdentityShareCardBlob();
+    const { filename } = LocalShareService.buildPersonaShareCardPackage(displayedPersona, username);
+    const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
+    if (result.success) {
+      success('Messenger opened with persona card.');
+    } else {
+      error(result.message || 'Could not share to Messenger.');
+    }
+  }, [displayedPersona, username, generateIdentityShareCardBlob, success, error]);
+
+  const handleNativeSharePersona = useCallback(async (text = null) => {
+    const blob = await generateIdentityShareCardBlob();
+    if (!blob) {
+      error('Could not generate persona share card.');
+      return;
+    }
+    const { title, filename } = LocalShareService.buildPersonaShareCardPackage(displayedPersona, username);
+    const file = new File([blob], filename, { type: 'image/png' });
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildPersonaShareText(displayedPersona, username));
+    const result = await LocalShareService.shareWithNativeShare({
+      title,
+      text: shareText,
+      files: [file]
+    });
+    if (result.success) {
+      success('Native share opened.');
+    } else {
+      error(result.message || 'Could not share.');
+    }
+  }, [generateIdentityShareCardBlob, displayedPersona, username, success, error]);
+
+  const handleCopyStoryShareText = useCallback(async (text = null) => {
+    const storyToShare = periodStory || gamingStory;
+    if (!storyToShare) return false;
+    const shareText = text || LocalShareService.buildPeriodStoryShareText(storyToShare, storyToShare.period || 'weekly', username);
+    const copied = await LocalShareService.copyTextToClipboard(shareText);
+    if (copied) {
+      success('Story share text copied to clipboard.');
+    } else {
+      error('Could not copy story text.');
+    }
+    return copied;
+  }, [periodStory, gamingStory, username, success, error]);
+
+  const handleShareStoryToChannel = useCallback(async (channel, text = null) => {
+    const storyToShare = periodStory || gamingStory;
+    if (!storyToShare) return;
+    const shareText = text || LocalShareService.buildPeriodStoryShareText(storyToShare, storyToShare.period || 'weekly', username);
+    const result = await LocalShareService.openShareIntent(channel, shareText);
+    if (result.success) {
+      success(`Opened ${result.label}.`);
+    } else {
+      error(result.message || 'Could not open share.');
+    }
+  }, [periodStory, gamingStory, username, success, error]);
 
   // Load completed games from localStorage
   useEffect(() => {
@@ -429,7 +553,7 @@ const Profile = ({ theme, library = [] }) => {
 
         success(`Ended session for ${gameName}: ${sessionMinutes} minutes recorded`);
         delete sessions[gameName];
-        StorageService.set('activeGameSessions', sessions);
+        SessionRepository.saveActiveSessions(sessions);
       }
     }
   };
@@ -488,7 +612,7 @@ const Profile = ({ theme, library = [] }) => {
 
     const identity = GamingIdentity.getProfile();
     setGamingIdentity(identity);
-    setGamingStory(GamingStoryService.updateStory(library));
+    setGamingStory(GamingStoryService.updateStory(safeLibrary));
     // Generate the period story using the persona variant the user has selected
     // so the weekly/monthly recap reads with the same voice as the persona card.
     setPeriodStory(GamingStoryService.updatePeriodStory(GamingStoryService.getStoryFrequency(), activePersona));
@@ -500,7 +624,7 @@ const Profile = ({ theme, library = [] }) => {
     setXpBoost(AchievementTracker.getPatreonBoostProfile());
     refreshRewardCatalog();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [library, refreshRewardCatalog]);
+  }, [safeLibrary, refreshRewardCatalog]);
 
   // Re-voice the current period story when the user switches persona variant
   // or window, so the weekly/monthly recap stays aligned with the card.
@@ -531,24 +655,34 @@ const Profile = ({ theme, library = [] }) => {
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        error('Image size must be less than 2MB');
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      error('Choose a valid image file.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      error('Image size must be less than 2MB.');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target.result;
+      if (typeof result !== 'string' || !result.startsWith('data:image/')) {
+        error('That image could not be read.');
         return;
       }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target.result;
-        setProfilePic(result);
-        if (!isEditing) {
-          StorageService.setString('profilePic', result);
-          dispatchProfileUpdatedEvent({ profilePic: result });
-          success('Profile picture updated!');
-        }
-      };
-      reader.readAsDataURL(file);
-    }
+      setProfilePic(result);
+      if (!isEditing) {
+        StorageService.setString('profilePic', result);
+        dispatchProfileUpdatedEvent({ profilePic: result });
+        success('Profile picture updated.');
+      }
+    };
+    reader.onerror = () => error('That image could not be read.');
+    reader.readAsDataURL(file);
   };
 
   const handleSave = () => {
@@ -563,11 +697,19 @@ const Profile = ({ theme, library = [] }) => {
 
       // Persist birthday for annual XP bonus / seasonal events
       if (tempBirthdayMonth && tempBirthdayDay) {
-        const month = parseInt(tempBirthdayMonth, 10) - 1; // 0-indexed
+        const month = parseInt(tempBirthdayMonth, 10) - 1;
         const day = parseInt(tempBirthdayDay, 10);
-        if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
-          CalendarXPService.setBirthday(month, day);
+        const validationDate = new Date(2000, month, day);
+        const isValidBirthday = month >= 0
+          && month <= 11
+          && day >= 1
+          && validationDate.getMonth() === month
+          && validationDate.getDate() === day;
+        if (!isValidBirthday) {
+          error('Enter a valid birthday.');
+          return;
         }
+        CalendarXPService.setBirthday(month, day);
       }
 
       dispatchProfileUpdatedEvent({
@@ -633,8 +775,8 @@ const Profile = ({ theme, library = [] }) => {
   const getSectionClass = (index) => `profile-section profile-section-${index}`;
 
   const handleRetunePersonalization = useCallback(() => {
-    navigate('/startup-questionnaire');
-  }, [navigate]);
+    setIsEditingStartupPersonalization(true);
+  }, []);
 
   const handleStartupDraftToggle = useCallback((field, value) => {
     setStartupDraft((current) => {
@@ -731,6 +873,7 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="profile-picture-overlay">
                   <label htmlFor="profile-pic-upload" className="camera-button">
                     <Camera size={20} />
+                    <span className="sr-only">Choose profile picture</span>
                   </label>
                   <input
                     id="profile-pic-upload"
@@ -740,8 +883,8 @@ const Profile = ({ theme, library = [] }) => {
                     style={{ display: 'none' }}
                   />
                   {profilePic && (
-                    <button onClick={removeProfilePic} className="remove-pic-button">
-                      <X size={16} />
+                    <button type="button" onClick={removeProfilePic} className="remove-pic-button" aria-label="Remove profile picture">
+                      <X size={16} aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -976,6 +1119,20 @@ const Profile = ({ theme, library = [] }) => {
                         <Dices size={14} />
                         Reroll roast
                       </button>
+                      <ShareMenu
+                        imageAvailable={Boolean(displayedPersona)}
+                        onCopyText={handleCopyPersonaShareText}
+                        onCopyImage={handleCopyIdentityShareCard}
+                        onSaveImage={handleDownloadIdentityShareCard}
+                        onShareText={handleSharePersonaToChannel}
+                        onShareToDiscord={handleSharePersonaToDiscord}
+                        onShareToMessenger={handleSharePersonaToMessenger}
+                        onDownloadText={handleCopyPersonaShareText}
+                        onNativeShare={handleNativeSharePersona}
+                        buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildPersonaShareText(displayedPersona, username))}
+                        disabled={isCapturingIdentity}
+                        triggerLabel="Share Persona"
+                      />
                     </div>
                     {displayedPersona.secondaryPersona && (
                       <div className="gaming-persona-variant-switch">
@@ -1002,9 +1159,19 @@ const Profile = ({ theme, library = [] }) => {
                       return (
                         <div className="gaming-persona-primary">
                           <h3>{active?.label || 'Gamer in Progress'}</h3>
+                          {active?.description && (
+                            <p className="gaming-persona-description">{active.description}</p>
+                          )}
                           <p className="gaming-persona-roast">{roast}</p>
+                          {active?.evidence?.length > 0 && (
+                            <div className="gaming-persona-evidence" aria-label="Persona evidence">
+                              {active.evidence.map((item) => (
+                                <span key={item}>{item}</span>
+                              ))}
+                            </div>
+                          )}
                           {active?.basedOnGame && (
-                            <span className="gaming-persona-basis">Based on your time in {active.basedOnGame}</span>
+                            <span className="gaming-persona-basis">Built from your actual play history, led by {active.basedOnGame}</span>
                           )}
                         </div>
                       );
@@ -1040,6 +1207,75 @@ const Profile = ({ theme, library = [] }) => {
                           <strong>Archetype scores</strong>
                           <pre>{JSON.stringify(displayedPersona.allArchetypes, null, 2)}</pre>
                         </div>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                      <button
+                        onClick={() => setShowPersonaPicker((prev) => !prev)}
+                        className="gaming-persona-debug-toggle"
+                        type="button"
+                      >
+                        {showPersonaPicker ? 'Hide picker' : 'Choose persona'}
+                      </button>
+                      {pinnedPersonaId && (
+                        <button
+                          onClick={handleUnpinPersona}
+                          className="gaming-persona-debug-toggle"
+                          type="button"
+                          style={{ borderColor: 'var(--accent, #6c5ce7)', color: 'var(--accent, #6c5ce7)' }}
+                        >
+                          Unpin ({displayedPersona?.allArchetypes?.find((a) => a.id === pinnedPersonaId)?.label || 'Custom'})
+                        </button>
+                      )}
+                    </div>
+                    {pinnedPersonaId && (
+                      <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: '4px 0 0' }}>
+                        Pinned — this persona overrides auto-detection everywhere in GamePilot.
+                      </p>
+                    )}
+                    {showPersonaPicker && displayedPersona?.allArchetypes && (
+                      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <p style={{ fontSize: '0.75rem', opacity: 0.6, margin: '0 0 4px' }}>
+                          Pin a persona to override auto-detection. Scores show how well each fits your play.
+                        </p>
+                        {displayedPersona.allArchetypes
+                          .filter((a) => a.score > 0)
+                          .map((arch) => (
+                            <div
+                              key={arch.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 8,
+                                padding: '8px 12px',
+                                borderRadius: 8,
+                                border: `1px solid ${arch.id === pinnedPersonaId ? 'var(--accent, #6c5ce7)' : 'rgba(255,255,255,0.1)'}`,
+                                background: arch.id === pinnedPersonaId ? 'rgba(108,92,231,0.1)' : 'transparent',
+                              }}
+                            >
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{arch.label}</span>
+                                <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>Score: {arch.score}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => arch.id === pinnedPersonaId ? handleUnpinPersona() : handlePinPersona(arch.id)}
+                                style={{
+                                  padding: '4px 14px',
+                                  borderRadius: 6,
+                                  border: '1px solid rgba(255,255,255,0.15)',
+                                  background: arch.id === pinnedPersonaId ? 'var(--accent, #6c5ce7)' : 'transparent',
+                                  color: arch.id === pinnedPersonaId ? '#fff' : 'inherit',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {arch.id === pinnedPersonaId ? 'Pinned' : 'Pin'}
+                              </button>
+                            </div>
+                          ))}
                       </div>
                     )}
                   </div>
@@ -1107,8 +1343,9 @@ const Profile = ({ theme, library = [] }) => {
         {gamingIdentity && gamingIdentity.identity && (
           <CollapsibleSection
             title="Gaming Identity"
-            subtitle="Your playstyle summary and identity traits."
-            badge={gamingIdentity.identity.personality}
+            subtitle="Legacy playstyle summary — persona roast above is the real voice."
+            badge={gamingIdentity.gamingPersona?.primaryPersona?.label || gamingIdentity.identity.personality}
+            defaultOpen={false}
             icon={<User size={18} />}
             className={getSectionClass(1)}
           >
@@ -1174,7 +1411,7 @@ const Profile = ({ theme, library = [] }) => {
                     </div>
                     <div className="startup-personalization-actions">
                       <button type="button" className="startup-personalization-button" onClick={() => setIsEditingStartupPersonalization((current) => !current)}>{isEditingStartupPersonalization ? 'Close editor' : 'Edit inline'}</button>
-                      <button type="button" className="startup-personalization-button" onClick={handleRetunePersonalization}>Retune</button>
+                      <button type="button" className="startup-personalization-button" onClick={handleRetunePersonalization}>Tune</button>
                     </div>
                   </div>
                   {isEditingStartupPersonalization && (
@@ -1248,7 +1485,7 @@ const Profile = ({ theme, library = [] }) => {
                         </label>
                       </div>
                       <div className="startup-personalization-editor-actions">
-                        <button type="button" className="startup-personalization-button" onClick={handleSaveStartupPersonalization}>Save tuning</button>
+                        <button type="button" className="startup-personalization-button startup-personalization-save-btn" onClick={handleSaveStartupPersonalization}>Save tuning</button>
                         <button type="button" className="startup-personalization-button" onClick={handleCancelStartupPersonalizationEdit}>Cancel</button>
                       </div>
                     </div>
@@ -1297,11 +1534,33 @@ const Profile = ({ theme, library = [] }) => {
         {/* Gaming Story Section */}
         <CollapsibleSection
           title="Gaming Story"
-          subtitle="Your latest chapter, taste fingerprint, and identity story."
+          subtitle="Chapters built from the games and genres you actually play."
           badge={periodStory?.period || gamingStory?.chapter || 'Anchor'}
+          defaultOpen
+        
           icon={<BookOpen size={18} />}
           className={getSectionClass(14)}
         >
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <ShareMenu
+              imageAvailable={false}
+              onCopyText={handleCopyStoryShareText}
+              onCopyImage={null}
+              onSaveImage={null}
+              onShareText={handleShareStoryToChannel}
+              onShareToDiscord={null}
+              onShareToMessenger={null}
+              onDownloadText={handleCopyStoryShareText}
+              onNativeShare={null}
+              buildCaption={() => {
+                const storyToShare = periodStory || gamingStory;
+                if (!storyToShare) return '';
+                return LocalShareService.buildPeriodStoryShareText(storyToShare, storyToShare.period || 'weekly', username);
+              }}
+              disabled={false}
+              triggerLabel="Share Story"
+            />
+          </div>
           {/* Latest weekly chapter leads when available */}
           {GamingStoryService.getStoryFrequency() !== 'off' && periodStory ? (
             <GamingStoryPanel story={periodStory} />
@@ -1337,7 +1596,7 @@ const Profile = ({ theme, library = [] }) => {
         {/* Identity Rewards Section */}
         <CollapsibleSection
           title="Identity Rewards"
-          subtitle="Earned titles based on your playstyle and identity."
+          subtitle="Optional unlock titles — not the main identity."
           badge={GamingIdentity.getIdentityRewards().filter((r) => r.unlocked).length}
           icon={<Award size={18} />}
           className={getSectionClass(1)}
@@ -1363,11 +1622,11 @@ const Profile = ({ theme, library = [] }) => {
         {xpStats && (
           <CollapsibleSection
             title="Experience & Level"
-            subtitle="Your XP totals, level progress, and source breakdown."
+            subtitle="Background progression — optional noise."
             badge={`Lv ${xpStats.level}`}
+            defaultOpen={false}
             icon={<Star size={18} />}
             className={getSectionClass(2)}
-            defaultOpen
           >
             <div className="gaming-identity-card">
               <h3>Experience & Level</h3>
@@ -1570,7 +1829,7 @@ const Profile = ({ theme, library = [] }) => {
               <IdentityShareCard
                 profile={gamingIdentity}
                 evolution={personaEvolution}
-                library={library}
+                library={safeLibrary}
                 watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
               />
             )}

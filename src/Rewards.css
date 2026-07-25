@@ -116,6 +116,10 @@
   box-shadow: 0 14px 28px rgba(124, 58, 237, 0.14);
 }
 
+.rewards-section-btn:active:not(.active) {
+  transform: translateY(0) scale(0.98);
+}
+
 .rewards-section-label {
   flex: 1;
   min-width: 0;
@@ -817,16 +821,48 @@
 }
 
 @media (max-width: 600px) {
+  .rewards-page {
+    padding: 12px;
+  }
+
   .rewards-header {
     flex-direction: column;
     gap: 16px;
+    margin-bottom: 20px;
+    padding: 0;
   }
-  
+
+  .rewards-header h1 {
+    font-size: 1.6rem;
+  }
+
   .rewards-level-badge {
     align-items: flex-start;
   }
-  
+
   .rewards-card-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+  }
+
+  .rewards-sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .rewards-section-btn {
+    min-width: 140px;
+    padding: 12px 14px;
+  }
+
+  .rewards-content {
+    padding: 14px;
+  }
+
+  .rewards-roadmap-card {
+    padding: 16px;
+  }
+
+  .rewards-roadmap-list {
+    grid-template-columns: 1fr;
   }
 }

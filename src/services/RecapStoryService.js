@@ -139,7 +139,7 @@ const buildMoodStory = (periodSnapshot, period) => {
 
   const periodLabel = PERIOD_LABELS[period] || 'period';
   const vibeMap = {
-    Escapist: 'chasing expansive worlds',
+    Competitive: 'chasing ranked glory',
     Relaxed: 'keeping things cozy',
     Social: 'hanging with friends',
     Focused: 'zeroing in',

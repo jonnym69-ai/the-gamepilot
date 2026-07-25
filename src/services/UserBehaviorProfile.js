@@ -24,9 +24,9 @@ const MOOD_PERSONA_IDENTITIES = {
     label: 'Precision Strategist',
     description: 'Finds flow in tight puzzles, tactical battles, and deliberate pacing.'
   },
-  Escapist: {
-    label: 'Storyseeker',
-    description: 'Loses hours to expansive narratives and atmospheric journeys.'
+  Competitive: {
+    label: 'Arena Challenger',
+    description: 'Thrives on ranked ladders, high-stakes matches, and competitive glory.'
   },
 };
 
@@ -53,7 +53,6 @@ const GENRE_PERSONA_IDENTITIES = {
   Exploration: { label: 'Cartographer', description: 'Maps the uncharted and collects every hidden corner.' },
   MMO: { label: 'Realm Regular', description: 'Commits to shared worlds and the communities inside them.' },
   'Story-driven': { label: 'Narrative Voyager', description: 'Follows branching stories and savours every dialogue beat.' },
-  Competitive: { label: 'Arena Challenger', description: 'Thrives on ranked ladders and high-stakes matches.' },
   Multiplayer: { label: 'Online Operative', description: 'Lives in shared lobbies and persistent online worlds.' },
   Casual: { label: 'Easygoing Explorer', description: 'Drops in for light, low-pressure sessions any time.' },
   Party: { label: 'Party Catalyst', description: 'Brings the couch-co-op chaos and group laughs.' },
@@ -63,33 +62,32 @@ const GENRE_PERSONA_IDENTITIES = {
 
 // Genre -> mood lean, used to infer a provisional mood from a scanned library
 const GENRE_MOOD_MAP = Object.freeze({
-  RPG: 'Escapist',
-  Adventure: 'Escapist',
-  Action: 'Escapist',
-  Horror: 'Escapist',
-  Survival: 'Escapist',
-  Exploration: 'Escapist',
-  'Story-driven': 'Escapist',
-  'Visual Novel': 'Escapist',
+  RPG: 'Focused',
+  Adventure: 'Creative',
+  Action: 'Focused',
+  Horror: 'Focused',
+  Survival: 'Creative',
+  Exploration: 'Creative',
+  'Story-driven': 'Creative',
+  'Visual Novel': 'Creative',
   MMO: 'Social',
   Multiplayer: 'Social',
-  Competitive: 'Social',
-  MOBA: 'Social',
-  Shooter: 'Social',
-  FPS: 'Social',
-  Fighting: 'Social',
-  Sports: 'Social',
-  Racing: 'Social',
+  MOBA: 'Competitive',
+  Shooter: 'Competitive',
+  FPS: 'Competitive',
+  Fighting: 'Competitive',
+  Sports: 'Competitive',
+  Racing: 'Competitive',
   Party: 'Social',
   Strategy: 'Focused',
-  Puzzle: 'Focused',
-  Management: 'Focused',
-  Platformer: 'Focused',
+  Puzzle: 'Relaxed',
+  Management: 'Relaxed',
+  Platformer: 'Relaxed',
   Stealth: 'Focused',
   Roguelike: 'Focused',
-  Simulation: 'Creative',
+  Simulation: 'Relaxed',
   Sandbox: 'Creative',
-  Indie: 'Relaxed',
+  Indie: 'Creative',
   Casual: 'Relaxed',
 });
 

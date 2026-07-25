@@ -1,11 +1,12 @@
 import PCGamingWikiService from './PCGamingWikiService';
 import StorageService from './StorageService';
+import SessionRepository from './SessionRepository';
 
 const HISTORY_KEY = 'saveBackupHistoryV1';
 const MAX_HISTORY_ENTRIES = 100;
 
 const isGameActive = (game = {}) => {
-  const sessions = StorageService.get('activeGameSessions', {});
+  const sessions = SessionRepository.getActiveSessions();
   if (!sessions || typeof sessions !== 'object') return false;
   const names = [game.name, game.title].filter(Boolean).map((value) => String(value).toLowerCase());
   return Object.keys(sessions).some((name) => names.includes(String(name).toLowerCase()));

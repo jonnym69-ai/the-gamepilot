@@ -16,21 +16,29 @@ export function buildIdentityShareData(profile = {}, evolution = null) {
   const gamingPersona = GamingPersonaService.getPersona();
   const primary = gamingPersona?.primaryPersona;
 
+  const personaLabel = primary?.label || persona?.personaIdentity?.label || identity.personality || 'Uncharted Pilot';
+  const personaRoast = gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || identity.description || 'Your gaming identity is still forming.';
+  const evidence = Array.isArray(primary?.evidence) ? primary.evidence : [];
+  const subTraits = Array.isArray(gamingPersona?.subTraits) ? gamingPersona.subTraits : [];
+
   return {
     username: safeProfile.username || 'Pilot',
     title: safeProfile.title || 'Newbie',
     level: safeProfile.level || 1,
-    identityLabel: identity.personality || primary?.label || persona?.personaIdentity?.label || 'Uncharted Pilot',
-    identityDescription: identity.description || gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || 'Your gaming identity is still forming.',
+    identityLabel: personaLabel,
+    identityDescription: personaRoast,
     playStyle: identity.playStyle || 'Balanced',
     favoriteMood: identity.favoriteMood || persona?.dominantMood || '—',
-    favoriteGenre: identity.favoriteGenre || persona?.dominantGenre || '—',
+    favoriteGenre: identity.favoriteGenre || gamingPersona?.signals?.dominantGenre || persona?.dominantGenre || '—',
     totalPlaytime: stats.totalPlayTime || 0,
     sessions: stats.totalSessions || 0,
     librarySize: stats.librarySize || 0,
     platformDiversity: stats.platformDiversity || 0,
     achievementUnlocked: stats.achievementProgress?.unlocked || 0,
     signature: identity.signature || safeProfile.signature || null,
+    evidence,
+    subTraits,
+    basedOnGame: primary?.basedOnGame || null,
     evolution: evolution
       ? {
         summary: evolution.summary || 'Your play profile stayed steady.',
@@ -144,6 +152,30 @@ export function IdentityShareCard({ profile = {}, evolution = null, library = []
             <strong>{data.achievementUnlocked}</strong>
           </div>
         </div>
+
+        {data.subTraits && data.subTraits.length > 0 && (
+          <div className="identity-share-card-traits">
+            {data.subTraits.slice(0, 5).map((trait) => (
+              <span key={trait.id || trait.label} className="identity-share-card-trait-chip">
+                {trait.label || trait.id}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {data.evidence && data.evidence.length > 0 && (
+          <div className="identity-share-card-evidence">
+            {data.evidence.slice(0, 3).map((item, index) => (
+              <span key={`evidence-${index}`} className="identity-share-card-evidence-item">
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {data.basedOnGame && (
+          <p className="identity-share-card-basis">Built from real play history, led by {data.basedOnGame}</p>
+        )}
 
         {data.evolution && (
           <div className="identity-share-card-evolution">

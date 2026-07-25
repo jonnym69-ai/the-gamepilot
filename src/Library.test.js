@@ -111,7 +111,7 @@ const mockLibrary = [
     name: 'The Witcher 3: Wild Hunt',
     platform: 'Steam',
     genres: ['RPG', 'Adventure'],
-    mood: 'Escapist',
+    mood: 'Competitive',
     time_played: 120
   },
   {
@@ -204,7 +204,7 @@ describe('Library Component', () => {
     const onScanLibrary = jest.fn();
     await renderLibrary({ onScanLibrary });
 
-    fireEvent.click(screen.getByText('🔄 Scan Library'));
+    fireEvent.click(screen.getByRole('button', { name: '🔄 Scan' }));
     expect(onScanLibrary).toHaveBeenCalledTimes(1);
   });
 });

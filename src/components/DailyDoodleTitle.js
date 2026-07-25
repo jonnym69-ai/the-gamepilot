@@ -185,7 +185,6 @@ const THEME_DOODLE_MAP = {
   'sunset-paradise': 'sunset-brush',
   sporty: 'pixel-parade',
   competitive: 'pixel-parade',
-  '16-bit-retro': 'pixel-parade',
   '8-bit-retro': 'pixel-parade',
   'retro-pipeline': 'pixel-parade',
   candy: 'pixel-parade',
@@ -200,7 +199,6 @@ const THEME_DOODLE_MAP = {
   cyberpunk: 'circuit-glow',
   'cyberpunk-2077': 'circuit-glow',
   holographic: 'synthwave-runway',
-  escapist: 'nebula-script',
   midnight: 'nebula-script',
   ocean: 'nebula-script',
   galaxy: 'nebula-script',
@@ -223,14 +221,12 @@ const THEME_TRANSITION_MAP = {
   sunset: 'tilt-drop',
   sporty: 'slide-right',
   competitive: 'slide-right',
-  focused: 'slide-up',
   tactical: 'slide-up',
   energetic: 'tilt-drop',
   'neon-pulse': 'tilt-drop',
   cyberpunk: 'slide-up',
   'cyberpunk-2077': 'slide-up',
   holographic: 'zoom-pop',
-  escapist: 'fade-glow',
   midnight: 'fade-glow',
   galaxy: 'fade-glow',
   'cosmic-nebula': 'fade-glow',
@@ -498,14 +494,16 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
         <div className="doodle-accent">{doodle.accent}</div>
         <div className="doodle-left">
           <div className="doodle-logo-row">
-            <div className={`doodle-logo logo-animation-${resolvedLogoAnimation}`} aria-hidden="true">
-              <div className="doodle-logo-ring" />
-              <div className="doodle-logo-particles">
-                <span className="doodle-logo-particle particle-a" />
-                <span className="doodle-logo-particle particle-b" />
-                <span className="doodle-logo-particle particle-c" />
+            <div className="doodle-logo-bounds">
+              <div key={resolvedLogoAnimation} className={`doodle-logo logo-animation-${resolvedLogoAnimation}`} aria-hidden="true">
+                <div className="doodle-logo-ring" />
+                <div className="doodle-logo-particles">
+                  <span className="doodle-logo-particle particle-a" />
+                  <span className="doodle-logo-particle particle-b" />
+                  <span className="doodle-logo-particle particle-c" />
+                </div>
+                <img src={avatarSrc} alt={avatarAlt} loading="lazy" />
               </div>
-              <img src={avatarSrc} alt={avatarAlt} loading="lazy" />
             </div>
             <div className="doodle-wordmark">
               {letters}

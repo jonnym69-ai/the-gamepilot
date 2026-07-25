@@ -1,13 +1,11 @@
-import StorageService from './StorageService';
-
-const ACTIVE_GAME_SESSIONS_KEY = 'activeGameSessions';
+import SessionRepository from './SessionRepository';
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
 export const readActiveGameSessions = () => {
   try {
-    const parsed = StorageService.get(ACTIVE_GAME_SESSIONS_KEY, {});
-    return isPlainObject(parsed) ? parsed : {};
+    const sessions = SessionRepository.getActiveSessions();
+    return isPlainObject(sessions) ? sessions : {};
   } catch (error) {
     console.error('Error reading active sessions:', error);
     return {};
@@ -81,12 +79,10 @@ export const normalizeAndPersistActiveSessions = () => {
     return acc;
   }, {});
 
-  StorageService.set(ACTIVE_GAME_SESSIONS_KEY, normalizedSessions);
+  SessionRepository.saveActiveSessions(normalizedSessions);
   return normalizedSessions;
 };
 
 export const persistActiveGameSessions = (sessions) => {
-  StorageService.set(ACTIVE_GAME_SESSIONS_KEY, sessions);
+  SessionRepository.saveActiveSessions(sessions);
 };
-
-export { ACTIVE_GAME_SESSIONS_KEY };

@@ -17,13 +17,14 @@ import {
   getMostRecentlyPlayedGame
 } from './services/LibraryDataService';
 import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
+import SessionRepository from './services/SessionRepository';
 import { PlaytimeEnrichmentService } from './services/PlaytimeEnrichmentService';
 import { SteamGenreEnrichmentService } from './services/SteamGenreEnrichmentService';
 import { ToastProvider, useToast } from './components/Toast';
 import LevelUpToast from './components/LevelUpToast';
 import WeeklySummaryToast from './components/WeeklySummaryToast';
 import CaptainLogModal from './components/CaptainLogModal';
-import { DailyEngagementService } from './services/DailyEngagementService';
+// Phase 0: DailyEngagementService kept available via other modules; not auto-toasted here.
 import { AchievementTracker } from './AchievementSystem';
 import { EasterEggService } from './services/EasterEggService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
@@ -107,15 +108,12 @@ const incrementPlaytimeBucket = (bucket, key, minutes) => ({
 const CONTROLLER_NAV_ROUTES = [
   '/',
   '/library',
+  '/recommendations',
   '/stats',
   '/profile',
-  '/settings',
-  '/gaming-links',
-  '/donate',
-  '/library-intelligence',
-  '/habits',
   '/year-in-review',
-  '/themes'
+  '/settings',
+  '/feedback'
 ];
 
 
@@ -160,21 +158,38 @@ function AppContent() {
   const [isOnline, setIsOnline] = useState(OfflineManager.isOnline);
   const [syncStatus, setSyncStatus] = useState(OfflineManager.getSyncStatus());
   const [activeSessions, setActiveSessions] = useState(() => PlaytimeAutoLogger.getActiveSessions());
-  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [hasLoadedLibrary, setHasLoadedLibrary] = useState(false);
+  // Phase 0: noise/modal UI silenced (components retained behind false mounts).
+  const showLevelUp = false;
+  const showWeeklySummary = false;
+  const weeklyStats = null;
+  const captainLogPrompt = null;
   const [currentLevel, setCurrentLevel] = useState(1);
-  const [showWeeklySummary, setShowWeeklySummary] = useState(false);
-  const [weeklyStats, setWeeklyStats] = useState(null);
   const [previousLevel, setPreviousLevel] = useState(1);
   const [stillPlayingPrompt, setStillPlayingPrompt] = useState(null);
   const [stillPlayingDeadlines, setStillPlayingDeadlines] = useState({});
-  const [captainLogPrompt, setCaptainLogPrompt] = useState(null);
+  const setShowLevelUp = () => {};
+  const setShowWeeklySummary = () => {};
+  const setCaptainLogPrompt = () => {};
+  void setShowLevelUp;
+  void setShowWeeklySummary;
+  void setCaptainLogPrompt;
   const [gamingStory, setGamingStory] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(() => StorageService.getString('minimizeOnLaunch') === 'true');
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
   // Memoization caches for performance
   const playtimeStatsCache = useRef(new Map());
+  const sessionRecoveryCompleted = useRef(false);
+  const launchesInProgress = useRef(new Set());
+  const [sessionStorageReady, setSessionStorageReady] = useState(false);
+
+  useEffect(() => {
+    SessionRepository.initialize()
+      .then(() => setSessionStorageReady(true))
+      .catch(() => setSessionStorageReady(true));
+  }, []);
 
   useEffect(() => {
     playtimeStatsCache.current.clear();
@@ -323,87 +338,18 @@ function AppContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Check for level-up and weekly summary on app load
+  // Phase 0: keep XP/calendar systems alive quietly; do not surface toast noise.
   useEffect(() => {
-    const checkLevelUp = () => {
-      const xpStats = AchievementTracker.getXPStats();
-      const newLevel = xpStats.level || 1;
-      if (newLevel > previousLevel) {
-        setCurrentLevel(newLevel);
-        setShowLevelUp(true);
-      }
-      setPreviousLevel(newLevel);
-    };
+    const xpStats = AchievementTracker.getXPStats();
+    const newLevel = xpStats.level || 1;
+    setCurrentLevel(newLevel);
+    setPreviousLevel(newLevel);
 
-    const checkWeeklySummary = () => {
-      const dayOfWeek = new Date().getDay();
-      const lastSummary = localStorage.getItem('lastWeeklySummary');
-      const today = new Date().toISOString().split('T')[0];
-
-      if (dayOfWeek === 0 && lastSummary !== today) {
-        const stats = DailyEngagementService.getWeeklySummary();
-        const timeStats = AchievementTracker.getTimeStats();
-        
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        const twoWeeksAgo = new Date();
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
-        let hoursThisWeek = 0;
-        let hoursLastWeek = 0;
-        let gamesPlayed = new Set();
-
-        Object.entries(timeStats.daily || {}).forEach(([date, minutes]) => {
-          if (date >= weekAgo.toISOString().split('T')[0]) {
-            hoursThisWeek += minutes;
-          } else if (date >= twoWeeksAgo.toISOString().split('T')[0]) {
-            hoursLastWeek += minutes;
-          }
-        });
-
-        library.forEach(game => {
-          if (game.last_played) {
-            const lastPlayed = new Date(game.last_played);
-            if (lastPlayed >= weekAgo) {
-              gamesPlayed.add(game.name);
-            }
-          }
-        });
-
-        const topGame = library.length > 0
-          ? [...library].sort((a, b) => (b.time_played || 0) - (a.time_played || 0))[0]?.name
-          : null;
-
-        setWeeklyStats({
-          hoursThisWeek: Math.round(hoursThisWeek / 60),
-          hoursLastWeek: Math.round(hoursLastWeek / 60),
-          gamesPlayed: gamesPlayed.size,
-          topGame,
-          streak: stats?.currentStreak || 0
-        });
-        setShowWeeklySummary(true);
-        localStorage.setItem('lastWeeklySummary', today);
-      }
-    };
-
-    checkLevelUp();
-    checkWeeklySummary();
-
-    // Auto-check calendar rewards on startup
+    // Calendar rewards can still process in the background without UI fanfare.
     try {
-      const birthdayReward = CalendarXPService.processBirthdayReward();
-      if (birthdayReward.success) {
-        // Birthday reward auto-claimed; XP already granted via AchievementTracker
-        console.log('[CalendarXP]', birthdayReward.message);
-      }
-      const anniversaryReward = CalendarXPService.checkAnniversaryReward();
-      if (anniversaryReward.success) {
-        console.log('[CalendarXP]', anniversaryReward.message);
-      }
-      const christmasReward = CalendarXPService.processChristmasReward();
-      if (christmasReward.success) {
-        console.log('[CalendarXP]', christmasReward.message);
-      }
+      CalendarXPService.processBirthdayReward();
+      CalendarXPService.checkAnniversaryReward();
+      CalendarXPService.processChristmasReward();
     } catch (e) {
       console.warn('Calendar auto-reward check failed:', e);
     }
@@ -499,6 +445,8 @@ function AppContent() {
         WishlistService.removeOwnedItems(normalizedLibrary);
       } catch (error) {
         console.error('Error loading saved library:', error);
+      } finally {
+        setHasLoadedLibrary(true);
       }
     })();
   }, []);
@@ -562,13 +510,23 @@ function AppContent() {
         detail: { scanReport, gameCount: curatedMerged.length }
       }));
 
+      const scanErrors = Number(scanReport?.summary?.errorPlatformCount || 0);
+      if (curatedMerged.length === 0) {
+        toastError('Scan completed, but no games were found. Open the scan report for launcher details.');
+      } else if (scanErrors > 0) {
+        toastError(`Found ${curatedMerged.length} games, but ${scanErrors} launcher scan${scanErrors === 1 ? '' : 's'} reported an error.`);
+      } else {
+        toastSuccess(`Library scan complete: ${curatedMerged.length} games found.`);
+      }
+
     } catch (err) {
       console.error(' Error during scan:', err);
       console.error(' Detailed error stack:', err.stack);
+      toastError(`Library scan failed: ${err?.message || 'Unknown scanner error'}`);
     } finally {
       setLoading(false);
     }
-  }, [library, saveLibrary, assignMoodToGame, getFallbackLibrary]);
+  }, [library, saveLibrary, assignMoodToGame, getFallbackLibrary, toastError, toastSuccess]);
 
   const handleLibraryUpdated = useCallback((updatedLibrary) => {
     const normalizedLibrary = normalizeLibraryData(updatedLibrary);
@@ -576,12 +534,12 @@ function AppContent() {
     saveLibrary(normalizedLibrary);
   }, [saveLibrary]);
 
-  const handleEndSession = useCallback((gameName) => {
+  const handleEndSession = useCallback((gameName, sessionMetadata = {}) => {
     if (!gameName) {
       return null;
     }
 
-    const sessionResult = PlaytimeAutoLogger.endSession(gameName);
+    const sessionResult = PlaytimeAutoLogger.endSession(gameName, sessionMetadata);
     if (!sessionResult) {
       return null;
     }
@@ -632,7 +590,6 @@ function AppContent() {
         setLastPlayedGame(mostRecentlyPlayedGame);
       }
 
-      PlaytimeAutoLogger.autoSyncOnSessionEnd(gameName, updatedLibrary);
       return updatedLibrary;
     });
 
@@ -668,18 +625,37 @@ function AppContent() {
     };
   }, [handleEndSession]);
 
-  // Startup recovery: end any stale active sessions left over from a previous
-  // unclean exit (crash, kill, or system shutdown while GamePilot was running).
+  // Startup recovery: settle interrupted sessions at their last confirmed heartbeat.
   useEffect(() => {
-    const staleSessions = PlaytimeAutoLogger.getActiveSessions();
-    const staleNames = Object.keys(staleSessions);
-    if (staleNames.length > 0) {
-      console.log('[SessionRecovery] Ending stale sessions from previous run:', staleNames);
-      PlaytimeAutoLogger.endAllSessions();
-      // Refresh local state so the UI doesn't show phantom active sessions
-      setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+    if (!hasLoadedLibrary || !sessionStorageReady || sessionRecoveryCompleted.current) {
+      return;
     }
-  }, []);
+
+    sessionRecoveryCompleted.current = true;
+    const interruptedSessions = PlaytimeAutoLogger.getActiveSessions();
+    Object.entries(interruptedSessions).forEach(([gameName, session]) => {
+      const recoveredEndTime = session.lastConfirmedAt || session.startTime;
+      handleEndSession(gameName, {
+        recoveredSession: true,
+        recoveredEndTime,
+        endTimeOverride: recoveredEndTime
+      });
+    });
+    setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+  }, [handleEndSession, hasLoadedLibrary, sessionStorageReady]);
+
+  useEffect(() => {
+    if (!hasLoadedLibrary) {
+      return undefined;
+    }
+
+    const heartbeat = () => {
+      const confirmedSessions = PlaytimeAutoLogger.confirmActiveSessions();
+      setActiveSessions(confirmedSessions);
+    };
+    const intervalId = window.setInterval(heartbeat, 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, [hasLoadedLibrary]);
 
   // Guard window close while an active session is running.
   // In Electron this shows a native confirmation dialog.
@@ -748,10 +724,12 @@ function AppContent() {
     if (!window.electronAPI?.onSystemShutdown) return undefined;
     const unsubscribe = window.electronAPI.onSystemShutdown(() => {
       console.log('[Session] System shutdown imminent — ending all active sessions');
-      PlaytimeAutoLogger.endAllSessions();
+      Object.keys(PlaytimeAutoLogger.getActiveSessions()).forEach((gameName) => {
+        handleEndSession(gameName, { shutdownSession: true });
+      });
     });
     return unsubscribe;
-  }, []);
+  }, [handleEndSession]);
 
   useEffect(() => {
     const handleSessionEnded = (event) => {
@@ -762,16 +740,7 @@ function AppContent() {
       const mins = minutes % 60;
       const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
       toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
-      // Prompt Captain's Log for sessions >= 5 minutes
-      if (minutes >= 5) {
-        setCaptainLogPrompt({
-          gameName: detail.gameName,
-          gameId: detail.gameId,
-          sessionTimestamp: detail.endTime,
-          sessionMood: detail.mood,
-          sessionMinutes: minutes
-        });
-      }
+      // Phase 0: Captain's Log stays in code but is not prompted after sessions.
     };
 
     window.addEventListener('gamepilot:session-ended', handleSessionEnded);
@@ -861,7 +830,28 @@ function AppContent() {
     setStillPlayingPrompt(null);
   }, [handleEndSession, stillPlayingPrompt]);
 
+  useEffect(() => {
+    if (!stillPlayingPrompt) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') handleStillPlayingContinue();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [handleStillPlayingContinue, stillPlayingPrompt]);
+
   const handleLaunchGame = useCallback(async (game) => {
+    const gameKey = String(game?.appid || game?.name || '').trim();
+    if (!gameKey) {
+      toastError('This game is missing the information needed to launch it.');
+      return;
+    }
+    if (launchesInProgress.current.has(gameKey)) {
+      toastInfo(`${game.name || 'This game'} is already being launched.`);
+      return;
+    }
+
+    launchesInProgress.current.add(gameKey);
     try {
       const electronAvailable = typeof window.electronAPI !== 'undefined';
       if (!electronAvailable) {
@@ -888,6 +878,7 @@ function AppContent() {
         toastError(result.message);
       } else {
         setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+        toastSuccess(`${game.name} launched. Session tracking is active.`);
 
         const seasonalReward = SeasonalRewardService.trackGamePlay(game);
         if (seasonalReward) {
@@ -902,8 +893,10 @@ function AppContent() {
     } catch (error) {
       console.error('Launch error:', error);
       toastError(`Failed to launch ${game.name}: ${error.message}`);
+    } finally {
+      launchesInProgress.current.delete(gameKey);
     }
-  }, [handleEndSession, library, saveLibrary, toastError, minimizeOnLaunch]);
+  }, [handleEndSession, library, minimizeOnLaunch, saveLibrary, toastError, toastInfo, toastSuccess]);
 
   // Listen for launch requests from CommandPalette / QuickLaunchHotbar
   useEffect(() => {
@@ -1055,26 +1048,33 @@ function AppContent() {
           onContinue={() => setGamingStory(null)}
         />
       )}
-      <LevelUpToast 
-        show={showLevelUp} 
-        level={currentLevel} 
-        xpTotal={AchievementTracker.getXPStats().totalXP}
-        onClose={() => setShowLevelUp(false)}
-      />
-      <WeeklySummaryToast
-        show={showWeeklySummary}
-        stats={weeklyStats}
-        onClose={() => setShowWeeklySummary(false)}
-      />
-      <CaptainLogModal
-        isOpen={!!captainLogPrompt}
-        onClose={() => setCaptainLogPrompt(null)}
-        gameName={captainLogPrompt?.gameName}
-        gameId={captainLogPrompt?.gameId}
-        sessionTimestamp={captainLogPrompt?.sessionTimestamp}
-        sessionMood={captainLogPrompt?.sessionMood}
-        sessionMinutes={captainLogPrompt?.sessionMinutes}
-      />
+      {/* Phase 0: XP / weekly summary / captain log UI silenced (code retained). */}
+      {false && (
+        <LevelUpToast
+          show={showLevelUp}
+          level={currentLevel}
+          xpTotal={AchievementTracker.getXPStats().totalXP}
+          onClose={() => setShowLevelUp(false)}
+        />
+      )}
+      {false && (
+        <WeeklySummaryToast
+          show={showWeeklySummary}
+          stats={weeklyStats}
+          onClose={() => setShowWeeklySummary(false)}
+        />
+      )}
+      {false && (
+        <CaptainLogModal
+          isOpen={!!captainLogPrompt}
+          onClose={() => setCaptainLogPrompt(null)}
+          gameName={captainLogPrompt?.gameName}
+          gameId={captainLogPrompt?.gameId}
+          sessionTimestamp={captainLogPrompt?.sessionTimestamp}
+          sessionMood={captainLogPrompt?.sessionMood}
+          sessionMinutes={captainLogPrompt?.sessionMinutes}
+        />
+      )}
       {loading && (
         <div className="scan-overlay" role="status" aria-live="polite" aria-label="Scanning local game libraries">
           <div className="scan-overlay-card">
@@ -1098,9 +1098,17 @@ function AppContent() {
       )}
       {stillPlayingPrompt?.gameName && activeSessions?.[stillPlayingPrompt.gameName] && (
         <div className="modal-overlay" onClick={handleStillPlayingContinue}>
-          <div className="modal-content" onClick={(event) => event.stopPropagation()} style={{ maxWidth: '520px', textAlign: 'center' }}>
-            <h2 className={`modal-title ${theme}`}>Are you still playing?</h2>
-            <p style={{ marginBottom: '18px', lineHeight: 1.6 }}>
+          <div
+            className="modal-content"
+            onClick={(event) => event.stopPropagation()}
+            style={{ maxWidth: '520px', textAlign: 'center' }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="still-playing-title"
+            aria-describedby="still-playing-description"
+          >
+            <h2 id="still-playing-title" className={`modal-title ${theme}`}>Are you still playing?</h2>
+            <p id="still-playing-description" style={{ marginBottom: '18px', lineHeight: 1.6 }}>
               <strong>{stillPlayingPrompt.gameName}</strong> has been active for 15 minutes.
             </p>
             <p style={{ marginBottom: '24px', opacity: 0.8, lineHeight: 1.6 }}>
@@ -1114,7 +1122,13 @@ function AppContent() {
         </div>
       )}
       <ErrorBoundary>
-      <Suspense fallback={<div className="page-loading-fallback" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-secondary)' }}>Loading...</div>}>
+      <Suspense fallback={(
+        <div className="page-loading-fallback" role="status" aria-live="polite">
+          <span className="page-loading-mark" aria-hidden="true">GP</span>
+          <span className="page-loading-spinner" aria-hidden="true" />
+          <span className="page-loading-label">Preparing your next view</span>
+        </div>
+      )}>
       <Routes>
         <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
         <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />

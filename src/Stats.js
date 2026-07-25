@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
@@ -28,8 +28,9 @@ import GamingPersonaService from './services/GamingPersonaService';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
-  if (!timestamp) return 'never';
-  const diffMs = Date.now() - timestamp;
+  const parsedTimestamp = Number(timestamp);
+  if (!parsedTimestamp || !Number.isFinite(parsedTimestamp)) return 'never';
+  const diffMs = Math.max(0, Date.now() - parsedTimestamp);
   const diffSeconds = Math.floor(diffMs / 1000);
   if (diffSeconds < 5) return 'just now';
   if (diffSeconds < 60) return `${diffSeconds}s ago`;
@@ -43,7 +44,8 @@ const formatRelativeTime = (timestamp) => {
 };
 
 function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 'USD' }) {
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
+  const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
   const [progressionData, setProgressionData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [libraryStats, setLibraryStats] = useState(null);
@@ -54,6 +56,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const [isCapturingHabits, setIsCapturingHabits] = useState(false);
   const personaCardRef = useRef(null);
   const [isCapturingPersona, setIsCapturingPersona] = useState(false);
+  const refreshTimeoutsRef = useRef(new Set());
 
   const calculateProgressionData = useCallback((dashboardSnapshot = null) => {
     const unlockedAchievements = [];
@@ -96,7 +99,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     };
   }, []);
 
-  const calculateDashboardData = useCallback(() => StatsAggregationService.getDashboardData(library), [library]);
+  const calculateDashboardData = useCallback(() => StatsAggregationService.getDashboardData(safeLibrary), [safeLibrary]);
 
   const calculateLibraryStats = useCallback(() => {
     let storedPrices = {};
@@ -106,7 +109,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       storedPrices = {};
     }
 
-    const totalValue = library.reduce((total, game) => {
+    const totalValue = safeLibrary.reduce((total, game) => {
       let gamePrice = 0;
       
       if (game.priceNumeric) {
@@ -126,21 +129,21 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       return total + gamePrice;
     }, 0);
 
-    const pricedGames = Array.isArray(library) ? library.filter(game => {
+    const pricedGames = safeLibrary.filter(game => {
       if (game.priceNumeric || game.price) return true;
       return storedPrices[game.appid]?.priceNumeric;
-    }).length : 0;
+    }).length;
 
     // Platform distribution
     const platformCounts = {};
-    library.forEach(game => {
+    safeLibrary.forEach(game => {
       const platform = game.platform || 'Unknown';
       platformCounts[platform] = (platformCounts[platform] || 0) + 1;
     });
 
     // Mood distribution (derive from genres if stored mood is missing)
     const moodCounts = {};
-    library.forEach(game => {
+    safeLibrary.forEach(game => {
       const mood = game.mood || getMoodForGame(game.genres);
       if (!mood) return;
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
@@ -148,7 +151,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
     // Genre distribution (CORRECTED SYNTAX BLOCK)
     const genreCounts = {};
-    library.forEach(game => {
+    safeLibrary.forEach(game => {
       if (game.genres && Array.isArray(game.genres)) {
         game.genres.forEach(genre => {
           if (genre && genre !== 'Unknown') {
@@ -168,7 +171,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       genreCounts[a] > genreCounts[b] ? a : b, 'Unknown');
 
     return {
-      totalGames: library.length,
+      totalGames: safeLibrary.length,
       totalValue,
       pricedGames,
       formattedValue: formatPrice(totalValue, currency),
@@ -182,7 +185,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       uniqueMoods: Object.keys(moodCounts).length,
       uniqueGenres: Object.keys(genreCounts).length
     };
-  }, [library, currency]);
+  }, [safeLibrary, currency]);
 
   const calculatePersonaData = useCallback((dashboardSnapshot = null) => {
     const baseSnapshot = UserBehaviorProfile.getPersonaSnapshot();
@@ -233,21 +236,27 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   }, []);
 
   const refreshStats = useCallback(() => {
-    const dashboardSnapshot = calculateDashboardData();
-    const achievementSnapshot = calculateProgressionData(dashboardSnapshot);
-    const personaSnapshot = calculatePersonaData(dashboardSnapshot);
-    const librarySnapshot = calculateLibraryStats();
+    try {
+      const dashboardSnapshot = calculateDashboardData();
+      const achievementSnapshot = calculateProgressionData(dashboardSnapshot);
+      const personaSnapshot = calculatePersonaData(dashboardSnapshot);
+      const librarySnapshot = calculateLibraryStats();
 
-    setProgressionData(achievementSnapshot);
-    setDashboardData(dashboardSnapshot);
-    setPersonaData(personaSnapshot);
-    setLibraryStats(librarySnapshot);
-    setLastRefresh(Date.now());
+      setProgressionData(achievementSnapshot);
+      setDashboardData(dashboardSnapshot);
+      setPersonaData(personaSnapshot);
+      setLibraryStats(librarySnapshot);
+      setLastRefresh(Date.now());
+    } catch (refreshError) {
+      console.error('Stats refresh failed:', refreshError);
+      showError('Stats could not be refreshed. Your saved data is unchanged.');
+    }
   }, [
     calculateProgressionData,
     calculateDashboardData,
     calculatePersonaData,
-    calculateLibraryStats
+    calculateLibraryStats,
+    showError
   ]);
 
   const scheduleRefresh = useCallback((delay = 0) => {
@@ -256,17 +265,22 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       return () => {};
     }
 
-    let timeoutId = null;
-    timeoutId = window.setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
+      refreshTimeoutsRef.current.delete(timeoutId);
       refreshStats();
     }, delay);
+    refreshTimeoutsRef.current.add(timeoutId);
 
     return () => {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
+      window.clearTimeout(timeoutId);
+      refreshTimeoutsRef.current.delete(timeoutId);
     };
   }, [refreshStats]);
+
+  useEffect(() => () => {
+    refreshTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    refreshTimeoutsRef.current.clear();
+  }, []);
 
   useEffect(() => {
     refreshStats();
@@ -287,14 +301,12 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
   // Listen for game session events to trigger immediate refresh
   useEffect(() => {
-    const cleanupCallbacks = [];
-
     const handleGameSession = () => {
-      cleanupCallbacks.push(scheduleRefresh(1000));
+      scheduleRefresh(1000);
     };
 
     const handleRollingAchievementsUpdate = () => {
-      cleanupCallbacks.push(scheduleRefresh(500));
+      scheduleRefresh(500);
     };
 
     window.addEventListener('gameSessionEnded', handleGameSession);
@@ -305,7 +317,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       window.removeEventListener('gameSessionEnded', handleGameSession);
       window.removeEventListener('gameSessionStarted', handleGameSession);
       window.removeEventListener('rollingAchievementsUpdated', handleRollingAchievementsUpdate);
-      cleanupCallbacks.forEach((cleanup) => cleanup());
     };
   }, [scheduleRefresh]);
 
@@ -367,18 +378,18 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </div>
 
-        {library.length > 0 && (
+        {safeLibrary.length > 0 && (
           <div className="stats-summary-grid">
             <div className="stats-summary-card">
               <span className="stats-summary-label">Games</span>
-              <strong className="stats-summary-value">{library.length}</strong>
+              <strong className="stats-summary-value">{safeLibrary.length}</strong>
               <span className="stats-summary-detail">{libraryStats?.uniquePlatforms || 0} platforms</span>
             </div>
             <div className="stats-summary-card">
               <span className="stats-summary-label">Total Playtime</span>
               <strong className="stats-summary-value">
                 {(() => {
-                  const totalHours = library.reduce((sum, g) => sum + (g.time_played || 0), 0) / 60;
+                  const totalHours = safeLibrary.reduce((sum, g) => sum + (g.time_played || 0), 0) / 60;
                   if (totalHours >= 1000) return `${(totalHours / 1000).toFixed(1)}k`;
                   return `${Math.round(totalHours)}`;
                 })()}h
@@ -389,27 +400,27 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               <span className="stats-summary-label">Completed</span>
               <strong className="stats-summary-value">
                 {(() => {
-                  const completed = library.filter((g) => g.completed || g.completionStatus === 'completed').length;
-                  const rate = library.length ? Math.round((completed / library.length) * 100) : 0;
+                  const completed = safeLibrary.filter((g) => g.completed || g.completionStatus === 'completed').length;
+                  const rate = safeLibrary.length ? Math.round((completed / safeLibrary.length) * 100) : 0;
                   return `${rate}%`;
                 })()}
               </strong>
               <span className="stats-summary-detail">
-                {library.filter((g) => g.completed || g.completionStatus === 'completed').length} games done
+                {safeLibrary.filter((g) => g.completed || g.completionStatus === 'completed').length} games done
               </span>
             </div>
             <div className="stats-summary-card">
               <span className="stats-summary-label">Top Platform</span>
               <strong className="stats-summary-value">{libraryStats?.mostCommonPlatform || '—'}</strong>
               <span className="stats-summary-detail">
-                {libraryStats?.mostCommonPlatform ? `${Math.round((libraryStats.platformCounts[libraryStats.mostCommonPlatform] / library.length) * 100)}% of library` : ''}
+                {libraryStats?.mostCommonPlatform ? `${Math.round((libraryStats.platformCounts[libraryStats.mostCommonPlatform] / safeLibrary.length) * 100)}% of library` : ''}
               </span>
             </div>
             <div className="stats-summary-card">
               <span className="stats-summary-label">Top Genre</span>
               <strong className="stats-summary-value">{libraryStats?.mostCommonGenre || '—'}</strong>
               <span className="stats-summary-detail">
-                {libraryStats?.mostCommonGenre ? `${Math.round((libraryStats.genreCounts[libraryStats.mostCommonGenre] / library.length) * 100)}% of library` : ''}
+                {libraryStats?.mostCommonGenre ? `${Math.round((libraryStats.genreCounts[libraryStats.mostCommonGenre] / safeLibrary.length) * 100)}% of library` : ''}
               </span>
             </div>
             <div className="stats-summary-card">
@@ -428,7 +439,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           icon={<Calendar size={18} />}
           className="stats-section stats-hero-heatmap"
         >
-          <PlaytimeHeatmap library={library} />
+          <PlaytimeHeatmap library={safeLibrary} />
         </CollapsibleSection>
 
         <CollapsibleSection
@@ -437,7 +448,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           icon={<BarChart3 size={18} />}
           className="stats-section"
         >
-          <TimeOfDayHeatmap library={library} />
+          <TimeOfDayHeatmap library={safeLibrary} />
         </CollapsibleSection>
 
         <CollapsibleSection
@@ -447,7 +458,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           className="stats-section"
           defaultOpen
         >
-          <StatsDrivenStory library={library} libraryStats={libraryStats} />
+          <StatsDrivenStory library={safeLibrary} libraryStats={libraryStats} />
         </CollapsibleSection>
 
         <CollapsibleSection
@@ -1042,7 +1053,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           )}
         </CollapsibleSection>
 
-        {library.length === 0 && habitProgress.totalSessions === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
+        {safeLibrary.length === 0 && habitProgress.totalSessions === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
           <EmptyState
             icon="📈"
             title={getEmptyLibraryFallback('Stats').message}

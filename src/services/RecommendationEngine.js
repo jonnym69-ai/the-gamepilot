@@ -10,6 +10,8 @@ import { GamingIdentity } from '../GamingIdentity';
 import { RecommendationTuningService } from './RecommendationTuningService';
 import { GameRatingService } from './GameRatingService';
 import StorageService from './StorageService';
+import { GamingPersonaService, PERSONA_AFFINITY_GENRES } from './GamingPersonaService';
+const PERSONA_GENRE_MAP = PERSONA_AFFINITY_GENRES;
 
 const PERFECT_PLAY_TIME_FILTERS = Object.freeze({
   quick: {
@@ -212,29 +214,20 @@ export class RecommendationEngine {
           }
         }
 
-        // Memeish gaming persona affinity bonus
-        if (id.gamingPersona?.primaryPersona) {
-          const personaGenreMap = {
-            backlog_archaeologist: ['Adventure', 'RPG', 'Strategy', 'Puzzle'],
-            credit_roll_dodger: ['Roguelike', 'Sandbox', 'Multiplayer', 'Survival', 'Arcade'],
-            frame_data_masochist: ['Action', 'Fighting', 'Roguelike', 'Platformer', 'Metroidvania', 'Bullet Hell', 'Souls-like'],
-            spreadsheet_tactician: ['Strategy', 'Simulation', 'Management', 'Grand Strategy', '4X', 'City Builder', 'Tycoon'],
-            story_diver: ['RPG', 'Adventure', 'Visual Novel', 'Interactive Fiction', 'Story Rich'],
-            comfort_replay_junkie: ['Cozy', 'Casual', 'Simulation', 'Life Sim', 'Farming Sim'],
-            night_owl: ['Atmospheric', 'Immersive Sim', 'RPG', 'Adventure'],
-            indie_curator: ['Indie'],
-            franchise_loyalist: ['Action-Adventure', 'RPG', 'Action'],
-            retro_futurist: ['Retro', 'Pixel Graphics', 'Arcade', 'Classic'],
-            bleeding_edge: ['Early Access'],
-            completionist: ['RPG', 'Adventure', 'Platformer', 'Metroidvania', 'Collectathon'],
-            roamer: ['Open World', 'Exploration', 'Sandbox', 'Adventure'],
-            social_drop_in: ['Multiplayer', 'Co-op', 'Online Co-Op', 'Party'],
-            jank_enjoyer: ['Early Access', 'Indie', 'Experimental']
-          };
-          const affinityGenres = personaGenreMap[id.gamingPersona.primaryPersona.id] || [];
-          const matchCount = gameGenres.filter((g) => affinityGenres.includes(g)).length;
+        // Roast-persona affinity bonus (canonical map shared with Home / explainers)
+        const personaId = id.gamingPersona?.primaryPersona?.id
+          || (() => { try { return GamingPersonaService.getPrimaryPersona()?.id; } catch { return null; } })();
+        if (personaId) {
+          const affinityGenres = PERSONA_GENRE_MAP[personaId] || GamingPersonaService.getAffinityGenres(personaId);
+          const normalizedGameGenres = gameGenres.map((g) => String(g).toLowerCase());
+          const matchCount = affinityGenres.filter((ag) => {
+            const needle = String(ag).toLowerCase();
+            return normalizedGameGenres.some((g) => g === needle || g.includes(needle) || needle.includes(g));
+          }).length;
           if (matchCount > 0) {
-            score += Math.min(w.gamingPersonaMatchBonus || 14, matchCount * 7);
+            score += Math.min(w.gamingPersonaMatchBonus || 16, matchCount * 8);
+          } else if (GamingPersonaService.gameMatchesPersona(game, personaId)) {
+            score += Math.round((w.gamingPersonaMatchBonus || 16) * 0.5);
           }
         }
       }

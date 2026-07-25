@@ -92,37 +92,6 @@
     "requiredTier": "basic"
   },
   {
-    "id": "escapist",
-    "name": "Escapist",
-    "description": "Cosmic escape theme with dark backgrounds and soft cyan text for comfortable viewing.",
-    "palette": {
-      "background": "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
-      "surface": "#2d2d2d",
-      "primary": "#ff5722",
-      "secondary": "#ff8a65",
-      "text": "#a0f0ff",
-      "accent": "#00e5ff",
-      "card": "rgba(45, 45, 45, 0.9)",
-      "hover": "rgba(255, 87, 34, 0.2)"
-    },
-    "effects": {
-      "vignette": 0.08,
-      "grain": 0.03,
-      "bloom": 0.1,
-      "shadow": "0 4px 20px rgba(255, 87, 34, 0.3)"
-    },
-    "animation": {
-      "enabled": true,
-      "type": "starfield",
-      "speed": "slow",
-      "intensity": 0.6,
-      "particleCount": 80,
-      "color": "rgba(0, 229, 255, 0.7)"
-    },
-    "isPremium": true,
-    "requiredTier": "basic"
-  },
-  {
     "id": "tactical",
     "name": "Tactical",
     "description": "Military precision theme with digital camouflage and bright orange targeting systems.",

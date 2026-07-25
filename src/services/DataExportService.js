@@ -1,5 +1,6 @@
 // DataExportService.js - Export and backup library, achievements, and game data
 import StorageService from './StorageService';
+import { DataManager } from '../DataManager';
 
 const toDateString = (date) => {
   if (!date) return null;
@@ -113,31 +114,11 @@ export class DataExportService {
     }
   }
 
-  // Export all data (library + achievements + game launch data)
+  // Export all user data as a comprehensive backup using DataManager as the source of truth.
   static exportAllDataAsJSON(library, filename = null) {
     try {
-      const unlockedAchievements = StorageService.get('unlockedAchievements', []);
-      const gameLaunchData = StorageService.get('gameLaunchData', {});
-      const featureTracking = StorageService.get('featureTracking', {});
-      const rollingAchievements = StorageService.get('rollingAchievements', {});
-
-      const exportData = {
-        exportDate: new Date().toISOString(),
-        version: '1.0',
-        library: {
-          gameCount: library.length,
-          games: library
-        },
-        achievements: {
-          unlockedCount: unlockedAchievements.length,
-          achievements: unlockedAchievements
-        },
-        gameLaunchData: gameLaunchData,
-        featureTracking: featureTracking,
-        rollingAchievements: rollingAchievements
-      };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const userData = DataManager.exportUserData();
+      const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' });
       this.downloadFile(blob, filename || `gamepilot-backup-${new Date().toISOString().split('T')[0]}.json`);
       return true;
     } catch (error) {
@@ -187,35 +168,25 @@ export class DataExportService {
     });
   }
 
-  // Import all data from backup JSON
+  // Import all data from backup JSON using DataManager as the source of truth.
   static importAllDataFromJSON(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data = JSON.parse(e.target.result);
-          
-          // Import achievements
-          if (data.achievements && data.achievements.achievements) {
-            StorageService.set('unlockedAchievements', data.achievements.achievements);
+          const raw = JSON.parse(e.target.result);
+          const result = DataManager.importUserData(raw);
+
+          if (!result.success) {
+            reject(new Error(result.message));
+            return;
           }
 
-          // Import game launch data
-          if (data.gameLaunchData) {
-            StorageService.set('gameLaunchData', data.gameLaunchData);
-          }
-
-          // Import feature tracking
-          if (data.featureTracking) {
-            StorageService.set('featureTracking', data.featureTracking);
-          }
-
-          // Import rolling achievements
-          if (data.rollingAchievements) {
-            StorageService.set('rollingAchievements', data.rollingAchievements);
-          }
-
-          const games = data.library && data.library.games ? data.library.games : [];
+          // Preserve backward-compatible return value for existing callers.
+          const payload = raw.data || raw;
+          const games = Array.isArray(payload.gameLibrary)
+            ? payload.gameLibrary
+            : (payload.library?.games || []);
           resolve(games);
         } catch (error) {
           reject(new Error('Invalid backup file format'));

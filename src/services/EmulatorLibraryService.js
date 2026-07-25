@@ -134,7 +134,7 @@ export class EmulatorLibraryService {
       iconUrl: '',
       icon: '',
       genres,
-      mood: getMoodForGame(genres) || 'Escapist',
+      mood: getMoodForGame(genres) || 'Competitive',
       ...createTrackedDefaults()
     };
   }

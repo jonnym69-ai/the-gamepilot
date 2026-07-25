@@ -1634,10 +1634,6 @@ export class ProgressionUnlockService {
           unlocked: getUnlockedRewardCount(themes),
           total: themes.length
         },
-        audio: {
-          unlocked: 0,
-          total: 0
-        },
         cosmetics: {
           unlocked: getUnlockedRewardCount(frames) + getUnlockedRewardCount(banners) + getUnlockedRewardCount(titles) + getUnlockedRewardCount(recommendationPacks) + getUnlockedRewardCount(gamingLinks) + getUnlockedRewardCount(gamingLinksLayouts),
           total: frames.length + banners.length + titles.length + recommendationPacks.length + gamingLinks.length + gamingLinksLayouts.length

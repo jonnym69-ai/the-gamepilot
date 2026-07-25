@@ -26,161 +26,208 @@ const PERIOD_LABELS = {
 
 const GENRE_TEMPLATES = {
   'Survival': {
-    lead: 'surviving the wild',
-    hook: 'You spent {period} surviving the wild'
+    lead: 'scraping by in the wild',
+    hook: 'You spent {period} scraping by in the wild',
+    arc: 'a survival arc where every session is another night you almost didn\'t make it'
   },
   'Survival Horror': {
-    lead: 'surviving the apocalypse',
-    hook: 'You spent {period} surviving the apocalypse'
+    lead: 'walking straight into the nightmare',
+    hook: 'You spent {period} walking straight into the nightmare',
+    arc: 'a horror arc built on bad decisions and worse hallways'
   },
   'Horror': {
-    lead: 'surviving the apocalypse',
-    hook: 'You spent {period} surviving the apocalypse'
+    lead: 'letting the dread cook',
+    hook: 'You spent {period} letting the dread cook',
+    arc: 'a horror arc where the jump scares are optional and the tension is not'
   },
   'Zombie': {
-    lead: 'surviving the zombie apocalypse',
-    hook: 'You spent {period} surviving the zombie apocalypse'
+    lead: 'outlasting the undead',
+    hook: 'You spent {period} outlasting the undead',
+    arc: 'a zombie-season arc: loot, bite marks, and one more safehouse'
   },
   'Sports': {
-    lead: 'living the pro sports life',
-    hook: 'You spent {period} living the pro sports life'
+    lead: 'living the pro sports grind',
+    hook: 'You spent {period} living the pro sports grind',
+    arc: 'a sports-year arc of seasons, rivalries, and highlight-reel delusions'
   },
   'Racing': {
     lead: 'chasing the checkered flag',
-    hook: 'You spent {period} chasing the checkered flag'
+    hook: 'You spent {period} chasing the checkered flag',
+    arc: 'a racing arc measured in apexes, restarts, and pure tunnel vision'
   },
   'RPG': {
-    lead: 'on an epic quest',
-    hook: 'You spent {period} on an epic quest'
+    lead: 'living inside someone else\'s legend',
+    hook: 'You spent {period} living inside someone else\'s legend',
+    arc: 'an RPG arc stuffed with side quests you swore you wouldn\'t do'
   },
   'Action RPG': {
-    lead: 'on an epic quest',
-    hook: 'You spent {period} on an epic quest'
+    lead: 'swinging through a whole campaign',
+    hook: 'You spent {period} swinging through a whole campaign',
+    arc: 'an action-RPG arc of bosses, builds, and "one more dungeon"'
   },
   'Strategy': {
-    lead: 'building empires',
-    hook: 'You spent {period} building empires'
+    lead: 'moving pieces until the map bends',
+    hook: 'You spent {period} moving pieces until the map bends',
+    arc: 'a strategy arc where the fun is the plan and the plan is a spreadsheet'
   },
   'Turn-Based Strategy': {
-    lead: 'building empires',
-    hook: 'You spent {period} building empires'
+    lead: 'winning wars one turn at a time',
+    hook: 'You spent {period} winning wars one turn at a time',
+    arc: 'a turn-based empire arc with zero urgency and maximum smugness'
   },
   'Simulation': {
-    lead: 'crafting worlds',
-    hook: 'You spent {period} crafting worlds'
+    lead: 'running a second life in systems',
+    hook: 'You spent {period} running a second life in systems',
+    arc: 'a sim arc where the menus are the gameplay and you are fine with that'
   },
   'Shooter': {
-    lead: 'in the thick of the action',
-    hook: 'You spent {period} in the thick of the action'
+    lead: 'living in the crosshairs',
+    hook: 'You spent {period} living in the crosshairs',
+    arc: 'a shooter arc of loadouts, rematches, and "that should have hit"'
   },
   'FPS': {
-    lead: 'in the thick of the action',
-    hook: 'You spent {period} in the thick of the action'
+    lead: 'living in the crosshairs',
+    hook: 'You spent {period} living in the crosshairs',
+    arc: 'an FPS arc measured in headshots and stubborn playlists'
   },
   'Adventure': {
-    lead: 'exploring unknown worlds',
-    hook: 'You spent {period} exploring unknown worlds'
+    lead: 'chasing the next unmarked trail',
+    hook: 'You spent {period} chasing the next unmarked trail',
+    arc: 'an adventure arc of maps, mysteries, and "I\'ll sleep after this area"'
   },
   'Open World': {
-    lead: 'exploring unknown worlds',
-    hook: 'You spent {period} exploring unknown worlds'
+    lead: 'getting beautifully distracted',
+    hook: 'You spent {period} getting beautifully distracted',
+    arc: 'an open-world arc where the main quest is a polite suggestion'
   },
   'Fighting': {
     lead: 'settling scores in the arena',
-    hook: 'You spent {period} settling scores in the arena'
+    hook: 'You spent {period} settling scores in the arena',
+    arc: 'a fighting-game arc of lab time, salt, and one clean combo'
   },
   'Puzzle': {
-    lead: 'bending your brain',
-    hook: 'You spent {period} bending your brain'
+    lead: 'staring at problems until they blink',
+    hook: 'You spent {period} staring at problems until they blink',
+    arc: 'a puzzle arc powered by stubbornness and quiet victory noises'
   },
   'Platformer': {
-    lead: 'leaping through danger',
-    hook: 'You spent {period} leaping through danger'
+    lead: 'timing jumps like a religion',
+    hook: 'You spent {period} timing jumps like a religion',
+    arc: 'a platformer arc of near-misses, retries, and pure flow'
   },
   'Indie': {
-    lead: 'championing the underdogs',
-    hook: 'You spent {period} championing indie underdogs'
+    lead: 'championing the weird little masterpieces',
+    hook: 'You spent {period} championing the weird little masterpieces',
+    arc: 'an indie arc of oddball gems nobody asked you to finish — but you did'
   },
   'Roguelike': {
-    lead: 'dying and trying again',
-    hook: 'You spent {period} dying, learning, and running it back'
+    lead: 'dying, learning, and running it back',
+    hook: 'You spent {period} dying, learning, and running it back',
+    arc: 'a roguelike arc where every death is tuition'
   },
   'Roguelite': {
-    lead: 'dying and trying again',
-    hook: 'You spent {period} dying, learning, and running it back'
+    lead: 'dying, learning, and running it back',
+    hook: 'You spent {period} dying, learning, and running it back',
+    arc: 'a roguelite arc of meta-progress and "this run is the one"'
   },
   'Metroidvania': {
     lead: 'unlocking the map one ability at a time',
-    hook: 'You spent {period} unlocking the map one ability at a time'
+    hook: 'You spent {period} unlocking the map one ability at a time',
+    arc: 'a metroidvania arc of locked doors and smug return trips'
   },
   'Sandbox': {
-    lead: 'building your own fun',
-    hook: 'You spent {period} building your own fun'
+    lead: 'building your own fun from scratch',
+    hook: 'You spent {period} building your own fun from scratch',
+    arc: 'a sandbox arc with no win condition except "look what I made"'
   },
   'Crafting': {
-    lead: 'gathering, building, repeating',
-    hook: 'You spent {period} gathering, building, and repeating'
+    lead: 'gathering, crafting, and justifying one more stack',
+    hook: 'You spent {period} gathering, crafting, and justifying one more stack',
+    arc: 'a crafting arc powered by inventory Tetris'
   },
   'MMO': {
     lead: 'grinding with the crowd',
-    hook: 'You spent {period} grinding alongside thousands of others'
+    hook: 'You spent {period} grinding alongside thousands of others',
+    arc: 'an MMO arc of raids, resets, and friends who are also a second job'
   },
   'MMORPG': {
     lead: 'grinding with the crowd',
-    hook: 'You spent {period} grinding alongside thousands of others'
+    hook: 'You spent {period} grinding alongside thousands of others',
+    arc: 'an MMORPG arc written in weekly lockouts'
   },
   'MOBA': {
     lead: 'chasing the perfect teamfight',
-    hook: 'You spent {period} chasing the perfect teamfight'
+    hook: 'You spent {period} chasing the perfect teamfight',
+    arc: 'a MOBA arc of drafts, tilt, and one beautiful objective steal'
   },
   'Battle Royale': {
     lead: 'dropping in for the last-one-standing rush',
-    hook: 'You spent {period} chasing that last-one-standing rush'
+    hook: 'You spent {period} chasing that last-one-standing rush',
+    arc: 'a battle-royale arc of hot drops and cold loot'
   },
   'Multiplayer': {
     lead: 'squadding up',
-    hook: 'You spent {period} squadding up with the crew'
+    hook: 'You spent {period} squadding up with the crew',
+    arc: 'a multiplayer arc that only makes sense with the right people online'
   },
   'Co-op': {
     lead: 'watching each other\'s backs',
-    hook: 'You spent {period} watching each other\'s backs'
+    hook: 'You spent {period} watching each other\'s backs',
+    arc: 'a co-op arc of shared wins and shared bad calls'
   },
   'Stealth': {
-    lead: 'staying in the shadows',
-    hook: 'You spent {period} staying in the shadows'
+    lead: 'staying in the shadows on purpose',
+    hook: 'You spent {period} staying in the shadows on purpose',
+    arc: 'a stealth arc where alarms are personal failures'
   },
   'Card Game': {
     lead: 'building the perfect deck',
-    hook: 'You spent {period} building the perfect deck'
+    hook: 'You spent {period} building the perfect deck',
+    arc: 'a card-game arc of tech choices and "one more ranked"'
   },
   'Deckbuilder': {
     lead: 'building the perfect deck',
-    hook: 'You spent {period} building the perfect deck'
+    hook: 'You spent {period} building the perfect deck',
+    arc: 'a deckbuilder arc of synergies you will explain to nobody'
   },
   'Fighting Game': {
     lead: 'settling scores in the arena',
-    hook: 'You spent {period} settling scores in the arena'
+    hook: 'You spent {period} settling scores in the arena',
+    arc: 'a fighting-game arc of lab time, salt, and one clean combo'
   },
   'Action-Adventure': {
-    lead: 'exploring unknown worlds',
-    hook: 'You spent {period} exploring unknown worlds'
+    lead: 'chasing set pieces and secrets',
+    hook: 'You spent {period} chasing set pieces and secrets',
+    arc: 'an action-adventure arc of big moments and bigger detours'
   },
   'Sci-Fi': {
     lead: 'chasing the stars',
-    hook: 'You spent {period} chasing the stars'
+    hook: 'You spent {period} chasing the stars',
+    arc: 'a sci-fi arc of strange tech and stranger choices'
   },
   'Fantasy': {
     lead: 'living out a legend',
-    hook: 'You spent {period} living out a fantasy legend'
+    hook: 'You spent {period} living out a fantasy legend',
+    arc: 'a fantasy arc of swords, spells, and lore rabbit holes'
+  },
+  'Souls-like': {
+    lead: 'dying with purpose',
+    hook: 'You spent {period} dying with purpose',
+    arc: 'a souls-like arc of patience, pattern memory, and pure spite'
+  },
+  'Visual Novel': {
+    lead: 'choosing every dialogue branch like it matters',
+    hook: 'You spent {period} choosing every dialogue branch like it matters',
+    arc: 'a visual-novel arc of feelings, flags, and bad endings on purpose'
   }
 };
 
 // Rotating fallbacks so unmapped genres don't all read identically.
 const DEFAULT_TEMPLATES = [
-  { lead: 'deep in the game', hook: 'You spent {period} deep in the game' },
-  { lead: 'locked in', hook: 'You spent {period} locked in' },
-  { lead: 'chasing the next session', hook: 'You spent {period} chasing the next session' },
-  { lead: 'lost in the grind', hook: 'You spent {period} lost in the grind' }
+  { lead: 'deep in the session', hook: 'You spent {period} deep in the session', arc: 'a pure playtime arc with no neat genre label' },
+  { lead: 'locked in', hook: 'You spent {period} locked in', arc: 'a locked-in arc where the clock stopped mattering' },
+  { lead: 'chasing the next session', hook: 'You spent {period} chasing the next session', arc: 'a habit arc of short hops that somehow added up' },
+  { lead: 'lost in the grind', hook: 'You spent {period} lost in the grind', arc: 'a grind arc that only makes sense if you were there' }
 ];
 
 const getTemplateForGenre = (genre) => {
@@ -188,9 +235,35 @@ const getTemplateForGenre = (genre) => {
   const normalized = String(genre).trim();
   const exact = GENRE_TEMPLATES[normalized];
   if (exact) return exact;
+  const lower = normalized.toLowerCase();
+  const fuzzyKey = Object.keys(GENRE_TEMPLATES).find((key) => {
+    const k = key.toLowerCase();
+    return lower.includes(k) || k.includes(lower);
+  });
+  if (fuzzyKey) return GENRE_TEMPLATES[fuzzyKey];
   // Rotate fallback by genre name so unmapped genres don't all read the same.
   const hash = normalized.split('').reduce((h, c) => h + c.charCodeAt(0), 0);
   return DEFAULT_TEMPLATES[hash % DEFAULT_TEMPLATES.length];
+};
+
+const buildGenreArcLine = (genreFingerprint = [], topGames = []) => {
+  const topGenres = (genreFingerprint || [])
+    .map((entry) => entry?.genre || entry)
+    .filter(Boolean)
+    .slice(0, 3);
+  if (topGenres.length === 0 && topGames[0]?.genre) {
+    topGenres.push(topGames[0].genre);
+  }
+  if (topGenres.length === 0) return '';
+
+  const primary = getTemplateForGenre(topGenres[0]);
+  if (topGenres.length === 1) {
+    return `This chapter reads like ${primary.arc || `a ${topGenres[0]} arc`}.`;
+  }
+  if (topGenres.length === 2) {
+    return `This chapter reads like ${primary.arc || `a ${topGenres[0]} arc`}, with a side plot of ${topGenres[1]}.`;
+  }
+  return `This chapter reads like ${primary.arc || `a ${topGenres[0]} arc`}, drifting through ${topGenres[1]} and ${topGenres[2]} along the way.`;
 };
 
 const getPeriodTopGames = (periodData, limit = 3) => {
@@ -199,10 +272,10 @@ const getPeriodTopGames = (periodData, limit = 3) => {
   }
 
   return periodData.topGames
-    .filter((entry) => entry && entry.gameName)
+    .filter((entry) => entry && (entry.gameName || entry.name))
     .map((entry) => ({
-      name: entry.gameName,
-      hours: Math.round((entry.minutes || 0) / 60),
+      name: entry.gameName || entry.name,
+      hours: Math.round((entry.minutes || entry.totalPlaytime || 0) / 60),
       genre: entry.genre || null,
       coverUrl: entry.coverUrl || ''
     }))
@@ -445,6 +518,13 @@ export const GamingStoryService = {
     const runnerUpGames = topGames.slice(1, 3);
     const runnerUpNames = runnerUpGames.map((g) => g.name);
 
+    let publicIdentity = null;
+    try {
+      publicIdentity = GamingPersonaService.getPublicIdentity();
+    } catch {
+      publicIdentity = null;
+    }
+
     let narrative = `Your first scan shows **${totalHours} hours** across your top ${topGames.length} games. `;
     narrative += `**${leadingGame.name}** leads the way with **${leadingGame.hours} hours**.`;
 
@@ -456,85 +536,115 @@ export const GamingStoryService = {
       narrative += ` Your strongest genres so far are ${formatList(topGenreNames)}.`;
     }
 
-    narrative += " GamePilot will build your identity from this foundation as you keep playing.";
+    const arcLine = buildGenreArcLine(genreFingerprint, topGames);
+    if (arcLine) {
+      narrative += ` ${arcLine}`;
+    }
+
+    if (publicIdentity?.label) {
+      narrative += ` Early read: you already look like **${publicIdentity.label}**.`;
+      if (publicIdentity.roast) {
+        narrative += ` ${publicIdentity.roast}`;
+      }
+    } else {
+      narrative += ' GamePilot will roast a living persona out of this as you keep playing.';
+    }
 
     return {
       chapter: 'anchor',
       title: 'Your Gaming Story Begins',
-      subtitle: `From ${topGames.length} anchor games and ${totalHours} hours`,
+      subtitle: publicIdentity?.label
+        ? `${publicIdentity.label} · ${topGames.length} anchor games`
+        : `From ${topGames.length} anchor games and ${totalHours} hours`,
       totalHours,
       gameCount: topGames.length,
       topGames,
       genreFingerprint,
       narrative,
-      identityLabel: null,
+      identityLabel: publicIdentity?.label || null,
       tasteClusters: []
     };
   },
 
   generateEvolvingStory() {
-    const profile = GamingIdentity.getProfile();
-    const identity = profile?.identity || {};
-    const persona = profile?.persona || {};
-    const stats = profile?.stats || {};
     const library = StorageService.get('library', []);
 
-    const topGames = getTopGames(library, 3);
+    const topGames = getTopGames(library, 5);
     if (topGames.length === 0) {
       return null;
     }
 
-    const totalHours = Math.round((stats.totalPlayTime || 0) / 60);
-    const gamingPersona = GamingPersonaService.getPersona();
-    const primary = gamingPersona?.primaryPersona;
-    const identityLabel = primary?.label || identity?.personality || 'Gamer';
-    const identityDescription = gamingPersona?.summaryRoast || primary?.roast || identity?.description || '';
-    const tasteClusters = profile?.tasteClusters || identity?.tasteClusters || [];
-    const dominantGenre = persona?.dominantGenre || identity?.dominantGenre || stats?.favoriteGenre || null;
-    const sessionPattern = persona?.sessionPatternLabel || identity?.sessionPattern || null;
-    const topGenres = (persona?.topGenres || []).slice(0, 3);
-
-    const genreNames = topGenres.map((g) => g.genre || g);
-    if (!genreNames.includes(dominantGenre) && dominantGenre) {
-      genreNames.unshift(dominantGenre);
+    let publicIdentity = null;
+    try {
+      publicIdentity = GamingPersonaService.getPublicIdentity();
+    } catch {
+      publicIdentity = null;
     }
+
+    const profile = GamingIdentity.getProfile();
+    const stats = profile?.stats || {};
+    const totalHours = Math.round((stats.totalPlayTime || 0) / 60);
+    const identityLabel = publicIdentity?.label || profile?.identity?.personality || 'Gamer';
+    const identityRoast = publicIdentity?.roast || profile?.identity?.description || '';
+    const dominantGenre = publicIdentity?.dominantGenre || profile?.persona?.dominantGenre || stats?.favoriteGenre || null;
+    const sessionPattern = profile?.persona?.sessionPatternLabel || profile?.identity?.sessionPattern || null;
+
+    // Build genre fingerprint from persona's affinity + dominant genre
+    const affinityGenres = publicIdentity?.affinityGenres || [];
+    const genreNames = [];
+    if (dominantGenre) genreNames.push(dominantGenre);
+    affinityGenres.forEach((g) => { if (!genreNames.includes(g)) genreNames.push(g); });
     const uniqueGenres = genreNames.slice(0, 3);
+    const genreFingerprint = uniqueGenres.map((genre) => ({ genre, count: 0, hours: 0 }));
 
     const leadingGame = topGames[0];
     const runnerUpGames = topGames.slice(1, 3);
     const runnerUpNames = runnerUpGames.map((g) => g.name);
 
-    let narrative = `You're now a **${identityLabel}**. `;
-    if (identityDescription) {
-      narrative += `${identityDescription} `;
+    const narrativeParts = [];
+
+    narrativeParts.push(`You're **${identityLabel}**.`);
+    if (identityRoast) {
+      narrativeParts.push(identityRoast);
     }
-    narrative += `Across **${totalHours} hours** and **${stats.totalSessions || 0} sessions**, **${leadingGame.name}** remains your anchor at **${leadingGame.hours} hours**.`;
+    narrativeParts.push(`Across **${totalHours} hours** and **${stats.totalSessions || 0} sessions**, **${leadingGame.name}** remains your anchor at **${leadingGame.hours} hours**.`);
 
     if (runnerUpNames.length > 0) {
-      narrative += ` It's joined by ${formatList(runnerUpNames)}.`;
+      narrativeParts.push(`It's joined by ${formatList(runnerUpNames)}.`);
     }
 
-    if (uniqueGenres.length > 0) {
-      narrative += ` Your taste clusters around ${formatList(uniqueGenres)}.`;
+    const arcLine = buildGenreArcLine(genreFingerprint, topGames);
+    if (arcLine) {
+      narrativeParts.push(arcLine);
+    } else if (uniqueGenres.length > 0) {
+      narrativeParts.push(`Your taste clusters around ${formatList(uniqueGenres)}.`);
     }
 
     if (sessionPattern) {
-      narrative += ` Your play pattern looks like ${sessionPattern.toLowerCase()} sessions.`;
+      narrativeParts.push(`Your sessions lean ${sessionPattern.toLowerCase()}.`);
     }
 
-    narrative += " GamePilot uses this to decide what you should play next.";
+    if (publicIdentity?.subTraits?.length > 0) {
+      narrativeParts.push(`Traits: ${publicIdentity.subTraits.slice(0, 3).join(', ')}.`);
+    }
+
+    narrativeParts.push('That voice is what GamePilot uses to pick — and roast — your next session.');
+
+    const narrative = narrativeParts.join(' ');
 
     return {
       chapter: 'identity',
       title: 'Your Gaming Story',
-      subtitle: `You play as a ${identityLabel.toLowerCase()}`,
+      subtitle: identityLabel.startsWith('The ')
+        ? `You play as ${identityLabel}`
+        : `You play as a ${identityLabel.toLowerCase()}`,
       totalHours,
       gameCount: topGames.length,
       topGames,
-      genreFingerprint: uniqueGenres.map((genre) => ({ genre, count: 0, hours: 0 })),
+      genreFingerprint,
       narrative,
       identityLabel,
-      tasteClusters: tasteClusters.slice(0, 3)
+      tasteClusters: (publicIdentity?.affinityGenres || []).slice(0, 3)
     };
   },
 
@@ -645,15 +755,16 @@ export const GamingStoryService = {
    */
   buildQuietPeriodStory(period, totalHours = 0, previousStory = null, persona = null) {
     const username = StorageService.getString('profileUsername', '') || 'you';
-    let identityPersonality = null;
+    let publicIdentity = null;
     try {
-      identityPersonality = GamingIdentity.getProfile()?.identity?.personality || null;
+      publicIdentity = GamingPersonaService.getPublicIdentity();
     } catch {
-      identityPersonality = null;
+      publicIdentity = null;
     }
 
-    const voice = getVoiceForStory(persona);
+    const voice = getVoiceForStory(persona || publicIdentity?.primary);
     const periodLabel = PERIOD_LABELS[period] || 'period';
+    const identityLabel = persona?.label || publicIdentity?.label || null;
 
     // Continuity: acknowledge stepping back after an active chapter.
     const usablePrevious = previousStory && previousStory.period === period ? previousStory : null;
@@ -663,6 +774,9 @@ export const GamingStoryService = {
     let narrative = fillVoiceTemplate(voice.quiet || DEFAULT_VOICE.quiet, { PERIOD: periodLabel });
     if (prevTop) {
       narrative += ` A change of pace after **${prevTop.name}** dominated ${PERIOD_PREVIOUS[period] || 'last time'}.`;
+    }
+    if (identityLabel) {
+      narrative += ` Even **${identityLabel}** needs a breather.`;
     }
 
     return {
@@ -678,7 +792,7 @@ export const GamingStoryService = {
       moodFingerprint: [],
       recommendationOutcomes: null,
       narrative,
-      identityLabel: persona?.label || identityPersonality,
+      identityLabel,
       tasteClusters: [],
       continuity: { lines: [], topGameStreak: 0, comparedTo: usablePrevious?.generatedAt || null }
     };
@@ -691,7 +805,7 @@ export const GamingStoryService = {
       return this.buildQuietPeriodStory(period, 0, previousStory, persona);
     }
 
-    const topGames = getPeriodTopGames(periodData, 3);
+    const topGames = getPeriodTopGames(periodData, 5);
     const totalHours = Math.round((periodData.playtimeMinutes || 0) / 60);
 
     // Quiet-period fallback: not enough playtime or no tracked games.
@@ -699,40 +813,119 @@ export const GamingStoryService = {
       return this.buildQuietPeriodStory(period, totalHours, previousStory, persona);
     }
 
-    const voice = getVoiceForStory(persona);
+    let publicIdentity = null;
+    try {
+      publicIdentity = GamingPersonaService.getPublicIdentity();
+    } catch {
+      publicIdentity = null;
+    }
+    const voice = getVoiceForStory(persona || publicIdentity?.primary);
     const periodLabel = PERIOD_LABELS[period] || 'this period';
+    const identityLabel = persona?.label || publicIdentity?.label || null;
+    const identityRoast = publicIdentity?.roast || null;
+
+    // --- Extract period stats ---
+    const sessionCount = periodData.sessions || 0;
+    const uniqueGames = periodData.uniqueGames || topGames.length;
+    const activeDays = periodData.activeDays || 0;
+    const avgSessionMin = periodData.avgSessionMinutes || 0;
+    const longestMin = periodData.longestSessionMinutes || 0;
+    const streak = periodData.streak || { current: 0, best: 0 };
+    const platformCounts = periodData.platformCounts || {};
+    const genreCounts = periodData.genreCounts || {};
+
+    // --- Genre fingerprint from genreCounts (richer than deriving from top games) ---
+    const genreFingerprint = Object.entries(genreCounts)
+      .filter(([g]) => g && g !== 'Unknown' && g !== 'null')
+      .map(([genre, count]) => ({ genre, count, hours: 0 }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // --- Leading game + genre template ---
     const leadingGame = topGames[0];
     const leadingTemplate = getTemplateForGenre(leadingGame.genre);
 
-    const secondaryGames = topGames.slice(1, 3);
-    const secondaryLines = secondaryGames.map((game) => {
-      const template = getTemplateForGenre(game.genre);
-      return fillVoiceTemplate(voice.secondary || DEFAULT_VOICE.secondary, {
-        LEAD: template.lead,
-        GAME: game.name,
-        HOURS: game.hours
-      });
-    });
+    // --- Build narrative with variety ---
+    const narrativeParts = [];
 
-    let narrative = fillVoiceTemplate(voice.periodHook || DEFAULT_VOICE.periodHook, {
+    // Opening: persona-voiced hook
+    narrativeParts.push(fillVoiceTemplate(voice.periodHook || DEFAULT_VOICE.periodHook, {
       PERIOD: periodLabel,
       LEAD: leadingTemplate.lead,
       GAME: leadingGame.name,
       HOURS: leadingGame.hours
-    });
+    }));
 
-    if (secondaryLines.length > 0) {
-      narrative += ` ${formatList(secondaryLines)}.`;
+    // Secondary games — use voice.secondary template
+    const secondaryGames = topGames.slice(1, 3);
+    if (secondaryGames.length > 0) {
+      const secondaryLines = secondaryGames.map((game) => {
+        const template = getTemplateForGenre(game.genre);
+        return fillVoiceTemplate(voice.secondary || DEFAULT_VOICE.secondary, {
+          LEAD: template.lead,
+          GAME: game.name,
+          HOURS: game.hours
+        });
+      });
+      narrativeParts.push(formatList(secondaryLines) + '.');
     }
 
-    narrative += ` **${totalHours} hours** total across your top games.`;
+    // Genre arc line
+    const arcLine = buildGenreArcLine(genreFingerprint, topGames);
+    if (arcLine) {
+      narrativeParts.push(arcLine);
+    }
 
-    const genreFingerprint = topGames
-      .map((g) => ({ genre: g.genre || 'Unknown', hours: g.hours, count: 1 }))
-      .filter((entry) => entry.genre !== 'Unknown');
+    // Session stats — varies phrasing based on intensity
+    const avgSessionHours = Math.round(avgSessionMin / 60 * 10) / 10;
+    const longestHours = Math.round(longestMin / 60 * 10) / 10;
+    if (sessionCount > 0) {
+      let sessionLine;
+      if (sessionCount >= 10) {
+        sessionLine = `**${sessionCount} sessions** across **${activeDays} day${activeDays === 1 ? '' : 's'}**`;
+      } else if (sessionCount >= 5) {
+        sessionLine = `**${sessionCount} sessions** over **${activeDays} day${activeDays === 1 ? '' : 's'}**`;
+      } else {
+        sessionLine = `**${sessionCount} session${sessionCount === 1 ? '' : 's'}** over **${activeDays} day${activeDays === 1 ? '' : 's'}**`;
+      }
+      if (avgSessionHours > 0) {
+        sessionLine += ` — averaging **${avgSessionHours}h** per sit-down`;
+      }
+      if (longestHours >= 3) {
+        sessionLine += `. Longest single session: **${longestHours}h**`;
+      }
+      narrativeParts.push(sessionLine + '.');
+    }
 
-    // Continuity: compare against the previous chapter of the same cadence and
-    // weave the deltas (new #1, streaks, comebacks, genre shifts) into the story.
+    // Total hours
+    narrativeParts.push(`**${totalHours} hours** total${uniqueGames > topGames.length ? ` across **${uniqueGames} games**` : ''}.`);
+
+    // Genre highlights — top 2 genres with counts
+    if (genreFingerprint.length >= 2) {
+      const topGenre = genreFingerprint[0].genre;
+      const secondGenre = genreFingerprint[1].genre;
+      narrativeParts.push(`Your taste leaned into **${topGenre}** and **${secondGenre}** ${periodLabel}.`);
+    } else if (genreFingerprint.length === 1) {
+      narrativeParts.push(`**${genreFingerprint[0].genre}** dominated your playtime ${periodLabel}.`);
+    }
+
+    // Platform breakdown if multi-platform
+    const platformEntries = Object.entries(platformCounts)
+      .filter(([p]) => p && p !== 'Unknown' && p !== 'null')
+      .sort((a, b) => b[1] - a[1]);
+    if (platformEntries.length >= 2) {
+      const topPlatform = platformEntries[0][0];
+      const topPlatformSessions = platformEntries[0][1];
+      narrativeParts.push(`Most of that was on **${topPlatform}** (${topPlatformSessions} session${topPlatformSessions === 1 ? '' : 's'}).`);
+    }
+
+    // Streak callout
+    if (streak.current >= 3) {
+      const noun = PERIOD_NOUN[period] || 'period';
+      narrativeParts.push(`You're on a **${streak.current}-${noun} streak** — keep it alive.`);
+    }
+
+    // Continuity: compare against the previous chapter of the same cadence
     const usablePrevious = previousStory && previousStory.period === period ? previousStory : null;
     const continuity = computeContinuity(
       period,
@@ -741,10 +934,17 @@ export const GamingStoryService = {
       voice
     );
     if (continuity.lines.length > 0) {
-      narrative += ` ${continuity.lines.join(' ')}`;
+      narrativeParts.push(continuity.lines.join(' '));
     }
 
-    // Taste fingerprint — top moods learned from actual behavior.
+    // Persona roast as a closing flourish
+    if (identityLabel && identityRoast) {
+      narrativeParts.push(`Because you're **${identityLabel}**: ${identityRoast}`);
+    } else if (identityLabel) {
+      narrativeParts.push(`That's **${identityLabel}** behaviour, through and through.`);
+    }
+
+    // Taste fingerprint — top moods
     let moodFingerprint = [];
     try {
       moodFingerprint = (UserBehaviorProfile.getTopMoods(3) || [])
@@ -753,8 +953,7 @@ export const GamingStoryService = {
       moodFingerprint = [];
     }
 
-    // Recommendation outcomes scoped to this period — how the user engaged
-    // with the recommendations they were shown.
+    // Recommendation outcomes
     let recommendationOutcomes = null;
     try {
       const since = this.getPeriodStartTimestamp(period);
@@ -764,28 +963,35 @@ export const GamingStoryService = {
         ignored: outcomes.ignoredCount
       };
       if (outcomes.acceptedCount > 0) {
-        narrative += ` You followed **${outcomes.acceptedCount}** recommendation${outcomes.acceptedCount === 1 ? '' : 's'} ${PERIOD_LABELS[period]}.`;
+        narrativeParts.push(`You followed **${outcomes.acceptedCount}** recommendation${outcomes.acceptedCount === 1 ? '' : 's'} ${periodLabel}.`);
       } else if (outcomes.ignoredCount > 0) {
-        narrative += ` You forged your own path, passing on ${outcomes.ignoredCount} suggestion${outcomes.ignoredCount === 1 ? '' : 's'}.`;
+        narrativeParts.push(`You forged your own path, passing on ${outcomes.ignoredCount} suggestion${outcomes.ignoredCount === 1 ? '' : 's'}.`);
       }
     } catch {
       recommendationOutcomes = null;
     }
+
+    const narrative = narrativeParts.join(' ');
 
     return {
       chapter: 'period',
       period,
       isQuiet: false,
       title: `Your ${PERIOD_LABELS[period]} story`,
-      subtitle: `${totalHours} hours · ${topGames.length} games`,
+      subtitle: `${totalHours}h · ${sessionCount} sessions · ${uniqueGames} games`,
       totalHours,
       gameCount: topGames.length,
+      sessionCount,
+      uniqueGames,
+      activeDays,
+      avgSessionMinutes: avgSessionMin,
+      longestSessionMinutes: longestMin,
       topGames,
       genreFingerprint,
       moodFingerprint,
       recommendationOutcomes,
       narrative,
-      identityLabel: persona?.label || null,
+      identityLabel,
       tasteClusters: [],
       continuity
     };

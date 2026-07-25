@@ -4,7 +4,6 @@ export const GENRES = [
   'Action',
   'Adventure',
   'Casual',
-  'Competitive',
   'Fighting',
   'Horror',
   'Indie',
@@ -32,16 +31,16 @@ export const MOODS = [
   'Social',
   'Creative',
   'Focused',
-  'Escapist'
+  'Competitive'
 ];
 
 // Genre->Mood mapping
 export const GENRE_MOOD_MAP = {
   Relaxed: ['Casual', 'Simulation', 'Platformer', 'Puzzle', 'Management'],
-  Social: ['Multiplayer', 'Party', 'Sports', 'Racing', 'Competitive', 'Fighting'],
-  Creative: ['Sandbox', 'Story-driven', 'Indie'],
-  Focused: ['Action', 'Shooter', 'Strategy', 'Tactical', 'Roguelike', 'Stealth', 'Survival'],
-  Escapist: ['RPG', 'Adventure', 'Horror']
+  Social: ['Multiplayer', 'Party'],
+  Creative: ['Sandbox', 'Survival', 'Indie', 'Adventure', 'Story-driven'],
+  Focused: ['RPG', 'Strategy', 'Tactical', 'Roguelike', 'Stealth', 'Horror', 'Action', 'Shooter'],
+  Competitive: ['Fighting', 'Sports', 'Racing', 'Shooter', 'Multiplayer']
 };
 
 const CANONICAL_LOOKUP = GENRES.reduce((acc, genre) => {
@@ -74,7 +73,7 @@ const GENRE_ALIAS_MAP = {
   'puzzle platformer': ['Puzzle', 'Platformer'],
   'co-op': ['Multiplayer', 'Party'],
   'cooperative': ['Multiplayer', 'Party'],
-  'battle royale': ['Shooter', 'Competitive'],
+  'battle royale': ['Shooter', 'Multiplayer'],
   'fps': ['Shooter'],
   'tps': ['Shooter'],
   'first person shooter': ['Shooter'],
@@ -175,16 +174,23 @@ export const normalizeGenres = (gameGenres) => {
 
 // Genre weight: how strongly a genre signals its mapped mood.
 const GENRE_SIGNAL_WEIGHT = {
-  Indie: 0.3,      // Weak Creative signal — wins only when no stronger genre present
-  Action: 0.5,     // Common but meaningful — contributes to Focused without dominating
-  Adventure: 0.5   // Common but meaningful — contributes to Escapist without dominating
+  Indie: 0.3,       // Weak Creative signal — wins only when no stronger genre present
+  Action: 0.5,      // Moderate Focused — common genre, doesn't dominate
+  Adventure: 0.5,   // Moderate Creative — common genre, doesn't dominate
+  Multiplayer: 0.5, // Moderate — appears in Social and Competitive, context decides
+  Shooter: 0.5      // Moderate — appears in Focused and Competitive, context decides
 };
 
 // Context suppression: when certain genres appear together, one genre's mood
 // contribution is suppressed. E.g., "Simulation" stops counting toward Relaxed
 // when Management/Strategy/Survival are also present (colony mgmt ≠ relaxing).
 const GENRE_CONTEXT_SUPPRESSION = [
-  { ifPresent: ['Strategy', 'Survival'], suppress: 'Simulation', fromMood: 'Relaxed' }
+  // Colony/management sims with Strategy or Survival aren't relaxing
+  { ifPresent: ['Strategy', 'Survival'], suppress: 'Simulation', fromMood: 'Relaxed' },
+  // Competitive shooters (Shooter + Multiplayer) → Competitive, not Focused
+  { ifPresent: ['Multiplayer'], suppress: 'Shooter', fromMood: 'Focused' },
+  // Party/coop games (Multiplayer + Party) → Social, not Competitive
+  { ifPresent: ['Party'], suppress: 'Multiplayer', fromMood: 'Competitive' }
 ];
 
 const scoreMoodsFromGenres = (genres) => {
@@ -268,7 +274,7 @@ export const getMoodForGame = (gameGenres) => {
   }
 
   const moodScores = scoreMoodsFromGenres(validGenres);
-  // Sort by score descending; on tie, prefer MOODS order (Relaxed > Social > Creative > Focused > Escapist)
+  // Sort by score descending; on tie, prefer MOODS order (Relaxed > Social > Creative > Focused > Competitive)
   const sortedMoods = Object.entries(moodScores).sort((a, b) => {
     if (b[1] !== a[1]) return b[1] - a[1];
     return MOODS.indexOf(a[0]) - MOODS.indexOf(b[0]);

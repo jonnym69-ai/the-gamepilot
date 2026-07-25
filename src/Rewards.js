@@ -7,6 +7,12 @@ import { SpecialEventsService } from './services/SpecialEventsService';
 import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper } from 'lucide-react';
 import './Rewards.css';
 
+const handleRewardCardKeyDown = (event, unlocked, onSelect) => {
+  if (!unlocked || (event.key !== 'Enter' && event.key !== ' ')) return;
+  event.preventDefault();
+  onSelect();
+};
+
 // Sample game card for preview
 const SampleGameCard = ({ style, isActive }) => (
   <div 
@@ -55,6 +61,12 @@ const CardStylesPanel = ({ styles, selectedCardStyle, onSelect }) => (
           key={style.id}
           className={`rewards-card-item ${selectedCardStyle === style.id ? 'active' : ''} ${!style.unlocked ? 'locked' : ''}`}
           onClick={() => style.unlocked && onSelect(style.id)}
+          onKeyDown={(event) => handleRewardCardKeyDown(event, style.unlocked, () => onSelect(style.id))}
+          role="button"
+          tabIndex={style.unlocked ? 0 : -1}
+          aria-disabled={!style.unlocked}
+          aria-pressed={selectedCardStyle === style.id}
+          aria-label={`${style.name}${style.unlocked ? '' : `, locked until ${style.requiredXP?.toLocaleString() || 0} XP`}`}
         >
           <SampleGameCard style={style} isActive={selectedCardStyle === style.id} />
           <div className="rewards-card-info">
@@ -80,6 +92,12 @@ const LogoAnimationPanel = ({ animations, selectedAnimation, onSelect }) => (
           key={anim.id} 
           className={`rewards-card-item ${selectedAnimation === anim.id ? 'active' : ''} ${!anim.unlocked ? 'locked' : ''}`}
           onClick={() => anim.unlocked && onSelect(anim.id)}
+          onKeyDown={(event) => handleRewardCardKeyDown(event, anim.unlocked, () => onSelect(anim.id))}
+          role="button"
+          tabIndex={anim.unlocked ? 0 : -1}
+          aria-disabled={!anim.unlocked}
+          aria-pressed={selectedAnimation === anim.id}
+          aria-label={`${anim.name}${anim.unlocked ? '' : `, locked until ${anim.requiredXP?.toLocaleString() || 0} XP`}`}
         >
           <div className="reward-animation-preview" style={{
             position: 'relative',
@@ -134,6 +152,12 @@ const LibraryViewPanel = ({ variants, selectedId, onSelect }) => (
           key={variant.id}
           className={`rewards-card-item ${selectedId === variant.id ? 'active' : ''} ${!variant.unlocked ? 'locked' : ''}`}
           onClick={() => variant.unlocked && onSelect(variant.id)}
+          onKeyDown={(event) => handleRewardCardKeyDown(event, variant.unlocked, () => onSelect(variant.id))}
+          role="button"
+          tabIndex={variant.unlocked ? 0 : -1}
+          aria-disabled={!variant.unlocked}
+          aria-pressed={selectedId === variant.id}
+          aria-label={`${variant.name}${variant.unlocked ? '' : `, locked until ${variant.requiredXP?.toLocaleString() || 0} XP`}`}
         >
           <div className="reward-library-preview" style={{
             position: 'relative',
@@ -188,6 +212,12 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
           key={layout.id}
           className={`rewards-card-item ${selectedId === layout.id ? 'active' : ''} ${!layout.unlocked ? 'locked' : ''}`}
           onClick={() => layout.unlocked && onSelect(layout.id)}
+          onKeyDown={(event) => handleRewardCardKeyDown(event, layout.unlocked, () => onSelect(layout.id))}
+          role="button"
+          tabIndex={layout.unlocked ? 0 : -1}
+          aria-disabled={!layout.unlocked}
+          aria-pressed={selectedId === layout.id}
+          aria-label={`${layout.name}${layout.unlocked ? '' : `, locked until ${layout.requiredXP?.toLocaleString() || 0} XP`}`}
         >
           <div className="reward-home-preview" style={{
             position: 'relative',

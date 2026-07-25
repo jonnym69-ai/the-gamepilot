@@ -294,6 +294,44 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.identity-share-card-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.identity-share-card-trait-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.identity-share-card-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.identity-share-card-evidence-item {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.identity-share-card-basis {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 10px;
+  font-style: italic;
+}
+
 @media (max-width: 720px) {
   .identity-share-card {
     padding: 32px;

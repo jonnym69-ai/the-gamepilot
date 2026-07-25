@@ -560,7 +560,7 @@ export class GamingIdentity {
     if (averageSessionTime > 120) return 'Marathon';
     if (averageSessionTime < 30) return 'Quick Sessions';
     if (mostUsedFeature === 'perfect_play' || mostUsedFeature === 'perfectPlay') return 'Strategic';
-    if (favoriteMood === 'Escapist') return 'Explorer';
+    if (favoriteMood === 'Competitive') return 'Competitor';
     return 'Balanced';
   }
 

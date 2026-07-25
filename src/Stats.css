@@ -237,12 +237,18 @@
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .stats-summary-card:hover {
   background: rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
+  border-color: rgba(255, 107, 53, 0.25);
+}
+
+.stats-summary-card:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
 }
 
 .stats-summary-label {
@@ -897,7 +903,58 @@
   background: var(--card-border, #dee2e6);
 }
 
-/* Responsive Most Played */
+/* Responsive Stats */
+@media (max-width: 900px) {
+  .stats-page {
+    padding: 16px;
+  }
+
+  .stats-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .stats-summary-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin: 16px 0 20px;
+  }
+
+  .stats-summary-card {
+    padding: 12px;
+  }
+
+  .stats-summary-value {
+    font-size: 1.35rem;
+  }
+
+  .persona-insights .persona-grid,
+  .hardware-synergy .synergy-list,
+  .heatmap-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .persona-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .persona-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .synergy-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .synergy-metrics {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
 @media (max-width: 768px) {
   .most-played-item {
     flex-wrap: wrap;

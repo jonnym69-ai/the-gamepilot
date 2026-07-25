@@ -771,6 +771,126 @@
   outline-offset: 2px;
 }
 
+/* ─── Mobile Responsiveness ─── */
+@media (max-width: 768px) {
+  .rec-content {
+    padding: 0 16px 24px;
+  }
+
+  .rec-top-nav {
+    padding: 10px 16px;
+  }
+
+  .rec-top-nav-title {
+    font-size: 0.92rem;
+  }
+
+  .rec-hub-header h1 {
+    font-size: 1.7rem;
+  }
+
+  .rec-hub-header p {
+    font-size: 0.95rem;
+  }
+
+  .rec-styles-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .rec-style-card {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .rec-style-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .rec-style-info h3 {
+    font-size: 0.95rem;
+  }
+
+  .rec-style-info p {
+    font-size: 0.8rem;
+  }
+
+  .rec-game-row {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .rec-row-info {
+    min-width: 60%;
+    flex: 1 1 auto;
+  }
+
+  .rec-row-action,
+  .rec-row-launch {
+    flex: 1 1 calc(50% - 5px);
+    justify-content: center;
+    height: 36px;
+  }
+
+  .rec-horizontal-strip {
+    gap: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+
+  .rec-strip-card {
+    width: 140px;
+  }
+
+  .rec-strip-artwork {
+    width: 140px;
+    height: 190px;
+  }
+
+  .rec-mix-header {
+    padding: 12px 14px;
+  }
+
+  .rec-mix-header h3 {
+    font-size: 1rem;
+  }
+
+  .rec-seed-game {
+    padding: 12px;
+  }
+
+  .rec-playlist-mini {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rec-styles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rec-game-row {
+    padding: 12px;
+  }
+
+  .rec-row-artwork {
+    width: 40px;
+    height: 40px;
+  }
+
+  .rec-row-index {
+    width: 20px;
+  }
+
+  .rec-row-action,
+  .rec-row-launch {
+    flex: 1 1 100%;
+  }
+}
+
 /* ─── Session Playlist Builder ─── */
 .rec-playlist-builder {
   margin-bottom: 28px;

@@ -24,7 +24,7 @@ import DiskUsageService from './services/DiskUsageService';
 import { useToast } from './components/Toast';
 import { DataExportService } from './services/DataExportService';
 import HowLongToBeatService, { hltbGameKey } from './services/HowLongToBeatService';
-import { MOODS, getMoodForGame } from './constants/GenresMoods';
+import { MOODS, getMoodForGame, getMoodScoresForGame } from './constants/GenresMoods';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
@@ -192,9 +192,9 @@ const getDisplayPlatform = (game) => {
 function Library({ 
   library = [], 
   onLaunchGame = NOOP, 
-  onScan = NOOP,
-  onScanLibrary = NOOP,
-  scanLocalLibrary = NOOP,
+  onScan = null,
+  onScanLibrary = null,
+  scanLocalLibrary = null,
   onLibraryUpdated = NOOP,
   loading = false,
   activeSessions = {},
@@ -227,7 +227,7 @@ function Library({
   const navigate = useNavigate();
   const { currentTheme } = useContext(ThemeContext);
   const { success, error: toastError } = useToast();
-  const scanLibraryHandler = onScanLibrary || onScan || scanLocalLibrary;
+  const scanLibraryHandler = onScanLibrary || onScan || scanLocalLibrary || NOOP;
   const [viewMode, setViewMode] = useState('grid');
   const [selectedGame, setSelectedGame] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -883,8 +883,12 @@ function Library({
       if (!game) return false;
       const displayPlatform = getDisplayPlatform(game);
       const resolvedMood = getResolvedMood(game);
+      const gameMoodScores = getMoodScoresForGame(game.genres || []);
       const matchesSearch = game.name ? game.name.toLowerCase().includes(localSearchQuery.toLowerCase()) : false;
-      const matchesMood = !localFilterMood || resolvedMood === localFilterMood;
+      const matchesMood = !localFilterMood || 
+                          resolvedMood === localFilterMood || 
+                          (gameMoodScores && gameMoodScores[localFilterMood] > 0) ||
+                          (game.mood && game.mood.trim() === localFilterMood);
       const matchesGenre = !localFilterGenre || (game.genres && Array.isArray(game.genres) && game.genres.includes(localFilterGenre));
       const matchesPlatform = !localFilterPlatform || displayPlatform === localFilterPlatform;
       const gamePlaytime = game.time_played || 0;
@@ -926,7 +930,13 @@ function Library({
           if (aRating === bRating) return a.name.localeCompare(b.name);
           return bRating - aRating;
         case 'platform': return (a.platform || '').localeCompare(b.platform || '');
-        case 'mood': return getResolvedMood(a).localeCompare(getResolvedMood(b));
+        case 'mood': 
+          const aScores = getMoodScoresForGame(a.genres || []);
+          const bScores = getMoodScoresForGame(b.genres || []);
+          const aMaxScore = Math.max(...Object.values(aScores), 0);
+          const bMaxScore = Math.max(...Object.values(bScores), 0);
+          if (bMaxScore !== aMaxScore) return bMaxScore - aMaxScore;
+          return getResolvedMood(a).localeCompare(getResolvedMood(b));
         case 'storage-size':
           const aStorage = a.storageSize || a.installedSize || 0;
           const bStorage = b.storageSize || b.installedSize || 0;
@@ -2102,6 +2112,7 @@ function Library({
                     onLaunchGame(game);
                   }}
                   className="library-launch-button"
+                  aria-label={`Launch ${game.name}`}
                 >
                   Launch
                 </button>
@@ -2113,6 +2124,7 @@ function Library({
                   }}
                   className="library-action-button"
                   title={game.hidden ? 'Unhide game' : 'Hide game'}
+                  aria-label={`${game.hidden ? 'Unhide' : 'Hide'} ${game.name}`}
                 >
                   {game.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
@@ -2126,6 +2138,7 @@ function Library({
                   }}
                   className="library-action-button danger"
                   title="Remove game"
+                  aria-label={`Remove ${game.name} from library`}
                 >
                   <Trash2 size={14} />
                 </button>

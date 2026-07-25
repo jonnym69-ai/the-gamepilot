@@ -3,6 +3,7 @@ const { app, BrowserWindow, ipcMain, shell, dialog, Menu, protocol, powerMonitor
 const fs = require('fs');
 const path = require('path');
 const GameLauncher = require('./launchHandler');
+const SessionDatabase = require('./sessionDatabase');
 const si = require('systeminformation');
 
  const APP_DISPLAY_NAME = 'GamePilot';
@@ -16,6 +17,7 @@ global.shell = shell;
 const gameLauncher = new GameLauncher();
 const activeGameMonitors = new Map();
 let mainWindow = null;
+const sessionDatabase = new SessionDatabase(app.getPath('userData'));
 const KNOWN_LAUNCHER_PROCESS_NAMES = new Set([
   'steam.exe',
   'epicgameslauncher.exe',
@@ -597,6 +599,17 @@ const collectSystemInfo = async () => {
     lastUpdated: Date.now()
   };
 };
+
+ipcMain.handle('session-store-initialize', async (_event, payload = {}) => sessionDatabase.initializeFromLegacy(payload));
+ipcMain.handle('session-store-save-active', async (_event, sessions = {}) => sessionDatabase.saveActiveSessions(sessions));
+ipcMain.handle('session-store-settle', async (_event, payload = {}) => {
+  if (!payload?.entry || !payload?.activeSessions) {
+    throw new Error('Invalid session settlement payload');
+  }
+  return sessionDatabase.settleSession(payload.entry, payload.activeSessions);
+});
+ipcMain.handle('session-store-replace-history', async (_event, history = []) => sessionDatabase.replaceHistory(history));
+ipcMain.handle('session-store-clear', async () => sessionDatabase.clear());
 
 ipcMain.handle('get-system-info', async () => {
   try {
@@ -2152,7 +2165,18 @@ ipcMain.handle('start-uninstall', async (_event, payload) => {
 
 ipcMain.handle('open-external-url', async (_event, url) => {
   try {
-    await shell.openExternal(url);
+    if (typeof url !== 'string' || url.length > 4096) {
+      return false;
+    }
+
+    const parsedUrl = new URL(url);
+    const allowedProtocols = new Set(['https:', 'http:', 'file:']);
+    if (!allowedProtocols.has(parsedUrl.protocol)) {
+      console.warn('Blocked unsupported external URL protocol:', parsedUrl.protocol);
+      return false;
+    }
+
+    await shell.openExternal(parsedUrl.toString());
     return true;
   } catch (error) {
     console.error('❌ Failed to open external URL:', error);
@@ -2291,11 +2315,18 @@ app.whenReady().then(() => {
   
   // Register app:// protocol for local file access
   protocol.registerFileProtocol('app', (request, callback) => {
-    const url = request.url.replace('app://', '');
     try {
-      return callback(path.normalize(`${__dirname}/${url}`));
+      const relativePath = decodeURIComponent(request.url.replace(/^app:\/\//, '')).replace(/^[/\\]+/, '');
+      const appRoot = path.resolve(__dirname);
+      const resolvedPath = path.resolve(appRoot, relativePath);
+      if (resolvedPath !== appRoot && !resolvedPath.startsWith(`${appRoot}${path.sep}`)) {
+        console.warn('Blocked app protocol path outside application root:', relativePath);
+        return callback({ error: -10 });
+      }
+      return callback(resolvedPath);
     } catch (error) {
-      console.error('Failed to register protocol', error);
+      console.error('Failed to resolve app protocol request', error);
+      return callback({ error: -2 });
     }
   });
 
@@ -2316,8 +2347,10 @@ function createWindow() {
       title: 'GamePilot',
       webPreferences: {
         preload: path.join(__dirname, 'public', 'preload.js'),
-        nodeIntegration: true,
-        contextIsolation: false,
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        webSecurity: true
       },
       show: true,
     });
@@ -2329,6 +2362,23 @@ function createWindow() {
         ? 'http://localhost:3000'
         : `file://${path.join(__dirname, './build/index.html')}`
     );
+
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+      if (/^https?:\/\//i.test(url)) {
+        shell.openExternal(url).catch((error) => console.error('Failed to open external window URL:', error));
+      }
+      return { action: 'deny' };
+    });
+
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+      const developmentOrigin = 'http://localhost:3000';
+      const isAllowedNavigation = process.env.NODE_ENV === 'development'
+        ? url.startsWith(developmentOrigin)
+        : url.startsWith('file://');
+      if (!isAllowedNavigation) {
+        event.preventDefault();
+      }
+    });
 
     mainWindow.webContents.on('console-message', (_event, _level, message) => {
       if (typeof message === 'string' && message.includes('[PERF]')) {

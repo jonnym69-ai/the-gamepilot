@@ -40,7 +40,8 @@ function formatPlaytime(minutes) {
 const PLAYLIST_KEY = 'recommendationsPlaylist';
 
 function loadPlaylist() {
-  return StorageService.get(PLAYLIST_KEY, []);
+  const stored = StorageService.get(PLAYLIST_KEY, []);
+  return Array.isArray(stored) ? stored.filter((game) => game && typeof game === 'object' && game.name) : [];
 }
 
 function savePlaylist(list) {
@@ -215,16 +216,18 @@ function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommend
       </div>
       {onAddToPlaylist && (
         <button
+          type="button"
           className={`rec-row-action ${inPlaylist ? 'in-playlist' : ''}`}
           onClick={() => onAddToPlaylist(game)}
           title={inPlaylist ? 'Remove from playlist' : 'Add to playlist'}
+          aria-label={`${inPlaylist ? 'Remove' : 'Add'} ${game.name} ${inPlaylist ? 'from' : 'to'} playlist`}
         >
           {inPlaylist ? <Trash2 size={16} /> : <Plus size={16} />}
           <span>{inPlaylist ? 'Remove' : 'Add'}</span>
         </button>
       )}
       {onLaunch && (
-        <button className="rec-row-launch" onClick={() => onLaunch(game)} title="Launch game">
+        <button type="button" className="rec-row-launch" onClick={() => onLaunch(game)} title="Launch game" aria-label={`Launch ${game.name}`}>
           <Play size={16} />
           <span>Launch</span>
         </button>
@@ -244,7 +247,7 @@ function HorizontalGameStrip({ games, onLaunch, onAddToPlaylist, playlist, recom
               alt={game.name}
               placeholder={getGameArtworkPlaceholder(game)}
             />
-            <button className="rec-strip-play" onClick={() => onLaunch?.(game)}>
+            <button type="button" className="rec-strip-play" onClick={() => onLaunch?.(game)} aria-label={`Launch ${game.name}`}>
               <Play size={20} />
             </button>
           </div>
@@ -258,8 +261,10 @@ function HorizontalGameStrip({ games, onLaunch, onAddToPlaylist, playlist, recom
           )}
           {onAddToPlaylist && (
             <button
+              type="button"
               className={`rec-strip-add ${playlist?.some((p) => p.name === game.name) ? 'in-playlist' : ''}`}
               onClick={() => onAddToPlaylist(game)}
+              aria-label={`${playlist?.some((p) => p.name === game.name) ? 'Remove' : 'Add'} ${game.name} ${playlist?.some((p) => p.name === game.name) ? 'from' : 'to'} playlist`}
             >
               {playlist?.some((p) => p.name === game.name) ? <Trash2 size={14} /> : <Plus size={14} />}
             </button>
@@ -276,6 +281,7 @@ export default function Recommendations({ library, onLaunchGame }) {
   const navigate = useNavigate();
   const [activeStyle, setActiveStyle] = useState('hub');
   const [playlist, setPlaylist] = useState(() => loadPlaylist());
+  const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
 
   const identity = useMemo(() => {
     try { return GamingIdentity.getProfile(); } catch { return null; }
@@ -366,8 +372,8 @@ export default function Recommendations({ library, onLaunchGame }) {
 
   const identityPicksResult = useMemo(() => {
     if (activeStyle !== 'identity-picks') return null;
-    return RecommendationEngine.getIdentityPicks(library, identity, 5);
-  }, [activeStyle, library, identity]);
+    return RecommendationEngine.getIdentityPicks(safeLibrary, identity, 5);
+  }, [activeStyle, safeLibrary, identity]);
 
   const wishlistIdentityPicks = useMemo(() => {
     if (activeStyle !== 'identity-picks') return null;
@@ -380,28 +386,28 @@ export default function Recommendations({ library, onLaunchGame }) {
 
   const rediscoverResult = useMemo(() => {
     if (activeStyle !== 'rediscover') return null;
-    return RecommendationEngine.getRediscoverResult(library);
-  }, [activeStyle, library]);
+    return RecommendationEngine.getRediscoverResult(safeLibrary);
+  }, [activeStyle, safeLibrary]);
 
   const surpriseResult = useMemo(() => {
     if (activeStyle !== 'surprise-me') return null;
-    return RecommendationEngine.getSurpriseMeResult(library);
-  }, [activeStyle, library]);
+    return RecommendationEngine.getSurpriseMeResult(safeLibrary);
+  }, [activeStyle, safeLibrary]);
 
   const moodMixes = useMemo(() => {
     if (activeStyle !== 'mood-mix') return [];
-    return getMoodMixes(library, identity);
-  }, [activeStyle, library, identity]);
+    return getMoodMixes(safeLibrary, identity);
+  }, [activeStyle, safeLibrary, identity]);
 
   const rabbitHole = useMemo(() => {
     if (activeStyle !== 'rabbit-hole') return null;
-    return getRabbitHole(library, identity);
-  }, [activeStyle, library, identity]);
+    return getRabbitHole(safeLibrary, identity);
+  }, [activeStyle, safeLibrary, identity]);
 
   const sessionCandidates = useMemo(() => {
     if (activeStyle !== 'session-playlist') return [];
-    return getSessionPlaylistCandidates(library, identity);
-  }, [activeStyle, library, identity]);
+    return getSessionPlaylistCandidates(safeLibrary, identity);
+  }, [activeStyle, safeLibrary, identity]);
 
   const renderHub = () => (
     <>
@@ -677,7 +683,7 @@ export default function Recommendations({ library, onLaunchGame }) {
         {activeStyle === 'perfect-play' && (
           <>
             {renderStyleHeader('Perfect Play', 'Select moods, genres & time to find your match')}
-            <PerfectPlaySelector library={library} onGameSelected={handleLaunch} />
+            <PerfectPlaySelector library={safeLibrary} onGameSelected={handleLaunch} />
           </>
         )}
 

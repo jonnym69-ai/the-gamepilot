@@ -99,12 +99,12 @@ export const ACHIEVEMENTS = {
     { id: 'focused_50', name: 'Precision Expert', desc: 'Choose "Focused" mood 50 times', icon: '🎯', rarity: 'EPIC' },
     { id: 'focused_100', name: 'Focus Legend', desc: 'Choose "Focused" mood 100 times', icon: '🏹', rarity: 'LEGENDARY' },
     
-    // Escapist mood achievements
-    { id: 'escapist_5', name: 'Dreamer', desc: 'Choose "Escapist" mood 5 times', icon: '💭', rarity: 'COMMON' },
-    { id: 'escapist_10', name: 'Reality Bender', desc: 'Choose "Escapist" mood 10 times', icon: '🌌', rarity: 'COMMON' },
-    { id: 'escapist_25', name: 'Fantasy Explorer', desc: 'Choose "Escapist" mood 25 times', icon: '🗺️', rarity: 'RARE' },
-    { id: 'escapist_50', name: 'Immersive Master', desc: 'Choose "Escapist" mood 50 times', icon: '🎭', rarity: 'EPIC' },
-    { id: 'escapist_100', name: 'Escape Legend', desc: 'Choose "Escapist" mood 100 times', icon: '🚀', rarity: 'LEGENDARY' },
+    // Competitive mood achievements
+    { id: 'competitive_5', name: 'Contender', desc: 'Choose "Competitive" mood 5 times', icon: '⚔️', rarity: 'COMMON' },
+    { id: 'competitive_10', name: 'Rank Climber', desc: 'Choose "Competitive" mood 10 times', icon: '🏅', rarity: 'COMMON' },
+    { id: 'competitive_25', name: 'Arena Veteran', desc: 'Choose "Competitive" mood 25 times', icon: '🥇', rarity: 'RARE' },
+    { id: 'competitive_50', name: 'Esports Prospect', desc: 'Choose "Competitive" mood 50 times', icon: '🏆', rarity: 'EPIC' },
+    { id: 'competitive_100', name: 'Arena Legend', desc: 'Choose "Competitive" mood 100 times', icon: '👑', rarity: 'LEGENDARY' },
     
     // Mood variety achievements
     { id: 'mood_explorer', name: 'Mood Explorer', desc: 'Try all 5 mood types at least once', icon: '🦎', rarity: 'RARE' },
@@ -485,7 +485,7 @@ export const ACHIEVEMENTS = {
   ]
 };
 
-export const MOOD_SLUGS = ['relaxed', 'social', 'creative', 'focused', 'escapist'];
+export const MOOD_SLUGS = ['relaxed', 'social', 'creative', 'focused', 'competitive'];
 
 export const GENRE_SLUGS = Array.from(new Set((ACHIEVEMENTS.genres || []).map(({ id }) => id.split('_')[0])));
 export const FEATURE_SLUGS = Array.from(new Set((ACHIEVEMENTS.features || [])
@@ -777,8 +777,8 @@ export const TOTAL_ACHIEVEMENT_COUNT = ALL_ACHIEVEMENT_DEFINITIONS.length;
 export const normalizeMood = (value) => {
   const slug = slugify(value);
   if (!slug) return null;
-  if (slug === 'adventurous') return 'escapist';
-  if (slug === 'adventure') return 'escapist';
+  if (slug === 'adventurous') return 'creative';
+  if (slug === 'adventure') return 'creative';
   return MOOD_SLUGS.includes(slug) ? slug : null;
 };
 
@@ -1643,11 +1643,11 @@ export class AchievementTracker {
       'focused_25': 100,
       'focused_50': 200,
       'focused_100': 400,
-      'escapist_5': 25,
-      'escapist_10': 50,
-      'escapist_25': 100,
-      'escapist_50': 200,
-      'escapist_100': 400,
+      'competitive_5': 25,
+      'competitive_10': 50,
+      'competitive_25': 100,
+      'competitive_50': 200,
+      'competitive_100': 400,
       'mood_explorer': 125,
       'mood_variety_10': 250,
       'mood_master': 500,
@@ -2195,7 +2195,7 @@ export class AchievementTracker {
       'Social': '🔥 Social Butterfly',
       'Creative': '🎨 Creative Genius',
       'Focused': '🎯 Focus Master',
-      'Escapist': '🌌 Dream Weaver'
+      'Competitive': '⚔️ Arena Champion'
     };
     
     return {

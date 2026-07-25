@@ -470,7 +470,7 @@ const getSmartFallbackGenre = (gameName) => {
   if (/\b(card|deck|collectible|trading card|tcg|ccg|card battler|card game)\b/i.test(normalized)) genres.push('Strategy');
   if (/\b(visual novel|vn|otome|dating sim|kinetic novel|narrative|story rich|story.driven|walking sim|walking simulator)\b/i.test(normalized)) genres.push('Story-driven');
   if (/\b(tower defense|tower defence|td$)\b/i.test(normalized)) genres.push('Strategy');
-  if (/\b(moba|arena|battle.arena)\b/i.test(normalized)) genres.push('Competitive');
+  if (/\b(moba|arena|battle.arena)\b/i.test(normalized)) genres.push('Multiplayer');
   if (/\b(mmo|mmorpg|massively multiplayer|online rpg)\b/i.test(normalized)) genres.push('Multiplayer');
   if (/\b(rhythm|music|beat|dance|guitar|drum|band|concert|song|audio|sound)\b/i.test(normalized)) genres.push('Casual');
   if (/\b(casual|relax|relaxing|zen|cozy|idle|clicker|incremental|cookie clicker|adVenture capitalist)\b/i.test(normalized)) genres.push('Casual');
@@ -494,7 +494,7 @@ const detectGenreByKeywords = (gameName) => {
 
   // MOBA keywords
   if (/\b(league of legends|lol|dota|smite|heroes of the storm|paladins|battlerite|arena of valor|mobile legends|wild rift|moba|multiplayer.online.battle.arena)\b/i.test(normalized)) {
-    genres.push('Competitive');
+    genres.push('Multiplayer');
   }
 
   // MMO keywords
@@ -642,9 +642,9 @@ const detectGenreByKeywords = (gameName) => {
     genres.push('Tactical');
   }
 
-  // Competitive keywords
+  // Competitive / esports keywords — mapped to Multiplayer since Competitive is now a mood
   if (/\b(esports|ranked|league of legends|dota|smite|overwatch|valorant|cs:?go|rainbow six|rocket league|fortnite|apex|pubg|warzone|competitive multiplayer|esport)\b/i.test(normalized)) {
-    genres.push('Competitive');
+    genres.push('Multiplayer');
   }
 
   return genres;

@@ -15,10 +15,10 @@ const PRICE_TRACKING_KEY = 'discoveryPriceTrackingV1';
 // Mood → IGDB theme keywords mapping
 const MOOD_THEME_MAP = Object.freeze({
   Relaxed: ['relaxing', 'cozy', 'atmospheric', 'casual'],
-  Social: ['multiplayer', 'co-op', 'cooperative', 'competitive', 'party'],
+  Social: ['multiplayer', 'co-op', 'cooperative', 'party'],
   Creative: ['sandbox', 'building', 'crafting', 'creative', 'modding'],
-  Focused: ['tactical', 'strategic', 'challenging', 'puzzle', 'difficult'],
-  Escapist: ['atmospheric', 'immersive', 'story rich', 'narrative', 'open world']
+  Focused: ['tactical', 'strategic', 'challenging', 'puzzle', 'difficult', 'rpg'],
+  Competitive: ['competitive', 'ranked', 'esports', 'pvp', 'arena']
 });
 
 // Genre → IGDB genre IDs
@@ -94,7 +94,7 @@ const SESSION_TIME_MAP = Object.freeze({
 
 // Demo game database — seeded with real games that map to personas
 const DEMO_GAME_DATABASE = [
-  // RPG / Escapist
+  // RPG / Creative
   { id: 'demo-1', name: 'Baldur\'s Gate 3', genres: ['RPG', 'Strategy'], themes: ['story rich', 'atmospheric', 'open world'], avgTime: 120, price: { steam: 5999, discount: 0 }, rating: 96, platforms: ['Steam', 'GOG'] },
   { id: 'demo-2', name: 'The Witcher 3: Wild Hunt', genres: ['RPG', 'Adventure'], themes: ['atmospheric', 'open world', 'story rich'], avgTime: 80, price: { steam: 2999, discount: 0 }, rating: 95, platforms: ['Steam', 'GOG'] },
   { id: 'demo-3', name: 'Disco Elysium', genres: ['RPG', 'Adventure'], themes: ['story rich', 'atmospheric', 'narrative'], avgTime: 30, price: { steam: 3499, discount: 50 }, rating: 94, platforms: ['Steam'] },

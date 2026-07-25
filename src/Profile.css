@@ -1562,6 +1562,19 @@
   background: var(--founder-surface, rgba(255, 107, 53, 0.14));
 }
 
+.startup-personalization-save-btn {
+  background: linear-gradient(135deg, #ff6b35, #ff9a5a);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 800;
+  padding: 10px 24px;
+}
+
+.startup-personalization-save-btn:hover {
+  background: linear-gradient(135deg, #ff5722, #ff8a50);
+  border-color: transparent;
+}
+
 .startup-personalization-stats {
   margin-top: 0;
 }
@@ -3916,10 +3929,10 @@ body.big-screen-mode .profile-section.selected {
 
 .gaming-persona-basis {
   display: block;
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 0.72rem;
-  font-style: italic;
   color: var(--text-secondary, #9aa0a6);
+  opacity: 0.78;
 }
 
 .gaming-persona-primary h3 {
@@ -3930,12 +3943,36 @@ body.big-screen-mode .profile-section.selected {
   line-height: 1.2;
 }
 
-.gaming-persona-roast {
-  font-size: 0.95rem;
-  line-height: 1.5;
+.gaming-persona-description {
+  margin: -2px 0 12px;
   color: var(--text-secondary, #9aa0a6);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.gaming-persona-roast {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-primary, #e8eaed);
   margin: 0;
   font-style: italic;
+}
+
+.gaming-persona-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.gaming-persona-evidence span {
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 107, 53, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 107, 53, 0.08);
+  color: var(--text-secondary, #9aa0a6);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .gaming-persona-traits {
@@ -4023,6 +4060,113 @@ body.big-screen-mode .profile-section.selected {
 }
 
 @media (max-width: 768px) {
+  .profile-container {
+    padding: 0 16px;
+  }
+
+  .profile-header {
+    padding: 32px 0 22px;
+    margin-bottom: 18px;
+  }
+
+  .profile-header h1 {
+    font-size: 2rem;
+  }
+
+  .profile-header svg {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 10px;
+  }
+
+  .profile-card {
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    padding: 24px;
+    border-radius: 20px;
+  }
+
+  .profile-picture-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .profile-picture-container {
+    width: 130px;
+    height: 130px;
+  }
+
+  .profile-picture-placeholder {
+    font-size: 2.8rem;
+  }
+
+  .profile-info {
+    width: 100%;
+  }
+
+  .username-display {
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .username-display h2 {
+    font-size: 1.65rem;
+  }
+
+  .edit-form,
+  .profile-section {
+    padding: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+  }
+
+  .profile-input,
+  .profile-select,
+  .welcome-input {
+    padding: 12px 14px;
+    font-size: 0.95rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .save-button,
+  .cancel-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-section-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .profile-section-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .gaming-persona-card {
+    margin: 12px 0 16px;
+    padding: 14px 16px;
+    max-width: 100%;
+  }
+
+  .gaming-persona-primary h3 {
+    font-size: 1.25rem;
+  }
+
   .profile-achievement-summary {
     grid-template-columns: 1fr;
   }

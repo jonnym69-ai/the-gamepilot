@@ -9,9 +9,23 @@ import { RollingAchievementsTracker } from './RollingAchievementsTracker';
 import { processSessionEnd } from './GamingIdentityEnhancements';
 import { getMoodForGame, mapGameGenresToValid } from '../constants/GenresMoods';
 import StorageService from './StorageService';
+import SessionRepository from './SessionRepository';
 
 const MAX_ACTIVE_SESSION_AGE_MS = 18 * 60 * 60 * 1000;
 const MAX_EMULATOR_SESSION_MINUTES = 240;
+
+const getSessionGamePart = (gameName) => String(gameName || 'game')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-|-$/g, '')
+  .slice(0, 40) || 'game';
+
+const createSessionId = (gameName, startedAt = Date.now()) => {
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `${getSessionGamePart(gameName)}-${startedAt}-${randomPart}`;
+};
+
+const createLegacySessionId = (gameName, startTime) => `${getSessionGamePart(gameName)}-${new Date(startTime).getTime() || 0}-legacy`;
 
 const isEmulatorSession = (session = {}, metadata = {}) => {
   const combinedMetadata = {
@@ -83,6 +97,8 @@ const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
       startTime,
       gameId: sessionEntry.gameId || gameName,
       metadata: sessionEntry.metadata && typeof sessionEntry.metadata === 'object' ? sessionEntry.metadata : {},
+      sessionId: sessionEntry.sessionId || createLegacySessionId(gameName, startTime),
+      lastConfirmedAt: sessionEntry.lastConfirmedAt || startTime,
       paused: Boolean(sessionEntry.paused)
     };
   }
@@ -91,6 +107,8 @@ const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
     startTime,
     gameId: gameName,
     metadata: {},
+    sessionId: createLegacySessionId(gameName, startTime),
+    lastConfirmedAt: startTime,
     paused: false
   };
 };
@@ -112,14 +130,17 @@ export class PlaytimeAutoLogger {
     const sessions = this.getActiveSessions();
     const normalizedMetadata = metadata && typeof metadata === 'object' ? metadata : {};
     
+    const startTime = new Date().toISOString();
     sessions[gameName] = {
-      startTime: new Date().toISOString(),
+      startTime,
       gameId,
       metadata: normalizedMetadata,
+      sessionId: createSessionId(gameName, Date.now()),
+      lastConfirmedAt: startTime,
       paused: false
     };
 
-    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+    SessionRepository.saveActiveSessions(sessions);
 
     // Trigger stats refresh event
     window.dispatchEvent(new CustomEvent('gameSessionStarted', { detail: { gameName } }));
@@ -139,8 +160,16 @@ export class PlaytimeAutoLogger {
       return null;
     }
 
+    if (session.sessionId && this.getSessionHistory().some((entry) => entry?.sessionId === session.sessionId)) {
+      delete sessions[gameName];
+      SessionRepository.saveActiveSessions(sessions);
+      return null;
+    }
+
     const startTime = new Date(session.startTime);
-    const endTime = new Date();
+    const requestedEndTime = normalizedMetadata.endTimeOverride || normalizedMetadata.recoveredEndTime || null;
+    const parsedEndTime = requestedEndTime ? new Date(requestedEndTime) : new Date();
+    const endTime = Number.isNaN(parsedEndTime.getTime()) || parsedEndTime < startTime ? new Date() : parsedEndTime;
     const {
       playtimeMinutes,
       adjusted,
@@ -157,10 +186,17 @@ export class PlaytimeAutoLogger {
         sessionAdjusted: adjusted,
         sessionAdjustmentReason: adjustmentReason,
         ...(session.metadata || {}),
-        ...normalizedMetadata
+        ...normalizedMetadata,
+        sessionId: session.sessionId || createLegacySessionId(gameName, session.startTime)
       };
 
-      this.logSessionToHistory(gameName, playtimeMinutes, session.gameId, combinedMetadata);
+      const historyEntry = this.createHistoryEntry(gameName, playtimeMinutes, session.gameId, combinedMetadata);
+      const remainingSessions = { ...sessions };
+      delete remainingSessions[gameName];
+      const historyWritten = SessionRepository.settleSession(historyEntry, remainingSessions);
+      if (!historyWritten) {
+        return null;
+      }
       
       // Update RollingAchievementsTracker with session data
       RollingAchievementsTracker.updatePlaytime(playtimeMinutes);
@@ -214,7 +250,7 @@ export class PlaytimeAutoLogger {
     }
 
     delete sessions[gameName];
-    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+    SessionRepository.saveActiveSessions(sessions);
 
     // Trigger stats refresh event
     window.dispatchEvent(new CustomEvent('gameSessionEnded', { detail: { gameName, playtimeMinutes } }));
@@ -225,6 +261,7 @@ export class PlaytimeAutoLogger {
       playtimeMinutes,
       startTime: session.startTime,
       endTime: endTime.toISOString(),
+      sessionId: session.sessionId || null,
       metadata: {
         actualElapsedMinutes,
         sessionAdjusted: adjusted,
@@ -248,7 +285,7 @@ export class PlaytimeAutoLogger {
 
     session.paused = true;
     session.pausedAt = new Date().toISOString();
-    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+    SessionRepository.saveActiveSessions(sessions);
 
     return session;
   }
@@ -277,7 +314,7 @@ export class PlaytimeAutoLogger {
 
     session.paused = false;
     delete session.pausedAt;
-    StorageService.set(this.ACTIVE_SESSIONS_KEY, sessions);
+    SessionRepository.saveActiveSessions(sessions);
 
     return session;
   }
@@ -286,14 +323,13 @@ export class PlaytimeAutoLogger {
    * Get all active sessions
    */
   static getActiveSessions() {
-    const stored = StorageService.getString(this.ACTIVE_SESSIONS_KEY);
     try {
-      const parsedSessions = stored ? JSON.parse(stored) : {};
-      if (!isPlainObject(parsedSessions)) {
+      const storedSessions = SessionRepository.getActiveSessions();
+      if (!isPlainObject(storedSessions)) {
         return {};
       }
 
-      return Object.entries(parsedSessions).reduce((normalizedSessions, [gameName, sessionEntry]) => {
+      return Object.entries(storedSessions).reduce((normalizedSessions, [gameName, sessionEntry]) => {
         const normalizedEntry = normalizeActiveSessionEntry(gameName, sessionEntry);
 
         if (normalizedEntry) {
@@ -321,6 +357,39 @@ export class PlaytimeAutoLogger {
     return results;
   }
 
+  static confirmActiveSessions(now = new Date()) {
+    const sessions = this.getActiveSessions();
+    const confirmedAt = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
+    let changed = false;
+
+    Object.values(sessions).forEach((session) => {
+      if (!session.paused) {
+        session.lastConfirmedAt = confirmedAt;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      SessionRepository.saveActiveSessions(sessions);
+    }
+
+    return sessions;
+  }
+
+  static recoverInterruptedSessions() {
+    const sessions = this.getActiveSessions();
+    return Object.entries(sessions).reduce((results, [gameName, session]) => {
+      const recoveredEndTime = session.lastConfirmedAt || session.startTime;
+      const result = this.endSession(gameName, {
+        recoveredSession: true,
+        recoveredEndTime,
+        endTimeOverride: recoveredEndTime
+      });
+      if (result) results.push(result);
+      return results;
+    }, []);
+  }
+
   static pruneStaleActiveSessions(maxAgeMs = MAX_ACTIVE_SESSION_AGE_MS) {
     const sessions = this.getActiveSessions();
     const now = Date.now();
@@ -338,7 +407,7 @@ export class PlaytimeAutoLogger {
     });
 
     if (prunedCount > 0) {
-      StorageService.set(this.ACTIVE_SESSIONS_KEY, nextSessions);
+      SessionRepository.saveActiveSessions(nextSessions);
     }
 
     return nextSessions;
@@ -363,35 +432,37 @@ export class PlaytimeAutoLogger {
   /**
    * Log session to history
    */
-  static logSessionToHistory(gameName, playtimeMinutes, gameId = null, metadata = {}) {
-    const history = this.getSessionHistory();
+  static createHistoryEntry(gameName, playtimeMinutes, gameId = null, metadata = {}) {
     const normalizedMetadata = metadata && typeof metadata === 'object' ? metadata : {};
-    
-    history.push({
+    const sessionId = normalizedMetadata.sessionId || createSessionId(gameName);
+    return {
       gameName,
       gameId,
       playtimeMinutes,
-      timestamp: new Date().toISOString(),
-      date: new Date().toLocaleDateString(),
-      ...normalizedMetadata
-    });
+      timestamp: normalizedMetadata.endTime || new Date().toISOString(),
+      date: new Date(normalizedMetadata.endTime || Date.now()).toLocaleDateString(),
+      ...normalizedMetadata,
+      sessionId
+    };
+  }
 
-    // Keep only last 1000 sessions for performance
-    if (history.length > 1000) {
-      history.shift();
+  static logSessionToHistory(gameName, playtimeMinutes, gameId = null, metadata = {}) {
+    const entry = this.createHistoryEntry(gameName, playtimeMinutes, gameId, metadata);
+    const history = this.getSessionHistory();
+    if (history.some((existing) => existing?.sessionId === entry.sessionId)) {
+      return false;
     }
-
-    StorageService.set(this.SESSION_HISTORY_KEY, history);
+    history.push(entry);
+    return SessionRepository.replaceHistory(history);
   }
 
   /**
    * Get session history
    */
   static getSessionHistory() {
-    const stored = StorageService.getString(this.SESSION_HISTORY_KEY);
     try {
-      const parsedHistory = stored ? JSON.parse(stored) : [];
-      return Array.isArray(parsedHistory) ? parsedHistory : [];
+      const history = SessionRepository.getSessionHistory();
+      return Array.isArray(history) ? history : [];
     } catch (e) {
       return [];
     }
@@ -630,7 +701,6 @@ export class PlaytimeAutoLogger {
    * Clear all session and history data
    */
   static clearAllData() {
-    StorageService.remove(this.ACTIVE_SESSIONS_KEY);
-    StorageService.remove(this.SESSION_HISTORY_KEY);
+    SessionRepository.clear();
   }
 }

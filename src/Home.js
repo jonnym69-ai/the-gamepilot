@@ -19,6 +19,10 @@ import WishlistSection from './components/WishlistSection';
 import NostalgiaCard from './components/NostalgiaCard';
 import PatchNotesBadge from './components/PatchNotesBadge';
 import LibrarianHubCarousel from './components/LibrarianHubCarousel';
+import WelcomeBackCard from './components/WelcomeBackCard';
+import { SessionService } from './services/SessionService';
+import { WelcomeBackService } from './services/WelcomeBackService';
+import StorageService from './services/StorageService';
 import {
   HomeGuidedContent,
   HomeSection,
@@ -79,6 +83,16 @@ const formatPlaytime = (minutes) => {
 // ... (rest of the code remains the same)
 
 function GettingStartedModal({ isOpen, onClose, onHidePermanently, onScan, theme }) {
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleScan = () => {
@@ -87,16 +101,26 @@ function GettingStartedModal({ isOpen, onClose, onHidePermanently, onScan, theme
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '520px' }}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-content"
+        style={{ maxWidth: '520px' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="getting-started-title"
+        aria-describedby="getting-started-description"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button
+          type="button"
           onClick={onClose}
           className="modal-close"
+          aria-label="Close getting started guide"
         >
-          ×
+          <span aria-hidden="true">×</span>
         </button>
-        <h2 className={`modal-title ${theme}`}>Your gaming librarian</h2>
-        <p style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
+        <h2 id="getting-started-title" className={`modal-title ${theme}`}>Your gaming librarian</h2>
+        <p id="getting-started-description" style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
           GamePilot reads your libraries, builds a living persona from how you play, and recommends your next session — with a roast on the side.
         </p>
         <div className="getting-started-actions">
@@ -112,12 +136,15 @@ const formatLastPlayed = (lastPlayedTimestamp) => {
   if (!lastPlayedTimestamp) return 'Never played';
 
   const lastPlayedDate = new Date(lastPlayedTimestamp);
+  if (Number.isNaN(lastPlayedDate.getTime())) return 'Unknown';
+
   const now = new Date();
-  const diffMs = now - lastPlayedDate;
+  const diffMs = Math.max(0, now - lastPlayedDate);
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
 
+  if (diffMinutes < 1) return 'Just now';
   if (diffMinutes < 60) return `${diffMinutes}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
@@ -168,27 +195,27 @@ function Home({
   const [buyRecommendationsLoading, setBuyRecommendationsLoading] = useState(false);
   const [surpriseShelfIndex, setSurpriseShelfIndex] = useState(null);
   const [surpriseCycling, setSurpriseCycling] = useState(false);
+  const [welcomeBackData, setWelcomeBackData] = useState(null);
+  const [welcomeBackVisible, setWelcomeBackVisible] = useState(false);
+
+  const safeLibrary = useMemo(() => (Array.isArray(library) ? library : []), [library]);
 
   const recentGames = useMemo(() => {
-    return library
+    return safeLibrary
       .filter(game => game.last_played && game.time_played > 0)
       .sort((a, b) => new Date(b.last_played) - new Date(a.last_played))
       .slice(0, 5);
-  }, [library]);
+  }, [safeLibrary]);
 
   const featuredGames = useMemo(() => {
-    return library
+    return safeLibrary
       .filter(game => game.time_played > 120)
       .sort((a, b) => b.time_played - a.time_played)
       .slice(0, 5);
-  }, [library]);
+  }, [safeLibrary]);
 
   const topRatedGames = useMemo(() => {
-    if (!Array.isArray(library)) {
-      return [];
-    }
-
-    return library
+    return safeLibrary
       .filter((game) => typeof game?.userRating === 'number' && game.userRating > 0)
       .sort((left, right) => {
         const ratingDiff = (right.userRating || 0) - (left.userRating || 0);
@@ -199,7 +226,7 @@ function Home({
         return (right.time_played || 0) - (left.time_played || 0);
       })
       .slice(0, 6);
-  }, [library]);
+  }, [safeLibrary]);
 
   const getHomeShelfGameKey = useCallback((game) => {
     if (!game) {
@@ -238,6 +265,25 @@ function Home({
       // Non-critical identity tracking
     }
     setRetentionRefreshKey((current) => current + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const lastTs = StorageService.get('lastSessionTimestamp', null);
+    const fresh = SessionService.isFreshSession(lastTs);
+    SessionService.stampSession();
+
+    if (fresh && !SessionService.isWelcomeBackDismissed() && !SessionService.isWelcomeBackOptedOut() && safeLibrary.length >= 2) {
+      try {
+        const data = WelcomeBackService.buildWelcomeBack(safeLibrary);
+        if (data) {
+          setWelcomeBackData(data);
+          setWelcomeBackVisible(true);
+        }
+      } catch (e) {
+        console.error('Home: failed to build welcome back card', e);
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -322,14 +368,10 @@ function Home({
 
   const handleMoodSelection = (nextMood) => {
     setMood(nextMood);
-    if (nextMood) {
-    }
   };
 
   const handleGenreSelection = (nextGenre) => {
     setSelectedGenre(nextGenre);
-    if (nextGenre) {
-    }
   };
 
   const handleFamiliarityChange = (bias) => {
@@ -656,7 +698,7 @@ function Home({
   const availableMoods = React.useMemo(() => {
     // Always show all 5 moods regardless of library content
     // This ensures users can select any mood even if no games currently have that mood
-    return ['Relaxed', 'Social', 'Focused', 'Creative', 'Escapist'];
+    return ['Relaxed', 'Social', 'Focused', 'Creative', 'Competitive'];
   }, []);
 
   const availableGenres = React.useMemo(() => {
@@ -830,7 +872,7 @@ function Home({
   const favoriteShelfArtwork = favoriteShelfGame ? resolveGameArtwork(favoriteShelfGame, { surface: 'recommendation_card' }) : null;
   const favoriteShelfPlaceholder = favoriteShelfGame ? getGameArtworkPlaceholder({ game: favoriteShelfGame, surface: 'recommendation_card' }) : null;
   const homeShelfCards = [tonightPickGame, continuePlayingGame, rediscoverShelfGame, favoriteShelfGame].filter(Boolean).length;
-  const weeklyQuestSummary = weeklyQuest?.primaryQuest?.title || weeklyQuest?.label || 'A few thoughtful picks are ready for you.';
+  const weeklyQuestSummary = 'Playstyle picks and shelves tuned to how you actually play.';
   const weeklyPlayDays = weeklyHabitStats.daysPlayed || weeklyQuest?.weeklyStats?.activeDays || 0;
   const weeklyPlaytimeHours = weeklyHabitStats.totalHours || weeklyQuest?.weeklyStats?.playtimeHours || 0;
   const recentLibraryActivity = recentGames.length;
@@ -1131,6 +1173,15 @@ function Home({
     }, 80);
   }, [surpriseShelfEntries]);
 
+  const handleDismissWelcomeBack = useCallback(() => {
+    SessionService.dismissWelcomeBack();
+    setWelcomeBackVisible(false);
+  }, []);
+
+  const handleOptOutWelcomeBack = useCallback(() => {
+    SessionService.setWelcomeBackOptedOut(true);
+  }, []);
+
   return (
     <div
       className={`home-page ${theme}`}
@@ -1216,6 +1267,15 @@ function Home({
         </div>
       </div>
 
+      {welcomeBackVisible && welcomeBackData && (
+        <WelcomeBackCard
+          data={welcomeBackData}
+          onLaunchGame={onLaunchGame}
+          onDismiss={handleDismissWelcomeBack}
+          onOptOut={handleOptOutWelcomeBack}
+        />
+      )}
+
       {isDashboard ? (
         <>
           <NostalgiaCard library={library} />
@@ -1225,7 +1285,7 @@ function Home({
 
           <CollapsibleSection
             title="Library Today"
-            subtitle="Guided shelves, picks, and your weekly story."
+            subtitle="Guided shelves and playstyle picks."
             badge={`${library?.length || 0} games`}
             icon={<Library size={18} />}
             className="home-guided-section"
@@ -1299,11 +1359,11 @@ function Home({
           />
 
           <CollapsibleSection
-            title="Identity & Habits"
-            subtitle="Your gaming persona, weekly progress, and active goals."
+            title="Your Persona"
+            subtitle="The roast-backed identity GamePilot uses for picks and stories."
             icon={<Library size={18} />}
             className="home-identity-section"
-            defaultOpen={false}
+            defaultOpen
           >
             <IdentitySnapshotCard persona={personaSnapshot} />
             <BecauseYouAreSection
@@ -1316,7 +1376,8 @@ function Home({
               getGameCardClass={getGameCardClass}
             />
             <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
-            <HabitGoalsMiniCard goalProgress={goalProgress} />
+            {/* Phase 0: habit goals mini-card hidden (system retained). */}
+            {false && <HabitGoalsMiniCard goalProgress={goalProgress} />}
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -1444,13 +1505,22 @@ function Home({
 
           <HomeSection
             eyebrow="Who You Are"
-            title="Your Gaming Identity"
-            copy="GamePilot learns your patterns and turns them into a living profile."
+            title="Your Gaming Persona"
+            copy="Built from real play — then roasted. This is what powers your recommendations."
             compact
           >
             <IdentitySnapshotCard persona={personaSnapshot} />
+            <BecauseYouAreSection
+              library={library}
+              resolveGameArtwork={resolveGameArtwork}
+              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
+              platformIcons={PLATFORM_ICONS}
+              formatPlaytime={formatPlaytime}
+              onLaunchGame={onLaunchGame}
+              getGameCardClass={getGameCardClass}
+            />
             <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
-            <HabitGoalsMiniCard goalProgress={goalProgress} />
+            {false && <HabitGoalsMiniCard goalProgress={goalProgress} />}
           </HomeSection>
 
           <HomeSection

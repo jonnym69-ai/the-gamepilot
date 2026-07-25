@@ -531,6 +531,71 @@ export class LocalShareService {
     return lines.join('\n');
   }
 
+  static buildPersonaShareText(persona = {}, username = 'Gamer') {
+    const safePersona = persona || {};
+    const primary = safePersona.primaryPersona || safePersona;
+    const label = primary?.label || safePersona?.label || 'Gamer in Progress';
+    const roast = safePersona?.summaryRoast || primary?.roast || '';
+    const description = primary?.description || '';
+    const evidence = Array.isArray(primary?.evidence) ? primary.evidence : [];
+    const subTraits = Array.isArray(safePersona?.subTraits) ? safePersona.subTraits : [];
+    const topGames = Array.isArray(safePersona?.topGames) ? safePersona.topGames.slice(0, 3) : [];
+    const dominantGenre = safePersona?.signals?.dominantGenre || primary?.basedOnGame || null;
+    const confidence = safePersona?.confidence || 'low';
+    const displayName = username || 'Pilot';
+
+    const lines = [
+      `🎮 ${displayName} · ${label}`,
+      ''
+    ];
+
+    if (roast) {
+      lines.push(`"${roast}"`);
+      lines.push('');
+    }
+
+    if (description) {
+      lines.push(description);
+      lines.push('');
+    }
+
+    if (evidence.length > 0) {
+      lines.push(`Evidence: ${evidence.join(' · ')}`);
+    }
+
+    if (subTraits.length > 0) {
+      const traitLabels = subTraits.map((t) => t.label || t.id).join(', ');
+      lines.push(`Traits: ${traitLabels}`);
+    }
+
+    if (topGames.length > 0) {
+      const gameNames = topGames.map((g) => g.name || g.gameName).filter(Boolean).join(', ');
+      if (gameNames) {
+        lines.push(`Top games: ${gameNames}`);
+      }
+    }
+
+    if (dominantGenre) {
+      lines.push(`Dominant genre: ${dominantGenre}`);
+    }
+
+    lines.push('');
+    lines.push(confidence === 'high' ? 'Confidence: High — built from real play history.' : 'Confidence: Still sharpening — play more to refine.');
+    lines.push('');
+    lines.push('Get your own gaming persona at:');
+    lines.push('https://github.com/jonnym69-ai/the-gamepilot/releases');
+    lines.push('#GamePilot #GamingPersona');
+
+    return lines.join('\n');
+  }
+
+  static buildPersonaShareCardPackage(persona = {}, username = 'Gamer') {
+    const text = LocalShareService.buildPersonaShareText(persona, username);
+    const filename = `gamepilot-persona-${new Date().toISOString().split('T')[0]}.png`;
+    const title = `${username || 'Pilot'}'s GamePilot Persona`;
+    return { text, filename, title };
+  }
+
   static buildIdentityShareCardPackage(profile = {}, username = 'Gamer') {
     const text = LocalShareService.buildIdentityShareText(profile, username);
     const filename = `gamepilot-identity-${new Date().toISOString().split('T')[0]}.png`;

@@ -5,6 +5,7 @@ import { ACHIEVEMENTS, AchievementTracker } from './AchievementSystem';
 import { RollingAchievementsTracker } from './services/RollingAchievementsTracker';
 import NavBar from './NavBar';
 import StorageService from './services/StorageService';
+import SessionRepository from './services/SessionRepository';
 import './Achievements.css';
 
 const getSessionStartTimestamp = (sessionEntry) => {
@@ -139,11 +140,11 @@ function Achievements({ theme }) {
       'focused_25': 'Choose "Focused" mood 25 times. Discipline champion!',
       'focused_50': 'Choose "Focused" mood 50 times. Precision expert!',
       'focused_100': 'Choose "Focused" mood 100 times. Focus legend!',
-      'escapist_5': 'Choose "Escapist" mood 5 times. Escape to new worlds!',
-      'escapist_10': 'Choose "Escapist" mood 10 times. Reality bender!',
-      'escapist_25': 'Choose "Escapist" mood 25 times. Fantasy explorer!',
-      'escapist_50': 'Choose "Escapist" mood 50 times. Immersive master!',
-      'escapist_100': 'Choose "Escapist" mood 100 times. Escape legend!',
+      'competitive_5': 'Choose "Competitive" mood 5 times. Step into the arena!',
+      'competitive_10': 'Choose "Competitive" mood 10 times. Rank climber!',
+      'competitive_25': 'Choose "Competitive" mood 25 times. Arena veteran!',
+      'competitive_50': 'Choose "Competitive" mood 50 times. Esports prospect!',
+      'competitive_100': 'Choose "Competitive" mood 100 times. Arena legend!',
       'mood_explorer': 'Try all 5 mood types at least once. Explore different gaming vibes!',
       'mood_variety_10': 'Use each mood at least 10 times. Mood chameleon!',
       'mood_master': 'Use each mood at least 25 times. Master all moods!',
@@ -429,12 +430,12 @@ function Achievements({ theme }) {
       'focused_50': <Trophy size={16} />,
       'focused_100': <Target size={16} />,
       
-      // Mood achievements - Escapist
-      'escapist_5': <Star size={16} />,
-      'escapist_10': <Medal size={16} />,
-      'escapist_25': <Crown size={16} />,
-      'escapist_50': <Trophy size={16} />,
-      'escapist_100': <Target size={16} />,
+      // Mood achievements - Competitive
+      'competitive_5': <Star size={16} />,
+      'competitive_10': <Medal size={16} />,
+      'competitive_25': <Crown size={16} />,
+      'competitive_50': <Trophy size={16} />,
+      'competitive_100': <Target size={16} />,
       
       // Mood variety achievements
       'mood_explorer': <Star size={16} />,
@@ -744,11 +745,11 @@ function Achievements({ theme }) {
       'focused_25': 800,
       'focused_50': 1500,
       'focused_100': 3000,
-      'escapist_5': 150,
-      'escapist_10': 350,
-      'escapist_25': 800,
-      'escapist_50': 1500,
-      'escapist_100': 3000,
+      'competitive_5': 150,
+      'competitive_10': 350,
+      'competitive_25': 800,
+      'competitive_50': 1500,
+      'competitive_100': 3000,
       'mood_explorer': 500,
       'mood_variety_10': 1000,
       'mood_master': 2000,
@@ -883,7 +884,7 @@ function Achievements({ theme }) {
     let adjustedTotalPlayTime = stats.totalPlayTime;
     if (achievement.category === 'time') {
       try {
-        const activeSessions = StorageService.get('activeGameSessions', {});
+        const activeSessions = SessionRepository.getActiveSessions();
         const currentTime = Date.now();
         
         for (const sessionData of Object.values(activeSessions)) {
@@ -991,21 +992,21 @@ function Achievements({ theme }) {
         const weekKeyF100 = AchievementTracker.getCurrentWeekKey();
         const weekMoodsF100 = moodStatsF100[weekKeyF100] || {};
         return Math.min(((weekMoodsF100.focused || 0) / 100) * 100, 100);
-      case 'escapist_25':
+      case 'competitive_25':
         const moodStatsE25 = AchievementTracker.getMoodStats();
         const weekKeyE25 = AchievementTracker.getCurrentWeekKey();
         const weekMoodsE25 = moodStatsE25[weekKeyE25] || {};
-        return Math.min(((weekMoodsE25.escapist || 0) / 25) * 100, 100);
-      case 'escapist_50':
+        return Math.min(((weekMoodsE25.competitive || 0) / 25) * 100, 100);
+      case 'competitive_50':
         const moodStatsE50 = AchievementTracker.getMoodStats();
         const weekKeyE50 = AchievementTracker.getCurrentWeekKey();
         const weekMoodsE50 = moodStatsE50[weekKeyE50] || {};
-        return Math.min(((weekMoodsE50.escapist || 0) / 50) * 100, 100);
-      case 'escapist_100':
+        return Math.min(((weekMoodsE50.competitive || 0) / 50) * 100, 100);
+      case 'competitive_100':
         const moodStatsE100 = AchievementTracker.getMoodStats();
         const weekKeyE100 = AchievementTracker.getCurrentWeekKey();
         const weekMoodsE100 = moodStatsE100[weekKeyE100] || {};
-        return Math.min(((weekMoodsE100.escapist || 0) / 100) * 100, 100);
+        return Math.min(((weekMoodsE100.competitive || 0) / 100) * 100, 100);
       case 'mood_explorer':
         const moodStatsExp = AchievementTracker.getMoodStats();
         const weekKeyExp = AchievementTracker.getCurrentWeekKey();
@@ -1015,14 +1016,14 @@ function Achievements({ theme }) {
         const moodStatsVar10 = AchievementTracker.getMoodStats();
         const weekKeyVar10 = AchievementTracker.getCurrentWeekKey();
         const weekMoodsVar10 = moodStatsVar10[weekKeyVar10] || {};
-        const allMoods10 = ['relaxed', 'social', 'creative', 'focused', 'escapist'];
+        const allMoods10 = ['relaxed', 'social', 'creative', 'focused', 'competitive'];
         const minUsage10 = Math.min(...allMoods10.map(mood => weekMoodsVar10[mood] || 0));
         return Math.min((minUsage10 / 10) * 100, 100);
       case 'mood_legend':
         const moodStatsLeg = AchievementTracker.getMoodStats();
         const weekKeyLeg = AchievementTracker.getCurrentWeekKey();
         const weekMoodsLeg = moodStatsLeg[weekKeyLeg] || {};
-        const allMoods50 = ['relaxed', 'social', 'creative', 'focused', 'escapist'];
+        const allMoods50 = ['relaxed', 'social', 'creative', 'focused', 'competitive'];
         const minUsage50 = Math.min(...allMoods50.map(mood => weekMoodsLeg[mood] || 0));
         return Math.min((minUsage50 / 50) * 100, 100);
       
@@ -1052,8 +1053,8 @@ function Achievements({ theme }) {
         const weekKeyF_group = AchievementTracker.getCurrentWeekKey();
         const weekMoodsF_group = moodStatsF_group[weekKeyF_group] || {};
         return Math.min(((weekMoodsF_group.focused || 0) / (achievement.id === 'focused_5' ? 5 : 10)) * 100, 100);
-      case 'escapist_5':
-      case 'escapist_10':
+      case 'competitive_5':
+      case 'competitive_10':
         const moodStatsE_group = AchievementTracker.getMoodStats();
         const weekKeyE_group = AchievementTracker.getCurrentWeekKey();
         const weekMoodsE_group = moodStatsE_group[weekKeyE_group] || {};
