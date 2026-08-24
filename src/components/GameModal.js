@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Trash2 } from 'lucide-react';
+import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Trash2, Globe, Trophy, Sparkles } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
 import { openExternalUrl } from '../services/ElectronBridge';
@@ -8,7 +8,13 @@ import ProfileService from '../services/ProfileService';
 import { GameCurationService } from '../services/GameCurationService';
 import { GameRatingService } from '../services/GameRatingService';
 import { PlaytimeAutoLogger } from '../services/PlaytimeAutoLogger';
+import HowLongToBeatService from '../services/HowLongToBeatService';
+import { RecommendationEngine } from '../services/RecommendationEngine';
+import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
+import { getGameArtworkPlaceholder, resolveGameArtwork } from '../services/GameArtworkService';
+import LazyImage from './LazyImage';
 import { GameShareCard, buildGameShareCaption, buildGameShareData } from './GameShareCard';
+import { SessionLaunchShareCard } from './SessionLaunchShareCard';
 import { ShareMenu } from './ShareMenu';
 import LibrariansNotes from './LibrariansNotes';
 import SaveBackupPanel from './SaveBackupPanel';
@@ -35,7 +41,7 @@ const getRatingLabel = (value) => {
   return 'Avoid';
 };
 
-const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavorite = false, onTogglePin, onUpdatePrice, onUpdateRating, onUpdateCollections, onToggleHidden, onUpdateCompletion, onUpdateNotes, onUpdateCoverArt, onAddSessionNote }) => {
+const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame, onToggleFavorite, isFavorite = false, onTogglePin, onUpdatePrice, onUpdateRating, onUpdateCollections, onToggleHidden, onUpdateCompletion, onUpdateNotes, onUpdateCoverArt, onAddSessionNote, onTogglePlayedElsewhere, bigScreen = false }) => {
   const { success: toastSuccess } = useToast();
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -53,9 +59,12 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
   const [selectedCollections, setSelectedCollections] = useState(game?.userCollections || []);
   const [completionStatus, setCompletionStatus] = useState(game?.completionStatus || 'not-started');
   const [coverArtUrl, setCoverArtUrl] = useState(game?.coverArtOverride || '');
+  const [playedElsewhere, setPlayedElsewhere] = useState(Boolean(game?.playedElsewhere));
   const [sessionNoteText, setSessionNoteText] = useState('');
   const fetchedGameId = React.useRef(null);
+  const modalBodyRef = useRef(null);
   const shareCardRef = useRef(null);
+  const sessionLaunchCardRef = useRef(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const interfacePrefs = useInterfacePreferences();
 
@@ -64,10 +73,30 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     return PlaytimeAutoLogger.getGameStats(game.name);
   }, [game?.name]);
 
+  const similarRecommendations = useMemo(() => (
+    RecommendationEngine.getSimilarToGame(Array.isArray(library) ? library : [], game, 6)
+  ), [library, game]);
+
   const isPinned = useMemo(() => {
     const key = String(game?.appid || game?.name || '');
     return (interfacePrefs.pinnedGameIds || []).map(String).includes(key);
   }, [interfacePrefs.pinnedGameIds, game]);
+
+  // HLTB completion check — if the user has played more than the HLTB main
+  // story time but hasn't marked the game as beaten/completed, show a prompt.
+  const hltbCompletionPrompt = useMemo(() => {
+    if (!game) return null;
+    const entry = HowLongToBeatService.getCached(game);
+    if (!entry || !entry.found || !entry.mainHours || entry.mainHours <= 0) return null;
+    const playedHours = (Number(game.time_played) || 0) / 60;
+    if (playedHours < entry.mainHours) return null;
+    const status = game.completionStatus || 'not-started';
+    if (status === 'beaten' || status === 'completed' || status === '100%' || status === 'abandoned') return null;
+    return {
+      mainHours: entry.mainHours,
+      playedHours: Math.round(playedHours * 10) / 10
+    };
+  }, [game]);
 
   // Sync state when game prop changes
   useEffect(() => {
@@ -81,8 +110,10 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
       setSelectedCollections(game.userCollections || []);
       setCompletionStatus(game.completionStatus || 'not-started');
       setCoverArtUrl(game.coverArtOverride || '');
+      setPlayedElsewhere(Boolean(game.playedElsewhere));
       setSaveState('idle');
       setSelectedControlIndex(0);
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [game]);
 
@@ -259,6 +290,26 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     }
   }, []);
 
+  const generateSessionLaunchShareCardBlob = useCallback(async () => {
+    if (!sessionLaunchCardRef.current) return null;
+    setIsCapturing(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(sessionLaunchCardRef.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true
+      });
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      setIsCapturing(false);
+      return blob;
+    } catch (e) {
+      setIsCapturing(false);
+      console.error('Session launch share capture failed:', e);
+      return null;
+    }
+  }, []);
+
   const handleCopyGameShareCard = useCallback(async () => {
     const blob = await generateGameShareCardBlob();
     if (!blob) {
@@ -269,6 +320,17 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     toastSuccess(copied ? 'Game card copied to clipboard.' : 'Could not copy game card.');
     return copied;
   }, [generateGameShareCardBlob, toastSuccess]);
+
+  const handleCopySessionLaunchShareCard = useCallback(async () => {
+    const blob = await generateSessionLaunchShareCardBlob();
+    if (!blob) {
+      toastSuccess('Could not generate session launch card.');
+      return false;
+    }
+    const copied = await LocalShareService.copyImageToClipboard(blob);
+    toastSuccess(copied ? 'Session launch card copied to clipboard.' : 'Could not copy session launch card.');
+    return copied;
+  }, [generateSessionLaunchShareCardBlob, toastSuccess]);
 
   const handleDownloadGameShareCard = useCallback(async () => {
     const blob = await generateGameShareCardBlob();
@@ -286,6 +348,49 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
     URL.revokeObjectURL(url);
     toastSuccess('Game card saved.');
   }, [generateGameShareCardBlob, toastSuccess]);
+
+  const buildGameSessionShareText = useCallback(() => {
+    const name = game?.name || 'this game';
+    const lines = [
+      `About to drop into ${name} for a session 🎮`,
+      'Might be streaming it too — come hang out if you see a link.',
+      '',
+      'Powered by GamePilot'
+    ];
+    return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+  }, [game]);
+
+  const handleDownloadSessionLaunchShareCard = useCallback(async () => {
+    const blob = await generateSessionLaunchShareCardBlob();
+    if (!blob) {
+      toastSuccess('Could not generate session launch card.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gamepilot-going-live-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toastSuccess('Session launch card saved.');
+  }, [generateSessionLaunchShareCardBlob, toastSuccess]);
+
+  const handleNativeShareSessionLaunch = useCallback(async (text = null) => {
+    const blob = await generateSessionLaunchShareCardBlob();
+    if (!blob) {
+      toastSuccess('Could not generate session launch card.');
+      return;
+    }
+    const file = new File([blob], `gamepilot-going-live-${Date.now()}.png`, { type: 'image/png' });
+    const result = await LocalShareService.shareWithNativeShare({
+      title: `Going live with ${game?.name}`,
+      text: text || buildGameSessionShareText(),
+      files: [file]
+    });
+    toastSuccess(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+  }, [generateSessionLaunchShareCardBlob, buildGameSessionShareText, toastSuccess, game?.name]);
 
   const buildGameShareText = useCallback(() => {
     const shareData = buildGameShareData(game, gameStats);
@@ -458,7 +563,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
 
   return (
     <>
-    <div className="game-modal-overlay" onClick={onClose}>
+    <div className={`game-modal-overlay ${bigScreen ? 'gm-big-screen' : ''}`} onClick={onClose}>
       <div className="game-modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="game-modal-header">
           <div className="game-modal-title">
@@ -482,7 +587,7 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
           </button>
         </div>
 
-        <div className="game-modal-body">
+        <div className="game-modal-body" ref={modalBodyRef}>
           {loading ? (
             <div className="game-modal-loading">
               <div className="game-modal-spinner"></div>
@@ -844,6 +949,38 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
 
                 <div className="game-info-panel">
                   <h3>Completion Status</h3>
+                  {hltbCompletionPrompt && (
+                    <div className="game-modal-hltb-prompt">
+                      <Trophy size={16} />
+                      <div>
+                        <strong>You've played {hltbCompletionPrompt.playedHours}h — that's past the HLTB main story ({hltbCompletionPrompt.mainHours}h).</strong>
+                        <p>Did you beat this game?</p>
+                        <div className="game-modal-hltb-prompt-actions">
+                          <button
+                            type="button"
+                            className="game-modal-hltb-prompt-btn beaten"
+                            onClick={() => handleCompletionChange('beaten')}
+                          >
+                            ⚡ Yes, beaten
+                          </button>
+                          <button
+                            type="button"
+                            className="game-modal-hltb-prompt-btn completed"
+                            onClick={() => handleCompletionChange('completed')}
+                          >
+                            ✓ Completed
+                          </button>
+                          <button
+                            type="button"
+                            className="game-modal-hltb-prompt-btn dismiss"
+                            onClick={() => handleCompletionChange('playing')}
+                          >
+                            Still playing
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <select
                     value={completionStatus}
                     onChange={(e) => handleCompletionChange(e.target.value)}
@@ -931,6 +1068,66 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
               </div>
             </div>
           )}
+
+        {similarRecommendations?.entries?.length > 0 && (
+          <section className="game-modal-similar-section" aria-labelledby="game-modal-similar-title">
+            <div className="game-modal-similar-header">
+              <div>
+                <h3 id="game-modal-similar-title"><Sparkles size={18} /> More Like This</h3>
+                <p>Games from your library that match {game.name}'s genres, themes, tags, and mood.</p>
+              </div>
+            </div>
+            <div className="game-modal-similar-grid">
+              {similarRecommendations.entries.map((entry, index) => {
+                const recommendedGame = entry.game;
+                const reason = similarRecommendations.meta?.allReasons?.[index]?.[0]
+                  || entry.reason
+                  || similarRecommendations.message;
+                return (
+                  <article className="game-modal-similar-card" key={recommendedGame.appid || recommendedGame.name}>
+                    <button
+                      type="button"
+                      className="game-modal-similar-main"
+                      onClick={() => onSelectGame?.(recommendedGame)}
+                      disabled={typeof onSelectGame !== 'function'}
+                      aria-label={`View ${recommendedGame.name}`}
+                    >
+                      <LazyImage
+                        src={resolveGameArtwork(recommendedGame, { surface: 'portrait' })}
+                        fallbackSrc={resolveGameArtwork(recommendedGame, { surface: 'hero' })}
+                        placeholder={getGameArtworkPlaceholder({ game: recommendedGame, surface: 'portrait' })}
+                        alt={recommendedGame.name}
+                        className="game-modal-similar-artwork"
+                      />
+                      <span className="game-modal-similar-copy">
+                        <strong>{recommendedGame.name}</strong>
+                        <small>{reason}</small>
+                      </span>
+                    </button>
+                    {typeof onLaunch === 'function' && (
+                      <button
+                        type="button"
+                        className="game-modal-similar-launch"
+                        onClick={() => {
+                          UserBehaviorProfile.trackRecommendationLaunch('similar-to-game', recommendedGame.appid || recommendedGame.name, {
+                            mood: recommendedGame.mood || null,
+                            genre: RecommendationEngine.getPrimaryGenre(recommendedGame) || null,
+                            source: 'game-modal',
+                            referenceGame: game.name
+                          });
+                          onLaunch(recommendedGame);
+                        }}
+                        aria-label={`Launch ${recommendedGame.name}`}
+                      >
+                        <Play size={15} /> Play
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
         </div>
 
         <div className="game-modal-footer">
@@ -989,6 +1186,21 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             </button>
           )}
 
+          {typeof onTogglePlayedElsewhere === 'function' && (
+            <button
+              className={`wishlist-button ${playedElsewhere ? 'wishlisted' : ''}`}
+              onClick={() => {
+                onTogglePlayedElsewhere(game.name);
+                setPlayedElsewhere((prev) => !prev);
+              }}
+              title="Mark this game as played on another launcher/platform so it stops counting as unplayed"
+              style={{ outline: modalControls[selectedControlIndex] === 'playedElsewhere' ? '2px solid var(--accent, #ff6b35)' : 'none' }}
+            >
+              <Globe size={16} />
+              {playedElsewhere ? 'Played Elsewhere ✓' : 'Mark Played Elsewhere'}
+            </button>
+          )}
+
           <ShareMenu
             onCopyText={async (text = null) => {
               const copied = await LocalShareService.copyTextToClipboard(text || buildGameShareText());
@@ -1001,6 +1213,22 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             buildCaption={buildGameShareText}
             onNativeShare={handleNativeShareGame}
             triggerLabel="Share Game"
+            imageAvailable={true}
+            disabled={isCapturing}
+          />
+
+          <ShareMenu
+            onCopyText={async (text = null) => {
+              const copied = await LocalShareService.copyTextToClipboard(text || buildGameSessionShareText());
+              toastSuccess(copied ? 'Session text copied to clipboard.' : 'Could not copy session text.');
+              return copied;
+            }}
+            onCopyImage={handleCopySessionLaunchShareCard}
+            onSaveImage={handleDownloadSessionLaunchShareCard}
+            onShareText={handleShareGameText}
+            buildCaption={buildGameSessionShareText}
+            onNativeShare={handleNativeShareSessionLaunch}
+            triggerLabel="Going Live"
             imageAvailable={true}
             disabled={isCapturing}
           />
@@ -1030,6 +1258,9 @@ const GameModal = ({ game, isOpen, onClose, onLaunch, onToggleFavorite, isFavori
             game={game}
             gameStats={gameStats}
           />
+        </div>
+        <div ref={sessionLaunchCardRef}>
+          <SessionLaunchShareCard game={game} />
         </div>
       </div>
     </>

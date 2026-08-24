@@ -1,9 +1,7 @@
 import React from 'react';
 import { Gamepad2 } from 'lucide-react';
-import { LibraryValueService } from '../services/LibraryValueService';
 import { StatsAggregationService } from '../services/StatsAggregationService';
 import { resolveGameArtwork } from '../services/GameArtworkService';
-import { formatPrice, getCurrentCurrency } from '../CurrencyConverter';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import { ShareCardWatermark } from './ShareCardWatermark';
 import './LibraryShareCard.css';
@@ -78,11 +76,6 @@ export function buildLibraryShareData(library = [], username = 'Pilot', period =
     }
   }
 
-  const libraryValue = LibraryValueService.calculateLibraryValue(safeLibrary);
-
-  const currency = getCurrentCurrency();
-  const totalValue = libraryValue?.totalValue || 0;
-
   return {
     username,
     period: validPeriod,
@@ -94,9 +87,6 @@ export function buildLibraryShareData(library = [], username = 'Pilot', period =
     steamGameCount,
     mostPlayed,
     sessionCount,
-    totalValue,
-    formattedTotalValue: formatPrice(totalValue, currency),
-    currency
   };
 }
 
@@ -135,15 +125,14 @@ export function LibraryShareCard({ library, username, period, theme = null, visi
   const data = buildLibraryShareData(library, username, period);
   const showSessions = data.sessionCount > 0;
   const topGame = data.mostPlayed?.[0];
-  const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'hero' }) : null;
+  const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'portrait' }) : null;
 
   const stats = visibleStats && typeof visibleStats === 'object' ? visibleStats : {};
   const show = (key) => stats[key] !== false; // default visible
   const stripStats = [
     { key: 'games', value: data.gameCount, label: 'games' },
     { key: 'sessions', value: data.sessionCount, label: 'sessions' },
-    { key: 'steamHours', value: data.steamHours, label: 'Steam hours' },
-    { key: 'libraryValue', value: data.formattedTotalValue || `$${data.totalValue.toFixed(0)}`, label: 'library value' }
+    { key: 'steamHours', value: data.steamHours, label: 'Steam hours' }
   ].filter((stat) => {
     // If no sessions have been tracked locally, showing "0 sessions" next to hundreds
     // of hours of Steam playtime looks broken. Hide it unless the user explicitly

@@ -8,6 +8,7 @@ const {
   createTrackedDefaults,
   addGameIfUnique,
   getActiveDrives,
+  getLinuxLibraryRoots,
   getSteamPlaytimeMap
 } = require('./scannerUtils');
 
@@ -57,6 +58,7 @@ const getSteamLibraryFolderPaths = (steamAppsPath) => {
 const getSteamInstallPaths = () => {
   const paths = [];
 
+  // Windows: registry + drive probing (unchanged)
   [
     queryRegistryValue('HKLM\\SOFTWARE\\Valve\\Steam', 'InstallPath'),
     queryRegistryValue('HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam', 'InstallPath'),
@@ -77,6 +79,32 @@ const getSteamInstallPaths = () => {
       addUniquePath(paths, candidatePath);
     });
   });
+
+  // Linux / Steam Deck: native install, Flatpak install, and common
+  // external-storage mounts (SD card on Deck mounts under /run/media).
+  if (process.platform !== 'win32') {
+    const home = process.env.HOME || '';
+    [
+      home && path.join(home, '.local', 'share', 'Steam', 'steamapps'),
+      home && path.join(home, '.steam', 'steam', 'steamapps'),
+      home && path.join(home, '.steam', 'debian-installation', 'steamapps'),
+      home && path.join(home, '.var', 'app', 'com.valvesoftware.Steam', '.local', 'share', 'Steam', 'steamapps'),
+      home && path.join(home, 'Games', 'Steam', 'steamapps')
+    ].filter(Boolean).forEach((candidatePath) => {
+      addUniquePath(paths, candidatePath);
+    });
+
+    // SD card / external mounts (Steam Deck mounts SD under /run/media/mmcblk0p1)
+    ['/run/media', '/media', '/mnt'].forEach((mountRoot) => {
+      safeReadDir(mountRoot).forEach((entry) => {
+        addUniquePath(paths, path.join(mountRoot, entry, 'steamapps'));
+      });
+    });
+
+    getLinuxLibraryRoots().forEach((root) => {
+      addUniquePath(paths, path.join(root, 'Steam', 'steamapps'));
+    });
+  }
 
   const extraPaths = [];
   paths.forEach((steamPath) => {

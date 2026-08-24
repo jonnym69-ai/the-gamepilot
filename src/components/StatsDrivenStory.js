@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Gamepad2, Trophy, Clock, Layers, Target, Sparkles } from 'lucide-react';
+import { isGameUnplayed } from '../services/RecommendationEngine';
 import './StatsDrivenStory.css';
 
 const HOURS_THRESHOLD = 100;
@@ -13,7 +14,7 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
     const totalGames = library.length;
     const completedGames = library.filter((g) => g.completed || g.completionStatus === 'completed').length;
     const backlogGames = library.filter((g) => !g.completed && g.time_played && g.time_played > 0).length;
-    const unplayedGames = library.filter((g) => !g.time_played || g.time_played === 0).length;
+    const unplayedGames = library.filter((g) => isGameUnplayed(g)).length;
 
     const hoursByGenre = {};
     const hoursByPlatform = {};

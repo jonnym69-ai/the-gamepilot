@@ -16,21 +16,27 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
 
   if (!data) return null;
 
-  const { anchorGame, recommendedGame, reason, label, roast, headline } = data;
+  const { anchorGame, recommendedGame, reason, label, headline, lastSessionDuration } = data;
 
   const anchorArt = !imgError
-    ? resolveGameArtwork(anchorGame)
-    : getGameArtworkPlaceholder(anchorGame);
+    ? resolveGameArtwork(anchorGame, { surface: 'portrait' })
+    : getGameArtworkPlaceholder({ game: anchorGame, surface: 'portrait' });
   const recArt = !recImgError
-    ? resolveGameArtwork(recommendedGame)
-    : getGameArtworkPlaceholder(recommendedGame);
+    ? resolveGameArtwork(recommendedGame, { surface: 'portrait' })
+    : getGameArtworkPlaceholder({ game: recommendedGame, surface: 'portrait' });
 
   const handleDismiss = () => {
     if (dontShowAgain && onOptOut) onOptOut();
     onDismiss();
   };
 
-  const handleLaunch = () => {
+  const handleLaunchAnchor = () => {
+    if (dontShowAgain && onOptOut) onOptOut();
+    if (onLaunchGame && anchorGame) onLaunchGame(anchorGame);
+    onDismiss();
+  };
+
+  const handleLaunchRec = () => {
     if (dontShowAgain && onOptOut) onOptOut();
     if (onLaunchGame && recommendedGame) onLaunchGame(recommendedGame);
     onDismiss();
@@ -40,7 +46,14 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
     <div className="modal-overlay" onClick={handleDismiss}>
       <div
         className="modal-content"
-        style={{ maxWidth: '580px', padding: '0', overflow: 'hidden' }}
+        style={{
+          maxWidth: '560px',
+          padding: '0',
+          overflow: 'hidden',
+          borderRadius: '16px',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(108,92,231,0.15)'
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="welcome-back-title"
@@ -55,42 +68,45 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
           <span aria-hidden="true">×</span>
         </button>
 
-        {/* Persona header band */}
+        {/* Recent activity header */}
         <div style={{
-          padding: '28px 32px 20px',
-          background: 'linear-gradient(135deg, var(--accent, #6c5ce7) 0%, var(--accent-secondary, #a29bfe) 100%)',
+          padding: '24px 28px 18px',
+          background: 'linear-gradient(135deg, rgba(108,92,231,0.9) 0%, rgba(88,72,200,0.9) 100%)',
           color: '#fff'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Gamepad2 size={16} style={{ opacity: 0.8 }} />
-            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Gamepad2 size={15} style={{ opacity: 0.85 }} />
+            <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.85 }}>
               Welcome back
             </span>
           </div>
           {headline && (
-            <h2 id="welcome-back-title" style={{ fontSize: '1.4rem', fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3 }}>
+            <h2 id="welcome-back-title" style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0, lineHeight: 1.35 }}>
               {headline}
             </h2>
-          )}
-          {roast && (
-            <p style={{ fontSize: '0.85rem', opacity: 0.9, margin: 0, lineHeight: 1.5 }}>
-              {roast}
-            </p>
           )}
         </div>
 
         {/* Game comparison body */}
-        <div style={{ padding: '24px 32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-            {/* Anchor game */}
+        <div style={{ padding: '22px 28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
+            {/* Anchor game (Last Played) */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: '1' }}>
-              <span style={{ fontSize: '0.65rem', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                You've been playing
+              <span style={{ fontSize: '0.65rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a29bfe' }}>
+                ⏱️ Last Played{lastSessionDuration ? ` · ${lastSessionDuration}` : ''}
               </span>
               <img
                 src={anchorArt}
                 alt={anchorGame?.name || 'anchor'}
-                style={{ width: '100%', maxWidth: '160px', height: '75px', borderRadius: '8px', objectFit: 'cover' }}
+                style={{
+                  width: '100%',
+                  maxWidth: '120px',
+                  aspectRatio: '2 / 3',
+                  borderRadius: '10px',
+                  objectFit: 'cover',
+                  border: '2px solid rgba(108,92,231,0.5)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.35)'
+                }}
                 onError={() => setImgError(true)}
               />
               <span style={{ fontSize: '0.8rem', fontWeight: 600, textAlign: 'center' }}>
@@ -100,18 +116,26 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
 
             <ArrowRight size={28} style={{ opacity: 0.3, flexShrink: 0 }} />
 
-            {/* Recommended game */}
+            {/* Recommended / Relatable pick */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: '1' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Sparkles size={12} style={{ opacity: 0.6 }} />
-                <span style={{ fontSize: '0.65rem', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {label ? `${label} pick` : 'Try next'}
+                <Sparkles size={12} style={{ opacity: 0.7, color: '#ffeaa7' }} />
+                <span style={{ fontSize: '0.65rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#ffeaa7' }}>
+                  {label ? `${label} Pick` : 'Relatable Pick'}
                 </span>
               </div>
               <img
                 src={recArt}
                 alt={recommendedGame?.name || 'recommended'}
-                style={{ width: '100%', maxWidth: '160px', height: '75px', borderRadius: '8px', objectFit: 'cover', border: '2px solid var(--accent, #6c5ce7)' }}
+                style={{
+                  width: '100%',
+                  maxWidth: '120px',
+                  aspectRatio: '2 / 3',
+                  borderRadius: '10px',
+                  objectFit: 'cover',
+                  border: '2px solid var(--accent, #6c5ce7)',
+                  boxShadow: '0 4px 16px rgba(108,92,231,0.35)'
+                }}
                 onError={() => setRecImgError(true)}
               />
               <span style={{ fontSize: '0.8rem', fontWeight: 600, textAlign: 'center' }}>
@@ -122,67 +146,72 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
 
           {/* Reason highlight box */}
           <div style={{
-            background: 'var(--bg-secondary, rgba(255,255,255,0.05))',
+            background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderLeft: '3px solid var(--accent, #6c5ce7)',
             borderRadius: '10px',
-            padding: '14px 16px',
-            marginBottom: '20px'
+            padding: '12px 16px',
+            marginBottom: '18px'
           }}>
             <p style={{ fontSize: '0.85rem', lineHeight: 1.6, margin: 0, opacity: 0.9 }}>
               {reason}
             </p>
           </div>
 
-          {/* Genre tags */}
-          {recommendedGame?.genres?.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '20px' }}>
-              {recommendedGame.genres.slice(0, 4).map((g, i) => (
-                <span key={i} style={{
-                  fontSize: '0.7rem',
-                  padding: '3px 10px',
-                  borderRadius: '12px',
-                  background: 'var(--bg-secondary, rgba(255,255,255,0.08))',
-                  opacity: 0.7
-                }}>
-                  {g}
-                </span>
-              ))}
-            </div>
-          )}
-
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={handleLaunch}
+              onClick={handleLaunchAnchor}
               style={{
-                padding: '12px 28px',
+                padding: '12px 20px',
                 borderRadius: '10px',
                 border: 'none',
-                background: 'var(--accent, #6c5ce7)',
+                background: 'linear-gradient(135deg, var(--accent, #6c5ce7) 0%, #5848c8 100%)',
                 color: '#fff',
                 fontWeight: 700,
-                fontSize: '0.9rem',
+                fontSize: '0.85rem',
                 cursor: 'pointer',
-                flex: '1 1 auto'
+                flex: '1 1 auto',
+                boxShadow: '0 4px 14px rgba(108,92,231,0.35)'
               }}
             >
-              Launch {recommendedGame?.name || 'Game'}
+              ▶️ Jump back into {anchorGame?.name ? (anchorGame.name.length > 18 ? `${anchorGame.name.slice(0, 16)}...` : anchorGame.name) : 'Last Game'}
             </button>
+            {recommendedGame && (
+              <button
+                type="button"
+                onClick={handleLaunchRec}
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  flex: '1 1 auto'
+                }}
+              >
+                ✨ Try {recommendedGame?.name ? (recommendedGame.name.length > 18 ? `${recommendedGame.name.slice(0, 16)}...` : recommendedGame.name) : 'Next'}
+              </button>
+            )}
             <button
               type="button"
               onClick={handleDismiss}
               style={{
-                padding: '12px 20px',
+                padding: '12px 14px',
                 borderRadius: '10px',
                 border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
                 background: 'transparent',
                 color: 'var(--text)',
                 fontWeight: 600,
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 cursor: 'pointer'
               }}
             >
-              Not now
+              Skip
             </button>
           </div>
 

@@ -50,3 +50,101 @@
     transform: translateY(0);
   }
 }
+
+/* ─── Recently Played tab ─── */
+.librarian-hub-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.88rem;
+}
+
+.librarian-hub-recently-played-intro {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.librarian-hub-recently-played-shelf {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  scrollbar-width: thin;
+}
+.librarian-hub-recently-played-shelf::-webkit-scrollbar { height: 6px; }
+.librarian-hub-recently-played-shelf::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+
+.librarian-hub-recently-played-card {
+  flex-shrink: 0;
+  width: 130px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.librarian-hub-recently-played-card:hover {
+  transform: translateY(-3px);
+}
+
+.librarian-hub-recently-played-art {
+  position: relative;
+  width: 130px;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--skeleton-bg, #1a1a2e);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 6px;
+}
+.librarian-hub-recently-played-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.librarian-hub-recently-played-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.librarian-hub-recently-played-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border-radius: 10px;
+  color: #fff;
+}
+.librarian-hub-recently-played-card:hover .librarian-hub-recently-played-overlay {
+  opacity: 1;
+}
+
+.librarian-hub-recently-played-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.librarian-hub-recently-played-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary, #e2e8f0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.librarian-hub-recently-played-meta {
+  font-size: 10.5px;
+  color: var(--text-secondary, #94a3b8);
+}

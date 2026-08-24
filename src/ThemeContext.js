@@ -295,8 +295,11 @@ export const ThemeProvider = ({ children }) => {
     };
   };
 
-  // All themes are free; Patreon is now donation-only
-  const isPatreonTheme = () => false;
+  // Founder-exclusive themes require a founder tier; all other themes are free
+  const isPatreonTheme = (themeId) => {
+    const meta = moodThemes.find((t) => t.id === themeId);
+    return Boolean(meta?.founderExclusive);
+  };
 
   // Check if user has an active Patreon boost (any tier)
   const hasPatreonAccess = useCallback(() => {
@@ -304,8 +307,15 @@ export const ThemeProvider = ({ children }) => {
     return Boolean(profile?.code) && profile.tier !== null && profile.tier !== 'none';
   }, []);
 
-  // All themes are freely available
-  const hasPremiumAccess = useCallback(() => true, []);
+  // Founder-exclusive themes require founder status; everything else is open
+  const hasPremiumAccess = useCallback(() => {
+    return true;
+  }, []);
+
+  const hasFounderAccess = useCallback(() => {
+    const profile = AchievementTracker.getPatreonBoostProfile();
+    return Boolean(profile?.tier);
+  }, []);
 
   // Get all available themes
   const getAvailableThemes = () => {
@@ -527,11 +537,11 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     const activeTheme = moodThemes.find((theme) => theme.id === currentTheme);
-    if (isPatreonTheme(activeTheme?.id) && !hasPremiumAccess()) {
+    if (isPatreonTheme(activeTheme?.id) && !hasFounderAccess()) {
       setCurrentTheme('dark');
       StorageService.setString('theme', 'dark');
     }
-  }, [currentTheme, hasPremiumAccess]);
+  }, [currentTheme, hasFounderAccess]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -547,7 +557,7 @@ export const ThemeProvider = ({ children }) => {
       const allThemes = getAvailableThemes();
       if (!allThemes[themeId]) return;
       const meta = moodThemes.find((theme) => theme.id === themeId);
-      if (isPatreonTheme(meta?.id) && !hasPremiumAccess()) return;
+      if (isPatreonTheme(meta?.id) && !hasFounderAccess()) return;
       setCurrentTheme(themeId);
       StorageService.setString('theme', themeId);
     };
@@ -586,7 +596,7 @@ export const ThemeProvider = ({ children }) => {
       const allThemes = getAvailableThemes();
       if (allThemes[themeId]) {
         const selectedTheme = moodThemes.find((theme) => theme.id === themeId);
-        if (isPatreonTheme(selectedTheme?.id) && !hasPremiumAccess()) {
+        if (isPatreonTheme(selectedTheme?.id) && !hasFounderAccess()) {
           return false;
         }
         setCurrentTheme(themeId);
@@ -611,6 +621,7 @@ export const ThemeProvider = ({ children }) => {
     isPatreonTheme,
     hasPatreonAccess,
     hasPremiumAccess,
+    hasFounderAccess,
     getAvailableThemes,
     bigScreenMode,
     toggleBigScreenMode,

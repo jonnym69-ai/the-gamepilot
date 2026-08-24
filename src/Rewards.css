@@ -384,8 +384,14 @@
   }
 
   .rewards-sidebar {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .rewards-section-btn {
+    min-width: 160px;
+    flex-shrink: 0;
   }
 }
 
@@ -803,23 +809,6 @@
 }
 
 /* Responsive */
-@media (max-width: 900px) {
-  .rewards-layout {
-    grid-template-columns: 1fr;
-  }
-  
-  .rewards-sidebar {
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 8px;
-  }
-  
-  .rewards-section-btn {
-    min-width: 160px;
-    flex-shrink: 0;
-  }
-}
-
 @media (max-width: 600px) {
   .rewards-page {
     padding: 12px;
@@ -842,11 +831,6 @@
 
   .rewards-card-grid {
     grid-template-columns: 1fr;
-  }
-
-  .rewards-sidebar {
-    flex-direction: row;
-    overflow-x: auto;
   }
 
   .rewards-section-btn {

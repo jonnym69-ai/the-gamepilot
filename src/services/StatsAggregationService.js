@@ -1,4 +1,5 @@
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
+import { isNonGameTitle } from './gameClassification';
 import { FeatureTracker } from './FeatureTracker';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
 import { QuestHistoryService } from './QuestHistoryService';
@@ -604,8 +605,11 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
 };
 
 export class StatsAggregationService {
+  static dashboardCache = { key: null, data: null };
+
   static clearCache() {
     StorageService.remove('lastLibraryHash');
+    this.dashboardCache = { key: null, data: null };
   }
 
   static getPeriodOptions() {
@@ -622,6 +626,9 @@ export class StatsAggregationService {
   static getNormalizedSessionHistory(library = []) {
     const libraryIndex = buildLibraryIndex(library);
     const sessions = PlaytimeAutoLogger.getSessionHistory()
+      // Launcher/utility "sessions" (e.g. the GOG Galaxy client detected
+      // running) are not play — drop them before they skew trends and habits.
+      .filter((session) => !isNonGameTitle(session?.gameName))
       .map((session) => normalizeSession(session, libraryIndex))
       .filter(Boolean);
     return sessions.sort((left, right) => left.timestamp - right.timestamp);
@@ -640,7 +647,24 @@ export class StatsAggregationService {
   }
 
   static getDashboardData(library = [], referenceDate = new Date()) {
-    const sessionHistory = this.getNormalizedSessionHistory(library);
+    const rawHistory = PlaytimeAutoLogger.getSessionHistory();
+    const lastSession = rawHistory[rawHistory.length - 1] || null;
+    const cacheKey = [
+      Array.isArray(library) ? library.length : 0,
+      rawHistory.length,
+      lastSession ? String(lastSession.sessionId || lastSession.timestamp || '') : 'none',
+      referenceDate.toDateString()
+    ].join('|');
+
+    if (this.dashboardCache.key === cacheKey && this.dashboardCache.data) {
+      return this.dashboardCache.data;
+    }
+
+    const libraryIndex = buildLibraryIndex(library);
+    const sessionHistory = rawHistory
+      .map((session) => normalizeSession(session, libraryIndex))
+      .filter(Boolean)
+      .sort((left, right) => left.timestamp - right.timestamp);
 
     // Only recompute if we have new library data, not on every refresh
     // This prevents wiping out current tracking progress
@@ -667,11 +691,13 @@ export class StatsAggregationService {
 
     const importedPlaytime = getImportedPlaytimeSummary(library);
 
-    return {
+    const dashboardData = {
       lastUpdated: Date.now(),
       totalSessionsRecorded: sessionHistory.length,
       importedPlaytime,
       periods
     };
+    this.dashboardCache = { key: cacheKey, data: dashboardData };
+    return dashboardData;
   }
 }

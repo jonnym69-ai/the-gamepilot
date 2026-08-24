@@ -131,6 +131,12 @@ describe('UserBehaviorProfile', () => {
       expect(UserBehaviorProfile.getMoodCompletionRate('Relaxed')).toBe(50);
     });
 
+    test('session feedback contributes without a prior manual selection', () => {
+      UserBehaviorProfile.trackSessionFeedback('Game', true, { mood: 'Focused', genre: 'Strategy' });
+      expect(UserBehaviorProfile.getMoodCompletionRate('Focused')).toBe(100);
+      expect(UserBehaviorProfile.getGenreCompletionRate('Strategy')).toBe(100);
+    });
+
     test('mood rate falls back to completedCount / count', () => {
       UserBehaviorProfile.trackSelection('Focused', 'Strategy', 60, 'a');
       UserBehaviorProfile.trackSelection('Focused', 'Strategy', 60, 'b');
@@ -258,7 +264,38 @@ describe('UserBehaviorProfile', () => {
       expect(entry.recommendationHelpful).toBe(true);
     });
 
+    test('prompts once after a meaningful recommended session', () => {
+      UserBehaviorProfile.trackRecommendationLaunch('perfect-play', 'game-1', { source: 'recommendations-page' });
+
+      expect(UserBehaviorProfile.recordRecommendationSession('game-1', 'Game 1', { playtimeMinutes: 9 })).toBeNull();
+      const prompt = UserBehaviorProfile.recordRecommendationSession('game-1', 'Game 1', { playtimeMinutes: 20 });
+      expect(prompt).toMatchObject({ recommendationType: 'perfect-play', launchedGameId: 'game-1' });
+      expect(UserBehaviorProfile.recordRecommendationSession('game-1', 'Game 1', { playtimeMinutes: 30 })).toBeNull();
+    });
+
+    test('stores Great pick as a positive learning signal', () => {
+      UserBehaviorProfile.trackRecommendationLaunch('perfect-play', 'game-1');
+      UserBehaviorProfile.trackRecommendationOutcome('game-1', 'great-pick', { gameName: 'Game 1' });
+
+      expect(UserBehaviorProfile.getRecommendationOutcomeSignal('game-1', 'Game 1')).toMatchObject({
+        adjustment: 24,
+        suppress: false,
+        outcome: 'great-pick'
+      });
+    });
+
+    test('suppresses Not now and Not for me outcomes', () => {
+      UserBehaviorProfile.trackRecommendationLaunch('perfect-play', 'later');
+      UserBehaviorProfile.trackRecommendationOutcome('later', 'not-now', { gameName: 'Later' });
+      expect(UserBehaviorProfile.shouldSuppressRecommendation('later', 'Later')).toBe(true);
+
+      UserBehaviorProfile.trackRecommendationLaunch('perfect-play', 'never');
+      UserBehaviorProfile.trackRecommendationOutcome('never', 'not-for-me', { gameName: 'Never' });
+      expect(UserBehaviorProfile.shouldSuppressRecommendation('never', 'Never')).toBe(true);
+    });
+
     test('trackRecommendationFeedback no-ops on invalid args', () => {
+      UserBehaviorProfile.trackRecommendationLaunch('seed', 'seed-game');
       const before = JSON.stringify(UserBehaviorProfile.getProfile());
       UserBehaviorProfile.trackRecommendationFeedback(null, 'game-1', true);
       UserBehaviorProfile.trackRecommendationFeedback('perfect-play', null, true);

@@ -24,6 +24,34 @@ const PERIOD_LABELS = {
   yearly: 'this year'
 };
 
+// Maps a story period to the recency window (in days) that should drive the
+// persona/roast used in that story. This keeps "this week" stories rooted in
+// what was actually played this week rather than an all-time identity.
+const PERIOD_WINDOW_DAYS = {
+  daily: 1,
+  weekly: 7,
+  monthly: 30,
+  yearly: 365
+};
+
+const getPublicIdentityForPeriod = (period) => {
+  try {
+    const windowDays = PERIOD_WINDOW_DAYS[period] ?? null;
+    return GamingPersonaService.getPublicIdentity(windowDays !== null ? { windowDays } : {});
+  } catch {
+    return null;
+  }
+};
+
+const PERIOD_STORY_TITLES = {
+  daily: 'Story of Your Day',
+  weekly: 'Story of Your Week',
+  monthly: 'Story of Your Month',
+  yearly: 'Story of Your Year'
+};
+
+const PERIOD_STORY_SCHEMA_VERSION = 3;
+
 const GENRE_TEMPLATES = {
   'Survival': {
     lead: 'scraping by in the wild',
@@ -271,15 +299,28 @@ const getPeriodTopGames = (periodData, limit = 3) => {
     return [];
   }
 
+  // Prefer recently played games from this period, not lifetime library leaders.
+  // Hours still break ties so a heavy recent sit-down can outrank a brief one.
   return periodData.topGames
     .filter((entry) => entry && (entry.gameName || entry.name))
-    .map((entry) => ({
-      name: entry.gameName || entry.name,
-      hours: Math.round((entry.minutes || entry.totalPlaytime || 0) / 60),
-      genre: entry.genre || null,
-      coverUrl: entry.coverUrl || ''
-    }))
-    .sort((a, b) => b.hours - a.hours)
+    .map((entry) => {
+      const lastPlayedRaw = entry.lastPlayed || entry.last_played || entry.timestamp || null;
+      const lastPlayedMs = lastPlayedRaw ? new Date(lastPlayedRaw).getTime() : 0;
+      return {
+        name: entry.gameName || entry.name,
+        hours: Math.round((entry.minutes || entry.totalPlaytime || 0) / 60),
+        minutes: Math.round(entry.minutes || entry.totalPlaytime || 0),
+        genre: entry.genre || null,
+        coverUrl: entry.coverUrl || '',
+        lastPlayed: Number.isFinite(lastPlayedMs) ? lastPlayedMs : 0,
+        sessions: entry.sessions || entry.playCount || 0
+      };
+    })
+    .sort((a, b) => {
+      if (b.lastPlayed !== a.lastPlayed) return b.lastPlayed - a.lastPlayed;
+      if (b.minutes !== a.minutes) return b.minutes - a.minutes;
+      return (b.sessions || 0) - (a.sessions || 0);
+    })
     .slice(0, limit);
 };
 
@@ -292,19 +333,33 @@ const getGameGenre = (game) => {
 };
 
 const getGameHours = (game) => {
-  const minutes = game?.playtime?.total || game?.time_played || game?.playtimeForever || 0;
+  const minutes = Math.max(
+    Number(game?.playtime?.total) || 0,
+    Number(game?.time_played) || 0,
+    Number(game?.playtimeForever) || 0,
+    Number(game?.importedPlaytimeMinutes) || 0,
+    Number(game?.playtimeMinutes) || 0,
+    Number(game?.totalPlaytime) || 0
+  );
   return Math.max(0, Math.round(minutes / 60));
 };
 
 const getTopGames = (library, limit = 5) => {
   return [...library]
-    .filter((g) => g && g.name)
+    .filter((g) => {
+      if (!g) return false;
+      const name = String(g.name || g.title || '').trim();
+      if (!name || /^(untitled|unknown|unknown game|null|undefined)$/i.test(name)) return false;
+      return getGameHours(g) > 0 || g.last_played;
+    })
     .map((game) => ({
       ...game,
+      name: game.name || game.title,
       hours: getGameHours(game),
       genre: getGameGenre(game),
       coverUrl: resolveGameArtwork(game, { surface: 'library_card' })
     }))
+    .filter((game) => game.hours > 0)
     .sort((a, b) => b.hours - a.hours)
     .slice(0, limit);
 };
@@ -755,15 +810,9 @@ export const GamingStoryService = {
    */
   buildQuietPeriodStory(period, totalHours = 0, previousStory = null, persona = null) {
     const username = StorageService.getString('profileUsername', '') || 'you';
-    let publicIdentity = null;
-    try {
-      publicIdentity = GamingPersonaService.getPublicIdentity();
-    } catch {
-      publicIdentity = null;
-    }
+    const publicIdentity = getPublicIdentityForPeriod(period);
 
     const voice = getVoiceForStory(persona || publicIdentity?.primary);
-    const periodLabel = PERIOD_LABELS[period] || 'period';
     const identityLabel = persona?.label || publicIdentity?.label || null;
 
     // Continuity: acknowledge stepping back after an active chapter.
@@ -771,7 +820,9 @@ export const GamingStoryService = {
     const prevTop = usablePrevious && !usablePrevious.isQuiet
       ? (usablePrevious.topGames || [])[0]
       : null;
-    let narrative = fillVoiceTemplate(voice.quiet || DEFAULT_VOICE.quiet, { PERIOD: periodLabel });
+    let narrative = fillVoiceTemplate(voice.quiet || DEFAULT_VOICE.quiet, {
+      PERIOD: PERIOD_NOUN[period] || 'period'
+    });
     if (prevTop) {
       narrative += ` A change of pace after **${prevTop.name}** dominated ${PERIOD_PREVIOUS[period] || 'last time'}.`;
     }
@@ -783,8 +834,10 @@ export const GamingStoryService = {
       chapter: 'quiet',
       period,
       isQuiet: true,
-      title: `A quiet ${periodLabel} for ${username}`,
-      subtitle: totalHours > 0 ? `${totalHours}h logged` : 'No sessions tracked',
+      title: `A quiet ${PERIOD_NOUN[period] || 'period'} for ${username}`,
+      subtitle: totalHours > 0
+        ? `${totalHours}h tracked by GamePilot`
+        : `No sessions tracked by GamePilot ${PERIOD_LABELS[period] || 'in this period'}`,
       totalHours,
       gameCount: 0,
       topGames: [],
@@ -813,12 +866,7 @@ export const GamingStoryService = {
       return this.buildQuietPeriodStory(period, totalHours, previousStory, persona);
     }
 
-    let publicIdentity = null;
-    try {
-      publicIdentity = GamingPersonaService.getPublicIdentity();
-    } catch {
-      publicIdentity = null;
-    }
+    const publicIdentity = getPublicIdentityForPeriod(period);
     const voice = getVoiceForStory(persona || publicIdentity?.primary);
     const periodLabel = PERIOD_LABELS[period] || 'this period';
     const identityLabel = persona?.label || publicIdentity?.label || null;
@@ -851,6 +899,7 @@ export const GamingStoryService = {
     // Opening: persona-voiced hook
     narrativeParts.push(fillVoiceTemplate(voice.periodHook || DEFAULT_VOICE.periodHook, {
       PERIOD: periodLabel,
+      PERIOD_NOUN: PERIOD_NOUN[period] || 'period',
       LEAD: leadingTemplate.lead,
       GAME: leadingGame.name,
       HOURS: leadingGame.hours
@@ -977,7 +1026,8 @@ export const GamingStoryService = {
       chapter: 'period',
       period,
       isQuiet: false,
-      title: `Your ${PERIOD_LABELS[period]} story`,
+      schemaVersion: PERIOD_STORY_SCHEMA_VERSION,
+      title: PERIOD_STORY_TITLES[period] || 'Story of Your Week',
       subtitle: `${totalHours}h · ${sessionCount} sessions · ${uniqueGames} games`,
       totalHours,
       gameCount: topGames.length,
@@ -997,20 +1047,31 @@ export const GamingStoryService = {
     };
   },
 
-  updatePeriodStory(period, persona = null) {
-    if (!this.shouldGeneratePeriodStory(period)) {
-      return this.getPeriodStory();
+  needsPeriodStoryRefresh(story, period) {
+    if (!story) return true;
+    if (story.period && period && story.period !== period) return true;
+    if (story.schemaVersion !== PERIOD_STORY_SCHEMA_VERSION) return true;
+    const title = String(story.title || '').toLowerCase();
+    return title.includes('this week story')
+      || title.includes("this week's story")
+      || title === 'this week'
+      || title.startsWith('your this');
+  },
+
+  updatePeriodStory(period, persona = null, options = {}) {
+    const force = Boolean(options?.force);
+    const existing = this.getPeriodStory();
+    const periodBoundary = this.shouldGeneratePeriodStory(period);
+    const needsRefresh = force || periodBoundary || this.needsPeriodStoryRefresh(existing, period);
+
+    if (!needsRefresh) {
+      return existing;
     }
-    // Capture the previous chapter before we overwrite it, so the new chapter
-    // can reference week-to-week changes.
-    const previousStory = this.getPeriodStory();
-    const story = this.generatePeriodStory(period, previousStory, persona);
+
+    const story = this.generatePeriodStory(period, existing, persona);
     if (story) {
       this.savePeriodStory(story);
-      // Archive weekly chapters so they can be assembled into the Year in
-      // Review book (52 / 12 / 4 layouts). Only weekly chapters are archived;
-      // monthly/seasonal digests are derived on demand from these.
-      if (period === 'weekly') {
+      if (period === 'weekly' && periodBoundary) {
         try {
           StoryArchiveService.recordWeeklyChapter({
             ...story,

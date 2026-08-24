@@ -1,0 +1,47 @@
+name: Linux AppImage
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    env:
+      CI: true
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npx react-scripts test --watchAll=false --silent
+
+      - name: Build renderer
+        run: npm run build
+
+      - name: Build Linux AppImage
+        run: npx electron-builder --linux AppImage --publish never
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: gamepilot-linux-x64-${{ github.ref_name }}
+          path: |
+            dist/*.AppImage
+            dist/*.AppImage.blockmap
+          if-no-files-found: error

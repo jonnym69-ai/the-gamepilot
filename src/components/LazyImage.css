@@ -67,6 +67,19 @@
   width: 100%;
 }
 
+/* Steam-style portrait poster override. The fixed 184px height above locks
+   the container to a landscape box regardless of any aspect-ratio set on it,
+   which is what was squishing/cropping portrait cover art into a 16:9 frame.
+   home-grid-poster (applied via LazyImage's className prop, which lands on
+   this wrapper, not the <img>) resets height to auto so aspect-ratio can
+   actually take effect. Scoped one level deeper than the fixed-height rule
+   above (specificity 0-4-0 vs 0-3-0) so it wins without !important. */
+.home-page .game-card .lazy-image-container.home-grid-poster {
+  height: auto;
+  aspect-ratio: 2 / 3;
+  width: 100%;
+}
+
 .library-page .game-card .lazy-image-container {
   height: 100%;
   width: 100%;

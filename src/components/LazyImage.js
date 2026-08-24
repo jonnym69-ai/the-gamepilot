@@ -62,24 +62,43 @@ const isImageFailed = (url) => {
   }
 };
 
-const LazyImage = ({ src, alt, className, placeholder, gameName, platform, genre, mood, ...props }) => {
+const optimizeImageSrc = (url) => {
+  if (!url || url.includes('placehold.co')) return url;
+  if (url.includes('steamstatic.com')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}quality=80&format=webp`;
+  }
+  return url;
+};
+
+const LazyImage = ({ src, alt, className, placeholder, fallbackSrc, gameName, platform, genre, mood, ...props }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [activeSrc, setActiveSrc] = useState(src);
   const imgRef = useRef(null);
-  
-  // Check if this image has already failed before
-  const isKnownFailure = useMemo(() => {
-    return src && isImageFailed(src);
-  }, [src]);
-  
-  // Set error state immediately if this is a known failure
+
   useEffect(() => {
-    if (isKnownFailure) {
-      setHasError(true);
-      setIsLoaded(true);
+    setActiveSrc(src);
+    setHasError(false);
+    setIsLoaded(false);
+  }, [src]);
+
+  const isKnownFailure = useMemo(() => {
+    return activeSrc && isImageFailed(activeSrc);
+  }, [activeSrc]);
+
+  useEffect(() => {
+    if (!isKnownFailure) return;
+    if (fallbackSrc && fallbackSrc !== activeSrc && !isImageFailed(fallbackSrc)) {
+      setActiveSrc(fallbackSrc);
+      setHasError(false);
+      setIsLoaded(false);
+      return;
     }
-  }, [isKnownFailure]);
+    setHasError(true);
+    setIsLoaded(true);
+  }, [isKnownFailure, fallbackSrc, activeSrc]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -113,75 +132,41 @@ const LazyImage = ({ src, alt, className, placeholder, gameName, platform, genre
   };
 
   const handleError = () => {
+    if (activeSrc) {
+      addToFailedCache(activeSrc);
+    }
+
+    if (fallbackSrc && fallbackSrc !== activeSrc && !isImageFailed(fallbackSrc)) {
+      setActiveSrc(fallbackSrc);
+      setHasError(false);
+      setIsLoaded(false);
+      return;
+    }
+
     setHasError(true);
     setIsLoaded(true);
-    // Cache this failed URL to prevent future requests
-    if (src) {
-      addToFailedCache(src);
-    }
   };
 
   const imageSrc = useMemo(() => {
-    // If this image is known to fail, don't try to load it
-    if (isKnownFailure) {
+    if (isKnownFailure || hasError) {
       return null;
     }
-    
-    // If we already have an error, use placeholder immediately
-    if (hasError) {
-      return placeholder || 'https://placehold.co/184x69.jpg?text=No+Image';
-    }
+    return optimizeImageSrc(activeSrc);
+  }, [activeSrc, hasError, isKnownFailure]);
 
-    // Optimize URL only if no error yet
-    if (!src || src.includes('placehold.co')) return src;
-    
-    // Add optimization parameters for Steam images
-    if (src.includes('steamstatic.com')) {
-      const separator = src.includes('?') ? '&' : '?';
-      return `${src}${separator}quality=80&format=webp`;
-    }
-    
-    return src;
-  }, [src, hasError, placeholder, isKnownFailure]);
+  const showPlaceholderOnly = isKnownFailure || hasError || !activeSrc;
 
-  // If this is a known failure, show placeholder immediately without any loading states
-  if (isKnownFailure) {
-    return (
-      <div 
-        ref={imgRef} 
-        className={`lazy-image-container ${className || ''}`}
-        data-error="true"
-      >
-        {placeholder ? (
-          <img 
-            src={placeholder} 
-            alt={alt} 
-            className="lazy-image lazy-image-loaded"
-            {...props}
-          />
-        ) : (
-          <div className="lazy-image-fallback">
-            <div className="lazy-image-fallback-content">
-              {gameName && <div className="fallback-game-name">{gameName}</div>}
-              <div className="fallback-details">
-                {platform && <span className="fallback-platform">{platform}</span>}
-                {genre && <span className="fallback-genre">{genre}</span>}
-                {mood && <span className="fallback-mood">{mood}</span>}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+  if (showPlaceholderOnly && !isInView && !activeSrc) {
+    // keep structure consistent below
   }
 
   return (
-    <div 
-      ref={imgRef} 
+    <div
+      ref={imgRef}
       className={`lazy-image-container ${className || ''}`}
-      data-error={hasError ? 'true' : 'false'}
+      data-error={hasError || isKnownFailure ? 'true' : 'false'}
     >
-      {!src && (gameName || platform || genre || mood) && (
+      {!activeSrc && (gameName || platform || genre || mood) && (
         <div className="lazy-image-fallback">
           <div className="lazy-image-fallback-content">
             {gameName && <div className="fallback-game-name">{gameName}</div>}
@@ -193,31 +178,44 @@ const LazyImage = ({ src, alt, className, placeholder, gameName, platform, genre
           </div>
         </div>
       )}
-      
-      {!isLoaded && src && !hasError && (
+
+      {!isLoaded && activeSrc && !hasError && !isKnownFailure && (
         <div className="lazy-image-placeholder">
           <div className="lazy-image-spinner"></div>
           {placeholder && (
-            <img 
-              src={placeholder} 
-              alt={alt} 
+            <img
+              src={placeholder}
+              alt={alt}
               className="lazy-image-placeholder-img"
               style={{ filter: 'blur(10px)' }}
             />
           )}
         </div>
       )}
-      
-      {hasError && placeholder && (
-        <img 
-          src={placeholder} 
-          alt={alt} 
+
+      {(hasError || isKnownFailure) && placeholder && (
+        <img
+          src={placeholder}
+          alt={alt}
           className="lazy-image lazy-image-loaded"
           {...props}
         />
       )}
-      
-      {isInView && src && !hasError && (
+
+      {(hasError || isKnownFailure) && !placeholder && (gameName || platform || genre || mood) && (
+        <div className="lazy-image-fallback">
+          <div className="lazy-image-fallback-content">
+            {gameName && <div className="fallback-game-name">{gameName}</div>}
+            <div className="fallback-details">
+              {platform && <span className="fallback-platform">{platform}</span>}
+              {genre && <span className="fallback-genre">{genre}</span>}
+              {mood && <span className="fallback-mood">{mood}</span>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isInView && activeSrc && !hasError && !isKnownFailure && imageSrc && (
         <img
           src={imageSrc}
           alt={alt}

@@ -8,6 +8,7 @@ import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import { StartupPersonalizationService } from './StartupPersonalizationService';
 import { GamingIdentity } from '../GamingIdentity';
 import { GamingPersonaService } from './GamingPersonaService';
+import { RecommendationEngine } from './RecommendationEngine';
 
 export class RecommendationExplainer {
   /**
@@ -37,6 +38,13 @@ export class RecommendationExplainer {
     }
 
     reasons.push(...this.getLocalSignalReasoning(game, recommendationType));
+
+    // Continuous play focus reasoning — surfaces when a game is part of the
+    // user's current daily/weekly rotation, keeping recs fresh with habits.
+    const focusReason = this.getFocusReasoning(game);
+    if (focusReason) {
+      reasons.push(focusReason);
+    }
 
     // Signature game + taste cluster reasoning
     const signatureReason = this.getSignatureGameReasoning(game);
@@ -146,6 +154,46 @@ export class RecommendationExplainer {
     }
   }
 
+  static getFocusReasoning(game) {
+    try {
+      const focus = RecommendationEngine.getCurrentPlayFocus();
+      if (!focus?.active) return null;
+
+      const gameName = game?.name || game?.title || '';
+      const normalize = (s) => String(s || '').trim().toLowerCase();
+      const focusHit = focus.games.find(
+        (f) => normalize(f.name) === normalize(gameName) || normalize(f.gameId) === normalize(game?.appid || game?.name)
+      );
+
+      if (focusHit) {
+        const dayCount = focusHit.distinctDays;
+        const sessionCount = focusHit.sessions;
+        if (dayCount >= 5) {
+          return `You've been playing ${gameName} across ${dayCount} separate days recently — it's your current rotation`;
+        } else if (dayCount >= 3) {
+          return `${gameName} is in your active rotation — ${dayCount} days this fortnight`;
+        } else if (sessionCount >= 4) {
+          return `${gameName} is heating up — ${sessionCount} sessions recently`;
+        }
+      }
+
+      // Adjacent genre reasoning: this game shares genres with the current focus
+      if (focus.genres.length > 0) {
+        const gameGenres = Array.isArray(game?.genres) ? game.genres.map((g) => String(g)) : [];
+        const related = gameGenres.filter((g) =>
+          focus.genres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
+        );
+        if (related.length > 0 && focus.primary) {
+          return `Shares ${related.join(', ')} with your current ${focus.primary.name} rotation`;
+        }
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
   static getPersonaReasoning(personaSnapshot, mood, genre) {
     if (!personaSnapshot || !personaSnapshot.personaIdentity) {
       return null;
@@ -175,7 +223,16 @@ export class RecommendationExplainer {
       const archetype = persona.primaryPersona;
       const gameName = game?.name || 'this game';
       const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
-      const gameHours = game?.time_played ? Math.round(game.time_played / 60) : 0;
+      const blendedMinutes = Math.max(
+        Number(game?.time_played || 0),
+        Number(game?.playtime?.total || 0),
+        Number(game?.playtime?.minutes || 0),
+        Number(game?.playtimeMinutes || 0),
+        Number(game?.importedPlaytimeMinutes || 0),
+        Number(game?.playtimeForever || 0),
+        Number(game?.totalPlaytime || 0)
+      );
+      const gameHours = blendedMinutes > 0 ? Math.round(blendedMinutes / 60) : 0;
 
       // Build signals object for template filling
       const signals = {
@@ -390,6 +447,24 @@ export class RecommendationExplainer {
 
     const normSelectedTime = UserBehaviorProfile.normalizeTimeAvailable(selectedTime);
 
+    // Detect if this game is part of the user's current continuous play focus
+    let focusGameName = '';
+    let focusDays = 0;
+    try {
+      const focus = RecommendationEngine.getCurrentPlayFocus();
+      if (focus?.active) {
+        const normalize = (s) => String(s || '').trim().toLowerCase();
+        const hit = focus.games.find(
+          (f) => normalize(f.name) === normalize(game?.name || game?.title)
+            || normalize(f.gameId) === normalize(game?.appid || game?.name)
+        );
+        if (hit) {
+          focusGameName = hit.name;
+          focusDays = hit.distinctDays;
+        }
+      }
+    } catch { /* focus optional */ }
+
     return {
       gameName: game?.name || 'this game',
       genreA,
@@ -408,7 +483,9 @@ export class RecommendationExplainer {
       userRating: typeof game?.userRating === 'number' ? game.userRating : null,
       selectedMood,
       selectedGenre,
-      selectedTimeText: normSelectedTime ? this.formatDuration(normSelectedTime) : ''
+      selectedTimeText: normSelectedTime ? this.formatDuration(normSelectedTime) : '',
+      focusGameName,
+      focusDays
     };
   }
 
@@ -435,7 +512,9 @@ export class RecommendationExplainer {
       .replace(/\{userRating\}/g, context.userRating !== null ? String(context.userRating) : '')
       .replace(/\{selectedMood\}/g, this.safeTemplate(context.selectedMood))
       .replace(/\{selectedGenre\}/g, this.safeTemplate(context.selectedGenre))
-      .replace(/\{selectedTimeText\}/g, this.safeTemplate(context.selectedTimeText));
+      .replace(/\{selectedTimeText\}/g, this.safeTemplate(context.selectedTimeText))
+      .replace(/\{focusGameName\}/g, this.safeTemplate(context.focusGameName))
+      .replace(/\{focusDays\}/g, context.focusDays > 0 ? String(context.focusDays) : '');
   }
 
   static extractPlaceholders(template) {
@@ -444,7 +523,7 @@ export class RecommendationExplainer {
   }
 
   static sharesHook(globalTemplate, gameTemplate) {
-    const metrics = ['avgSession', 'gameAvgSession', 'launchCount', 'daysSince', 'lastPlayedText', 'timePlayed', 'genreA', 'genreB', 'topGenre', 'playStyle'];
+    const metrics = ['avgSession', 'gameAvgSession', 'launchCount', 'daysSince', 'lastPlayedText', 'timePlayed', 'genreA', 'genreB', 'topGenre', 'playStyle', 'focusGameName', 'focusDays'];
     const globalPlaceholders = this.extractPlaceholders(globalTemplate);
     const gamePlaceholders = this.extractPlaceholders(gameTemplate);
     return metrics.some((m) => globalPlaceholders.includes(m) && gamePlaceholders.includes(m));
@@ -459,6 +538,7 @@ export class RecommendationExplainer {
     const templates = {
       tonight: {
         global: [
+          { text: 'You\'ve been on a {focusGameName} streak — {focusDays} days running. Here\'s what fits alongside it.', weight: 5, condition: (ctx) => ctx.focusGameName && ctx.focusDays >= 3 },
           { text: 'Seeking a {selectedMood} session? Here is a prime choice for your tonight shelf.', weight: 3, condition: (ctx) => ctx.selectedMood },
           { text: 'Sized perfectly for a {selectedTimeText} session tonight.', weight: 3, condition: (ctx) => ctx.selectedTimeText },
           { text: 'A handpicked {selectedMood} experience tailored to fit your time available.', weight: 3, condition: (ctx) => ctx.selectedMood && ctx.selectedTimeText },
@@ -467,6 +547,7 @@ export class RecommendationExplainer {
           { text: 'Your play style is {playStyle}, so tonight\'s pick should match your typical {avgSession} burst.', weight: 1, condition: (ctx) => ctx.playStyle && ctx.avgSession }
         ],
         game: [
+          { text: '{gameName} is your current rotation — {focusDays} days straight. Keep the streak alive.', weight: 5, condition: (ctx) => ctx.focusGameName && ctx.focusDays >= 3 && ctx.gameName === ctx.focusGameName },
           { text: '{gameName} matches your requested {selectedMood} mood with genres like {genreA}.', weight: 3, condition: (ctx) => ctx.selectedMood && ctx.genreA },
           { text: '{gameName}\'s estimated {gameAvgSession} session fits smoothly into your {selectedTimeText} window.', weight: 3, condition: (ctx) => ctx.selectedTimeText && ctx.gameAvgSession },
           { text: 'You rated {gameName} a brilliant {userRating}/10, making it a stellar candidate to boot up again.', weight: 1.5, condition: (ctx) => ctx.userRating !== null && ctx.userRating >= 8 },
@@ -734,19 +815,36 @@ export class RecommendationExplainer {
     if (!reason) return 0;
     let score = 0;
     const lower = reason.toLowerCase();
+    const mentionsGame = Boolean(gameName && lower.includes(gameName.toLowerCase()));
 
-    // Mentions the actual game name -> very distinctive.
-    if (gameName && lower.includes(gameName.toLowerCase())) score += 5;
+    // A small bonus for mentioning the game name — but this alone is not a
+    // reliable distinctiveness signal since most templates include it,
+    // including the generic mood/genre completion-rate boilerplate.
+    if (mentionsGame) score += 1;
 
-    // References concrete, game-specific signals.
+    // References concrete, game-specific signals — these differ meaningfully
+    // from game to game and should outrank generic profile stats.
     if (/estimated \d+ min/i.test(reason)) score += 2;
-    if (/you rated this/i.test(reason)) score += 2;
-    if (/last played/i.test(reason)) score += 2;
+    if (/you rated this|rated .* \d\/10/i.test(reason)) score += 3;
+    if (/last played|lastplayedtext/i.test(reason)) score += 2;
     if (/you('ve| have) (spent|invested|already|launched)/i.test(reason)) score += 2;
-    if (/shares your .* taste/i.test(reason)) score += 2;
-    if (/signature/i.test(reason)) score += 1;
+    if (/logged it \d+ times|launched it \d+ times/i.test(reason)) score += 2;
+    if (/rediscovery candidate|last played \d+ days ago/i.test(reason)) score += 2;
+    if (/current rotation|active rotation|heating up|this fortnight/i.test(reason)) score += 5;
+    if (/shares .* with your current .* rotation/i.test(reason)) score += 3;
+    if (/shares your .* taste/i.test(reason)) score += 4;
+    if (/overlaps with \d+ genres?/i.test(reason)) score += 3;
+    if (/signature/i.test(reason)) score += 2;
     if (/unplayed in your local history/i.test(reason)) score += 1;
     if (/fits within your/i.test(reason)) score += 1;
+
+    // Generic mood/genre completion-rate boilerplate — structurally identical
+    // across every card that shares the mood/genre, regardless of wording
+    // variety, so it should never outrank genuinely game-specific evidence.
+    if (/you finish \d+% of your|% completion rate on|sits in that lane|carries that dna|keeps that streak alive|track record is solid|comfortable lane for you|belongs there|fits the pattern/i.test(reason)) {
+      score -= 4;
+    }
+    if (/still building a read on|only a couple of .* games tracked/i.test(reason)) score -= 2;
 
     // Generic profile boilerplate that repeats across every card.
     if (/peak gaming time/i.test(reason)) score -= 3;

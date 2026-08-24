@@ -17,12 +17,14 @@ import DiskUsageService from './services/DiskUsageService';
 import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
-import LabsService from './services/LabsService';
 import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
+import { LocalShareService } from './services/LocalShareService';
 import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
 import BackupRestoreDashboard from './components/BackupRestoreDashboard';
+import DiscordPresenceService from './services/DiscordPresenceService';
+import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import './Settings.css';
 
 function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
@@ -44,16 +46,13 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [steamId, setSteamId] = useState(() => SteamWishlistService.getSteamId());
   const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
-  const [labsEnabled, setLabsEnabled] = useState(() => LabsService.isEnabled());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [gameLaunchNotifications, setGameLaunchNotifications] = useState(true);
-  const [dailySummaryNotifications, setDailySummaryNotifications] = useState(false);
-  const [scanCompleteNotifications, setScanCompleteNotifications] = useState(true);
-  const [backupReminders, setBackupReminders] = useState(false);
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
   const [startupLaunchSupported, setStartupLaunchSupported] = useState(false);
   const [startupLaunchLoading, setStartupLaunchLoading] = useState(false);
+  const [discordRichPresence, setDiscordRichPresence] = useState(() => DiscordPresenceService.isEnabled());
+  const [discordWebhookUrl, setDiscordWebhookUrl] = useState(() => LocalShareService.getDiscordWebhookUrl());
+  const [webhookTestLoading, setWebhookTestLoading] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [previewTheme] = useState(currentTheme);
   const [customBgImage, setCustomBgImage] = useState('');
@@ -63,6 +62,9 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [shortcutEntries, setShortcutEntries] = useState(() => KeyboardShortcuts.getShortcutList());
   const [recommendationStyle, setRecommendationStyle] = useState(() => StorageService.getString('recommendationStyle', 'balanced'));
   const [storyFrequency, setStoryFrequency] = useState(() => StorageService.getString('gamingStoryFrequency', 'weekly'));
+  const [recommendationOutcomePromptsEnabled, setRecommendationOutcomePromptsEnabled] = useState(
+    () => UserBehaviorProfile.getFeedbackPreferences().sessionPromptEnabled
+  );
   const { success, error: toastError } = useToast();
 
   const refreshShortcutSettings = useCallback(() => {
@@ -77,12 +79,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     setThemeMode(StorageService.getString('themeMode', 'custom'));
     setCacheEnabled(StorageService.getString('cacheEnabled', 'true') === 'true');
 
-    // Load notification settings
-    setNotificationsEnabled(StorageService.getString('notificationsEnabled', 'true') === 'true');
-    setGameLaunchNotifications(StorageService.getString('gameLaunchNotifications', 'true') === 'true');
-    setDailySummaryNotifications(StorageService.getString('dailySummaryNotifications') === 'true');
-    setScanCompleteNotifications(StorageService.getString('scanCompleteNotifications', 'true') === 'true');
-    setBackupReminders(StorageService.getString('backupReminders') === 'true');
     setSelectedCurrency(StorageService.getString('selectedCurrency', 'USD'));
     setStoryFrequency(StorageService.getString('gamingStoryFrequency', 'weekly'));
 
@@ -199,7 +195,33 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     success(`Theme mode changed to ${newMode}`);
   };
 
+  const testDiscordWebhook = async () => {
+    const trimmed = discordWebhookUrl.trim();
+    if (!trimmed || !trimmed.startsWith('https://discord.com/api/webhooks/')) {
+      toastError('Enter a valid Discord webhook URL first.');
+      return;
+    }
+    LocalShareService.setDiscordWebhookUrl(trimmed);
+    setWebhookTestLoading(true);
+    try {
+      const result = await LocalShareService.postToDiscordWebhook({
+        text: 'GamePilot webhook test — this is a test message. If you can see this, your webhook is working!',
+        filename: 'test.txt'
+      });
+      if (result.success) {
+        success('Test message sent to Discord! Check your channel.');
+      } else {
+        toastError(result.message || 'Webhook test failed.');
+      }
+    } catch (err) {
+      toastError(err?.message || 'Webhook test failed.');
+    } finally {
+      setWebhookTestLoading(false);
+    }
+  };
+
   const saveSettings = () => {
+    LocalShareService.setDiscordWebhookUrl(discordWebhookUrl.trim());
     StorageService.setString('dateFormat', dateFormat);
     StorageService.setString('timeFormat', timeFormat);
     StorageService.setString('timezone', timezone);
@@ -210,12 +232,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     StorageService.setString('selectedCurrency', selectedCurrency);
     StorageService.setString('recommendationStyle', recommendationStyle);
 
-    // Save notification settings
-    StorageService.setString('notificationsEnabled', notificationsEnabled ? 'true' : 'false');
-    StorageService.setString('gameLaunchNotifications', gameLaunchNotifications ? 'true' : 'false');
-    StorageService.setString('dailySummaryNotifications', dailySummaryNotifications ? 'true' : 'false');
-    StorageService.setString('scanCompleteNotifications', scanCompleteNotifications ? 'true' : 'false');
-    StorageService.setString('backupReminders', backupReminders ? 'true' : 'false');
     StorageService.setString('gamingStoryFrequency', storyFrequency);
 
     success('Settings saved successfully!');
@@ -291,11 +307,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
         'cacheEnabled',
         'theme',
         'selectedCurrency',
-        'notificationsEnabled',
-        'gameLaunchNotifications',
-        'dailySummaryNotifications',
-        'scanCompleteNotifications',
-        'backupReminders',
         'gamingStoryFrequency',
         'customBgImage',
         'customBgOverlay',
@@ -309,11 +320,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
       setDateFormat('DD/MM/YYYY');
       setTimeFormat('24-hour');
       setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-      setNotificationsEnabled(true);
-      setGameLaunchNotifications(true);
-      setDailySummaryNotifications(false);
-      setScanCompleteNotifications(true);
-      setBackupReminders(false);
       setStoryFrequency('weekly');
       if (startupLaunchSupported) {
         setLaunchOnStartup(false);
@@ -407,25 +413,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     </select>
                   </div>
 
-                  <div className="setting-item">
-                    <label>Labs (experimental features)</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={labsEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setLabsEnabled(next);
-                          LabsService.setEnabled(next);
-                        }}
-                        id="labs-enabled"
-                      />
-                      <label htmlFor="labs-enabled" className="toggle-slider"></label>
-                    </div>
-                    <p className="setting-description">
-                      On by default. Reveals secondary features (Habits, Achievements, Library Reclaimer, Year in Review, Performance Cockpit, and more) in the “More” menu. Turn this off to keep the interface focused on the essentials — your library and deciding what to play or buy next.
-                    </p>
-                  </div>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -760,8 +747,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
               {/* Preferences Section */}
               <CollapsibleSection
                 title="Preferences"
-                subtitle="Notification behavior and local cache preferences."
-                badge={notificationsEnabled ? 'Alerts on' : 'Alerts off'}
+                subtitle="Local cache and data-source preferences."
+                badge={cacheEnabled ? 'Cache on' : 'Cache off'}
                 icon={<Bell size={18} />}
                 className="settings-folder"
               >
@@ -771,80 +758,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>Preferences</h2>
                   </div>
                   <div className="preferences-settings">
-                  <div className="setting-item">
-                    <label>Enable notifications</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={notificationsEnabled}
-                        onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                        id="notifications-enabled"
-                      />
-                      <label htmlFor="notifications-enabled" className="toggle-slider"></label>
-                    </div>
-                  </div>
 
-                  {notificationsEnabled && (
-                    <>
-                      <div className="notification-section">
-                        <h4 style={{ marginTop: '16px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Notifications</h4>
-
-                        <div className="setting-item">
-                          <label>🎮 Game launched successfully</label>
-                          <div className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={gameLaunchNotifications}
-                              onChange={(e) => setGameLaunchNotifications(e.target.checked)}
-                              id="game-launch-notifications"
-                            />
-                            <label htmlFor="game-launch-notifications" className="toggle-slider"></label>
-                          </div>
-                        </div>
-
-                        <div className="setting-item">
-                          <label>📊 Daily gaming summary</label>
-                          <div className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={dailySummaryNotifications}
-                              onChange={(e) => setDailySummaryNotifications(e.target.checked)}
-                              id="daily-summary-notifications"
-                            />
-                            <label htmlFor="daily-summary-notifications" className="toggle-slider"></label>
-                          </div>
-                        </div>
-
-                        <div className="setting-item">
-                          <label>🔍 Library scan complete</label>
-                          <div className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={scanCompleteNotifications}
-                              onChange={(e) => setScanCompleteNotifications(e.target.checked)}
-                              id="scan-complete-notifications"
-                            />
-                            <label htmlFor="scan-complete-notifications" className="toggle-slider"></label>
-                          </div>
-                        </div>
-
-                        <div className="setting-item">
-                          <label>💾 Backup reminders</label>
-                          <div className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={backupReminders}
-                              onChange={(e) => setBackupReminders(e.target.checked)}
-                              id="backup-reminders"
-                            />
-                            <label htmlFor="backup-reminders" className="toggle-slider"></label>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Local Storage & Recaps</h4>
+                  <h4 style={{ marginTop: '8px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Local Storage & Recaps</h4>
 
                   <div className="setting-item">
                     <label>Enable local cache</label>
@@ -875,6 +790,26 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     </select>
                     <p className="setting-description">
                       How often GamePilot generates a themed recap of your recent play.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Recommendation outcome prompts</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={recommendationOutcomePromptsEnabled}
+                        onChange={(event) => {
+                          const enabled = event.target.checked;
+                          setRecommendationOutcomePromptsEnabled(enabled);
+                          UserBehaviorProfile.setFeedbackPromptEnabled('session', enabled);
+                        }}
+                        id="recommendation-outcome-prompts"
+                      />
+                      <label htmlFor="recommendation-outcome-prompts" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      Ask for Great pick, Not now, or Not for me after a meaningful session launched from a GamePilot recommendation.
                     </p>
                   </div>
 
@@ -1124,6 +1059,85 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       </div>
                     </div>
                   )}
+
+                  <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      <div>
+                        <label htmlFor="discord-webhook-url">Discord Share Webhook</label>
+                        <p className="setting-description" style={{ margin: '6px 0 0' }}>
+                          Optional: paste a Discord webhook URL to post share cards directly to a channel.
+                        </p>
+                      </div>
+                    </div>
+                    <input
+                      id="discord-webhook-url"
+                      type="text"
+                      value={discordWebhookUrl}
+                      onChange={(e) => setDiscordWebhookUrl(e.target.value)}
+                      onBlur={() => {
+                        const trimmed = discordWebhookUrl.trim();
+                        if (trimmed && !trimmed.startsWith('https://discord.com/api/webhooks/')) {
+                          toastError('Discord webhook URL must start with https://discord.com/api/webhooks/');
+                          return;
+                        }
+                        LocalShareService.setDiscordWebhookUrl(trimmed);
+                        if (trimmed) success('Discord webhook URL saved.');
+                      }}
+                      placeholder="https://discord.com/api/webhooks/..."
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'var(--input-bg, #1a1a2e)',
+                        color: 'inherit'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={testDiscordWebhook}
+                      disabled={webhookTestLoading || !discordWebhookUrl.trim()}
+                      style={{
+                        marginTop: 8,
+                        padding: '6px 16px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        background: webhookTestLoading ? 'rgba(255,255,255,0.05)' : 'var(--accent, #6c5ce7)',
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: '0.82rem',
+                        cursor: webhookTestLoading || !discordWebhookUrl.trim() ? 'not-allowed' : 'pointer',
+                        opacity: webhookTestLoading || !discordWebhookUrl.trim() ? 0.5 : 1
+                      }}
+                    >
+                      {webhookTestLoading ? 'Sending...' : 'Test Webhook'}
+                    </button>
+                  </div>
+
+                  <div className="setting-item">
+                    <div>
+                      <label>Discord Rich Presence</label>
+                      <p className="setting-description" style={{ margin: '6px 0 0' }}>
+                        Show what you're playing on your Discord profile. Updates automatically when you launch a game.
+                      </p>
+                    </div>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={discordRichPresence}
+                        onChange={(e) => {
+                          const enabled = e.target.checked;
+                          DiscordPresenceService.setEnabled(enabled);
+                          setDiscordRichPresence(enabled);
+                          if (enabled) {
+                            DiscordPresenceService.setIdlePresence();
+                          }
+                        }}
+                        id="discord-rich-presence"
+                      />
+                      <label htmlFor="discord-rich-presence" className="toggle-slider"></label>
+                    </div>
+                  </div>
                   </div>
                 </div>
               </CollapsibleSection>

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, X, Search, BookOpen, MessageSquarePlus, Monitor, Palette } from 'lucide-react';
+import { Menu, X, Search, BookOpen, MessageSquarePlus, Monitor, Palette, Trophy, Target, Gift, Database, Download, Heart, Link as LinkIcon, Crown } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
-// Phase 0.5 product IA — only these destinations are linked in the UI:
-// Home · Library · Recommendations · Stats · Profile · Settings · Year in Review · Feedback
-// Everything else stays mounted by URL if needed, but is not advertised.
+// Primary nav: Home · Library · Recs · Stats · Profile · Settings
+// More menu: Year in Review, Habits, Achievements, Rewards,
+// Storage Manager, Export Hub,
+// Feedback, Donate, Gaming Links, Themes, TV Mode
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -86,14 +87,44 @@ function HybridNavBar() {
           <div className="dropdown-menu" id="gamepilot-more-navigation" aria-label="More pages">
             <div className="dropdown-section">
               <div className="dropdown-section-title">Story</div>
+              <Link to="/timeline" className="dropdown-item" onClick={closeDropdown} title="Your most-played game each week, month, and year">
+                <Crown size={16} className="dropdown-item-icon" /> Hall of Champions
+              </Link>
               <Link to="/year-in-review" className="dropdown-item" onClick={closeDropdown} title="Your yearly gaming story arc">
                 <BookOpen size={16} className="dropdown-item-icon" /> Year in Review
+              </Link>
+            </div>
+            <div className="dropdown-section">
+              <div className="dropdown-section-title">Progression</div>
+              <Link to="/habits" className="dropdown-item" onClick={closeDropdown} title="Track play habits and goals">
+                <Target size={16} className="dropdown-item-icon" /> Habits
+              </Link>
+              <Link to="/achievements" className="dropdown-item" onClick={closeDropdown} title="View achievements and milestones">
+                <Trophy size={16} className="dropdown-item-icon" /> Achievements
+              </Link>
+              <Link to="/rewards" className="dropdown-item" onClick={closeDropdown} title="XP, unlocks, and progression rewards">
+                <Gift size={16} className="dropdown-item-icon" /> Rewards
+              </Link>
+            </div>
+            <div className="dropdown-section">
+              <div className="dropdown-section-title">Library Tools</div>
+              <Link to="/storage-manager" className="dropdown-item" onClick={closeDropdown} title="Manage and reclaim storage">
+                <Database size={16} className="dropdown-item-icon" /> Storage Manager
+              </Link>
+              <Link to="/export-hub" className="dropdown-item" onClick={closeDropdown} title="Export your data and stats">
+                <Download size={16} className="dropdown-item-icon" /> Export Hub
               </Link>
             </div>
             <div className="dropdown-section">
               <div className="dropdown-section-title">Community</div>
               <Link to="/feedback" className="dropdown-item" onClick={closeDropdown} title="Suggest features and share feedback">
                 <MessageSquarePlus size={16} className="dropdown-item-icon" /> Feedback
+              </Link>
+              <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Support GamePilot">
+                <Heart size={16} className="dropdown-item-icon" /> Donate
+              </Link>
+              <Link to="/gaming-links" className="dropdown-item" onClick={closeDropdown} title="Your gaming bookmarks and useful links">
+                <LinkIcon size={16} className="dropdown-item-icon" /> Gaming Links
               </Link>
             </div>
             <div className="dropdown-section">

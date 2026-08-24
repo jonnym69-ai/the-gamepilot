@@ -3,6 +3,8 @@
 import StorageService from './StorageService';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
+import { getBlendedPlaytimeMinutes, isGameUnplayed, isNonGameTitle } from './gameClassification';
+import FounderService from './FounderService';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,24 +18,17 @@ const getReleaseYear = (game) => {
   return match ? Number(match[0]) : null;
 };
 
-const getPlaytime = (game) => {
-  if (!game) return 0;
-  // Steam returns minutes; internal GamePilot also uses minutes.
-  // playtime is stored as an object with .total in some places, so check
-  // the specific numeric fields first.
-  const candidates = [
-    game.time_played,
-    game.playtime?.total,
-    game.playtime?.minutes,
-    game.playtimeMinutes,
-    game.importedPlaytimeMinutes
-  ];
-  for (const raw of candidates) {
-    if (raw === null || raw === undefined) continue;
-    const num = Number(raw);
-    if (Number.isFinite(num)) return Math.max(0, num);
-  }
-  return 0;
+// Use canonical playtime from shared classification module
+const getPlaytime = getBlendedPlaytimeMinutes;
+
+const getGameDisplayName = (game) => {
+  if (!game) return null;
+  const raw = game.name || game.title || game.gameName || game.appname || '';
+  const name = String(raw).trim();
+  if (!name) return null;
+  // Drop placeholder / broken titles that leak into roasts as "0h in Untitled".
+  if (/^(untitled|unknown|unknown game|null|undefined)$/i.test(name)) return null;
+  return name;
 };
 
 const getGenres = (game) => {
@@ -102,24 +97,76 @@ const getSessionStart = (session) => {
 
 const normalizeGameKey = (value) => (value ? String(value).trim().toLowerCase() : '');
 
+// The persona is built from the user's CURRENT ROTATION by default: the most
+// recent tracked sessions, weighted by position (newest weighs most). This is
+// deliberately not a calendar window — if the user takes a break, the persona
+// holds steady instead of decaying to nothing.
+const ADAPTIVE_SESSION_COUNT = 15;
+// Position-based half-life: a session 6 positions back weighs half as much as
+// the most recent one.
+const ADAPTIVE_HALF_LIFE_SESSIONS = 6;
+// Cold-start blend: recent play fully takes over at ~10 tracked hours. Before
+// that, lifetime library playtime fills the gaps so a new user still gets a
+// meaningful persona from their scanned library on day one.
+const RECENT_TAKEOVER_MINUTES = 10 * 60;
+
 const gatherSignals = (options = {}) => {
+  // Modes:
+  //  - 'recent' (default): the current rotation. Uses an adaptive session pool
+  //    (last N sessions) unless an explicit windowDays calendar window is
+  //    given (e.g. Profile's historical windowed views).
+  //  - 'all-time': pure lifetime library playtime totals imported from
+  //    Steam/GOG/Epic etc. Explicit opt-in for retrospective surfaces (Profile
+  //    all-time view, Year in Review).
+  const isAllTime = options.mode === 'all-time';
   const windowDays = Number.isFinite(options.windowDays) ? options.windowDays : null;
   const recencyHalfLifeDays = Number.isFinite(options.recencyHalfLifeDays) && options.recencyHalfLifeDays > 0
     ? options.recencyHalfLifeDays
     : null;
-  const library = StorageService.get('library', []);
+  // Launcher/utility apps (GOG Galaxy client etc.) are not games — exclude
+  // them from persona signals even if a scan let one into the library.
+  const library = StorageService.get('library', []).filter((game) => !isNonGameTitle(game));
   const behaviorProfile = UserBehaviorProfile.getProfile();
   const personaSnapshot = UserBehaviorProfile.getPersonaSnapshot();
-  const allSessions = PlaytimeAutoLogger.getSessionHistory() || [];
+  const allSessions = (PlaytimeAutoLogger.getSessionHistory() || [])
+    .filter((s) => !isNonGameTitle(s?.gameName));
 
-  // Within a time window, recent sessions contribute more than older ones.
-  // Half-life of N days means a session N days old has 0.5 weight.
+  // Newest-first ordering shared by the adaptive pool and window filtering.
+  const sortedSessions = [...allSessions].sort(
+    (a, b) => (getSessionStart(b) || 0) - (getSessionStart(a) || 0)
+  );
+
+  // Session pool: all-time = everything; calendar window = sessions inside the
+  // window; default recent = the N most recent sessions regardless of age.
+  let sessions;
+  if (isAllTime) {
+    sessions = allSessions;
+  } else if (windowDays !== null) {
+    const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+    sessions = sortedSessions.filter((s) => {
+      const start = getSessionStart(s);
+      return start !== null && start >= cutoff;
+    });
+  } else {
+    sessions = sortedSessions.slice(0, ADAPTIVE_SESSION_COUNT);
+  }
+  const sessionIndexByRef = new Map(sessions.map((s, i) => [s, i]));
+
+  // Recency weights: flat in all-time mode; day-based half-life inside a
+  // calendar window (default 30d); position-based half-life across the
+  // adaptive pool otherwise.
   const getRecencyWeight = (session) => {
-    if (recencyHalfLifeDays === null) return 1;
-    const start = getSessionStart(session);
-    if (start === null) return 1;
-    const daysAgo = (Date.now() - start) / (24 * 60 * 60 * 1000);
-    return Math.exp(-0.6931471805599453 * daysAgo / recencyHalfLifeDays);
+    if (isAllTime) return 1;
+    if (windowDays !== null) {
+      const halfLifeDays = recencyHalfLifeDays !== null ? recencyHalfLifeDays : 30;
+      const start = getSessionStart(session);
+      if (start === null) return 1;
+      const daysAgo = (Date.now() - start) / (24 * 60 * 60 * 1000);
+      return Math.exp(-0.6931471805599453 * daysAgo / halfLifeDays);
+    }
+    const index = sessionIndexByRef.get(session);
+    if (index === undefined) return 1;
+    return Math.exp(-0.6931471805599453 * index / ADAPTIVE_HALF_LIFE_SESSIONS);
   };
 
   const getSessionDuration = (session) => {
@@ -131,20 +178,10 @@ const gatherSignals = (options = {}) => {
     return Math.max(0, num);
   };
 
-  // Restrict sessions to the requested window (null = all time).
-  const cutoff = windowDays !== null ? Date.now() - windowDays * 24 * 60 * 60 * 1000 : null;
-  const sessions = cutoff !== null
-    ? allSessions.filter((s) => {
-        const start = getSessionStart(s);
-        return start === null ? false : start >= cutoff;
-      })
-    : allSessions;
-
-  // When recency weighting is active (with or without a hard window), per-game
-  // playtime comes from session history weighted by recency, so a game you
-  // stopped playing fades out of the persona. In pure all-time mode (no
-  // recency half-life, no window), we fall back to library playtime totals.
-  const useRecencyPlaytime = windowDays !== null || recencyHalfLifeDays !== null;
+  // In recent mode (adaptive pool or calendar window), per-game playtime comes
+  // from session history weighted by recency, so a game you stopped playing
+  // fades out of the persona. All-time mode uses library playtime totals.
+  const useRecencyPlaytime = !isAllTime;
   const recentPlaytimeByGame = {};
   if (useRecencyPlaytime) {
     sessions.forEach((s) => {
@@ -154,27 +191,58 @@ const gatherSignals = (options = {}) => {
       recentPlaytimeByGame[key] = (recentPlaytimeByGame[key] || 0) + getSessionDuration(s) * weight;
     });
   }
+
+  // Cold-start blend: until ~10h of tracked play, all-time playtime fills the
+  // gaps by SHARE, not magnitude. Blending raw minutes let a huge lifetime
+  // game (e.g. 1500h of Rust) swamp a current binge whenever blendFactor was
+  // even slightly below 1 — blending proportions keeps all-time taste shape
+  // informative without its size ever outweighing current play.
+  // blendFactor 0 = pure all-time (new user), 1 = pure current rotation.
+  const recentTrackedMinutes = sessions.reduce((acc, s) => acc + getSessionDuration(s), 0);
+  const blendFactor = isAllTime ? 0 : Math.min(1, recentTrackedMinutes / RECENT_TAKEOVER_MINUTES);
+
+  const totalGames = library.length;
+  // Lifetime library minutes (Steam/GOG/local) — never discarded.
+  const lifetimeLibraryPlaytime = library.reduce((acc, game) => acc + getPlaytime(game), 0);
+  const recentWeightedTotal = sum(Object.values(recentPlaytimeByGame));
+  // Raw (unweighted) recent minutes per game — for honest "Xh in GAME" display.
+  const recentRawMinutesByGame = {};
+  if (useRecencyPlaytime) {
+    sessions.forEach((s) => {
+      const key = normalizeGameKey(s.gameName || s.gameId);
+      if (!key) return;
+      recentRawMinutesByGame[key] = (recentRawMinutesByGame[key] || 0) + getSessionDuration(s);
+    });
+  }
+  // Display scale: what one share-point is worth in minutes. With no tracked
+  // play yet, the blend degenerates to raw lifetime minutes (cold start).
+  const scaleTotal = recentWeightedTotal > 0 ? recentWeightedTotal : lifetimeLibraryPlaytime;
+
   const effectivePlaytime = (game) => {
-    if (!useRecencyPlaytime) return getPlaytime(game);
+    const lifetime = getPlaytime(game);
+    if (!useRecencyPlaytime) return lifetime;
     const key = normalizeGameKey(game.name || game.title || game.gameName || game.appid);
-    return recentPlaytimeByGame[key] || 0;
+    const recentShare = recentWeightedTotal > 0 ? (recentPlaytimeByGame[key] || 0) / recentWeightedTotal : 0;
+    const lifetimeShare = lifetimeLibraryPlaytime > 0 ? lifetime / lifetimeLibraryPlaytime : 0;
+    return scaleTotal * (blendFactor * recentShare + (1 - blendFactor) * lifetimeShare);
   };
   const wasPlayedInWindow = (game) => effectivePlaytime(game) > 0;
 
-  const totalGames = library.length;
-  const libraryPlaytime = library.reduce((acc, game) => acc + effectivePlaytime(game), 0);
+  const windowedLibraryPlaytime = library.reduce((acc, game) => acc + effectivePlaytime(game), 0);
   const sessionPlaytime = sessions.reduce(
     (acc, session) => acc + getSessionDuration(session) * getRecencyWeight(session),
     0
   );
-  const totalPlaytime = libraryPlaytime || sessionPlaytime;
+  // All-time mode: lifetime library is the truth. Windowed/recent mode: use
+  // session-weighted totals, but never drop below what the window actually saw.
+  const totalPlaytime = useRecencyPlaytime
+    ? Math.max(windowedLibraryPlaytime, sessionPlaytime)
+    : Math.max(lifetimeLibraryPlaytime, windowedLibraryPlaytime, sessionPlaytime);
   const playedGames = useRecencyPlaytime
     ? library.filter(wasPlayedInWindow).length
-    : library.filter((game) => getPlaytime(game) > 0 || game.last_played).length;
+    : library.filter((game) => !isGameUnplayed(game)).length;
   const playedRatio = totalGames > 0 ? playedGames / totalGames : 0;
-  // Backlog = games that have never been launched (0 playtime, never opened).
-  // This is a reliable, local-only signal that needs no manual logging.
-  const neverPlayedGames = library.filter((game) => getPlaytime(game) === 0 && !game.last_played).length;
+  const neverPlayedGames = library.filter((game) => isGameUnplayed(game)).length;
   const unplayedRatio = totalGames > 0 ? neverPlayedGames / totalGames : 0;
 
   // Manual completion data — only meaningful if the user actually logs it.
@@ -188,23 +256,97 @@ const gatherSignals = (options = {}) => {
     ? Math.min(100, Math.round((completedCount / playedGames) * 100))
     : 0;
 
-  const releaseYears = library.map(getReleaseYear).filter((y) => y !== null);
-  const avgReleaseYear = releaseYears.length ? Math.round(mean(releaseYears)) : null;
-  const releaseYearCoverage = totalGames > 0 ? releaseYears.length / totalGames : 0;
+  // Release-year profile. In recent mode, weight by recent playtime so the
+  // retro-vs-modern signal reflects what the user has actually been playing.
+  const releaseYearPairs = library
+    .map((game) => {
+      const year = getReleaseYear(game);
+      if (year === null) return null;
+      const weight = useRecencyPlaytime ? effectivePlaytime(game) : getPlaytime(game);
+      return weight > 0 ? { year, weight } : null;
+    })
+    .filter(Boolean);
+  const totalReleaseYearWeight = sum(releaseYearPairs.map((p) => p.weight));
+  const avgReleaseYear = releaseYearPairs.length
+    ? (totalReleaseYearWeight > 0
+      ? Math.round(sum(releaseYearPairs.map((p) => p.year * p.weight)) / totalReleaseYearWeight)
+      : Math.round(mean(releaseYearPairs.map((p) => p.year))))
+    : null;
+  const releaseYearCoverage = totalGames > 0 ? releaseYearPairs.length / totalGames : 0;
 
-  // Most-played games by playtime — the concrete titles that define the player.
-  const topGames = library
-    .map((game) => ({ name: game.name || game.title || game.gameName, minutes: effectivePlaytime(game) }))
-    .filter((g) => g.name && g.minutes > 0)
-    .sort((a, b) => b.minutes - a.minutes)
+  // Most-played games. In all-time mode, lifetime minutes define the player.
+  // In recent/windowed mode, sort by recent session playtime so the persona
+  // reflects what the user has actually been playing lately, not their all-time
+  // history.
+  const libraryTopGames = library
+    .map((game) => {
+      const name = getGameDisplayName(game);
+      if (!name) return null;
+      const lifetime = getPlaytime(game);
+      const key = normalizeGameKey(game.name || game.title || game.gameName || game.appid);
+      const minutes = effectivePlaytime(game);
+      const recentRaw = useRecencyPlaytime ? (recentRawMinutesByGame[key] || 0) : 0;
+      return { name, minutes, lifetimeMinutes: lifetime, recentMinutes: recentRaw };
+    })
+    .filter((g) => g && g.minutes > 0);
+
+  // Session-only games: a game the user has been playing may not be in the
+  // scanned library (e.g. manually tracked, non-Steam, or name mismatch). In
+  // recent mode, surface these from session history so a current binge (e.g.
+  // 20h of Project Zomboid this week) actually leads the persona instead of
+  // being orphaned while an all-time favorite (e.g. Rust) keeps top billing.
+  const libraryKeys = new Set(library.map((g) => normalizeGameKey(getGameDisplayName(g))));
+  // Recover original display names from sessions (recentPlaytimeByGame keys
+  // are normalized lowercase; we want "Project Zomboid" not "project zomboid").
+  const sessionNameByKey = {};
+  sessions.forEach((s) => {
+    const key = normalizeGameKey(s.gameName || s.gameId);
+    const name = s.gameName || s.gameId || null;
+    if (key && name && !sessionNameByKey[key]) {
+      sessionNameByKey[key] = String(name).trim();
+    }
+  });
+  const sessionOnlyGames = useRecencyPlaytime
+    ? Object.entries(recentPlaytimeByGame)
+        .filter(([key, minutes]) => key && minutes > 0 && !libraryKeys.has(key))
+        .map(([key, minutes]) => ({
+          name: sessionNameByKey[key] || key,
+          minutes: scaleTotal * blendFactor * (recentWeightedTotal > 0 ? minutes / recentWeightedTotal : 0),
+          lifetimeMinutes: 0,
+          recentMinutes: recentRawMinutesByGame[key] || 0
+        }))
+    : [];
+
+  const topGames = [...libraryTopGames, ...sessionOnlyGames]
+    .sort((a, b) => b.minutes - a.minutes || b.recentMinutes - a.recentMinutes)
     .slice(0, 5);
   const topGame = topGames[0] || null;
   const topGameShare = totalPlaytime > 0 && topGame ? topGame.minutes / totalPlaytime : 0;
 
-  // Genre distribution by playtime
+  // Last-played game (most recently launched/played) — present-tense focus.
+  const recentPlayedList = library
+    .filter((g) => g?.last_played && (getPlaytime(g) > 0 || Number(g?.time_played || 0) > 0))
+    .sort((a, b) => new Date(b.last_played) - new Date(a.last_played));
+  const lastPlayedRaw = recentPlayedList[0] || null;
+  const lastPlayedName = getGameDisplayName(lastPlayedRaw);
+  // Fall back to the most recent tracked session if no library game has
+  // last_played (e.g. session-only game not in the scanned library).
+  const lastSession = sessions.length > 0
+    ? [...sessions].sort((a, b) => (getSessionStart(b) || 0) - (getSessionStart(a) || 0))[0]
+    : null;
+  const lastSessionName = lastSession ? String(lastSession.gameName || lastSession.gameId || '').trim() : null;
+  const lastPlayedGame = lastPlayedRaw && lastPlayedName
+    ? { name: lastPlayedName, minutes: getPlaytime(lastPlayedRaw), last_played: lastPlayedRaw.last_played }
+    : (lastSessionName
+      ? { name: lastSessionName, minutes: getSessionDuration(lastSession), last_played: lastSession.timestamp || null }
+      : null);
+
+  // Genre distribution. In recent mode, weight by recent session playtime so
+  // the dominant genre reflects current play, not all-time history.
   const genrePlaytime = {};
   library.forEach((game) => {
-    const pt = effectivePlaytime(game);
+    const pt = useRecencyPlaytime ? effectivePlaytime(game) : Math.max(getPlaytime(game), effectivePlaytime(game));
+    if (pt <= 0) return;
     getGenres(game).forEach((genre) => {
       genrePlaytime[genre] = (genrePlaytime[genre] || 0) + pt;
     });
@@ -217,6 +359,34 @@ const gatherSignals = (options = {}) => {
   const dominantGenreShare = totalGenrePlaytime > 0 && dominantGenre
     ? genrePlaytime[dominantGenre] / totalGenrePlaytime
     : 0;
+
+  // Theme profile — the worlds the player inhabits (zombies, space, horror...)
+  // from tags+genres weighted by the same effective playtime as genres. In
+  // recent mode this follows the current rotation automatically.
+  const themePlaytime = {};
+  library.forEach((game) => {
+    const pt = effectivePlaytime(game);
+    if (pt <= 0) return;
+    const haystack = [...getTags(game), ...getGenres(game)];
+    THEME_DEFINITIONS.forEach((theme) => {
+      const matched = theme.tags.some((needle) => haystack.some((h) => h === needle || h.includes(needle)));
+      if (matched) themePlaytime[theme.id] = (themePlaytime[theme.id] || 0) + pt;
+    });
+  });
+  const totalThemePlaytime = sum(Object.values(themePlaytime));
+  const rankedThemes = THEME_DEFINITIONS
+    .map((theme) => ({
+      id: theme.id,
+      label: theme.label,
+      shortName: theme.shortName,
+      roasts: theme.roasts,
+      playtime: themePlaytime[theme.id] || 0,
+      share: totalThemePlaytime > 0 ? (themePlaytime[theme.id] || 0) / totalThemePlaytime : 0
+    }))
+    .filter((theme) => theme.playtime > 0)
+    .sort((a, b) => b.playtime - a.playtime);
+  const dominantTheme = rankedThemes[0] && rankedThemes[0].share >= 0.15 ? rankedThemes[0] : null;
+  const secondaryTheme = rankedThemes[1] && rankedThemes[1].share >= 0.15 ? rankedThemes[1] : null;
 
   // Tags
   const tagCounts = {};
@@ -271,9 +441,10 @@ const gatherSignals = (options = {}) => {
   const totalSessions = sum(sortedSessionCounts);
   const top3SessionShare = totalSessions > 0 ? top3Sessions / totalSessions : 0;
 
-  // Peak hour — from windowed sessions in recent mode, else the all-time snapshot.
+  // Peak hour — from the session pool in recent mode (adaptive pool or
+  // calendar window), else the all-time behavior snapshot.
   let peakHour = personaSnapshot.peakPlayHour;
-  if (windowDays !== null) {
+  if (useRecencyPlaytime) {
     const hourCounts = {};
     sessions.forEach((s) => {
       const start = getSessionStart(s);
@@ -298,7 +469,7 @@ const gatherSignals = (options = {}) => {
   // current play cadence.
   let sessionPattern = personaSnapshot.preferredSessionBucket || null;
   let avgSessionLength = personaSnapshot.avgSessionLength || 0;
-  if (windowDays !== null) {
+  if (useRecencyPlaytime) {
     const durations = sessions
       .map((s) => getSessionDuration(s) * getRecencyWeight(s))
       .filter((d) => d > 0);
@@ -339,6 +510,29 @@ const gatherSignals = (options = {}) => {
   });
   const challengeRatio = totalPlaytime > 0 ? challengeScore / totalPlaytime : 0;
   const hardGameRatio = totalGames > 0 ? hardGameCount / totalGames : 0;
+
+  // Chill score: playtime-weighted cozy/relaxing/wholesome content
+  const chillTags = ['cozy', 'relaxing', 'wholesome', 'farming', 'low-stress', 'low stress', 'slice of life', 'wholesome', 'comfort', 'meditative', 'zen', 'peaceful', 'wholesome horror'];
+  const chillGenres = ['casual', 'simulation', 'puzzle', 'management'];
+  let chillScore = 0;
+  let chillGameCount = 0;
+  library.forEach((game) => {
+    const pt = effectivePlaytime(game);
+    const tags = getTags(game);
+    const genres = getGenres(game);
+    const tagMatch = chillTags.some((t) => tags.includes(t));
+    const genreMatch = chillGenres.some((g) => genres.includes(g));
+    if (tagMatch || genreMatch) {
+      chillScore += pt;
+      chillGameCount += 1;
+    }
+  });
+  const chillRatio = totalPlaytime > 0 ? chillScore / totalPlaytime : 0;
+  const chillGameRatio = totalGames > 0 ? chillGameCount / totalGames : 0;
+
+  // Cluster density tiers: dominant (30%+), notable (15-30%), minor (<15%)
+  const hardClusterTier = hardGameRatio >= 0.3 ? 'dominant' : hardGameRatio >= 0.15 ? 'notable' : 'minor';
+  const chillClusterTier = chillGameRatio >= 0.3 ? 'dominant' : chillGameRatio >= 0.15 ? 'notable' : 'minor';
 
   // Multiplayer / competitive game ratio
   const multiplayerTags = ['multiplayer', 'pvp', 'competitive', 'online multiplayer', 'mmo', 'moba', 'battle royale', 'team-based'];
@@ -398,14 +592,24 @@ const gatherSignals = (options = {}) => {
     totalGames,
     totalPlaytime,
     playedRatio,
+    playedGames,
     unplayedRatio,
     neverPlayedGames,
+    useRecencyPlaytime,
+    mode: isAllTime ? 'all-time' : 'recent',
+    blendFactor,
+    recentTrackedMinutes,
+    adaptiveSessionCount: sessions.length,
+    lifetimeLibraryPlaytime,
+    lifetimeGames: library.filter((game) => getPlaytime(game) > 0 || game.last_played).length,
     avgReleaseYear,
     releaseYearCoverage,
     genrePlaytime,
     sortedGenres,
     dominantGenre,
     dominantGenreShare,
+    dominantTheme,
+    secondaryTheme,
     tagCounts,
     indieRatio,
     earlyAccessRatio,
@@ -429,10 +633,18 @@ const gatherSignals = (options = {}) => {
     challengeScore,
     challengeRatio,
     hardGameRatio,
+    hardGameCount,
+    hardClusterTier,
+    chillScore,
+    chillRatio,
+    chillGameRatio,
+    chillGameCount,
+    chillClusterTier,
     completedCount,
     hasCompletionData,
     topGames,
     topGame,
+    lastPlayedGame,
     topGameShare,
     multiplayerRatio,
     multiplayerPlaytimeShare,
@@ -457,21 +669,21 @@ const gatherSignals = (options = {}) => {
 // ---------------------------------------------------------------------------
 
 export const DEFAULT_VOICE = {
-  periodHook: 'You spent {PERIOD} {LEAD} in **{GAME}** ({HOURS}h).',
-  secondary: 'with a taste of **{LEAD}** in **{GAME}** ({HOURS}h)',
-  quiet: 'A quiet {PERIOD}. The backlog can wait. Ready when you are.',
-  digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged.',
-  digestYear: 'Across {WEEKS} active {WEEKWORD} this year, you logged **{HOURS}h**.',
-  digestMVP: ' **{MVP}** was your MVP at **{MVPHOURS}h**.',
-  digestGenre: ' You leaned hard into **{GENRE}**.',
-  digestPeak: ' Your busiest week hit **{PEAK}h**.',
-  digestStreak: ' One game held the crown **{STREAK} weeks** straight.',
+  periodHook: '{PERIOD}, your gaming story was anchored by **{GAME}** ({HOURS}h), {LEAD}.',
+  secondary: 'You also spent time {LEAD} in **{GAME}** ({HOURS}h)',
+  quiet: 'A quiet {PERIOD}. The backlog can wait — ready whenever you are.',
+  digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged across your games.',
+  digestYear: 'Across {WEEKS} active {WEEKWORD} this year, you logged **{HOURS}h** in total.',
+  digestMVP: ' **{MVP}** was your true MVP at **{MVPHOURS}h**.',
+  digestGenre: ' You leaned heavily into **{GENRE}**.',
+  digestPeak: ' Your peak week reached **{PEAK}h** of playtime.',
+  digestStreak: ' **{MVP}** held top billing for **{STREAK} weeks** straight.',
   continuity: {
-    streak: '**{GAME}** has held the crown for the {ORDINAL} {PERIOD} running.',
-    dethroned: '**{GAME}** dethroned **{PREVGAME}** as your most-played.',
-    comeback: 'Back in the game after a quiet {PERIOD}.',
-    genreShift: 'Your taste swung from **{PREVGENRE}** toward **{GENRE}**.',
-    newRotation: 'New in the rotation: {FRESH}.'
+    streak: '**{GAME}** held top billing for the {ORDINAL} {PERIOD} in a row.',
+    dethroned: '**{GAME}** took over top spot from **{PREVGAME}**.',
+    comeback: 'Welcome back into session after a quiet {PERIOD}.',
+    genreShift: 'Your focus shifted from **{PREVGENRE}** over to **{GENRE}**.',
+    newRotation: 'Fresh additions to your recent rotation: {FRESH}.'
   }
 };
 
@@ -518,7 +730,7 @@ const ARCHETYPES = [
       'The {GENRE} section of their library is thriving. {GAME} is the only one that gets opened.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} digging through the backlog; **{GAME}** ({HOURS}h) surfaced this time.',
+      periodHook: 'Another {PERIOD_NOUN} digging through the backlog; **{GAME}** ({HOURS}h) surfaced this time.',
       quiet: 'Not even the backlog got touched this {PERIOD}. The pile grows.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The backlog briefly noticed.',
       continuity: {
@@ -561,7 +773,7 @@ const ARCHETYPES = [
       'Knows the {GENRE} tutorial by heart. The rest is a mystery.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} of starting strong in **{GAME}** ({HOURS}h). The ending remains a mystery.',
+      periodHook: 'Another {PERIOD_NOUN} of starting strong in **{GAME}** ({HOURS}h). The ending remains a mystery.',
       quiet: 'No new starts this {PERIOD}. The half-finished pile stays half-finished.',
       continuity: {
         comeback: 'Back at the title screen after a quiet {PERIOD}.'
@@ -575,10 +787,11 @@ const ARCHETYPES = [
     score: (s) => {
       const hasHardLibrary = s.hardGameRatio >= 0.3;
       if (s.totalPlaytime < 60 && !hasHardLibrary) return 0;
-      const challengeScore = Math.min(1, s.challengeRatio) * 65;
-      const hardGameScore = Math.min(1, s.hardGameRatio) * 35;
-      const sessionScore = ['medium', 'long', 'weekend'].includes(s.sessionPattern) ? 15 : 0;
-      return challengeScore + hardGameScore + sessionScore;
+      const challengeScore = Math.min(1, s.challengeRatio) * 55;
+      const hardGameScore = Math.min(1, s.hardGameRatio) * 30;
+      const clusterBonus = s.hardClusterTier === 'dominant' ? 15 : s.hardClusterTier === 'notable' ? 8 : 0;
+      const sessionScore = ['medium', 'long', 'weekend'].includes(s.sessionPattern) ? 10 : 0;
+      return challengeScore + hardGameScore + clusterBonus + sessionScore;
     },
     roasts: [
       'Enjoys suffering. Calls it "mechanics."',
@@ -599,7 +812,7 @@ const ARCHETYPES = [
       'Plays {GENRE} games specifically because they hurt. {GAME} hurts the most.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} of studying pain in **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} of studying pain in **{GAME}** ({HOURS}h).',
       quiet: 'Even the masochist took a break this {PERIOD}. The bosses will wait.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The suffering was consistent.',
       continuity: {
@@ -638,7 +851,7 @@ const ARCHETYPES = [
       'Knows the exact DPS difference between two {GENRE} builds. Uses neither for fun.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} of optimising systems in **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} of optimising systems in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The spreadsheets remain untouched.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The numbers mostly went up.'
     })
@@ -674,7 +887,7 @@ const ARCHETYPES = [
       'Their {GENRE} shelf is a library of emotional damage. {GAME} caused the most.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} lost in the story of **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} lost in the story of **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The next chapter will have to wait.',
       continuity: {
         comeback: 'Back to the story after a quiet {PERIOD}.'
@@ -710,12 +923,51 @@ const ARCHETYPES = [
       'Their {GENRE} comfort zone has a name. It\'s {GAME}. It\'s always {GAME}.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} back in the comfort loop with **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} back in the comfort loop with **{GAME}** ({HOURS}h).',
       quiet: 'The comfort loop is on pause this {PERIOD}. Nothing new broke the streak.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged, mostly in the same comfort zone.',
       continuity: {
         streak: '**{GAME}** has held the crown for the {ORDINAL} {PERIOD} running. The comfort loop continues.',
         comeback: 'Back in the comfort zone after a quiet {PERIOD}.'
+      }
+    })
+  },
+  {
+    id: 'unwinder',
+    label: 'The Unwinder',
+    description: 'Turns to cozy, low-stress games to decompress. Their library is a warm blanket.',
+    score: (s) => {
+      if (s.totalGames < 5) return 0;
+      const chillPlayScore = Math.min(1, s.chillRatio) * 50;
+      const chillGameScore = Math.min(1, s.chillGameRatio) * 35;
+      const clusterBonus = s.chillClusterTier === 'dominant' ? 15 : s.chillClusterTier === 'notable' ? 8 : 0;
+      const shortSessionBonus = s.sessionPattern === 'short' ? 5 : 0;
+      return chillPlayScore + chillGameScore + clusterBonus + shortSessionBonus;
+    },
+    roasts: [
+      'Their ideal evening involves a farm, a cat, and zero consequences.',
+      'Has never met a problem that couldn\'t be solved by watering virtual crops.',
+      'Plays games to relax. Their games are already relaxed. It\'s mutual.',
+      'Knows the exact in-game season for every crop in their library.',
+      'Tells friends they\'re "into gaming." They mean Stardew Valley. Again.',
+      'Their backlog is just a list of cozy games they haven\'t pet the animals in yet.',
+      'Has 200 hours in a game where the hardest challenge is a slightly grumpy villager.'
+    ],
+    contextRoasts: [
+      'Spent {HOURS} hours in {GAME} doing absolutely nothing stressful. On purpose.',
+      '{GAME} is their idea of a wild night. {GAME} involves fishing.',
+      'Has {HOURS} hours in {GAME}. Most of it is rearranging furniture.',
+      'Tells people {GAME} is "actually quite deep." It\'s a farming sim. They\'re right.',
+      'Their {GENRE} games are all the same vibe: warm, soft, and aggressively non-threatening.',
+      'Plays {GAME} specifically because nothing in it wants to kill them. Unlike the rest of their library.'
+    ],
+    voice: mergeVoice({
+      periodHook: 'A gentle {PERIOD_NOUN} unwinding with **{GAME}** ({HOURS}h). No stress, no rush.',
+      quiet: 'A quiet {PERIOD}. The crops will grow without you. Probably.',
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged, all of it cozy.',
+      continuity: {
+        streak: '**{GAME}** remains the comfort pick for the {ORDINAL} {PERIOD} running. The vibe holds.',
+        comeback: 'Back to the cozy corner after a busy {PERIOD}.'
       }
     })
   },
@@ -748,7 +1000,7 @@ const ARCHETYPES = [
       'Their {GENRE} collection is 90% games with under 500 reviews. {GAME} has 47.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} championing indie gems; **{GAME}** ({HOURS}h) led the charge.',
+      periodHook: 'Another {PERIOD_NOUN} championing indie gems; **{GAME}** ({HOURS}h) led the charge.',
       quiet: 'A quiet {PERIOD}. The indie scene carries on without you.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Underdogs dominated.'
     })
@@ -782,7 +1034,7 @@ const ARCHETYPES = [
       'Has a {GAME} wiki tab open permanently. It has been open for years.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} staying loyal to **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} staying loyal to **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The franchise waits patiently.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The loyalty remains unmatched.'
     })
@@ -817,7 +1069,7 @@ const ARCHETYPES = [
       'Owns {GAME} on three different platforms. The original is still the best. Obviously.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} back in the golden era with **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} back in the golden era with **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The classics will keep.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Retro soul intact.'
     })
@@ -852,7 +1104,7 @@ const ARCHETYPES = [
       'Pre-ordered {GAME} for the bonus skin. Doesn\'t use the skin. Doesn\'t regret the pre-order.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} on the release frontier with **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} on the release frontier with **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The patch notes pile up.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Cutting edge, new scratches.'
     })
@@ -885,7 +1137,7 @@ const ARCHETYPES = [
       'Their {GAME} completion rate is 100%. Their social life is 0%. Worth it.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} of ticking boxes in **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} of ticking boxes in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The checklist stays unchecked.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Completionism marches on.'
     })
@@ -963,7 +1215,7 @@ const ARCHETYPES = [
       'Their {GENRE} collection is 80% co-op games. Their co-op partner count is zero.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} dropping into lobbies with **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} dropping into lobbies with **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The squad is on standby.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The lobby stayed open.'
     })
@@ -998,7 +1250,7 @@ const ARCHETYPES = [
       'Their {GENRE} library is full of 0.3-version games. {GAME} is on 0.7. Practically finished.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} embracing the jank in **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} embracing the jank in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. Even the bugs miss you.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Held together with tape and hope.'
     })
@@ -1033,7 +1285,7 @@ const ARCHETYPES = [
       'Reinstalls {GAME} just to try a new modlist. Plays for 2 hours. Goes back to modding.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} tweaking and modding **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} tweaking and modding **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The load order stays untouched.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly in the mod manager.'
     })
@@ -1068,7 +1320,7 @@ const ARCHETYPES = [
       'Can quote {GAME}\'s frame data from memory. Cannot remember what they had for lunch.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} grinding splits in **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} grinding splits in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The timer stays paused.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly resets.'
     })
@@ -1103,7 +1355,7 @@ const ARCHETYPES = [
       'Has {HOURS} hours in {GAME}. Has never played another game since they installed it.'
     ],
     voice: mergeVoice({
-      periodHook: 'Another {PERIOD} grinding matches in **{GAME}** ({HOURS}h).',
+      periodHook: 'Another {PERIOD_NOUN} grinding matches in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The lobby emptied out.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. All ranked. All {GAME}.'
     })
@@ -1138,7 +1390,7 @@ const ARCHETYPES = [
       'Plays {GAME} like it\'s a weekend sport. Warm-up Friday. Tournament Saturday. Cool-down Sunday.'
     ],
     voice: mergeVoice({
-      periodHook: 'A {PERIOD} of weekend campaigns in **{GAME}** ({HOURS}h).',
+      periodHook: 'A {PERIOD_NOUN} of weekend campaigns in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The weekends weren\'t enough.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly weekend marathons.'
     })
@@ -1173,7 +1425,7 @@ const ARCHETYPES = [
       'Has {HOURS} hours in {GAME}. It took 600 sessions. Each one ended with "just one more." It was never just one more.'
     ],
     voice: mergeVoice({
-      periodHook: 'A {PERIOD} of bite-sized sessions in **{GAME}** ({HOURS}h).',
+      periodHook: 'A {PERIOD_NOUN} of bite-sized sessions in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. Lunch breaks were busy.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Quick hits, steady pace.'
     })
@@ -1183,6 +1435,195 @@ const ARCHETYPES = [
 // ---------------------------------------------------------------------------
 // Sub-traits
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Theme layer: the WORLDS the player inhabits (zombies, space, fantasy...),
+// detected from game tags+genres weighted by playtime. This is what makes the
+// persona game-related — "The Doomsday Prepper who replays everything" — with
+// the behavioral archetype kept as the second half of the hybrid label.
+// Ordered most-specific first: ties break toward the more evocative theme.
+// ---------------------------------------------------------------------------
+
+export const THEME_DEFINITIONS = [
+  {
+    id: 'doomsday_prepper',
+    label: 'The Doomsday Prepper',
+    shortName: 'the apocalypse',
+    tags: ['zombies', 'post-apocalyptic', 'open world survival craft', 'survival'],
+    roasts: [
+      'Has spent {HOURS} hours barricading windows in {GAME}. The canned-food stockpile is aspirational.',
+      'Plays {GAME} like a training manual. The zombie plan is written down somewhere.',
+      'Every {GENRE} game becomes a rehearsal for the end of the world. {GAME} is going well, thanks for asking.'
+    ]
+  },
+  {
+    id: 'horror_junkie',
+    label: 'The Horror Junkie',
+    shortName: 'horror',
+    tags: ['survival horror', 'psychological horror', 'horror', 'gore'],
+    roasts: [
+      'Plays {GAME} with the lights off on purpose. The neighbours have heard things.',
+      '{HOURS} hours being scared in {GAME}. Calls it relaxing. It is not relaxing.',
+      'Reads "Warning: disturbing content" as a personal invitation. See: {GAME}.'
+    ]
+  },
+  {
+    id: 'ashen_masochist',
+    label: 'The Ashen Masochist',
+    shortName: 'punishing games',
+    tags: ['souls-like', 'soulslike', 'punishing', 'difficult'],
+    roasts: [
+      'Died four hundred times in {GAME} and counted every one as progress.',
+      '"Maybe this boss attempt" — said {HOURS} hours ago, mid-{GAME}.',
+      'Calls {GAME} "fair". The death screen disagrees.'
+    ]
+  },
+  {
+    id: 'console_cowboy',
+    label: 'The Console Cowboy',
+    shortName: 'neon dystopias',
+    tags: ['cyberpunk', 'dystopian', 'hacking', 'neon'],
+    roasts: [
+      "Lives in {GAME}'s neon rain. Owns no trench coat. Yet.",
+      '{HOURS} hours jacked into {GAME}. Reality has worse lighting.'
+    ]
+  },
+  {
+    id: 'starfarer',
+    label: 'The Starfarer',
+    shortName: 'space',
+    tags: ['space sim', 'spaceships', 'space', 'sci-fi'],
+    roasts: [
+      '{HOURS} hours into {GAME}; the commute now feels disappointingly terrestrial.',
+      'Names every ship in {GAME}. Remembers none of their real-life passwords.'
+    ]
+  },
+  {
+    id: 'dungeon_delver',
+    label: 'The Dungeon Delver',
+    shortName: 'fantasy worlds',
+    tags: ['dark fantasy', 'dungeon crawler', 'fantasy', 'magic', 'dragons', 'medieval'],
+    roasts: [
+      'Has {HOURS} hours in {GAME} and still reads every item description out loud.',
+      'Carries forty-seven wheels of cheese in {GAME}. Encumbrance is a suggestion.'
+    ]
+  },
+  {
+    id: 'queue_warrior',
+    label: 'The Queue Warrior',
+    shortName: 'the competitive queue',
+    tags: ['moba', 'battle royale', 'hero shooter', 'esports', 'competitive'],
+    roasts: [
+      'Blames the team in {GAME}. The team changes. The losses remain.',
+      '{HOURS} hours in {GAME} ranked. Mentally, still in promos.'
+    ]
+  },
+  {
+    id: 'run_addict',
+    label: 'The Run Addict',
+    shortName: 'roguelikes',
+    tags: ['roguelike', 'roguelite', 'deckbuilding', 'procedural generation'],
+    roasts: [
+      '"One more run" of {GAME} has ended exactly zero times.',
+      '{HOURS} hours in {GAME}; the run always dies, the hope never does.'
+    ]
+  },
+  {
+    id: 'breacher',
+    label: 'The Breacher',
+    shortName: 'shooters',
+    tags: ['tactical', 'military', 'fps', 'shooter', 'war'],
+    roasts: [
+      'Checks corners in {GAME} and, reportedly, in supermarkets.',
+      '{HOURS} hours of {GAME}. Reloads after firing three rounds. Every time.'
+    ]
+  },
+  {
+    id: 'homesteader',
+    label: 'The Homesteader',
+    shortName: 'cozy games',
+    tags: ['farming', 'cozy', 'fishing', 'wholesome', 'life sim', 'relaxing'],
+    roasts: [
+      'The {GAME} crops are watered on a stricter schedule than anything in real life.',
+      '{HOURS} hours of {GAME}. Blood pressure: immaculate.'
+    ]
+  },
+  {
+    id: 'armchair_general',
+    label: 'The Armchair General',
+    shortName: 'strategy',
+    tags: ['grand strategy', '4x', 'turn-based strategy', 'real time strategy', 'strategy', 'tactics'],
+    roasts: [
+      'One more turn in {GAME}, said {HOURS} hours ago.',
+      'Pauses {GAME} to think. Unpauses to conquer.'
+    ]
+  },
+  {
+    id: 'gearhead',
+    label: 'The Gearhead',
+    shortName: 'racing',
+    tags: ['racing', 'driving', 'automobile', 'motorsport'],
+    roasts: [
+      'Brakes later in {GAME} than they ever would in a real car.',
+      '{HOURS} hours chasing tenths in {GAME}. The commute is now "practice".'
+    ]
+  },
+  {
+    id: 'club_athlete',
+    label: 'The Club Athlete',
+    shortName: 'sports',
+    tags: ['sports', 'football', 'soccer', 'basketball', 'hockey'],
+    roasts: [
+      'Manages {GAME} transfers with more care than their own finances.',
+      '{HOURS} hours into {GAME}. Still blames the referee.'
+    ]
+  },
+  {
+    id: 'architect',
+    label: 'The Architect',
+    shortName: 'building games',
+    tags: ['city builder', 'colony sim', 'automation', 'building', 'crafting'],
+    roasts: [
+      'The {GAME} layout has a five-year plan. The garage does not.',
+      '{HOURS} hours optimising {GAME}. The factory must grow.'
+    ]
+  },
+  {
+    id: 'cartographer',
+    label: 'The Cartographer',
+    shortName: 'open worlds',
+    tags: ['open world', 'exploration', 'walking simulator'],
+    roasts: [
+      'Ignores the {GAME} main quest to see what that mountain does.',
+      '{HOURS} hours in {GAME}, about 3% of it on the actual storyline.'
+    ]
+  }
+];
+
+// Behavioral half of the hybrid label, keyed by archetype id.
+const BEHAVIOR_PHRASES = {
+  backlog_archaeologist: 'excavates the pile',
+  credit_roll_dodger: 'never sees the credits',
+  frame_data_masochist: 'chooses pain',
+  spreadsheet_tactician: 'optimises the fun out',
+  story_diver: 'reads every codex',
+  comfort_replay_junkie: 'replays everything',
+  indie_curator: 'champions the weird little games',
+  franchise_loyalist: 'married to one franchise',
+  retro_futurist: 'lives in the past',
+  bleeding_edge: 'plays the unfinished',
+  completionist: '100%s everything',
+  roamer: 'wanders every world',
+  social_drop_in: 'drops in on friends',
+  jank_enjoyer: 'loves the jank',
+  modder: 'mods everything',
+  speedrunner: 'skips every cutscene',
+  multiplayer_mainliner: 'lives in ranked',
+  weekend_warrior: 'saves it all for Saturday',
+  lunch_break_gamer: 'snacks on sessions',
+  unwinder: 'unwinds on schedule',
+  night_owl: 'plays after midnight'
+};
 
 const SUB_TRAITS = [
   {
@@ -1360,6 +1801,20 @@ const SUB_TRAITS = [
       'Installs games the way other people bookmark articles — compulsively, and with zero intention of following through.',
       'Has a 90% unplayed ratio and considers this "curated."'
     ]
+  },
+  {
+    id: 'founder_supporter',
+    label: 'Founding Supporter',
+    condition: () => FounderService.getFounderProfile().isFounder,
+    roasts: [
+      'Pays real money for a free app. Has their priorities straight.',
+      'Supports local-first development. Their library is safe from the cloud.',
+      'Their wallet did what their backlog couldn\'t: supported something.',
+      'Has a founder badge and zero regrets. The badge is worth more than the backlog.',
+      'Could\'ve bought a coffee. Bought GamePilot a coffee instead. The app runs on it.',
+      'Their tier is higher than their completion rate. No notes.',
+      'Believes in the cockpit enough to fund it. The cockpit believes in them back.'
+    ]
   }
 ];
 
@@ -1404,20 +1859,45 @@ const formatHours = (minutes) => {
   return hours >= 1000 ? `${(hours / 1000).toFixed(1)}k` : `${hours}`;
 };
 
+// Minutes shown to the user for a game — always REAL numbers, never
+// blend-scaled ranking units. Recent mode shows raw minutes from the current
+// rotation; all-time mode shows lifetime. Falls back to whichever exists so
+// roasts never invent hours.
+const getDisplayMinutes = (game, mode) => {
+  if (!game) return 0;
+  if (mode === 'all-time') return game.lifetimeMinutes ?? game.minutes ?? 0;
+  if ((game.recentMinutes || 0) > 0) return game.recentMinutes;
+  if ((game.lifetimeMinutes || 0) > 0) return game.lifetimeMinutes;
+  return game.minutes || 0;
+};
+
 // Substitute real game/genre data into a roast template. Uses a specific game
 // so the persona references what the player actually plays.
+const isUsableGameName = (value) => {
+  const name = String(value || '').trim();
+  if (!name) return false;
+  return !/^(untitled|unknown|unknown game|null|undefined|their main)$/i.test(name);
+};
+
 const fillTemplate = (str, signals, game) => {
   if (!str) return str;
-  const primaryGame = game || signals.topGame;
-  const name = primaryGame?.name || 'their main';
-  const second = signals.topGames?.find((g) => g.name !== name)?.name || 'something else';
-  const third = signals.topGames?.find((g) => g.name !== name && g.name !== second)?.name || 'a third option';
-  const hours = formatHours(primaryGame?.minutes || 0);
+  const primaryGame = (game && isUsableGameName(game.name) && (game.minutes || 0) > 0)
+    ? game
+    : (signals.lastPlayedGame && isUsableGameName(signals.lastPlayedGame.name) && (signals.lastPlayedGame.minutes || 0) > 0)
+      ? signals.lastPlayedGame
+      : (signals.topGame && isUsableGameName(signals.topGame.name) && (signals.topGame.minutes || 0) > 0)
+        ? signals.topGame
+        : null;
+  const name = isUsableGameName(primaryGame?.name) ? primaryGame.name : 'their main';
+  const second = (signals.topGames || []).find((g) => isUsableGameName(g.name) && g.name !== name)?.name || 'something else';
+  const third = (signals.topGames || []).find((g) => isUsableGameName(g.name) && g.name !== name && g.name !== second)?.name || 'a third option';
+  const hoursNum = Number(getDisplayMinutes(primaryGame, signals.mode) || 0);
+  const hours = hoursNum > 0 ? formatHours(hoursNum) : 'plenty';
   const genre = signals.dominantGenre || 'games';
   const franchise = signals.topFranchise?.[0] || 'their favorite franchise';
   const dev = signals.topDev?.[0] || 'their favorite studio';
   const publisher = signals.topPub?.[0] || 'their favorite publisher';
-  return str
+  let out = str
     .replace(/\{GAME3\}/g, third)
     .replace(/\{GAME2\}/g, second)
     .replace(/\{GAME\}/g, name)
@@ -1426,6 +1906,11 @@ const fillTemplate = (str, signals, game) => {
     .replace(/\{FRANCHISE\}/g, franchise)
     .replace(/\{DEV\}/g, dev)
     .replace(/\{PUBLISHER\}/g, publisher);
+  // Last-resort cleanup if a bad title still slipped through.
+  out = out.replace(/\b0h in Untitled\b/gi, 'a long-running main')
+    .replace(/\bUntitled\b/g, 'their main')
+    .replace(/\b0h\b/g, 'plenty');
+  return out;
 };
 
 // Pick the best roast for an archetype: prefer a game-aware contextual roast
@@ -1488,23 +1973,99 @@ const getRoastStingers = (signals, game) => {
 const buildPersonaEvidence = (archetype, signals, game) => {
   const evidence = [];
   const primaryGame = game || signals.topGame;
+  const secondGame = signals.topGames?.find((g) => g.name !== primaryGame?.name);
 
-  if (primaryGame?.name) evidence.push(`${formatHours(primaryGame.minutes)}h in ${primaryGame.name}`);
-  if (archetype?.id === 'completionist' && signals.hasCompletionData) evidence.push(`${signals.completionRate}% recorded completion rate`);
-  if (archetype?.id === 'credit_roll_dodger' && signals.hasCompletionData) evidence.push(`${signals.completionRate}% recorded completion rate`);
-  if (signals.dominantGenre) evidence.push(`${signals.dominantGenre} leads your playtime`);
+  // Headline: hours in the game that actually anchors this persona.
+  if (primaryGame?.name) evidence.push(`${formatHours(getDisplayMinutes(primaryGame, signals.mode))}h in ${primaryGame.name}`);
+
+  // Archetype-specific proof takes priority over generic stats.
+  if ((archetype?.id === 'completionist' || archetype?.id === 'credit_roll_dodger') && signals.hasCompletionData) {
+    evidence.push(`${signals.completionRate}% recorded completion rate`);
+  }
+
+  // Second game gives a two-game snapshot instead of just one data point.
+  if (secondGame?.name) evidence.push(`${formatHours(getDisplayMinutes(secondGame, signals.mode))}h in ${secondGame.name}`);
+
+  // Theme concentration — the world the current rotation lives in.
+  if (signals.dominantTheme) {
+    const scope = signals.mode === 'all-time' ? 'of your all-time play' : 'of your current rotation';
+    evidence.push(`${Math.round(signals.dominantTheme.share * 100)}% ${scope} is ${signals.dominantTheme.shortName}`);
+  }
+
+  // Genre concentration, only when it's actually telling (over ~35%).
+  if (signals.dominantGenre && signals.dominantGenreShare > 0.35) {
+    evidence.push(`${Math.round(signals.dominantGenreShare * 100)}% ${signals.dominantGenre}`);
+  } else if (signals.dominantGenre) {
+    evidence.push(`${signals.dominantGenre} leads your playtime`);
+  }
+
+  // Franchise / developer loyalty.
+  if (signals.topFranchise && signals.topFranchiseShare > 0.15) {
+    evidence.push(`${signals.topFranchise[0]} × ${signals.topFranchise[1]} game${signals.topFranchise[1] === 1 ? '' : 's'}`);
+  } else if (signals.topDev && signals.topDevShare > 0.25) {
+    evidence.push(`${Math.round(signals.topDevShare * 100)}% of playtime from ${signals.topDev[0]}`);
+  }
+
+  // Session timing tells a very human story.
+  if (signals.isNightOwl) evidence.push('Peak hours after 10pm');
+  else if (signals.isEarlyRiser) evidence.push('Peak hours before 9am');
+
+  if (signals.sessionPattern === 'long') evidence.push('Marathon sessions, 90+ min average');
+  else if (signals.sessionPattern === 'short') evidence.push('Quick-hit sessions, under 30 min average');
+
+  // Mood signature.
+  if (signals.dominantMood) evidence.push(`Mostly plays in a ${signals.dominantMood} mood`);
+
+  // Challenge appetite — cluster-aware.
+  if (signals.hardClusterTier === 'dominant') {
+    evidence.push(`${signals.hardGameCount} punishing/hardcore games — dominant cluster`);
+  } else if (signals.hardClusterTier === 'notable') {
+    evidence.push(`${signals.hardGameCount} punishing/hardcore games in library`);
+  } else if (signals.hardGameCount >= 3) {
+    evidence.push(`${signals.hardGameCount} punishing/hardcore games logged`);
+  }
+
+  // Chill appetite — cluster-aware.
+  if (signals.chillClusterTier === 'dominant') {
+    evidence.push(`${signals.chillGameCount} cozy/relaxing games — dominant cluster`);
+  } else if (signals.chillClusterTier === 'notable') {
+    evidence.push(`${signals.chillGameCount} cozy/relaxing games in library`);
+  } else if (signals.chillGameCount >= 5) {
+    evidence.push(`${signals.chillGameCount} cozy/relaxing games logged`);
+  }
+
+  // Multiplayer vs solo lean.
+  if (signals.multiplayerPlaytimeShare > 0.5) {
+    evidence.push(`${Math.round(signals.multiplayerPlaytimeShare * 100)}% multiplayer playtime`);
+  } else if (signals.socialMoodShare > 0.4) {
+    evidence.push('Plays social more often than not');
+  }
+
+  // Library behaviour.
   if (signals.neverPlayedGames > 0) evidence.push(`${signals.neverPlayedGames} games untouched`);
-  if (signals.totalSessions > 0) evidence.push(`${Math.round(signals.totalSessions)} tracked sessions`);
+  if (signals.indieRatio > 0.5) evidence.push(`${Math.round(signals.indieRatio * 100)}% of tagged library is indie`);
+  if (signals.platformCount >= 3) evidence.push(`Spread across ${signals.platformCount} platforms`);
 
-  return evidence.slice(0, 3);
+  // Fall back to raw session count if nothing else landed.
+  if (evidence.length === 0 && signals.totalSessions > 0) {
+    evidence.push(`${Math.round(signals.totalSessions)} tracked sessions`);
+  }
+
+  return evidence.slice(0, 5);
 };
 
 const pickArchetypeRoast = (archetype, signals, seed, game) => {
   if (!archetype) return 'GamePilot is still learning your style.';
-  const useContext = (game || signals.topGame)?.name && Array.isArray(archetype.contextRoasts) && archetype.contextRoasts.length;
-  const pool = useContext ? archetype.contextRoasts : archetype.roasts;
-  const opening = fillTemplate(pickRoast(pool, seed), signals, game);
-  const stingers = getRoastStingers(signals, game);
+  const targetGame = game || signals.lastPlayedGame || signals.topGame;
+  // Theme roasts speak the language of the world the player lives in (zombies,
+  // space, horror...) — prefer them whenever a dominant theme is detected.
+  const themeRoasts = signals.dominantTheme?.roasts;
+  const useContext = targetGame?.name && Array.isArray(archetype.contextRoasts) && archetype.contextRoasts.length;
+  const pool = themeRoasts?.length
+    ? themeRoasts
+    : (useContext ? archetype.contextRoasts : archetype.roasts);
+  const opening = fillTemplate(pickRoast(pool, seed), signals, targetGame);
+  const stingers = getRoastStingers(signals, targetGame);
   const stinger = pickRoast(stingers, seed + 7);
   return stinger ? `${opening} ${stinger}` : opening;
 };
@@ -1517,6 +2078,7 @@ export const PERSONA_AFFINITY_GENRES = Object.freeze({
   spreadsheet_tactician: ['Strategy', 'Simulation', 'Management', 'Grand Strategy', '4X', 'City Builder', 'Tycoon'],
   story_diver: ['RPG', 'Adventure', 'Visual Novel', 'Interactive Fiction', 'Story Rich'],
   comfort_replay_junkie: ['Cozy', 'Casual', 'Simulation', 'Life Sim', 'Farming Sim', 'Adventure'],
+  unwinder: ['Cozy', 'Casual', 'Simulation', 'Puzzle', 'Farming Sim', 'Life Sim', 'Relaxing'],
   night_owl: ['Atmospheric', 'Immersive Sim', 'RPG', 'Adventure', 'Horror'],
   indie_curator: ['Indie', 'Adventure', 'Puzzle', 'Experimental'],
   franchise_loyalist: ['Action-Adventure', 'RPG', 'Action', 'Shooter'],
@@ -1548,11 +2110,14 @@ export class GamingPersonaService {
 
   static getPersona(identityProfile = null, customSeed = null, options = {}) {
     const windowDays = options.windowDays ?? null;
-    // Default to a 60-day recency half-life so the persona reflects recent
-    // play patterns without completely ignoring older history. Callers can
-    // override with options.recencyHalfLifeDays or set null for pure all-time.
-    const recencyHalfLifeDays = options.recencyHalfLifeDays ?? (windowDays !== null ? 30 : 60);
-    const signals = gatherSignals({ windowDays, recencyHalfLifeDays });
+    const isAllTime = options.mode === 'all-time';
+    // Default mode is adaptive-recent: the persona is built from the current
+    // rotation (recent tracked sessions, position-weighted, blending with
+    // lifetime playtime until ~10h tracked). Recency half-life only applies
+    // to explicit calendar windows; callers wanting lifetime totals pass
+    // { mode: 'all-time' }.
+    const recencyHalfLifeDays = options.recencyHalfLifeDays ?? (windowDays !== null ? 30 : null);
+    const signals = gatherSignals({ mode: options.mode, windowDays, recencyHalfLifeDays });
 
     // Score each archetype
     const scoredArchetypes = ARCHETYPES.map((archetype) => ({
@@ -1584,7 +2149,13 @@ export class GamingPersonaService {
       .slice(0, 2);
 
     const baseSeed = customSeed ?? generateSeed(primary, matchedSubTraits);
-    const primaryRoast = pickArchetypeRoast(primary, signals, baseSeed, signals.topGame);
+    // History anchors the persona (topGame); present play can flavor the roast.
+    const roastGame = (signals.topGame && isUsableGameName(signals.topGame.name) && (signals.topGame.minutes || 0) > 0)
+      ? signals.topGame
+      : (signals.lastPlayedGame && isUsableGameName(signals.lastPlayedGame.name) && (signals.lastPlayedGame.minutes || 0) > 0)
+        ? signals.lastPlayedGame
+        : null;
+    const primaryRoast = pickArchetypeRoast(primary, signals, baseSeed, roastGame);
     const subTraitRoast = buildSubTraitRoast(matchedSubTraits, baseSeed + 1);
     const summaryRoast = formatSummaryRoast(primaryRoast, subTraitRoast);
 
@@ -1595,17 +2166,39 @@ export class GamingPersonaService {
       description: pickRoast(trait.roasts, baseSeed + 2)
     }));
 
+    // Theme layer: the dominant world the player inhabits (zombies, space...)
+    // becomes the headline of a hybrid label — "The Doomsday Prepper who
+    // replays everything". Behavioral archetype stays as the second half.
+    // Secondary theme (if any) surfaces as a sub-trait.
+    const theme = signals.dominantTheme || null;
+    const behaviorPhrase = primary ? (BEHAVIOR_PHRASES[primary.id] || 'plays it all') : null;
+    const hybridLabel = primary
+      ? (theme ? `${theme.label} who ${behaviorPhrase}` : primary.label)
+      : null;
+    if (signals.secondaryTheme) {
+      subTraits.push({
+        id: 'secondary_theme',
+        label: `Also dabbles in ${signals.secondaryTheme.shortName}`,
+        description: pickRoast([
+          `A side of ${signals.secondaryTheme.shortName} keeps the rotation interesting.`,
+          `Not the main course, but ${signals.secondaryTheme.shortName} shows up regularly.`
+        ], baseSeed + 3)
+      });
+    }
+
     const primaryPersona = primary
       ? {
           id: primary.id,
-          label: primary.label,
+          label: hybridLabel,
+          archetypeLabel: primary.label,
+          theme: theme ? { id: theme.id, label: theme.label, shortName: theme.shortName, share: theme.share } : null,
           description: primary.description,
           score: Math.round(primary.score),
           roast: primaryRoast,
           roasts: primary.roasts || [],
           contextRoasts: primary.contextRoasts || [],
-          basedOnGame: signals.topGame?.name || null,
-          evidence: buildPersonaEvidence(primary, signals, signals.topGame),
+          basedOnGame: roastGame?.name || null,
+          evidence: buildPersonaEvidence(primary, signals, roastGame || signals.topGame),
           voice: primary.voice || DEFAULT_VOICE
         }
       : null;
@@ -1619,10 +2212,13 @@ export class GamingPersonaService {
     const secondaryGame = signals.topGames?.find((g) => g.name !== signals.topGame?.name)
       || signals.topGame
       || null;
+    const secondaryBehaviorPhrase = secondaryArchetype ? (BEHAVIOR_PHRASES[secondaryArchetype.id] || 'plays it all') : null;
     const secondaryPersona = secondaryArchetype
       ? {
           id: secondaryArchetype.id,
-          label: secondaryArchetype.label,
+          label: theme ? `${theme.label} who ${secondaryBehaviorPhrase}` : secondaryArchetype.label,
+          archetypeLabel: secondaryArchetype.label,
+          theme: theme ? { id: theme.id, label: theme.label, shortName: theme.shortName, share: theme.share } : null,
           description: secondaryArchetype.description,
           score: Math.round(secondaryArchetype.score),
           roast: pickArchetypeRoast(secondaryArchetype, signals, baseSeed + 5, secondaryGame),
@@ -1640,7 +2236,24 @@ export class GamingPersonaService {
       score: Math.round(a.score)
     }));
 
-    return {
+    const formatHoursRounded = (mins) => {
+    const hours = mins / 60;
+    if (hours >= 100) return Math.round(hours).toString();
+    if (hours >= 10) return hours.toFixed(0);
+    return hours.toFixed(1);
+  };
+
+  const lifetimeGames = signals.lifetimeGames;
+  const windowLabel = windowDays !== null
+    ? `Last ${windowDays} days`
+    : isAllTime
+      ? 'All-time'
+      : 'Current rotation';
+  const contextLine = signals.useRecencyPlaytime
+    ? `${windowLabel}: ${formatHoursRounded(signals.recentTrackedMinutes)}h across ${signals.adaptiveSessionCount} session${signals.adaptiveSessionCount === 1 ? '' : 's'} · All-time: ${formatHoursRounded(signals.lifetimeLibraryPlaytime)}h across ${lifetimeGames} games`
+    : `${windowLabel}: ${formatHoursRounded(signals.totalPlaytime)}h across ${lifetimeGames} games`;
+
+  return {
       primaryPersona,
       secondaryPersona,
       subTraits,
@@ -1648,19 +2261,32 @@ export class GamingPersonaService {
       topGames: signals.topGames,
       windowDays,
       recencyHalfLifeDays,
+      mode: signals.mode,
+      blendFactor: signals.blendFactor,
+      recentTrackedMinutes: signals.recentTrackedMinutes,
       confidence,
+      contextLine,
       allArchetypes,
+      founder: FounderService.getFounderProfile(),
       signals: {
         totalGames: signals.totalGames,
         playedRatio: Math.round(signals.playedRatio * 100),
         avgReleaseYear: signals.avgReleaseYear,
         dominantGenre: signals.dominantGenre,
         dominantGenreShare: Math.round(signals.dominantGenreShare * 100),
+        peakHour: signals.peakHour,
+        sessionPattern: signals.sessionPattern,
         completionRate: signals.completionRate,
         top3SessionShare: Math.round(signals.top3SessionShare * 100),
         platformCount: signals.platformCount,
         challengeRatio: Math.round(signals.challengeRatio * 100),
         hardGameRatio: Math.round(signals.hardGameRatio * 100),
+        hardGameCount: signals.hardGameCount,
+        hardClusterTier: signals.hardClusterTier,
+        chillRatio: Math.round(signals.chillRatio * 100),
+        chillGameRatio: Math.round(signals.chillGameRatio * 100),
+        chillGameCount: signals.chillGameCount,
+        chillClusterTier: signals.chillClusterTier,
         totalPlaytime: signals.totalPlaytime,
         unplayedRatio: Math.round(signals.unplayedRatio * 100),
         neverPlayedGames: signals.neverPlayedGames,
@@ -1678,6 +2304,67 @@ export class GamingPersonaService {
   // Get a short label for the current user, e.g. for "Because you're a..."
   static getRoastLine() {
     return this.getPersona().summaryRoast;
+  }
+
+  /**
+   * Generate a roast specific to a particular game, using the user's
+   * persona archetype and contextRoasts templates with {GAME}/{HOURS}/{GENRE}.
+   */
+  static getGameSpecificRoast(game, options = {}) {
+    if (!game || !game.name) return null;
+    try {
+      const persona = this.getPersona(null, options.seed ?? null, options);
+      const primary = persona?.primaryPersona;
+      if (!primary) return null;
+      const signals = persona?.signals || {};
+      const minutes = Math.max(
+        0,
+        Number(game.time_played || 0),
+        Number(game.playtime?.total || 0),
+        Number(game.playtimeMinutes || 0)
+      );
+      const targetGame = {
+        name: game.name,
+        minutes,
+        genres: game.genres || [],
+      };
+      return pickArchetypeRoast(primary, signals, options.seed ?? 42, targetGame);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get a roast tailored to the BigScreen blade context.
+   * - 'continue-playing': roast about the specific game being resumed
+   * - 'for-you': roast about the user's taste matching the continue-playing game
+   * - 'backlog': roast about the backlog
+   * - 'library': general persona roast
+   * - 'profile': general persona roast
+   */
+  static getBladeRoast(bladeId, game = null, options = {}) {
+    try {
+      if (bladeId === 'continue-playing' && game) {
+        return this.getGameSpecificRoast(game, options);
+      }
+      if (bladeId === 'for-you' && game) {
+        const persona = this.getPersona(null, options.seed ?? null, options);
+        const primary = persona?.primaryPersona;
+        if (!primary) return null;
+        const contextRoasts = primary.contextRoasts || [];
+        const signals = persona?.signals || {};
+        if (contextRoasts.length > 0) {
+          const minutes = Math.max(0, Number(game.time_played || 0));
+          const targetGame = { name: game.name, minutes, genres: game.genres || [] };
+          return pickArchetypeRoast(primary, signals, options.seed ?? 99, targetGame);
+        }
+        return primary.roast || persona?.summaryRoast || null;
+      }
+      // Default: overall persona roast
+      return this.getPersona().summaryRoast;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -1701,6 +2388,10 @@ export class GamingPersonaService {
       roast,
       description,
       confidence: persona?.confidence || 'low',
+      mode: persona?.mode || 'recent',
+      blendFactor: persona?.blendFactor ?? 0,
+      recentTrackedMinutes: persona?.recentTrackedMinutes || 0,
+      contextLine: persona?.contextLine || null,
       primary,
       secondary,
       subTraits: persona?.subTraits || [],

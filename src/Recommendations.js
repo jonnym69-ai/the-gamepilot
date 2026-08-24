@@ -15,17 +15,24 @@ import {
   Play,
   Plus,
   Trash2,
-  Fingerprint
+  Fingerprint,
+  Gamepad,
+  Scale,
+  TrendingUp,
+  Gamepad2
 } from 'lucide-react';
 import NavBar from './NavBar';
 import LazyImage from './components/LazyImage';
 import { PerfectPlaySelector } from './components/PerfectPlaySelector';
 import { GamingIdentity } from './GamingIdentity';
+import { AchievementTracker } from './AchievementSystem';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { RecommendationReasonChip } from './components/RecommendationReasonChip';
+import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import WishlistService from './services/WishlistService';
 import StorageService from './services/StorageService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
+import { MOODS, getMoodForGame } from './constants/GenresMoods';
 import './Recommendations.css';
 
 function formatPlaytime(minutes) {
@@ -36,6 +43,87 @@ function formatPlaytime(minutes) {
   if (m === 0) return `${h}h`;
   return `${h}h ${m}m`;
 }
+
+/* ──────────────── Library Intelligence Helpers ──────────────── */
+
+const getGameId = (game) => String(game?.appid || game?.app_id || game?.steamAppId || game?.launchId || game?.name || '');
+
+const getMinutesPlayed = (game) => {
+  const direct = Number(game?.time_played || 0);
+  const nested = Number(game?.playtime?.total || 0);
+  return Math.max(Number.isFinite(direct) ? direct : 0, Number.isFinite(nested) ? nested : 0);
+};
+
+const formatHours = (minutes) => {
+  const hours = Math.round((Number(minutes || 0) / 60) * 10) / 10;
+  return `${hours}h`;
+};
+
+const formatDate = (value) => {
+  if (!value) return 'Never';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const getCompletionLabel = (game) => (
+  game?.completionStatus
+  || game?.completion_status
+  || game?.status
+  || (game?.completed ? 'Completed' : 'Unfinished')
+);
+
+const getRatingLabel = (game) => {
+  const rating = game?.userRating ?? game?.rating ?? game?.user_rating;
+  return rating ? `${rating}/10` : 'Not rated';
+};
+
+const getTopGenres = (game) => (
+  Array.isArray(game?.genres) && game.genres.length > 0 ? game.genres.slice(0, 3).join(', ') : 'Unknown'
+);
+
+const getRecencyScore = (game) => {
+  if (!game?.last_played) return 0;
+  const days = (Date.now() - new Date(game.last_played).getTime()) / 86400000;
+  if (!Number.isFinite(days)) return 0;
+  if (days <= 7) return 30;
+  if (days <= 30) return 20;
+  if (days <= 90) return 10;
+  return 3;
+};
+
+const getMomentumScore = (game) => {
+  const minutes = getMinutesPlayed(game);
+  const launches = Number(game?.launch_count || 0);
+  return Math.min(100, Math.round((minutes / 60) * 2 + launches * 3 + getRecencyScore(game)));
+};
+
+const buildVerdict = (selectedGames) => {
+  if (selectedGames.length < 2) {
+    return 'Pick at least two games to compare your local play patterns.';
+  }
+
+  const sortedByTime = [...selectedGames].sort((a, b) => getMinutesPlayed(b) - getMinutesPlayed(a));
+  const sortedByMomentum = [...selectedGames].sort((a, b) => getMomentumScore(b) - getMomentumScore(a));
+  const mostPlayed = sortedByTime[0];
+  const highestMomentum = sortedByMomentum[0];
+
+  if (getGameId(mostPlayed) === getGameId(highestMomentum)) {
+    return `${mostPlayed.name} is your strongest pick here: it has the most time invested and the best current momentum.`;
+  }
+
+  return `${mostPlayed.name} has the most time invested, but ${highestMomentum.name} looks like the better current-session pick based on recent activity and launches.`;
+};
+
+const metricRows = [
+  { label: 'Playtime', getValue: (game) => formatHours(getMinutesPlayed(game)) },
+  { label: 'Launches', getValue: (game) => Number(game?.launch_count || 0) },
+  { label: 'Last played', getValue: (game) => formatDate(game?.last_played) },
+  { label: 'Completion', getValue: getCompletionLabel },
+  { label: 'Rating', getValue: getRatingLabel },
+  { label: 'Genres', getValue: getTopGenres },
+  { label: 'Momentum', getValue: (game) => `${getMomentumScore(game)}/100` }
+];
 
 const PLAYLIST_KEY = 'recommendationsPlaylist';
 
@@ -71,25 +159,25 @@ function getPlatformIcon(platform) {
 
 function getMoodMixes(library, identity) {
   if (!library?.length) return [];
-  const moods = {};
+  const moods = Object.fromEntries(MOODS.map((mood) => [mood, []]));
   library.forEach((game) => {
-    const mood = game.mood || 'Unsorted';
-    if (!moods[mood]) moods[mood] = [];
-    moods[mood].push(game);
+    if (UserBehaviorProfile.shouldSuppressRecommendation(game?.appid || game?.name, game?.name)) return;
+    const explicitMood = MOODS.find((mood) => mood.toLowerCase() === String(game?.mood || '').toLowerCase());
+    const mood = explicitMood || getMoodForGame(game?.genres);
+    if (mood && moods[mood]) moods[mood].push(game);
   });
 
-  const mixes = Object.entries(moods)
-    .filter(([_, games]) => games.length >= 3)
-    .map(([mood, games]) => {
-      const shuffled = [...games].sort(() => Math.random() - 0.5);
-      return {
-        title: `${mood} Mix`,
-        subtitle: `${games.length} games`,
-        mood,
-        games: shuffled.slice(0, 6),
-        color: getMoodColor(mood)
-      };
-    });
+  const mixes = MOODS.map((mood) => {
+    const games = moods[mood];
+    const shuffled = [...games].sort(() => Math.random() - 0.5);
+    return {
+      title: `${mood} Mix`,
+      subtitle: games.length > 0 ? `${games.length} ${games.length === 1 ? 'game' : 'games'}` : 'No matches yet',
+      mood,
+      games: shuffled.slice(0, 6),
+      color: getMoodColor(mood)
+    };
+  });
 
   // Prioritize mixes that match user's favorite mood
   const favorite = identity?.identity?.favoriteMood;
@@ -106,14 +194,11 @@ function getMoodMixes(library, identity) {
 
 function getMoodColor(mood) {
   const map = {
-    'Competitive': '#e74c3c',
-    'Relaxed': '#27ae60',
-    'Adventure': '#3498db',
-    'Creative': '#9b59b6',
-    'Story': '#e67e22',
-    'Quick Fix': '#1abc9c',
-    'Horror': '#2c3e50',
-    'Party': '#f39c12'
+    Competitive: '#e74c3c',
+    Relaxed: '#27ae60',
+    Social: '#f39c12',
+    Creative: '#9b59b6',
+    Focused: '#3498db'
   };
   return map[mood] || '#6366f1';
 }
@@ -134,10 +219,10 @@ function getRabbitHole(library, identity) {
 
   // Find similar games
   const similar = library
-    .filter((g) => g !== seedGame)
+    .filter((g) => g !== seedGame && !UserBehaviorProfile.shouldSuppressRecommendation(g?.appid || g?.name, g?.name))
     .map((game) => {
       const genres = Array.isArray(game.genres) ? game.genres : [];
-      let score = 0;
+      let score = UserBehaviorProfile.getRecommendationOutcomeSignal(game?.appid || game?.name, game?.name).adjustment;
       genres.forEach((g) => {
         if (seedGenres.includes(g)) score += 3;
       });
@@ -163,6 +248,7 @@ function getSessionPlaylistCandidates(library, identity) {
   if (!library?.length) return [];
   // Short games or games with low playtime
   return library.filter((g) => {
+    if (UserBehaviorProfile.shouldSuppressRecommendation(g?.appid || g?.name, g?.name)) return false;
     const hltb = g.hltb?.main || g.hltb?.mainExtra || 0;
     const played = g.time_played || 0;
     return (hltb > 0 && hltb <= 120) || (played > 0 && played <= 120);
@@ -191,8 +277,8 @@ function StyleCard({ icon: Icon, title, description, color, onClick, isActive })
 }
 
 function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommendationType }) {
-  const artwork = useMemo(() => resolveGameArtwork(game), [game]);
-  const placeholder = useMemo(() => getGameArtworkPlaceholder(game), [game]);
+  const artwork = useMemo(() => resolveGameArtwork(game, { surface: 'portrait' }), [game]);
+  const placeholder = useMemo(() => getGameArtworkPlaceholder({ game, surface: 'portrait' }), [game]);
 
   return (
     <div className="rec-game-row">
@@ -243,9 +329,9 @@ function HorizontalGameStrip({ games, onLaunch, onAddToPlaylist, playlist, recom
         <div key={`${game.appid || game.name}-${i}`} className="rec-strip-card">
           <div className="rec-strip-artwork">
             <LazyImage
-              src={resolveGameArtwork(game)}
+              src={resolveGameArtwork(game, { surface: 'portrait' })}
               alt={game.name}
-              placeholder={getGameArtworkPlaceholder(game)}
+              placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
             />
             <button type="button" className="rec-strip-play" onClick={() => onLaunch?.(game)} aria-label={`Launch ${game.name}`}>
               <Play size={20} />
@@ -283,6 +369,15 @@ export default function Recommendations({ library, onLaunchGame }) {
   const [playlist, setPlaylist] = useState(() => loadPlaylist());
   const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
 
+  const playableLibrary = useMemo(() => (
+    Array.isArray(library)
+      ? library.filter((game) => game && game.name).sort((a, b) => String(a.name).localeCompare(String(b.name)))
+      : []
+  ), [library]);
+
+  const defaultSelections = useMemo(() => playableLibrary.slice(0, 2).map(getGameId), [playableLibrary]);
+  const [selectedIds, setSelectedIds] = useState(defaultSelections);
+
   const identity = useMemo(() => {
     try { return GamingIdentity.getProfile(); } catch { return null; }
   }, []);
@@ -306,10 +401,27 @@ export default function Recommendations({ library, onLaunchGame }) {
   }, []);
 
   const handleLaunch = useCallback((game) => {
+    const gameId = game?.appid || game?.name;
+    const achievementFeature = {
+      'perfect-play': 'perfect_play',
+      'surprise-me': 'surprise',
+      rediscover: 'rediscover'
+    }[activeStyle];
+    if (achievementFeature) {
+      AchievementTracker.logGameplayFeature(achievementFeature);
+      AchievementTracker.checkAndUnlockAchievements();
+    }
+    if (gameId && activeStyle !== 'hub') {
+      UserBehaviorProfile.trackRecommendationLaunch(activeStyle, gameId, {
+        mood: game?.mood || null,
+        genre: RecommendationEngine.getPrimaryGenre(game) || null,
+        source: 'recommendations-page'
+      });
+    }
     if (typeof onLaunchGame === 'function') {
       onLaunchGame(game);
     }
-  }, [onLaunchGame]);
+  }, [activeStyle, onLaunchGame]);
 
   const recommendationStyles = useMemo(() => [
     {
@@ -332,6 +444,13 @@ export default function Recommendations({ library, onLaunchGame }) {
       description: 'Curated stacks by vibe like Spotify Daily Mix',
       icon: Music,
       color: '#1db954'
+    },
+    {
+      id: 'backlog-buster',
+      title: 'Backlog Buster',
+      description: 'Unplayed games matched to your taste',
+      icon: Gamepad,
+      color: '#e67e22'
     },
     {
       id: 'rediscover',
@@ -367,6 +486,27 @@ export default function Recommendations({ library, onLaunchGame }) {
       description: 'Tinder-style quick sorting',
       icon: Heart,
       color: '#ec4899'
+    },
+    {
+      id: 'game-comparison',
+      title: 'Game Comparison',
+      description: 'Compare 2-4 games side-by-side',
+      icon: Scale,
+      color: '#ff8a1f'
+    },
+    {
+      id: 'momentum-picks',
+      title: 'Momentum Picks',
+      description: 'Games ranked by momentum score',
+      icon: TrendingUp,
+      color: '#1abc9c'
+    },
+    {
+      id: 'untouched-shelf',
+      title: 'Untouched Shelf',
+      description: 'Games with zero playtime',
+      icon: Gamepad2,
+      color: '#9b59b6'
     }
   ], []);
 
@@ -383,6 +523,11 @@ export default function Recommendations({ library, onLaunchGame }) {
       return null;
     }
   }, [activeStyle, identity]);
+
+  const backlogBusterResult = useMemo(() => {
+    if (activeStyle !== 'backlog-buster') return null;
+    return RecommendationEngine.getBacklogBusterResult(safeLibrary, null, null, 5);
+  }, [activeStyle, safeLibrary]);
 
   const rediscoverResult = useMemo(() => {
     if (activeStyle !== 'rediscover') return null;
@@ -408,6 +553,54 @@ export default function Recommendations({ library, onLaunchGame }) {
     if (activeStyle !== 'session-playlist') return [];
     return getSessionPlaylistCandidates(safeLibrary, identity);
   }, [activeStyle, safeLibrary, identity]);
+
+  /* ── Library Intelligence computations ── */
+
+  const selectedGames = useMemo(() => (
+    selectedIds
+      .map((id) => playableLibrary.find((game) => getGameId(game) === id))
+      .filter(Boolean)
+  ), [playableLibrary, selectedIds]);
+
+  const updateSelection = useCallback((slotIndex, value) => {
+    setSelectedIds((current) => {
+      const next = [...current];
+      next[slotIndex] = value;
+      return next.filter(Boolean).slice(0, 4);
+    });
+  }, []);
+
+  const addCompareSlot = useCallback(() => {
+    const nextGame = playableLibrary.find((game) => !selectedIds.includes(getGameId(game)));
+    if (nextGame) {
+      setSelectedIds((current) => [...current, getGameId(nextGame)].slice(0, 4));
+    }
+  }, [playableLibrary, selectedIds]);
+
+  const removeCompareSlot = useCallback((slotIndex) => {
+    setSelectedIds((current) => current.filter((_, i) => i !== slotIndex));
+  }, []);
+
+  const highMomentum = useMemo(() => {
+    if (activeStyle !== 'momentum-picks') return [];
+    return playableLibrary
+      .filter((game) => getMinutesPlayed(game) > 0
+        && !UserBehaviorProfile.shouldSuppressRecommendation(game?.appid || game?.name, game?.name))
+      .sort((a, b) => (
+        getMomentumScore(b) + UserBehaviorProfile.getRecommendationOutcomeSignal(b?.appid || b?.name, b?.name).adjustment
+      ) - (
+        getMomentumScore(a) + UserBehaviorProfile.getRecommendationOutcomeSignal(a?.appid || a?.name, a?.name).adjustment
+      ))
+      .slice(0, 5);
+  }, [activeStyle, playableLibrary]);
+
+  const untouchedGames = useMemo(() => {
+    if (activeStyle !== 'untouched-shelf') return [];
+    return playableLibrary
+      .filter((game) => getMinutesPlayed(game) === 0
+        && !UserBehaviorProfile.shouldSuppressRecommendation(game?.appid || game?.name, game?.name))
+      .slice(0, 6);
+  }, [activeStyle, playableLibrary]);
 
   const renderHub = () => (
     <>
@@ -531,7 +724,11 @@ export default function Recommendations({ library, onLaunchGame }) {
                 <span>{mix.subtitle}</span>
               </div>
             </div>
-            <HorizontalGameStrip games={mix.games} onLaunch={handleLaunch} />
+            {mix.games.length > 0 ? (
+              <HorizontalGameStrip games={mix.games} onLaunch={handleLaunch} />
+            ) : (
+              <div className="rec-mood-empty">No games in your library currently match this mood.</div>
+            )}
           </div>
         ))}
       </div>
@@ -592,9 +789,9 @@ export default function Recommendations({ library, onLaunchGame }) {
             <span className="rec-seed-label">Starting from</span>
             <div className="rec-seed-card">
               <LazyImage
-                src={resolveGameArtwork(rabbitHole.seedGame)}
+                src={resolveGameArtwork(rabbitHole.seedGame, { surface: 'portrait' })}
                 alt={rabbitHole.seedGame.name}
-                placeholder={getGameArtworkPlaceholder(rabbitHole.seedGame)}
+                placeholder={getGameArtworkPlaceholder({ game: rabbitHole.seedGame, surface: 'portrait' })}
               />
               <span>{rabbitHole.seedGame.name}</span>
             </div>
@@ -602,6 +799,131 @@ export default function Recommendations({ library, onLaunchGame }) {
         )}
         <h3 className="rec-section-title">You might also love</h3>
         {renderGameList(rabbitHole.games)}
+      </>
+    );
+  };
+
+  const renderGameComparison = () => {
+    if (playableLibrary.length < 2) {
+      return (
+        <div className="rec-empty">
+          <Scale size={48} />
+          <p>You need at least two games in your library to compare.</p>
+        </div>
+      );
+    }
+    return (
+      <>
+        <div className="rec-comparison-controls">
+          <div className="rec-comparison-selectors">
+            {selectedIds.map((id, index) => (
+              <label key={`${id}-${index}`} className="rec-comparison-selector">
+                <span>Game {index + 1}</span>
+                <div className="rec-comparison-selector-row">
+                  <select value={id} onChange={(event) => updateSelection(index, event.target.value)}>
+                    {playableLibrary.map((game) => (
+                      <option key={getGameId(game)} value={getGameId(game)}>{game.name}</option>
+                    ))}
+                  </select>
+                  {selectedIds.length > 2 && (
+                    <button
+                      type="button"
+                      className="rec-comparison-remove"
+                      onClick={() => removeCompareSlot(index)}
+                      aria-label={`Remove game ${index + 1}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </label>
+            ))}
+          </div>
+          {selectedIds.length < 4 && (
+            <button type="button" className="rec-comparison-add" onClick={addCompareSlot}>
+              <Plus size={16} /> Add game
+            </button>
+          )}
+        </div>
+
+        <div className="rec-comparison-verdict">
+          <Sparkles size={18} />
+          <span>{buildVerdict(selectedGames)}</span>
+        </div>
+
+        <div className="rec-comparison-table">
+          <div className="rec-comparison-table-row rec-comparison-table-head">
+            <span>Metric</span>
+            {selectedGames.map((game) => <strong key={getGameId(game)}>{game.name}</strong>)}
+          </div>
+          {metricRows.map((row) => (
+            <div className="rec-comparison-table-row" key={row.label}>
+              <span>{row.label}</span>
+              {selectedGames.map((game) => <strong key={`${row.label}-${getGameId(game)}`}>{row.getValue(game)}</strong>)}
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  const renderMomentumPicks = () => {
+    if (highMomentum.length === 0) {
+      return (
+        <div className="rec-empty">
+          <TrendingUp size={48} />
+          <p>No momentum yet — start playing a few games to surface your strongest patterns.</p>
+        </div>
+      );
+    }
+    return (
+      <>
+        <p className="rec-payload-message">
+          Games with the strongest current pattern from playtime, launches, and recency.
+        </p>
+        <div className="rec-momentum-list">
+          {highMomentum.map((game, index) => (
+            <article className="rec-momentum-card" key={getGameId(game)}>
+              <span className="rec-momentum-rank">{index + 1}</span>
+              <div className="rec-momentum-info">
+                <strong>{game.name}</strong>
+                <span>{formatHours(getMinutesPlayed(game))} · {formatDate(game.last_played)}</span>
+              </div>
+              <div className="rec-momentum-score">{getMomentumScore(game)}</div>
+              {typeof onLaunchGame === 'function' && (
+                <button type="button" className="rec-momentum-launch" onClick={() => handleLaunch(game)}>
+                  <Play size={14} /> Launch
+                </button>
+              )}
+            </article>
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  const renderUntouchedShelf = () => {
+    if (untouchedGames.length === 0) {
+      return (
+        <div className="rec-empty">
+          <Gamepad2 size={48} />
+          <p>No untouched games found — every game in your library has some playtime.</p>
+        </div>
+      );
+    }
+    return (
+      <>
+        <p className="rec-payload-message">
+          Games in your library with no recorded playtime yet.
+        </p>
+        <div className="rec-untouched-grid">
+          {untouchedGames.map((game) => (
+            <span className="rec-untouched-chip" key={getGameId(game)}>
+              <Gamepad2 size={14} />
+              {game.name}
+            </span>
+          ))}
+        </div>
       </>
     );
   };
@@ -619,9 +941,9 @@ export default function Recommendations({ library, onLaunchGame }) {
             <div key={item.key || item.name} className="rec-wishlist-identity-row">
               <div className="rec-wishlist-identity-artwork">
                 <LazyImage
-                  src={resolveGameArtwork(item)}
+                  src={resolveGameArtwork(item, { surface: 'portrait' })}
                   alt={item.name}
-                  placeholder={getGameArtworkPlaceholder(item)}
+                  placeholder={getGameArtworkPlaceholder({ game: item, surface: 'portrait' })}
                 />
               </div>
               <div className="rec-wishlist-identity-info">
@@ -694,6 +1016,26 @@ export default function Recommendations({ library, onLaunchGame }) {
           </>
         )}
 
+        {activeStyle === 'backlog-buster' && (
+          <>
+            {renderStyleHeader('Backlog Buster', 'Unplayed games matched to your taste')}
+            {backlogBusterResult?.backlogStats && (
+              <div className="rec-backlog-stats">
+                <span className="rec-backlog-stat">
+                  <strong>{backlogBusterResult.backlogStats.totalUnplayed}</strong> unplayed
+                </span>
+                <span className="rec-backlog-stat">
+                  <strong>{backlogBusterResult.backlogStats.totalLibrary}</strong> total games
+                </span>
+                <span className="rec-backlog-stat">
+                  <strong>{backlogBusterResult.backlogStats.backlogPercentage}%</strong> backlog
+                </span>
+              </div>
+            )}
+            {renderPayload(backlogBusterResult, 'backlog-buster')}
+          </>
+        )}
+
         {activeStyle === 'rediscover' && (
           <>
             {renderStyleHeader('Rediscover', 'Old favorites waiting for you')}
@@ -730,6 +1072,27 @@ export default function Recommendations({ library, onLaunchGame }) {
           <>
             {renderStyleHeader('Session Playlist', 'Build a queue of short games')}
             {renderSessionPlaylist()}
+          </>
+        )}
+
+        {activeStyle === 'game-comparison' && (
+          <>
+            {renderStyleHeader('Game Comparison', 'Compare 2-4 games side-by-side')}
+            {renderGameComparison()}
+          </>
+        )}
+
+        {activeStyle === 'momentum-picks' && (
+          <>
+            {renderStyleHeader('Momentum Picks', 'Games ranked by momentum score')}
+            {renderMomentumPicks()}
+          </>
+        )}
+
+        {activeStyle === 'untouched-shelf' && (
+          <>
+            {renderStyleHeader('Untouched Shelf', 'Games with zero playtime')}
+            {renderUntouchedShelf()}
           </>
         )}
       </div>

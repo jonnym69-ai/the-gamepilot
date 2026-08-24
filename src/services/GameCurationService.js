@@ -14,7 +14,8 @@ const KEYS = {
   coverArt: 'coverArtOverridesV1',
   sessionNotes: 'sessionNotesV1',
   duplicates: 'duplicateMergesV1',
-  scanTimestamps: 'scanTimestampsV1'
+  scanTimestamps: 'scanTimestampsV1',
+  playedElsewhere: 'playedElsewhereV1'
 };
 
 const DEFAULT_COLLECTIONS = [
@@ -109,6 +110,32 @@ function toggleHiddenGame(gameKey) {
   }
   setHiddenGames(hidden);
   return hidden.has(gameKey);
+}
+
+// ---------- Played Elsewhere ----------
+
+function getPlayedElsewhere() {
+  return StorageService.get(KEYS.playedElsewhere, {});
+}
+
+function isPlayedElsewhere(gameKey) {
+  return Boolean(getPlayedElsewhere()[gameKey]);
+}
+
+function setPlayedElsewhere(gameKey, value) {
+  const all = getPlayedElsewhere();
+  if (value) {
+    all[gameKey] = Date.now();
+  } else {
+    delete all[gameKey];
+  }
+  StorageService.set(KEYS.playedElsewhere, all);
+}
+
+function togglePlayedElsewhere(gameKey) {
+  const next = !isPlayedElsewhere(gameKey);
+  setPlayedElsewhere(gameKey, next);
+  return next;
 }
 
 // ---------- Completion History ----------
@@ -299,6 +326,7 @@ function enrichGame(game) {
   const dateAdded = getDateAdded(key);
   const hidden = isGameHidden(key);
   const duplicatePrimary = getMergedGameKey(key);
+  const playedElsewhere = isPlayedElsewhere(key);
 
   return {
     ...game,
@@ -311,7 +339,8 @@ function enrichGame(game) {
     dateAdded,
     isHidden: hidden,
     isDuplicateMerged: duplicatePrimary !== key,
-    duplicatePrimaryKey: duplicatePrimary
+    duplicatePrimaryKey: duplicatePrimary,
+    playedElsewhere
   };
 }
 
@@ -371,6 +400,11 @@ export const GameCurationService = {
   mergeDuplicateGames,
   getMergedGameKey,
   isDuplicateMerged,
+  // Played elsewhere
+  getPlayedElsewhere,
+  isPlayedElsewhere,
+  setPlayedElsewhere,
+  togglePlayedElsewhere,
   // Recently added
   recordGameSeen,
   getDateAdded,

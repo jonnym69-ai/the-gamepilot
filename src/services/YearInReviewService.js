@@ -4,6 +4,7 @@ import { DailyEngagementService } from './DailyEngagementService';
 import { getDateKey } from './DateKeyService';
 import { ProgressionUnlockService } from './ProgressionUnlockService';
 import GamingPersonaService from './GamingPersonaService';
+import PeriodChampionService from './PeriodChampionService';
 
 const MONTH_LABELS = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 const SESSION_BUCKET_LABELS = Object.freeze({
@@ -35,7 +36,9 @@ const buildRankedList = (counts = {}, limit = 5) => {
 };
 
 const getPersonaVoice = () => {
-  const persona = GamingPersonaService.getPersona();
+  // Year in Review is a retrospective — it deliberately uses the all-time
+  // persona rather than the app-wide default current-rotation persona.
+  const persona = GamingPersonaService.getPersona(null, null, { mode: 'all-time' });
   const primary = persona?.primaryPersona;
   return {
     label: primary?.label || null,
@@ -66,6 +69,27 @@ const buildMonthlyBreakdown = (sessions = []) => {
       Object.entries(playtimeMinutes).map(([label, value]) => [label, Number((value / 60).toFixed(1))])
     ),
     sessionCounts
+  };
+};
+
+const buildChampionJourney = (sessions = [], library = [], year = new Date().getFullYear()) => {
+  const safeYear = Number(year) || new Date().getFullYear();
+  const monthlyChampions = MONTH_LABELS.map((monthLabel, monthIndex) => {
+    const periodKey = `${safeYear}-${String(monthIndex + 1).padStart(2, '0')}`;
+    const champion = PeriodChampionService.getChampionForPeriod('month', periodKey, {
+      library,
+      sessions,
+      includePersona: false,
+    });
+    return champion ? { ...champion, monthLabel } : null;
+  }).filter(Boolean);
+  return {
+    yearChampion: PeriodChampionService.getChampionForPeriod('year', String(safeYear), {
+      library,
+      sessions,
+      includePersona: false,
+    }),
+    monthlyChampions,
   };
 };
 
@@ -184,13 +208,9 @@ const getSessionStyleDescriptor = (bucket) => {
 };
 
 const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSessionBucket, peakPlayWindow }) => {
-  const gamingPersona = getPersonaVoice();
-  if (gamingPersona.label) {
-    return {
-      label: gamingPersona.label,
-      description: gamingPersona.roast || 'Your gaming identity, sharpened from real play data.'
-    };
-  }
+  // Don't inject the current archetype into historical snapshots — evolution
+  // should show how mood/genre/session patterns changed over time, not repeat
+  // the same archetype label on both sides.
 
   if (!dominantMood && !dominantGenre && !preferredSessionBucket) {
     return {
@@ -689,6 +709,7 @@ export class YearInReviewService {
       const evolution = buildPersonaEvolution(sessions);
       const seasonalStory = buildSeasonalStory(sessions, safeYear);
       const deepStats = buildDeepStats(sessions, topGames);
+      const championJourney = buildChampionJourney(sessions, library, safeYear);
 
       let progression = null;
       try {
@@ -721,6 +742,7 @@ export class YearInReviewService {
         evolution,
         seasonalStory,
         deepStats,
+        championJourney,
         progression,
         summaryCards: buildSummaryCards({
           year: safeYear,
@@ -813,6 +835,7 @@ export class YearInReviewService {
         evolution: null,
         seasonalStory: null,
         deepStats: buildDeepStats([], []),
+        championJourney: { yearChampion: null, monthlyChampions: [] },
         progression: fallbackProgression,
         summaryCards: buildSummaryCards({
           year: fallbackYear,
@@ -843,6 +866,7 @@ export class YearInReviewService {
         monthly: snapshot.monthly,
         seasonalStory: snapshot.seasonalStory,
         deepStats: snapshot.deepStats,
+        championJourney: snapshot.championJourney,
         topGames: snapshot.topGames,
         distributions: {
           topPlatforms: snapshot.distributions.topPlatforms,

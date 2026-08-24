@@ -1,9 +1,10 @@
 import React from 'react';
-import { Gamepad2, User, TrendingUp, Award, Clock, Zap } from 'lucide-react';
+import { Gamepad2, User, TrendingUp, Award, Clock, Zap, Crown } from 'lucide-react';
 import { resolveGameArtwork } from '../services/GameArtworkService';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import { ShareCardWatermark } from './ShareCardWatermark';
 import GamingPersonaService from '../services/GamingPersonaService';
+import FounderService from '../services/FounderService';
 import './IdentityShareCard.css';
 
 export const IDENTITY_SHARE_CARD_SIZE_PX = 1080;
@@ -20,9 +21,15 @@ export function buildIdentityShareData(profile = {}, evolution = null) {
   const personaRoast = gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || identity.description || 'Your gaming identity is still forming.';
   const evidence = Array.isArray(primary?.evidence) ? primary.evidence : [];
   const subTraits = Array.isArray(gamingPersona?.subTraits) ? gamingPersona.subTraits : [];
+  // Prefer blended lifetime (Steam/import floor + GamePilot tracked) when present.
+  const totalPlaytime = Math.max(
+    Number(stats.totalPlayTime) || 0,
+    Number(stats.trackedPlayTime) || 0,
+    Number(stats.importedPlayTime) || 0
+  );
 
   return {
-    username: safeProfile.username || 'Pilot',
+    username: safeProfile.username || 'Player',
     title: safeProfile.title || 'Newbie',
     level: safeProfile.level || 1,
     identityLabel: personaLabel,
@@ -30,7 +37,7 @@ export function buildIdentityShareData(profile = {}, evolution = null) {
     playStyle: identity.playStyle || 'Balanced',
     favoriteMood: identity.favoriteMood || persona?.dominantMood || '—',
     favoriteGenre: identity.favoriteGenre || gamingPersona?.signals?.dominantGenre || persona?.dominantGenre || '—',
-    totalPlaytime: stats.totalPlayTime || 0,
+    totalPlaytime,
     sessions: stats.totalSessions || 0,
     librarySize: stats.librarySize || 0,
     platformDiversity: stats.platformDiversity || 0,
@@ -65,6 +72,7 @@ const getMostPlayedGame = (library = []) => {
 
 export function IdentityShareCard({ profile = {}, evolution = null, library = [], coverGame = null, showCover = true, watermark = 'gamepilot' }) {
   const data = buildIdentityShareData(profile, evolution);
+  const founder = FounderService.getFounderProfile();
   const coverGameSource = coverGame || getMostPlayedGame(library);
   const coverUrl = showCover && coverGameSource ? resolveGameArtwork(coverGameSource, { surface: 'hero' }) : null;
 
@@ -165,7 +173,7 @@ export function IdentityShareCard({ profile = {}, evolution = null, library = []
 
         {data.evidence && data.evidence.length > 0 && (
           <div className="identity-share-card-evidence">
-            {data.evidence.slice(0, 3).map((item, index) => (
+            {data.evidence.slice(0, 5).map((item, index) => (
               <span key={`evidence-${index}`} className="identity-share-card-evidence-item">
                 {item}
               </span>
@@ -191,6 +199,13 @@ export function IdentityShareCard({ profile = {}, evolution = null, library = []
           </div>
         )}
       </div>
+
+      {founder.isFounder && (
+        <div className={`identity-share-card-founder-stamp founder-stamp-${founder.tier.toLowerCase()}`}>
+          <Crown size={18} />
+          <span>{founder.tier} Founder</span>
+        </div>
+      )}
 
       <div className="identity-share-card-footer">
         <ShareCardWatermark

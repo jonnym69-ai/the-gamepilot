@@ -40,7 +40,7 @@ export function YearInReviewShareCard({ snapshot, year, username, showCover = tr
   const topGenre = snapshot?.persona?.dominantGenre || '—';
   const topGames = (snapshot?.topGames || []).slice(0, 3);
   const topGame = topGames[0];
-  const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'hero' }) : null;
+  const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'portrait' }) : null;
   const storyArc = snapshot?.seasonalStory?.arc;
 
   const longestSession = snapshot?.deepStats?.longestSession;

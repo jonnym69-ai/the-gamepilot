@@ -1,5 +1,6 @@
 import { getBrandPlatform } from './PlatformBranding';
 import { getMoodForGame, isValidMood } from '../constants/GenresMoods';
+import { isNonGameTitle } from './gameClassification';
 
 const normalizeTrackedNumber = (value) => {
   const parsedValue = Number(value);
@@ -170,7 +171,9 @@ const normalizeGameLibraryEntry = (game) => {
 
 const normalizeLibraryData = (libraryData) => (
   Array.isArray(libraryData)
-    ? libraryData.map(normalizeGameLibraryEntry).filter(Boolean)
+    // Launcher/utility entries (e.g. the GOG Galaxy client) are dropped here so
+    // any merge or rescan cleans them out of the stored library for good.
+    ? libraryData.map(normalizeGameLibraryEntry).filter(Boolean).filter((game) => !isNonGameTitle(game))
     : []
 );
 

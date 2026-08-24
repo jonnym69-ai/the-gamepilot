@@ -23,6 +23,12 @@ function GamingStoryPanel({ story }) {
   const safeGenreFingerprint = Array.isArray(genreFingerprint) ? genreFingerprint : [];
   const safeMoodFingerprint = Array.isArray(moodFingerprint) ? moodFingerprint : [];
   const safeTasteClusters = Array.isArray(tasteClusters) ? tasteClusters : [];
+  const quietPeriodLabel = {
+    daily: 'day',
+    weekly: 'week',
+    monthly: 'month',
+    yearly: 'year'
+  }[period] || 'period';
 
   return (
     <div className="gaming-story-panel">
@@ -45,7 +51,7 @@ function GamingStoryPanel({ story }) {
         <div className="gaming-story-panel-header">
           <div className="gaming-story-panel-badge">
             {isIdentity ? <TrendingUp size={14} /> : isDigest ? <BookOpen size={14} /> : isPeriod ? <Clock size={14} /> : <Sparkles size={14} />}
-            {isQuiet ? `Quiet ${period || 'week'}` : isIdentity ? 'Evolving identity' : isDigest ? `${period} digest` : isPeriod ? `${period} recap` : 'First chapter'}
+            {isQuiet ? `Quiet ${quietPeriodLabel}` : isIdentity ? 'Evolving identity' : isDigest ? `${period} digest` : isPeriod ? `${period} recap` : 'First chapter'}
           </div>
           {identityLabel && (
             <div className="gaming-story-panel-identity" title="Narrative voice">{identityLabel}</div>

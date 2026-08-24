@@ -3950,6 +3950,14 @@ body.big-screen-mode .profile-section.selected {
   font-weight: 600;
 }
 
+.gaming-persona-context-line {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(255, 107, 53, 0.72);
+  letter-spacing: 0.01em;
+}
+
 .gaming-persona-roast {
   font-size: 1rem;
   line-height: 1.6;
@@ -4170,4 +4178,182 @@ body.big-screen-mode .profile-section.selected {
   .profile-achievement-summary {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================
+   GAMING DNA SECTIONS (merged from GamingDNAPage)
+   ============================================ */
+
+/* Signature Games Section */
+.dna-signature-games-section {
+  background: var(--card, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+
+.dna-section-description {
+  font-size: 0.85rem;
+  color: var(--text-muted, #8892a0);
+  margin: 0 0 16px 0;
+}
+
+.dna-signature-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dna-signature-game {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border-radius: 14px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.04));
+}
+
+.dna-signature-game-rank {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-color, #ff6b35);
+  min-width: 28px;
+}
+
+.dna-signature-game-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dna-signature-game-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.dna-signature-game-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted, #8892a0);
+}
+
+.dna-signature-game-genres {
+  font-size: 0.72rem;
+  color: var(--text-muted, #8892a0);
+  opacity: 0.7;
+}
+
+.dna-signature-game-score {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-color, #ff6b35);
+  background: rgba(255, 107, 53, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+/* Taste Clusters Section */
+.dna-taste-clusters-section {
+  background: var(--card, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+
+.dna-taste-clusters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dna-taste-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border-radius: 14px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.04));
+}
+
+.dna-taste-cluster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dna-taste-cluster-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.dna-taste-cluster-count {
+  font-size: 0.72rem;
+  color: var(--text-muted, #8892a0);
+  white-space: nowrap;
+}
+
+.dna-taste-cluster-description {
+  font-size: 0.82rem;
+  color: var(--text-muted, #8892a0);
+}
+
+.dna-taste-cluster-games {
+  font-size: 0.75rem;
+  color: var(--text-muted, #8892a0);
+  opacity: 0.7;
+}
+
+/* Identity Badges Section */
+.dna-badges-section {
+  margin-bottom: 24px;
+}
+
+.dna-badges-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dna-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  color: var(--text, #fff);
+}
+
+.dna-badge-icon {
+  font-size: 1.1rem;
+}
+
+.dna-badge-name {
+  font-weight: 500;
+}
+
+/* Gamer Signature Section */
+.dna-signature {
+  background: linear-gradient(135deg, rgba(255,107,53,0.06) 0%, rgba(255,107,53,0.02) 100%);
+  border: 1px solid rgba(255, 107, 53, 0.15);
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+
+.dna-signature-text {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text, #fff);
+  font-weight: 500;
 }

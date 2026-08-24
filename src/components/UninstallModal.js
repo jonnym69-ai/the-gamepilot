@@ -68,7 +68,15 @@ const UninstallModal = ({ isOpen, game, onClose, onCompleted = () => {} }) => {
       onCompleted(game, result.plan);
       onClose();
     } else {
-      setError(result?.error || 'Failed to launch uninstaller.');
+      const errMsg = result?.error || 'Failed to launch uninstaller.';
+      // Provide a more helpful message for common failure cases
+      let userMsg = errMsg;
+      if (errMsg === 'electron-only') {
+        userMsg = 'Uninstall is only available in the desktop app. Run GamePilot as an installed app, not in a browser.';
+      } else if (errMsg.includes('openExternal') || errMsg.includes('start fallback')) {
+        userMsg = `Could not open the launcher uninstaller (${errMsg}). Try opening the launcher manually and uninstalling from there.`;
+      }
+      setError(userMsg);
     }
   };
 
@@ -129,9 +137,17 @@ const UninstallModal = ({ isOpen, game, onClose, onCompleted = () => {} }) => {
                 {plan.method === 'open-folder' || plan.method === 'manual'
                   ? <FolderOpen size={14} />
                   : <ExternalLink size={14} />}
-                <span><strong>{plan.label}</strong> will open</span>
+                <span>
+                  <strong>{plan.label}</strong>{plan.method === 'unsupported' ? '' : ` will open${plan.fallback ? ' (fallback)' : ''}`}
+                </span>
               </div>
               <p className="uninstall-modal-plan-message">{plan.message}</p>
+              {game.platform && (
+                <p className="uninstall-modal-path">
+                  <span>Detected platform:</span> <code>{game.platform}</code>
+                  {game.appid && <span style={{ marginLeft: '8px' }}>(appid: {game.appid})</span>}
+                </p>
+              )}
               {game.installDir && (
                 <p className="uninstall-modal-path">
                   <span>Install folder:</span> <code>{game.installDir}</code>
@@ -153,9 +169,9 @@ const UninstallModal = ({ isOpen, game, onClose, onCompleted = () => {} }) => {
           <button
             className="uninstall-modal-confirm"
             onClick={handleConfirm}
-            disabled={dispatching || planLoading || !plan}
+            disabled={dispatching || planLoading || !plan || plan.method === 'unsupported'}
           >
-            {dispatching ? 'Opening uninstaller…' : `Open ${plan?.label || 'uninstaller'}`}
+            {dispatching ? 'Opening uninstaller…' : plan?.method === 'unsupported' ? 'Unavailable' : `Open ${plan?.label || 'uninstaller'}`}
           </button>
         </footer>
       </div>

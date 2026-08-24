@@ -217,6 +217,40 @@
   cursor: wait;
 }
 
+.stats-period-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 auto 20px;
+  max-width: fit-content;
+  border-radius: 999px;
+  background: var(--card, rgba(22, 37, 51, 0.85));
+  border: 1px solid var(--card-border, #2a475e);
+}
+
+.stats-period-toggle-button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, var(--text));
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stats-period-toggle-button:hover {
+  color: var(--text);
+}
+
+.stats-period-toggle-button.active {
+  background: linear-gradient(135deg, var(--accent-color, #ff6b35), #ff8c42);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.22);
+}
+
 .stats-last-refresh {
   font-size: 0.85rem;
   opacity: 0.8;

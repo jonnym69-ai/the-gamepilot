@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Download, FileText, Filter, Image as ImageIcon, Link as LinkIcon, RefreshCcw, Share2, Trash2, Upload } from 'lucide-react';
+import { Download, Filter, Image as ImageIcon, Link as LinkIcon, RefreshCcw, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import NavBar from './NavBar';
@@ -10,11 +10,9 @@ import { DataExportService } from './services/DataExportService';
 import { DataManager } from './DataManager';
 import { LocalShareService } from './services/LocalShareService';
 import { ProfileService } from './services/ProfileService';
-import { YearInReviewService } from './services/YearInReviewService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { LibraryShareCard, LIBRARY_SHARE_CARD_SIZE_PX } from './components/LibraryShareCard';
-import { YearInReviewShareCard, SHARE_CARD_SIZE_PX as YIR_CARD_SIZE_PX } from './components/YearInReviewShareCard';
 import { ShareCaptionDialog } from './components/ShareCaptionDialog';
 import './ExportHub.css';
 
@@ -28,10 +26,8 @@ function ExportHub({ library = [], theme }) {
   const navigate = useNavigate();
   const backupImportRef = useRef(null);
   const filteredShareCardRef = useRef(null);
-  const yearInReviewShareCardRef = useRef(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [editShare, setEditShare] = useState(null);
   const [recapCustomization] = useState(() => ProgressionUnlockService.getRecapCustomization?.() || { palette: null, visibleStats: {} });
   const username = useMemo(() => ProfileService.getCurrentUsername(), []);
@@ -50,10 +46,6 @@ function ExportHub({ library = [], theme }) {
 
   const rewardSummary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
   const safeLibrary = useMemo(() => (Array.isArray(library) && library.length > 0 ? library : getFallbackLibrary()), [library]);
-  const availableYears = useMemo(() => YearInReviewService.getAvailableYears(safeLibrary), [safeLibrary]);
-  const resolvedYear = availableYears.includes(selectedYear) ? selectedYear : (availableYears[0] || new Date().getFullYear());
-  const yearSnapshot = useMemo(() => YearInReviewService.getYearSnapshot(safeLibrary, resolvedYear), [safeLibrary, resolvedYear]);
-  const shareText = useMemo(() => LocalShareService.buildYearInReviewShareText(yearSnapshot, resolvedYear), [yearSnapshot, resolvedYear]);
   const backupSummary = useMemo(() => DataExportService.getBackupSummary(library || []), [library]);
   const filteredLibrary = useMemo(() => DataExportService.applyExportFilters(safeLibrary, exportOptions), [safeLibrary, exportOptions]);
   const filteredCount = filteredLibrary.length;
@@ -122,7 +114,7 @@ function ExportHub({ library = [], theme }) {
     const blob = await generateFilteredRecapBlob();
     const date = new Date().toISOString().split('T')[0];
     const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
-    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, 'all');
+    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
     const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
     if (result.success) {
       success(result.imageStaged
@@ -137,7 +129,7 @@ function ExportHub({ library = [], theme }) {
     const blob = await generateFilteredRecapBlob();
     const date = new Date().toISOString().split('T')[0];
     const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
-    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, 'all');
+    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
     const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
     if (result.success) {
       success(result.imageStaged
@@ -149,7 +141,7 @@ function ExportHub({ library = [], theme }) {
   }, [generateFilteredRecapBlob, exportOptions.dateRange, filteredLibrary, username, success, error]);
 
   const handleShareFilteredRecapToChannel = useCallback(async (channel, text = null) => {
-    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, 'all');
+    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
     let imageStaged = false;
     if (LocalShareService.canCopyImage()) {
       try {
@@ -230,116 +222,6 @@ function ExportHub({ library = [], theme }) {
     success('All local data cleared. Reloading...');
     window.setTimeout(() => window.location.reload(), 1200);
   };
-
-  const handleCopyYearShare = async () => {
-    const copied = await LocalShareService.copyTextToClipboard(shareText);
-    if (copied) {
-      success('Year in Review share text copied.');
-      return;
-    }
-    error('Could not copy share text.');
-  };
-
-  const handleDownloadYearShare = () => {
-    const result = LocalShareService.downloadShareText(shareText, `gamepilot-year-in-review-${resolvedYear}-share.txt`);
-    if (result) {
-      success('Year in Review share text downloaded.');
-      return;
-    }
-    error('Could not download share text.');
-  };
-
-  const generateYearInReviewBlob = useCallback(async () => {
-    if (!yearInReviewShareCardRef.current) {
-      error('Could not generate Year in Review share image.');
-      return null;
-    }
-    const canvas = await html2canvas(yearInReviewShareCardRef.current, {
-      width: YIR_CARD_SIZE_PX,
-      height: YIR_CARD_SIZE_PX,
-      scale: 1,
-      useCORS: true,
-      backgroundColor: '#0d1224',
-      logging: false
-    });
-    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-  }, [error]);
-
-  const handleSaveYearInReviewImage = useCallback(async () => {
-    const blob = await generateYearInReviewBlob();
-    if (!blob) return;
-    const filename = `gamepilot-year-in-review-${resolvedYear}.png`;
-    DataExportService.downloadFile(blob, filename);
-    success(`Year in Review image saved.`);
-  }, [generateYearInReviewBlob, resolvedYear, success]);
-
-  const handleCopyYearInReviewImage = useCallback(async () => {
-    const blob = await generateYearInReviewBlob();
-    if (!blob) return;
-    const filename = `gamepilot-year-in-review-${resolvedYear}.png`;
-    const result = await LocalShareService.copyImageToClipboard(blob, filename);
-    if (result.success) {
-      success('Year in Review image copied to clipboard.');
-    } else {
-      error(result.message || 'Could not copy image.');
-    }
-  }, [generateYearInReviewBlob, resolvedYear, success, error]);
-
-  const handleShareYearInReviewToDiscord = useCallback(async (text = null) => {
-    const blob = await generateYearInReviewBlob();
-    const filename = `gamepilot-year-in-review-${resolvedYear}.png`;
-    const caption = text || shareText;
-    const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: caption, filename });
-    if (result.success) {
-      success(result.imageStaged
-        ? 'Discord opened — your Year in Review image and caption are copied, just paste them in.'
-        : 'Discord opened — caption copied, image saved to attach.');
-    } else {
-      error(result.message || 'Could not share to Discord.');
-    }
-  }, [generateYearInReviewBlob, resolvedYear, shareText, success, error]);
-
-  const handleShareYearInReviewToMessenger = useCallback(async (text = null) => {
-    const blob = await generateYearInReviewBlob();
-    const filename = `gamepilot-year-in-review-${resolvedYear}.png`;
-    const caption = text || shareText;
-    const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: caption, filename });
-    if (result.success) {
-      success(result.imageStaged
-        ? 'Messenger opened — your Year in Review image and caption are copied, just paste them in.'
-        : 'Messenger opened — caption copied, image saved to attach.');
-    } else {
-      error(result.message || 'Could not share to Messenger.');
-    }
-  }, [generateYearInReviewBlob, resolvedYear, shareText, success, error]);
-
-  const handleShareYearInReviewToChannel = useCallback(async (channel, text = null) => {
-    const caption = text || shareText;
-    let imageStaged = false;
-    if (LocalShareService.canCopyImage()) {
-      try {
-        const blob = await generateYearInReviewBlob();
-        if (blob) {
-          const filename = `gamepilot-year-in-review-${resolvedYear}.png`;
-          const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
-          imageStaged = copyResult.success;
-        }
-      } catch (err) {
-        imageStaged = false;
-      }
-    }
-
-    const result = await LocalShareService.openShareIntent(channel, caption);
-    if (result.success) {
-      if (imageStaged) {
-        success(`${result.label} opened — your Year in Review image is copied, just paste it into the post.`);
-      } else {
-        success(`${result.label} share opened.`);
-      }
-    } else {
-      error(result.message || 'Could not open share link.');
-    }
-  }, [generateYearInReviewBlob, resolvedYear, shareText, success, error]);
 
   return (
     <div className="export-hub-page">
@@ -500,7 +382,7 @@ function ExportHub({ library = [], theme }) {
                 onClick={() => {
                   setEditShare({
                     channel,
-                    caption: LocalShareService.buildLibraryShareText(filteredLibrary, username, 'all'),
+                    caption: LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange),
                     onShare: (text) => {
                       if (channel.id === 'discord') {
                         handleShareFilteredRecapToDiscord(text);
@@ -521,66 +403,6 @@ function ExportHub({ library = [], theme }) {
           </div>
         </section>
 
-        <section className="export-hub-card">
-          <h2>Year in Review Share</h2>
-          <div className="export-hub-year-row">
-            <label>
-              <span className="export-hub-stat-label export-hub-year-label">Recap year</span>
-              <select value={resolvedYear} onChange={(event) => setSelectedYear(Number(event.target.value))} className="export-hub-btn export-hub-year-select">
-                {availableYears.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className="export-hub-share-text">{shareText}</p>
-          <div className="export-hub-btn-row">
-            <button type="button" className="export-hub-btn" onClick={handleCopyYearShare} title="Copy your recap summary text to the clipboard">
-              <Share2 size={16} />
-              <span>Copy Share Text</span>
-            </button>
-            <button type="button" className="export-hub-btn" onClick={handleDownloadYearShare} title="Download your recap summary as a plain text file">
-              <FileText size={16} />
-              <span>Download Share Text</span>
-            </button>
-            <button type="button" className="export-hub-btn" onClick={handleCopyYearInReviewImage} title="Copy your Year in Review recap image to the clipboard">
-              <ImageIcon size={16} />
-              <span>Copy Recap Image</span>
-            </button>
-            <button type="button" className="export-hub-btn" onClick={handleSaveYearInReviewImage} title="Download your Year in Review recap image">
-              <Download size={16} />
-              <span>Save Recap Image</span>
-            </button>
-          </div>
-          <div className="export-hub-btn-row">
-            {LocalShareService.getSupportedChannels().map((channel) => (
-              <button
-                key={channel.id}
-                type="button"
-                className="export-hub-btn"
-                onClick={() => {
-                  setEditShare({
-                    channel,
-                    caption: shareText,
-                    onShare: (text) => {
-                      if (channel.id === 'discord') {
-                        handleShareYearInReviewToDiscord(text);
-                      } else if (channel.id === 'messenger') {
-                        handleShareYearInReviewToMessenger(text);
-                      } else {
-                        handleShareYearInReviewToChannel(channel.id, text);
-                      }
-                    }
-                  });
-                }}
-                title={`Open a ${channel.label} share intent with your Year in Review recap`}
-              >
-                <LinkIcon size={16} />
-                <span>Share to {channel.label}</span>
-              </button>
-            ))}
-          </div>
-        </section>
       </div>
 
       <div
@@ -598,23 +420,10 @@ function ExportHub({ library = [], theme }) {
         <LibraryShareCard
           library={filteredLibrary}
           username={username}
-          period="all"
+          period={exportOptions.dateRange}
           theme={recapCustomization.palette}
           visibleStats={recapCustomization.visibleStats}
         />
-      </div>
-
-      <div
-        ref={yearInReviewShareCardRef}
-        style={{
-          position: 'fixed',
-          top: -10000,
-          left: -10000,
-          pointerEvents: 'none',
-          zIndex: -1
-        }}
-      >
-        <YearInReviewShareCard snapshot={yearSnapshot} year={resolvedYear} username={username} />
       </div>
 
       {isExportModalOpen && (

@@ -505,6 +505,66 @@ ipcMain.handle('steam-wishlist', async (event, steamId) => {
   }
 });
 
+// IPC Handler for Discord webhook posts (bypasses renderer CORS)
+ipcMain.handle('discord-webhook-post', async (event, payload) => {
+  try {
+    const { url, body, isMultipart } = payload;
+    if (!url || !url.startsWith('https://discord.com/api/webhooks/')) {
+      return { success: false, status: 0, error: 'Invalid webhook URL.' };
+    }
+
+    const fetchOptions = { method: 'POST' };
+
+    if (isMultipart) {
+      const boundary = '----GamePilotBoundary' + Math.random().toString(16).slice(2);
+      const parts = [];
+
+      if (body.payload_json) {
+        parts.push(
+          `--${boundary}\r\n` +
+          `Content-Disposition: form-data; name="payload_json"\r\n` +
+          `Content-Type: application/json\r\n\r\n` +
+          `${body.payload_json}\r\n`
+        );
+      }
+
+      if (body.file) {
+        const fileBuffer = Buffer.from(body.file.data);
+        const safeFilename = String(body.file.filename || 'file').replace(/[\r\n"]/g, '');
+        const safeContentType = String(body.file.contentType || 'application/octet-stream').replace(/[\r\n]/g, '');
+        parts.push(
+          `--${boundary}\r\n` +
+          `Content-Disposition: form-data; name="file"; filename="${safeFilename}"\r\n` +
+          `Content-Type: ${safeContentType}\r\n\r\n`
+        );
+        const footer = `\r\n--${boundary}--\r\n`;
+        fetchOptions.body = Buffer.concat([
+          Buffer.from(parts.join(''), 'utf8'),
+          fileBuffer,
+          Buffer.from(footer, 'utf8')
+        ]);
+        fetchOptions.headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+      } else {
+        fetchOptions.body = parts.join('') + `--${boundary}--\r\n`;
+        fetchOptions.headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+      }
+    } else {
+      fetchOptions.headers = { 'Content-Type': 'application/json' };
+      fetchOptions.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      return { success: false, status: response.status, error: errorText };
+    }
+    return { success: true, status: response.status };
+  } catch (err) {
+    console.error('[Electron] Discord webhook post error:', err.message);
+    return { success: false, status: 0, error: err.message || 'Could not post to Discord webhook.' };
+  }
+});
+
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {

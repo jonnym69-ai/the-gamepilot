@@ -9,90 +9,45 @@ const PERIOD_CONFIG = {
       { id: 'daily_15min', minutes: 15 },
       { id: 'daily_30min', minutes: 30 },
       { id: 'daily_1hour', minutes: 60 },
-      { id: 'daily_2hours', minutes: 120 },
-      { id: 'daily_3hours', minutes: 180 },
-      { id: 'daily_5hours', minutes: 300 },
-      { id: 'daily_7hours', minutes: 420 },
-      { id: 'daily_10hours', minutes: 600 }
+      { id: 'daily_2hours', minutes: 120 }
     ],
     sessions: [
-      { id: 'daily_3sessions', count: 3 },
-      { id: 'daily_5sessions', count: 5 },
-      { id: 'daily_10sessions', count: 10 }
+      { id: 'daily_2sessions', count: 2 }
     ],
     games: [
-      { id: 'daily_3games', count: 3 },
-      { id: 'daily_5games', count: 5 }
+      { id: 'daily_2games', count: 2 }
     ],
     genres: [
-      { id: 'daily_3genres', count: 3 },
-      { id: 'daily_5genres', count: 5 }
+      { id: 'daily_2genres', count: 2 }
     ],
     moods: [
-      { id: 'daily_2moods', count: 2 },
-      { id: 'daily_3moods', count: 3 },
-      { id: 'daily_all_moods', count: 5 }
-    ],
-    platforms: [
-      { id: 'daily_2platforms', count: 2 },
-      { id: 'daily_3platforms', count: 3 }
-    ],
-    features: [
-      { id: 'daily_perfect_play', key: 'perfectPlay', count: 1 },
-      { id: 'daily_surprise', key: 'surpriseMe', count: 1 },
-      { id: 'daily_rediscover', key: 'rediscover', count: 1 },
-      { id: 'daily_share', key: 'share', count: 1 }
-    ],
-    streaks: []
+      { id: 'daily_2moods', count: 2 }
+    ]
   },
   weekly: {
     playtime: [
       { id: 'weekly_2hours', minutes: 120 },
       { id: 'weekly_5hours', minutes: 300 },
       { id: 'weekly_10hours', minutes: 600 },
-      { id: 'weekly_20hours', minutes: 1200 },
-      { id: 'weekly_40hours', minutes: 2400 },
-      { id: 'weekly_60hours', minutes: 3600 },
-      { id: 'weekly_100hours', minutes: 6000 }
+      { id: 'weekly_20hours', minutes: 1200 }
     ],
     sessions: [
-      { id: 'weekly_7sessions', count: 7 },
-      { id: 'weekly_14sessions', count: 14 },
-      { id: 'weekly_21sessions', count: 21 }
+      { id: 'weekly_3sessions', count: 3 },
+      { id: 'weekly_7sessions', count: 7 }
     ],
     games: [
-      { id: 'weekly_5games', count: 5 },
-      { id: 'weekly_10games', count: 10 },
-      { id: 'weekly_15games', count: 15 }
+      { id: 'weekly_3games', count: 3 },
+      { id: 'weekly_5games', count: 5 }
     ],
     genres: [
-      { id: 'weekly_4genres', count: 4 },
-      { id: 'weekly_6genres', count: 6 }
+      { id: 'weekly_3genres', count: 3 }
     ],
     moods: [
-      { id: 'weekly_3moods', count: 3 },
-      { id: 'weekly_4moods', count: 4 }
+      { id: 'weekly_3moods', count: 3 }
     ],
     activeDays: [
-      { id: 'weekly_4days', count: 4 },
-      { id: 'weekly_6days', count: 6 }
-    ],
-    streaks: [
-      { id: 'weekly_streak_3', count: 3 },
-      { id: 'weekly_streak_5', count: 5 },
-      { id: 'weekly_streak_7', count: 7 }
-    ],
-    perfectPlay: [
-      { id: 'weekly_perfect_5', count: 5 }
-    ],
-    surprise: [
-      { id: 'weekly_surprise_7', count: 7 }
-    ],
-    rediscover: [
-      { id: 'weekly_rediscover_3', count: 3 }
-    ],
-    share: [
-      { id: 'weekly_share_3', count: 3 }
+      { id: 'weekly_3days', count: 3 },
+      { id: 'weekly_5days', count: 5 }
     ]
   },
   monthly: {
@@ -100,96 +55,50 @@ const PERIOD_CONFIG = {
       { id: 'monthly_10hours', minutes: 600 },
       { id: 'monthly_25hours', minutes: 1500 },
       { id: 'monthly_50hours', minutes: 3000 },
-      { id: 'monthly_100hours', minutes: 6000 },
-      { id: 'monthly_150hours', minutes: 9000 },
-      { id: 'monthly_200hours', minutes: 12000 },
-      { id: 'monthly_300hours', minutes: 18000 }
+      { id: 'monthly_100hours', minutes: 6000 }
     ],
     sessions: [
-      { id: 'monthly_30sessions', count: 30 },
-      { id: 'monthly_50sessions', count: 50 },
-      { id: 'monthly_75sessions', count: 75 }
+      { id: 'monthly_10sessions', count: 10 },
+      { id: 'monthly_25sessions', count: 25 }
     ],
     activeDays: [
+      { id: 'monthly_5days', count: 5 },
       { id: 'monthly_10days', count: 10 },
-      { id: 'monthly_20days', count: 20 },
-      { id: 'monthly_25days', count: 25 }
-    ],
-    unlocks: [
-      { id: 'monthly_unlock_5', count: 5 },
-      { id: 'monthly_unlock_10', count: 10 },
-      { id: 'monthly_unlock_15', count: 15 }
+      { id: 'monthly_20days', count: 20 }
     ],
     genres: [
-      { id: 'monthly_10genres', count: 10 },
-      { id: 'monthly_15genres', count: 15 }
-    ],
-    platforms: [
-      { id: 'monthly_5platforms', count: 5 }
+      { id: 'monthly_5genres', count: 5 },
+      { id: 'monthly_10genres', count: 10 }
     ],
     moods: [
       { id: 'monthly_all_moods', count: 5 }
-    ],
-    perfectPlay: [
-      { id: 'monthly_perfect_10', count: 10 }
-    ],
-    surprise: [
-      { id: 'monthly_surprise_15', count: 15 }
-    ],
-    rediscover: [
-      { id: 'monthly_rediscover_5', count: 5 }
-    ],
-    share: [
-      { id: 'monthly_share_5', count: 5 }
     ]
   },
   yearly: {
     playtime: [
+      { id: 'yearly_50hours', minutes: 3000 },
       { id: 'yearly_100hours', minutes: 6000 },
+      { id: 'yearly_250hours', minutes: 15000 },
       { id: 'yearly_500hours', minutes: 30000 },
-      { id: 'yearly_1000hours', minutes: 60000 },
-      { id: 'yearly_1500hours', minutes: 90000 },
-      { id: 'yearly_2000hours', minutes: 120000 }
+      { id: 'yearly_1000hours', minutes: 60000 }
     ],
     sessions: [
-      { id: 'yearly_200sessions', count: 200 },
-      { id: 'yearly_365sessions', count: 365 }
+      { id: 'yearly_50sessions', count: 50 },
+      { id: 'yearly_100sessions', count: 100 },
+      { id: 'yearly_200sessions', count: 200 }
     ],
     activeDays: [
-      { id: 'yearly_300days', count: 300 },
-      { id: 'yearly_350days', count: 350 }
-    ],
-    unlocks: [
-      { id: 'yearly_unlock_50', count: 50 },
-      { id: 'yearly_unlock_100', count: 100 },
-      { id: 'yearly_unlock_150', count: 150 }
+      { id: 'yearly_25days', count: 25 },
+      { id: 'yearly_50days', count: 50 },
+      { id: 'yearly_100days', count: 100 },
+      { id: 'yearly_200days', count: 200 }
     ],
     genres: [
-      { id: 'yearly_20genres', count: 20 },
-      { id: 'yearly_25genres', count: 25 }
-    ],
-    platforms: [
-      { id: 'yearly_10platforms', count: 10 }
+      { id: 'yearly_10genres', count: 10 },
+      { id: 'yearly_15genres', count: 15 }
     ],
     moods: [
-      { id: 'yearly_mood_100', count: 100 }
-    ],
-    perfectPlay: [
-      { id: 'yearly_perfect_50', count: 50 }
-    ],
-    surprise: [
-      { id: 'yearly_surprise_100', count: 100 }
-    ],
-    rediscover: [
-      { id: 'yearly_rediscover_25', count: 25 }
-    ],
-    share: [
-      { id: 'yearly_share_25', count: 25 }
-    ],
-    streaks: [
-      { id: 'yearly_streak_30', count: 30 },
-      { id: 'yearly_streak_50', count: 50 },
-      { id: 'yearly_streak_100', count: 100 }
+      { id: 'yearly_all_moods', count: 5 }
     ]
   }
 };

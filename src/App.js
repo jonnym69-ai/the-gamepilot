@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import './App.css';
 import moodThemes from './themes/moodThemes.json';
 import { ThemeProvider } from './ThemeContext';
@@ -20,6 +20,7 @@ import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
 import SessionRepository from './services/SessionRepository';
 import { PlaytimeEnrichmentService } from './services/PlaytimeEnrichmentService';
 import { SteamGenreEnrichmentService } from './services/SteamGenreEnrichmentService';
+import TrayMenuService from './services/TrayMenuService';
 import { ToastProvider, useToast } from './components/Toast';
 import LevelUpToast from './components/LevelUpToast';
 import WeeklySummaryToast from './components/WeeklySummaryToast';
@@ -31,14 +32,16 @@ import { SeasonalRewardService } from './services/SeasonalRewardService';
 import CalendarXPService from './services/CalendarXPService';
 import { GameCurationService } from './services/GameCurationService';
 import { GameRatingService } from './services/GameRatingService';
-import { UserBehaviorProfile } from './services/UserBehaviorProfile';
+import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import StorageService from './services/StorageService';
+import PeriodChampionService from './services/PeriodChampionService';
 import WishlistService from './services/WishlistService';
 import { assignMoodToGame as importedAssignMoodToGame } from './services/MoodAssignmentService';
 import { resolveGameArtwork } from './services/GameArtworkService';
 import DynamicBackdropService from './services/DynamicBackdropService';
 import CommandPalette from './components/CommandPalette';
+import BigScreenMode from './components/BigScreenMode';
 import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
 import GamingStoryCard from './components/GamingStoryCard';
@@ -53,9 +56,9 @@ const Stats = lazy(() => import('./Stats'));
 const Settings = lazy(() => import('./Settings'));
 const Profile = lazy(() => import('./Profile'));
 const YearInReview = lazy(() => import('./YearInReview'));
+const Timeline = lazy(() => import('./Timeline'));
 const Donate = lazy(() => import('./Donate'));
 const GamingLinks = lazy(() => import('./GamingLinks'));
-const LibraryIntelligence = lazy(() => import('./LibraryIntelligence'));
 const StartupQuestionnaire = lazy(() => import('./components/StartupQuestionnaire'));
 const Themes = lazy(() => import('./Themes'));
 const Habits = lazy(() => import('./Habits'));
@@ -65,7 +68,7 @@ const StorageManager = lazy(() => import('./StorageManager'));
 const PerformanceCockpit = lazy(() => import('./PerformanceCockpit'));
 const SwipeDeck = lazy(() => import('./SwipeDeck'));
 const Recommendations = lazy(() => import('./Recommendations'));
-const GamingDNAPage = lazy(() => import('./components/GamingDNAPage'));
+const GameBarOverlay = lazy(() => import('./components/GameBarOverlay'));
 const Rewards = lazy(() => import('./Rewards'));
 const Feedback = lazy(() => import('./Feedback'));
 
@@ -112,6 +115,7 @@ const CONTROLLER_NAV_ROUTES = [
   '/stats',
   '/profile',
   '/year-in-review',
+  '/timeline',
   '/settings',
   '/feedback'
 ];
@@ -157,7 +161,10 @@ function AppContent() {
   const [lastPlayedGame, setLastPlayedGame] = useState(null);
   const [isOnline, setIsOnline] = useState(OfflineManager.isOnline);
   const [syncStatus, setSyncStatus] = useState(OfflineManager.getSyncStatus());
-  const [activeSessions, setActiveSessions] = useState(() => PlaytimeAutoLogger.getActiveSessions());
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [bigScreenMode, setBigScreenMode] = useState(
+    () => localStorage.getItem('gamepilot-bigScreenMode') === 'true'
+  );
   const [hasLoadedLibrary, setHasLoadedLibrary] = useState(false);
   // Phase 0: noise/modal UI silenced (components retained behind false mounts).
   const showLevelUp = false;
@@ -167,6 +174,7 @@ function AppContent() {
   const [currentLevel, setCurrentLevel] = useState(1);
   const [previousLevel, setPreviousLevel] = useState(1);
   const [stillPlayingPrompt, setStillPlayingPrompt] = useState(null);
+  const [recommendationOutcomePrompt, setRecommendationOutcomePrompt] = useState(null);
   const [stillPlayingDeadlines, setStillPlayingDeadlines] = useState({});
   const setShowLevelUp = () => {};
   const setShowWeeklySummary = () => {};
@@ -192,7 +200,32 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
+    if (!sessionStorageReady) return;
+    try {
+      PeriodChampionService.lockChampionsIfNeeded({ library });
+    } catch { /* non-critical */ }
+  }, [library, sessionStorageReady]);
+
+  useEffect(() => {
     playtimeStatsCache.current.clear();
+  }, [library]);
+
+  useEffect(() => {
+    if (Array.isArray(library) && library.length > 0) {
+      TrayMenuService.updateMenu(library);
+    }
+  }, [library]);
+
+  // Keep the main-process passive watcher in sync with the library so games
+  // launched outside GamePilot (Epic, Ubisoft, shortcuts, etc.) still get
+  // session-tracked. Debounced — library churn during scans is frequent.
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api || typeof api.updateWatchlist !== 'function') return;
+    const timer = window.setTimeout(() => {
+      api.updateWatchlist(Array.isArray(library) ? library : []).catch(() => {});
+    }, 1500);
+    return () => window.clearTimeout(timer);
   }, [library]);
 
   useEffect(() => {
@@ -394,7 +427,14 @@ function AppContent() {
       }
     };
     window.addEventListener('gamepilot:bigscreen-toggled', handleBigScreenToggle);
-    return () => window.removeEventListener('gamepilot:bigscreen-toggled', handleBigScreenToggle);
+    const handleBigScreenState = (e) => {
+      setBigScreenMode(!!e?.detail?.enabled);
+    };
+    window.addEventListener('gamepilot:bigscreen-toggled', handleBigScreenState);
+    return () => {
+      window.removeEventListener('gamepilot:bigscreen-toggled', handleBigScreenToggle);
+      window.removeEventListener('gamepilot:bigscreen-toggled', handleBigScreenState);
+    };
   }, [theme]);
 
   // --- Utility Functions ---
@@ -552,6 +592,9 @@ function AppContent() {
       console.error('Habit tracking failed during session end:', habitError);
     }
 
+    AchievementTracker.recordSessionDurationAchievements(sessionResult.playtimeMinutes || 0);
+    AchievementTracker.checkAndUnlockAchievements();
+
     let endedGameSnapshot = null;
 
     setLibrary((previousLibrary) => {
@@ -599,16 +642,23 @@ function AppContent() {
       window.electronAPI.restoreWindow().catch(() => {});
     }
 
+    const endedGameId = endedGameSnapshot?.appid || endedGameSnapshot?.name || gameName;
+    const recommendationLaunch = UserBehaviorProfile.getLatestRecommendationLaunch(endedGameId, gameName);
+
     window.dispatchEvent(new CustomEvent('gamepilot:session-ended', {
       detail: {
         gameName,
-        gameId: endedGameSnapshot?.appid || endedGameSnapshot?.name || gameName,
+        gameId: endedGameId,
         mood: endedGameSnapshot?.mood || null,
         genre: Array.isArray(endedGameSnapshot?.genres)
           ? endedGameSnapshot.genres.find((genre) => genre && genre !== 'Unknown') || null
           : null,
         playtimeMinutes: normalizeTrackedNumber(sessionResult.playtimeMinutes),
-        endTime: sessionResult.endTime || Date.now()
+        endTime: sessionResult.endTime || Date.now(),
+        recommendationType: recommendationLaunch?.recommendationType || null,
+        recommendationSource: recommendationLaunch?.source || null,
+        recoveredSession: Boolean(sessionMetadata.recoveredSession),
+        shutdownSession: Boolean(sessionMetadata.shutdownSession)
       }
     }));
 
@@ -740,6 +790,20 @@ function AppContent() {
       const mins = minutes % 60;
       const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
       toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+      const feedbackPreferences = UserBehaviorProfile.getFeedbackPreferences();
+      if (detail.recommendationType
+        && feedbackPreferences.sessionPromptEnabled
+        && !detail.recoveredSession
+        && !detail.shutdownSession) {
+        const recommendationSession = UserBehaviorProfile.recordRecommendationSession(
+          detail.gameId,
+          detail.gameName,
+          detail
+        );
+        if (recommendationSession) {
+          setRecommendationOutcomePrompt({ ...detail, recommendationSession });
+        }
+      }
       // Phase 0: Captain's Log stays in code but is not prompted after sessions.
     };
 
@@ -830,6 +894,43 @@ function AppContent() {
     setStillPlayingPrompt(null);
   }, [handleEndSession, stillPlayingPrompt]);
 
+  const submitRecommendationOutcome = useCallback((outcome) => {
+    if (!recommendationOutcomePrompt || !Object.values(RECOMMENDATION_OUTCOME).includes(outcome)) {
+      setRecommendationOutcomePrompt(null);
+      return;
+    }
+
+    const metadata = {
+      gameName: recommendationOutcomePrompt.gameName,
+      mood: recommendationOutcomePrompt.mood,
+      genre: recommendationOutcomePrompt.genre,
+      playtimeMinutes: recommendationOutcomePrompt.playtimeMinutes,
+      recommendationType: recommendationOutcomePrompt.recommendationType,
+      source: recommendationOutcomePrompt.recommendationSource || 'recommendation'
+    };
+    UserBehaviorProfile.trackRecommendationOutcome(recommendationOutcomePrompt.gameId, outcome, metadata);
+    if (outcome !== RECOMMENDATION_OUTCOME.NOT_NOW) {
+      UserBehaviorProfile.trackSessionFeedback(
+        recommendationOutcomePrompt.gameName,
+        outcome === RECOMMENDATION_OUTCOME.GREAT_PICK,
+        { ...metadata, gameId: recommendationOutcomePrompt.gameId }
+      );
+    }
+
+    const message = outcome === RECOMMENDATION_OUTCOME.GREAT_PICK
+      ? 'Great — GamePilot will favor picks like this.'
+      : outcome === RECOMMENDATION_OUTCOME.NOT_NOW
+        ? 'Got it — this game will stay out of recommendations for a while.'
+        : 'Understood — GamePilot will stop recommending this game.';
+    toastInfo(message, 5000);
+    setRecommendationOutcomePrompt(null);
+  }, [recommendationOutcomePrompt, toastInfo]);
+
+  const disableRecommendationOutcomePrompts = useCallback(() => {
+    UserBehaviorProfile.setFeedbackPromptEnabled('session', false);
+    setRecommendationOutcomePrompt(null);
+  }, []);
+
   useEffect(() => {
     if (!stillPlayingPrompt) return undefined;
 
@@ -839,6 +940,40 @@ function AppContent() {
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [handleStillPlayingContinue, stillPlayingPrompt]);
+
+  // Passive watcher session events: games detected running outside GamePilot.
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api || typeof api.onPassiveSessionStarted !== 'function') return undefined;
+
+    const unsubscribeStarted = api.onPassiveSessionStarted((payload) => {
+      const gameName = payload?.gameName;
+      if (!gameName) return;
+      const game = (library || []).find((g) => g?.name === gameName);
+      PlaytimeAutoLogger.startSession(gameName, payload?.appid || game?.appid || null, {
+        source: 'passive-watch',
+        platform: payload?.platform || game?.platform || 'Unknown',
+        genres: game?.genres || [],
+        gameGenres: game?.genres || []
+      });
+      setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+      toastInfo(`${gameName} detected running — session tracking started.`);
+    });
+
+    const unsubscribeEnded = api.onPassiveSessionEnded((payload) => {
+      const gameName = payload?.gameName;
+      if (!gameName) return;
+      handleEndSession(gameName, {
+        source: 'passive-watch',
+        platform: payload?.platform || 'Unknown'
+      });
+    });
+
+    return () => {
+      if (typeof unsubscribeStarted === 'function') unsubscribeStarted();
+      if (typeof unsubscribeEnded === 'function') unsubscribeEnded();
+    };
+  }, [library, handleEndSession, toastInfo]);
 
   const handleLaunchGame = useCallback(async (game) => {
     const gameKey = String(game?.appid || game?.name || '').trim();
@@ -936,6 +1071,7 @@ function AppContent() {
 
     setLibrary(updatedLibrary);
     saveLibrary(updatedLibrary);
+    AchievementTracker.checkAndUnlockAchievements();
 
     if (typeof userRating === 'number' && userRating > 0) {
       const targetGame = (library || []).find((g) => g?.name === gameName);
@@ -1001,10 +1137,20 @@ function AppContent() {
   }, [saveLibrary]);
 
   const handleUpdateCompletion = useCallback((gameName, status, note) => {
+    const completedStatuses = new Set(['beaten', 'completed', '100%']);
+    const isCompletionStatus = completedStatuses.has(String(status || '').trim().toLowerCase());
     GameCurationService.setGameCompletion(gameName, status, note);
     setLibrary((prev) => {
+      const priorGame = prev.find(g => g.name === gameName);
+      const wasCompleted = completedStatuses.has(String(priorGame?.completionStatus || '').trim().toLowerCase());
+      const hadPlaytime = Number(priorGame?.time_played || 0) > 0;
       const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
       saveLibrary(updatedLibrary);
+      AchievementTracker.checkAndUnlockAchievements();
+      if (isCompletionStatus && hadPlaytime && !wasCompleted) {
+        AchievementTracker.trackBacklogMilestone('finish_started');
+        AchievementTracker.checkAndUnlockAchievements();
+      }
       return updatedLibrary;
     });
   }, [saveLibrary]);
@@ -1035,6 +1181,18 @@ function AppContent() {
       return updatedLibrary;
     });
   }, [saveLibrary]);
+
+  const handleTogglePlayedElsewhere = useCallback((gameName) => {
+    const next = GameCurationService.togglePlayedElsewhere(gameName);
+    setLibrary((prev) => {
+      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
+      saveLibrary(updatedLibrary);
+      return updatedLibrary;
+    });
+    toastSuccess(next
+      ? `${gameName} marked as played elsewhere — no longer counts as unplayed.`
+      : `${gameName} unmarked — counts as unplayed again.`);
+  }, [saveLibrary, toastSuccess]);
 
   return (
     <div className="App-container">
@@ -1121,6 +1279,35 @@ function AppContent() {
           </div>
         </div>
       )}
+      {recommendationOutcomePrompt && (
+        <div className="modal-overlay">
+          <div
+            className="modal-content"
+            style={{ maxWidth: '560px', textAlign: 'center' }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recommendation-outcome-title"
+            aria-describedby="recommendation-outcome-description"
+          >
+            <h2 id="recommendation-outcome-title" className={`modal-title ${theme}`}>Did this recommendation land?</h2>
+            <p id="recommendation-outcome-description" style={{ marginBottom: '12px', lineHeight: 1.6 }}>
+              You played <strong>{recommendationOutcomePrompt.gameName}</strong> for {Math.round(recommendationOutcomePrompt.playtimeMinutes || 0)} minutes after finding it through GamePilot.
+            </p>
+            <p style={{ marginBottom: '22px', opacity: 0.78, lineHeight: 1.6 }}>
+              Your answer will tune every recommendation surface, not just this one.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              <button onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.GREAT_PICK)} className="getting-started-primary">Great pick</button>
+              <button onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.NOT_NOW)} className="getting-started-secondary">Not now</button>
+              <button onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.NOT_FOR_ME)} className="getting-started-secondary">Not for me</button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <button onClick={() => setRecommendationOutcomePrompt(null)} className="clear-button">Skip</button>
+              <button onClick={disableRecommendationOutcomePrompts} className="clear-button">Do not ask again</button>
+            </div>
+          </div>
+        </div>
+      )}
       <ErrorBoundary>
       <Suspense fallback={(
         <div className="page-loading-fallback" role="status" aria-live="polite">
@@ -1132,29 +1319,49 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
         <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
-        <Route path="/library" element={<Library library={library} setLibrary={setLibrary} onLibraryUpdated={handleLibraryUpdated} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onScanLibrary={scanLocalLibrary} scanLocalLibrary={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} onUpdateCollections={handleUpdateCollections} onToggleHidden={handleToggleHidden} onUpdateCompletion={handleUpdateCompletion} onUpdateNotes={handleUpdateNotes} onUpdateCoverArt={handleUpdateCoverArt} onAddSessionNote={handleAddSessionNote} loading={loading} />} />
+        <Route path="/library" element={<Library library={library} setLibrary={setLibrary} onLibraryUpdated={handleLibraryUpdated} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onScanLibrary={scanLocalLibrary} scanLocalLibrary={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} onUpdateCollections={handleUpdateCollections} onToggleHidden={handleToggleHidden} onUpdateCompletion={handleUpdateCompletion} onUpdateNotes={handleUpdateNotes} onUpdateCoverArt={handleUpdateCoverArt} onAddSessionNote={handleAddSessionNote} onTogglePlayedElsewhere={handleTogglePlayedElsewhere} loading={loading} />} />
         <Route path="/stats" element={<Stats library={library} />} />
-        <Route path="/gaming-dna" element={<GamingDNAPage library={library} />} />
+        <Route path="/gaming-dna" element={<Navigate to="/profile" replace />} />
         <Route path="/themes" element={<Themes />} />
         <Route path="/habits" element={<Habits library={library} />} />
         <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} library={library} dynamicCoverBg={dynamicCoverBg} setDynamicCoverBg={setDynamicCoverBg} minimizeOnLaunch={minimizeOnLaunch} setMinimizeOnLaunch={setMinimizeOnLaunch} />} />
         <Route path="/profile" element={<Profile library={library} />} />
         <Route path="/year-in-review" element={<YearInReview library={library} />} />
+        <Route path="/timeline" element={<Timeline library={library} />} />
         <Route path="/gaming-links" element={<GamingLinks theme={theme} />} />
         <Route path="/donate" element={<Donate theme={theme} />} />
-        <Route path="/library-intelligence" element={<LibraryIntelligence library={library} onLaunchGame={handleLaunchGame} />} />
+        <Route path="/library-intelligence" element={<Navigate to="/recommendations" replace />} />
         <Route path="/achievements" element={<Achievements theme={theme} />} />
         <Route path="/export-hub" element={<ExportHub library={library} />} />
         <Route path="/storage-manager" element={<StorageManager library={library} onLaunchGame={handleLaunchGame} />} />
         <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />
         <Route path="/swipe-deck" element={<SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />} />
         <Route path="/recommendations" element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />} />
+        <Route path="/gamebar" element={<GameBarOverlay />} />
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/startup-questionnaire" element={<StartupQuestionnaireRoute />} />
       </Routes>
       </Suspense>
       </ErrorBoundary>
+      {bigScreenMode && (
+        <BigScreenMode
+          library={library}
+          onLaunchGame={handleLaunchGame}
+          activeSessions={activeSessions}
+          onEndSession={handleEndSession}
+          lastPlayedGame={lastPlayedGame}
+          onUpdateRating={handleUpdateRating}
+          onToggleFavorite={handleToggleFavorite}
+          onUpdateCollections={handleUpdateCollections}
+          onToggleHidden={handleToggleHidden}
+          onUpdateCompletion={handleUpdateCompletion}
+          onUpdateNotes={handleUpdateNotes}
+          onUpdateCoverArt={handleUpdateCoverArt}
+          onAddSessionNote={handleAddSessionNote}
+          onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
+        />
+      )}
     </div>
   );
 }

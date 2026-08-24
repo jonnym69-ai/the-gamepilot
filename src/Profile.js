@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
-import { Clock, Download, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Image as ImageIcon, Sparkles, Award, Dna, BookOpen, Dices } from 'lucide-react';
+import { Clock, Download, X, Trophy, Star, User, Camera, Check, Crown, Edit2, TrendingUp, Image as ImageIcon, Sparkles, BookOpen, Dices, Flame, Target, Award } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
 import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
@@ -22,6 +21,7 @@ import ExportModal from './components/ExportModal';
 import CinematicExport from './components/CinematicExport';
 import PersonaEvolutionCard from './components/PersonaEvolutionCard';
 import { IdentityShareCard, IDENTITY_SHARE_CARD_SIZE_PX } from './components/IdentityShareCard';
+import { StoryShareCard, STORY_SHARE_CARD_SIZE_PX } from './components/StoryShareCard';
 import GamingStoryPanel from './components/GamingStoryPanel';
 import TasteFingerprint from './components/TasteFingerprint';
 import { GamingStoryService } from './services/GamingStoryService';
@@ -72,7 +72,6 @@ const dispatchProfileUpdatedEvent = (detail = {}) => {
 };
 
 const Profile = ({ theme, library = [] }) => {
-  const navigate = useNavigate();
   const { success, error } = useToast();
   const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
   const [tempUsername, setTempUsername] = useState('');
@@ -89,16 +88,16 @@ const Profile = ({ theme, library = [] }) => {
   const [personaSeed, setPersonaSeed] = useState(null);
   const [showPersonaDebug, setShowPersonaDebug] = useState(false);
   const [personaVariant, setPersonaVariant] = useState('primary');
-  const [personaWindow, setPersonaWindow] = useState('all'); // 'all' | 'recent'
+  const [personaWindow, setPersonaWindow] = useState('recent'); // 'all' | 'recent' — recent (current rotation) is the default; all-time is opt-in
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   const [pinnedPersonaId, setPinnedPersonaId] = useState(() => GamingPersonaService.getPinnedPersonaId());
   const displayedPersona = useMemo(
     () => {
       if (!gamingIdentity) return null;
-      const windowDays = personaWindow === 'recent' ? 90 : null;
-      // Use the cached all-time persona only when no reroll/window override is active.
-      if (personaSeed === null && windowDays === null) return gamingIdentity.gamingPersona || null;
-      return GamingPersonaService.getPersona(null, personaSeed, { windowDays });
+      // 'recent' uses the app-wide default: adaptive current-rotation persona.
+      // 'all' is the explicit retrospective opt-in.
+      const options = personaWindow === 'all' ? { mode: 'all-time' } : {};
+      return GamingPersonaService.getPersona(null, personaSeed, options);
     },
     [gamingIdentity, personaSeed, personaWindow]
   );
@@ -127,7 +126,9 @@ const Profile = ({ theme, library = [] }) => {
   const [gamingStory, setGamingStory] = useState(() => GamingStoryService.getCurrentStory());
   const [periodStory, setPeriodStory] = useState(() => GamingStoryService.getPeriodStory());
   const identityShareCardRef = useRef(null);
+  const storyShareCardRef = useRef(null);
   const [isCapturingIdentity, setIsCapturingIdentity] = useState(false);
+  const [isCapturingStory, setIsCapturingStory] = useState(false);
   const [xpStats, setXpStats] = useState(null);
   const [xpBoost, setXpBoost] = useState(null);
   const [completedGames, setCompletedGames] = useState([]);
@@ -362,6 +363,147 @@ const Profile = ({ theme, library = [] }) => {
     }
   }, [periodStory, gamingStory, username, success, error]);
 
+  const handleShareStoryToDiscord = useCallback(async (text = null) => {
+    const storyToShare = periodStory || gamingStory;
+    if (!storyToShare) return;
+    const shareText = text || LocalShareService.buildPeriodStoryShareText(storyToShare, storyToShare.period || 'weekly', username);
+    const result = await LocalShareService.shareToDiscord({ text: shareText });
+    if (result.success) {
+      success('Discord opened with story text.');
+    } else {
+      error(result.message || 'Could not share to Discord.');
+    }
+  }, [periodStory, gamingStory, username, success, error]);
+
+  const handleShareStoryToMessenger = useCallback(async (text = null) => {
+    const storyToShare = periodStory || gamingStory;
+    if (!storyToShare) return;
+    const shareText = text || LocalShareService.buildPeriodStoryShareText(storyToShare, storyToShare.period || 'weekly', username);
+    const result = await LocalShareService.shareToMessenger({ text: shareText });
+    if (result.success) {
+      success('Messenger opened with story text.');
+    } else {
+      error(result.message || 'Could not share to Messenger.');
+    }
+  }, [periodStory, gamingStory, username, success, error]);
+
+  const storyToShare = periodStory || gamingStory;
+
+  const generateStoryShareCardBlob = useCallback(async () => {
+    if (!storyShareCardRef.current) return null;
+    setIsCapturingStory(true);
+    try {
+      const canvas = await html2canvas(storyShareCardRef.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true,
+        logging: false
+      });
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    } catch (err) {
+      console.error('Failed to generate story share card:', err);
+      return null;
+    } finally {
+      setIsCapturingStory(false);
+    }
+  }, []);
+
+  const handleCopyStoryShareCard = useCallback(async () => {
+    const blob = await generateStoryShareCardBlob();
+    if (!blob) {
+      error('Could not generate story share card.');
+      return false;
+    }
+    const copied = await LocalShareService.copyImageToClipboard(blob);
+    if (copied) {
+      success('Story share card copied to clipboard.');
+    } else {
+      error('Could not copy story card.');
+    }
+    return copied;
+  }, [generateStoryShareCardBlob, success, error]);
+
+  const handleDownloadStoryShareCard = useCallback(async () => {
+    const blob = await generateStoryShareCardBlob();
+    if (!blob) {
+      error('Could not generate story share card.');
+      return;
+    }
+    const { filename } = LocalShareService.buildPeriodStoryShareCardPackage(storyToShare, storyToShare?.period || 'weekly', username);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    success('Story share card saved.');
+  }, [generateStoryShareCardBlob, storyToShare, username, success, error]);
+
+  const handleNativeShareStory = useCallback(async (text = null) => {
+    const blob = await generateStoryShareCardBlob();
+    if (!blob) {
+      error('Could not generate story share card.');
+      return;
+    }
+    const { title, filename } = LocalShareService.buildPeriodStoryShareCardPackage(storyToShare, storyToShare?.period || 'weekly', username);
+    const file = new File([blob], filename, { type: 'image/png' });
+    const shareText = text || LocalShareService.buildPeriodStoryShareText(storyToShare, storyToShare?.period || 'weekly', username);
+    const result = await LocalShareService.shareWithNativeShare({ text: shareText, files: [file], title });
+    if (result.success) {
+      success('Story card shared.');
+    } else {
+      error(result.message || 'Could not share.');
+    }
+  }, [generateStoryShareCardBlob, storyToShare, username, success, error]);
+
+  const storyCardLines = storyToShare?.narrative
+    ? storyToShare.narrative
+        .replace(/\*\*/g, '')
+        .split(/(?<=\.)\s+/)
+        .filter((line) => line.length > 0 && line.length < 180)
+        .slice(0, 4)
+    : [];
+  const storyCardTopGame = storyToShare?.topGames?.[0]
+    ? { name: storyToShare.topGames[0].name, coverUrl: storyToShare.topGames[0].coverUrl }
+    : null;
+
+  const buildIdentityArcCaption = useCallback(() => {
+    if (!personaEvolution?.opening || !personaEvolution?.closing) return '';
+    const lines = [
+      `My GamePilot Identity Arc`,
+      personaEvolution.summary || '',
+      `Started as: ${personaEvolution.opening.identityLabel}`,
+      `Now: ${personaEvolution.closing.identityLabel}`,
+      'Tracked locally by GamePilot.'
+    ].filter(Boolean);
+    return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
+  }, [personaEvolution]);
+
+  const handleCopyIdentityArcText = useCallback(async (text = null) => {
+    const shareText = text || buildIdentityArcCaption();
+    if (!shareText) return false;
+    const copied = await LocalShareService.copyTextToClipboard(shareText);
+    if (copied) {
+      success('Identity arc copied to clipboard.');
+    } else {
+      error('Could not copy identity arc.');
+    }
+    return copied;
+  }, [buildIdentityArcCaption, success, error]);
+
+  const handleShareIdentityArcToChannel = useCallback(async (channel, text = null) => {
+    const shareText = text || buildIdentityArcCaption();
+    if (!shareText) return;
+    const result = await LocalShareService.openShareIntent(channel, shareText);
+    if (result.success) {
+      success(`Opened ${result.label}.`);
+    } else {
+      error(result.message || 'Could not open share.');
+    }
+  }, [buildIdentityArcCaption, success, error]);
+
   // Load completed games from localStorage
   useEffect(() => {
     const savedCompletedGames = StorageService.get('completedGames', []);
@@ -385,10 +527,22 @@ const Profile = ({ theme, library = [] }) => {
     setCompletedGames(prev => {
       const exists = prev.some(g => g.name === gameName);
       if (!exists) {
+        const libraryGame = safeLibrary.find((g) => g.name === gameName);
+        const blendedMinutes = libraryGame
+          ? Math.max(
+              Number(libraryGame.time_played || 0),
+              Number(libraryGame.playtime?.total || 0),
+              Number(libraryGame.playtime?.minutes || 0),
+              Number(libraryGame.playtimeMinutes || 0),
+              Number(libraryGame.importedPlaytimeMinutes || 0),
+              Number(libraryGame.playtimeForever || 0),
+              Number(libraryGame.totalPlaytime || 0)
+            )
+          : 0;
         const newGames = [...prev, {
           name: gameName,
           completedAt: new Date().toISOString(),
-          playTime: Math.floor(Math.random() * 100) + 50 // Random playtime between 50-150 minutes
+          playTime: blendedMinutes
         }];
         saveCompletedGames(newGames);
 
@@ -404,7 +558,7 @@ const Profile = ({ theme, library = [] }) => {
       }
       return prev;
     });
-  }, [saveCompletedGames, success]);
+  }, [saveCompletedGames, success, safeLibrary]);
 
   // Remove game from completed list
   const removeCompletedGame = useCallback((gameName) => {
@@ -615,7 +769,11 @@ const Profile = ({ theme, library = [] }) => {
     setGamingStory(GamingStoryService.updateStory(safeLibrary));
     // Generate the period story using the persona variant the user has selected
     // so the weekly/monthly recap reads with the same voice as the persona card.
-    setPeriodStory(GamingStoryService.updatePeriodStory(GamingStoryService.getStoryFrequency(), activePersona));
+    setPeriodStory(GamingStoryService.updatePeriodStory(
+      GamingStoryService.getStoryFrequency(),
+      activePersona,
+      { force: true }
+    ));
     setStartupPersonalization(StartupPersonalizationService.getProfile());
     setStartupDraft(StartupPersonalizationService.getProfile());
 
@@ -829,7 +987,7 @@ const Profile = ({ theme, library = [] }) => {
               <User size={32} />
               <h1 className="profile-title" style={{ margin: 0 }}>{username ? `${username}'s Profile` : 'Player Profile'}</h1>
             </div>
-            <div className="profile-header-actions" style={{ display: 'none', gap: '10px' }}>
+            <div className="profile-header-actions" style={{ display: 'flex', gap: '10px' }}>
               <button
                 className="action-btn"
                 onClick={() => setIsCinematicExportOpen(true)}
@@ -1162,6 +1320,9 @@ const Profile = ({ theme, library = [] }) => {
                           {active?.description && (
                             <p className="gaming-persona-description">{active.description}</p>
                           )}
+                          {displayedPersona?.contextLine && (
+                            <p className="gaming-persona-context-line">{displayedPersona.contextLine}</p>
+                          )}
                           <p className="gaming-persona-roast">{roast}</p>
                           {active?.evidence?.length > 0 && (
                             <div className="gaming-persona-evidence" aria-label="Persona evidence">
@@ -1343,7 +1504,7 @@ const Profile = ({ theme, library = [] }) => {
         {gamingIdentity && gamingIdentity.identity && (
           <CollapsibleSection
             title="Gaming Identity"
-            subtitle="Legacy playstyle summary — persona roast above is the real voice."
+            subtitle="Playstyle breakdown, stats, and DNA profile."
             badge={gamingIdentity.gamingPersona?.primaryPersona?.label || gamingIdentity.identity.personality}
             defaultOpen={false}
             icon={<User size={18} />}
@@ -1353,14 +1514,6 @@ const Profile = ({ theme, library = [] }) => {
               <div className="gaming-identity-card-header">
                 <h3>Gaming Identity</h3>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    className="gaming-dna-link"
-                    onClick={() => navigate('/gaming-dna')}
-                  >
-                    <Dna size={14} />
-                    View Full DNA
-                  </button>
                   <ShareMenu
                     imageAvailable={Boolean(gamingIdentity)}
                     onCopyText={handleCopyIdentityShareText}
@@ -1531,10 +1684,113 @@ const Profile = ({ theme, library = [] }) => {
           </CollapsibleSection>
         )}
 
+        {/* Signature Games Section (from Gaming DNA) */}
+        {gamingIdentity && gamingIdentity.signatureGames && gamingIdentity.signatureGames.length > 0 && (
+          <CollapsibleSection
+            title="Signature Games"
+            subtitle="The titles that define your taste — ranked by playtime, ratings, and engagement."
+            badge={`${gamingIdentity.signatureGames.length} titles`}
+            defaultOpen={false}
+            icon={<Flame size={18} />}
+            className={getSectionClass(1)}
+          >
+            <div className="dna-signature-games-section">
+              <div className="dna-signature-games-list">
+                {gamingIdentity.signatureGames.map((game, idx) => (
+                  <div key={game.appid || game.name || idx} className="dna-signature-game">
+                    <span className="dna-signature-game-rank">#{idx + 1}</span>
+                    <div className="dna-signature-game-info">
+                      <span className="dna-signature-game-name">{game.name}</span>
+                      <span className="dna-signature-game-meta">
+                        {game.playtimeHours > 0 && `${game.playtimeHours}h played`}
+                        {game.playtimeHours > 0 && game.rating > 0 && ' · '}
+                        {game.rating > 0 && `${game.rating}/10`}
+                        {game.wouldReplay === true && ' · would replay'}
+                      </span>
+                      {game.genres && game.genres.length > 0 && (
+                        <span className="dna-signature-game-genres">{game.genres.join(' · ')}</span>
+                      )}
+                    </div>
+                    <span className="dna-signature-game-score">{game.score}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Taste Clusters Section (from Gaming DNA) */}
+        {gamingIdentity && gamingIdentity.tasteClusters && gamingIdentity.tasteClusters.length > 0 && (
+          <CollapsibleSection
+            title="Taste Clusters"
+            subtitle="Emergent patterns from your play history that go beyond single-genre tags."
+            badge={`${gamingIdentity.tasteClusters.length} clusters`}
+            defaultOpen={false}
+            icon={<Target size={18} />}
+            className={getSectionClass(1)}
+          >
+            <div className="dna-taste-clusters-section">
+              <div className="dna-taste-clusters-list">
+                {gamingIdentity.tasteClusters.map((cluster) => (
+                  <div key={cluster.id} className="dna-taste-cluster">
+                    <div className="dna-taste-cluster-header">
+                      <span className="dna-taste-cluster-label">{cluster.label}</span>
+                      <span className="dna-taste-cluster-count">{cluster.matchCount} signature games</span>
+                    </div>
+                    <span className="dna-taste-cluster-description">{cluster.description}</span>
+                    <span className="dna-taste-cluster-games">{cluster.gameNames.join(', ')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Identity Badges Section (from Gaming DNA) */}
+        {gamingIdentity && gamingIdentity.badges && gamingIdentity.badges.length > 0 && (
+          <CollapsibleSection
+            title="Identity Badges"
+            subtitle="Milestones and traits earned through your play behavior."
+            badge={`${gamingIdentity.badges.length} badges`}
+            defaultOpen={false}
+            icon={<Award size={18} />}
+            className={getSectionClass(1)}
+          >
+            <div className="dna-badges-section">
+              <div className="dna-badges-grid">
+                {gamingIdentity.badges.slice(0, 8).map((badge) => (
+                  <div key={badge.id} className="dna-badge">
+                    <span className="dna-badge-icon">{badge.icon}</span>
+                    <span className="dna-badge-name">{badge.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Gamer Signature Section (from Gaming DNA) */}
+        {gamingIdentity && gamingIdentity.identity && (
+          <CollapsibleSection
+            title="Gamer Signature"
+            subtitle="An auto-generated signature that distills your playstyle into one line."
+            badge="Signature"
+            defaultOpen={false}
+            icon={<Award size={18} />}
+            className={getSectionClass(1)}
+          >
+            <div className="dna-signature">
+              <p className="dna-signature-text">
+                {gamingIdentity.identity.signature || `${gamingIdentity.title || 'Gamer'} • Level ${gamingIdentity.level || 1} • ${gamingIdentity.identity.favoriteMood || 'Curious'} • ${gamingIdentity.identity.favoriteGenre || 'Explorer'}`}
+              </p>
+            </div>
+          </CollapsibleSection>
+        )}
+
         {/* Gaming Story Section */}
         <CollapsibleSection
           title="Gaming Story"
-          subtitle="Chapters built from the games and genres you actually play."
+          subtitle="A recent chapter and an all-time one, both built from the games you actually play."
           badge={periodStory?.period || gamingStory?.chapter || 'Anchor'}
           defaultOpen
         
@@ -1543,21 +1799,20 @@ const Profile = ({ theme, library = [] }) => {
         >
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
             <ShareMenu
-              imageAvailable={false}
+              imageAvailable={Boolean(storyToShare)}
               onCopyText={handleCopyStoryShareText}
-              onCopyImage={null}
-              onSaveImage={null}
+              onCopyImage={handleCopyStoryShareCard}
+              onSaveImage={handleDownloadStoryShareCard}
               onShareText={handleShareStoryToChannel}
-              onShareToDiscord={null}
-              onShareToMessenger={null}
+              onShareToDiscord={handleShareStoryToDiscord}
+              onShareToMessenger={handleShareStoryToMessenger}
               onDownloadText={handleCopyStoryShareText}
-              onNativeShare={null}
+              onNativeShare={handleNativeShareStory}
               buildCaption={() => {
-                const storyToShare = periodStory || gamingStory;
                 if (!storyToShare) return '';
                 return LocalShareService.buildPeriodStoryShareText(storyToShare, storyToShare.period || 'weekly', username);
               }}
-              disabled={false}
+              disabled={isCapturingStory}
               triggerLabel="Share Story"
             />
           </div>
@@ -1568,16 +1823,19 @@ const Profile = ({ theme, library = [] }) => {
             <GamingStoryPanel story={gamingStory} />
           )}
 
-          {/* Identity-derived taste fingerprint */}
-          <div style={{ marginTop: '20px' }}>
-            <TasteFingerprint />
-          </div>
-
-          {/* Identity story kept as the anchor chapter below the weekly recap */}
-          {GamingStoryService.getStoryFrequency() !== 'off' && periodStory && gamingStory && (
+          {/* All-time story kept as the anchor chapter below the weekly/monthly recap */}
+          {GamingStoryService.getStoryFrequency() !== 'off' && periodStory && gamingStory ? (
             <div style={{ marginTop: '20px' }}>
-              <h4 style={{ marginBottom: '12px', fontSize: '14px', opacity: 0.8 }}>Identity Story</h4>
+              <h4 style={{ marginBottom: '12px', fontSize: '14px', opacity: 0.8 }}>All-Time Story & Taste</h4>
               <GamingStoryPanel story={gamingStory} />
+              {/* Identity-derived taste fingerprint */}
+              <div style={{ marginTop: '20px' }}>
+                <TasteFingerprint />
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: '20px' }}>
+              <TasteFingerprint />
             </div>
           )}
         </CollapsibleSection>
@@ -1590,33 +1848,25 @@ const Profile = ({ theme, library = [] }) => {
           icon={<TrendingUp size={18} />}
           className={getSectionClass(1)}
         >
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <ShareMenu
+              imageAvailable={Boolean(personaEvolution && gamingIdentity)}
+              onCopyText={handleCopyIdentityArcText}
+              onCopyImage={handleCopyIdentityShareCard}
+              onSaveImage={handleDownloadIdentityShareCard}
+              onShareText={handleShareIdentityArcToChannel}
+              onShareToDiscord={handleShareIdentityToDiscord}
+              onShareToMessenger={handleShareIdentityToMessenger}
+              onDownloadText={handleCopyIdentityArcText}
+              onNativeShare={handleNativeShareIdentityCard}
+              buildCaption={buildIdentityArcCaption}
+              disabled={isCapturingIdentity}
+              triggerLabel="Share Arc"
+            />
+          </div>
           <PersonaEvolutionCard evolution={personaEvolution} />
         </CollapsibleSection>
 
-        {/* Identity Rewards Section */}
-        <CollapsibleSection
-          title="Identity Rewards"
-          subtitle="Optional unlock titles — not the main identity."
-          badge={GamingIdentity.getIdentityRewards().filter((r) => r.unlocked).length}
-          icon={<Award size={18} />}
-          className={getSectionClass(1)}
-          defaultOpen={false}
-        >
-          <div className="identity-rewards-grid">
-            {GamingIdentity.getIdentityRewards().map((reward) => (
-              <div key={reward.id} className={`identity-reward-card ${reward.unlocked ? 'unlocked' : 'locked'}`}>
-                <span className="identity-reward-icon">{reward.icon}</span>
-                <span className="identity-reward-name">{reward.name}</span>
-                <span className="identity-reward-desc">{reward.desc}</span>
-                {reward.unlocked ? (
-                  <span className="identity-reward-status">Unlocked</span>
-                ) : (
-                  <span className="identity-reward-status">Locked</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </CollapsibleSection>
 
         {/* XP & Level Section */}
         {xpStats && (
@@ -1736,22 +1986,6 @@ const Profile = ({ theme, library = [] }) => {
                 }
               }}
             />
-
-            {isExportModalOpen && (
-              <ExportModal
-                isOpen={isExportModalOpen}
-                onClose={() => setIsExportModalOpen(false)}
-                library={[]}
-              />
-            )}
-
-            {isCinematicExportOpen && (
-              <CinematicExport
-                isOpen={isCinematicExportOpen}
-                onClose={() => setIsCinematicExportOpen(false)}
-                library={[]}
-              />
-            )}
           </div>
           </div>
         </CollapsibleSection>
@@ -1835,10 +2069,52 @@ const Profile = ({ theme, library = [] }) => {
             )}
           </div>
         </div>
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: -10000,
+            left: -10000,
+            width: STORY_SHARE_CARD_SIZE_PX,
+            height: STORY_SHARE_CARD_SIZE_PX,
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+        >
+          <div ref={storyShareCardRef}>
+            {storyToShare && (
+              <StoryShareCard
+                stories={storyCardLines}
+                period={storyToShare.period || 'weekly'}
+                username={username || 'Pilot'}
+                totalPlaytime={(storyToShare.totalHours || 0) * 60}
+                topGame={storyCardTopGame}
+                watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+              />
+            )}
+          </div>
+        </div>
+
+        {isExportModalOpen && (
+          <ExportModal
+            isOpen={isExportModalOpen}
+            onClose={() => setIsExportModalOpen(false)}
+            library={safeLibrary}
+          />
+        )}
+
+        {isCinematicExportOpen && (
+          <CinematicExport
+            isOpen={isCinematicExportOpen}
+            onClose={() => setIsCinematicExportOpen(false)}
+            library={safeLibrary}
+          />
+        )}
       </div>
     </div>
   </div>
-  );
+);
 };
 
 export default Profile;

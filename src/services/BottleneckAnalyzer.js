@@ -55,7 +55,7 @@ export class BottleneckAnalyzer {
           game.steamAppId ||
           game.name,
         gameName: gameName,
-        gameImage: resolveGameArtwork(game, { surface: 'recommendation_card' }) || null,
+        gameImage: resolveGameArtwork(game, { surface: 'portrait' }) || null,
         canRun: compatibility.canRun,
         performanceLevel: compatibility.settingsLevel,
         bottlenecks: compatibility.bottlenecks || [],

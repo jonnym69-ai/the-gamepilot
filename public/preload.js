@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const electronAPI = {
+  platform: process.platform,
   sessionStoreInitialize: (payload) => ipcRenderer.invoke('session-store-initialize', payload),
   sessionStoreSaveActive: (sessions) => ipcRenderer.invoke('session-store-save-active', sessions),
   sessionStoreSettle: (payload) => ipcRenderer.invoke('session-store-settle', payload),
@@ -57,7 +58,25 @@ const electronAPI = {
     return () => ipcRenderer.removeListener('system-shutdown', listener);
   },
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
-  restoreWindow: () => ipcRenderer.invoke('restore-window')
+  restoreWindow: () => ipcRenderer.invoke('restore-window'),
+  discordStartGamePresence: (game) => ipcRenderer.invoke('discord-start-game-presence', game),
+  discordStopGamePresence: () => ipcRenderer.invoke('discord-stop-game-presence'),
+  discordSetIdlePresence: () => ipcRenderer.invoke('discord-set-idle-presence'),
+  discordDisconnect: () => ipcRenderer.invoke('discord-disconnect'),
+  updateTrayMenu: (games) => ipcRenderer.invoke('update-tray-menu', games),
+  updateWatchlist: (games) => ipcRenderer.invoke('update-watchlist', games),
+  onPassiveSessionStarted: (callback) => {
+    const listener = (_event, data) => callback?.(data);
+    ipcRenderer.on('passive-session-started', listener);
+    return () => ipcRenderer.removeListener('passive-session-started', listener);
+  },
+  onPassiveSessionEnded: (callback) => {
+    const listener = (_event, data) => callback?.(data);
+    ipcRenderer.on('passive-session-ended', listener);
+    return () => ipcRenderer.removeListener('passive-session-ended', listener);
+  },
+  openGameBarOverlay: () => ipcRenderer.invoke('open-gamebar-overlay'),
+  discordWebhookPost: (payload) => ipcRenderer.invoke('discord-webhook-post', payload)
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

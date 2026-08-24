@@ -192,8 +192,6 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
                   buildCaption={buildSteamHoursText}
                   onDownloadText={handleDownloadSteamHoursText}
                   onNativeShare={handleNativeShareSteamHours}
-                  onSaveImage={() => {}}
-                  onCopyImage={() => Promise.resolve(false)}
                   imageAvailable={false}
                 />
               </div>

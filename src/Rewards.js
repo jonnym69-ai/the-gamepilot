@@ -275,6 +275,12 @@ const GamingLinksPanel = ({ features, layouts, selectedFeatureId, selectedLayout
             key={feature.id}
             className={`rewards-card-item ${selectedFeatureId === feature.id ? 'active' : ''} ${!feature.unlocked ? 'locked' : ''}`}
             onClick={() => feature.unlocked && onSelectFeature(feature.id)}
+            onKeyDown={(event) => handleRewardCardKeyDown(event, feature.unlocked, () => onSelectFeature(feature.id))}
+            role="button"
+            tabIndex={feature.unlocked ? 0 : -1}
+            aria-disabled={!feature.unlocked}
+            aria-pressed={selectedFeatureId === feature.id}
+            aria-label={`${feature.name}${feature.unlocked ? '' : `, locked until ${feature.requiredXP?.toLocaleString() || 0} XP`}`}
           >
             <div
               className="reward-animation-preview"
@@ -324,6 +330,12 @@ const GamingLinksPanel = ({ features, layouts, selectedFeatureId, selectedLayout
             key={layout.id}
             className={`rewards-card-item ${selectedLayoutId === layout.id ? 'active' : ''} ${!layout.unlocked ? 'locked' : ''}`}
             onClick={() => layout.unlocked && onSelectLayout(layout.id)}
+            onKeyDown={(event) => handleRewardCardKeyDown(event, layout.unlocked, () => onSelectLayout(layout.id))}
+            role="button"
+            tabIndex={layout.unlocked ? 0 : -1}
+            aria-disabled={!layout.unlocked}
+            aria-pressed={selectedLayoutId === layout.id}
+            aria-label={`${layout.name}${layout.unlocked ? '' : `, locked until ${layout.requiredXP?.toLocaleString() || 0} XP`}`}
           >
             <div
               className="reward-library-preview"

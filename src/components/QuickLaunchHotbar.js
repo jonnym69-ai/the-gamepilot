@@ -71,7 +71,7 @@ export default function QuickLaunchHotbar({ library = [] }) {
       {!collapsed && (
         <div className="quick-launch-list">
           {games.map((game) => {
-            const art = resolveGameArtwork(game, { surface: 'hotbar' }) || getGameArtworkPlaceholder({ game, surface: 'hotbar' });
+            const art = resolveGameArtwork(game, { surface: 'portrait' }) || getGameArtworkPlaceholder({ game, surface: 'portrait' });
             const id = gameKey(game);
             const isPinned = (prefs.pinnedGameIds || []).map(String).includes(id);
             return (

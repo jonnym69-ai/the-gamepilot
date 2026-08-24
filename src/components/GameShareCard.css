@@ -22,11 +22,11 @@
 
 .game-share-card-cover-frame {
   position: relative;
-  width: 800px;
-  height: 480px;
+  width: 600px;
+  height: 800px;
   border-radius: 20px;
   background-size: cover;
-  background-position: center;
+  background-position: center top;
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 24px 70px rgba(0, 0, 0, 0.55),

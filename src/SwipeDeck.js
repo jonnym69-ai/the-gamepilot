@@ -4,7 +4,7 @@ import { ArrowLeft, Heart, X, Play, RotateCcw, Sparkles, Trash2 } from 'lucide-r
 import NavBar from './NavBar';
 import LazyImage from './components/LazyImage';
 import { GamingIdentity } from './GamingIdentity';
-import { UserBehaviorProfile } from './services/UserBehaviorProfile';
+import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import StorageService from './services/StorageService';
 import './SwipeDeck.css';
@@ -59,7 +59,9 @@ function getWhyThisText(game, identity) {
 }
 
 function buildDeck(library, filters, identity) {
-  let pool = [...library];
+  if (!Array.isArray(library)) return [];
+  let pool = library.filter((game) => game
+    && !UserBehaviorProfile.shouldSuppressRecommendation(game.appid || game.name, game.name));
 
   if (filters.mood) {
     pool = pool.filter((g) => g.mood === filters.mood);
@@ -84,6 +86,7 @@ function buildDeck(library, filters, identity) {
   // Score and sort
   const scored = pool.map((game) => {
     let score = Math.random() * 10; // slight shuffle
+    score += UserBehaviorProfile.getRecommendationOutcomeSignal(game.appid || game.name, game.name).adjustment;
     const genres = Array.isArray(game.genres) ? game.genres : [];
     const id = identity?.identity;
 
@@ -162,7 +165,7 @@ function HalfStarRating({ value, onChange, size = 18 }) {
   return <div className="half-star-rating">{stars}</div>;
 }
 
-export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
+export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }) {
   const navigate = useNavigate();
   const [phase, setPhase] = useState('filter'); // filter | swiping | finished
   const [filters, setFilters] = useState({ mood: '', genre: '', deckType: 'smart' });
@@ -213,12 +216,19 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
       if (!history[today].includes(id)) history[today].push(id);
       saveSwipeHistory(history);
 
-      UserBehaviorProfile.trackRecommendationFeedback('swipe_deck', id, direction === 'right', {
+      const metadata = {
         mood: game.mood,
         genre: Array.isArray(game.genres) ? game.genres[0] : null,
         direction,
-        deckType: filters.deckType
-      });
+        deckType: filters.deckType,
+        source: 'swipe-deck'
+      };
+      UserBehaviorProfile.trackRecommendation('swipe-deck', metadata.mood, metadata.genre, null, [id], metadata);
+      if (direction === 'left') {
+        UserBehaviorProfile.trackRecommendationOutcome(id, RECOMMENDATION_OUTCOME.NOT_NOW, { gameName: game.name, ...metadata });
+      } else if (direction === 'right') {
+        UserBehaviorProfile.trackRecommendationFeedback('swipe-deck', id, true, metadata);
+      }
     } catch {
       // non-critical
     }
@@ -237,6 +247,11 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
       const next = [...loadShortlist(), currentGame];
       saveShortlist(next);
       setShortlist(next);
+      UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', currentGame.appid || currentGame.name, {
+        mood: currentGame.mood || null,
+        genre: Array.isArray(currentGame.genres) ? currentGame.genres[0] : null,
+        source: 'swipe-deck'
+      });
       if (onLaunchGame) onLaunchGame(currentGame);
     } else {
       setDismissedCount((c) => c + 1);
@@ -335,9 +350,9 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
             <div key={game.appid || game.name} className="swipe-shortlist-item">
               <div className="swipe-shortlist-artwork">
                 <LazyImage
-                  src={resolveGameArtwork(game, { surface: 'recommendation_card' })}
+                  src={resolveGameArtwork(game, { surface: 'portrait' })}
                   alt={game.name}
-                  placeholder={getGameArtworkPlaceholder({ game, surface: 'recommendation_card' })}
+                  placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
                 />
               </div>
               <span className="swipe-shortlist-name">{game.name}</span>
@@ -347,7 +362,14 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
                 size={16}
               />
               <div className="swipe-shortlist-actions">
-                <button onClick={() => onLaunchGame && onLaunchGame(game)} title="Launch">
+                <button onClick={() => {
+                  UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', game.appid || game.name, {
+                    mood: game.mood || null,
+                    genre: Array.isArray(game.genres) ? game.genres[0] : null,
+                    source: 'swipe-deck-shortlist'
+                  });
+                  if (onLaunchGame) onLaunchGame(game);
+                }} title="Launch">
                   <Play size={14} />
                 </button>
                 <button onClick={() => removeFromShortlist(game)} title="Remove">
@@ -554,9 +576,9 @@ export default function SwipeDeck({ library, onLaunchGame, onUpdateRating }) {
           >
             <div className="swipe-card-artwork">
               <LazyImage
-                src={resolveGameArtwork(currentGame, { surface: 'recommendation_card' })}
+                src={resolveGameArtwork(currentGame, { surface: 'portrait' })}
                 alt={currentGame.name}
-                placeholder={getGameArtworkPlaceholder({ game: currentGame, surface: 'recommendation_card' })}
+                placeholder={getGameArtworkPlaceholder({ game: currentGame, surface: 'portrait' })}
               />
               {whyText && (
                 <div className="swipe-card-reason">{whyText}</div>

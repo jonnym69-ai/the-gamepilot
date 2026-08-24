@@ -7,6 +7,7 @@ import { HardwareDetector } from './services/HardwareDetector';
 import UninstallModal from './components/UninstallModal';
 import LazyImage from './components/LazyImage';
 import { resolveGameArtwork, getGameArtworkPlaceholder } from './services/GameArtworkService';
+import { isGameUnplayed } from './services/RecommendationEngine';
 import './StorageManager.css';
 
 const SORT_OPTIONS = [
@@ -118,8 +119,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
       .filter((g) => !q || (g.name || '').toLowerCase().includes(q))
       .filter((g) => {
         if (coldDays === 0) {
-          // Never played
-          return !g.last_played || g.time_played === 0 || g.time_played == null;
+          return isGameUnplayed(g);
         }
         if (!g.last_played) return true; // show never-played in all thresholds
         const ms = new Date(g.last_played).getTime();
@@ -301,8 +301,8 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
           {decorated.map(({ game, bytes, known }) => {
             const lastPlayedMs = game.last_played ? new Date(game.last_played).getTime() : 0;
             const daysSincePlayed = lastPlayedMs ? Math.round((Date.now() - lastPlayedMs) / 86400000) : Infinity;
-            const isCold = daysSincePlayed >= 30;
-            const isVeryCold = daysSincePlayed >= 60;
+            const isCold = coldDays > 0 && daysSincePlayed >= coldDays;
+            const isVeryCold = coldDays > 0 && daysSincePlayed >= coldDays * 2;
             const reclaimPrompt = !game.time_played || isVeryCold
               ? 'Never played — is this worth keeping installed?'
               : isCold
@@ -314,9 +314,9 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
               <div className="storage-manager-cell-game">
                 <div className="storage-manager-cell-art">
                   <LazyImage
-                    src={resolveGameArtwork(game, { surface: 'recommendation_card' })}
+                    src={resolveGameArtwork(game, { surface: 'portrait' })}
                     alt={game.name}
-                    placeholder={getGameArtworkPlaceholder({ game, surface: 'recommendation_card' })}
+                    placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>

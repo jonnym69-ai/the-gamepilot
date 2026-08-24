@@ -34,23 +34,43 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
     const persona = GamingPersonaService.getPersona();
     const dashboard = StatsAggregationService.getDashboardData(library);
     const allTime = dashboard?.periods?.all;
+    const trackedMinutes = Number(allTime?.playtimeMinutes) || 0;
+    const importedMinutes = Number(dashboard?.importedPlaytime?.totalMinutes) || 0;
+    const libraryMinutes = library.reduce((sum, game) => {
+      const mins = Math.max(
+        Number(game?.time_played) || 0,
+        Number(game?.playtime?.total) || 0,
+        Number(game?.importedPlaytimeMinutes) || 0
+      );
+      return sum + mins;
+    }, 0);
+    const lifetimeMinutes = Math.max(trackedMinutes, importedMinutes, libraryMinutes);
 
     const topMoods = UserBehaviorProfile.getTopMoods(3);
     const topGenres = UserBehaviorProfile.getTopGenres(3);
     const peakHours = UserBehaviorProfile.getPeakPlayHours(1);
+    // Recent-play identity signals: the persona's dominant genre and peak hour
+    // come from the current rotation (adaptive session pool), falling back to
+    // all-time behavior stats only when no recent signal exists.
+    const recentGenre = persona?.signals?.dominantGenre || null;
+    const recentPeakHour = Number.isFinite(persona?.signals?.peakHour) ? persona.signals.peakHour : null;
 
     return {
       label: persona?.primaryPersona?.label || 'Gamer in Progress',
       description: persona?.summaryRoast || persona?.primaryPersona?.roast || 'Building your gaming identity one session at a time.',
       tags: persona?.subTraits?.map((trait) => trait.label) || [],
+      contextLine: persona?.contextLine || null,
       totalGames: library.length,
-      totalHours: Math.round(allTime?.playtimeHours || 0),
+      totalHours: Math.round(lifetimeMinutes / 60),
       totalSessions: allTime?.sessions || 0,
       completedCount: allTime?.questUsage?.totalCompleted || 0,
       avgSession: allTime?.avgSessionMinutes || 0,
       topMoods,
       topGenres,
-      peakWindow: peakHours[0]?.timeOfDay || 'Unknown',
+      recentGenre,
+      peakWindow: recentPeakHour !== null
+        ? UserBehaviorProfile.getTimeOfDay(recentPeakHour)
+        : (peakHours[0]?.timeOfDay || 'Unknown'),
       completionRate: allTime?.sessions > 0
         ? Math.round(((allTime?.questUsage?.totalCompleted || 0) / allTime.sessions) * 100)
         : 0
@@ -219,10 +239,15 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
 
       <div className="gamer-card-footer">
         <span>Peak: {identity.peakWindow}</span>
-        {identity.topGenres.length > 0 && (
-          <span>Top Genre: {identity.topGenres[0].genre}</span>
+        {(identity.recentGenre || identity.topGenres.length > 0) && (
+          <span>Top Genre: {identity.recentGenre || identity.topGenres[0].genre}</span>
         )}
       </div>
+      {identity.contextLine && (
+        <div className="gamer-card-footer">
+          <span>{identity.contextLine}</span>
+        </div>
+      )}
     </div>
   );
 };

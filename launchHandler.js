@@ -48,6 +48,9 @@ const createLaunchResult = (success, mode, message, metadata = {}) => ({
   timestamp: Date.now()
 });
 
+const isLaunchPlatformSupported = (platform, hostPlatform = process.platform) =>
+  hostPlatform !== 'linux' || String(platform || '').trim().toLowerCase() === 'steam';
+
 class GameLauncher {
   constructor() {
     this.shell = require('electron').shell;
@@ -235,6 +238,14 @@ class GameLauncher {
   async launchGame(game) {
     const normalizedPlatform = this.normalizePlatform(game?.platform);
     console.log(`🚀 Launching ${game.name} (${normalizedPlatform})`);
+
+    if (!isLaunchPlatformSupported(normalizedPlatform)) {
+      return createLaunchResult(
+        false,
+        'unsupported',
+        `${normalizedPlatform || 'This platform'} is not supported in the Linux beta. GamePilot currently launches Steam games on Linux.`
+      );
+    }
     
     try {
       switch (normalizedPlatform) {
@@ -293,11 +304,12 @@ class GameLauncher {
 
   // Steam launch (already working)
   async launchSteam(game) {
-    if (!game.appid) {
+    const appId = game.appid || game.app_id || game.appId || game.steamAppId;
+    if (!appId) {
       return createLaunchResult(false, 'unknown', 'Steam game missing AppID');
     }
 
-    const steamUrl = `steam://run/${game.appid}`;
+    const steamUrl = `steam://run/${appId}`;
     console.log('🚂 Steam URL:', steamUrl);
     await this.shell.openExternal(steamUrl);
     return createLaunchResult(true, 'protocol', `Launched ${game.name}`, { launchUrl: steamUrl });
@@ -789,3 +801,4 @@ class GameLauncher {
 }
 
 module.exports = GameLauncher;
+module.exports.isLaunchPlatformSupported = isLaunchPlatformSupported;

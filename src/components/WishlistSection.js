@@ -168,7 +168,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
   const artworkForItem = (item) => {
     const game = item?.libraryGame;
     if (game) {
-      const art = resolveGameArtwork(game);
+      const art = resolveGameArtwork(game, { surface: 'library_card' });
       if (art && typeof art === 'string' && art.startsWith('http')) return art;
     }
     const steamId = item?.steamAppID || (item?.appid && /^\d+$/.test(String(item.appid)) ? item.appid : null);
@@ -381,7 +381,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
         <div className="wishlist-grid">
           {items.map((item) => {
             const game = item.libraryGame;
-            const placeholder = getGameArtworkPlaceholder(game?.platform);
+            const placeholder = getGameArtworkPlaceholder({ game, surface: 'library_card' });
             const artwork = artworkForItem(item);
             const currentPrice = item.currentPrice;
             const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;

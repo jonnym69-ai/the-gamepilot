@@ -11,8 +11,27 @@ const {
   parseVdf,
   getSteamPlaytimeMap
 } = require('./scannerUtils');
+const { getSupportedScanPlatforms } = require('../../../nativeLibraryScanner');
+const { isLaunchPlatformSupported } = require('../../../launchHandler');
 
 describe('Scanner Utils', () => {
+  describe('platform support', () => {
+    test('uses a Steam-only scanner path for the Linux beta', () => {
+      expect(getSupportedScanPlatforms('linux')).toEqual(['steam']);
+    });
+
+    test('keeps the full launcher scan on Windows', () => {
+      expect(getSupportedScanPlatforms('win32')).toEqual(expect.arrayContaining(['steam', 'epic', 'gog', 'xbox']));
+    });
+
+    test('limits Linux launching to Steam during beta', () => {
+      expect(isLaunchPlatformSupported('Steam', 'linux')).toBe(true);
+      expect(isLaunchPlatformSupported('Epic', 'linux')).toBe(false);
+      expect(isLaunchPlatformSupported('Xbox', 'linux')).toBe(false);
+      expect(isLaunchPlatformSupported('Epic', 'win32')).toBe(true);
+    });
+  });
+
   describe('isLikelyNonGameFolder', () => {
     test('returns true for launcher folders', () => {
       expect(isLikelyNonGameFolder('Launcher')).toBe(true);

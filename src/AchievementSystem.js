@@ -6,6 +6,7 @@ import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
 import { getDateKey } from './services/DateKeyService';
 import StorageService from './services/StorageService';
 import { HabitTrackerService } from './services/HabitTrackerService';
+import { THEME_DEFINITIONS } from './services/GamingPersonaService';
 
 // Achievement rarity system
 export const ACHIEVEMENT_RARITY = {
@@ -18,476 +19,181 @@ export const ACHIEVEMENT_RARITY = {
 // Achievement definitions
 export const ACHIEVEMENTS = {
   library: [
-    { id: 'first_game', name: 'First Steps', desc: 'Launch your first game', icon: '🎮', rarity: 'COMMON' },
-    { id: 'collector_5', name: 'Collector', desc: 'Have 5 games in library', icon: '📚', rarity: 'COMMON' },
-    { id: 'collector_10', name: 'Game Hoarder', desc: 'Have 10 games in library', icon: '📦', rarity: 'COMMON' },
-    { id: 'collector_25', name: 'Library Master', desc: 'Have 25 games in library', icon: '🏛️', rarity: 'RARE' },
-    { id: 'collector_50', name: 'Game Collector', desc: 'Have 50 games in library', icon: '🏆', rarity: 'RARE' },
-    { id: 'collector_100', name: 'Century Club', desc: 'Have 100 games in library', icon: '💯', rarity: 'EPIC' },
-    { id: 'collector_250', name: 'Quarter Master', desc: 'Have 250 games in library', icon: '🎯', rarity: 'EPIC' },
-    { id: 'collector_500', name: 'Halfway Hero', desc: 'Have 500 games in library', icon: '🎖️', rarity: 'LEGENDARY' },
-    { id: 'collector_750', name: 'Three Quarter King', desc: 'Have 750 games in library', icon: '👑', rarity: 'LEGENDARY' },
-    { id: 'collector_1000', name: 'Millennium Master', desc: 'Have 1000 games in library', icon: '🎊', rarity: 'LEGENDARY' },
-    { id: 'collector_1500', name: 'Epic Collector', desc: 'Have 1500 games in library', icon: '🌟', rarity: 'LEGENDARY' },
-    { id: 'collector_2500', name: 'Ultimate Collector', desc: 'Have 2500 games in library', icon: '', rarity: 'LEGENDARY' },
-    { id: 'variety_3', name: 'Variety Player', desc: 'Play 3 different genres', icon: '🌈', rarity: 'COMMON' },
+    { id: 'first_game', name: 'First Steps', desc: 'Launch your first game with GamePilot', icon: '🎮', rarity: 'COMMON' },
+    { id: 'collector_5', name: 'Small Shelf', desc: 'Have 5 games in your library', icon: '📚', rarity: 'COMMON' },
+    { id: 'collector_10', name: 'Growing Library', desc: 'Have 10 games in your library', icon: '📦', rarity: 'COMMON' },
+    { id: 'collector_25', name: 'Library Curator', desc: 'Have 25 games in your library', icon: '🏛️', rarity: 'RARE' },
+    { id: 'collector_50', name: 'Collection Keeper', desc: 'Have 50 games in your library', icon: '🏆', rarity: 'RARE' },
+    { id: 'collector_100', name: 'Century Collection', desc: 'Have 100 games in your library', icon: '💯', rarity: 'EPIC' },
+    { id: 'collector_250', name: 'Grand Archive', desc: 'Have 250 games in your library', icon: '🎯', rarity: 'EPIC' },
+    { id: 'collector_500', name: 'Vast Archive', desc: 'Have 500 games in your library', icon: '🎖️', rarity: 'LEGENDARY' },
+    { id: 'variety_3', name: 'Genre Sampler', desc: 'Play 3 different genres', icon: '🌈', rarity: 'COMMON' },
     { id: 'variety_5', name: 'Genre Explorer', desc: 'Play 5 different genres', icon: '🎨', rarity: 'RARE' },
     { id: 'platform_diverse', name: 'Platform Diverse', desc: 'Use 3 different platforms', icon: '🔄', rarity: 'RARE' }
   ],
   time: [
-    { id: 'hour_1', name: 'Quick Session', desc: 'Play 1 hour total', icon: '⏱️', rarity: 'COMMON' },
-    { id: 'hour_5', name: 'Casual Gamer', desc: 'Play 5 hours total', icon: '☕', rarity: 'COMMON' },
-    { id: 'hour_10', name: 'Dedicated Gamer', desc: 'Play 10 hours total', icon: '⚡', rarity: 'COMMON' },
-    { id: 'hour_25', name: 'Marathon Runner', desc: 'Play 25 hours total', icon: '🏃', rarity: 'RARE' },
-    { id: 'hour_50', name: 'Gaming Legend', desc: 'Play 50 hours total', icon: '👑', rarity: 'RARE' },
-    { id: 'hour_100', name: 'Century Player', desc: 'Play 100 hours total', icon: '💯', rarity: 'EPIC' },
-    { id: 'hour_250', name: 'Quarter Century Gamer', desc: 'Play 250 hours total', icon: '🎯', rarity: 'EPIC' },
-    { id: 'hour_500', name: 'Half Millennium', desc: 'Play 500 hours total', icon: '🎖️', rarity: 'LEGENDARY' },
-    { id: 'hour_1000', name: 'Millennium Master', desc: 'Play 1000 hours total', icon: '🏆', rarity: 'LEGENDARY' },
-    { id: 'hour_1500', name: 'Time Sage', desc: 'Play 1500 hours total', icon: '⌛', rarity: 'LEGENDARY' },
-    { id: 'hour_2500', name: 'Chrono Champion', desc: 'Play 2500 hours total', icon: '🕰️', rarity: 'LEGENDARY' },
-    { id: 'hour_5000', name: 'Eternal Player', desc: 'Play 5000 hours total', icon: '🌀', rarity: 'LEGENDARY' },
-    { id: 'hour_7500', name: 'Infinity Runner', desc: 'Play 7500 hours total', icon: '♾️', rarity: 'LEGENDARY' },
-    { id: 'hour_10000', name: 'Mythic Chrononaut', desc: 'Play 10000 hours total', icon: '🌌', rarity: 'LEGENDARY' },
-    { id: 'session_1', name: 'Session Warmup', desc: 'Complete 1 gaming session', icon: '🎮', rarity: 'COMMON' },
-    { id: 'session_3', name: 'Session Rookie', desc: 'Complete 3 gaming sessions', icon: '🎯', rarity: 'COMMON' },
-    { id: 'session_5', name: 'Session Regular', desc: 'Complete 5 gaming sessions', icon: '🎲', rarity: 'COMMON' },
-    { id: 'session_10', name: 'Session Starter', desc: 'Complete 10 gaming sessions', icon: '🎮', rarity: 'COMMON' },
-    { id: 'session_15', name: 'Session Enthusiast', desc: 'Complete 15 gaming sessions', icon: '🎮', rarity: 'COMMON' },
-    { id: 'session_30', name: 'Session Grinder', desc: 'Complete 30 gaming sessions', icon: '🗓️', rarity: 'RARE' },
-    { id: 'session_50', name: 'Daily Player', desc: 'Complete 50 gaming sessions', icon: '🗓️', rarity: 'RARE' },
-    { id: 'session_75', name: 'Session Specialist', desc: 'Complete 75 gaming sessions', icon: '🏅', rarity: 'RARE' },
-    { id: 'session_100', name: 'Century Sessions', desc: 'Complete 100 gaming sessions', icon: '📊', rarity: 'EPIC' },
-    { id: 'session_150', name: 'Session Veteran', desc: 'Complete 150 gaming sessions', icon: '📈', rarity: 'EPIC' },
-    { id: 'session_200', name: 'Session Strategist', desc: 'Complete 200 gaming sessions', icon: '🎮', rarity: 'EPIC' },
-    { id: 'session_300', name: 'Session Maestro', desc: 'Complete 300 gaming sessions', icon: '🎼', rarity: 'EPIC' },
-    { id: 'session_500', name: 'Session Legend', desc: 'Complete 500 gaming sessions', icon: '🏆', rarity: 'LEGENDARY' },
-    { id: 'session_750', name: 'Session Fanatic', desc: 'Complete 750 gaming sessions', icon: '🔥', rarity: 'LEGENDARY' },
-    { id: 'session_1000', name: 'Session Champion', desc: 'Complete 1000 gaming sessions', icon: '🏅', rarity: 'LEGENDARY' },
-    { id: 'session_1500', name: 'Session Myth', desc: 'Complete 1500 gaming sessions', icon: '👑', rarity: 'LEGENDARY' },
-    { id: 'session_2000', name: 'Session Immortal', desc: 'Complete 2000 gaming sessions', icon: '🌌', rarity: 'LEGENDARY' },
-    { id: 'session_3000', name: 'Session Deity', desc: 'Complete 3000 gaming sessions', icon: '💫', rarity: 'LEGENDARY' },
-    { id: 'session_4000', name: 'Session Ascendant', desc: 'Complete 4000 gaming sessions', icon: '🌠', rarity: 'LEGENDARY' },
-    { id: 'session_5000', name: 'Session Infinite', desc: 'Complete 5000 gaming sessions', icon: '♾️', rarity: 'LEGENDARY' },
+    { id: 'hour_1', name: 'First Hour', desc: 'Play 1 hour total', icon: '⏱️', rarity: 'COMMON' },
+    { id: 'hour_5', name: 'Five Hour Mark', desc: 'Play 5 hours total', icon: '☕', rarity: 'COMMON' },
+    { id: 'hour_10', name: 'Ten Hour Mark', desc: 'Play 10 hours total', icon: '⚡', rarity: 'COMMON' },
+    { id: 'hour_25', name: 'Time Explorer', desc: 'Play 25 hours total', icon: '⌚', rarity: 'RARE' },
+    { id: 'hour_50', name: 'Time Enthusiast', desc: 'Play 50 hours total', icon: '🕰️', rarity: 'RARE' },
+    { id: 'hour_100', name: 'Hundred Hours', desc: 'Play 100 hours total', icon: '💯', rarity: 'EPIC' },
+    { id: 'hour_250', name: 'Seasoned Player', desc: 'Play 250 hours total', icon: '🎯', rarity: 'EPIC' },
+    { id: 'hour_500', name: 'Playtime Veteran', desc: 'Play 500 hours total', icon: '🎖️', rarity: 'LEGENDARY' },
+    { id: 'session_1', name: 'First Session', desc: 'Complete 1 gaming session', icon: '🎮', rarity: 'COMMON' },
+    { id: 'session_5', name: 'Session Starter', desc: 'Complete 5 gaming sessions', icon: '🎲', rarity: 'COMMON' },
+    { id: 'session_10', name: 'Session Regular', desc: 'Complete 10 gaming sessions', icon: '🗓️', rarity: 'COMMON' },
+    { id: 'session_25', name: 'Session Explorer', desc: 'Complete 25 gaming sessions', icon: '📅', rarity: 'RARE' },
+    { id: 'session_50', name: 'Session Enthusiast', desc: 'Complete 50 gaming sessions', icon: '📈', rarity: 'RARE' },
+    { id: 'session_100', name: 'Session Century', desc: 'Complete 100 gaming sessions', icon: '📊', rarity: 'EPIC' },
+    { id: 'session_250', name: 'Session Veteran', desc: 'Complete 250 gaming sessions', icon: '🏅', rarity: 'EPIC' },
+    { id: 'session_500', name: 'Session Specialist', desc: 'Complete 500 gaming sessions', icon: '🏆', rarity: 'LEGENDARY' }
   ],
   mood: [
-    // Relaxed mood achievements
-    { id: 'relaxed_5', name: 'Chill Master', desc: 'Choose "Relaxed" mood 5 times', icon: '😌', rarity: 'COMMON' },
-    { id: 'relaxed_10', name: 'Zen Master', desc: 'Choose "Relaxed" mood 10 times', icon: '🧘', rarity: 'COMMON' },
-    { id: 'relaxed_25', name: 'Ultimate Chill', desc: 'Choose "Relaxed" mood 25 times', icon: '😎', rarity: 'RARE' },
-    { id: 'relaxed_50', name: 'Tranquility Expert', desc: 'Choose "Relaxed" mood 50 times', icon: '🔥', rarity: 'EPIC' },
-    { id: 'relaxed_100', name: 'Peace Master', desc: 'Choose "Relaxed" mood 100 times', icon: '☯️', rarity: 'LEGENDARY' },
-    
-    // Social mood achievements
-    { id: 'social_5', name: 'Social Butterfly', desc: 'Choose "Social" mood 5 times', icon: '🦋', rarity: 'COMMON' },
-    { id: 'social_10', name: 'Party Master', desc: 'Choose "Social" mood 10 times', icon: '🎉', rarity: 'COMMON' },
-    { id: 'social_25', name: 'Community Builder', desc: 'Choose "Social" mood 25 times', icon: '🤝', rarity: 'RARE' },
-    { id: 'social_50', name: 'Social Champion', desc: 'Choose "Social" mood 50 times', icon: '👑', rarity: 'EPIC' },
-    { id: 'social_100', name: 'Connection Master', desc: 'Choose "Social" mood 100 times', icon: '🌍', rarity: 'LEGENDARY' },
-    
-    // Creative mood achievements
-    { id: 'creative_5', name: 'Artisan', desc: 'Choose "Creative" mood 5 times', icon: '🎨', rarity: 'COMMON' },
-    { id: 'creative_10', name: 'Master Creator', desc: 'Choose "Creative" mood 10 times', icon: '🖌️', rarity: 'COMMON' },
-    { id: 'creative_25', name: 'Innovation Expert', desc: 'Choose "Creative" mood 25 times', icon: '💡', rarity: 'RARE' },
-    { id: 'creative_50', name: 'Creative Genius', desc: 'Choose "Creative" mood 50 times', icon: '🎭', rarity: 'EPIC' },
-    { id: 'creative_100', name: 'Imagination Master', desc: 'Choose "Creative" mood 100 times', icon: '🔥', rarity: 'LEGENDARY' },
-    
-    // Focused mood achievements
-    { id: 'focused_5', name: 'Focus Expert', desc: 'Choose "Focused" mood 5 times', icon: '🎯', rarity: 'COMMON' },
-    { id: 'focused_10', name: 'Concentration Master', desc: 'Choose "Focused" mood 10 times', icon: '🔥', rarity: 'COMMON' },
-    { id: 'focused_25', name: 'Discipline Champion', desc: 'Choose "Focused" mood 25 times', icon: '⚡', rarity: 'RARE' },
-    { id: 'focused_50', name: 'Precision Expert', desc: 'Choose "Focused" mood 50 times', icon: '🎯', rarity: 'EPIC' },
-    { id: 'focused_100', name: 'Focus Legend', desc: 'Choose "Focused" mood 100 times', icon: '🏹', rarity: 'LEGENDARY' },
-    
-    // Competitive mood achievements
-    { id: 'competitive_5', name: 'Contender', desc: 'Choose "Competitive" mood 5 times', icon: '⚔️', rarity: 'COMMON' },
-    { id: 'competitive_10', name: 'Rank Climber', desc: 'Choose "Competitive" mood 10 times', icon: '🏅', rarity: 'COMMON' },
-    { id: 'competitive_25', name: 'Arena Veteran', desc: 'Choose "Competitive" mood 25 times', icon: '🥇', rarity: 'RARE' },
-    { id: 'competitive_50', name: 'Esports Prospect', desc: 'Choose "Competitive" mood 50 times', icon: '🏆', rarity: 'EPIC' },
-    { id: 'competitive_100', name: 'Arena Legend', desc: 'Choose "Competitive" mood 100 times', icon: '👑', rarity: 'LEGENDARY' },
-    
-    // Mood variety achievements
-    { id: 'mood_explorer', name: 'Mood Explorer', desc: 'Try all 5 mood types at least once', icon: '🦎', rarity: 'RARE' },
-    { id: 'mood_variety_10', name: 'Mood Chameleon', desc: 'Use each mood at least 10 times', icon: '🦎', rarity: 'EPIC' },
-    { id: 'mood_master', name: 'Mood Master', desc: 'Use each mood at least 25 times', icon: '🎭', rarity: 'LEGENDARY' },
-    { id: 'mood_legend', name: 'Mood Legend', desc: 'Use each mood at least 50 times', icon: '👑', rarity: 'LEGENDARY' },
-    
-    // Mood completion rate achievements (based on behavior profile)
-    { id: 'mood_completion_50', name: 'Mood Specialist', desc: 'Achieve 50%+ completion rate in one mood', icon: '🎯', rarity: 'RARE' },
-    { id: 'mood_completion_70', name: 'Mood Expert', desc: 'Achieve 70%+ completion rate in one mood', icon: '⭐', rarity: 'EPIC' },
-    { id: 'mood_completion_90', name: 'Mood Perfectionist', desc: 'Achieve 90%+ completion rate in one mood', icon: '💯', rarity: 'LEGENDARY' }
+    { id: 'relaxed_5', name: 'Easygoing', desc: 'Play 5 Relaxed sessions', icon: '😌', rarity: 'COMMON' },
+    { id: 'relaxed_25', name: 'Calm Routine', desc: 'Play 25 Relaxed sessions', icon: '🧘', rarity: 'RARE' },
+    { id: 'social_5', name: 'Good Company', desc: 'Play 5 Social sessions', icon: '🦋', rarity: 'COMMON' },
+    { id: 'social_25', name: 'Social Circle', desc: 'Play 25 Social sessions', icon: '🤝', rarity: 'RARE' },
+    { id: 'creative_5', name: 'Creative Spark', desc: 'Play 5 Creative sessions', icon: '🎨', rarity: 'COMMON' },
+    { id: 'creative_25', name: 'Creative Current', desc: 'Play 25 Creative sessions', icon: '💡', rarity: 'RARE' },
+    { id: 'focused_5', name: 'Finding Focus', desc: 'Play 5 Focused sessions', icon: '🎯', rarity: 'COMMON' },
+    { id: 'focused_25', name: 'Deep Focus', desc: 'Play 25 Focused sessions', icon: '🏹', rarity: 'RARE' },
+    { id: 'competitive_5', name: 'Friendly Rival', desc: 'Play 5 Competitive sessions', icon: '⚔️', rarity: 'COMMON' },
+    { id: 'competitive_25', name: 'Seasoned Competitor', desc: 'Play 25 Competitive sessions', icon: '🥇', rarity: 'RARE' },
+    { id: 'mood_explorer', name: 'Mood Explorer', desc: 'Play at least one session across all 5 moods', icon: '🎭', rarity: 'RARE' }
   ],
   features: [
-    { id: 'perfect_play_1', name: 'Perfect Start', desc: 'Use Perfect Play once', icon: '✨', rarity: 'COMMON' },
-    { id: 'perfect_play_5', name: 'Perfect Player', desc: 'Use Perfect Play 5 times', icon: '⭐', rarity: 'COMMON' },
-    { id: 'perfect_play_10', name: 'Perfect Master', desc: 'Use Perfect Play 10 times', icon: '🌟', rarity: 'RARE' },
-    { id: 'perfect_play_25', name: 'Perfect Expert', desc: 'Use Perfect Play 25 times', icon: '💫', rarity: 'EPIC' },
-    { id: 'perfect_play_50', name: 'Perfect Legend', desc: 'Use Perfect Play 50 times', icon: '👑', rarity: 'LEGENDARY' },
-    { id: 'perfect_play_100', name: 'Perfect Myth', desc: 'Use Perfect Play 100 times', icon: '🌟', rarity: 'LEGENDARY' },
-    
-    // Patreon supporter achievements
-    { id: 'patreon_supporter', name: 'Patreon Supporter', desc: 'Support GamePilot on Patreon', icon: '💎', xp: 0, hidden: true, rarity: 'LEGENDARY' },
-    
-    // Surprise Me achievements
-    { id: 'surprise_1', name: 'Surprise!', desc: 'Use Surprise Me once', icon: '🎁', rarity: 'COMMON' },
-    { id: 'surprise_5', name: 'Surprise Hunter', desc: 'Use Surprise Me 5 times', icon: '', rarity: 'COMMON' },
-    { id: 'surprise_10', name: 'Surprise Master', desc: 'Use Surprise Me 10 times', icon: '', rarity: 'RARE' },
-    { id: 'surprise_25', name: 'Surprise Expert', desc: 'Use Surprise Me 25 times', icon: '', rarity: 'EPIC' },
-    { id: 'surprise_50', name: 'Surprise Legend', desc: 'Use Surprise Me 50 times', icon: '', rarity: 'LEGENDARY' },
-    { id: 'surprise_100', name: 'Surprise Myth', desc: 'Use Surprise Me 100 times', icon: '', rarity: 'LEGENDARY' },
-    
-    // Rediscover achievements
-    { id: 'rediscover_1', name: 'Memory Lane', desc: 'Rediscover a game once', icon: '🔮', rarity: 'COMMON' },
-    { id: 'rediscover_5', name: 'Nostalgic', desc: 'Rediscover 5 games', icon: '📜', rarity: 'COMMON' },
-    { id: 'rediscover_10', name: 'Memory Master', desc: 'Rediscover 10 games', icon: '🗝️', rarity: 'RARE' },
-    { id: 'rediscover_25', name: 'Nostalgia Expert', desc: 'Rediscover 25 games', icon: '📚', rarity: 'EPIC' },
-    { id: 'rediscover_50', name: 'Time Traveler', desc: 'Rediscover 50 games', icon: '⏰', rarity: 'LEGENDARY' },
-    { id: 'rediscover_100', name: 'Eternal Memory', desc: 'Rediscover 100 games', icon: '🌌', rarity: 'LEGENDARY' },
-    
-    // Share achievements
-    { id: 'share_1', name: 'Show Off', desc: 'Share your library once', icon: '📤', rarity: 'COMMON' },
-    { id: 'share_3', name: 'Social Butterfly', desc: 'Share your library 3 times', icon: '🦋', rarity: 'COMMON' },
-    { id: 'share_5', name: 'Community Star', desc: 'Share your library 5 times', icon: '⭐', rarity: 'RARE' },
-    { id: 'share_10', name: 'Social Influencer', desc: 'Share your library 10 times', icon: '📱', rarity: 'EPIC' },
-    { id: 'share_25', name: 'Community Legend', desc: 'Share your library 25 times', icon: '🌟', rarity: 'LEGENDARY' },
-    { id: 'share_50', name: 'Social Myth', desc: 'Share your library 50 times', icon: '🌍', rarity: 'LEGENDARY' },
-    
-    // Filter achievements
-    { id: 'filter_10', name: 'Filter Expert', desc: 'Apply 10 different filters', icon: '🔍', rarity: 'COMMON' },
-    { id: 'filter_25', name: 'Search Master', desc: 'Apply 25 different filters', icon: '🎯', rarity: 'RARE' },
-    { id: 'filter_50', name: 'Filter Legend', desc: 'Apply 50 different filters', icon: '🔬', rarity: 'EPIC' },
-    { id: 'filter_100', name: 'Search Guru', desc: 'Apply 100 different filters', icon: '🧠', rarity: 'LEGENDARY' },
-    { id: 'filter_250', name: 'Filter Myth', desc: 'Apply 250 different filters', icon: '🔭', rarity: 'LEGENDARY' },
-    
-    // Sort achievements
-    { id: 'sort_5', name: 'Organizer', desc: 'Use sorting options 5 times', icon: '📋', rarity: 'COMMON' },
-    { id: 'sort_15', name: 'Data Wrangler', desc: 'Use sorting options 15 times', icon: '📊', rarity: 'RARE' },
-    { id: 'sort_30', name: 'Sort Master', desc: 'Use sorting options 30 times', icon: '📈', rarity: 'EPIC' },
-    { id: 'sort_50', name: 'Organization Legend', desc: 'Use sorting options 50 times', icon: '🏆', rarity: 'LEGENDARY' },
-    { id: 'sort_100', name: 'Data Myth', desc: 'Use sorting options 100 times', icon: '📊', rarity: 'LEGENDARY' },
-    
-    // Export achievements
-    { id: 'export_1', name: 'Data Exporter', desc: 'Export your library once', icon: '💾', rarity: 'COMMON' },
-    { id: 'export_5', name: 'Backup Master', desc: 'Export your library 5 times', icon: '📦', rarity: 'COMMON' },
-    { id: 'export_10', name: 'Data Guardian', desc: 'Export your library 10 times', icon: '🛡️', rarity: 'RARE' },
-    { id: 'export_25', name: 'Backup Legend', desc: 'Export your library 25 times', icon: '🎎', rarity: 'EPIC' },
-    { id: 'export_50', name: 'Backup Myth', desc: 'Export your library 50 times', icon: '💎', rarity: 'LEGENDARY' },
-    
-    // Settings achievements
-    { id: 'settings_3', name: 'Customizer', desc: 'Change 3 different settings', icon: '⚙️', rarity: 'COMMON' }
+    { id: 'perfect_play_1', name: 'Perfect Start', desc: 'Launch your first Perfect Play pick', icon: '✨', rarity: 'COMMON' },
+    { id: 'perfect_play_5', name: 'Perfect Picks', desc: 'Launch 5 Perfect Play picks', icon: '⭐', rarity: 'RARE' },
+    { id: 'surprise_1', name: 'First Surprise', desc: 'Launch your first Surprise Me pick', icon: '🎁', rarity: 'COMMON' },
+    { id: 'surprise_5', name: 'Surprise Seeker', desc: 'Launch 5 Surprise Me picks', icon: '🎲', rarity: 'RARE' },
+    { id: 'rediscover_1', name: 'Memory Lane', desc: 'Launch your first Rediscover pick', icon: '🔮', rarity: 'COMMON' },
+    { id: 'rediscover_5', name: 'Backlog Revival', desc: 'Launch 5 Rediscover picks', icon: '📜', rarity: 'RARE' }
   ],
   quests: [
     { id: 'quest_total_1', name: 'Quest Initiate', desc: 'Complete your first rotating quest', icon: '🧭', rarity: 'COMMON' },
     { id: 'quest_total_10', name: 'Quest Runner', desc: 'Complete 10 rotating quests', icon: '🗺️', rarity: 'RARE' },
-    { id: 'quest_total_25', name: 'Quest Specialist', desc: 'Complete 25 rotating quests', icon: '🎯', rarity: 'EPIC' },
-    { id: 'quest_total_50', name: 'Quest Vanguard', desc: 'Complete 50 rotating quests', icon: '🚀', rarity: 'LEGENDARY' },
-    { id: 'quest_daily_10', name: 'Daily Cadence', desc: 'Complete 10 daily quests', icon: '🌅', rarity: 'RARE' },
-    { id: 'quest_weekly_10', name: 'Weekly Rhythm', desc: 'Complete 10 weekly quests', icon: '📆', rarity: 'RARE' },
-    { id: 'quest_monthly_5', name: 'Monthly Momentum', desc: 'Complete 5 monthly quests', icon: '🗓️', rarity: 'EPIC' },
-    { id: 'quest_yearly_3', name: 'Yearly Legend', desc: 'Complete 3 yearly quests', icon: '🏆', rarity: 'LEGENDARY' }
-  ],
-  goals: [
-    { id: 'goal_first', name: 'Goal Getter', desc: 'Complete your first habit goal', icon: '🎯', rarity: 'COMMON' },
-    { id: 'goal_5', name: 'Goal Setter', desc: 'Complete 5 habit goals', icon: '📈', rarity: 'COMMON' },
-    { id: 'goal_10', name: 'Goal Crusher', desc: 'Complete 10 habit goals', icon: '💪', rarity: 'RARE' },
-    { id: 'goal_25', name: 'Goal Machine', desc: 'Complete 25 habit goals', icon: '🤖', rarity: 'EPIC' },
-    { id: 'goal_50', name: 'Goal Legend', desc: 'Complete 50 habit goals', icon: '🏆', rarity: 'LEGENDARY' },
-    { id: 'goal_monthly_3', name: 'Monthly Focus', desc: 'Complete 3 monthly goals', icon: '🗓️', rarity: 'RARE' },
-    { id: 'goal_weekly_5', name: 'Weekly Warrior', desc: 'Complete 5 weekly goals in a row', icon: '🔥', rarity: 'RARE' }
+    { id: 'quest_total_25', name: 'Quest Specialist', desc: 'Complete 25 rotating quests', icon: '🚩', rarity: 'EPIC' }
   ],
   uniqueGames: [
-    { id: 'unique_game_1', name: 'Fresh Start', desc: 'Play 1 unique game', icon: '🎯', rarity: 'COMMON' },
-    { id: 'unique_game_3', name: 'New Experiences', desc: 'Play 3 unique games', icon: '🆕', rarity: 'COMMON' },
+    { id: 'unique_game_1', name: 'Fresh Start', desc: 'Play 1 unique game', icon: '🆕', rarity: 'COMMON' },
+    { id: 'unique_game_3', name: 'New Experiences', desc: 'Play 3 unique games', icon: '🕹️', rarity: 'COMMON' },
     { id: 'unique_game_5', name: 'Game Explorer', desc: 'Play 5 unique games', icon: '🧭', rarity: 'COMMON' },
     { id: 'unique_game_10', name: 'Diverse Player', desc: 'Play 10 unique games', icon: '🌈', rarity: 'RARE' },
-    { id: 'unique_game_15', name: 'Genre Sampler', desc: 'Play 15 unique games', icon: '🎨', rarity: 'RARE' },
-    { id: 'unique_game_30', name: 'Game Hopper', desc: 'Play 30 unique games', icon: '🚀', rarity: 'EPIC' },
-    { id: 'unique_game_50', name: 'Library Voyager', desc: 'Play 50 unique games', icon: '🛸', rarity: 'EPIC' },
-    { id: 'unique_game_75', name: 'Collection Conqueror', desc: 'Play 75 unique games', icon: '🏰', rarity: 'EPIC' },
-    { id: 'unique_game_100', name: 'Century Explorer', desc: 'Play 100 unique games', icon: '💯', rarity: 'LEGENDARY' },
-    { id: 'unique_game_150', name: 'Curator', desc: 'Play 150 unique games', icon: '🖼️', rarity: 'LEGENDARY' },
-    { id: 'unique_game_200', name: 'Game Historian', desc: 'Play 200 unique games', icon: '📜', rarity: 'LEGENDARY' },
-    { id: 'unique_game_300', name: 'Catalogue Legend', desc: 'Play 300 unique games', icon: '📚', rarity: 'LEGENDARY' },
-    { id: 'unique_game_500', name: 'Library Myth', desc: 'Play 500 unique games', icon: '🏛️', rarity: 'LEGENDARY' },
-    { id: 'unique_game_750', name: 'Collection Immortal', desc: 'Play 750 unique games', icon: '🌌', rarity: 'LEGENDARY' },
-    { id: 'unique_game_1000', name: 'Archive Deity', desc: 'Play 1000 unique games', icon: '⚡', rarity: 'LEGENDARY' },
-    { id: 'unique_game_1500', name: 'Infinite Curator', desc: 'Play 1500 unique games', icon: '♾️', rarity: 'LEGENDARY' }
+    { id: 'unique_game_25', name: 'Library Voyager', desc: 'Play 25 unique games', icon: '🚀', rarity: 'RARE' },
+    { id: 'unique_game_50', name: 'Wide Horizons', desc: 'Play 50 unique games', icon: '🛸', rarity: 'EPIC' },
+    { id: 'unique_game_100', name: 'Century Explorer', desc: 'Play 100 unique games', icon: '💯', rarity: 'LEGENDARY' }
   ],
   genres: [
-    // Action genre achievements
-    { id: 'action_1', name: 'Action Initiate', desc: 'Play 1 Action game', icon: '⚔️', rarity: 'COMMON' },
-    { id: 'action_5', name: 'Action Explorer', desc: 'Play 5 different Action games', icon: '🎯', rarity: 'COMMON' },
-    { id: 'action_10', name: 'Action Fan', desc: 'Play 10 different Action games', icon: '🎯', rarity: 'RARE' },
-    { id: 'action_25', name: 'Action Expert', desc: 'Play 25 different Action games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'action_50', name: 'Action Master', desc: 'Play 50 different Action games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Adventure genre achievements
-    { id: 'adventure_1', name: 'Adventure Initiate', desc: 'Play 1 Adventure game', icon: '🗺️', rarity: 'COMMON' },
-    { id: 'adventure_5', name: 'Adventure Explorer', desc: 'Play 5 different Adventure games', icon: '🗺️', rarity: 'COMMON' },
-    { id: 'adventure_10', name: 'Adventure Fan', desc: 'Play 10 different Adventure games', icon: '🗺️', rarity: 'RARE' },
-    { id: 'adventure_25', name: 'Adventure Expert', desc: 'Play 25 different Adventure games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'adventure_50', name: 'Adventure Master', desc: 'Play 50 different Adventure games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // RPG genre achievements
-    { id: 'rpg_1', name: 'RPG Initiate', desc: 'Play 1 RPG game', icon: '⚔️', rarity: 'COMMON' },
-    { id: 'rpg_5', name: 'RPG Explorer', desc: 'Play 5 different RPG games', icon: '🎯', rarity: 'COMMON' },
-    { id: 'rpg_10', name: 'RPG Fan', desc: 'Play 10 different RPG games', icon: '🎯', rarity: 'RARE' },
-    { id: 'rpg_25', name: 'RPG Expert', desc: 'Play 25 different RPG games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'rpg_50', name: 'RPG Master', desc: 'Play 50 different RPG games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Indie genre achievements
-    { id: 'indie_1', name: 'Indie Initiate', desc: 'Play 1 Indie game', icon: '🎮', rarity: 'COMMON' },
-    { id: 'indie_5', name: 'Indie Explorer', desc: 'Play 5 different Indie games', icon: '🎮', rarity: 'COMMON' },
-    { id: 'indie_10', name: 'Indie Fan', desc: 'Play 10 different Indie games', icon: '🎮', rarity: 'RARE' },
-    { id: 'indie_25', name: 'Indie Expert', desc: 'Play 25 different Indie games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'indie_50', name: 'Indie Master', desc: 'Play 50 different Indie games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Puzzle genre achievements
-    { id: 'puzzle_1', name: 'Puzzle Initiate', desc: 'Play 1 Puzzle game', icon: '🧩', rarity: 'COMMON' },
-    { id: 'puzzle_5', name: 'Puzzle Explorer', desc: 'Play 5 different Puzzle games', icon: '🧩', rarity: 'COMMON' },
-    { id: 'puzzle_10', name: 'Puzzle Fan', desc: 'Play 10 different Puzzle games', icon: '🧩', rarity: 'RARE' },
-    { id: 'puzzle_25', name: 'Puzzle Expert', desc: 'Progress through 25 Puzzle games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'puzzle_50', name: 'Puzzle Master', desc: 'Play 50 different Puzzle games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Simulation genre achievements
-    { id: 'simulation_1', name: 'Simulation Initiate', desc: 'Play 1 Simulation game', icon: '🏗️', rarity: 'COMMON' },
-    { id: 'simulation_5', name: 'Simulation Explorer', desc: 'Play 5 different Simulation games', icon: '🏗️', rarity: 'COMMON' },
-    { id: 'simulation_10', name: 'Simulation Fan', desc: 'Play 10 different Simulation games', icon: '🏗️', rarity: 'RARE' },
-    { id: 'simulation_25', name: 'Simulation Expert', desc: 'Play 25 different Simulation games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'simulation_50', name: 'Simulation Master', desc: 'Play 50 different Simulation games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Strategy genre achievements
-    { id: 'strategy_1', name: 'Strategy Initiate', desc: 'Play 1 Strategy game', icon: '♟️', rarity: 'COMMON' },
-    { id: 'strategy_5', name: 'Strategy Explorer', desc: 'Play 5 different Strategy games', icon: '♟️', rarity: 'COMMON' },
-    { id: 'strategy_10', name: 'Strategy Fan', desc: 'Play 10 different Strategy games', icon: '♟️', rarity: 'RARE' },
-    { id: 'strategy_25', name: 'Strategy Expert', desc: 'Play 25 different Strategy games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'strategy_50', name: 'Strategy Master', desc: 'Play 50 different Strategy games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Shooter genre achievements
-    { id: 'shooter_1', name: 'Shooter Initiate', desc: 'Play 1 Shooter game', icon: '🔫', rarity: 'COMMON' },
-    { id: 'shooter_5', name: 'Shooter Explorer', desc: 'Play 5 different Shooter games', icon: '🔫', rarity: 'COMMON' },
-    { id: 'shooter_10', name: 'Shooter Fan', desc: 'Play 10 different Shooter games', icon: '🔫', rarity: 'RARE' },
-    { id: 'shooter_25', name: 'Shooter Expert', desc: 'Play 25 different Shooter games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'shooter_50', name: 'Shooter Master', desc: 'Play 50 different Shooter games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Racing genre achievements
-    { id: 'racing_1', name: 'Racing Initiate', desc: 'Play 1 Racing game', icon: '🏁', rarity: 'COMMON' },
-    { id: 'racing_5', name: 'Racing Explorer', desc: 'Play 5 different Racing games', icon: '🏁', rarity: 'COMMON' },
-    { id: 'racing_10', name: 'Racing Fan', desc: 'Play 10 different Racing games', icon: '🏁', rarity: 'RARE' },
-    { id: 'racing_25', name: 'Racing Expert', desc: 'Play 25 different Racing games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'racing_50', name: 'Racing Master', desc: 'Play 50 different Racing games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Platformer genre achievements
-    { id: 'platformer_1', name: 'Platformer Initiate', desc: 'Play 1 Platformer game', icon: '🦘', rarity: 'COMMON' },
-    { id: 'platformer_5', name: 'Platformer Explorer', desc: 'Play 5 different Platformer games', icon: '🦘', rarity: 'COMMON' },
-    { id: 'platformer_10', name: 'Platformer Fan', desc: 'Play 10 different Platformer games', icon: '🦘', rarity: 'RARE' },
-    { id: 'platformer_25', name: 'Platformer Expert', desc: 'Play 25 different Platformer games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'platformer_50', name: 'Platformer Master', desc: 'Play 50 different Platformer games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Horror genre achievements
-    { id: 'horror_1', name: 'Horror Initiate', desc: 'Play 1 Horror game', icon: '😱', rarity: 'COMMON' },
-    { id: 'horror_5', name: 'Horror Explorer', desc: 'Play 5 different Horror games', icon: '😱', rarity: 'COMMON' },
-    { id: 'horror_10', name: 'Horror Fan', desc: 'Play 10 different Horror games', icon: '😱', rarity: 'RARE' },
-    { id: 'horror_25', name: 'Horror Expert', desc: 'Play 25 different Horror games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'horror_50', name: 'Horror Master', desc: 'Play 50 different Horror games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Fighting genre achievements
-    { id: 'fighting_1', name: 'Fighting Initiate', desc: 'Play 1 Fighting game', icon: '🥊', rarity: 'COMMON' },
-    { id: 'fighting_5', name: 'Fighting Explorer', desc: 'Play 5 different Fighting games', icon: '🥊', rarity: 'COMMON' },
-    { id: 'fighting_10', name: 'Fighting Fan', desc: 'Play 10 different Fighting games', icon: '🥊', rarity: 'RARE' },
-    { id: 'fighting_25', name: 'Fighting Expert', desc: 'Play 25 different Fighting games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'fighting_50', name: 'Fighting Master', desc: 'Play 50 different Fighting games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Sports genre achievements
-    { id: 'sports_1', name: 'Sports Initiate', desc: 'Play 1 Sports game', icon: '⚽', rarity: 'COMMON' },
-    { id: 'sports_5', name: 'Sports Explorer', desc: 'Play 5 different Sports games', icon: '⚽', rarity: 'COMMON' },
-    { id: 'sports_10', name: 'Sports Fan', desc: 'Play 10 different Sports games', icon: '⚽', rarity: 'RARE' },
-    { id: 'sports_25', name: 'Sports Expert', desc: 'Play 25 different Sports games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'sports_50', name: 'Sports Master', desc: 'Play 50 different Sports games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Roguelike genre achievements
-    { id: 'roguelike_1', name: 'Roguelike Initiate', desc: 'Play 1 Roguelike game', icon: '🎲', rarity: 'COMMON' },
-    { id: 'roguelike_5', name: 'Roguelike Explorer', desc: 'Play 5 different Roguelike games', icon: '🎲', rarity: 'COMMON' },
-    { id: 'roguelike_10', name: 'Roguelike Fan', desc: 'Play 10 different Roguelike games', icon: '🎲', rarity: 'RARE' },
-    { id: 'roguelike_25', name: 'Roguelike Expert', desc: 'Play 25 different Roguelike games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'roguelike_50', name: 'Roguelike Master', desc: 'Play 50 different Roguelike games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Management genre achievements
-    { id: 'management_1', name: 'Management Initiate', desc: 'Play 1 Management game', icon: '📋', rarity: 'COMMON' },
-    { id: 'management_5', name: 'Management Explorer', desc: 'Play 5 different Management games', icon: '📋', rarity: 'COMMON' },
-    { id: 'management_10', name: 'Management Fan', desc: 'Play 10 different Management games', icon: '📋', rarity: 'RARE' },
-    { id: 'management_25', name: 'Management Expert', desc: 'Play 25 different Management games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'management_50', name: 'Management Master', desc: 'Play 50 different Management games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Survival genre achievements
-    { id: 'survival_1', name: 'Survival Initiate', desc: 'Play 1 Survival game', icon: '🏕️', rarity: 'COMMON' },
-    { id: 'survival_5', name: 'Survival Explorer', desc: 'Play 5 different Survival games', icon: '🏕️', rarity: 'COMMON' },
-    { id: 'survival_10', name: 'Survival Fan', desc: 'Play 10 different Survival games', icon: '🏕️', rarity: 'RARE' },
-    { id: 'survival_25', name: 'Survival Expert', desc: 'Play 25 different Survival games', icon: '🔥', rarity: 'EPIC' },
-    { id: 'survival_50', name: 'Survival Master', desc: 'Play 50 different Survival games', icon: '💥', rarity: 'LEGENDARY' },
-    
-    // Genre completion rate achievements (based on behavior profile)
-    { id: 'genre_completion_50', name: 'Genre Specialist', desc: 'Achieve 50%+ completion rate in one genre', icon: '🎯', rarity: 'RARE' },
-    { id: 'genre_completion_70', name: 'Genre Expert', desc: 'Achieve 70%+ completion rate in one genre', icon: '⭐', rarity: 'EPIC' },
-    { id: 'genre_completion_90', name: 'Genre Perfectionist', desc: 'Achieve 90%+ completion rate in one genre', icon: '💯', rarity: 'LEGENDARY' }
+    { id: 'genre_sessions_5', name: 'Genre Regular', desc: 'Play 5 sessions in any one genre', icon: '🎨', rarity: 'COMMON' },
+    { id: 'genre_sessions_15', name: 'Genre Enthusiast', desc: 'Play 15 sessions in any one genre', icon: '🎵', rarity: 'RARE' },
+    { id: 'genre_sessions_30', name: 'Genre Specialist', desc: 'Play 30 sessions in any one genre', icon: '🏅', rarity: 'EPIC' }
   ],
   sessions: [
-    // Session warrior achievements - single session length milestones
-    { id: 'session_warrior_30', name: 'Session Starter', desc: 'Complete a 30-minute gaming session', icon: '⏱️', rarity: 'COMMON' },
-    { id: 'session_warrior_1h', name: 'Session Player', desc: 'Complete a 1-hour gaming session', icon: '⏰', rarity: 'COMMON' },
-    { id: 'session_warrior_2h', name: 'Session Enthusiast', desc: 'Complete a 2-hour gaming session', icon: '🎮', rarity: 'RARE' },
-    { id: 'session_warrior_3h', name: 'Session Marathon', desc: 'Complete a 3-hour gaming session', icon: '🏃', rarity: 'RARE' },
-    { id: 'session_warrior_4h', name: 'Session Legend', desc: 'Complete a 4-hour gaming session', icon: '⚡', rarity: 'EPIC' },
-    { id: 'session_warrior_6h', name: 'Session Master', desc: 'Complete a 6-hour gaming session', icon: '🔥', rarity: 'EPIC' },
-    { id: 'session_warrior_8h', name: 'Session Immortal', desc: 'Complete an 8-hour gaming session', icon: '👑', rarity: 'LEGENDARY' },
-    { id: 'session_warrior_10h', name: 'Session Godlike', desc: 'Complete a 10-hour gaming session', icon: '🌟', rarity: 'LEGENDARY' },
-    { id: 'session_warrior_12h', name: 'Session Myth', desc: 'Complete a 12-hour gaming session', icon: '💫', rarity: 'LEGENDARY' }
+    { id: 'session_warrior_30', name: 'Half-Hour Session', desc: 'Complete a 30-minute gaming session', icon: '⏱️', rarity: 'COMMON' },
+    { id: 'session_warrior_1h', name: 'Full-Hour Session', desc: 'Complete a 1-hour gaming session', icon: '⏰', rarity: 'COMMON' },
+    { id: 'session_warrior_2h', name: 'Two-Hour Session', desc: 'Complete a 2-hour gaming session', icon: '🎮', rarity: 'RARE' },
+    { id: 'session_warrior_4h', name: 'Four-Hour Session', desc: 'Complete a 4-hour gaming session', icon: '⌛', rarity: 'EPIC' }
+  ],
+  engagement: [
+    { id: 'rating_1', name: 'First Impression', desc: 'Rate your first game', icon: '⭐', rarity: 'COMMON' },
+    { id: 'rating_5', name: 'Opinion Sharer', desc: 'Rate 5 games', icon: '📝', rarity: 'COMMON' },
+    { id: 'rating_15', name: 'Library Reviewer', desc: 'Rate 15 games', icon: '📋', rarity: 'RARE' },
+    { id: 'completion_1', name: 'First Finish', desc: 'Mark your first game Beaten, Completed, or 100%', icon: '✅', rarity: 'COMMON' },
+    { id: 'completion_5', name: 'Finish Line Five', desc: 'Mark 5 games Beaten, Completed, or 100%', icon: '🏁', rarity: 'RARE' },
+    { id: 'completion_10', name: 'Ten Titles Finished', desc: 'Mark 10 games Beaten, Completed, or 100%', icon: '🏆', rarity: 'EPIC' }
   ],
   daily: [
-    { id: 'daily_15min', name: 'Daily Quickie', desc: 'Play 15 minutes in one day', icon: '⏰', rarity: 'COMMON' },
-    { id: 'daily_30min', name: 'Daily Gamer', desc: 'Play 30 minutes in one day', icon: '⏰', rarity: 'COMMON' },
-    { id: 'daily_1hour', name: 'Daily Player', desc: 'Play 1 hour in one day', icon: '⏰', rarity: 'COMMON' },
-    { id: 'daily_2hours', name: 'Daily Enthusiast', desc: 'Play 2 hours in one day', icon: '⏰', rarity: 'RARE' },
-    { id: 'daily_3hours', name: 'Daily Marathon', desc: 'Play 3 hours in one day', icon: '⏰', rarity: 'EPIC' },
-    { id: 'daily_5hours', name: 'Daily Legend', desc: 'Play 5 hours in one day', icon: '⏰', rarity: 'LEGENDARY' },
-    { id: 'daily_7hours', name: 'Daily Immortal', desc: 'Play 7 hours in one day', icon: '🔥', rarity: 'LEGENDARY' },
-    { id: 'daily_10hours', name: 'Daily Godlike', desc: 'Play 10 hours in one day', icon: '👑', rarity: 'LEGENDARY' },
-
-    // Session streaks
-    { id: 'daily_3sessions', name: 'Session Sprinter', desc: 'Complete 3 gaming sessions today', icon: '🎮', rarity: 'COMMON' },
-    { id: 'daily_5sessions', name: 'Session Grinder', desc: 'Complete 5 gaming sessions today', icon: '🎯', rarity: 'RARE' },
-    { id: 'daily_10sessions', name: 'Session Machine', desc: 'Complete 10 gaming sessions today', icon: '🏆', rarity: 'EPIC' },
-
-    // Games/genres variety
-    { id: 'daily_3games', name: 'Game Sampler', desc: 'Play 3 different games today', icon: '🕹️', rarity: 'COMMON' },
-    { id: 'daily_5games', name: 'Library Tour', desc: 'Play 5 different games today', icon: '🧭', rarity: 'RARE' },
-    { id: 'daily_3genres', name: 'Genre Hopper', desc: 'Play 3 different genres today', icon: '🎨', rarity: 'COMMON' },
-    { id: 'daily_5genres', name: 'Genre Cyclone', desc: 'Play 5 different genres today', icon: '🌪️', rarity: 'RARE' },
-
-    // Mood/platform variety
-    { id: 'daily_2moods', name: 'Mood Mixer', desc: 'Use 2 different moods today', icon: '🎭', rarity: 'COMMON' },
-    { id: 'daily_3moods', name: 'Mood Maestro', desc: 'Use 3 different moods today', icon: '🎷', rarity: 'RARE' },
-    { id: 'daily_all_moods', name: 'Mood Cyclone', desc: 'Use all moods in a single day', icon: '🌈', rarity: 'EPIC' },
-    { id: 'daily_2platforms', name: 'Platform Explorer', desc: 'Play on 2 platforms today', icon: '🖥️', rarity: 'COMMON' },
-    { id: 'daily_3platforms', name: 'Platform Polyglot', desc: 'Play on 3 platforms today', icon: '💻', rarity: 'RARE' },
-
-    // Feature usage
-    { id: 'daily_perfect_play', name: 'Perfect Start', desc: 'Use Perfect Play today', icon: '✨', rarity: 'COMMON' },
-    { id: 'daily_surprise', name: 'Daily Surprise', desc: 'Use Surprise Me today', icon: '🎁', rarity: 'COMMON' },
-    { id: 'daily_rediscover', name: 'Nostalgia Spark', desc: 'Rediscover a game today', icon: '🔮', rarity: 'COMMON' },
-    { id: 'daily_share', name: 'Share Snapshot', desc: 'Share your library today', icon: '📤', rarity: 'RARE' }
+    { id: 'daily_15min', name: 'Daily Fifteen', desc: 'Play 15 minutes in one day', icon: '⏰', rarity: 'COMMON' },
+    { id: 'daily_30min', name: 'Daily Half Hour', desc: 'Play 30 minutes in one day', icon: '⌚', rarity: 'COMMON' },
+    { id: 'daily_1hour', name: 'Daily Hour', desc: 'Play 1 hour in one day', icon: '🕐', rarity: 'COMMON' },
+    { id: 'daily_2hours', name: 'Daily Two Hours', desc: 'Play 2 hours in one day', icon: '🕑', rarity: 'RARE' },
+    { id: 'daily_2sessions', name: 'Daily Double', desc: 'Complete 2 sessions in one day', icon: '🎮', rarity: 'COMMON' },
+    { id: 'daily_2games', name: 'Daily Game Pair', desc: 'Play 2 games in one day', icon: '🕹️', rarity: 'COMMON' },
+    { id: 'daily_2genres', name: 'Daily Genre Pair', desc: 'Play 2 genres in one day', icon: '🎨', rarity: 'COMMON' },
+    { id: 'daily_2moods', name: 'Daily Mood Pair', desc: 'Play sessions in 2 moods in one day', icon: '🎭', rarity: 'COMMON' }
   ],
   weekly: [
-    // Playtime milestones
-    { id: 'weekly_2hours', name: 'Weekend Warrior', desc: 'Play 2 hours in a week', icon: '�️', rarity: 'COMMON' },
-    { id: 'weekly_5hours', name: 'Weekly Gamer', desc: 'Play 5 hours in a week', icon: '�️', rarity: 'COMMON' },
-    { id: 'weekly_10hours', name: 'Weekly Enthusiast', desc: 'Play 10 hours in a week', icon: '�️', rarity: 'RARE' },
-    { id: 'weekly_20hours', name: 'Weekly Marathon', desc: 'Play 20 hours in a week', icon: '�️', rarity: 'EPIC' },
-    { id: 'weekly_40hours', name: 'Weekly Legend', desc: 'Play 40 hours in a week', icon: '�️', rarity: 'LEGENDARY' },
-    { id: 'weekly_60hours', name: 'Weekly Immortal', desc: 'Play 60 hours in a week', icon: '🔥', rarity: 'LEGENDARY' },
-    { id: 'weekly_100hours', name: 'Weekly Godlike', desc: 'Play 100 hours in a week', icon: '👑', rarity: 'LEGENDARY' },
-
-    // Session volume
-    { id: 'weekly_7sessions', name: 'Routine Builder', desc: 'Complete 7 sessions in a week', icon: '📆', rarity: 'COMMON' },
-    { id: 'weekly_14sessions', name: 'Weekly Grinder', desc: 'Complete 14 sessions in a week', icon: '📆', rarity: 'RARE' },
-    { id: 'weekly_21sessions', name: 'Weekly Machine', desc: 'Complete 21 sessions in a week', icon: '📆', rarity: 'EPIC' },
-
-    // Variety goals
-    { id: 'weekly_5games', name: 'Weekly Sampler', desc: 'Play 5 different games in a week', icon: '🕹️', rarity: 'COMMON' },
-    { id: 'weekly_10games', name: 'Weekly Explorer', desc: 'Play 10 different games in a week', icon: '🧭', rarity: 'RARE' },
-    { id: 'weekly_15games', name: 'Library Sprint', desc: 'Play 15 different games in a week', icon: '🚀', rarity: 'EPIC' },
-    { id: 'weekly_4genres', name: 'Palette Switcher', desc: 'Play 4 genres in a week', icon: '🎨', rarity: 'RARE' },
-    { id: 'weekly_6genres', name: 'Genre Cyclone', desc: 'Play 6 genres in a week', icon: '🌪️', rarity: 'EPIC' },
-    { id: 'weekly_3moods', name: 'Mood Juggler', desc: 'Use 3 moods in a week', icon: '🎭', rarity: 'COMMON' },
-    { id: 'weekly_4moods', name: 'Mood Virtuoso', desc: 'Use 4 moods in a week', icon: '🎷', rarity: 'RARE' },
-
-    // Consistency
-    { id: 'weekly_4days', name: 'Cadence Keeper', desc: 'Have activity on 4 days of the week', icon: '🔥', rarity: 'RARE' },
-    { id: 'weekly_6days', name: 'Weeklong Presence', desc: 'Have activity on 6 days of the week', icon: '🔥', rarity: 'EPIC' },
-
-    // Feature usage
-    { id: 'weekly_perfect_5', name: 'Perfect Week', desc: 'Use Perfect Play 5 times in a week', icon: '✨', rarity: 'RARE' },
-    { id: 'weekly_surprise_7', name: 'Mystery Tour', desc: 'Use Surprise Me 7 times in a week', icon: '🎁', rarity: 'RARE' },
-    { id: 'weekly_rediscover_3', name: 'Weekly Nostalgia', desc: 'Rediscover 3 games in a week', icon: '🔮', rarity: 'RARE' },
-    { id: 'weekly_share_3', name: 'Weekly Hype Squad', desc: 'Share 3 times in a week', icon: '📤', rarity: 'RARE' },
-
-    // Streaks
-    { id: 'weekly_streak_3', name: 'Streak Spark', desc: 'Maintain a 3-week activity streak', icon: '🔥', rarity: 'RARE' },
-    { id: 'weekly_streak_5', name: 'Streak Surfer', desc: 'Maintain a 5-week activity streak', icon: '🔥', rarity: 'EPIC' },
-    { id: 'weekly_streak_7', name: 'Weekly Streak Legend', desc: 'Maintain a 7-week activity streak', icon: '🔥', rarity: 'LEGENDARY' }
+    { id: 'weekly_2hours', name: 'Weekly Two Hours', desc: 'Play 2 hours in one week', icon: '📆', rarity: 'COMMON' },
+    { id: 'weekly_5hours', name: 'Weekly Five Hours', desc: 'Play 5 hours in one week', icon: '🗓️', rarity: 'COMMON' },
+    { id: 'weekly_10hours', name: 'Weekly Ten Hours', desc: 'Play 10 hours in one week', icon: '⌚', rarity: 'RARE' },
+    { id: 'weekly_20hours', name: 'Weekly Twenty Hours', desc: 'Play 20 hours in one week', icon: '⏳', rarity: 'EPIC' },
+    { id: 'weekly_3sessions', name: 'Weekly Session Trio', desc: 'Complete 3 sessions in one week', icon: '🎮', rarity: 'COMMON' },
+    { id: 'weekly_7sessions', name: 'Weekly Seven Sessions', desc: 'Complete 7 sessions in one week', icon: '📅', rarity: 'RARE' },
+    { id: 'weekly_3games', name: 'Weekly Game Trio', desc: 'Play 3 games in one week', icon: '🕹️', rarity: 'COMMON' },
+    { id: 'weekly_5games', name: 'Weekly Five Games', desc: 'Play 5 games in one week', icon: '🧭', rarity: 'RARE' },
+    { id: 'weekly_3genres', name: 'Weekly Genre Trio', desc: 'Play 3 genres in one week', icon: '🎨', rarity: 'COMMON' },
+    { id: 'weekly_3moods', name: 'Weekly Mood Trio', desc: 'Play sessions in 3 moods in one week', icon: '🎭', rarity: 'COMMON' },
+    { id: 'weekly_3days', name: 'Weekly Three Days', desc: 'Be active on 3 days in one week', icon: '📌', rarity: 'COMMON' },
+    { id: 'weekly_5days', name: 'Weekly Five Days', desc: 'Be active on 5 days in one week', icon: '🔥', rarity: 'RARE' }
   ],
   monthly: [
-    // Playtime marathons
-    { id: 'monthly_10hours', name: 'Monthly Player', desc: 'Play 10 hours in a month', icon: '📆', rarity: 'COMMON' },
-    { id: 'monthly_25hours', name: 'Monthly Gamer', desc: 'Play 25 hours in a month', icon: '📆', rarity: 'COMMON' },
-    { id: 'monthly_50hours', name: 'Monthly Enthusiast', desc: 'Play 50 hours in a month', icon: '📆', rarity: 'RARE' },
-    { id: 'monthly_100hours', name: 'Monthly Marathon', desc: 'Play 100 hours in a month', icon: '📆', rarity: 'EPIC' },
-    { id: 'monthly_150hours', name: 'Monthly Immortal', desc: 'Play 150 hours in a month', icon: '🔥', rarity: 'LEGENDARY' },
-    { id: 'monthly_200hours', name: 'Monthly Godlike', desc: 'Play 200 hours in a month', icon: '👑', rarity: 'LEGENDARY' },
-    { id: 'monthly_300hours', name: 'Monthly Mythic', desc: 'Play 300 hours in a month', icon: '🌌', rarity: 'LEGENDARY' },
-
-    // Sessions & consistency
-    { id: 'monthly_30sessions', name: 'Monthly Habit', desc: 'Complete 30 sessions in a month', icon: '📈', rarity: 'RARE' },
-    { id: 'monthly_50sessions', name: 'Monthly Grinder', desc: 'Complete 50 sessions in a month', icon: '📉', rarity: 'EPIC' },
-    { id: 'monthly_75sessions', name: 'Monthly Machine', desc: 'Complete 75 sessions in a month', icon: '🏆', rarity: 'LEGENDARY' },
-    { id: 'monthly_10days', name: 'Monthly Momentum', desc: 'Be active on 10 days in a month', icon: '🔥', rarity: 'RARE' },
-    { id: 'monthly_20days', name: 'Monthly Presence', desc: 'Be active on 20 days in a month', icon: '🔥', rarity: 'EPIC' },
-    { id: 'monthly_25days', name: 'Monthly Everpresent', desc: 'Be active on 25 days in a month', icon: '🔥', rarity: 'LEGENDARY' },
-
-    // Unlock & variety focus
-    { id: 'monthly_unlock_5', name: 'Monthly Unlocker', desc: 'Unlock 5 achievements in a month', icon: '🔓', rarity: 'RARE' },
-    { id: 'monthly_unlock_10', name: 'Monthly Achievement Hunter', desc: 'Unlock 10 achievements in a month', icon: '🔑', rarity: 'EPIC' },
-    { id: 'monthly_unlock_15', name: 'Monthly Completionist', desc: 'Unlock 15 achievements in a month', icon: '🏅', rarity: 'LEGENDARY' },
-    { id: 'monthly_10genres', name: 'Monthly Genre Tour', desc: 'Play 10 genres in a month', icon: '🎨', rarity: 'RARE' },
-    { id: 'monthly_15genres', name: 'Monthly Genre Master', desc: 'Play 15 genres in a month', icon: '🌈', rarity: 'EPIC' },
-    { id: 'monthly_5platforms', name: 'Platform Voyager', desc: 'Play on 5 platforms this month', icon: '💻', rarity: 'EPIC' },
-    { id: 'monthly_all_moods', name: 'Monthly Mood Maestro', desc: 'Use all moods in a month', icon: '🎭', rarity: 'LEGENDARY' },
-
-    // Feature usage
-    { id: 'monthly_perfect_10', name: 'Perfect Planner', desc: 'Use Perfect Play 10 times in a month', icon: '✨', rarity: 'RARE' },
-    { id: 'monthly_surprise_15', name: 'Mystery Marathon', desc: 'Use Surprise Me 15 times in a month', icon: '🎁', rarity: 'EPIC' },
-    { id: 'monthly_rediscover_5', name: 'Monthly Archivist', desc: 'Rediscover 5 games in a month', icon: '🔮', rarity: 'RARE' },
-    { id: 'monthly_share_5', name: 'Monthly Broadcaster', desc: 'Share 5 times in a month', icon: '📤', rarity: 'EPIC' }
+    { id: 'monthly_10hours', name: 'Monthly Ten Hours', desc: 'Play 10 hours in one month', icon: '📆', rarity: 'COMMON' },
+    { id: 'monthly_25hours', name: 'Monthly Twenty-Five Hours', desc: 'Play 25 hours in one month', icon: '🗓️', rarity: 'COMMON' },
+    { id: 'monthly_50hours', name: 'Monthly Fifty Hours', desc: 'Play 50 hours in one month', icon: '⌚', rarity: 'RARE' },
+    { id: 'monthly_100hours', name: 'Monthly Hundred Hours', desc: 'Play 100 hours in one month', icon: '⏳', rarity: 'EPIC' },
+    { id: 'monthly_10sessions', name: 'Monthly Ten Sessions', desc: 'Complete 10 sessions in one month', icon: '🎮', rarity: 'COMMON' },
+    { id: 'monthly_25sessions', name: 'Monthly Twenty-Five Sessions', desc: 'Complete 25 sessions in one month', icon: '📅', rarity: 'RARE' },
+    { id: 'monthly_5days', name: 'Monthly Five Days', desc: 'Be active on 5 days in one month', icon: '📌', rarity: 'COMMON' },
+    { id: 'monthly_10days', name: 'Monthly Ten Days', desc: 'Be active on 10 days in one month', icon: '🔥', rarity: 'RARE' },
+    { id: 'monthly_20days', name: 'Monthly Twenty Days', desc: 'Be active on 20 days in one month', icon: '📈', rarity: 'EPIC' },
+    { id: 'monthly_5genres', name: 'Monthly Five Genres', desc: 'Play 5 genres in one month', icon: '🎨', rarity: 'COMMON' },
+    { id: 'monthly_10genres', name: 'Monthly Ten Genres', desc: 'Play 10 genres in one month', icon: '🌈', rarity: 'RARE' },
+    { id: 'monthly_all_moods', name: 'Monthly Mood Tour', desc: 'Play sessions across all 5 moods in one month', icon: '🎭', rarity: 'EPIC' }
   ],
   yearly: [
-    // Playtime legends
-    { id: 'yearly_100hours', name: 'Yearly Player', desc: 'Play 100 hours in a year', icon: '🎊', rarity: 'COMMON' },
-    { id: 'yearly_500hours', name: 'Yearly Gamer', desc: 'Play 500 hours in a year', icon: '🎊', rarity: 'RARE' },
-    { id: 'yearly_1000hours', name: 'Yearly Legend', desc: 'Play 1000 hours in a year', icon: '🎊', rarity: 'EPIC' },
-    { id: 'yearly_1500hours', name: 'Yearly Immortal', desc: 'Play 1500 hours in a year', icon: '🔥', rarity: 'LEGENDARY' },
-    { id: 'yearly_2000hours', name: 'Yearly Godlike', desc: 'Play 2000 hours in a year', icon: '👑', rarity: 'LEGENDARY' },
-
-    // Sessions & presence
-    { id: 'yearly_200sessions', name: 'Yearly Routine', desc: 'Complete 200 sessions in a year', icon: '📊', rarity: 'RARE' },
-    { id: 'yearly_365sessions', name: 'Daily Devotee', desc: 'Complete 365 sessions in a year', icon: '📅', rarity: 'LEGENDARY' },
-    { id: 'yearly_300days', name: 'Yearly Everpresent', desc: 'Be active on 300 days in a year', icon: '🔥', rarity: 'EPIC' },
-    { id: 'yearly_350days', name: 'Yearly Unbroken', desc: 'Be active on 350 days in a year', icon: '🔥', rarity: 'LEGENDARY' },
-
-    // Unlock & variety focus
-    { id: 'yearly_unlock_50', name: 'Yearly Unlocker', desc: 'Unlock 50 achievements in a year', icon: '🔓', rarity: 'RARE' },
-    { id: 'yearly_unlock_100', name: 'Yearly Achievement Hunter', desc: 'Unlock 100 achievements in a year', icon: '🔑', rarity: 'EPIC' },
-    { id: 'yearly_unlock_150', name: 'Yearly Completionist', desc: 'Unlock 150 achievements in a year', icon: '🏅', rarity: 'LEGENDARY' },
-    { id: 'yearly_20genres', name: 'Yearly Genre Tour', desc: 'Play 20 genres in a year', icon: '🎨', rarity: 'RARE' },
-    { id: 'yearly_25genres', name: 'Yearly Genre Master', desc: 'Play 25 genres in a year', icon: '🌈', rarity: 'EPIC' },
-    { id: 'yearly_10platforms', name: 'Platform Globe Trotter', desc: 'Play on 10 platforms in a year', icon: '🌍', rarity: 'LEGENDARY' },
-    { id: 'yearly_mood_100', name: 'Mood Marathoner', desc: 'Use moods 100 times in a year', icon: '🎭', rarity: 'EPIC' },
-
-    // Feature usage
-    { id: 'yearly_perfect_50', name: 'Perfect Year', desc: 'Use Perfect Play 50 times in a year', icon: '✨', rarity: 'RARE' },
-    { id: 'yearly_surprise_100', name: 'Yearly Mystery Tour', desc: 'Use Surprise Me 100 times in a year', icon: '🎁', rarity: 'EPIC' },
-    { id: 'yearly_rediscover_25', name: 'Yearly Archivist', desc: 'Rediscover 25 games in a year', icon: '🔮', rarity: 'RARE' },
-    { id: 'yearly_share_25', name: 'Yearly Broadcaster', desc: 'Share 25 times in a year', icon: '📤', rarity: 'EPIC' },
-
-    // Streaks
-    { id: 'yearly_streak_30', name: 'Yearly Spark', desc: 'Maintain a 30-day streak of active months', icon: '🔥', rarity: 'RARE' },
-    { id: 'yearly_streak_50', name: 'Yearly Blaze', desc: 'Maintain a 50-day streak of active months', icon: '🔥', rarity: 'EPIC' },
-    { id: 'yearly_streak_100', name: 'Yearly Inferno', desc: 'Maintain a 100-day streak of active months', icon: '🔥', rarity: 'LEGENDARY' }
+    { id: 'yearly_50hours', name: 'Yearly Fifty Hours', desc: 'Play 50 hours in one year', icon: '🎊', rarity: 'COMMON' },
+    { id: 'yearly_100hours', name: 'Yearly Hundred Hours', desc: 'Play 100 hours in one year', icon: '📆', rarity: 'COMMON' },
+    { id: 'yearly_250hours', name: 'Yearly Two-Fifty', desc: 'Play 250 hours in one year', icon: '⌚', rarity: 'RARE' },
+    { id: 'yearly_500hours', name: 'Yearly Five Hundred', desc: 'Play 500 hours in one year', icon: '⏳', rarity: 'EPIC' },
+    { id: 'yearly_1000hours', name: 'Yearly Thousand Hours', desc: 'Play 1000 hours in one year', icon: '🏅', rarity: 'LEGENDARY' },
+    { id: 'yearly_50sessions', name: 'Yearly Fifty Sessions', desc: 'Complete 50 sessions in one year', icon: '🎮', rarity: 'COMMON' },
+    { id: 'yearly_100sessions', name: 'Yearly Hundred Sessions', desc: 'Complete 100 sessions in one year', icon: '📅', rarity: 'RARE' },
+    { id: 'yearly_200sessions', name: 'Yearly Two Hundred Sessions', desc: 'Complete 200 sessions in one year', icon: '📊', rarity: 'EPIC' },
+    { id: 'yearly_25days', name: 'Yearly Twenty-Five Days', desc: 'Be active on 25 days in one year', icon: '📌', rarity: 'COMMON' },
+    { id: 'yearly_50days', name: 'Yearly Fifty Days', desc: 'Be active on 50 days in one year', icon: '🗓️', rarity: 'RARE' },
+    { id: 'yearly_100days', name: 'Yearly Hundred Days', desc: 'Be active on 100 days in one year', icon: '📈', rarity: 'EPIC' },
+    { id: 'yearly_200days', name: 'Yearly Two Hundred Days', desc: 'Be active on 200 days in one year', icon: '🏆', rarity: 'LEGENDARY' },
+    { id: 'yearly_10genres', name: 'Yearly Ten Genres', desc: 'Play 10 genres in one year', icon: '🎨', rarity: 'RARE' },
+    { id: 'yearly_15genres', name: 'Yearly Fifteen Genres', desc: 'Play 15 genres in one year', icon: '🌈', rarity: 'EPIC' },
+    { id: 'yearly_all_moods', name: 'Yearly Mood Tour', desc: 'Play sessions across all 5 moods in one year', icon: '🎭', rarity: 'EPIC' }
+  ],
+  themes: [
+    { id: 'theme_horror_3', name: 'Horror Initiate', desc: 'Play 3 different horror games', icon: '👻', rarity: 'COMMON' },
+    { id: 'theme_horror_5', name: 'Horror Regular', desc: 'Play 5 different horror games', icon: '🔪', rarity: 'RARE' },
+    { id: 'theme_horror_10', name: 'Horror Connoisseur', desc: 'Play 10 different horror games', icon: '💀', rarity: 'EPIC' },
+    { id: 'theme_survival_3', name: 'Survival Instinct', desc: 'Play 3 different survival games', icon: '🏕️', rarity: 'COMMON' },
+    { id: 'theme_survival_5', name: 'Survivalist', desc: 'Play 5 different survival games', icon: '🔥', rarity: 'RARE' },
+    { id: 'theme_survival_10', name: 'Apocalypse Ready', desc: 'Play 10 different survival games', icon: '🪓', rarity: 'EPIC' },
+    { id: 'theme_space_3', name: 'Space Cadet', desc: 'Play 3 different space or sci-fi games', icon: '🚀', rarity: 'COMMON' },
+    { id: 'theme_space_5', name: 'Star Voyager', desc: 'Play 5 different space or sci-fi games', icon: '🛸', rarity: 'RARE' },
+    { id: 'theme_space_10', name: 'Galaxy Explorer', desc: 'Play 10 different space or sci-fi games', icon: '🌌', rarity: 'EPIC' },
+    { id: 'theme_fantasy_3', name: 'Fantasy Novice', desc: 'Play 3 different fantasy games', icon: '⚔️', rarity: 'COMMON' },
+    { id: 'theme_fantasy_5', name: 'Fantasy Adventurer', desc: 'Play 5 different fantasy games', icon: '🐉', rarity: 'RARE' },
+    { id: 'theme_fantasy_10', name: 'Fantasy Legend', desc: 'Play 10 different fantasy games', icon: '🏰', rarity: 'EPIC' },
+    { id: 'theme_cyberpunk_3', name: 'Neon Rookie', desc: 'Play 3 different cyberpunk or dystopian games', icon: '🌃', rarity: 'COMMON' },
+    { id: 'theme_cyberpunk_5', name: 'Neon Native', desc: 'Play 5 different cyberpunk or dystopian games', icon: '🦾', rarity: 'RARE' },
+    { id: 'theme_cyberpunk_10', name: 'Chrome Legend', desc: 'Play 10 different cyberpunk or dystopian games', icon: '💡', rarity: 'EPIC' },
+    { id: 'theme_cozy_3', name: 'Cozy Starter', desc: 'Play 3 different cozy or farming games', icon: '🌱', rarity: 'COMMON' },
+    { id: 'theme_cozy_5', name: 'Cozy Comfort', desc: 'Play 5 different cozy or farming games', icon: '🏡', rarity: 'RARE' },
+    { id: 'theme_cozy_10', name: 'Cozy Master', desc: 'Play 10 different cozy or farming games', icon: '🌻', rarity: 'EPIC' }
+  ],
+  backlog: [
+    { id: 'dust_off_1', name: 'Dust Off', desc: 'Play a game you hadn\'t touched in 6 months', icon: '🧹', rarity: 'COMMON' },
+    { id: 'dust_off_5', name: 'Serial Dust Off', desc: 'Play 5 games you hadn\'t touched in 6 months', icon: '📐', rarity: 'RARE' },
+    { id: 'shelf_diver_1', name: 'Shelf Diver', desc: 'Play a game that\'s been in your library for 1+ year', icon: '📦', rarity: 'COMMON' },
+    { id: 'shelf_diver_5', name: 'Deep Shelf Diver', desc: 'Play 5 games that have been in your library for 1+ year', icon: '🗂️', rarity: 'RARE' },
+    { id: 'finish_started_1', name: 'Finish What You Started', desc: 'Complete a game you had previously played but not finished', icon: '✅', rarity: 'COMMON' },
+    { id: 'finish_started_5', name: 'Comeback Season', desc: 'Complete 5 games you had previously played but not finished', icon: '🏅', rarity: 'EPIC' }
   ]
 };
 
 export const MOOD_SLUGS = ['relaxed', 'social', 'creative', 'focused', 'competitive'];
 
-export const GENRE_SLUGS = Array.from(new Set((ACHIEVEMENTS.genres || []).map(({ id }) => id.split('_')[0])));
+export const GENRE_SLUGS = [
+  'action', 'adventure', 'rpg', 'indie', 'puzzle', 'simulation', 'strategy', 'shooter',
+  'racing', 'platformer', 'horror', 'fighting', 'sports', 'roguelike', 'management', 'survival'
+];
 export const FEATURE_SLUGS = Array.from(new Set((ACHIEVEMENTS.features || [])
   .map(({ id }) => id.split('_'))
   .filter(parts => parts.length > 1 && !Number.isNaN(parseInt(parts[parts.length - 1], 10)))
@@ -747,11 +453,27 @@ const TIME_ASSIGNMENT_DEFAULT_COUNTS = {
 };
 
 export const MOOD_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.mood, MOOD_SLUGS);
-export const GENRE_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.genres);
+export const GENRE_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.genres, ['genre_sessions']);
 export const FEATURE_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.features);
 export const SESSION_THRESHOLD_MAP = createThresholdMap(SESSION_ACHIEVEMENTS, ['session']);
 export const PLAYTIME_THRESHOLD_MAP = createThresholdMap(HOUR_ACHIEVEMENTS, ['hour']);
 export const UNIQUE_GAME_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.uniqueGames, ['unique_game']);
+export const COLLECTOR_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.library, ['collector']);
+export const QUEST_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.quests, ['quest_total']);
+export const ENGAGEMENT_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.engagement, ['rating', 'completion']);
+
+// Maps achievement theme slugs to GamingPersonaService THEME_DEFINITIONS ids.
+export const THEME_ACHIEVEMENT_MAP = {
+  horror: 'horror_junkie',
+  survival: 'doomsday_prepper',
+  space: 'starfarer',
+  fantasy: 'dungeon_delver',
+  cyberpunk: 'console_cowboy',
+  cozy: 'homesteader'
+};
+
+export const THEME_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.themes);
+export const BACKLOG_THRESHOLD_MAP = createThresholdMap(ACHIEVEMENTS.backlog, ['dust_off', 'shelf_diver', 'finish_started']);
 
 export const ROLLING_FEATURE_KEY_MAP = {
   perfect_play: 'perfectPlay',
@@ -761,11 +483,7 @@ export const ROLLING_FEATURE_KEY_MAP = {
   share: 'share'
 };
 
-export const MOOD_VARIETY_TARGETS = [
-  { id: 'mood_variety_10', value: 10 },
-  { id: 'mood_master', value: 25 },
-  { id: 'mood_legend', value: 50 }
-];
+export const MOOD_VARIETY_TARGETS = [];
 
 const ALL_ACHIEVEMENT_DEFINITIONS = Object.entries(ACHIEVEMENTS).flatMap(([category, defs]) =>
   defs.map(def => ({ ...def, category }))
@@ -784,8 +502,7 @@ export const normalizeMood = (value) => {
 
 export const normalizeGenre = (value) => {
   const slug = slugify(value);
-  if (!slug) return null;
-  return GENRE_SLUGS.includes(slug) ? slug : null;
+  return slug || null;
 };
 
 const normalizeFeature = (value) => {
@@ -801,7 +518,9 @@ const normalizeFeature = (value) => {
 
 const AchievementStats = {
   getCompletionRate(unlockedIds = null) {
-    const unlockedCount = Array.isArray(unlockedIds) ? unlockedIds.length : AchievementTracker.getUnlockedAchievements().length;
+    const currentIds = new Set(ALL_ACHIEVEMENT_DEFINITIONS.map(({ id }) => id));
+    const storedIds = Array.isArray(unlockedIds) ? unlockedIds : AchievementTracker.getUnlockedAchievements();
+    const unlockedCount = new Set(storedIds.filter(id => currentIds.has(id))).size;
     return {
       unlocked: unlockedCount,
       total: TOTAL_ACHIEVEMENT_COUNT,
@@ -1190,6 +909,27 @@ export class AchievementTracker {
     StorageService.set('timeStats', stats);
   }
 
+  static recordSessionDurationAchievements(minutes) {
+    const duration = Math.max(0, Number(minutes) || 0);
+    const previousLongest = Math.max(0, Number(StorageService.get('longestSessionMinutes', 0)) || 0);
+    if (duration > previousLongest) StorageService.set('longestSessionMinutes', duration);
+    const thresholds = [
+      { id: 'session_warrior_30', minutes: 30 },
+      { id: 'session_warrior_1h', minutes: 60 },
+      { id: 'session_warrior_2h', minutes: 120 },
+      { id: 'session_warrior_4h', minutes: 240 }
+    ];
+
+    return thresholds
+      .filter(({ minutes: target }) => duration >= target)
+      .filter(({ id }) => this.unlockAchievement(id))
+      .map(({ id }) => id);
+  }
+
+  static getLongestSessionMinutes() {
+    return Math.max(0, Number(StorageService.get('longestSessionMinutes', 0)) || 0);
+  }
+
   static getMoodStats() {
     try {
       return StorageService.get('moodStats', {});
@@ -1199,8 +939,32 @@ export class AchievementTracker {
     }
   }
 
+  static getLifetimeMoodStats() {
+    try {
+      const stored = StorageService.get('lifetimeMoodStats', null);
+      if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+        return stored;
+      }
+
+      // Seed lifetime totals from the existing weekly history once, preserving prior mood progress.
+      const lifetimeStats = {};
+      Object.values(this.getMoodStats()).forEach((weekStats) => {
+        if (!weekStats || typeof weekStats !== 'object') return;
+        MOOD_SLUGS.forEach((mood) => {
+          lifetimeStats[mood] = (lifetimeStats[mood] || 0) + Math.max(0, Number(weekStats[mood]) || 0);
+        });
+      });
+      StorageService.set('lifetimeMoodStats', lifetimeStats);
+      return lifetimeStats;
+    } catch (error) {
+      StorageService.set('lifetimeMoodStats', {});
+      return {};
+    }
+  }
+
   static trackMoodUsage(mood) {
     const stats = this.getMoodStats();
+    const lifetimeStats = this.getLifetimeMoodStats();
     const weekKey = this.getCurrentWeekKey();
     
     if (!stats[weekKey]) {
@@ -1208,7 +972,9 @@ export class AchievementTracker {
     }
     
     stats[weekKey][mood] = (stats[weekKey][mood] || 0) + 1;
+    lifetimeStats[mood] = (lifetimeStats[mood] || 0) + 1;
     StorageService.set('moodStats', stats);
+    StorageService.set('lifetimeMoodStats', lifetimeStats);
   }
 
   static getCurrentWeekKey() {
@@ -1329,10 +1095,13 @@ export class AchievementTracker {
     const state = this.getTimeAssignmentState();
     const periodState = state[period] || { key: null, ids: [] };
     const currentKey = this.getPeriodCurrentKey(period);
-    if (periodState.key !== currentKey || !Array.isArray(periodState.ids) || periodState.ids.length === 0) {
+    const availableIds = new Set((ACHIEVEMENTS[period] || []).map(({ id }) => id));
+    const validIds = Array.isArray(periodState.ids) ? periodState.ids.filter((id) => availableIds.has(id)) : [];
+    const targetCount = Math.min(TIME_ASSIGNMENT_DEFAULT_COUNTS[period] || availableIds.size, availableIds.size);
+    if (periodState.key !== currentKey || validIds.length !== targetCount) {
       return this.rotatePeriodAssignments(period, currentKey);
     }
-    return periodState.ids;
+    return validIds;
   }
 
   static getActivePeriodAchievementDefinitions(period) {
@@ -1432,6 +1201,96 @@ export class AchievementTracker {
     const stats = this.getGenreStats();
     stats[genre] = (stats[genre] || 0) + 1;
     StorageService.set('genreStats', stats);
+  }
+
+  // --- Theme tracking (horror, survival, space, fantasy, cyberpunk, cozy) ---
+
+  static getThemesForGame(game) {
+    if (!game) return [];
+    const genres = Array.isArray(game.genres) ? game.genres : (game.genre ? [game.genre] : []);
+    const tags = Array.isArray(game.tags) ? game.tags : (game.tag ? [game.tag] : []);
+    const haystack = [...genres, ...tags].filter(Boolean).map(s => String(s).toLowerCase());
+    if (haystack.length === 0) return [];
+
+    const matchedThemeIds = new Set();
+    THEME_DEFINITIONS.forEach((theme) => {
+      const matched = theme.tags.some((needle) =>
+        haystack.some((h) => h === needle || h.includes(needle))
+      );
+      if (matched) matchedThemeIds.add(theme.id);
+    });
+
+    // Map persona theme IDs to achievement theme slugs
+    const slugs = [];
+    Object.entries(THEME_ACHIEVEMENT_MAP).forEach(([slug, personaId]) => {
+      if (matchedThemeIds.has(personaId)) slugs.push(slug);
+    });
+    return slugs;
+  }
+
+  static getThemeStats() {
+    try {
+      return StorageService.get('themeStats', {});
+    } catch (error) {
+      StorageService.set('themeStats', {});
+      return {};
+    }
+  }
+
+  static trackThemeUsage(game) {
+    const themeSlugs = this.getThemesForGame(game);
+    if (themeSlugs.length === 0) return;
+    const identifier = this.getGameIdentifier(game);
+    if (!identifier) return;
+
+    const stats = this.getThemeStats();
+    themeSlugs.forEach((slug) => {
+      if (!stats[slug]) stats[slug] = {};
+      stats[slug][identifier] = true;
+    });
+    StorageService.set('themeStats', stats);
+  }
+
+  static getThemeUniqueCount(slug) {
+    const stats = this.getThemeStats();
+    return Object.keys(stats[slug] || {}).length;
+  }
+
+  // --- Backlog tracking (dust off, shelf diver, finish what you started) ---
+
+  static getBacklogStats() {
+    try {
+      return StorageService.get('backlogStats', { dust_off: 0, shelf_diver: 0, finish_started: 0 });
+    } catch (error) {
+      const defaults = { dust_off: 0, shelf_diver: 0, finish_started: 0 };
+      StorageService.set('backlogStats', defaults);
+      return defaults;
+    }
+  }
+
+  static trackBacklogMilestone(type) {
+    if (!['dust_off', 'shelf_diver', 'finish_started'].includes(type)) return;
+    const stats = this.getBacklogStats();
+    stats[type] = (stats[type] || 0) + 1;
+    StorageService.set('backlogStats', stats);
+  }
+
+  static checkDustOff(game) {
+    const lastPlayed = game?.last_played;
+    if (!lastPlayed) return false;
+    const lastPlayedTs = typeof lastPlayed === 'number' ? lastPlayed : Date.parse(lastPlayed);
+    if (!Number.isFinite(lastPlayedTs)) return false;
+    const sixMonthsMs = 1000 * 60 * 60 * 24 * 180;
+    return (Date.now() - lastPlayedTs) >= sixMonthsMs;
+  }
+
+  static checkShelfDiver(game) {
+    const added = game?.dateAdded || game?.addedAt || game?.firstSeen;
+    if (!added) return false;
+    const addedTs = typeof added === 'number' ? added : Date.parse(added);
+    if (!Number.isFinite(addedTs)) return false;
+    const oneYearMs = 1000 * 60 * 60 * 24 * 365;
+    return (Date.now() - addedTs) >= oneYearMs;
   }
 
   static getGamingStats() {
@@ -1568,310 +1427,12 @@ export class AchievementTracker {
 
   // XP and Level System
   static getAchievementPoints() {
-    const pointsMap = {
-      // Library achievements
-      'first_game': 10,
-      'collector_5': 25,
-      'collector_10': 50,
-      'collector_25': 100,
-      'collector_50': 200,
-      'collector_100': 300,
-      'collector_250': 500,
-      'collector_500': 750,
-      'collector_750': 1000,
-      'collector_1500': 1500,
-      'collector_2500': 2000,
-      'variety_3': 30,
-      'variety_5': 60,
-      'platform_diverse': 40,
-
-      // Time achievements
-      'hour_1': 15,
-      'hour_5': 30,
-      'hour_10': 60,
-      'hour_25': 125,
-      'hour_50': 250,
-      'hour_100': 500,
-      'hour_250': 750,
-      'hour_500': 1000,
-      'hour_1000': 1500,
-      'hour_1500': 2000,
-      'hour_2500': 3200,
-      'hour_5000': 5000,
-      'hour_7500': 6500,
-      'hour_10000': 8000,
-      'session_1': 5,
-      'session_3': 10,
-      'session_5': 15,
-      'session_10': 20,
-      'session_15': 35,
-      'session_30': 50,
-      'session_50': 90,
-      'session_75': 130,
-      'session_100': 180,
-      'session_150': 260,
-      'session_200': 320,
-      'session_300': 420,
-      'session_400': 600,
-      'session_500': 800,
-      'session_750': 1100,
-      'session_1000': 1500,
-      'session_1500': 2000,
-      'session_2000': 2600,
-      'session_3000': 3400,
-      'session_4000': 4200,
-      'session_5000': 5000,
-
-      // Mood achievements
-      'relaxed_5': 25,
-      'relaxed_10': 50,
-      'relaxed_25': 100,
-      'relaxed_50': 200,
-      'relaxed_100': 400,
-      'social_5': 25,
-      'social_10': 50,
-      'social_25': 100,
-      'social_50': 200,
-      'social_100': 400,
-      'creative_5': 25,
-      'creative_10': 50,
-      'creative_25': 100,
-      'creative_50': 200,
-      'creative_100': 400,
-      'focused_5': 25,
-      'focused_10': 50,
-      'focused_25': 100,
-      'focused_50': 200,
-      'focused_100': 400,
-      'competitive_5': 25,
-      'competitive_10': 50,
-      'competitive_25': 100,
-      'competitive_50': 200,
-      'competitive_100': 400,
-      'mood_explorer': 125,
-      'mood_variety_10': 250,
-      'mood_master': 500,
-      'mood_legend': 1000,
-      'perfect_play_1': 35,
-      'perfect_play_5': 75,
-      'perfect_play_10': 150,
-      'perfect_play_25': 300,
-      'perfect_play_50': 600,
-      'perfect_play_100': 1200,
-      'patreon_supporter': 0,
-      'surprise_1': 25,
-      'surprise_5': 55,
-      'surprise_10': 110,
-      'surprise_25': 225,
-      'surprise_50': 450,
-      'surprise_100': 900,
-      'rediscover_1': 20,
-      'rediscover_5': 45,
-      'rediscover_10': 90,
-      'rediscover_25': 180,
-      'rediscover_50': 350,
-      'rediscover_100': 700,
-      'share_1': 30,
-      'share_3': 65,
-      'share_5': 120,
-      'share_10': 200,
-      'share_25': 400,
-      'share_50': 800,
-      'filter_10': 40,
-      'filter_25': 90,
-      'filter_50': 180,
-      'filter_100': 350,
-      'filter_250': 700,
-      'sort_5': 35,
-      'sort_15': 80,
-      'sort_30': 160,
-      'sort_50': 300,
-      'sort_100': 600,
-      'export_1': 45,
-      'export_5': 100,
-      'export_10': 200,
-      'export_25': 240,
-      'export_50': 480,
-      'settings_3': 30,
-      'quest_total_1': 15,
-      'quest_total_10': 80,
-      'quest_total_25': 180,
-      'quest_total_50': 360,
-      'quest_daily_10': 90,
-      'quest_weekly_10': 140,
-      'quest_monthly_5': 240,
-      'quest_yearly_3': 420,
-      'first_session': 25,
-      'settings_8': 110,
-      'settings_15': 200,
-      'settings_25': 350,
-      'settings_50': 700,
-      'mood_changes_10': 60,
-      'mood_changes_25': 125,
-      'mood_changes_50': 250,
-      'mood_changes_100': 500,
-      'theme_changes_5': 40,
-      'theme_changes_10': 80,
-      'theme_changes_25': 160,
-      'theme_changes_50': 320,
-
-      // Genre achievements
-      'genre_rpg_10': 80,
-      'genre_rpg_25': 180,
-      'genre_rpg_50': 350,
-      'genre_rpg_100': 700,
-      'genre_action_10': 70,
-      'genre_action_25': 160,
-      'genre_action_50': 320,
-      'genre_action_100': 650,
-      'genre_strategy_10': 90,
-      'genre_strategy_25': 200,
-      'genre_strategy_50': 400,
-      'genre_strategy_100': 800,
-      'genre_adventure_10': 75,
-      'genre_adventure_25': 170,
-      'genre_adventure_50': 340,
-      'genre_adventure_100': 680,
-      'genre_simulation_10': 65,
-      'genre_simulation_25': 140,
-      'genre_simulation_50': 280,
-      'genre_simulation_100': 560,
-      'genre_horror_5': 60,
-      'genre_horror_15': 135,
-      'genre_horror_30': 270,
-      'genre_puzzle_10': 70,
-      'genre_puzzle_25': 155,
-      'genre_puzzle_50': 310,
-      'genre_racing_10': 65,
-      'genre_racing_25': 145,
-      'genre_racing_50': 290,
-      'genre_sports_10': 60,
-      'genre_sports_25': 135,
-      'genre_sports_50': 270,
-      'genre_fighting_5': 55,
-      'genre_fighting_15': 125,
-      'genre_fighting_30': 250,
-      'genre_shooter_10': 75,
-      'genre_shooter_25': 165,
-      'genre_shooter_50': 330,
-      'genre_indie_15': 105,
-      'genre_indie_30': 225,
-      'genre_indie_50': 450,
-      'genre_platformer_10': 70,
-      'genre_platformer_25': 155,
-      'genre_platformer_50': 310,
-      'genre_collector': 300,
-      'genre_master': 500,
-      'genre_legend': 800,
-      'genre_completionist': 1200,
-
-      // Daily achievements - lower XP since they reset daily
-      'daily_15min': 10,
-      'daily_30min': 15,
-      'daily_1hour': 25,
-      'daily_2hours': 40,
-      'daily_3hours': 60,
-      'daily_5hours': 100,
-      'daily_7hours': 140,
-      'daily_10hours': 200,
-      'daily_3sessions': 12,
-      'daily_5sessions': 20,
-      'daily_10sessions': 35,
-      'daily_perfect_play': 15,
-      'daily_surprise': 12,
-      'daily_rediscover': 10,
-      'daily_share': 18,
-      'daily_2moods': 8,
-      'daily_3moods': 15,
-      'daily_all_moods': 30,
-      'daily_3genres': 12,
-      'daily_5genres': 20,
-      'daily_2platforms': 10,
-      'daily_3platforms': 18,
-      'daily_3games': 15,
-      'daily_5games': 28,
-
-      // Weekly achievements - moderate XP
-      'weekly_2hours': 25,
-      'weekly_5hours': 50,
-      'weekly_10hours': 80,
-      'weekly_20hours': 140,
-      'weekly_40hours': 260,
-      'weekly_60hours': 380,
-      'weekly_100hours': 600,
-      'weekly_7sessions': 60,
-      'weekly_14sessions': 110,
-      'weekly_21sessions': 180,
-      'weekly_5games': 70,
-      'weekly_10games': 140,
-      'weekly_15games': 220,
-      'weekly_4genres': 120,
-      'weekly_6genres': 220,
-      'weekly_3moods': 60,
-      'weekly_4moods': 120,
-      'weekly_4days': 130,
-      'weekly_6days': 220,
-      'weekly_streak_3': 80,
-      'weekly_streak_5': 160,
-      'weekly_streak_7': 320,
-      'weekly_perfect_5': 100,
-      'weekly_surprise_7': 130,
-      'weekly_rediscover_3': 70,
-      'weekly_share_3': 90,
-
-      // Monthly achievements - higher XP for longer commitment
-      'monthly_10hours': 120,
-      'monthly_25hours': 180,
-      'monthly_50hours': 240,
-      'monthly_100hours': 420,
-      'monthly_150hours': 600,
-      'monthly_200hours': 900,
-      'monthly_300hours': 1300,
-      'monthly_30sessions': 170,
-      'monthly_50sessions': 280,
-      'monthly_75sessions': 430,
-      'monthly_10days': 200,
-      'monthly_20days': 360,
-      'monthly_25days': 520,
-      'monthly_unlock_5': 320,
-      'monthly_unlock_10': 620,
-      'monthly_unlock_15': 950,
-      'monthly_10genres': 270,
-      'monthly_15genres': 420,
-      'monthly_5platforms': 320,
-      'monthly_all_moods': 360,
-      'monthly_perfect_10': 220,
-      'monthly_surprise_15': 320,
-      'monthly_rediscover_5': 170,
-      'monthly_share_5': 260,
-
-      // Yearly achievements - highest XP for epic challenges
-      'yearly_100hours': 400,
-      'yearly_500hours': 1000,
-      'yearly_1000hours': 2000,
-      'yearly_1500hours': 3000,
-      'yearly_2000hours': 4000,
-      'yearly_200sessions': 800,
-      'yearly_365sessions': 2000,
-      'yearly_300days': 1500,
-      'yearly_350days': 2500,
-      'yearly_unlock_50': 2000,
-      'yearly_unlock_100': 4000,
-      'yearly_unlock_150': 6000,
-      'yearly_20genres': 1000,
-      'yearly_25genres': 1500,
-      'yearly_10platforms': 1200,
-      'yearly_mood_100': 800,
-      'yearly_perfect_50': 600,
-      'yearly_surprise_100': 1000,
-      'yearly_rediscover_25': 500,
-      'yearly_share_25': 800,
-      'yearly_streak_30': 1500,
-      'yearly_streak_50': 2500,
-      'yearly_streak_100': 5000,
-    };
-
-    return pointsMap;
+    const rarityPoints = { COMMON: 50, RARE: 150, EPIC: 400, LEGENDARY: 1000 };
+    const map = {};
+    ALL_ACHIEVEMENT_DEFINITIONS.forEach((def) => {
+      map[def.id] = rarityPoints[def.rarity] || 50;
+    });
+    return map;
   }
 
   static getPatreonBoostProfile() {
@@ -2211,48 +1772,22 @@ export class AchievementTracker {
       const unlocked = this.getUnlockedAchievements();
     
     // Library achievements
-    if (stats.totalSessions > 0 && !unlocked.includes('first_game')) {
+    if (this.getLaunchRewardStats().launches > 0 && !unlocked.includes('first_game')) {
       this.unlockAchievement('first_game');
+      unlocked.push('first_game');
     }
-    if (stats.librarySize >= 5 && !unlocked.includes('collector_5')) {
-      this.unlockAchievement('collector_5');
-    }
-    if (stats.librarySize >= 10 && !unlocked.includes('collector_10')) {
-      this.unlockAchievement('collector_10');
-    }
-    if (stats.librarySize >= 25 && !unlocked.includes('collector_25')) {
-      this.unlockAchievement('collector_25');
-    }
-    if (stats.librarySize >= 50 && !unlocked.includes('collector_50')) {
-      this.unlockAchievement('collector_50');
-    }
-    if (stats.librarySize >= 100 && !unlocked.includes('collector_100')) {
-      this.unlockAchievement('collector_100');
-    }
-    if (stats.librarySize >= 250 && !unlocked.includes('collector_250')) {
-      this.unlockAchievement('collector_250');
-    }
-    if (stats.librarySize >= 500 && !unlocked.includes('collector_500')) {
-      this.unlockAchievement('collector_500');
-    }
-    if (stats.librarySize >= 750 && !unlocked.includes('collector_750')) {
-      this.unlockAchievement('collector_750');
-    }
-    if (stats.librarySize >= 1000 && !unlocked.includes('collector_1000')) {
-      this.unlockAchievement('collector_1000');
-    }
-    if (stats.librarySize >= 1500 && !unlocked.includes('collector_1500')) {
-      this.unlockAchievement('collector_1500');
-    }
-    if (stats.librarySize >= 2000 && !unlocked.includes('collector_2000')) {
-      this.unlockAchievement('collector_2000');
-    }
+    (COLLECTOR_THRESHOLD_MAP.collector || []).forEach(({ id, threshold }) => {
+      if (stats.librarySize >= threshold && !unlocked.includes(id)) {
+        this.unlockAchievement(id);
+        unlocked.push(id);
+      }
+    });
 
     // Time achievements (total)
     const totalPlaytime = stats.totalPlayTime;
     const playtimeThresholds = PLAYTIME_THRESHOLD_MAP.hour || [];
     playtimeThresholds.forEach(({ id, threshold }) => {
-      if (totalPlaytime >= threshold && !unlocked.includes(id)) {
+      if (totalPlaytime >= threshold * 60 && !unlocked.includes(id)) {
         this.unlockAchievement(id);
         unlocked.push(id);
       }
@@ -2284,15 +1819,29 @@ export class AchievementTracker {
       unlocked.push('variety_5');
     }
 
-    // Specific genre achievements (e.g., action_1, action_5, ...)
-    Object.entries(GENRE_THRESHOLD_MAP).forEach(([genre, thresholds = []]) => {
-      const plays = genreStats[genre] || 0;
+    // Mood achievements use permanent lifetime counts, while weekly mood data remains available for badges.
+    const lifetimeMoodStats = this.getLifetimeMoodStats();
+    Object.entries(MOOD_THRESHOLD_MAP).forEach(([mood, thresholds = []]) => {
+      const sessions = Number(lifetimeMoodStats[mood] || 0);
       thresholds.forEach(({ id, threshold }) => {
-        if (plays >= threshold && !unlocked.includes(id)) {
+        if (sessions >= threshold && !unlocked.includes(id)) {
           this.unlockAchievement(id);
           unlocked.push(id);
         }
       });
+    });
+    if (MOOD_SLUGS.every(mood => Number(lifetimeMoodStats[mood] || 0) > 0) && !unlocked.includes('mood_explorer')) {
+      this.unlockAchievement('mood_explorer');
+      unlocked.push('mood_explorer');
+    }
+
+    // Genre session achievements use the most-played genre.
+    const maxGenreSessions = Math.max(0, ...Object.values(genreStats).map(value => Number(value) || 0));
+    (GENRE_THRESHOLD_MAP.genre_sessions || []).forEach(({ id, threshold }) => {
+      if (maxGenreSessions >= threshold && !unlocked.includes(id)) {
+        this.unlockAchievement(id);
+        unlocked.push(id);
+      }
     });
 
     // Unique gameplay achievements
@@ -2317,24 +1866,52 @@ export class AchievementTracker {
       });
     });
 
+    // Engagement achievements are derived from the current stored library.
+    const library = this.getStoredLibrary();
+    const ratingCount = library.filter(game => Number(game?.userRating ?? game?.rating) > 0).length;
+    const completedStatuses = new Set(['beaten', 'completed', '100%']);
+    const completionCount = library.filter(game => completedStatuses.has(String(game?.completionStatus || '').trim().toLowerCase())).length;
+    Object.entries(ENGAGEMENT_THRESHOLD_MAP).forEach(([metric, thresholds = []]) => {
+      const count = metric === 'rating' ? ratingCount : completionCount;
+      thresholds.forEach(({ id, threshold }) => {
+        if (count >= threshold && !unlocked.includes(id)) {
+          this.unlockAchievement(id);
+          unlocked.push(id);
+        }
+      });
+    });
+
     // Quest completion achievements
     const questStats = this.getQuestCompletionStats();
-    const questThresholds = [
-      { id: 'quest_total_1', threshold: 1, count: questStats.totalCompleted },
-      { id: 'quest_total_10', threshold: 10, count: questStats.totalCompleted },
-      { id: 'quest_total_25', threshold: 25, count: questStats.totalCompleted },
-      { id: 'quest_total_50', threshold: 50, count: questStats.totalCompleted },
-      { id: 'quest_daily_10', threshold: 10, count: questStats.periodCounts.daily || 0 },
-      { id: 'quest_weekly_10', threshold: 10, count: questStats.periodCounts.weekly || 0 },
-      { id: 'quest_monthly_5', threshold: 5, count: questStats.periodCounts.monthly || 0 },
-      { id: 'quest_yearly_3', threshold: 3, count: questStats.periodCounts.yearly || 0 }
-    ];
-
-    questThresholds.forEach(({ id, threshold, count }) => {
-      if (count >= threshold && !unlocked.includes(id)) {
+    (QUEST_THRESHOLD_MAP.quest_total || []).forEach(({ id, threshold }) => {
+      if (questStats.totalCompleted >= threshold && !unlocked.includes(id)) {
         this.unlockAchievement(id);
         unlocked.push(id);
       }
+    });
+
+    // Theme achievements — unique games played per theme
+    Object.entries(THEME_THRESHOLD_MAP).forEach(([themeKey, thresholds = []]) => {
+      const themeSlug = themeKey.replace(/^theme_/, '');
+      const themeCount = this.getThemeUniqueCount(themeSlug);
+      thresholds.forEach(({ id, threshold }) => {
+        if (themeCount >= threshold && !unlocked.includes(id)) {
+          this.unlockAchievement(id);
+          unlocked.push(id);
+        }
+      });
+    });
+
+    // Backlog achievements
+    const backlogStats = this.getBacklogStats();
+    Object.entries(BACKLOG_THRESHOLD_MAP).forEach(([metric, thresholds = []]) => {
+      const count = Number(backlogStats[metric]) || 0;
+      thresholds.forEach(({ id, threshold }) => {
+        if (count >= threshold && !unlocked.includes(id)) {
+          this.unlockAchievement(id);
+          unlocked.push(id);
+        }
+      });
     });
 
     // Time-based achievements

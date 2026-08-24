@@ -7,6 +7,17 @@
 import StorageService from './StorageService';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 
+export const RECOMMENDATION_OUTCOME = Object.freeze({
+  GREAT_PICK: 'great-pick',
+  NOT_NOW: 'not-now',
+  NOT_FOR_ME: 'not-for-me'
+});
+
+const RECOMMENDATION_OUTCOME_VALUES = new Set(Object.values(RECOMMENDATION_OUTCOME));
+const RECOMMENDATION_LAUNCH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const RECOMMENDATION_NOT_NOW_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
+const MEANINGFUL_RECOMMENDATION_SESSION_MINUTES = 10;
+
 const MOOD_PERSONA_IDENTITIES = {
   Relaxed: {
     label: 'Chill Voyager',
@@ -423,6 +434,129 @@ export class UserBehaviorProfile {
     return profile;
   }
 
+  static historyEntryMatchesGame(entry, gameId, gameName = null) {
+    if (!entry) return false;
+    const candidates = new Set([gameId, gameName].filter(Boolean).map((value) => String(value)));
+    if (candidates.size === 0) return false;
+    const entryIds = [entry.selectedGameId, entry.launchedGameId, ...(entry.recommendedGameIds || [])]
+      .filter(Boolean)
+      .map((value) => String(value));
+    return entryIds.some((value) => candidates.has(value));
+  }
+
+  static getLatestRecommendationLaunch(gameId, gameName = null) {
+    const profile = this.getProfile();
+    const now = Date.now();
+    return [...profile.selectionHistory]
+      .reverse()
+      .find((entry) => {
+        if (!entry?.recommendationType || !entry?.launchedAt) return false;
+        const launchedAt = new Date(entry.launchedAt).getTime();
+        if (!Number.isFinite(launchedAt) || now - launchedAt > RECOMMENDATION_LAUNCH_TTL_MS) return false;
+        return this.historyEntryMatchesGame(entry, gameId, gameName);
+      }) || null;
+  }
+
+  static recordRecommendationSession(gameId, gameName, metadata = {}) {
+    const profile = this.getProfile();
+    const now = Date.now();
+    const playtimeMinutes = Math.max(0, Number(metadata.playtimeMinutes) || 0);
+    const historyMatch = [...profile.selectionHistory]
+      .reverse()
+      .find((entry) => {
+        if (!entry?.recommendationType || !entry?.launchedAt || entry?.recommendationOutcome) return false;
+        const launchedAt = new Date(entry.launchedAt).getTime();
+        if (!Number.isFinite(launchedAt) || now - launchedAt > RECOMMENDATION_LAUNCH_TTL_MS) return false;
+        return this.historyEntryMatchesGame(entry, gameId, gameName);
+      });
+
+    if (!historyMatch) return null;
+
+    historyMatch.recommendationSessionCount = (historyMatch.recommendationSessionCount || 0) + 1;
+    historyMatch.recommendationPlaytimeMinutes = (historyMatch.recommendationPlaytimeMinutes || 0) + playtimeMinutes;
+    historyMatch.lastRecommendationSessionAt = new Date().toISOString();
+    Object.assign(historyMatch, metadata);
+
+    const shouldPrompt = playtimeMinutes >= MEANINGFUL_RECOMMENDATION_SESSION_MINUTES
+      && !historyMatch.recommendationOutcomePromptedAt;
+    if (shouldPrompt) historyMatch.recommendationOutcomePromptedAt = new Date().toISOString();
+
+    profile.lastUpdated = new Date().toISOString();
+    this.saveProfile(profile);
+    return shouldPrompt ? { ...historyMatch } : null;
+  }
+
+  static trackRecommendationOutcome(gameId, outcome, metadata = {}) {
+    if (!gameId || !RECOMMENDATION_OUTCOME_VALUES.has(outcome)) return this.getProfile();
+    const profile = this.getProfile();
+    const historyMatch = [...profile.selectionHistory]
+      .reverse()
+      .find((entry) => entry?.recommendationType && this.historyEntryMatchesGame(entry, gameId, metadata.gameName));
+    if (!historyMatch) return profile;
+
+    historyMatch.recommendationOutcome = outcome;
+    historyMatch.recommendationOutcomeAt = new Date().toISOString();
+    if (outcome === RECOMMENDATION_OUTCOME.GREAT_PICK) {
+      historyMatch.recommendationHelpful = true;
+      historyMatch.recommendationDeferredUntil = null;
+    } else if (outcome === RECOMMENDATION_OUTCOME.NOT_FOR_ME) {
+      historyMatch.recommendationHelpful = false;
+      historyMatch.recommendationDeferredUntil = null;
+    } else {
+      historyMatch.recommendationDeferredUntil = new Date(Date.now() + RECOMMENDATION_NOT_NOW_COOLDOWN_MS).toISOString();
+    }
+    Object.assign(historyMatch, metadata);
+    profile.lastUpdated = new Date().toISOString();
+    this.saveProfile(profile);
+    return profile;
+  }
+
+  static getRecommendationOutcomeSignal(gameId, gameName = null) {
+    const profile = this.getProfile();
+    const historyMatch = [...profile.selectionHistory]
+      .reverse()
+      .find((entry) => this.historyEntryMatchesGame(entry, gameId, gameName)
+        && (entry?.recommendationOutcome
+          || typeof entry?.recommendationHelpful === 'boolean'
+          || typeof entry?.sessionEnjoyed === 'boolean'
+          || Number(entry?.recommendationSessionCount || 0) >= 2
+          || Number(entry?.recommendationPlaytimeMinutes || 0) >= 60));
+    if (!historyMatch) return { adjustment: 0, suppress: false, reason: null, outcome: null };
+
+    const outcome = historyMatch.recommendationOutcome || null;
+    if (outcome === RECOMMENDATION_OUTCOME.NOT_FOR_ME) {
+      return { adjustment: -120, suppress: true, reason: 'You marked this as not for you', outcome };
+    }
+    if (outcome === RECOMMENDATION_OUTCOME.NOT_NOW) {
+      const deferredUntil = new Date(historyMatch.recommendationDeferredUntil || 0).getTime();
+      const deferred = Number.isFinite(deferredUntil) && deferredUntil > Date.now();
+      return {
+        adjustment: deferred ? -1000 : -5,
+        suppress: deferred,
+        reason: deferred ? 'Deferred after your Not now feedback' : null,
+        outcome
+      };
+    }
+    if (outcome === RECOMMENDATION_OUTCOME.GREAT_PICK) {
+      return { adjustment: 24, suppress: false, reason: 'Raised because this pick worked for you', outcome };
+    }
+    if (historyMatch.recommendationHelpful === false || historyMatch.sessionEnjoyed === false) {
+      return { adjustment: -40, suppress: false, reason: 'Lowered by your earlier feedback', outcome: null };
+    }
+    if (historyMatch.recommendationHelpful === true || historyMatch.sessionEnjoyed === true) {
+      return { adjustment: 16, suppress: false, reason: 'Raised by your earlier feedback', outcome: null };
+    }
+    if (Number(historyMatch.recommendationSessionCount || 0) >= 2
+      || Number(historyMatch.recommendationPlaytimeMinutes || 0) >= 60) {
+      return { adjustment: 10, suppress: false, reason: 'Raised because you returned after a recommendation', outcome: null };
+    }
+    return { adjustment: 0, suppress: false, reason: null, outcome: null };
+  }
+
+  static shouldSuppressRecommendation(gameId, gameName = null) {
+    return this.getRecommendationOutcomeSignal(gameId, gameName).suppress;
+  }
+
   /**
    * Track game completion
    */
@@ -652,10 +786,10 @@ export class UserBehaviorProfile {
       const gameId = entry?.selectedGameId || entry?.launchedGameId;
       if (!gameId) return;
       const id = String(gameId);
-      if (entry.recommendationHelpful === true || entry.sessionEnjoyed === true) {
+      if (entry.recommendationOutcome === RECOMMENDATION_OUTCOME.GREAT_PICK || entry.recommendationHelpful === true || entry.sessionEnjoyed === true) {
         liked.add(id);
         disliked.delete(id);
-      } else if (entry.recommendationHelpful === false || entry.sessionEnjoyed === false) {
+      } else if (entry.recommendationOutcome === RECOMMENDATION_OUTCOME.NOT_FOR_ME || entry.recommendationHelpful === false || entry.sessionEnjoyed === false) {
         disliked.add(id);
         liked.delete(id);
       }
@@ -677,10 +811,11 @@ export class UserBehaviorProfile {
   static getMoodCompletionRate(mood) {
     const profile = this.getProfile();
     const moodData = profile.moodPreferences[mood];
-    if (!moodData || moodData.count === 0) return 0;
+    if (!moodData) return 0;
     if (moodData.sessionFeedbackCount > 0) {
       return Math.round(((moodData.enjoyedSessionCount || 0) / moodData.sessionFeedbackCount) * 100);
     }
+    if (moodData.count === 0) return 0;
     return Math.round((moodData.completedCount / moodData.count) * 100);
   }
 
@@ -690,10 +825,11 @@ export class UserBehaviorProfile {
   static getGenreCompletionRate(genre) {
     const profile = this.getProfile();
     const genreData = profile.genrePreferences[genre];
-    if (!genreData || genreData.count === 0) return 0;
+    if (!genreData) return 0;
     if (genreData.sessionFeedbackCount > 0) {
       return Math.round(((genreData.enjoyedSessionCount || 0) / genreData.sessionFeedbackCount) * 100);
     }
+    if (genreData.count === 0) return 0;
     return Math.round((genreData.completedCount / genreData.count) * 100);
   }
 
@@ -1260,23 +1396,63 @@ export class UserBehaviorProfile {
     const estimatedSession = PersonaPerformanceInsights.estimateSessionMinutes(game);
     const avgSession = Math.round(profile.playstylePatterns.avgSessionLength || 0);
 
+    // Seed picks a stable-per-game-per-day index into each phrasing pool, so the
+    // same mood/genre stat doesn't read identically across every card that shares it.
+    const seedFor = (salt) => {
+      const base = `${gameName}|${salt}`.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      return base + new Date().getDate();
+    };
+    const pick = (pool, salt) => pool[seedFor(salt) % pool.length];
+
     // Check mood match — tie it to the specific game so it doesn't read identically for every title.
     if (mood) {
+      const moodData = profile.moodPreferences[mood];
+      const sampleSize = moodData?.count || 0;
       const moodRate = this.getMoodCompletionRate(mood);
-      if (moodRate > 70) {
-        reasons.push(`You finish ${moodRate}% of your ${mood} games — ${gameName} sits in that lane`);
-      } else if (moodRate > 50) {
-        reasons.push(`${mood} is a comfortable lane for you, and ${gameName} fits there`);
+      const avgMoodPlaytime = sampleSize > 0 ? Math.round((moodData.totalPlaytime || 0) / sampleSize) : 0;
+
+      if (sampleSize >= 5 && moodRate > 70) {
+        reasons.push(pick([
+          `You finish ${moodRate}% of your ${mood} games — ${gameName} sits in that lane`,
+          `${moodRate}% completion rate on ${mood} picks, and ${gameName} fits the pattern`,
+          `${gameName} joins a strong streak — ${moodRate}% of your ${mood} games get finished`
+        ], `mood-high`));
+      } else if (sampleSize >= 3 && moodRate > 50) {
+        reasons.push(pick([
+          `${mood} is a comfortable lane for you, and ${gameName} fits there`,
+          `You've had decent luck finishing ${mood} games — ${gameName} is in that group`,
+          `${gameName} lines up with the ${mood} games you tend to stick with`
+        ], `mood-mid`));
+      } else if (sampleSize > 0 && sampleSize < 3) {
+        // Small sample — avoid claiming a confident percentage off 1-2 games.
+        reasons.push(`Still building a read on ${mood} games, but ${gameName} matches the mood you picked`);
+      }
+      if (avgMoodPlaytime >= 60 && sampleSize >= 3) {
+        const hours = Math.round((avgMoodPlaytime / 60) * 10) / 10;
+        reasons.push(`You typically sink ${hours}h into ${mood} sessions`);
       }
     }
 
     // Check genre match — reference the actual game name.
     if (genre) {
+      const genreData = profile.genrePreferences[genre];
+      const sampleSize = genreData?.count || 0;
       const genreRate = this.getGenreCompletionRate(genre);
-      if (genreRate > 70) {
-        reasons.push(`You finish ${genreRate}% of your ${genre} games — ${gameName} carries that DNA`);
-      } else if (genreRate > 50) {
-        reasons.push(`${genre} tends to land well for you, and ${gameName} is in that space`);
+
+      if (sampleSize >= 5 && genreRate > 70) {
+        reasons.push(pick([
+          `You finish ${genreRate}% of your ${genre} games — ${gameName} carries that DNA`,
+          `${genre} is a strong genre for you at ${genreRate}% completion, and ${gameName} belongs there`,
+          `Across your ${genre} games you finish ${genreRate}% — ${gameName} keeps that streak alive`
+        ], `genre-high`));
+      } else if (sampleSize >= 3 && genreRate > 50) {
+        reasons.push(pick([
+          `${genre} tends to land well for you, and ${gameName} is in that space`,
+          `${gameName} sits in ${genre}, a genre you generally follow through on`,
+          `Your ${genre} track record is solid, and ${gameName} fits right in`
+        ], `genre-mid`));
+      } else if (sampleSize > 0 && sampleSize < 3) {
+        reasons.push(`Only a couple of ${genre} games tracked so far, but ${gameName} is a solid one to build that read`);
       }
     }
 
@@ -1284,7 +1460,10 @@ export class UserBehaviorProfile {
     if (avgSession > 0 && estimatedSession > 0) {
       const diff = Math.abs(estimatedSession - avgSession);
       if (diff <= 15) {
-        reasons.push(`${gameName}'s estimated ${estimatedSession} min session lines up with your ${avgSession} min average`);
+        reasons.push(pick([
+          `${gameName}'s estimated ${estimatedSession} min session lines up with your ${avgSession} min average`,
+          `A ${estimatedSession} min sit-down, right around your usual ${avgSession} min sessions`
+        ], `session-match`));
       } else if (estimatedSession < avgSession) {
         reasons.push(`${gameName} is estimated at ${estimatedSession} min — a quick hit against your ${avgSession} min average`);
       } else {

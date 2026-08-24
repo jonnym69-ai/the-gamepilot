@@ -10,6 +10,7 @@ import ProfileService from './services/ProfileService';
 import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
 import { YearInReviewStoryShareCard } from './components/YearInReviewStoryShareCard';
 import ShareMenu from './components/ShareMenu';
+import LazyImage from './components/LazyImage';
 import { formatPlaytime } from './utils/formatPlaytime';
 import './YearInReview.css';
 
@@ -117,20 +118,6 @@ const sanitizeExportClone = (sourceRoot, clonedDocument) => {
   });
 };
 
-const SkeletonCard = () => (
-  <div className="skeleton-card">
-    <div className="skeleton-header">
-      <div className="skeleton-icon" />
-      <div className="skeleton-title" />
-    </div>
-    <div className="skeleton-content">
-      <div className="skeleton-line" />
-      <div className="skeleton-line short" />
-      <div className="skeleton-line" />
-    </div>
-  </div>
-);
-
 function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, endSession, getPlaytimeStats, getMostPlayedGames }) {
   const exportRef = useRef(null);
   const shareCardRef = useRef(null);
@@ -144,7 +131,6 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
   const [statusMessage, setStatusMessage] = useState('');
   const [isExportingImage, setIsExportingImage] = useState(false);
   const [isExportingShare, setIsExportingShare] = useState(false);
-  const isLoading = false;
 
   useEffect(() => {
     if (!availableYears.includes(selectedYear)) {
@@ -406,22 +392,13 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
 
         <div ref={exportRef} className="year-review-export-surface">
           <section className="year-review-summary-grid">
-            {isLoading ? (
-              <>
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-              </>
-            ) : (
-              snapshot.summaryCards.map((card) => (
-                <article key={card.id} className="year-review-summary-card">
-                  <span className="summary-card-title">{card.title}</span>
-                  <strong>{card.value}</strong>
-                  <p>{card.detail}</p>
-                </article>
-              ))
-            )}
+            {snapshot.summaryCards.map((card) => (
+              <article key={card.id} className="year-review-summary-card">
+                <span className="summary-card-title">{card.title}</span>
+                <strong>{card.value}</strong>
+                <p>{card.detail}</p>
+              </article>
+            ))}
           </section>
 
           {!snapshot.hasData ? (
@@ -531,6 +508,67 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                       </article>
                     ))}
                   </div>
+                </section>
+              )}
+
+              {snapshot.championJourney?.yearChampion && (
+                <section className="year-review-champion-journey">
+                  <div className="year-review-champion-heading">
+                    <div>
+                      <span className="year-review-kicker">Your year in games</span>
+                      <h2><Trophy size={21} /> Champion journey</h2>
+                      <p>The games that defined each month, led by your most-played game of {selectedYear}.</p>
+                    </div>
+                  </div>
+                  <div className="year-review-year-champion">
+                    <div className="year-review-year-champion-cover">
+                      <LazyImage
+                        src={snapshot.championJourney.yearChampion.game?.portrait}
+                        fallbackSrc={snapshot.championJourney.yearChampion.game?.portraitFallback}
+                        placeholder={snapshot.championJourney.yearChampion.game?.placeholder}
+                        gameName={snapshot.championJourney.yearChampion.game?.name}
+                        platform={snapshot.championJourney.yearChampion.game?.platform}
+                        alt={`${snapshot.championJourney.yearChampion.game?.name} cover`}
+                      />
+                    </div>
+                    <div className="year-review-year-champion-copy">
+                      <span>Game of {selectedYear}</span>
+                      <h3>{snapshot.championJourney.yearChampion.game?.name}</h3>
+                      <div className="year-review-year-champion-stats">
+                        <div><strong>{formatPlaytime(snapshot.championJourney.yearChampion.minutes)}</strong><span>played</span></div>
+                        <div><strong>{snapshot.championJourney.yearChampion.sessionCount}</strong><span>sessions</span></div>
+                        <div><strong>{formatPlaytime(snapshot.championJourney.yearChampion.longestSessionMinutes)}</strong><span>longest sitting</span></div>
+                        <div><strong>{Math.round((snapshot.championJourney.yearChampion.minutes / Math.max(1, snapshot.championJourney.yearChampion.totalPeriodMinutes)) * 100)}%</strong><span>of yearly play</span></div>
+                      </div>
+                      <p>
+                        {formatPlaytime(snapshot.championJourney.yearChampion.totalPeriodMinutes)} across {snapshot.championJourney.yearChampion.totalPeriodSessions} sessions and {snapshot.championJourney.yearChampion.periodGameCount} games this year.
+                      </p>
+                    </div>
+                  </div>
+                  {snapshot.championJourney.monthlyChampions.length > 0 && (
+                    <div className="year-review-month-champions">
+                      {snapshot.championJourney.monthlyChampions.map((champion) => (
+                        <article key={champion.periodKey} className="year-review-month-champion">
+                          <div className="year-review-month-cover">
+                            <LazyImage
+                              src={champion.game?.portrait}
+                              fallbackSrc={champion.game?.portraitFallback}
+                              placeholder={champion.game?.placeholder}
+                              gameName={champion.game?.name}
+                              platform={champion.game?.platform}
+                              alt={`${champion.game?.name} cover`}
+                            />
+                            <span>{champion.monthLabel}</span>
+                          </div>
+                          <div className="year-review-month-copy">
+                            <strong title={champion.game?.name}>{champion.game?.name}</strong>
+                            <span>{formatPlaytime(champion.minutes)} · {champion.sessionCount} session{champion.sessionCount === 1 ? '' : 's'}</span>
+                            <small>Longest: {formatPlaytime(champion.longestSessionMinutes)}</small>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </section>
               )}
 

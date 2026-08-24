@@ -1,10 +1,11 @@
 const electron = require('electron');
-const { app, BrowserWindow, ipcMain, shell, dialog, Menu, protocol, powerMonitor } = electron;
+const { app, BrowserWindow, ipcMain, shell, dialog, Menu, Tray, protocol, powerMonitor } = electron;
 const fs = require('fs');
 const path = require('path');
 const GameLauncher = require('./launchHandler');
 const SessionDatabase = require('./sessionDatabase');
 const si = require('systeminformation');
+const discordPresence = require('./discordPresence');
 
  const APP_DISPLAY_NAME = 'GamePilot';
  app.setName(APP_DISPLAY_NAME);
@@ -17,13 +18,21 @@ global.shell = shell;
 const gameLauncher = new GameLauncher();
 const activeGameMonitors = new Map();
 let mainWindow = null;
+let tray = null;
+let gameBarWindow = null;
 const sessionDatabase = new SessionDatabase(app.getPath('userData'));
 const KNOWN_LAUNCHER_PROCESS_NAMES = new Set([
   'steam.exe',
+  'steamservice.exe',
+  'steamwebhelper.exe',
   'epicgameslauncher.exe',
   'epicwebhelper.exe',
   'goggalaxy.exe',
   'galaxyclient.exe',
+  'galaxyclientservice.exe',
+  'galaxycommunication.exe',
+  'galaxyclient helper.exe',
+  'galaxyclienthelper.exe',
   'battle.net.exe',
   'eadesktop.exe',
   'origin.exe',
@@ -31,9 +40,24 @@ const KNOWN_LAUNCHER_PROCESS_NAMES = new Set([
   'upc.exe',
   'rockstargameslauncher.exe',
   'launcherpatcher.exe',
+  'riotclientservices.exe',
+  'riotclientux.exe',
+  'riotclientuxrender.exe',
   'gamingservicesui.exe',
   'gamingservices.exe',
-  'xboxpcapp.exe'
+  'xboxpcapp.exe',
+  'xboxapp.exe',
+  'xboxgamebar.exe'
+]);
+
+// Launcher/utility apps that can end up in the scanned library as if they were
+// games. They must never be watched for play sessions — a running launcher is
+// not playtime.
+const NON_GAME_WATCH_TITLES = new Set([
+  'gog galaxy', 'epic games launcher', 'ubisoft connect', 'battle.net',
+  'ea app', 'origin', 'riot client', 'rockstar games launcher',
+  'rockstar social club', 'xbox game bar', 'amazon games', 'itch', 'playnite',
+  'steamworks common redistributables'
 ]);
 const APP_PREFERENCES_FILE = 'preferences.json';
 
@@ -372,6 +396,7 @@ const collectSystemInfo = async () => {
         const key = fs.fs.toLowerCase();
         fsMap.set(key, fs);
         fsMap.set(key.replace(/\\/g, ''), fs); // also store without backslashes
+        if (fs.mount) fsMap.set(String(fs.mount).toLowerCase(), fs);
       }
     }
   }
@@ -490,8 +515,12 @@ const collectSystemInfo = async () => {
         const bdIndex = getDiskIndex(bd?.physical);
         const diskIndex = getDiskIndex(disk.device);
         if (bdIndex !== null && diskIndex !== null && bdIndex === diskIndex) {
-          if (bd.mount && /^[A-Z]:$/i.test(bd.mount)) {
-            ownedMounts.add(bd.mount.toUpperCase());
+          if (bd.mount) {
+            if (process.platform === 'win32' && /^[A-Z]:$/i.test(bd.mount)) {
+              ownedMounts.add(bd.mount.toUpperCase());
+            } else if (process.platform === 'linux' && String(bd.mount).startsWith('/')) {
+              ownedMounts.add(String(bd.mount));
+            }
           }
         }
       }
@@ -589,13 +618,15 @@ const collectSystemInfo = async () => {
     },
     driveTypeMap,
     logicalDrives: Array.isArray(fsSizes) ? fsSizes.map(fs => ({
-      mount: fs.fs,
+      mount: process.platform === 'win32' ? fs.fs : (fs.mount || fs.fs),
       fsType: fs.type,
       sizeGB: fs.size ? Math.round(fs.size / (1024 ** 3)) : 0,
       usedGB: fs.used ? Math.round(fs.used / (1024 ** 3)) : 0,
       freeGB: fs.available ? Math.round(fs.available / (1024 ** 3)) : 0,
       usePercent: Math.round(fs.use || 0)
-    })).filter(d => /^[A-Z]:$/i.test(d.mount)) : [],
+    })).filter((drive) => process.platform === 'win32'
+      ? /^[A-Z]:$/i.test(drive.mount)
+      : String(drive.mount || '').startsWith('/') && !['tmpfs', 'devtmpfs', 'squashfs', 'overlay'].includes(String(drive.fsType || '').toLowerCase())) : [],
     lastUpdated: Date.now()
   };
 };
@@ -1416,7 +1447,7 @@ ipcMain.handle('steam-wishlist', async (_event, steamId) => {
 // to opening Programs & Features (appwiz.cpl) and the install folder so the
 // user can decide.
 // ---------------------------------------------------------------------------
-const { exec: childExec } = require('child_process');
+const { execFile: childExecFile } = require('child_process');
 
 const MAX_DISK_WALK_DEPTH = 16;
 const MAX_DISK_WALK_FILES = 250_000;
@@ -2053,9 +2084,9 @@ function buildUninstallPlan(game) {
   if ((platform === 'epic' || platform === 'epic games') && launchId) {
     return {
       method: 'deeplink',
-      url: `com.epicgames.launcher://apps/${launchId}?action=uninstall`,
+      url: `com.epicgames.launcher://apps/${launchId}?action=launch`,
       label: 'Epic Games Launcher',
-      message: 'Epic Games Launcher will open the uninstall confirmation. Cloud saves are preserved on your Epic account.'
+      message: 'Epic Games Launcher will open this game. Click ⋮ → Uninstall to remove it. Cloud saves are preserved on your Epic account.'
     };
   }
   if (platform === 'gog' || platform === 'gog galaxy') {
@@ -2135,6 +2166,22 @@ function buildUninstallPlan(game) {
 
 ipcMain.handle('build-uninstall-plan', async (_event, game) => {
   try {
+    if (process.platform === 'linux') {
+      const isSteamGame = String(game?.platform || '').toLowerCase() === 'steam';
+      return {
+        ok: true,
+        plan: isSteamGame ? {
+          method: 'deeplink',
+          url: 'steam://open/games',
+          label: 'Steam Library',
+          message: 'GamePilot will open your Steam Library. Use the game’s Manage menu to uninstall it safely.',
+        } : {
+          method: 'unsupported',
+          label: 'Unsupported on Linux',
+          message: 'This launcher is not supported in the Steam-first Linux beta. Manage the game with its original launcher.',
+        },
+      };
+    }
     return { ok: true, plan: buildUninstallPlan(game) };
   } catch (err) {
     return { ok: false, error: err.message || 'plan-failed' };
@@ -2142,19 +2189,98 @@ ipcMain.handle('build-uninstall-plan', async (_event, game) => {
 });
 
 ipcMain.handle('start-uninstall', async (_event, payload) => {
+  if (process.platform === 'linux') {
+    const linuxGame = payload?.game || payload;
+    if (String(linuxGame?.platform || '').toLowerCase() !== 'steam') {
+      return {
+        ok: false,
+        error: 'This launcher is not supported in the Steam-first Linux beta.',
+      };
+    }
+    try {
+      await shell.openExternal('steam://open/games');
+      return { ok: true, plan: { method: 'deeplink', label: 'Steam Library', url: 'steam://open/games' } };
+    } catch (error) {
+      return { ok: false, error: error.message || 'Could not open Steam.' };
+    }
+  }
   const game = payload?.game || payload;
   const plan = buildUninstallPlan(game);
+
+  // Helper: spawn a command with argument array (safe from injection).
+  const spawnArgs = (cmd, args) => new Promise((resolve, reject) => {
+    childExecFile(cmd, args, (err) => err ? reject(err) : resolve());
+  });
+
+  // Helper: open Programs & Features reliably. `control appwiz.cpl` is more
+  // robust than bare `appwiz.cpl` which can fail silently.
+  const openAppWiz = () => spawnArgs('control', ['appwiz.cpl']);
+
+  // Helper: open a custom protocol URL (steam://, com.epicgames.launcher://,
+  // etc.) via the Windows `start` command. This is MORE reliable than
+  // shell.openExternal for custom protocols because Electron's openExternal
+  // can silently succeed without actually launching the handler.
+  const openProtocol = async (url) => {
+    // Try `start` first — it goes through the Windows shell which properly
+    // resolves protocol handlers. Using execFile with arg array prevents
+    // command injection via malicious protocol URLs.
+    try {
+      await spawnArgs('cmd', ['/c', 'start', '', url]);
+      return true;
+    } catch (startErr) {
+      console.warn(`[Uninstall] start command failed for ${url}:`, startErr.message);
+    }
+    // Try explorer.exe — it can also resolve protocol handlers and is
+    // sometimes more reliable than `start` for custom protocols like
+    // com.epicgames.launcher://
+    try {
+      await spawnArgs('explorer', [url]);
+      return true;
+    } catch (explorerErr) {
+      console.warn(`[Uninstall] explorer failed for ${url}:`, explorerErr.message);
+    }
+    // Fall back to shell.openExternal
+    try {
+      await shell.openExternal(url);
+      return true;
+    } catch (extErr) {
+      console.warn(`[Uninstall] shell.openExternal failed for ${url}:`, extErr.message);
+      return false;
+    }
+  };
+
+  const tryFallback = async (reason) => {
+    console.warn(`[Uninstall] ${plan.label} primary method failed (${reason}), falling back to Programs & Features.`);
+    try {
+      await openAppWiz();
+      if (plan.target) await shell.openPath(plan.target).catch(() => {});
+      return { ok: true, plan: { ...plan, method: 'cmd', label: `${plan.label} (fallback)`, fallback: true } };
+    } catch (fallbackErr) {
+      return { ok: false, error: `Could not open ${plan.label} or Programs & Features. ${fallbackErr.message}`, plan };
+    }
+  };
+
   try {
     if (plan.method === 'deeplink') {
-      await shell.openExternal(plan.url);
+      const success = await openProtocol(plan.url);
+      if (!success) {
+        return tryFallback('All protocol launch methods failed');
+      }
     } else if (plan.method === 'cmd') {
-      childExec(plan.cmd);
+      // Use `control appwiz.cpl` instead of bare `appwiz.cpl` for reliability.
+      const cmd = plan.cmd === 'appwiz.cpl' ? 'control' : plan.cmd;
+      const cmdArgs = plan.cmd === 'appwiz.cpl' ? ['appwiz.cpl'] : [];
+      try {
+        await spawnArgs(cmd, cmdArgs);
+      } catch (cmdErr) {
+        return tryFallback(`cmd failed: ${cmdErr.message}`);
+      }
     } else if (plan.method === 'open-folder') {
       await shell.openPath(plan.target);
     } else if (plan.method === 'manual') {
       // Belt and braces: open both — user picks whichever path actually works.
-      childExec(plan.cmd);
-      if (plan.target) await shell.openPath(plan.target);
+      spawnArgs('control', ['appwiz.cpl']).catch((e) => console.warn('[Uninstall] appwiz.cpl error:', e.message));
+      if (plan.target) await shell.openPath(plan.target).catch((e) => console.warn('[Uninstall] openPath error:', e.message));
     }
     return { ok: true, plan };
   } catch (err) {
@@ -2221,6 +2347,181 @@ ipcMain.handle('set-startup-launch-enabled', async (_event, enabled) => {
     isPackaged: app.isPackaged,
     message: writeSucceeded ? null : 'Unable to persist startup preference'
   };
+});
+
+// ---------- Passive game watcher ----------
+// Detects library games launched outside GamePilot (any launcher) and emits
+// session events so playtime gets tracked regardless of launch source.
+const PASSIVE_WATCH_POLL_MS = 30000;
+const PASSIVE_WATCH_MISS_TOLERANCE = 2;
+let passiveWatchlist = [];
+let passiveWatchInterval = null;
+const passiveSessions = new Map();
+
+const buildWatchEntry = (game = {}) => {
+  const matcher = buildMonitorMatcher(game);
+  return {
+    gameName: game.name,
+    appid: typeof game.appid !== 'undefined' ? game.appid : null,
+    platform: game.platform || null,
+    resolvedExecutablePath: matcher.resolvedExecutablePath,
+    installDir: matcher.installDir,
+    executableName: matcher.executableName
+  };
+};
+
+const GENERIC_EXECUTABLE_NAMES = new Set([
+  'game.exe', 'launcher.exe', 'start.exe', 'run.exe', 'play.exe',
+  'main.exe', 'client.exe', 'app.exe', 'setup.exe', 'win64.exe', 'win32.exe'
+]);
+
+const processMatchesWatchEntry = (processInfo, entry) => {
+  const processName = `${processInfo?.name || ''}`.toLowerCase();
+  const processPath = `${processInfo?.path || ''}`.toLowerCase();
+  const commandLine = `${processInfo?.command || processInfo?.params || ''}`.toLowerCase();
+
+  if (KNOWN_LAUNCHER_PROCESS_NAMES.has(processName)) {
+    return false;
+  }
+
+  if (entry.resolvedExecutablePath && processPath && processPath === entry.resolvedExecutablePath) {
+    return true;
+  }
+
+  if (entry.installDir && processPath && processPath.startsWith(entry.installDir)) {
+    return true;
+  }
+
+  // Linux/Steam Deck: Proton wraps games, so the real exe appears in the
+  // command line (e.g. "proton .../common/Game/game.exe") while the process
+  // name is just "proton" or "pressure-vessel". Match installDir or exe name
+  // in the command line, excluding the wrapper binaries themselves.
+  if (process.platform === 'linux' && commandLine) {
+    const isWrapper = ['proton', 'pressure-vessel', 'steam-runtime', 'wineserver', 'wine64', 'wine'].some(
+      (w) => processName === w || processName.startsWith(`${w}.`)
+    );
+    if (entry.installDir && commandLine.includes(entry.installDir) && (isWrapper || processPath.startsWith(entry.installDir))) {
+      return true;
+    }
+  }
+
+  // Name-only match is a fallback: require a distinctive name and, when an
+  // installDir exists, that the process actually lives under it.
+  if (
+    entry.executableName
+    && processName
+    && processName === entry.executableName
+    && entry.executableName.length >= 6
+    && !GENERIC_EXECUTABLE_NAMES.has(entry.executableName)
+  ) {
+    if (!entry.installDir || (processPath && processPath.startsWith(entry.installDir))) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const sendPassiveSessionEvent = (channel, payload) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+};
+
+const isCoveredByActiveMonitor = (entry) => {
+  for (const monitor of activeGameMonitors.values()) {
+    const monitoredName = `${monitor?.game?.name || ''}`.toLowerCase();
+    const monitoredAppId = typeof monitor?.game?.appid !== 'undefined' ? String(monitor.game.appid) : null;
+    if (monitoredName && monitoredName === `${entry.gameName || ''}`.toLowerCase()) {
+      return true;
+    }
+    if (monitoredAppId && entry.appid !== null && monitoredAppId === String(entry.appid)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const pollPassiveWatch = async () => {
+  if (passiveWatchlist.length === 0) return;
+
+  let processList;
+  try {
+    processList = await getProcessList();
+  } catch {
+    return;
+  }
+  if (!Array.isArray(processList) || processList.length === 0) return;
+
+  const seenKeys = new Set();
+
+  for (const entry of passiveWatchlist) {
+    if (!entry.gameName) continue;
+    const key = entry.gameName;
+    const running = processList.some((proc) => processMatchesWatchEntry(proc, entry));
+
+    if (running) {
+      seenKeys.add(key);
+      const existing = passiveSessions.get(key);
+      if (existing) {
+        existing.missedPolls = 0;
+        existing.lastSeenAt = Date.now();
+      } else if (!isCoveredByActiveMonitor(entry)) {
+        const session = {
+          gameName: entry.gameName,
+          appid: entry.appid,
+          platform: entry.platform,
+          startedAt: Date.now(),
+          lastSeenAt: Date.now(),
+          missedPolls: 0
+        };
+        passiveSessions.set(key, session);
+        sendPassiveSessionEvent('passive-session-started', {
+          gameName: session.gameName,
+          appid: session.appid,
+          platform: session.platform,
+          startedAt: session.startedAt,
+          source: 'passive-watch'
+        });
+      }
+    }
+  }
+
+  for (const [key, session] of Array.from(passiveSessions.entries())) {
+    if (seenKeys.has(key)) continue;
+    session.missedPolls += 1;
+    if (session.missedPolls >= PASSIVE_WATCH_MISS_TOLERANCE) {
+      passiveSessions.delete(key);
+      sendPassiveSessionEvent('passive-session-ended', {
+        gameName: session.gameName,
+        appid: session.appid,
+        platform: session.platform,
+        startedAt: session.startedAt,
+        endedAt: Date.now(),
+        source: 'passive-watch'
+      });
+    }
+  }
+};
+
+const startPassiveWatchInterval = () => {
+  if (passiveWatchInterval) return;
+  passiveWatchInterval = setInterval(() => {
+    pollPassiveWatch().catch(() => {});
+  }, PASSIVE_WATCH_POLL_MS);
+};
+
+ipcMain.handle('update-watchlist', async (_event, games = []) => {
+  try {
+    passiveWatchlist = (Array.isArray(games) ? games : [])
+      .filter((game) => game && game.name && !NON_GAME_WATCH_TITLES.has(String(game.name).trim().toLowerCase()))
+      .map(buildWatchEntry)
+      .filter((entry) => entry.resolvedExecutablePath || entry.installDir || entry.executableName);
+    startPassiveWatchInterval();
+    return { success: true, count: passiveWatchlist.length };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 });
 
 ipcMain.handle('start-game-monitor', async (event, payload = {}) => {
@@ -2309,10 +2610,48 @@ ipcMain.handle('stop-game-monitor', async (event, payload = {}) => {
   };
 });
 
+ipcMain.handle('discord-start-game-presence', async (_event, game = {}) => {
+  try {
+    discordPresence.startGamePresence(game);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle('discord-stop-game-presence', async () => {
+  try {
+    discordPresence.stopGamePresence();
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle('discord-set-idle-presence', async () => {
+  try {
+    discordPresence.setIdlePresence();
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle('discord-disconnect', async () => {
+  try {
+    discordPresence.disconnect();
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: String(error?.message || error) };
+  }
+});
+
 app.whenReady().then(() => {
   console.log('🚀 App ready, creating window...');
   applyStartupLaunchPreference(getStartupLaunchPreference());
-  
+
+  createTray();
+
   // Register app:// protocol for local file access
   protocol.registerFileProtocol('app', (request, callback) => {
     try {
@@ -2336,6 +2675,117 @@ app.whenReady().then(() => {
   console.error('❌ Error stack:', err.stack);
   process.exit(1);
 });
+
+function createTray() {
+  if (process.platform === 'darwin') {
+    // Tray is optional on macOS; focus on Windows for now.
+    return;
+  }
+
+  const iconFile = process.platform === 'linux' ? 'gamepilotlogo.png' : 'gamepilot.ico.ico';
+  const iconPath = path.join(__dirname, 'public', iconFile);
+  const fallbackIcon = path.join(__dirname, 'public', 'favicon.ico');
+
+  try {
+    tray = new Tray(fs.existsSync(iconPath) ? iconPath : fallbackIcon);
+    tray.setToolTip('GamePilot');
+    tray.setContextMenu(buildTrayMenu([]));
+
+    tray.on('click', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore();
+        }
+        mainWindow.focus();
+      } else {
+        createWindow();
+      }
+    });
+  } catch (error) {
+    tray = null;
+    console.warn('[Tray] System tray is unavailable:', error.message);
+  }
+}
+
+let cachedTrayGames = [];
+
+function buildTrayMenu(games = []) {
+  const gameItems = Array.isArray(games) && games.length > 0
+    ? games.map((game) => ({
+        label: game.name,
+        click: () => {
+          gameLauncher.launch(game).catch(() => {});
+        }
+      }))
+    : [{ label: 'No recent games yet', enabled: false }];
+
+  return Menu.buildFromTemplate([
+    { label: 'Open GamePilot', click: () => createWindow() },
+    { label: 'Open Game Bar Overlay', click: () => createGameBarOverlayWindow() },
+    { type: 'separator' },
+    { label: 'Continue Playing', enabled: false },
+    ...gameItems,
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => app.quit()
+    }
+  ]);
+}
+
+function createGameBarOverlayWindow() {
+  if (gameBarWindow && !gameBarWindow.isDestroyed()) {
+    gameBarWindow.focus();
+    return;
+  }
+
+  gameBarWindow = new BrowserWindow({
+    width: 320,
+    height: 120,
+    alwaysOnTop: true,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    show: false,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'public', 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true
+    }
+  });
+
+  gameBarWindow.loadURL(
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000/#/gamebar'
+      : `file://${path.join(__dirname, './build/index.html')}#/gamebar`
+  );
+
+  gameBarWindow.once('ready-to-show', () => {
+    gameBarWindow.show();
+  });
+
+  gameBarWindow.on('closed', () => {
+    gameBarWindow = null;
+  });
+}
+
+ipcMain.handle('open-gamebar-overlay', () => {
+  createGameBarOverlayWindow();
+  return { ok: true };
+});
+
+ipcMain.handle('update-tray-menu', async (_event, games = []) => {
+  cachedTrayGames = games;
+  if (tray && !tray.isDestroyed()) {
+    tray.setContextMenu(buildTrayMenu(games));
+  }
+  return { ok: true };
+});
+
+ipcMain.handle('get-tray-menu', async () => cachedTrayGames);
 
 function createWindow() {
   console.log('🏗️ Creating Electron window...');
@@ -2491,6 +2941,7 @@ app.on('activate', () => {
 app.on('window-all-closed', () => {
   console.log('❌ All windows closed');
   stopAllGameMonitors();
+  discordPresence.disconnect();
   if (process.platform !== 'darwin') {
     app.quit();
   }

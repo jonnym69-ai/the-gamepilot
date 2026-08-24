@@ -30,8 +30,8 @@ const getEquippedLayout = () => {
   try {
     const customization = ProgressionUnlockService.getRewardPresentationCustomization();
     const selectedId = customization?.selectedGamingLinksLayout || 'classic_grid';
-    const layout = ProgressionUnlockService.getGamingLinksLayouts().find((l) => l.id === selectedId && l.unlocked);
-    return layout || ProgressionUnlockService.getGamingLinksLayouts().find((l) => l.unlocked) || null;
+    const layout = (ProgressionUnlockService.getGamingLinksLayouts() || []).find((l) => l.id === selectedId && l.unlocked);
+    return layout || (ProgressionUnlockService.getGamingLinksLayouts() || []).find((l) => l.unlocked) || null;
   } catch {
     return null;
   }
@@ -41,8 +41,8 @@ const getEquippedFeature = () => {
   try {
     const customization = ProgressionUnlockService.getRewardPresentationCustomization();
     const selectedId = customization?.selectedGamingLinksFeatures || 'basic_hover';
-    const feature = ProgressionUnlockService.getGamingLinksFeatures().find((item) => item.id === selectedId && item.unlocked);
-    return feature || ProgressionUnlockService.getGamingLinksFeatures().find((item) => item.unlocked) || null;
+    const feature = (ProgressionUnlockService.getGamingLinksFeatures() || []).find((item) => item.id === selectedId && item.unlocked);
+    return feature || (ProgressionUnlockService.getGamingLinksFeatures() || []).find((item) => item.unlocked) || null;
   } catch {
     return null;
   }
@@ -229,7 +229,7 @@ function GamingLinks({ theme = 'dark' }) {
                   <div className="gl-link-body">
                     <div className="gl-link-name">{link.name}</div>
                     <div className="gl-link-domain">
-                      {link.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                      {(link.url || '').replace(/^https?:\/\//, '').replace(/\/$/, '')}
                     </div>
                   </div>
                   <button

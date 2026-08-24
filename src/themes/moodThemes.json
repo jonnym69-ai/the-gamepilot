@@ -1317,5 +1317,35 @@
     },
     "patreonExclusive": true,
     "isPremium": true
+  },
+  {
+    "id": "founder-gold",
+    "name": "Founder Gold",
+    "description": "Founder-exclusive theme with deep navy surfaces and radiant gold accents. A prestige look for supporters.",
+    "palette": {
+      "background": "linear-gradient(135deg, #0a0e1a 0%, #121829 25%, #1a1f3a 50%, #121829 75%, #0a0e1a 100%)",
+      "surface": "rgba(26, 31, 58, 0.9)",
+      "primary": "#ffd700",
+      "secondary": "#d4af37",
+      "text": "#f0e6c8",
+      "accent": "#ffd700",
+      "card": "rgba(18, 24, 41, 0.85)",
+      "hover": "rgba(255, 215, 0, 0.12)"
+    },
+    "effects": {
+      "vignette": 0.08,
+      "grain": 0.006,
+      "bloom": 0.15,
+      "shadow": "0 4px 24px rgba(255, 215, 0, 0.25)"
+    },
+    "animation": {
+      "enabled": true,
+      "type": "shimmer",
+      "speed": "slow",
+      "intensity": 0.3,
+      "color": "rgba(255, 215, 0, 0.15)"
+    },
+    "founderExclusive": true,
+    "isPremium": true
   }
 ]

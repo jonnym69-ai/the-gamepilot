@@ -462,7 +462,12 @@ export class PlaytimeAutoLogger {
   static getSessionHistory() {
     try {
       const history = SessionRepository.getSessionHistory();
-      return Array.isArray(history) ? history : [];
+      if (!Array.isArray(history)) return [];
+      // Always present a deduped view so persona/stats never double-count
+      // legacy rows that snuck in before SQLite uniqueness.
+      return typeof SessionRepository.dedupeSessionHistory === 'function'
+        ? SessionRepository.dedupeSessionHistory(history)
+        : history;
     } catch (e) {
       return [];
     }

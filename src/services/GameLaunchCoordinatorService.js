@@ -7,6 +7,7 @@ import {
   persistActiveGameSessions,
   readActiveGameSessions
 } from './ActiveSessionService';
+import DiscordPresenceService from './DiscordPresenceService';
 import { LauncherService } from './LauncherService';
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
 
@@ -102,9 +103,12 @@ export class GameLaunchCoordinatorService {
   }
 
   static monitorLaunchedGame(launchedGame, onEndSession) {
+    DiscordPresenceService.startGamePresence(launchedGame);
     GameProcessMonitor.stopMonitoringByGame(launchedGame.name);
     GameProcessMonitor.startMonitoring(launchedGame, {
       onGameClosed: (closedGame) => {
+        DiscordPresenceService.stopGamePresence();
+        DiscordPresenceService.setIdlePresence();
         if (typeof onEndSession === 'function') {
           onEndSession(closedGame.name);
         }
@@ -115,10 +119,29 @@ export class GameLaunchCoordinatorService {
     });
   }
 
-  static trackLaunchSideEffects(startedNewSession) {
+  static trackLaunchSideEffects(startedNewSession, launchedGame, originalGame) {
     try {
       if (startedNewSession) {
         AchievementTracker.rewardGameLaunch(10);
+        AchievementTracker.logUniqueGamePlay(launchedGame);
+        AchievementTracker.logGameplayMood(launchedGame?.mood);
+        (Array.isArray(launchedGame?.genres) ? launchedGame.genres : []).forEach((genre) => {
+          AchievementTracker.logGameplayGenre(genre);
+        });
+        AchievementTracker.trackThemeUsage(launchedGame);
+        if (launchedGame?.platform) AchievementTracker.trackPlatformUsage(launchedGame.platform);
+
+        // Backlog milestones — check original game before last_played was updated
+        if (originalGame) {
+          if (AchievementTracker.checkDustOff(originalGame)) {
+            AchievementTracker.trackBacklogMilestone('dust_off');
+          }
+          if (AchievementTracker.checkShelfDiver(originalGame)) {
+            AchievementTracker.trackBacklogMilestone('shelf_diver');
+          }
+        }
+
+        AchievementTracker.checkAndUnlockAchievements();
       }
 
       GamingIdentity.updateGamingIdentity();
@@ -178,7 +201,7 @@ export class GameLaunchCoordinatorService {
 
     const { startedNewSession } = this.reconcileSessionAfterLaunch(launchedGame);
     this.monitorLaunchedGame(launchedGame, onEndSession);
-    this.trackLaunchSideEffects(startedNewSession);
+    this.trackLaunchSideEffects(startedNewSession, launchedGame, game);
 
     return {
       success: true,

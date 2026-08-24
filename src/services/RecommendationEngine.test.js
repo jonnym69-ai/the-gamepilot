@@ -17,6 +17,24 @@ jest.mock('./RecommendationExplainer', () => ({
   }
 }));
 
+jest.mock('../GamingIdentity', () => ({
+  GamingIdentity: {
+    getProfile: jest.fn(() => null),
+    getSignatureGames: jest.fn(() => []),
+    classifyFamiliarity: jest.fn(() => ({ label: 'neutral' }))
+  }
+}));
+
+jest.mock('./GamingPersonaService', () => ({
+  GamingPersonaService: {
+    getPersona: jest.fn(() => ({ primaryPersona: null, summaryRoast: null })),
+    getPrimaryPersona: jest.fn(() => null),
+    getAffinityGenres: jest.fn(() => []),
+    gameMatchesPersona: jest.fn(() => false)
+  },
+  PERSONA_AFFINITY_GENRES: {}
+}));
+
 const baseGame = (overrides = {}) => ({
   appid: '1',
   name: 'Game',
@@ -200,8 +218,8 @@ describe('RecommendationEngine', () => {
     test('returns games with any signal of being played', () => {
       const library = [
         baseGame({ appid: '1', time_played: 60 }),
-        baseGame({ appid: '2', launch_count: 3 }),
-        baseGame({ appid: '3', last_played: '2024-01-01T00:00:00Z' }),
+        baseGame({ appid: '2', launch_count: 15 }),
+        baseGame({ appid: '3', time_played: 10 }),
         baseGame({ appid: '4' })
       ];
       const played = RecommendationEngine.getPlayedGames(library);
@@ -351,6 +369,58 @@ describe('RecommendationEngine', () => {
       const librarianScore = RecommendationEngine.scoreGameByBehavior(active, null, null, null);
 
       expect(fullScore).toBeGreaterThan(librarianScore);
+    });
+  });
+
+  describe('getSimilarToGame', () => {
+    test('returns matching backlog games and excludes the reference game', () => {
+      const reference = baseGame({
+        appid: 'reference',
+        name: 'Zombie Survival',
+        genres: ['Survival', 'Action'],
+        tags: ['Zombies', 'Open World'],
+        mood: 'Focused',
+        time_played: 1200
+      });
+      const closeMatch = baseGame({
+        appid: 'match',
+        name: 'Backlog Survivor',
+        genres: ['Survival', 'Action'],
+        tags: ['Zombies'],
+        mood: 'Focused',
+        time_played: 0
+      });
+      const weakMatch = baseGame({
+        appid: 'weak',
+        name: 'Quiet Puzzle',
+        genres: ['Puzzle'],
+        tags: ['Relaxing'],
+        mood: 'Relaxed',
+        time_played: 0
+      });
+
+      const result = RecommendationEngine.getSimilarToGame([reference, weakMatch, closeMatch], reference, 4);
+
+      expect(result.recommendationType).toBe('similar-to-game');
+      expect(result.games.map((game) => game.name)).not.toContain(reference.name);
+      expect(result.primaryGame.name).toBe(closeMatch.name);
+      expect(result.meta.referenceGame).toBe(reference.name);
+    });
+
+    test('returns null without a reference game', () => {
+      expect(RecommendationEngine.getSimilarToGame([baseGame()], null)).toBeNull();
+    });
+
+    test('excludes games marked Not for me', () => {
+      const reference = baseGame({ appid: 'reference', name: 'Reference', genres: ['Strategy'], time_played: 500 });
+      const rejected = baseGame({ appid: 'rejected', name: 'Rejected', genres: ['Strategy'], time_played: 0 });
+      const alternative = baseGame({ appid: 'alternative', name: 'Alternative', genres: ['Strategy'], time_played: 0 });
+      UserBehaviorProfile.trackRecommendationLaunch('similar-to-game', rejected.appid);
+      UserBehaviorProfile.trackRecommendationOutcome(rejected.appid, 'not-for-me', { gameName: rejected.name });
+
+      const result = RecommendationEngine.getSimilarToGame([reference, rejected, alternative], reference, 3);
+
+      expect(result.games.map((game) => game.name)).toEqual(['Alternative']);
     });
   });
 

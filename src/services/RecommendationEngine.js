@@ -11,7 +11,25 @@ import { RecommendationTuningService } from './RecommendationTuningService';
 import { GameRatingService } from './GameRatingService';
 import StorageService from './StorageService';
 import { GamingPersonaService, PERSONA_AFFINITY_GENRES } from './GamingPersonaService';
+import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
+import { getBlendedPlaytimeMinutes, isGameUnplayed, NEGLIGIBLE_PLAYTIME_MINUTES } from './gameClassification';
 const PERSONA_GENRE_MAP = PERSONA_AFFINITY_GENRES;
+
+export { getBlendedPlaytimeMinutes, isGameUnplayed, NEGLIGIBLE_PLAYTIME_MINUTES };
+
+const CURRENT_FOCUS_CACHE_TTL_MS = 60 * 1000;
+let _currentFocusCache = null;
+let _currentFocusCacheAt = 0;
+
+const normalizeGameKey = (value) => String(value || '').trim().toLowerCase();
+
+const getSessionDayKey = (session) => {
+  const raw = session?.endTime || session?.timestamp || session?.startTime || session?.date;
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
 
 const PERFECT_PLAY_TIME_FILTERS = Object.freeze({
   quick: {
@@ -55,7 +73,107 @@ const getLastPlayedTimestamp = (lastPlayedValue) => {
   return 0;
 };
 
+const getShelfAgeDays = (game) => {
+  const added = game?.dateAdded || game?.addedAt || game?.firstSeen;
+  const ts = getLastPlayedTimestamp(added);
+  if (!ts) return 0;
+  return Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+};
+
 export class RecommendationEngine {
+  /**
+   * Detect continuous/recent play focus from session history.
+   * A "focus" game is one the player returned to across multiple recent days.
+   * Used to keep recs fresh with current habits without discarding lifetime taste.
+   */
+  static getCurrentPlayFocus(options = {}) {
+    const windowDays = Number(options.windowDays) > 0 ? Number(options.windowDays) : 14;
+    const minDistinctDays = Number(options.minDistinctDays) > 0 ? Number(options.minDistinctDays) : 3;
+    const now = Date.now();
+    if (
+      _currentFocusCache
+      && now - _currentFocusCacheAt < CURRENT_FOCUS_CACHE_TTL_MS
+      && _currentFocusCache.windowDays === windowDays
+    ) {
+      return _currentFocusCache.value;
+    }
+
+    const cutoff = now - windowDays * 24 * 60 * 60 * 1000;
+    const byGame = new Map();
+
+    try {
+      const history = PlaytimeAutoLogger.getSessionHistory() || [];
+      history.forEach((session) => {
+        const tsRaw = session?.endTime || session?.timestamp || session?.startTime;
+        const ts = tsRaw ? new Date(tsRaw).getTime() : 0;
+        if (!ts || ts < cutoff) return;
+        const name = String(session.gameName || session.name || '').trim();
+        if (!name) return;
+        const key = normalizeGameKey(session.gameId || name);
+        const day = getSessionDayKey(session);
+        const minutes = Math.max(0, Number(session.playtimeMinutes) || 0);
+        const entry = byGame.get(key) || {
+          key,
+          name,
+          gameId: session.gameId || null,
+          minutes: 0,
+          sessions: 0,
+          days: new Set(),
+          lastPlayed: 0,
+          genres: Array.isArray(session.metadata?.genres) ? session.metadata.genres : []
+        };
+        entry.minutes += minutes;
+        entry.sessions += 1;
+        if (day) entry.days.add(day);
+        entry.lastPlayed = Math.max(entry.lastPlayed, ts);
+        if ((!entry.genres || entry.genres.length === 0) && Array.isArray(session.genres)) {
+          entry.genres = session.genres;
+        }
+        byGame.set(key, entry);
+      });
+    } catch {
+      // session history optional
+    }
+
+    const focusGames = Array.from(byGame.values())
+      .map((entry) => ({
+        ...entry,
+        distinctDays: entry.days.size,
+        days: undefined
+      }))
+      .filter((entry) => entry.distinctDays >= minDistinctDays || (entry.sessions >= 4 && entry.minutes >= 90))
+      .sort((a, b) => {
+        if (b.distinctDays !== a.distinctDays) return b.distinctDays - a.distinctDays;
+        if (b.minutes !== a.minutes) return b.minutes - a.minutes;
+        return b.lastPlayed - a.lastPlayed;
+      })
+      .slice(0, 5);
+
+    const focusGenres = {};
+    focusGames.forEach((game) => {
+      (game.genres || []).forEach((g) => {
+        const genre = String(g || '').trim();
+        if (!genre) return;
+        focusGenres[genre] = (focusGenres[genre] || 0) + game.minutes;
+      });
+    });
+
+    const value = {
+      windowDays,
+      games: focusGames,
+      primary: focusGames[0] || null,
+      genres: Object.entries(focusGenres)
+        .sort((a, b) => b[1] - a[1])
+        .map(([genre]) => genre)
+        .slice(0, 5),
+      active: focusGames.length > 0
+    };
+
+    _currentFocusCache = { windowDays, value };
+    _currentFocusCacheAt = now;
+    return value;
+  }
+
   /**
    * Score a game based on user behavior profile
    * Higher score = better recommendation
@@ -145,15 +263,43 @@ export class RecommendationEngine {
       }
     }
 
-    // Persona alignment bonus
-    if (hasProfileData) {
+    // Continuous play focus — games played across multiple recent days are
+    // the player's current habit, not stale noise.  Detect once per cache TTL.
+    const focus = this.getCurrentPlayFocus();
+    const gameKey = normalizeGameKey(game?.appid || game?.name || game?.title);
+    const focusHit = focus.active
+      ? focus.games.find(
+          (f) =>
+            normalizeGameKey(f.gameId || f.name) === gameKey ||
+            normalizeGameKey(f.name) === normalizeGameKey(game?.name || game?.title)
+        )
+      : null;
+
+    // Persona alignment bonus (skip if this game is already a focus hit —
+    // focus boost below will outweigh it and we avoid double-counting)
+    if (hasProfileData && !focusHit) {
       const personaAlignment = UserBehaviorProfile.getPersonaAlignmentScore({
         mood,
         genres: Array.isArray(game?.genres) ? game.genres : [],
-        sessionMinutes: estimatedSessionMinutes
+        sessionMinutes: estimatedSessionMinutes,
       });
       if (personaAlignment > 0) {
         score += Math.round(personaAlignment * w.personaAlignmentMultiplier);
+      }
+    }
+
+    // Focus boost — keep current rotation warm so daily/continuous play surfaces
+    if (focusHit) {
+      score += Math.min(22, 10 + focusHit.distinctDays * 3);
+    } else if (focus.active && focus.genres.length > 0) {
+      const gameGenresForFocus = Array.isArray(game?.genres)
+        ? game.genres.map((g) => String(g))
+        : [];
+      const related = gameGenresForFocus.filter((g) =>
+        focus.genres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
+      );
+      if (related.length > 0) {
+        score += Math.min(12, related.length * 5);
       }
     }
 
@@ -238,8 +384,8 @@ export class RecommendationEngine {
     // Hardware readiness removed from core scoring to keep the main bundle
     // lightweight. Compatibility checks remain available in Performance Cockpit.
 
-    // Unplayed games bonus - encourage discovery
-    if (!game.time_played || game.time_played === 0) {
+    // Unplayed games bonus - encourage discovery (uses blended playtime)
+    if (isGameUnplayed(game)) {
       score += w.unplayedBonus;
     }
 
@@ -289,12 +435,8 @@ export class RecommendationEngine {
     // Explicit feedback from the user (thumbs up/down on specific games)
     const gameId = String(game?.appid || game?.name || '');
     if (gameId) {
-      const { liked, disliked } = UserBehaviorProfile.getGameFeedbackMap();
-      if (disliked.has(gameId)) {
-        score -= w.dislikedGamePenalty;
-      } else if (liked.has(gameId)) {
-        score += w.likedGameBonus;
-      }
+      const outcomeSignal = UserBehaviorProfile.getRecommendationOutcomeSignal(gameId, game?.name);
+      score += outcomeSignal.adjustment;
 
       const rating = GameRatingService.getRating(gameId);
       if (rating && typeof rating.value === 'number' && rating.value > 0) {
@@ -437,11 +579,7 @@ export class RecommendationEngine {
 
   static getPlayedGames(library = []) {
     return Array.isArray(library)
-      ? library.filter((game) => (
-        Number(game?.time_played || 0) > 0
-        || Number(game?.launch_count || 0) > 0
-        || getLastPlayedTimestamp(game?.last_played) > 0
-      ))
+      ? library.filter((game) => !isGameUnplayed(game))
       : [];
   }
 
@@ -470,6 +608,16 @@ export class RecommendationEngine {
 
     const resolvedGenre = genre || this.getPrimaryGenre(game);
     const isExploration = !!game?._isExplorationPick;
+    const gameId = String(game?.appid || game?.name || '');
+    const outcomeSignal = UserBehaviorProfile.getRecommendationOutcomeSignal(gameId, game?.name);
+    if (outcomeSignal.suppress) return null;
+    const baseExplanation = RecommendationExplainer.getDetailedExplanation(
+      game,
+      mood,
+      resolvedGenre,
+      availableMinutes,
+      recommendationType
+    );
 
     return {
       game,
@@ -477,14 +625,10 @@ export class RecommendationEngine {
       genre: resolvedGenre,
       estimatedSessionMinutes: PersonaPerformanceInsights.estimateSessionMinutes(game) || null,
       isExploration,
-      explanation: RecommendationExplainer.getDetailedExplanation(
-        game,
-        mood,
-        resolvedGenre,
-        availableMinutes,
-        recommendationType
-      ),
-      meta: { ...metadata }
+      explanation: outcomeSignal.reason && outcomeSignal.adjustment > 0
+        ? [baseExplanation, `${outcomeSignal.reason}.`].filter(Boolean).join(' ')
+        : baseExplanation,
+      meta: { ...metadata, learnedReason: outcomeSignal.reason }
     };
   }
 
@@ -716,7 +860,7 @@ export class RecommendationEngine {
     const genreMinutes = {};
     let maxMinutes = 0;
     library.forEach((game) => {
-      const minutes = Number(game?.time_played) || 0;
+      const minutes = getBlendedPlaytimeMinutes(game);
       if (!minutes) return;
       mapGameGenresToValid(game?.genres).forEach((genre) => {
         genreMinutes[genre] = (genreMinutes[genre] || 0) + minutes;
@@ -761,7 +905,7 @@ export class RecommendationEngine {
           minFamiliarity = 0;
         }
         const novelty = (1 - minFamiliarity) * w.explorationGenreNoveltyWeight;
-        const unplayed = (!game?.time_played || game.time_played === 0) ? w.explorationUnplayedBonus : 0;
+        const unplayed = isGameUnplayed(game) ? w.explorationUnplayedBonus : 0;
         const base = this.scoreGameByBehavior(game, mood, novelGenre, availableMinutes);
         const score = base + novelty + unplayed;
         return { game, score, novelGenre, familiarity: minFamiliarity };
@@ -1078,7 +1222,7 @@ export class RecommendationEngine {
       availableMinutes,
       usedFallback: engineRediscoverGames.length === 0,
       message: effectiveMood
-        ? `A few ${effectiveMood.toLowerCase()} picks from your backlog that deserve another run.`
+        ? `A few ${effectiveMood.toLowerCase()} picks from your library that deserve another run.`
         : REDISCOVER_MESSAGES[Math.floor(Math.random() * REDISCOVER_MESSAGES.length)]
     });
   }
@@ -1281,6 +1425,216 @@ export class RecommendationEngine {
     };
   }
 
+  /**
+   * Backlog Buster — the core "battle the backlog" recommendation path.
+   * Surfaces unplayed games from the user's library that match their taste,
+   * time budget, and current play focus. This is the differentiator: nobody
+   * else solves "I own 200 games and don't know what to play next."
+   *
+   * Scoring priorities for unplayed games:
+   *   1. Taste alignment (favorite genre, mood, archetype, signature overlap)
+   *   2. Time fit (can you finish it in the time you have?)
+   *   3. Shelf age (older unplayed = higher priority to surface)
+   *   4. Current play focus genre adjacency (keep recs fresh with habits)
+   *   5. Exploration novelty (gentle nudge toward unfamiliar genres)
+   *
+   * @param {Array} library - the user's game library
+   * @param {string|null} [mood] - optional mood filter
+   * @param {string|null} [timeConstraint] - quick|medium|long|weekend or minutes
+   * @param {number} [count] - number of picks (default 5)
+   */
+  static getBacklogBusterResult(library, mood = null, timeConstraint = null, count = 5) {
+    if (!Array.isArray(library) || library.length === 0) {
+      return null;
+    }
+
+    const { now, validRecent } = this.getRecentRecommendationState();
+    const normalizedTimeConstraint = this.normalizeTimeConstraint(timeConstraint);
+    const availableMinutes = normalizedTimeConstraint?.availableMinutes
+      || (typeof timeConstraint === 'number' && timeConstraint > 0 ? timeConstraint : null);
+
+    const unplayedGames = library.filter((game) => isGameUnplayed(game));
+
+    if (unplayedGames.length === 0) {
+      return null;
+    }
+
+    const focus = this.getCurrentPlayFocus();
+    const focusGenres = focus.active ? focus.genres : [];
+
+    let sigGenres = new Set();
+    try {
+      const sigGames = GamingIdentity.getSignatureGames(3);
+      sigGenres = new Set(sigGames.flatMap((s) => s.genres || []));
+    } catch { /* optional */ }
+
+    let profile = null;
+    let favoriteGenre = null;
+    let favoriteMood = null;
+    let personaId = null;
+    try {
+      profile = GamingIdentity.getProfile();
+      favoriteGenre = profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
+        ? profile.identity.favoriteGenre : null;
+      favoriteMood = profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
+        ? profile.identity.favoriteMood : null;
+      personaId = profile?.identity?.gamingPersona?.primaryPersona?.id || null;
+    } catch { /* optional */ }
+
+    const scored = unplayedGames
+      .map((game) => {
+        if (!game) return null;
+        const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+        const normalizedGenres = mapGameGenresToValid(gameGenres);
+        const effectiveMood = mood || (favoriteMood && Number(getMoodScoresForGame(gameGenres)?.[favoriteMood] || 0) > 0 ? favoriteMood : null);
+        const effectiveGenre = this.getPrimaryGenre(game, favoriteGenre ? [favoriteGenre] : []) || normalizedGenres[0] || null;
+
+        let score = this.scoreGameByBehavior(game, effectiveMood, effectiveGenre, availableMinutes);
+
+        // Strong unplayed boost — this is the backlog buster, so unplayed is the point
+        score += 25;
+
+        // Taste alignment bonuses
+        if (favoriteGenre && normalizedGenres.includes(favoriteGenre)) {
+          score += 20;
+        }
+        if (effectiveMood && Number(getMoodScoresForGame(gameGenres)?.[effectiveMood] || 0) > 0) {
+          score += 15;
+        }
+
+        // Signature game genre overlap — anchored to actual most-played taste
+        if (sigGenres.size > 0) {
+          const sigOverlap = normalizedGenres.filter((g) => sigGenres.has(g)).length;
+          if (sigOverlap > 0) {
+            score += Math.min(18, sigOverlap * 7);
+          }
+        }
+
+        // Persona affinity
+        if (personaId) {
+          const affinityGenres = PERSONA_GENRE_MAP[personaId] || [];
+          const normalizedGameGenres = normalizedGenres.map((g) => String(g).toLowerCase());
+          const matchCount = affinityGenres.filter((ag) => {
+            const needle = String(ag).toLowerCase();
+            return normalizedGameGenres.some((g) => g === needle || g.includes(needle) || needle.includes(g));
+          }).length;
+          if (matchCount > 0) {
+            score += Math.min(16, matchCount * 8);
+          }
+        }
+
+        // Shelf age bonus — the longer it's been sitting unplayed, the more we surface it
+        const shelfDays = getShelfAgeDays(game);
+        if (shelfDays > 0) {
+          score += Math.min(15, Math.floor(shelfDays / 30) * 3);
+        }
+
+        // Focus genre adjacency — if the user is currently playing RPGs, unplayed RPGs get a boost
+        if (focusGenres.length > 0) {
+          const focusOverlap = normalizedGenres.filter((g) =>
+            focusGenres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
+          ).length;
+          if (focusOverlap > 0) {
+            score += Math.min(12, focusOverlap * 5);
+          }
+        }
+
+        // Time fit — if we know the estimated session length, reward games that fit
+        const estimatedMinutes = PersonaPerformanceInsights.estimateSessionMinutes(game);
+        if (availableMinutes && estimatedMinutes) {
+          if (estimatedMinutes <= availableMinutes) {
+            score += 12;
+          } else if (estimatedMinutes <= availableMinutes * 1.5) {
+            score += 6;
+          }
+        }
+
+        // Recently recommended penalty
+        if (validRecent.some((entry) => entry.name === game.name)) {
+          score -= 30;
+        }
+
+        // Small randomization for variety
+        score += (Math.random() * 8) - 4;
+
+        const reasons = [];
+        if (favoriteGenre && normalizedGenres.includes(favoriteGenre)) {
+          reasons.push(`Matches your favorite genre: ${favoriteGenre}`);
+        }
+        if (sigGenres.size > 0 && normalizedGenres.some((g) => sigGenres.has(g))) {
+          reasons.push('Shares genres with your most-played games');
+        }
+        if (focusGenres.length > 0 && normalizedGenres.some((g) =>
+          focusGenres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
+        )) {
+          reasons.push("Adjacent to what you're playing right now");
+        }
+        if (shelfDays > 90) {
+          reasons.push(`Sitting unplayed for ${Math.floor(shelfDays / 30)} months`);
+        }
+        if (availableMinutes && estimatedMinutes && estimatedMinutes <= availableMinutes) {
+          reasons.push(`Fits in your ${Math.floor(availableMinutes / 60)}h ${availableMinutes % 60}m window`);
+        }
+        if (reasons.length === 0) {
+          reasons.push('Unplayed and matches your taste profile');
+        }
+
+        return { game, score, reasons, estimatedMinutes, shelfDays };
+      })
+      .filter(Boolean)
+      .sort((left, right) => right.score - left.score);
+
+    if (scored.length === 0) {
+      return null;
+    }
+
+    const topPicks = scored.slice(0, count);
+    const matchLookup = new Map(
+      topPicks.map((entry) => [String(entry.game?.appid || entry.game?.name || ''), entry])
+    );
+
+    const totalUnplayed = unplayedGames.length;
+    const totalLibrary = library.length;
+    const backlogPercentage = totalLibrary > 0 ? Math.round((totalUnplayed / totalLibrary) * 100) : 0;
+
+    const messages = [];
+    if (totalUnplayed > 0) {
+      const backlogNote = backlogPercentage > 50 ? ` — that's ${backlogPercentage}% of your backlog!` : '.';
+      messages.push(`You have ${totalUnplayed} unplayed game${totalUnplayed !== 1 ? 's' : ''} in your library${backlogNote}`);
+    }
+    if (topPicks[0]?.shelfDays > 180) {
+      messages.push(`Your top pick has been sitting unplayed for ${Math.floor(topPicks[0].shelfDays / 30)} months — time to change that.`);
+    }
+
+    this.persistRecentRecommendations(topPicks.map((e) => e.game), validRecent, now);
+
+    return this.buildRecommendationPayload('backlog-buster', topPicks.map((entry) => entry.game), {
+      mood: mood || favoriteMood || null,
+      genre: favoriteGenre || null,
+      timeConstraint,
+      availableMinutes,
+      message: messages.join(' '),
+      backlogStats: {
+        totalUnplayed,
+        totalLibrary,
+        backlogPercentage
+      },
+      entryContextResolver: (game) => {
+        const match = matchLookup.get(String(game?.appid || game?.name || ''));
+        return {
+          mood: mood || favoriteMood || game?.mood || null,
+          genre: this.getPrimaryGenre(game, favoriteGenre ? [favoriteGenre] : []) || null,
+          metadata: {
+            score: match?.score || 0,
+            backlogReasons: match?.reasons || [],
+            shelfDays: match?.shelfDays || 0,
+            estimatedMinutes: match?.estimatedMinutes || null
+          }
+        };
+      }
+    });
+  }
+
   static getContinuePlayingResult(library, mood = null, timeConstraint = null, lastPlayedGame = null) {
     const availableMinutes = this.getAvailableMinutes(timeConstraint);
 
@@ -1324,6 +1678,199 @@ export class RecommendationEngine {
     });
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // "Because you played X" — find games in the backlog that are similar
+  // to recently played games by genre, mood, theme, and tag overlap.
+  // This is the recommendation that directly serves backlog paralysis:
+  // "you enjoyed RDR2, here's something similar you haven't touched."
+  // ─────────────────────────────────────────────────────────────────────
+
+  // Lightweight theme detection — mirrors GamingPersonaService's approach
+  // but self-contained so RecommendationEngine doesn't need a new import.
+  static _THEME_TAGS = [
+    { id: 'zombies', tags: ['zombies', 'post-apocalyptic', 'survival'] },
+    { id: 'horror', tags: ['survival horror', 'psychological horror', 'horror', 'gore'] },
+    { id: 'souls', tags: ['souls-like', 'soulslike', 'punishing', 'difficult'] },
+    { id: 'cyberpunk', tags: ['cyberpunk', 'dystopian', 'hacking', 'neon'] },
+    { id: 'space', tags: ['space sim', 'spaceships', 'space', 'sci-fi'] },
+    { id: 'fantasy', tags: ['dark fantasy', 'dungeon crawler', 'fantasy', 'magic', 'dragons', 'medieval'] },
+    { id: 'competitive', tags: ['moba', 'battle royale', 'hero shooter', 'esports', 'competitive'] },
+    { id: 'roguelike', tags: ['roguelike', 'roguelite', 'deckbuilding', 'procedural generation'] },
+    { id: 'shooter', tags: ['tactical', 'military', 'fps', 'shooter', 'war'] },
+    { id: 'cozy', tags: ['farming', 'cozy', 'fishing', 'wholesome', 'life sim', 'relaxing'] },
+    { id: 'strategy', tags: ['grand strategy', '4x', 'turn-based strategy', 'real time strategy', 'strategy', 'tactics'] },
+    { id: 'racing', tags: ['racing', 'driving', 'automobile', 'motorsport'] },
+    { id: 'open_world', tags: ['open world', 'sandbox', 'exploration'] },
+    { id: 'rpg', tags: ['rpg', 'role-playing', 'jrpg', 'action rpg'] },
+    { id: 'stealth', tags: ['stealth', 'assassin', 'thief'] },
+    { id: 'western', tags: ['western', 'cowboy', 'frontier'] }
+  ];
+
+  static _detectGameThemes(game) {
+    if (!game) return [];
+    const haystack = [
+      ...(Array.isArray(game.tags) ? game.tags : []),
+      ...(Array.isArray(game.steamTags) ? game.steamTags : []),
+      ...(Array.isArray(game.genres) ? game.genres : [])
+    ].filter(Boolean).map((s) => String(s).toLowerCase());
+    if (haystack.length === 0) return [];
+    const matched = [];
+    this._THEME_TAGS.forEach((theme) => {
+      if (theme.tags.some((needle) => haystack.some((h) => h === needle || h.includes(needle)))) {
+        matched.push(theme.id);
+      }
+    });
+    return matched;
+  }
+
+  static _getGameTags(game) {
+    if (!game) return [];
+    const tags = game.tags || game.tag || game.steamTags || [];
+    if (Array.isArray(tags)) return tags.filter(Boolean).map((t) => String(t).toLowerCase());
+    if (typeof tags === 'string') return [tags.toLowerCase()];
+    return [];
+  }
+
+  /**
+   * Find games in the library similar to recently played games.
+   * @param {Array} library - full library
+   * @param {Array} recentGames - recently played games (sorted by last_played desc)
+   * @param {number} count - how many recommendations to return
+   * @returns {Object|null} recommendation payload with entries + reference game
+   */
+  static getSimilarToRecent(library, recentGames = [], count = 3, recommendationType = 'similar-to-recent') {
+    if (!Array.isArray(library) || library.length === 0) return null;
+    if (!Array.isArray(recentGames) || recentGames.length === 0) return null;
+
+    // Build a "taste profile" from the recent games
+    const recentNames = new Set();
+    const recentGenres = new Set();
+    const recentMoods = new Set();
+    const recentThemes = new Set();
+    const recentTags = new Set();
+
+    recentGames.slice(0, 5).forEach((game) => {
+      if (!game) return;
+      recentNames.add(game.name);
+      mapGameGenresToValid(game?.genres).forEach((g) => recentGenres.add(g));
+      if (game?.mood) recentMoods.add(game.mood);
+      this._detectGameThemes(game).forEach((t) => recentThemes.add(t));
+      this._getGameTags(game).forEach((t) => recentTags.add(t));
+    });
+
+    if (recentGenres.size === 0 && recentThemes.size === 0 && recentTags.size === 0) {
+      return null; // not enough signal from recent games
+    }
+
+    const recentlyRecommendedNames = new Set(
+      this.getRecentRecommendationState().validRecent.map((entry) => normalizeGameKey(entry.name))
+    );
+
+    // Score the rest of the library
+    const scored = library
+      .filter((game) => game
+        && !game.hidden
+        && !game.isHidden
+        && !recentNames.has(game.name)
+        && !UserBehaviorProfile.shouldSuppressRecommendation(game.appid || game.name, game.name))
+      .map((game) => {
+        const gameGenres = mapGameGenresToValid(game?.genres);
+        const gameThemes = this._detectGameThemes(game);
+        const gameTags = this._getGameTags(game);
+        const gameMood = game?.mood || null;
+
+        let score = 0;
+        const reasons = [];
+        if (recentlyRecommendedNames.has(normalizeGameKey(game.name))) score -= 30;
+        const outcomeSignal = UserBehaviorProfile.getRecommendationOutcomeSignal(game.appid || game.name, game.name);
+        score += outcomeSignal.adjustment;
+        if (outcomeSignal.reason && outcomeSignal.adjustment > 0) reasons.push(outcomeSignal.reason);
+
+        // Genre overlap — strongest signal
+        const sharedGenres = gameGenres.filter((g) => recentGenres.has(g));
+        if (sharedGenres.length > 0) {
+          score += sharedGenres.length * 22;
+          reasons.push(`Shares ${sharedGenres.length > 1 ? 'genres' : 'genre'} with ${recentGames[0]?.name || 'your recent games'}`);
+        }
+
+        // Theme overlap — zombies, space, fantasy, etc.
+        const sharedThemes = gameThemes.filter((t) => recentThemes.has(t));
+        if (sharedThemes.length > 0) {
+          score += sharedThemes.length * 18;
+          reasons.push(`Similar themes to ${recentGames[0]?.name || 'what you have been playing'}`);
+        }
+
+        // Mood overlap
+        if (gameMood && recentMoods.has(gameMood)) {
+          score += 15;
+          reasons.push(`Same ${gameMood} mood`);
+        }
+
+        // Tag overlap — more granular than genres
+        const sharedTags = gameTags.filter((t) => recentTags.has(t));
+        if (sharedTags.length > 0) {
+          score += Math.min(sharedTags.length * 6, 24);
+        }
+
+        // Backlog boost — strongly prefer unplayed or underplayed games.
+        // The whole point of this shelf is "you liked X, here's something
+        // similar you haven't touched" — so under 2h gets a big boost.
+        const playedMinutes = getBlendedPlaytimeMinutes(game);
+        if (playedMinutes < NEGLIGIBLE_PLAYTIME_MINUTES) {
+          score += 40;
+          reasons.push('Unplayed in your backlog');
+        } else if (playedMinutes < 120) {
+          score += 30;
+          reasons.push('Barely touched in your backlog');
+        } else if (playedMinutes < 600) {
+          score += 5;
+        }
+
+        // Penalty for games played a lot — likely already finished or abandoned
+        if (playedMinutes > 600) {
+          score -= 15;
+        }
+        if (playedMinutes > 2000) {
+          score -= 20;
+        }
+
+        // User rating boost
+        if (typeof game.userRating === 'number' && game.userRating >= 7) {
+          score += 8;
+        }
+
+        // Small randomness to break ties and keep it fresh
+        score += Math.random() * 5;
+
+        return { game, score, reasons, sharedGenres, sharedThemes };
+      })
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (scored.length === 0) return null;
+
+    const topPicks = scored.slice(0, count).map((entry) => entry.game);
+    const referenceGame = recentGames[0] || null;
+    const primaryReason = scored[0]?.reasons?.[0] || `Similar to ${referenceGame?.name || 'your recent games'}`;
+
+    return this.buildRecommendationPayload(recommendationType, topPicks, {
+      mood: referenceGame?.mood || null,
+      genre: this.getPrimaryGenre(referenceGame),
+      message: primaryReason,
+      usedFallback: false,
+      meta: {
+        referenceGame: referenceGame?.name || null,
+        referenceGameId: referenceGame?.appid || referenceGame?.name || null,
+        allReasons: scored.slice(0, count).map((e) => e.reasons)
+      }
+    });
+  }
+
+  static getSimilarToGame(library, referenceGame, count = 6) {
+    if (!referenceGame) return null;
+    return this.getSimilarToRecent(library, [referenceGame], count, 'similar-to-game');
+  }
+
   // Get Perfect Play recommendation
   static getPerfectPlayRecommendation(library, mood, availableMinutes = null) {
     if (!GenreMoodMapper.isValidMood(mood)) {
@@ -1359,11 +1906,7 @@ export class RecommendationEngine {
     }
 
     const games = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes)
-      .filter((game) => (
-        Number(game?.time_played || 0) > 0
-        || Number(game?.launch_count || 0) > 0
-        || getLastPlayedTimestamp(game?.last_played) > 0
-      ));
+      .filter((game) => !isGameUnplayed(game));
 
     if (games.length === 0) {
       return null;
@@ -1422,11 +1965,7 @@ export class RecommendationEngine {
       case 'rediscover':
         // Get played games that haven't been played recently
         const rediscoverGames = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes)
-          .filter((game) => (
-            Number(game?.time_played || 0) > 0
-            || Number(game?.launch_count || 0) > 0
-            || getLastPlayedTimestamp(game?.last_played) > 0
-          ));
+          .filter((game) => !isGameUnplayed(game));
         const sorted = rediscoverGames.sort((a, b) => {
           const aPlayCount = a.launch_count || 0;
           const bPlayCount = b.launch_count || 0;

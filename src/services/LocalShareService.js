@@ -1,14 +1,16 @@
 import { DataExportService } from './DataExportService';
 import { openExternalUrl } from './ElectronBridge';
-import { LibraryValueService } from './LibraryValueService';
 import { StatsAggregationService } from './StatsAggregationService';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import { GamingIdentity } from '../GamingIdentity';
 import GamingPersonaService from './GamingPersonaService';
 import { RecapStoryService } from './RecapStoryService';
 import { YearInReviewService } from './YearInReviewService';
+import CurrentEraService from './CurrentEraService';
 
 const normalizeShareText = (value) => String(value || '').trim();
+
+const DISCORD_WEBHOOK_URL_KEY = 'discordWebhookUrl';
 
 const SHARE_CHANNELS = Object.freeze({
   x: {
@@ -29,9 +31,9 @@ const SHARE_CHANNELS = Object.freeze({
   },
   reddit: {
     label: 'Reddit',
-    buildUrl: (text) => {
-      const title = 'My GamePilot Year in Review';
-      return `https://www.reddit.com/submit?title=${encodeURIComponent(title)}&text=${encodeURIComponent(text)}`;
+    buildUrl: (text, title) => {
+      const shareTitle = title || text?.split('\n')?.[0] || 'My GamePilot Share';
+      return `https://www.reddit.com/submit?title=${encodeURIComponent(shareTitle)}&text=${encodeURIComponent(text)}`;
     }
   },
   discord: {
@@ -61,13 +63,106 @@ const SHARE_CHANNELS = Object.freeze({
   email: {
     label: 'Email',
     buildUrl: (text) => {
-      const subject = 'My GamePilot Year in Review';
+      const subject = text?.split('\n')?.[0] || 'My GamePilot Share';
       return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
     }
   }
 });
 
 export class LocalShareService {
+  static getDiscordWebhookUrl() {
+    try {
+      return window.localStorage.getItem(DISCORD_WEBHOOK_URL_KEY) || '';
+    } catch {
+      return '';
+    }
+  }
+
+  static setDiscordWebhookUrl(url) {
+    try {
+      if (url && typeof url === 'string' && url.startsWith('https://discord.com/api/webhooks/')) {
+        window.localStorage.setItem(DISCORD_WEBHOOK_URL_KEY, url);
+        return true;
+      }
+      window.localStorage.removeItem(DISCORD_WEBHOOK_URL_KEY);
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  static hasDiscordWebhookUrl() {
+    const url = LocalShareService.getDiscordWebhookUrl();
+    return Boolean(url) && url.startsWith('https://discord.com/api/webhooks/');
+  }
+
+  static async postToDiscordWebhook({ imageBlob = null, text = '', filename = 'gamepilot-share.png' }) {
+    const webhookUrl = LocalShareService.getDiscordWebhookUrl();
+    if (!webhookUrl) {
+      return { success: false, message: 'No Discord webhook URL configured.' };
+    }
+
+    const normalizedText = normalizeShareText(text);
+    if (!normalizedText && !imageBlob) {
+      return { success: false, message: 'Nothing to post to Discord.' };
+    }
+
+    try {
+      const payloadJson = JSON.stringify({
+        content: normalizedText || '',
+        username: 'GamePilot',
+        avatar_url: 'https://raw.githubusercontent.com/jonnym69-ai/the-gamepilot/main/public/gamepilotlogo.png'
+      });
+
+      const electronAPI = typeof window !== 'undefined' ? window.electronAPI : null;
+
+      if (electronAPI && typeof electronAPI.discordWebhookPost === 'function') {
+        const body = { payload_json: payloadJson };
+
+        if (imageBlob) {
+          const arrayBuffer = await imageBlob.arrayBuffer();
+          body.file = {
+            data: Array.from(new Uint8Array(arrayBuffer)),
+            filename,
+            contentType: imageBlob.type || 'image/png'
+          };
+        }
+
+        const result = await electronAPI.discordWebhookPost({
+          url: webhookUrl,
+          body,
+          isMultipart: true
+        });
+
+        if (!result.success) {
+          return { success: false, message: `Discord webhook failed: ${result.status} ${result.error || ''}` };
+        }
+
+        return { success: true, channel: 'discord-webhook', label: 'Discord Webhook' };
+      }
+
+      // Browser fallback (may hit CORS — Electron path is preferred)
+      const formData = new FormData();
+      formData.append('payload_json', new Blob([payloadJson], { type: 'application/json' }));
+
+      if (imageBlob) {
+        const file = new File([imageBlob], filename, { type: imageBlob.type || 'image/png' });
+        formData.append('file', file);
+      }
+
+      const response = await fetch(webhookUrl, { method: 'POST', body: formData });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        return { success: false, message: `Discord webhook failed: ${response.status} ${errorText}` };
+      }
+
+      return { success: true, channel: 'discord-webhook', label: 'Discord Webhook' };
+    } catch (error) {
+      return { success: false, message: error?.message || 'Could not post to Discord webhook.' };
+    }
+  }
+
   static getSupportedChannels() {
     return Object.entries(SHARE_CHANNELS).map(([id, config]) => ({
       id,
@@ -202,6 +297,14 @@ export class LocalShareService {
       return { success: false, message: 'Nothing to share to Discord.' };
     }
 
+    if (LocalShareService.hasDiscordWebhookUrl()) {
+      const result = await LocalShareService.postToDiscordWebhook({ imageBlob, text, filename });
+      if (result.success) {
+        return { ...result, imageStaged: false, url: '' };
+      }
+      return { ...result, imageStaged: false };
+    }
+
     const canWriteClipboard = typeof navigator !== 'undefined' &&
       navigator.clipboard &&
       typeof navigator.clipboard.write === 'function';
@@ -278,13 +381,14 @@ export class LocalShareService {
     return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   }
 
-  static async shareWithNativeShare({ text, files = [], title = 'My GamePilot Year in Review' }) {
+  static async shareWithNativeShare({ text, files = [], title = null }) {
     if (!LocalShareService.canUseNativeShare()) {
       return { success: false, message: 'Native sharing is not available on this device.' };
     }
 
     try {
-      const payload = { title, text };
+      const shareTitle = title || text?.split('\n')?.[0] || 'My GamePilot Share';
+      const payload = { title: shareTitle, text };
       if (files.length > 0) {
         payload.files = files;
       }
@@ -417,14 +521,36 @@ export class LocalShareService {
 
     const totalPlaytime = formatPlaytime(totalMinutes);
     const steamPlaytime = formatPlaytime(steamMinutes);
-    const libraryValue = LibraryValueService.calculateLibraryValue(safeLibrary);
+
+    let persona = null;
+    let personaRoast = null;
+    try {
+      persona = GamingPersonaService.getPersona();
+      personaRoast = persona?.summaryRoast || persona?.primaryPersona?.roast || null;
+    } catch { /* ignore */ }
+
+    const roasts = [
+      `${totalPlaytime} across ${gameCount} games and I still can't decide what to play next.`,
+      `${sessionCount} sessions. ${gameCount} games. Zero regrets. Okay, maybe some regrets.`,
+      `I could've learned a language. Instead, ${totalPlaytime} in games. Worth it.`,
+      `My backlog is bigger than some people's Steam accounts. ${totalPlaytime} and counting.`,
+      `Steam says ${steamPlaytime}. GamePilot says ${totalPlaytime}. My social life says nothing.`,
+    ];
+    if (personaRoast) {
+      roasts.unshift(personaRoast);
+    }
+
+    const roastLine = roasts[Math.floor(Math.random() * roasts.length)];
+    const eraTagline = CurrentEraService.getEraTagline();
 
     const lines = [
       `🎮 ${username}'s ${periodLabel} GamePilot Recap`,
       ``,
       `⏱️ ${totalPlaytime} across ${gameCount} games · ${sessionCount} session${sessionCount !== 1 ? 's' : ''}`,
       `🎯 Steam: ${steamPlaytime} · ${steamGameCount} games`,
-      `💰 Library value: $${(libraryValue?.totalValue || 0).toFixed(2)}`
+      ...(eraTagline ? [``, `🗺️ ${eraTagline}`] : []),
+      ``,
+      roastLine,
     ];
 
     if (mostPlayed.length > 0) {
@@ -500,6 +626,46 @@ export class LocalShareService {
     return { text, filename, title };
   }
 
+  static buildMultiGameShareText(games = [], username = 'Gamer') {
+    const safeGames = Array.isArray(games) ? games.slice(0, 3).filter(Boolean) : [];
+    if (safeGames.length === 0) return '';
+
+    const names = safeGames.map((g) => g.name || 'Unknown').join(' · ');
+    const totalMinutes = safeGames.reduce((sum, g) => sum + Number(g?.time_played ?? g?.playtime ?? 0), 0);
+    const totalSessions = safeGames.reduce((sum, g) => sum + (g?.launch_count || g?.sessions || 0), 0);
+    const playtimeLabel = formatPlaytime(totalMinutes);
+
+    const roasts = [
+      `${playtimeLabel} across ${safeGames.length} games and I still want more.`,
+      `${safeGames.length} games. ${playtimeLabel}. ${totalSessions} sessions. This is my personality now.`,
+      `Currently rotating: ${names}. My free time called, it's not coming back.`,
+      `Someone asked what I'm playing. I sent them this. They regret asking.`,
+    ];
+
+    const lines = [
+      `🎮 ${username}'s GamePilot Picks`,
+      ``,
+      `⏱️ ${playtimeLabel} · ${totalSessions} session${totalSessions !== 1 ? 's' : ''}`,
+      `🎯 ${names}`,
+      ``,
+      roasts[Math.floor(Math.random() * roasts.length)],
+    ];
+
+    lines.push('');
+    lines.push('Get your own local-first recap:');
+    lines.push('https://github.com/jonnym69-ai/the-gamepilot/releases');
+    lines.push('#GamePilot #GamingStats');
+
+    return lines.join('\n');
+  }
+
+  static buildMultiGameShareCardPackage(games = [], username = 'Gamer') {
+    const text = LocalShareService.buildMultiGameShareText(games, username);
+    const filename = `gamepilot-picks-${new Date().toISOString().split('T')[0]}.png`;
+    const title = `${username}'s GamePilot Picks`;
+    return { text, filename, title };
+  }
+
   static buildIdentityShareText(profile = {}, username = 'Gamer') {
     const safeProfile = profile || {};
     const identity = safeProfile.identity || {};
@@ -508,11 +674,13 @@ export class LocalShareService {
 
     const gamingPersona = GamingPersonaService.getPersona();
     const primary = gamingPersona?.primaryPersona;
-    const identityLabel = identity.personality || primary?.label || 'Uncharted Pilot';
-    const description = identity.description || gamingPersona?.summaryRoast || primary?.roast || 'My gaming identity';
+    const identityLabel = primary?.label || identity.personality || 'Uncharted Pilot';
+    const description = gamingPersona?.summaryRoast || primary?.roast || identity.description || 'My gaming identity';
     const title = safeProfile.title || 'Newbie';
     const level = safeProfile.level || 1;
     const totalPlaytime = stats.totalPlayTime || 0;
+    const dominantGenre = gamingPersona?.signals?.dominantGenre || identity.favoriteGenre || '—';
+    const dominantMood = identity.favoriteMood || gamingPersona?.signals?.dominantMood || '—';
 
     const lines = [
       `${displayName} · GamePilot Player Identity`,
@@ -521,7 +689,7 @@ export class LocalShareService {
       `${description}`,
       '',
       `Title: ${title} · Level ${level} · ${formatPlaytime(totalPlaytime)} total playtime`,
-      `Top mood: ${identity.favoriteMood || '—'} · Top genre: ${identity.favoriteGenre || '—'} · Playstyle: ${identity.playStyle || 'Balanced'}`,
+      `Top mood: ${dominantMood} · Top genre: ${dominantGenre} · Playstyle: ${identity.playStyle || 'Balanced'}`,
       '',
       'Generated locally by GamePilot.',
       'https://github.com/jonnym69-ai/the-gamepilot/releases',
@@ -544,9 +712,11 @@ export class LocalShareService {
     const confidence = safePersona?.confidence || 'low';
     const displayName = username || 'Pilot';
 
+    const eraTagline = CurrentEraService.getEraTagline();
+
     const lines = [
       `🎮 ${displayName} · ${label}`,
-      ''
+      ...(eraTagline ? [`Currently in: ${eraTagline}`, ''] : [''])
     ];
 
     if (roast) {
@@ -603,8 +773,23 @@ export class LocalShareService {
     return { text, filename, title };
   }
 
-  static buildPeriodStoryShareText(periodSnapshot = {}, period = 'weekly', username = 'Gamer') {
-    return RecapStoryService.buildShareText(periodSnapshot, period, username);
+  static buildPeriodStoryShareText(story = {}, period = 'weekly', username = 'Gamer') {
+    if (story?.narrative) {
+      const periodTitle = period === 'weekly'
+        ? "This Week's GamePilot Recap"
+        : period === 'monthly'
+          ? "This Month's GamePilot Recap"
+          : 'GamePilot Recap';
+      const lines = [
+        `${periodTitle} — ${username || 'Pilot'}`,
+        '',
+        story.narrative.replace(/\*\*/g, ''),
+        '',
+        'Generated locally by GamePilot.'
+      ];
+      return lines.join('\n');
+    }
+    return RecapStoryService.buildShareText(story, period, username);
   }
 
   static buildPeriodStoryShareCardPackage(periodSnapshot = {}, period = 'weekly', username = 'Gamer') {

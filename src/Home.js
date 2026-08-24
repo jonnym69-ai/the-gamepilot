@@ -1,156 +1,66 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import NavBar from './NavBar';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
+import { AchievementTracker } from './AchievementSystem';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import WishlistService from './services/WishlistService';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import CollapsibleSection from './components/CollapsibleSection';
 import { Library, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { RecommendationEngine } from './services/RecommendationEngine';
+import { BacklogCoachService } from './services/BacklogCoachService';
 import { GamingIdentity } from './GamingIdentity';
 import { getFamiliarityBias, setFamiliarityBias } from './services/RecommendationWeights';
 import { RetentionQuestService } from './services/RetentionQuestService';
-import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
+import { getGameArtworkPlaceholder, resolveGameArtwork, resolveGameArtworkBundle } from './services/GameArtworkService';
 import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
 import './Home.css';
 import './LibraryValue.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
+import LazyImage from './components/LazyImage';
 import WishlistSection from './components/WishlistSection';
 import NostalgiaCard from './components/NostalgiaCard';
 import PatchNotesBadge from './components/PatchNotesBadge';
 import LibrarianHubCarousel from './components/LibrarianHubCarousel';
+import WeeklyRecapNudge from './components/WeeklyRecapNudge';
 import WelcomeBackCard from './components/WelcomeBackCard';
 import { SessionService } from './services/SessionService';
 import { WelcomeBackService } from './services/WelcomeBackService';
 import StorageService from './services/StorageService';
+import { HomeSection } from './components/HomeSectionPrimitives';
 import {
-  HomeGuidedContent,
-  HomeSection,
-  HomeToolsContent,
-  LibraryTodaySection,
   TuneYourNextPickSection,
   PerfectPlayResultSection,
   RecommendationResultsSection,
   SurpriseGameResultSection,
   RediscoverResultSection,
+} from './components/RecommendationShelves';
+import {
+  HomeGuidedContent,
+  HomeToolsContent,
+} from './components/HomeOrchestrators';
+import { LibraryTodaySection } from './components/LibraryTodaySection';
+import {
   IdentitySnapshotCard,
+  CurrentEraCard,
   WeeklyPlaySnapshot,
   HabitGoalsMiniCard,
   BecauseYouAreSection,
   FamiliarOrFreshNudge,
-} from './components/HomeDashboardSections';
-const GETTING_STARTED_PREFERENCE_KEY = 'gettingStartedPreferences';
-
-const readGettingStartedPreferences = () => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(GETTING_STARTED_PREFERENCE_KEY) || '{}');
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? parsed
-      : { hasSeen: false, hidden: false };
-  } catch (error) {
-    return { hasSeen: false, hidden: false };
-  }
-};
-
-const saveGettingStartedPreferences = (preferences = {}) => {
-  localStorage.setItem(GETTING_STARTED_PREFERENCE_KEY, JSON.stringify({
-    hasSeen: Boolean(preferences.hasSeen),
-    hidden: Boolean(preferences.hidden)
-  }));
-};
+  RecentSessionsSummary,
+  CurrentChampionCard,
+} from './components/IdentityWidgets';
+import GettingStartedModal from './components/GettingStartedModal';
+import {
+  readGettingStartedPreferences,
+  saveGettingStartedPreferences,
+  formatPlaytime,
+  formatLastPlayed,
+} from './utils/homeHelpers';
 
 // Use centralized platform constants
 const platformIcons = PLATFORM_ICONS;
 const platformColors = PLATFORM_COLORS;
-
-// Helper function to format playtime accurately
-const formatPlaytime = (minutes) => {
-  if (!minutes || minutes <= 0) return null;
-  
-  if (minutes < 60) {
-    return `${Math.round(minutes)}m played`;
-  } else if (minutes < 120) {
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return mins > 0 ? `${hours}h ${mins}m played` : `${hours}h played`;
-  } else {
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return `${hours}h ${mins}m played`;
-  }
-};
-
-// ... (rest of the code remains the same)
-
-function GettingStartedModal({ isOpen, onClose, onHidePermanently, onScan, theme }) {
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const handleScan = () => {
-    onScan?.();
-    onClose();
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        style={{ maxWidth: '520px' }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="getting-started-title"
-        aria-describedby="getting-started-description"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="modal-close"
-          aria-label="Close getting started guide"
-        >
-          <span aria-hidden="true">×</span>
-        </button>
-        <h2 id="getting-started-title" className={`modal-title ${theme}`}>Your gaming librarian</h2>
-        <p id="getting-started-description" style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
-          GamePilot reads your libraries, builds a living persona from how you play, and recommends your next session — with a roast on the side.
-        </p>
-        <div className="getting-started-actions">
-          <button onClick={handleScan} className="getting-started-primary">Scan my games</button>
-          <button onClick={onHidePermanently} className="getting-started-secondary">Skip for now</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const formatLastPlayed = (lastPlayedTimestamp) => {
-  if (!lastPlayedTimestamp) return 'Never played';
-
-  const lastPlayedDate = new Date(lastPlayedTimestamp);
-  if (Number.isNaN(lastPlayedDate.getTime())) return 'Unknown';
-
-  const now = new Date();
-  const diffMs = Math.max(0, now - lastPlayedDate);
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-
-  if (diffMinutes < 1) return 'Just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  return `${Math.floor(diffDays / 30)}mo ago`;
-};
 
 function Home({
   mode = 'home',
@@ -345,7 +255,7 @@ function Home({
       }
 
       const detail = event?.detail;
-      if (!detail?.gameName) {
+      if (!detail?.gameName || detail.recommendationType) {
         return;
       }
 
@@ -528,6 +438,8 @@ function Home({
 
     if (feature) {
       try {
+        AchievementTracker.logGameplayFeature(feature);
+        AchievementTracker.checkAndUnlockAchievements();
       } catch (error) {
         console.error(`Home: Failed to log gameplay feature "${feature}"`, error);
       }
@@ -740,8 +652,7 @@ function Home({
   ), [lastPlayedGame, library, recommendationMood, time]);
   const continuePlayingEntry = continuePlayingResult?.primaryEntry || null;
   const continuePlayingGame = continuePlayingEntry?.game || continuePlayingResult?.primaryGame || null;
-  const continuePlayingArtwork = continuePlayingGame ? resolveGameArtwork(continuePlayingGame, { surface: 'recommendation_card' }) : null;
-  const continuePlayingPlaceholder = continuePlayingGame ? getGameArtworkPlaceholder({ game: continuePlayingGame, surface: 'recommendation_card' }) : null;
+  const { artwork: continuePlayingArtwork, placeholder: continuePlayingPlaceholder } = resolveGameArtworkBundle(continuePlayingGame, { surface: 'portrait' });
   const perfectPlayEntries = perfectPlayResult?.entries || [];
   // Auto-computed pick that powers "Your Library Today" when the user hasn't
   // run a manual Perfect Play search. It goes through scoreGameByBehavior,
@@ -755,9 +666,17 @@ function Home({
   const autoTonightEntries = autoTonightResult?.entries || [];
   const surpriseEntry = surpriseGameResult?.primaryEntry || null;
   const surpriseGame = surpriseEntry?.game || surpriseGameResult?.primaryGame || null;
-  const surpriseGameArtwork = surpriseGame ? resolveGameArtwork(surpriseGame, { surface: 'recommendation_card' }) : null;
-  const surpriseGamePlaceholder = surpriseGame ? getGameArtworkPlaceholder({ game: surpriseGame, surface: 'recommendation_card' }) : null;
+  const { artwork: surpriseGameArtwork, placeholder: surpriseGamePlaceholder } = resolveGameArtworkBundle(surpriseGame, { surface: 'portrait' });
   const rediscoverEntries = rediscoverGameResult?.entries || [];
+  const backlogPlan = useMemo(() => {
+    if (!Array.isArray(library) || library.length === 0) return null;
+    try {
+      return BacklogCoachService.getBacklogPlan(library, 5);
+    } catch {
+      return null;
+    }
+  }, [library]);
+  const backlogQueue = backlogPlan?.queue || [];
   const retentionSnapshot = useMemo(() => {
     try {
       return RetentionQuestService.getHomeRetentionSnapshot(library);
@@ -785,8 +704,7 @@ function Home({
     || autoTonightEntries[0]
     || null;
   const tonightPickGame = tonightPickEntry?.game || null;
-  const tonightPickArtwork = tonightPickGame ? resolveGameArtwork(tonightPickGame, { surface: 'recommendation_card' }) : null;
-  const tonightPickPlaceholder = tonightPickGame ? getGameArtworkPlaceholder({ game: tonightPickGame, surface: 'recommendation_card' }) : null;
+  const { artwork: tonightPickArtwork, placeholder: tonightPickPlaceholder } = resolveGameArtworkBundle(tonightPickGame, { surface: 'portrait' });
   const rediscoverShelfEntry = rediscoverEntries[0] || null;
   const rediscoverShelfFallback = useMemo(() => {
     if (!Array.isArray(library) || library.length === 0) {
@@ -838,8 +756,7 @@ function Home({
     return topPool[pickIndex]?.game || null;
   }, [continuePlayingGame, getHomeShelfGameKey, library, tonightPickGame]);
   const rediscoverShelfGame = rediscoverShelfEntry?.game || rediscoverShelfFallback || null;
-  const rediscoverShelfArtwork = rediscoverShelfGame ? resolveGameArtwork(rediscoverShelfGame, { surface: 'recommendation_card' }) : null;
-  const rediscoverShelfPlaceholder = rediscoverShelfGame ? getGameArtworkPlaceholder({ game: rediscoverShelfGame, surface: 'recommendation_card' }) : null;
+  const { artwork: rediscoverShelfArtwork, placeholder: rediscoverShelfPlaceholder } = resolveGameArtworkBundle(rediscoverShelfGame, { surface: 'portrait' });
 
   const favoriteShelfFallback = useMemo(() => {
     const excludedKeys = new Set([
@@ -869,13 +786,23 @@ function Home({
     return null;
   }, [continuePlayingGame, featuredGames, getHomeShelfGameKey, library, recentGames, rediscoverShelfGame, tonightPickGame]);
   const favoriteShelfGame = topRatedGames[0] || favoriteShelfFallback || null;
-  const favoriteShelfArtwork = favoriteShelfGame ? resolveGameArtwork(favoriteShelfGame, { surface: 'recommendation_card' }) : null;
-  const favoriteShelfPlaceholder = favoriteShelfGame ? getGameArtworkPlaceholder({ game: favoriteShelfGame, surface: 'recommendation_card' }) : null;
+  const { artwork: favoriteShelfArtwork, placeholder: favoriteShelfPlaceholder } = resolveGameArtworkBundle(favoriteShelfGame, { surface: 'portrait' });
   const homeShelfCards = [tonightPickGame, continuePlayingGame, rediscoverShelfGame, favoriteShelfGame].filter(Boolean).length;
   const weeklyQuestSummary = 'Playstyle picks and shelves tuned to how you actually play.';
   const weeklyPlayDays = weeklyHabitStats.daysPlayed || weeklyQuest?.weeklyStats?.activeDays || 0;
   const weeklyPlaytimeHours = weeklyHabitStats.totalHours || weeklyQuest?.weeklyStats?.playtimeHours || 0;
   const recentLibraryActivity = recentGames.length;
+  const similarToRecentResult = React.useMemo(() => {
+    if (!Array.isArray(library) || library.length === 0 || recentGames.length === 0) return null;
+    try {
+      return RecommendationEngine.getSimilarToRecent(library, recentGames, 3);
+    } catch (e) {
+      console.warn('getSimilarToRecent failed:', e);
+      return null;
+    }
+  }, [library, recentGames]);
+  const similarToRecentEntries = similarToRecentResult?.entries || [];
+  const similarToRecentReference = similarToRecentResult?.meta?.referenceGame || null;
   const shouldShowLegacyContinueSection = continuePlayingGame && homeShelfCards === 0;
   const shouldShowLegacyTopRatedSection = topRatedGames.length > 0 && !favoriteShelfGame;
   const storyLeadGame = recentGames[0] || featuredGames[0] || favoriteShelfGame || tonightPickGame || null;
@@ -944,6 +871,56 @@ function Home({
       </button>
     );
   };
+
+  const similarToRecentShelf = similarToRecentEntries.length > 0 && similarToRecentReference ? (
+    <CollapsibleSection
+      title={`Because you played ${similarToRecentReference}`}
+      subtitle="Similar games from your backlog, matched by genre, theme, and tags."
+      icon={<Sparkles size={18} />}
+      className="home-similar-to-recent"
+      defaultOpen
+    >
+      <div className="home-similar-grid">
+        {similarToRecentEntries.map((entry, i) => {
+          const game = entry?.game;
+          if (!game) return null;
+          const { artwork, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait' });
+          const reasons = similarToRecentResult?.meta?.allReasons?.[i] || [];
+          return (
+            <div
+              key={game.appid || game.name || i}
+              className="home-shelf-card"
+              onClick={() => {
+                onLaunchGame(game);
+                trackRecommendationLaunch(similarToRecentResult, game);
+              }}
+            >
+              <div className="home-shelf-card-artwork">
+                {artwork ? (
+                  <img src={artwork} alt={game.name} className="home-shelf-card-img" />
+                ) : (
+                  <div className="home-shelf-card-placeholder">{placeholder || game.name}</div>
+                )}
+              </div>
+              <div className="home-shelf-card-body">
+                <div className="home-shelf-card-name">{game.name}</div>
+                {reasons.length > 0 && (
+                  <div className="home-shelf-card-reason">{reasons[0]}</div>
+                )}
+                <div className="home-shelf-card-meta">
+                  {game.time_played > 120
+                    ? `${formatPlaytime(game.time_played)} played`
+                    : game.time_played > 0
+                      ? 'Barely touched'
+                      : 'Unplayed in your backlog'}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </CollapsibleSection>
+  ) : null;
 
   const handleHomeControllerInput = useCallback((action) => {
     const itemsCount = recentGames.length + featuredGames.length;
@@ -1136,14 +1113,14 @@ function Home({
     const item = surpriseShelfEntry?.meta?.wishlistItem || {};
     const steamAppId = item.steamAppID || game?.appid || game?.app_id || game?.steamAppId || null;
     if (steamAppId) {
-      return `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/header.jpg`;
+      return `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/library_600x900.jpg`;
     }
     if (item.thumb && /^https?:\/\//i.test(item.thumb)) {
       return item.thumb;
     }
-    return resolveGameArtwork(game, { surface: 'recommendation_card' });
+    return resolveGameArtwork(game, { surface: 'portrait' });
   }, [surpriseShelfEntry, surpriseShelfGame]);
-  const surpriseShelfPlaceholder = surpriseShelfGame ? getGameArtworkPlaceholder({ game: surpriseShelfGame, surface: 'recommendation_card' }) : null;
+  const surpriseShelfPlaceholder = surpriseShelfGame ? getGameArtworkPlaceholder({ game: surpriseShelfGame, surface: 'portrait' }) : null;
 
   const openSurpriseShelfOnSteam = useCallback(() => {
     const item = surpriseShelfEntry?.meta?.wishlistItem || {};
@@ -1281,7 +1258,11 @@ function Home({
           <NostalgiaCard library={library} />
           <PatchNotesBadge library={library} />
 
+          <WeeklyRecapNudge />
+
           <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
+
+          {similarToRecentShelf}
 
           <CollapsibleSection
             title="Library Today"
@@ -1342,8 +1323,6 @@ function Home({
               gamePilotPickEntries={gamePilotPickEntries}
               gamePilotPicksResult={gamePilotPicksResult}
               getGameCardClass={getGameCardClass}
-              resolveGameArtwork={resolveGameArtwork}
-              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
               onLaunchGame={onLaunchGame}
               trackRecommendationLaunch={trackRecommendationLaunch}
               renderEndSessionButton={renderEndSessionButton}
@@ -1357,28 +1336,6 @@ function Home({
             formatPlaytime={formatPlaytime}
             formatLastPlayed={formatLastPlayed}
           />
-
-          <CollapsibleSection
-            title="Your Persona"
-            subtitle="The roast-backed identity GamePilot uses for picks and stories."
-            icon={<Library size={18} />}
-            className="home-identity-section"
-            defaultOpen
-          >
-            <IdentitySnapshotCard persona={personaSnapshot} />
-            <BecauseYouAreSection
-              library={library}
-              resolveGameArtwork={resolveGameArtwork}
-              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
-              platformIcons={PLATFORM_ICONS}
-              formatPlaytime={formatPlaytime}
-              onLaunchGame={onLaunchGame}
-              getGameCardClass={getGameCardClass}
-            />
-            <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
-            {/* Phase 0: habit goals mini-card hidden (system retained). */}
-            {false && <HabitGoalsMiniCard goalProgress={goalProgress} />}
-          </CollapsibleSection>
 
           <CollapsibleSection
             title="Tools & Recommendations"
@@ -1413,8 +1370,6 @@ function Home({
               topRatedGames={topRatedGames}
               shouldShowLegacyTopRatedSection={shouldShowLegacyTopRatedSection}
               getGameCardClass={getGameCardClass}
-              resolveGameArtwork={resolveGameArtwork}
-              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
               platformColors={platformColors}
               platformIcons={platformIcons}
               formatPlaytime={formatPlaytime}
@@ -1452,6 +1407,8 @@ function Home({
       ) : (
         <>
           <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
+
+          {similarToRecentShelf}
 
           <HomeSection
             eyebrow="Your Library"
@@ -1506,20 +1463,21 @@ function Home({
           <HomeSection
             eyebrow="Who You Are"
             title="Your Gaming Persona"
-            copy="Built from real play — then roasted. This is what powers your recommendations."
+            copy="Built from what you're playing right now — then roasted. This is what powers your recommendations."
             compact
           >
-            <IdentitySnapshotCard persona={personaSnapshot} />
+            <RecentSessionsSummary />
+            <CurrentEraCard />
+            <CurrentChampionCard library={safeLibrary} />
+            <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
             <BecauseYouAreSection
               library={library}
-              resolveGameArtwork={resolveGameArtwork}
-              getGameArtworkPlaceholder={getGameArtworkPlaceholder}
               platformIcons={PLATFORM_ICONS}
               formatPlaytime={formatPlaytime}
               onLaunchGame={onLaunchGame}
               getGameCardClass={getGameCardClass}
             />
-            <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
+            <IdentitySnapshotCard persona={personaSnapshot} />
             {false && <HabitGoalsMiniCard goalProgress={goalProgress} />}
           </HomeSection>
 
@@ -1548,8 +1506,6 @@ function Home({
                 result={perfectPlayResult}
                 entries={perfectPlayEntries}
                 getGameCardClass={getGameCardClass}
-                resolveGameArtwork={resolveGameArtwork}
-                getGameArtworkPlaceholder={getGameArtworkPlaceholder}
                 platformIcons={platformIcons}
                 formatPlaytime={formatPlaytime}
                 handleTrackedLaunch={handleTrackedLaunch}
@@ -1574,8 +1530,6 @@ function Home({
                 result={rediscoverGameResult}
                 entries={rediscoverEntries}
                 getGameCardClass={getGameCardClass}
-                resolveGameArtwork={resolveGameArtwork}
-                getGameArtworkPlaceholder={getGameArtworkPlaceholder}
                 platformIcons={platformIcons}
                 formatPlaytime={formatPlaytime}
                 handleTrackedLaunch={handleTrackedLaunch}
@@ -1585,6 +1539,66 @@ function Home({
               />
             </RecommendationResultsSection>
           </HomeSection>
+
+          {backlogQueue.length > 0 && (
+            <HomeSection
+              className="home-backlog-section"
+              eyebrow="Battle The Backlog"
+              title="Your Backlog Plan"
+              copy={backlogPlan?.message || "Backlog games matched to how you actually play right now."}
+              compact
+            >
+              <div className="home-backlog-stats">
+                {backlogPlan?.summary && (
+                  <div className="home-backlog-stat-bar">
+                    <span className="home-backlog-stat-item">
+                      <strong>{backlogPlan.summary.backlogCount}</strong> in backlog
+                    </span>
+                    <span className="home-backlog-stat-item">
+                      <strong>~{backlogPlan.summary.hoursToClear}h</strong> to sample the pile
+                    </span>
+                    <span className="home-backlog-stat-item">
+                      <strong>{backlogPlan.summary.clearedThisMonth}</strong> cleared this month
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="home-backlog-games">
+                {backlogQueue.map((entry, i) => {
+                  const game = entry?.game;
+                  if (!game) return null;
+                  const { artwork, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait' });
+                  const reasons = entry?.reasons || [];
+                  const isTonightPick = i === 0;
+                  return (
+                    <div
+                      key={`${game.appid || game.name}-${i}`}
+                      className={`home-backlog-game-card ${getGameCardClass(game)}${isTonightPick ? ' tonight-pick' : ''}`}
+                      onClick={() => handleTrackedLaunch(game)}
+                    >
+                      {isTonightPick && (
+                        <span className="home-backlog-tonight-badge">Tonight's backlog pick</span>
+                      )}
+                      <div className="home-backlog-game-artwork">
+                        <LazyImage src={artwork} alt={game.name} placeholder={placeholder} />
+                      </div>
+                      <div className="home-backlog-game-info">
+                        <span className="home-backlog-game-title">{game.name}</span>
+                        {reasons.length > 0 && (
+                          <span className="home-backlog-game-reason">{reasons[0]}</span>
+                        )}
+                        {entry?.estimatedMinutes && (
+                          <span className="home-backlog-game-time">
+                            ~{Math.round(entry.estimatedMinutes / 60)}h to finish
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </HomeSection>
+          )}
 
           <HomeSection
             className="home-wishlist-section"

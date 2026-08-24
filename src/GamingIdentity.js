@@ -173,13 +173,30 @@ export class GamingIdentity {
     const genreStats = Object.keys(allTimeSnapshot?.genreCounts || {}).length > 0
       ? allTimeSnapshot.genreCounts
       : AchievementTracker.getGenreStats();
-    const totalPlayTime = Number(allTimeSnapshot?.playtimeMinutes || legacyTimeStats.total || 0);
+    const trackedPlayTime = Number(allTimeSnapshot?.playtimeMinutes || legacyTimeStats.total || 0);
+    // Lifetime floor from library (Steam/GOG imports + local). Never show a
+    // "0h identity" when the library clearly has hundreds of imported hours.
+    const libraryLifetimeMinutes = Array.isArray(library)
+      ? library.reduce((sum, game) => {
+          const candidates = [
+            Number(game?.time_played) || 0,
+            Number(game?.playtime?.total) || 0,
+            Number(game?.importedPlaytimeMinutes) || 0,
+            Number(game?.playtimeForever) || 0
+          ];
+          return sum + Math.max(...candidates, 0);
+        }, 0)
+      : 0;
+    const importedSummaryMinutes = Number(dashboardData?.importedPlaytime?.totalMinutes) || 0;
+    const totalPlayTime = Math.max(trackedPlayTime, libraryLifetimeMinutes, importedSummaryMinutes);
     const totalSessions = Number(allTimeSnapshot?.sessions || legacyTimeStats.sessions || 0);
     
     const stats = {
       totalPlayTime,
+      trackedPlayTime,
+      importedPlayTime: Math.max(libraryLifetimeMinutes, importedSummaryMinutes),
       totalSessions,
-      averageSessionTime: totalSessions > 0 ? Math.round(totalPlayTime / totalSessions) : 0,
+      averageSessionTime: totalSessions > 0 ? Math.round(trackedPlayTime / totalSessions) : 0,
       favoritePlatform: this.getFavoritePlatform(platformStats),
       mostUsedFeature: this.getMostUsedFeature(featureStats),
       favoriteMood: this.getFavoriteMood(moodStats) !== 'None' ? this.getFavoriteMood(moodStats) : (onboardingSeed?.moods?.[0] || 'None'),
@@ -279,7 +296,16 @@ export class GamingIdentity {
 
     const scored = library
       .map((game) => {
-        const playtimeMinutes = Number(game.time_played || 0);
+        const playtimeMinutes = Math.max(
+          Number(game.time_played) || 0,
+          Number(game.playtime && game.playtime.total) || 0,
+          Number(game.importedPlaytimeMinutes) || 0,
+          Number(game.playtimeForever) || 0
+        );
+        const displayName = String(game.name || game.title || '').trim();
+        if (!displayName || /^(untitled|unknown|unknown game|null|undefined)$/i.test(displayName)) {
+          return null;
+        }
         if (playtimeMinutes <= 0 && !game.last_played) return null;
 
         const playtimeHours = Math.round(playtimeMinutes / 60);
@@ -288,25 +314,33 @@ export class GamingIdentity {
         const ratingValue = rating?.value || 0;
         const launchCount = Number(game.launch_count || 0);
 
-        // Score: playtime is the primary signal, rating amplifies it,
-        // launch count adds engagement breadth.
+        // Score: lifetime playtime is the primary signal, rating amplifies it,
+        // launch count adds engagement breadth. Recent last_played is a light boost
+        // so present play still surfaces without burying history.
         let score = Math.min(50, playtimeHours / 10); // up to 50 pts from playtime (500h+)
         if (ratingValue > 0) {
           score += (ratingValue / 10) * 25; // up to 25 pts from a 10/10 rating
         }
         score += Math.min(15, launchCount); // up to 15 pts from launch frequency
         if (rating?.wouldReplay === true) score += 10; // would-replay bonus
+        if (game.last_played) {
+          const daysSince = (Date.now() - new Date(game.last_played).getTime()) / (1000 * 60 * 60 * 24);
+          if (Number.isFinite(daysSince) && daysSince >= 0 && daysSince < 14) {
+            score += Math.max(0, 8 - daysSince * 0.4);
+          }
+        }
 
         let genres = Array.isArray(game.genres) ? game.genres.filter(Boolean) : [];
         if (genres.length === 0) {
-          try { genres = getGameGenres(game.name) || []; } catch { genres = []; }
+          try { genres = getGameGenres(game.name) || []; } catch (e) { genres = []; }
         }
 
         return {
-          name: game.name || game.title || 'Unknown',
+          name: displayName,
           appid: game.appid || '',
           platform: game.platform || '',
           playtimeHours,
+          playtimeMinutes,
           rating: ratingValue,
           wouldReplay: rating?.wouldReplay || null,
           score: Math.round(score * 10) / 10,

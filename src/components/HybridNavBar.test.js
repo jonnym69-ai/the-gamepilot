@@ -21,11 +21,6 @@ jest.mock('../ThemeContext', () => ({
   })
 }));
 
-jest.mock('../services/LabsService', () => ({
-  isEnabled: jest.fn(() => false),
-  subscribe: jest.fn(() => jest.fn())
-}));
-
 const renderNavigation = (route = '/') => {
   mockPathname = route;
   mockLocation = { pathname: route };
@@ -46,12 +41,12 @@ describe('HybridNavBar', () => {
     const moreButton = screen.getByRole('button', { name: 'More navigation options' });
     fireEvent.click(moreButton);
 
-    expect(screen.getByLabelText('More pages and tools')).not.toBeNull();
+    expect(screen.getByLabelText('More pages')).not.toBeNull();
     expect(moreButton.getAttribute('aria-expanded')).toBe('true');
 
     fireEvent.keyDown(document, { key: 'Escape' });
 
-    expect(screen.queryByLabelText('More pages and tools')).toBeNull();
+    expect(screen.queryByLabelText('More pages')).toBeNull();
     expect(moreButton.getAttribute('aria-expanded')).toBe('false');
   });
 
@@ -64,5 +59,19 @@ describe('HybridNavBar', () => {
 
     expect(listener).toHaveBeenCalledTimes(1);
     window.removeEventListener('gamepilot:open-command-palette', listener);
+  });
+
+  test('shows the complete secondary navigation', () => {
+    renderNavigation();
+
+    fireEvent.click(screen.getByRole('button', { name: 'More navigation options' }));
+
+    expect(screen.getByText('Habits')).toBeTruthy();
+    expect(screen.getByText('Achievements')).toBeTruthy();
+    expect(screen.getByText('Rewards')).toBeTruthy();
+    expect(screen.getByText('Storage Manager')).toBeTruthy();
+    expect(screen.queryByText(/Performance Cockpit/)).toBeNull();
+    expect(screen.getByText('Export Hub')).toBeTruthy();
+    expect(screen.getByText('Gaming Links')).toBeTruthy();
   });
 });

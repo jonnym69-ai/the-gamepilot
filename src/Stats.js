@@ -1,15 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import NavBar from './NavBar';
-import { AchievementTracker } from './AchievementSystem';
-import { Trophy, Star, TrendingUp, Award, User, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, BookOpen } from 'lucide-react';
+import { TrendingUp, RefreshCcw, Calendar, BarChart3, PieChart as PieChartIcon, BookOpen } from 'lucide-react';
 import { formatPrice } from './CurrencyConverter';
 import { PieChart, BarChart } from './components/StatsCharts';
 import EmptyState from './components/EmptyState';
-import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import StorageService from './services/StorageService';
-import { DailyEngagementService } from './services/DailyEngagementService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import { getMoodForGame } from './constants/GenresMoods';
 import { HabitTrackerService } from './services/HabitTrackerService';
@@ -22,9 +19,7 @@ import { LocalShareService } from './services/LocalShareService';
 import { useToast } from './components/Toast';
 import ShareMenu from './components/ShareMenu';
 import { HabitsShareCard } from './components/HabitsShareCard';
-import { PersonaShareCard } from './components/PersonaShareCard';
 import StatsDrivenStory from './components/StatsDrivenStory';
-import GamingPersonaService from './services/GamingPersonaService';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
@@ -46,58 +41,13 @@ const formatRelativeTime = (timestamp) => {
 function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 'USD' }) {
   const { success, error: showError } = useToast();
   const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
-  const [progressionData, setProgressionData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [libraryStats, setLibraryStats] = useState(null);
-  const [personaData, setPersonaData] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('all');
+  const [selectedPeriod, setSelectedPeriod] = useState('weekly');
   const habitsCardRef = useRef(null);
   const [isCapturingHabits, setIsCapturingHabits] = useState(false);
-  const personaCardRef = useRef(null);
-  const [isCapturingPersona, setIsCapturingPersona] = useState(false);
   const refreshTimeoutsRef = useRef(new Set());
-
-  const calculateProgressionData = useCallback((dashboardSnapshot = null) => {
-    const unlockedAchievements = [];
-    const xpStats = AchievementTracker.getXPStats();
-    const periods = dashboardSnapshot?.periods || {};
-    const currentYear = new Date().getFullYear();
-
-    const timeCounters = {
-      daily: {
-        count: Number(periods?.daily?.questUsage?.totalCompleted || 0),
-        day: new Date().toLocaleDateString()
-      },
-      weekly: {
-        count: Number(periods?.weekly?.questUsage?.totalCompleted || 0),
-        week: periods?.weekly?.rangeLabel || 'This Week'
-      },
-      monthly: {
-        count: Number(periods?.monthly?.questUsage?.totalCompleted || 0),
-        month: periods?.monthly?.rangeLabel || 'This Month'
-      },
-      yearly: {
-        count: Number(periods?.yearly?.questUsage?.totalCompleted || 0),
-        year: currentYear
-      }
-    };
-
-    const unlockCounters = {
-      daily: Number(periods?.daily?.achievementUsage?.totalUnlocked || 0),
-      weekly: Number(periods?.weekly?.achievementUsage?.totalUnlocked || 0),
-      monthly: Number(periods?.monthly?.achievementUsage?.totalUnlocked || 0),
-      yearly: Number(periods?.yearly?.achievementUsage?.totalUnlocked || 0),
-      all: Number(periods?.all?.achievementUsage?.totalUnlocked || unlockedAchievements.length || 0)
-    };
-
-    return {
-      unlocked: unlockedAchievements,
-      timeCounters,
-      unlockCounters,
-      xpStats
-    };
-  }, []);
 
   const calculateDashboardData = useCallback(() => StatsAggregationService.getDashboardData(safeLibrary), [safeLibrary]);
 
@@ -121,8 +71,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
         const storedPrice = storedPrices[game.appid];
         if (storedPrice && storedPrice.priceNumeric) {
           gamePrice = storedPrice.priceNumeric;
-        } else {
-          gamePrice = 15;
         }
       }
       
@@ -187,64 +135,12 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     };
   }, [safeLibrary, currency]);
 
-  const calculatePersonaData = useCallback((dashboardSnapshot = null) => {
-    const baseSnapshot = UserBehaviorProfile.getPersonaSnapshot();
-    const gamingPersona = GamingPersonaService.getPersona();
-    const primary = gamingPersona?.primaryPersona;
-    const snapshot = {
-      ...baseSnapshot,
-      personaIdentity: baseSnapshot?.personaIdentity
-        ? {
-            ...baseSnapshot.personaIdentity,
-            label: primary?.label || baseSnapshot.personaIdentity.label,
-            description: gamingPersona?.summaryRoast || primary?.roast || baseSnapshot.personaIdentity.description
-          }
-        : (primary
-          ? { label: primary.label, description: gamingPersona?.summaryRoast || primary.roast || '', anchors: [] }
-          : null)
-    };
-    const allPeriodStats = dashboardSnapshot?.periods?.all || {};
-    const moodUsage = Object.entries(allPeriodStats.moodCounts || {})
-      .map(([mood, data]) => ({
-        label: mood,
-        count: Number(data || 0)
-      }))
-      .filter((entry) => entry.label && entry.label !== 'Unknown' && entry.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-
-    const genreUsage = Object.entries(allPeriodStats.genreCounts || {})
-      .map(([genre, data]) => ({
-        label: genre,
-        count: Number(data || 0)
-      }))
-      .filter((entry) => entry.label && entry.label !== 'Unknown' && entry.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-
-    const profile = UserBehaviorProfile.getProfile();
-    const sessionBuckets = profile.playstylePatterns?.preferredSessionLengths || {};
-    const preferredBucket = Object.entries(sessionBuckets)
-      .sort((a, b) => b[1] - a[1])[0]?.[0] || snapshot?.preferredSessionBucket;
-
-    return {
-      snapshot,
-      moodUsage,
-      genreUsage,
-      preferredBucket
-    };
-  }, []);
-
   const refreshStats = useCallback(() => {
     try {
       const dashboardSnapshot = calculateDashboardData();
-      const achievementSnapshot = calculateProgressionData(dashboardSnapshot);
-      const personaSnapshot = calculatePersonaData(dashboardSnapshot);
       const librarySnapshot = calculateLibraryStats();
 
-      setProgressionData(achievementSnapshot);
       setDashboardData(dashboardSnapshot);
-      setPersonaData(personaSnapshot);
       setLibraryStats(librarySnapshot);
       setLastRefresh(Date.now());
     } catch (refreshError) {
@@ -252,9 +148,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       showError('Stats could not be refreshed. Your saved data is unchanged.');
     }
   }, [
-    calculateProgressionData,
     calculateDashboardData,
-    calculatePersonaData,
     calculateLibraryStats,
     showError
   ]);
@@ -320,23 +214,9 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
     };
   }, [scheduleRefresh]);
 
-  const engagement = DailyEngagementService.getStatus();
-  const currentStreak = Number(engagement?.currentStreak || 0);
-  const bestStreak = Number(engagement?.longestStreak || 0);
   const habitProgress = HabitTrackerService.getHabitXP();
 
-  const isLoading = !progressionData || !dashboardData || !libraryStats || !personaData;
-
-  const formatSessionBucket = (bucket) => {
-    if (!bucket) return 'Flexible sessions';
-    const labels = {
-      '0-30': 'Sprint Sessions',
-      '30-60': 'Focused Runs',
-      '60-120': 'Extended Flights',
-      '120+': 'Marathon Missions'
-    };
-    return labels[bucket] || bucket;
-  };
+  const isLoading = !dashboardData || !libraryStats;
 
   if (isLoading) {
     return (
@@ -352,8 +232,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   }
 
   const allTimeStats = dashboardData?.periods?.all || {};
-  const totalFeatureUses = Number(allTimeStats?.featureUsage?.totalUses || 0);
-  const favoriteFeature = allTimeStats?.featureUsage?.favoriteFeature || '—';
   const selectedStats = dashboardData?.periods?.[selectedPeriod] || allTimeStats;
   const habitInsights = selectedStats?.habitInsights || {};
 
@@ -378,6 +256,27 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           </div>
         </div>
 
+        <div className="stats-period-toggle" role="tablist" aria-label="Stats view period">
+          <button
+            type="button"
+            className={`stats-period-toggle-button ${selectedPeriod !== 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedPeriod('weekly')}
+            role="tab"
+            aria-selected={selectedPeriod !== 'all'}
+          >
+            Recent
+          </button>
+          <button
+            type="button"
+            className={`stats-period-toggle-button ${selectedPeriod === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedPeriod('all')}
+            role="tab"
+            aria-selected={selectedPeriod === 'all'}
+          >
+            All-time
+          </button>
+        </div>
+
         {safeLibrary.length > 0 && (
           <div className="stats-summary-grid">
             <div className="stats-summary-card">
@@ -400,13 +299,17 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               <span className="stats-summary-label">Completed</span>
               <strong className="stats-summary-value">
                 {(() => {
-                  const completed = safeLibrary.filter((g) => g.completed || g.completionStatus === 'completed').length;
+                  const COMPLETED_STATUSES = ['finished', 'beaten', 'completed', '100%'];
+                  const completed = safeLibrary.filter((g) => g.completed || COMPLETED_STATUSES.includes(g.completionStatus) || COMPLETED_STATUSES.includes(g.replayIntent)).length;
                   const rate = safeLibrary.length ? Math.round((completed / safeLibrary.length) * 100) : 0;
                   return `${rate}%`;
                 })()}
               </strong>
               <span className="stats-summary-detail">
-                {safeLibrary.filter((g) => g.completed || g.completionStatus === 'completed').length} games done
+                {(() => {
+                  const COMPLETED_STATUSES = ['finished', 'beaten', 'completed', '100%'];
+                  return safeLibrary.filter((g) => g.completed || COMPLETED_STATUSES.includes(g.completionStatus) || COMPLETED_STATUSES.includes(g.replayIntent)).length;
+                })()} games done
               </span>
             </div>
             <div className="stats-summary-card">
@@ -459,57 +362,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           defaultOpen
         >
           <StatsDrivenStory library={safeLibrary} libraryStats={libraryStats} />
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Progression & Habits"
-          subtitle="XP and level progress, earned through your gaming habits."
-          badge={`Lv ${progressionData.xpStats.level}`}
-          icon={<Trophy size={18} />}
-          className="stats-section"
-          defaultOpen
-        >
-          <div className="stats-grid">
-            <div className="stat-card achievement-card">
-              <div className="stat-icon">
-                <Award size={24} />
-              </div>
-              <div className="stat-content">
-                <h3>{habitProgress.activeDays}</h3>
-                <p>Active Days</p>
-              </div>
-            </div>
-
-            <div className="stat-card achievement-card">
-              <div className="stat-icon">
-                <TrendingUp size={24} />
-              </div>
-              <div className="stat-content">
-                <h3>{habitProgress.totalSessions}</h3>
-                <p>Sessions Tracked</p>
-              </div>
-            </div>
-
-            <div className="stat-card achievement-card">
-              <div className="stat-icon">
-                <Trophy size={24} />
-              </div>
-              <div className="stat-content">
-                <h3>{habitProgress.totalCompletions}</h3>
-                <p>Games Completed</p>
-              </div>
-            </div>
-
-            <div className="stat-card level-card">
-              <div className="stat-icon">
-                <Star size={24} />
-              </div>
-              <div className="stat-content">
-                <h3>Level {progressionData.xpStats.level}</h3>
-                <p>{progressionData.xpStats.xpProgress}/{progressionData.xpStats.xpToNextLevel} XP</p>
-              </div>
-            </div>
-          </div>
         </CollapsibleSection>
 
         <CollapsibleSection
@@ -710,271 +562,6 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               insights={habitInsights}
               username={ProfileService.getCurrentUsername()}
               periodLabel={selectedStats?.rangeLabel || 'All Time'}
-            />
-          </div>
-        </div>
-
-        <CollapsibleSection
-          title="Flight Persona Snapshot"
-          subtitle="Your gaming identity and playstyle traits."
-          icon={<User size={18} />}
-          className="stats-section persona-insights"
-        >
-          {personaData.snapshot ? (
-            <div className="persona-grid">
-              <div className="persona-card">
-                <div className="persona-header">
-                  <div>
-                    <p className="persona-label">Identity</p>
-                    <h3>{personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}</h3>
-                  </div>
-                  <div className="persona-header-actions">
-                    {personaData.snapshot.personaIdentity?.anchors?.length > 0 && (
-                      <span className="persona-anchors">
-                        {personaData.snapshot.personaIdentity.anchors.join(' + ')}
-                      </span>
-                    )}
-                    <ShareMenu
-                      triggerLabel="Share"
-                      imageAvailable
-                      disabled={isCapturingPersona}
-                      onCopyText={async (text = null) => {
-                        if (!text) {
-                          const lines = [
-                            `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
-                            `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
-                            `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
-                            `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
-                            `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
-                            `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
-                            `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
-                            'Powered by GamePilot'
-                          ];
-                          text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
-                        }
-                        const shareText = text;
-                        const copied = await LocalShareService.copyTextToClipboard(shareText);
-                        success(copied ? 'Persona snapshot copied.' : 'Could not copy persona snapshot.');
-                        return copied;
-                      }}
-                      onCopyImage={async () => {
-                        if (!personaCardRef.current) return false;
-                        setIsCapturingPersona(true);
-                        try {
-                          const canvas = await html2canvas(personaCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
-                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                          if (!blob) { success('Could not generate persona card.'); return false; }
-                          const copied = await LocalShareService.copyImageToClipboard(blob);
-                          success(copied ? 'Persona card copied to clipboard.' : 'Could not copy persona card.');
-                          return copied;
-                        } catch (err) { console.error(err); success('Could not generate persona card.'); return false; }
-                        finally { setIsCapturingPersona(false); }
-                      }}
-                      onSaveImage={async () => {
-                        if (!personaCardRef.current) return;
-                        setIsCapturingPersona(true);
-                        try {
-                          const canvas = await html2canvas(personaCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
-                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                          if (!blob) { success('Could not generate persona card.'); return; }
-                          const url = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = url;
-                          link.download = `gamepilot-persona-${new Date().toISOString().split('T')[0]}.png`;
-                          document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                          URL.revokeObjectURL(url);
-                          success('Persona card saved.');
-                        } catch (err) { console.error(err); success('Could not generate persona card.'); }
-                        finally { setIsCapturingPersona(false); }
-                      }}
-                      onDownloadText={(text = null) => {
-                        if (!text) {
-                          const lines = [
-                            `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
-                            `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
-                            `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
-                            `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
-                            `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
-                            `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
-                            `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
-                            'Powered by GamePilot'
-                          ];
-                          text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
-                        }
-                        LocalShareService.downloadShareText(text, 'flight-persona.txt');
-                        success('Flight persona downloaded.');
-                      }}
-                      onShareText={async (channel, text = null) => {
-                        if (!text) {
-                          const lines = [
-                            `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
-                            `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
-                            `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
-                            `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
-                            `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
-                            `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
-                            `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
-                            'Powered by GamePilot'
-                          ];
-                          text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
-                        }
-                        const result = await LocalShareService.openShareIntent(channel, text);
-                        success(result.success ? `Opened ${result.label}.` : result.message || 'Could not share flight persona.');
-                      }}
-                      buildCaption={() => {
-                        const text = [
-                          `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
-                          `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
-                          `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
-                          `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
-                          `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
-                          `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
-                          `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
-                          'Powered by GamePilot'
-                        ].join('\n');
-                        return ProfileService.appendSocialLinksToShareText(text);
-                      }}
-                      onNativeShare={async (text = null) => {
-                        if (!personaCardRef.current) return;
-                        setIsCapturingPersona(true);
-                        try {
-                          const canvas = await html2canvas(personaCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
-                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                          if (!blob) { success('Could not generate persona card.'); return; }
-                          const file = new File([blob], `gamepilot-persona-${new Date().toISOString().split('T')[0]}.png`, { type: 'image/png' });
-                          if (!text) {
-                            const lines = [
-                              `🎮 Flight Persona — ${ProfileService.getCurrentUsername()}`,
-                              `Identity: ${personaData.snapshot.personaIdentity?.label || 'Calibrating Persona'}`,
-                              `Dominant Mood: ${personaData.snapshot.dominantMood || '—'}`,
-                              `Preferred Sessions: ${formatSessionBucket(personaData.preferredBucket)}`,
-                              `Avg Session Length: ${personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}`,
-                              `Peak Play Window: ${personaData.snapshot.peakPlayWindow || 'Anytime'}`,
-                              `Activity Streak: ${currentStreak} current active days • ${bestStreak} best streak`,
-                              'Powered by GamePilot'
-                            ];
-                            text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
-                          }
-                          const result = await LocalShareService.shareWithNativeShare({ title: 'My Flight Persona', text, files: [file] });
-                          success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
-                        } catch (err) { console.error(err); success('Could not generate persona card.'); }
-                        finally { setIsCapturingPersona(false); }
-                      }}
-                    />
-                  </div>
-                </div>
-                <p className="persona-description">
-                  {personaData.snapshot.personaIdentity?.description || 'Play a few sessions to let GamePilot map your habits locally.'}
-                </p>
-                <div className="persona-meta-grid">
-                  <div>
-                    <span>Dominant Mood</span>
-                    <strong>{personaData.snapshot.dominantMood || '—'}</strong>
-                  </div>
-                  <div>
-                    <span>Preferred Sessions</span>
-                    <strong>{formatSessionBucket(personaData.preferredBucket)}</strong>
-                  </div>
-                  <div>
-                    <span>Avg Session Length</span>
-                    <strong>{personaData.snapshot.avgSessionLength ? `${personaData.snapshot.avgSessionLength} min` : '—'}</strong>
-                  </div>
-                  <div>
-                    <span>Peak Play Window</span>
-                    <strong>{personaData.snapshot.peakPlayWindow || 'Anytime'}</strong>
-                  </div>
-                </div>
-                <div className="persona-progress">
-                  <span>Activity Streak</span>
-                  <div className="persona-progress-bar">
-                    <div
-                      className="persona-progress-fill"
-                      style={{ width: `${Math.min(bestStreak > 0 ? Math.round((currentStreak / bestStreak) * 100) : 0, 100)}%` }}
-                    />
-                  </div>
-                  <small>{currentStreak} current active days • {bestStreak} best streak</small>
-                </div>
-              </div>
-
-              <div className="persona-card heatmap-card">
-                <div className="persona-header">
-                  <div>
-                    <p className="persona-label">Local Usage Snapshot</p>
-                    <h3>Mood, Genre &amp; Feature Usage</h3>
-                  </div>
-                  ✨
-                </div>
-                <div className="heatmap-grid">
-                  {personaData.moodUsage.length > 0 && (
-                    <div className="heatmap-column">
-                      <h4>Moods</h4>
-                      {personaData.moodUsage.map((item) => (
-                        <div key={item.label} className="heatmap-row">
-                          <span>{item.label}</span>
-                          <div className="heatmap-bar">
-                            <div style={{ width: `${Math.min(item.count * 10, 100)}%` }} />
-                          </div>
-                          <span className="heatmap-value">{item.count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {personaData.genreUsage.length > 0 && (
-                    <div className="heatmap-column">
-                      <h4>Genres</h4>
-                      {personaData.genreUsage.map((item) => (
-                        <div key={item.label} className="heatmap-row">
-                          <span>{item.label}</span>
-                          <div className="heatmap-bar">
-                            <div style={{ width: `${Math.min(item.count * 10, 100)}%` }} />
-                          </div>
-                          <span className="heatmap-value">{item.count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="heatmap-column">
-                    <h4>Usage</h4>
-                    <div className="heatmap-row">
-                      <span>Games Played</span>
-                      <span className="heatmap-value">{allTimeStats.uniqueGames || 0}</span>
-                    </div>
-                    <div className="heatmap-row">
-                      <span>Sessions</span>
-                      <span className="heatmap-value">{allTimeStats.sessions || 0}</span>
-                    </div>
-                    <div className="heatmap-row">
-                      <span>Session days</span>
-                      <span className="heatmap-value">{allTimeStats.activeDays || 0}</span>
-                    </div>
-                    <div className="heatmap-row">
-                      <span>Feature Uses</span>
-                      <span className="heatmap-value">{totalFeatureUses}</span>
-                    </div>
-                    <div className="heatmap-row">
-                      <span>Top Feature</span>
-                      <span className="heatmap-value">{favoriteFeature}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <EmptyState
-              icon="🧭"
-              title="Your persona will appear after a few sessions"
-              description="GamePilot builds this locally from your play habits, moods, genres, and session length patterns once there is enough signal to read from."
-              compact
-            />
-          )}
-        </CollapsibleSection>
-
-        <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
-          <div ref={personaCardRef}>
-            <PersonaShareCard
-              persona={personaData}
-              username={ProfileService.getCurrentUsername()}
-              streaks={{ current: currentStreak, best: bestStreak }}
             />
           </div>
         </div>

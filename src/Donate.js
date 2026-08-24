@@ -1,10 +1,11 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Heart, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle, Key, Sparkles, Shield, Palette, Image as ImageIcon, Layers3, LockKeyhole, FileText } from 'lucide-react';
+import { Heart, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle, Key, Sparkles, Shield, Palette, FileText, Database } from 'lucide-react';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
 import { openExternalUrl } from './services/ElectronBridge';
 import StorageService from './services/StorageService';
+import EntitlementService from './services/EntitlementService';
 import './Donate.css';
 
 const TIER_LABEL_MAP = {
@@ -48,7 +49,7 @@ function Donate({ theme }) {
 
   const canonicalPatreonCodes = useMemo(() => {
     const codes = {};
-    const boostCatalog = AchievementTracker.getPatreonBoostCatalog();
+    const boostCatalog = AchievementTracker.getPatreonBoostCatalog() || {};
     Object.entries(boostCatalog).forEach(([code, meta]) => {
       const tier = meta?.tier && TIER_LABEL_MAP[meta.tier] ? meta.tier : 'Bronze';
       codes[code.toUpperCase()] = {
@@ -82,7 +83,7 @@ function Donate({ theme }) {
     {
       name: 'itch.io',
       url: officialUpdatesUrl,
-      description: 'Download builds & version notes',
+      description: 'Donate, download builds, and view updates',
       icon: <FileText size={24} />
     }
   ];
@@ -153,132 +154,58 @@ function Donate({ theme }) {
   ];
 
   const savedUsername = StorageService.getString('profileUsername', '');
-  const activeBoostProfile = AchievementTracker.getPatreonBoostProfile();
+  const activeBoostProfile = AchievementTracker.getPatreonBoostProfile() || null;
   const currentFounder = founders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
-  const effectiveTier = currentFounder?.tier || activeBoostProfile.tier || null;
-  const loungeUnlocked = Boolean(effectiveTier);
-  const activeFounderName = currentFounder?.name || savedUsername || 'Pilot';
-  const founderJoinDate = currentFounder?.date || activeBoostProfile.activatedAt || null;
+  const effectiveTier = currentFounder?.tier || activeBoostProfile?.tier || null;
+  const loungeUnlocked = EntitlementService.isSupporter() || Boolean(effectiveTier);
   const xpMultiplierLabel = activeBoostProfile?.multiplier > 1 ? `${activeBoostProfile.multiplier}x XP boost active` : 'No XP boost active';
 
-  const tierOrder = ['Platinum', 'Gold', 'Silver', 'Bronze'];
-  const tierBreakdown = tierOrder.map(tier => ({
-    tier,
-    count: founders.filter(founder => founder.tier === tier).length
-  }));
+  const supportOptions = [
+    {
+      id: 'one-time',
+      name: 'Choose Your Amount',
+      price: 'Pay what you want',
+      priceNote: 'choose on itch.io',
+      description: 'Every GamePilot feature stays free. If the app helps you, choose any one-time amount you feel comfortable contributing.',
+      icon: <Heart size={28} />,
+      highlight: false,
+      cta: 'Donate What You Want',
+      url: officialUpdatesUrl
+    }
+  ];
+
+  const allPerks = [
+    {
+      title: 'Better Recommendations',
+      description: 'Support continued work on smarter play-next decisions, recommendation learning, and more reliable explanations.',
+      icon: <Sparkles size={22} />,
+      tags: ['Recommendations', 'Learning', 'Backlog help']
+    },
+    {
+      title: 'Library Reliability',
+      description: 'Help improve launcher scanning, session tracking, metadata quality, backups, and compatibility across more libraries.',
+      icon: <Database size={22} />,
+      tags: ['Scanning', 'Tracking', 'Metadata']
+    },
+    {
+      title: 'Polish & Accessibility',
+      description: 'Fund continued interface polish, controller support, responsive layouts, accessibility, and desktop reliability.',
+      icon: <Palette size={22} />,
+      tags: ['Polish', 'Accessibility', 'Desktop']
+    },
+    {
+      title: 'Independent Development',
+      description: 'Give GamePilot more time to grow without ads, subscriptions, or artificial feature restrictions.',
+      icon: <Heart size={22} />,
+      tags: ['No ads', 'No subscription', 'Independent']
+    }
+  ];
 
   const founderStats = [
-    { label: 'Founding Members', value: founders.length.toString() },
-    { label: 'Your Founder Tier', value: effectiveTier || 'Visitor' },
-    { label: 'Progression Model', value: 'Play to unlock • Local-first' }
+    { label: 'Supporters', value: founders.length.toString() },
+    { label: 'Your Status', value: loungeUnlocked ? 'Recognized supporter' : 'Optional support' },
+    { label: 'Model', value: 'Pay what you want · Everything free' }
   ];
-
-  const tierPriceMap = {
-    Bronze: '£3/mo',
-    Silver: '£5/mo',
-    Gold: '£8/mo',
-    Platinum: '£10/mo'
-  };
-
-  const tierCheckoutLinks = {
-    Bronze: 'https://www.patreon.com/checkout/GamePilot?rid=27801627&vanity=15465959',
-    Silver: 'https://www.patreon.com/checkout/GamePilot?rid=27792237&vanity=15465959',
-    Gold: 'https://www.patreon.com/checkout/GamePilot?rid=28142503&vanity=15465959',
-    Platinum: 'https://www.patreon.com/checkout/GamePilot?rid=27792268&vanity=15465959'
-  };
-
-  const tierPerks = [
-    {
-      tier: 'Bronze',
-      summary: 'Bronze support: a 2x XP boost to speed up free progression, plus your name on the Founders Wall as a thank you.',
-      checkoutUrl: tierCheckoutLinks.Bronze
-    },
-    {
-      tier: 'Silver',
-      summary: 'Silver support: a 3x XP boost to speed up free progression, plus Silver founder recognition and bonus themes.',
-      checkoutUrl: tierCheckoutLinks.Silver
-    },
-    {
-      tier: 'Gold',
-      summary: 'Gold support: a 4x XP boost to speed up free progression, plus Gold founder recognition and premium export styling.',
-      checkoutUrl: tierCheckoutLinks.Gold
-    },
-    {
-      tier: 'Platinum',
-      summary: 'Platinum support: the maximum 5x XP boost to speed up free progression, plus Platinum founder recognition and the full cosmetic pack.',
-      checkoutUrl: tierCheckoutLinks.Platinum
-    }
-  ];
-
-  const tierBenefits = {
-    Platinum: ['5x XP boost multiplier', 'Platinum founder recognition on the Founders Wall', 'Supports new local-first polish and reward drops'],
-    Gold: ['4x XP boost multiplier', 'Gold founder recognition on the Founders Wall', 'Supports new progression rewards and identity features'],
-    Silver: ['3x XP boost multiplier', 'Silver founder recognition on the Founders Wall', 'Supports ongoing cockpit polish and quality-of-life updates'],
-    Bronze: ['2x XP boost multiplier', 'Bronze founder recognition on the Founders Wall', 'Supports ongoing local-first development']
-  };
-
-  const founderLoungeFeatures = [
-    {
-      title: 'Founder Identity Pack',
-      description: 'Exclusive founder badge, profile frame, banner styling, and title direction that make support feel permanent and visible.',
-      icon: <Shield size={22} />,
-      tier: 'Bronze+',
-      tags: ['Founder badge', 'Profile frame', 'Founder title'],
-      unlocked: loungeUnlocked
-    },
-    {
-      title: 'Founder Atmosphere',
-      description: 'A prestige presentation pack for the lounge itself with richer lighting, premium ambiance, and a supporters-only tone.',
-      icon: <Palette size={22} />,
-      tier: 'Silver+',
-      tags: ['Prestige theme', 'Lounge styling', 'Founder mood'],
-      unlocked: ['Silver', 'Gold', 'Platinum'].includes(effectiveTier)
-    },
-    {
-      title: 'Founder Year in Review Style',
-      description: 'Premium recap/export treatment with a Founding Supporter stamp, elevated card polish, and collector-style identity framing.',
-      icon: <ImageIcon size={22} />,
-      tier: 'Gold+',
-      tags: ['Recap stamp', 'Premium export styling', 'Collector polish'],
-      unlocked: ['Gold', 'Platinum'].includes(effectiveTier)
-    },
-    {
-      title: 'Founder Showcase Shelf',
-      description: 'A lounge-style identity shelf for spotlighting your support era, your founder tier, and the kind of cockpit you helped fund.',
-      icon: <Layers3 size={22} />,
-      tier: 'Platinum',
-      tags: ['Founder shelf', 'Support timeline', 'Identity plaque'],
-      unlocked: effectiveTier === 'Platinum'
-    }
-  ];
-
-  const founderLoungeMoments = [
-    {
-      title: 'Founder Crest',
-      detail: loungeUnlocked ? `${effectiveTier} crest active for ${activeFounderName}.` : 'Unlock your crest by redeeming a Patreon founder code.',
-      status: loungeUnlocked ? 'Active' : 'Locked'
-    },
-    {
-      title: 'Support Timeline',
-      detail: founderJoinDate ? `Founder since ${new Date(founderJoinDate).toLocaleDateString()}.` : 'Your founder join date will appear here once the lounge is unlocked.',
-      status: founderJoinDate ? 'Tracked' : 'Waiting'
-    },
-    {
-      title: 'Export Signature',
-      detail: ['Gold', 'Platinum'].includes(effectiveTier) ? 'Founder export styling is eligible for premium recap treatment.' : 'Higher founder tiers can unlock premium recap/export styling.',
-      status: ['Gold', 'Platinum'].includes(effectiveTier) ? 'Eligible' : 'Preview'
-    }
-  ];
-
-  const scrollToCodeForm = () => {
-    if (codeFormRef.current) {
-      const detailsElement = codeFormRef.current.querySelector('details');
-      if (detailsElement) {
-        detailsElement.open = true;
-      }
-      codeFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   const getTierIcon = (tier) => {
     switch(tier) {
@@ -329,7 +256,7 @@ function Donate({ theme }) {
           setUnifiedMessage('This code has already been used!');
           setUnifiedSuccess(false);
         } else {
-          const boostMeta = AchievementTracker.validatePatreonBoostCode(code);
+          const boostMeta = AchievementTracker.validatePatreonBoostCode(code) || null;
           let boostMessage = '';
           if (boostMeta) {
             const boostResult = AchievementTracker.activatePatreonXPBoost(code);
@@ -377,197 +304,102 @@ function Donate({ theme }) {
     <div className={`App ${theme}`}>
       <NavBar />
       <div className="donate-container">
-        <section className="founder-hero">
-          <div className="hero-text">
+        {/* Hero */}
+        <section className="donate-hero">
+          <div className="donate-hero-text">
             <div className="hero-badge">
-              <Sparkles size={16} /> Supporter Lounge
+              <Sparkles size={16} /> Support GamePilot
             </div>
-            <h1>GamePilot is free. Your support keeps it going.</h1>
+            <h1>Everything is free. Support is optional.</h1>
             <p>
-              Every feature, theme, and tool is unlocked for everyone. The Supporter Lounge is a thank-you space for people who choose to back development — with founder recognition, cosmetic perks, and an XP boost.
+              GamePilot does not lock features behind donations. If it helps you decide what to play
+              or makes your library more useful, you can contribute any one-time amount you choose.
+              No subscription is required, there are no feature tiers, and there is no pressure to pay.
             </p>
-            <div className="hero-actions">
-              <button className="hero-primary" onClick={scrollToCodeForm}>
-                Unlock Founder Lounge
-              </button>
-              <button className="hero-secondary" onClick={() => handleLinkClick(supportLinks[0].url)}>
-                Visit Patreon
-              </button>
-            </div>
-            <div className="hero-stats-grid">
-              {founderStats.map((stat, index) => (
-                <div key={stat.label} className="hero-stat-card">
-                  <Shield size={16} />
-                  <div>
-                    <span>{stat.label}</span>
-                    <strong>{stat.value}</strong>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
-          <div className="hero-card">
-            <h3>{loungeUnlocked ? `${activeFounderName}'s Lounge Access` : 'Founder Lounge Access'}</h3>
-            <div className={`lounge-status-card ${loungeUnlocked ? 'unlocked' : 'locked'}`}>
-              <div>
-                <span className="lounge-status-label">Status</span>
-                <strong>{loungeUnlocked ? `${effectiveTier} Founder active` : 'Locked until founder code is redeemed'}</strong>
-              </div>
-              <div>
-                <span className="lounge-status-label">Progression</span>
-                <strong>{xpMultiplierLabel}</strong>
-              </div>
-            </div>
-            <ul>
-              <li>Founder badge, title, and identity pack direction</li>
-              <li>Founder-only atmosphere and prestige page styling</li>
-              <li>Premium Year in Review / export presentation roadmap</li>
-              <li>All stored locally with no account dependency</li>
-            </ul>
-            <p>{loungeUnlocked ? 'Your founder tier is now part of your local identity layer inside GamePilot.' : 'Redeem a valid founder code to turn this page into your personalized founder space.'}</p>
-          </div>
-        </section>
 
-        <section className="founder-lounge-overview">
-          <div className="lounge-overview-copy">
-            <div className="updates-pill">
-              <Shield size={14} /> Lounge Identity
-            </div>
-            <h2>{loungeUnlocked ? `Welcome back, ${activeFounderName}.` : 'Founder Lounge preview'}</h2>
-            <p>
-              {loungeUnlocked
-                ? `Your ${effectiveTier} founder access is active. This lounge highlights the identity, prestige styling, and supporter recognition your local profile now carries.`
-                : 'Preview the founder-only identity layer before you unlock it. Support stays local-first, tasteful, and focused on prestige instead of gating the core experience.'}
-            </p>
+          {/* Pricing cards */}
+          <div className="donate-pricing-grid">
+            {supportOptions.map((opt) => (
+              <div key={opt.id} className={`donate-price-card ${opt.highlight ? 'highlighted' : ''}`}>
+                {opt.highlight && <div className="donate-price-badge">Best value</div>}
+                <div className="donate-price-icon">{opt.icon}</div>
+                <h3>{opt.name}</h3>
+                <div className="donate-price-amount">
+                  <span className="donate-price-value">{opt.price}</span>
+                  <span className="donate-price-note">{opt.priceNote}</span>
+                </div>
+                <p>{opt.description}</p>
+                <button
+                  className={`donate-price-cta ${opt.highlight ? 'primary' : 'secondary'}`}
+                  onClick={() => handleLinkClick(opt.url)}
+                >
+                  {opt.cta}
+                  <ExternalLink size={16} />
+                </button>
+              </div>
+            ))}
           </div>
-          <div className="lounge-moment-grid">
-            {founderLoungeMoments.map((moment) => (
-              <div key={moment.title} className="lounge-moment-card">
-                <span>{moment.title}</span>
-                <strong>{moment.status}</strong>
-                <p>{moment.detail}</p>
+
+          {/* Status strip */}
+          {loungeUnlocked && (
+            <div className="donate-status-strip">
+              <Check size={18} />
+              <span>You're recognized as a supporter{effectiveTier ? ` (${effectiveTier})` : ''}. Every app feature remains available to everyone. {xpMultiplierLabel}.</span>
+            </div>
+          )}
+
+          <div className="hero-stats-grid">
+            {founderStats.map((stat) => (
+              <div key={stat.label} className="hero-stat-card">
+                <Shield size={16} />
+                <div>
+                  <span>{stat.label}</span>
+                  <strong>{stat.value}</strong>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        <div className="support-links">
-          {supportLinks.map((link, index) => (
-            <div key={index} className="support-card" onClick={() => handleLinkClick(link.url)}>
-              <div className="support-icon">
-                {link.icon}
-              </div>
-              <div className="support-info">
-                <h3>{link.name}</h3>
-                <p>{link.description}</p>
-              </div>
-              <ExternalLink size={16} className="external-icon" />
-            </div>
-          ))}
-        </div>
-
-        <div className="updates-cta">
-          <div className="updates-copy">
-            <div className="updates-pill">
-              <Sparkles size={14} /> Release Channel
-            </div>
-            <h3>Need the latest build, support notes, or version info?</h3>
+        {/* All perks — visible, not hidden in collapsible */}
+        <section className="donate-perks-section">
+          <div className="feature-heading">
+            <h2>What your support helps fund</h2>
             <p>
-              The itch.io hub is the source of truth for GamePilot releases, troubleshooting posts, and
-              detailed about/version changelogs. Bookmark it to stay in sync with every cockpit drop.
+              Donations support continued development. They do not change which GamePilot features you can use.
             </p>
           </div>
-          <button className="updates-button" onClick={() => handleLinkClick(officialUpdatesUrl)}>
-            Open itch.io Hub
-            <ExternalLink size={16} />
-          </button>
-        </div>
-
-        <CollapsibleSection
-          title="Founder Lounge Perks"
-          subtitle="A prestige identity layer for supporters: founder cosmetics, recap styling, and a private lounge feel without pay-to-win unlocks."
-          badge={`${tierPerks.length} tiers`}
-          icon={<Heart size={18} />}
-          className="donate-folder"
-        >
-          <section className="founder-feature-section tier-perks">
-            <div className="feature-heading">
-              <h2>Founder Lounge Perks</h2>
-              <p>
-                Support unlocks a founder-only identity layer built around prestige, atmosphere, and supporter recognition.
-                It complements progression instead of replacing it, and keeps the app local-first with no online account requirement.
-              </p>
-            </div>
-            <div className="feature-grid founder-lounge-grid">
-              {founderLoungeFeatures.map((feature) => (
-                <div key={feature.title} className={`feature-card ${feature.unlocked ? 'animated' : ''}`}>
-                  <div className="feature-card-header">
-                    <div className="feature-icon">{feature.unlocked ? feature.icon : <LockKeyhole size={22} />}</div>
-                    <div>
-                      <h3>{feature.title}</h3>
-                      <p>{feature.description}</p>
-                    </div>
-                  </div>
-                  <div className="feature-meta">
-                    <span className={`tier-pill ${(effectiveTier || 'bronze').toLowerCase()}`}>{feature.tier}</span>
-                    <span className="coming-soon">{feature.unlocked ? 'Unlocked for your lounge' : 'Tier preview'}</span>
-                  </div>
-                  <div className="feature-tags-inline">
-                    {feature.tags.map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
+          <div className="feature-grid">
+            {allPerks.map((perk) => (
+              <div key={perk.title} className="feature-card animated">
+                <div className="feature-card-header">
+                  <div className="feature-icon">{perk.icon}</div>
+                  <div>
+                    <h3>{perk.title}</h3>
+                    <p>{perk.description}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="tier-perks-grid">
-              {tierPerks.map((tierInfo) => (
-                <div key={tierInfo.tier} className={`tier-perk-card ${tierInfo.tier.toLowerCase()}`}>
-                  <div className="tier-card-header">
-                    <div>
-                      <h3>{tierInfo.tier} Founder</h3>
-                      <p>{tierInfo.summary}</p>
-                    </div>
-                    <span className="tier-price">{tierPriceMap[tierInfo.tier]}</span>
-                  </div>
-                  <button
-                    className="tier-cta"
-                    onClick={() => handleLinkClick(tierInfo.checkoutUrl)}
-                  >
-                    Support at {tierInfo.tier}
-                    <ExternalLink size={16} />
-                  </button>
-
-                  <div className="tier-section">
-                    <div className="tier-section-title">Included with this tier</div>
-                    <ul className="tier-benefit-list">
-                      {tierBenefits[tierInfo.tier].map((benefit) => (
-                        <li key={benefit}>{benefit}</li>
-                      ))}
-                    </ul>
-                    <p className="tier-note">All themes, audio packs, and presentation rewards still unlock through play inside the app.</p>
-                  </div>
+                <div className="feature-tags-inline">
+                  {perk.tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        </CollapsibleSection>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        {/* Unified Code Redemption */}
+        {/* Code redemption — for existing Patreon supporters */}
         <div ref={codeFormRef}>
           <CollapsibleSection
-            title="Redeem a Patreon Code"
-            subtitle="Enter your Patreon or founder code to activate your supporter tier and XP boost."
+            title="Legacy supporter recognition"
+            subtitle="Existing Patreon supporters can redeem a legacy code for local Founders Wall recognition."
             badge="Patreon"
             icon={<Key size={18} />}
             className="donate-folder"
           >
             <div className="become-founder-section">
-              <h2><Key size={24} /> Redeem a Patreon Code</h2>
-              <p className="founder-signup-intro">
-                Paste your Patreon supporter code here to unlock the lounge, add your name to the founders wall, and activate any included XP boost.
-              </p>
-
               <div className="unified-code-form">
                 <div className="code-input-group">
                   <label htmlFor="founder-name">Display Name</label>
@@ -595,7 +427,7 @@ function Donate({ theme }) {
                         setUnifiedMessage('');
                         setUnifiedSuccess(false);
                       }}
-                      placeholder="Paste your unlock or founder code"
+                      placeholder="Paste your Patreon code"
                       className="code-input"
                       maxLength={40}
                     />
@@ -615,29 +447,20 @@ function Donate({ theme }) {
                     <span>{unifiedMessage}</span>
                   </div>
                 )}
-
-                <div className="unified-code-hints">
-                  <span><Star size={12} /> Founder codes activate supporter perks and add your name to the Founders Wall</span>
-                </div>
               </div>
             </div>
           </CollapsibleSection>
         </div>
 
-        {/* Founders Section */}
+        {/* Founders Wall */}
         <CollapsibleSection
           title="Founders Wall"
-          subtitle="Browse the current founders wall, supporter tiers, and the players helping shape the cockpit." 
-          badge={`${founders.length} founders`}
+          subtitle="The people backing GamePilot's local-first future."
+          badge={`${founders.length} supporters`}
           icon={<Trophy size={18} />}
           className="donate-folder"
         >
           <div className="founders-section">
-            <h2>🏆 Founders Wall</h2>
-            <p className="founders-intro">
-              These are the supporters helping fund the lounge, new reward polish, and the local-first future of GamePilot.
-            </p>
-            
             {founders.length > 0 ? (
               <div className="founders-grid">
                 {founders.map((founder, index) => (
@@ -658,62 +481,33 @@ function Donate({ theme }) {
               </div>
             ) : (
               <div className="no-founders">
-                <p>Be the first to become a GamePilot Founder!</p>
-                <p>Your support will be featured here for all to see.</p>
+                <p>Be the first supporter on the wall.</p>
               </div>
             )}
-
-            <div className="tier-breakdown">
-              {tierBreakdown.map(({ tier, count }) => (
-                <div key={tier} className="tier-breakdown-card">
-                  <div className="tier-breakdown-count">{count || '—'}</div>
-                  <div className="tier-breakdown-info">
-                    <div className="tier-breakdown-label">
-                      {getTierIcon(tier)} {tier} Tier
-                    </div>
-                    <ul>
-                      {tierBenefits[tier].map((benefit) => (
-                        <li key={benefit}>{benefit}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="founders-footer">
-              <h3>🌟 Step into the Founder Lounge</h3>
-              <p>
-                Founder access is about identity, prestige, and supporting the roadmap without locking core play-driven progression.
-              </p>
-              <div className="tier-info">
-                <div className="tier-item">
-                  <Crown size={16} /> <strong>Platinum:</strong> Full founder lounge package + top-tier prestige
-                </div>
-                <div className="tier-item">
-                  <Trophy size={16} /> <strong>Gold:</strong> Premium recap/export styling direction + founder prestige
-                </div>
-                <div className="tier-item">
-                  <Star size={16} /> <strong>Silver:</strong> Founder atmosphere and upgraded lounge identity
-                </div>
-                <div className="tier-item">
-                  <Gem size={16} /> <strong>Bronze:</strong> Founder badge, wall placement, and lounge access
-                </div>
-              </div>
-            </div>
           </div>
         </CollapsibleSection>
 
+        {/* Support links */}
+        <div className="support-links">
+          {supportLinks.map((link, index) => (
+            <div key={index} className="support-card" onClick={() => handleLinkClick(link.url)}>
+              <div className="support-icon">
+                {link.icon}
+              </div>
+              <div className="support-info">
+                <h3>{link.name}</h3>
+                <p>{link.description}</p>
+              </div>
+              <ExternalLink size={16} className="external-icon" />
+            </div>
+          ))}
+        </div>
+
         <div className="donate-footer">
           <p>
-            Your support helps maintain GamePilot and develop new features like:
+            Your support funds development, new features, and keeps GamePilot local-first with no ads,
+            no tracking, and no online account required.
           </p>
-          <ul>
-            <li>Founder identity packs and profile prestige styling</li>
-            <li>Expanded Year in Review and export presentation polish</li>
-            <li>New local-first reward drops, themes, and audio atmosphere</li>
-            <li>Core reliability and launcher polish for everyone</li>
-          </ul>
         </div>
       </div>
     </div>

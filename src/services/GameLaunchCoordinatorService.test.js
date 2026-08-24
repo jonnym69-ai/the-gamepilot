@@ -13,7 +13,16 @@ import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
 
 jest.mock('../AchievementSystem', () => ({
   AchievementTracker: {
-    rewardGameLaunch: jest.fn()
+    rewardGameLaunch: jest.fn(),
+    logUniqueGamePlay: jest.fn(),
+    logGameplayMood: jest.fn(),
+    logGameplayGenre: jest.fn(),
+    trackPlatformUsage: jest.fn(),
+    trackThemeUsage: jest.fn(),
+    checkDustOff: jest.fn(),
+    checkShelfDiver: jest.fn(),
+    trackBacklogMilestone: jest.fn(),
+    checkAndUnlockAchievements: jest.fn()
   }
 }));
 

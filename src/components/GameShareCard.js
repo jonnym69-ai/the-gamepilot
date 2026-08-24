@@ -94,7 +94,7 @@ export function buildGameShareData(game = {}, gameStats = {}) {
 
   return {
     name: safeGame.name || 'Unknown Game',
-    coverUrl: resolveGameArtwork(safeGame, { surface: 'hero' }),
+    coverUrl: resolveGameArtwork(safeGame, { surface: 'portrait' }),
     rating,
     timePlayed,
     sessions,
@@ -124,22 +124,31 @@ export function buildGameShareCaption(data = {}) {
     `I've put ${playtime} into ${name} and I'm still having a blast 🎮`,
     `Just hit ${playtime} in ${name} — ${sessions} sessions and still going strong 🚀`,
     `${name} has me hooked: ${playtime} across ${sessions} sessions and counting 🔥`,
+    `My Steam backlog is weeping but ${name} deserves every minute of ${playtime} 💀`,
+    `Someone asked what I do for fun. I sent them this card. ${playtime} in ${name}. They understand now.`,
   ];
 
   if (rating > 0) {
     templates.push(`Rated ${name} a ${rating}/10 and I've already sunk ${playtime} into it ⭐`);
+    templates.push(`${rating}/10 for ${name}. Would play again. Actually, I already did — ${sessions} times.`);
   }
 
   if (avgSession && sessions > 1) {
     templates.push(`My average ${name} session runs ${avgSession} — ${sessions} times and counting 🎯`);
+    templates.push(`${sessions} sessions averaging ${avgSession} each in ${name}. My free time has a new boss.`);
   }
 
   if (genre && mood) {
-    templates.push(`My ${mood} ${genre} pick right now: ${name}. ${playtime} well spent �`);
+    templates.push(`My ${mood} ${genre} pick right now: ${name}. ${playtime} well spent 🎮`);
   }
 
   if (completion === 'Completed') {
-    return `Finally rolled credits on ${name} after ${playtime} and ${sessions} sessions. What a ride ✅`;
+    const completedLines = [
+      `Finally rolled credits on ${name} after ${playtime} and ${sessions} sessions. What a ride ✅`,
+      `Beat ${name}. ${playtime}. ${sessions} sessions. No notes. ✅`,
+      `${name}: completed. ${playtime} well spent. My backlog is furious but I'm at peace. ✅`,
+    ];
+    return completedLines[Math.floor(Math.random() * completedLines.length)];
   }
 
   if (sessions <= 1 && data.timePlayed > 0) {
@@ -147,7 +156,12 @@ export function buildGameShareCaption(data = {}) {
   }
 
   if (data.timePlayed > 6000) {
-    return `I may have a problem: ${playtime} in ${name} and I'm not even close to done 😅`;
+    const longLines = [
+      `I may have a problem: ${playtime} in ${name} and I'm not even close to done 😅`,
+      `${playtime} in ${name}. My therapist says acknowledging it is the first step. I say it's a feature.`,
+      `When I said "just one more session" I meant it. ${sessions} times. ${playtime} in ${name}. 😤`,
+    ];
+    return longLines[Math.floor(Math.random() * longLines.length)];
   }
 
   return templates[Math.floor(Math.random() * templates.length)];

@@ -7,6 +7,7 @@ import GameModal from './components/GameModal';
 import LibraryAnalyticsPanel from './components/LibraryAnalyticsPanel';
 import LibraryShareCard, { LIBRARY_SHARE_CARD_SIZE_PX } from './components/LibraryShareCard';
 import TopRatedShareCard, { TOP_RATED_SHARE_CARD_SIZE_PX } from './components/TopRatedShareCard';
+import MultiGameShareCard, { MULTI_GAME_SHARE_CARD_SIZE_PX } from './components/MultiGameShareCard';
 import RecapCustomizeModal from './components/RecapCustomizeModal';
 import ShareMenu from './components/ShareMenu';
 import EmptyLibraryState from './components/EmptyLibraryState';
@@ -94,6 +95,18 @@ const getGameValue = (game) => {
 const formatTimePlayed = (minutes) => {
   if (!minutes || minutes === 0) return 'Never played';
   return formatPlaytime(minutes);
+};
+
+const formatLastPlayedShort = (lastPlayed) => {
+  if (!lastPlayed) return '';
+  const t = new Date(lastPlayed).getTime();
+  if (!Number.isFinite(t) || t === 0) return '';
+  const days = Math.round((Date.now() - t) / 86400000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.round(days / 30)}mo ago`;
+  return `${Math.round(days / 365)}y ago`;
 };
 
 const getLastPlayedSortValue = (lastPlayedValue) => {
@@ -219,6 +232,7 @@ function Library({
   onUpdateNotes = NOOP,
   onUpdateCoverArt = NOOP,
   onAddSessionNote = NOOP,
+  onTogglePlayedElsewhere = NOOP,
   searchQuery = '',
   setSearchQuery = NOOP,
   endSession = NOOP,
@@ -249,6 +263,9 @@ function Library({
   const [showTopRatedPicker, setShowTopRatedPicker] = useState(false);
   const libraryShareCardRef = useRef(null);
   const topRatedShareCardRef = useRef(null);
+  const multiGameShareCardRef = useRef(null);
+  const [multiGamePicks, setMultiGamePicks] = useState([]);
+  const [showMultiGamePicker, setShowMultiGamePicker] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [itemsPerPage] = useState(50);
   const [displayCount, setDisplayCount] = useState(50);
@@ -609,6 +626,145 @@ function Library({
       toastError(result.message || 'Native share failed.');
     }
   }, [generateTopRatedShareCardBlob, library, username, selectedTopRatedGames, toastError]);
+
+  const generateMultiGameShareCardBlob = useCallback(async () => {
+    if (!multiGameShareCardRef.current) {
+      return null;
+    }
+    const canvas = await html2canvas(multiGameShareCardRef.current, {
+      scale: 1,
+      width: MULTI_GAME_SHARE_CARD_SIZE_PX,
+      height: MULTI_GAME_SHARE_CARD_SIZE_PX,
+      backgroundColor: null,
+      logging: false,
+      useCORS: true
+    });
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }, []);
+
+  const handleCopyMultiGameShareText = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
+    const copied = await LocalShareService.copyTextToClipboard(shareText);
+    if (copied) {
+      success('Picks caption copied to clipboard.');
+    } else {
+      toastError('Could not copy caption.');
+    }
+    return copied;
+  }, [multiGamePicks, username, success, toastError]);
+
+  const handleCopyMultiGameShareCard = useCallback(async () => {
+    const blob = await generateMultiGameShareCardBlob();
+    if (!blob) {
+      toastError('Could not generate share card.');
+      return false;
+    }
+    const { filename } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+    const result = await LocalShareService.copyImageToClipboard(blob, filename);
+    if (result.success) {
+      success('Picks card copied to clipboard.');
+      return true;
+    }
+    toastError(result.message || 'Could not copy image.');
+    return false;
+  }, [generateMultiGameShareCardBlob, multiGamePicks, username, success, toastError]);
+
+  const handleDownloadMultiGameShareCard = useCallback(async () => {
+    const blob = await generateMultiGameShareCardBlob();
+    if (!blob) {
+      toastError('Could not generate share card.');
+      return false;
+    }
+    const { filename } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+    DataExportService.downloadFile(blob, filename);
+    success('Picks card saved.');
+    return true;
+  }, [generateMultiGameShareCardBlob, multiGamePicks, username, success, toastError]);
+
+  const handleShareMultiGameToChannel = useCallback(async (channel, text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
+    let imageStaged = false;
+    try {
+      const blob = await generateMultiGameShareCardBlob();
+      if (blob && LocalShareService.canCopyImage()) {
+        const { filename } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+        const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
+        imageStaged = copyResult.success;
+      }
+    } catch {
+      imageStaged = false;
+    }
+    const result = await LocalShareService.openShareIntent(channel, shareText);
+    if (result.success) {
+      if (imageStaged) {
+        success(`${result.label} opened — your picks card is copied, just paste it into the post.`);
+      } else {
+        success(`${result.label} share opened. Save the picks card to attach it to your post.`);
+      }
+    } else {
+      toastError(result.message || 'Could not open share link.');
+    }
+  }, [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]);
+
+  const handleShareMultiGameToDiscord = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
+    let imageBlob = null;
+    let filename = 'gamepilot-picks.png';
+    try {
+      imageBlob = await generateMultiGameShareCardBlob();
+      const pkg = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+      filename = pkg.filename;
+    } catch {
+      imageBlob = null;
+    }
+    const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
+    if (result.success) {
+      if (result.imageStaged) {
+        success('Discord opened — your picks image and caption are copied, just paste them in.');
+      } else {
+        success('Discord opened — caption copied, save the image to attach it.');
+      }
+    } else {
+      toastError(result.message || 'Could not share to Discord.');
+    }
+  }, [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]);
+
+  const handleShareMultiGameToMessenger = useCallback(async (text = null) => {
+    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
+    let imageBlob = null;
+    let filename = 'gamepilot-picks.png';
+    try {
+      imageBlob = await generateMultiGameShareCardBlob();
+      const pkg = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+      filename = pkg.filename;
+    } catch {
+      imageBlob = null;
+    }
+    const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
+    if (result.success) {
+      if (result.imageStaged) {
+        success('Messenger opened — your picks image and caption are copied, just paste them in.');
+      } else {
+        success('Messenger opened — caption copied, save the image to attach it.');
+      }
+    } else {
+      toastError(result.message || 'Could not share to Messenger.');
+    }
+  }, [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]);
+
+  const handleNativeShareMultiGameCard = useCallback(async (text = null) => {
+    const blob = await generateMultiGameShareCardBlob();
+    if (!blob) {
+      toastError('Could not generate share card.');
+      return;
+    }
+    const { text: baseText, filename, title } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+    const file = new File([blob], filename, { type: 'image/png' });
+    const result = await LocalShareService.shareWithNativeShare({ text: text || ProfileService.appendSocialLinksToShareText(baseText), files: [file], title });
+    if (!result.success) {
+      toastError(result.message || 'Native share failed.');
+    }
+  }, [generateMultiGameShareCardBlob, multiGamePicks, username, toastError]);
 
   const handleToggleFavorite = useCallback((key) => {
     setFavorites((prev) => {
@@ -971,6 +1127,23 @@ function Library({
   const displayedGames = useMemo(() => {
     return filteredAndSortedGames.slice(0, displayCount);
   }, [displayCount, filteredAndSortedGames]);
+
+  const openMultiGamePicker = useCallback(() => {
+    if (multiGamePicks.length === 0 && Array.isArray(library) && library.length > 0) {
+      const safeMinutes = (game) => {
+        const value = Number(game?.time_played ?? game?.playtime ?? 0);
+        return Number.isFinite(value) ? value : 0;
+      };
+      const top3 = [...library]
+        .sort((a, b) => safeMinutes(b) - safeMinutes(a))
+        .slice(0, 3)
+        .filter((g) => safeMinutes(g) > 0);
+      if (top3.length > 0) {
+        setMultiGamePicks(top3);
+      }
+    }
+    setShowMultiGamePicker(true);
+  }, [library, multiGamePicks.length]);
 
   // Steam News warmup — pulls recent posts so PatchNewsBadge can render the
   // "updated since you last played" pill on cards without an extra round-trip
@@ -1342,6 +1515,12 @@ function Library({
   const favoriteGames = useMemo(() => (
     library.filter((game) => favorites.includes(getFavoriteGameKey(game)))
   ), [library, favorites]);
+  const recentlyPlayedShelfGames = useMemo(() => (
+    library
+      .filter((game) => game.last_played && game.time_played > 0)
+      .sort((a, b) => getLastPlayedSortValue(b.last_played) - getLastPlayedSortValue(a.last_played))
+      .slice(0, 7)
+  ), [library]);
   const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0);
 
   return (
@@ -1522,6 +1701,7 @@ function Library({
             onShareToMessenger={handleShareToMessenger}
             onDownloadText={handleDownloadShareText}
             onNativeShare={handleNativeShareLibraryCard}
+            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod))}
           />
           <ShareMenu
             imageAvailable={library.length > 0}
@@ -1536,6 +1716,26 @@ function Library({
             buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames))}
             triggerLabel="Share 10/10 Picks"
           />
+          <ShareMenu
+            imageAvailable={multiGamePicks.length > 0}
+            onCopyText={handleCopyMultiGameShareText}
+            onCopyImage={handleCopyMultiGameShareCard}
+            onSaveImage={handleDownloadMultiGameShareCard}
+            onShareText={handleShareMultiGameToChannel}
+            onShareToDiscord={handleShareMultiGameToDiscord}
+            onShareToMessenger={handleShareMultiGameToMessenger}
+            onDownloadText={handleCopyMultiGameShareText}
+            onNativeShare={handleNativeShareMultiGameCard}
+            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username))}
+            triggerLabel="Share My Picks"
+          />
+          <button
+            onClick={openMultiGamePicker}
+            className="export-button"
+            title="Choose up to 3 games to feature on a share card"
+          >
+            <Sparkles size={16} /> Edit Picks ({multiGamePicks.length || 'auto'})
+          </button>
           {allTopRatedGames.length > 6 && (
             <button
               onClick={() => setShowTopRatedPicker(true)}
@@ -1846,14 +2046,22 @@ function Library({
 
       {/* Unified Shelf Carousel */}
       {(() => {
-        const sections = [
+        const allSections = [
+          { id: 'recently-played', kicker: 'Pick up where you left off', title: 'Recently Played', games: recentlyPlayedShelfGames, getBadge: (g) => formatLastPlayedShort(g.last_played) },
           { id: 'pinned', kicker: 'Quick access', title: 'Pinned Games', games: pinnedGames, getBadge: () => null },
           { id: 'favorites', kicker: 'Your picks', title: 'Favourite Games', games: favoriteGames, getBadge: () => null },
           { id: 'top-rated', kicker: 'Highest rated', title: 'Top Rated Games', games: topRatedShelfGames, getBadge: (g) => `${g.userRating}/10` },
           { id: 'recent', kicker: 'Fresh in your library', title: 'Newly Added Games', games: recentlyAddedShelfGames, getBadge: () => 'New' },
         ];
-        const active = sections[carouselIndex];
-        if (!active || active.games.length === 0) return null;
+        // Only show shelves that actually have games so an empty Pinned shelf
+        // (or any other empty category) cannot hide the populated ones.
+        const sections = allSections.filter((section) => section.games.length > 0);
+        if (sections.length === 0) return null;
+        // Clamp the carousel index into the available-section range so a
+        // previously selected section that is now empty cannot leave the
+        // carousel pointing at a removed shelf.
+        const safeIndex = Math.min(Math.max(carouselIndex, 0), sections.length - 1);
+        const active = sections[safeIndex];
         return (
           <section className="library-recent-section" aria-labelledby="library-carousel-title">
             <div className="library-recent-section-header">
@@ -1896,13 +2104,13 @@ function Library({
                       aria-label={`Launch ${game.name}`}
                     >
                       <LazyImage
-                        src={resolveGameArtwork(game, { surface: 'recommendation_card' })}
+                        src={resolveGameArtwork(game, { surface: 'portrait' })}
                         alt={game.name}
                         gameName={game.name}
                         platform={getDisplayPlatform(game)}
                         genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
                         mood={game.mood}
-                        placeholder={getGameArtworkPlaceholder({ game, surface: 'recommendation_card' })}
+                        placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
                         className="library-recent-shelf-art-image"
                       />
                       <div className="library-recent-shelf-overlay">
@@ -2003,7 +2211,7 @@ function Library({
             
             <div className="game-card-image-wrapper" style={viewMode === 'grid' ? {
                 width: '100%',
-                aspectRatio: '231 / 87',
+                aspectRatio: '2 / 3',
                 height: 'auto',
                 marginBottom: '12px',
                 borderRadius: '8px',
@@ -2021,13 +2229,14 @@ function Library({
                 backgroundColor: '#1a1a1a'
             }}>
                 <LazyImage 
-                    src={resolveGameArtwork(game, { surface: viewMode === 'grid' ? 'library_card' : 'recommendation_card' })} 
+                    src={resolveGameArtwork(game, { surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card' })}
+                    fallbackSrc={viewMode === 'grid' ? resolveGameArtwork(game, { surface: 'hero' }) : undefined}
                     alt={game.name} 
                     gameName={game.name}
                     platform={getDisplayPlatform(game)}
                     genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
                     mood={game.mood}
-                    placeholder={getGameArtworkPlaceholder({ game, surface: viewMode === 'grid' ? 'library_card' : 'recommendation_card' })}
+                    placeholder={getGameArtworkPlaceholder({ game, surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card' })}
                     style={{ height: '100%', width: '100%', objectFit: 'cover' }}
                 />
               </div>
@@ -2163,7 +2372,7 @@ function Library({
       )}
 
       {/* Modals */}
-      {isModalOpen && <GameModal game={selectedModalGame} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onTogglePin={handleTogglePin} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} />}
+      {isModalOpen && <GameModal game={selectedModalGame} library={library} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} onSelectGame={setSelectedGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onTogglePin={handleTogglePin} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} onTogglePlayedElsewhere={onTogglePlayedElsewhere} />}
       <RecapCustomizeModal
         isOpen={isRecapCustomizeOpen}
         onClose={() => setIsRecapCustomizeOpen(false)}
@@ -2270,6 +2479,86 @@ function Library({
               <button
                 className="library-top-rated-picker-done"
                 onClick={() => setShowTopRatedPicker(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {multiGamePicks.length > 0 && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: -10000,
+            left: -10000,
+            width: MULTI_GAME_SHARE_CARD_SIZE_PX,
+            height: MULTI_GAME_SHARE_CARD_SIZE_PX,
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+        >
+          <div ref={multiGameShareCardRef}>
+            <MultiGameShareCard
+              games={multiGamePicks}
+              username={username}
+              watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+            />
+          </div>
+        </div>
+      )}
+
+      {showMultiGamePicker && (
+        <div className="library-top-rated-picker-overlay" onClick={() => setShowMultiGamePicker(false)}>
+          <div className="library-top-rated-picker" onClick={(e) => e.stopPropagation()}>
+            <div className="library-top-rated-picker-header">
+              <h3>Choose your picks</h3>
+              <p>Select up to 3 games to feature on the share card. Auto-picks your most played by default.</p>
+            </div>
+            <div className="library-top-rated-picker-list">
+              {filteredAndSortedGames.map((game) => {
+                const id = game.id || game.appid || game.name;
+                const checked = multiGamePicks.some((g) => (g.id || g.appid || g.name) === id);
+                const disabled = !checked && multiGamePicks.length >= 3;
+                return (
+                  <label key={id} className={`library-top-rated-picker-item${disabled ? ' disabled' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => {
+                        setMultiGamePicks((prev) => {
+                          const exists = prev.some((g) => (g.id || g.appid || g.name) === id);
+                          if (exists) return prev.filter((g) => (g.id || g.appid || g.name) !== id);
+                          if (prev.length >= 3) return prev;
+                          return [...prev, game];
+                        });
+                      }}
+                    />
+                    <span className="library-top-rated-picker-name">{game.name}</span>
+                    <span className="library-top-rated-picker-playtime">
+                      {formatPlaytime(Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0))}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="library-top-rated-picker-actions">
+              <span className="library-top-rated-picker-count">
+                {multiGamePicks.length}/3 selected
+              </span>
+              <button
+                className="library-top-rated-picker-clear"
+                onClick={() => setMultiGamePicks([])}
+                disabled={multiGamePicks.length === 0}
+              >
+                Clear
+              </button>
+              <button
+                className="library-top-rated-picker-done"
+                onClick={() => setShowMultiGamePicker(false)}
               >
                 Done
               </button>

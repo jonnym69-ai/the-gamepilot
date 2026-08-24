@@ -5,6 +5,7 @@ import { GamingIdentity } from '../GamingIdentity';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { GameRatingService } from './GameRatingService';
 import { getFamiliarityBias } from './RecommendationWeights';
+import { GamingPersonaService } from './GamingPersonaService';
 
 const SETTINGS_KEY = 'buyRecommendationsEnabled';
 const MAX_RESULTS = 3;
@@ -338,29 +339,30 @@ class BuyRecommendationService {
         if (ratedGenreMatches.length > 0) buyScore += 8; // you rate games in this genre highly
         if (familiarityMatch) buyScore += 28; // strong preference for familiar/fresh genre matches
 
-        // Memeish gaming persona affinity boost
+        // Current play focus boost — if the user is on a streak with a game,
+        // wishlist items sharing those genres are more relevant right now.
+        let focusReason = null;
+        try {
+          const focus = RecommendationEngine.getCurrentPlayFocus();
+          if (focus?.active && focus.genres.length > 0) {
+            const focusGenreMatches = genres.filter((g) =>
+              focus.genres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
+            );
+            if (focusGenreMatches.length > 0) {
+              buyScore += Math.min(10, focusGenreMatches.length * 5);
+              focusReason = `${item.name} shares ${focusGenreMatches.join(', ')} with your current ${focus.primary?.name || 'rotation'} streak`;
+            }
+          }
+        } catch { /* focus optional */ }
+
+        // Memeish gaming persona affinity boost — sourced from the canonical
+        // GamingPersonaService affinity map so buy recs stay in lockstep with
+        // the persona/roast shown everywhere else in the app.
         let personaReason = null;
         try {
           const persona = GamingIdentity.getProfile().gamingPersona?.primaryPersona;
           if (persona) {
-            const personaGenreMap = {
-              backlog_archaeologist: ['Adventure', 'RPG', 'Strategy', 'Puzzle'],
-              credit_roll_dodger: ['Roguelike', 'Sandbox', 'Multiplayer', 'Survival', 'Arcade'],
-              frame_data_masochist: ['Action', 'Fighting', 'Roguelike', 'Platformer', 'Metroidvania', 'Bullet Hell', 'Souls-like'],
-              spreadsheet_tactician: ['Strategy', 'Simulation', 'Management', 'Grand Strategy', '4X', 'City Builder', 'Tycoon'],
-              story_diver: ['RPG', 'Adventure', 'Visual Novel', 'Interactive Fiction', 'Story Rich'],
-              comfort_replay_junkie: ['Cozy', 'Casual', 'Simulation', 'Life Sim', 'Farming Sim'],
-              night_owl: ['Atmospheric', 'Immersive Sim', 'RPG', 'Adventure'],
-              indie_curator: ['Indie'],
-              franchise_loyalist: ['Action-Adventure', 'RPG', 'Action'],
-              retro_futurist: ['Retro', 'Pixel Graphics', 'Arcade', 'Classic'],
-              bleeding_edge: ['Early Access'],
-              completionist: ['RPG', 'Adventure', 'Platformer', 'Metroidvania', 'Collectathon'],
-              roamer: ['Open World', 'Exploration', 'Sandbox', 'Adventure'],
-              social_drop_in: ['Multiplayer', 'Co-op', 'Online Co-Op', 'Party'],
-              jank_enjoyer: ['Early Access', 'Indie', 'Experimental']
-            };
-            const affinityGenres = personaGenreMap[persona.id] || [];
+            const affinityGenres = GamingPersonaService.getAffinityGenres(persona.id);
             const personaMatches = genres.filter((g) => affinityGenres.includes(g));
             if (personaMatches.length > 0) {
               buyScore += Math.min(12, personaMatches.length * 6);
@@ -368,6 +370,19 @@ class BuyRecommendationService {
             }
           }
         } catch { /* persona optional */ }
+
+        // Recent play focus genre boost — separate from the current-streak
+        // reason above, this reflects the *persona's* recent-window read of
+        // the player's taste (last 14 days), keeping buy recs aligned with
+        // whatever "Recent" identity view the player sees on their profile.
+        try {
+          const recentIdentity = GamingPersonaService.getPublicIdentity({ windowDays: 14 });
+          const recentGenres = recentIdentity?.affinityGenres || [];
+          const recentMatches = genres.filter((g) => recentGenres.includes(g) && !((tasteProfile.topGenres || []).includes(g)));
+          if (recentMatches.length > 0) {
+            buyScore += Math.min(8, recentMatches.length * 4);
+          }
+        } catch { /* recent identity optional */ }
 
         buyScore = Math.max(0, Math.min(100, buyScore));
 
@@ -401,6 +416,7 @@ class BuyRecommendationService {
             : null,
           platformMatch ? `${gameName} is on ${gameLike.platform}, a launcher you use often` : null,
           personaReason ? personaReason : null,
+          focusReason ? focusReason : null,
           item.notes ? `You left a note for ${gameName}` : null
         ].filter(Boolean);
 

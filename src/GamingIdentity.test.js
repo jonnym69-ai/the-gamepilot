@@ -12,7 +12,8 @@ jest.mock('./AchievementSystem', () => ({
     getMoodStats: jest.fn(),
     getGenreStats: jest.fn(),
     getTimeStats: jest.fn(),
-    getXPStats: jest.fn()
+    getXPStats: jest.fn(),
+    getPatreonBoostProfile: jest.fn(() => ({ multiplier: 1, tier: null, code: null }))
   }
 }));
 
@@ -35,6 +36,7 @@ describe('GamingIdentity', () => {
     AchievementTracker.getGenreStats.mockReturnValue({});
     AchievementTracker.getTimeStats.mockReturnValue({ total: 0, sessions: 0 });
     AchievementTracker.getXPStats.mockReturnValue({ level: 1, xp: 0, nextLevelXP: 100 });
+    AchievementTracker.getPatreonBoostProfile.mockReturnValue({ multiplier: 1, tier: null, code: null });
 
     StatsAggregationService.getDashboardData.mockReturnValue({
       periods: {

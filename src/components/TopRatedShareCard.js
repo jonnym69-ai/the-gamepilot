@@ -41,9 +41,9 @@ export function buildTopRatedShareData(library = [], username = 'Pilot', selecte
 export function TopRatedShareCard({ library = [], selectedGames = null, username = 'Pilot', showCover = true, watermark = 'gamepilot' }) {
   const data = buildTopRatedShareData(library, username, selectedGames);
   const topGame = data.topRated?.[0];
-  const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'hero' }) : null;
+  const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'portrait' }) : null;
   const coverGrid = showCover && data.topRated.length > 0
-    ? data.topRated.slice(0, 6).map((game) => resolveGameArtwork(game, { surface: 'hero' })).filter(Boolean)
+    ? data.topRated.slice(0, 6).map((game) => resolveGameArtwork(game, { surface: 'portrait' })).filter(Boolean)
     : [];
   const showCoverGrid = coverGrid.length > 1;
 

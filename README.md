@@ -2,7 +2,7 @@
 
 ### Your library. Your stats. Your machine.
 
-**Version 1.7.0** | **Copyright © 2026 Moz** | **MIT License** | **Local-first · Private · Open source**
+**Version 1.9.0** | **Copyright © 2026 Moz** | **MIT License** | **Local-first · Private · Open source**
 
 GamePilot is a local-first desktop app that unifies your game library across every launcher, tracks your playtime (even offline), and turns your collection into a private, gamified dashboard — without accounts, cloud sync, or telemetry of any kind.
 
@@ -73,10 +73,21 @@ A gaming identity that learns your habits, recommendations that explain *why*, a
 ## Installation
 
 ### Windows
-1. Download `GamePilot Setup 1.5.0.exe` from the releases page
+1. Download `GamePilot Setup 1.9.0.exe` from the releases page
 2. Run the installer
 3. Follow the installation wizard
 4. Launch GamePilot from your Start Menu
+
+### Linux / Steam Deck beta
+
+Linux support is Steam-first and remains a beta until it has been validated on physical handheld hardware. Download the x86_64 AppImage, mark it executable, and launch it from Desktop Mode. Steam Deck users can then add the AppImage to Steam as a non-Steam game for Gaming Mode.
+
+```bash
+chmod +x GamePilot-1.9.0.AppImage
+./GamePilot-1.9.0.AppImage
+```
+
+The beta supports Steam library discovery and Steam protocol launching. Windows-only launchers and platform tools are intentionally unavailable on Linux.
 
 ### Development Setup
 ```bash
@@ -88,7 +99,10 @@ npm start
 ```bash
 npm run build
 npm run build-electron-win
+npm run build-electron-linux
 ```
+
+Linux AppImage packaging requires a Linux host or the included Ubuntu CI workflow.
 
 ## Usage
 
@@ -149,22 +163,24 @@ For running GamePilot, please download the installer from the main downloads sec
 ## System Requirements
 
 ### Minimum
-- Windows 10 or later
+- Windows 10 or later, or a modern x86_64 Linux distribution for the beta
 - 4GB RAM
 - 500MB free disk space
-- Intel i5 or equivalent
+- Intel i5, AMD equivalent, or Steam Deck
 
 ### Recommended
-- Windows 11
+- Windows 11 or current SteamOS
 - 8GB+ RAM
 - SSD with 1GB free space
-- Intel i7 or AMD Ryzen 7
+- Intel i7, AMD Ryzen 7, or equivalent
 
 ## Data Storage
 
 All GamePilot data is stored locally on your computer:
-```
-C:\Users\[YourUsername]\AppData\Roaming\GamePilot\
+
+```text
+Windows: C:\Users\[YourUsername]\AppData\Roaming\GamePilot\
+Linux:   ~/.config/GamePilot/
 ```
 
 You can:

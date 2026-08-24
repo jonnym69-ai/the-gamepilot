@@ -68,6 +68,7 @@ const addUniquePath = (paths, candidatePath) => {
 };
 
 const queryRegistryValue = (registryKey, valueName) => {
+  if (process.platform !== 'win32') return '';
   const output = runCommand(`reg query "${registryKey}" /v ${valueName}`);
   if (!output) return '';
   const match = output.match(new RegExp(`${valueName}\\s+REG_\\w+\\s+(.+)`));
@@ -679,6 +680,7 @@ const applyGogGalaxyPlaytime = (games, gogMap) => {
 };
 
 const getActiveDrives = () => {
+  if (process.platform !== 'win32') return [];
   const logicalDiskOutput = runCommand('powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType | ConvertTo-Json -Compress"');
   let activeDrives = [];
 
@@ -721,6 +723,24 @@ const getActiveDrives = () => {
   return activeDrives;
 };
 
+// Linux install roots for common game library locations. Windows drive probing
+// stays in getActiveDrives; this is the non-Windows equivalent.
+const getLinuxLibraryRoots = () => {
+  if (process.platform === 'win32') return [];
+  const home = process.env.HOME || '';
+  if (!home) return [];
+  const roots = [];
+  [
+    path.join(home, '.local', 'share'),
+    path.join(home, '.steam'),
+    path.join(home, '.var', 'app'), // Flatpak app data
+    path.join(home, 'Games'),
+    '/mnt',
+    '/media'
+  ].forEach((candidate) => addUniquePath(roots, candidate));
+  return roots;
+};
+
 module.exports = {
   runCommand,
   safeReadDir,
@@ -740,6 +760,7 @@ module.exports = {
   createTrackedDefaults,
   addGameIfUnique,
   getActiveDrives,
+  getLinuxLibraryRoots,
   parseVdf,
   getSteamPlaytimeMap,
   getGogGalaxyPlaytimeMap,

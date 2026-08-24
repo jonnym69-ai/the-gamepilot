@@ -609,7 +609,7 @@
 
 .swipe-shortlist-artwork {
   width: 100%;
-  aspect-ratio: 460 / 215;
+  aspect-ratio: 2 / 3;
   border-radius: 10px;
   overflow: hidden;
 }

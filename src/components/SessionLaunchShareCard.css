@@ -1,0 +1,162 @@
+.session-launch-share-card {
+  --recap-bg: linear-gradient(135deg, #0d1224 0%, #111827 50%, #0d1224 100%);
+  --recap-accent: #ff6b35;
+  --recap-glow: rgba(255, 107, 53, 0.22);
+  --recap-text: #f8fafc;
+  --recap-muted: #94a3b8;
+  --recap-surface: rgba(255, 255, 255, 0.06);
+  --recap-surface-border: rgba(255, 255, 255, 0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1080px;
+  height: 1080px;
+  padding: 56px 64px 64px;
+  box-sizing: border-box;
+  background: var(--recap-bg);
+  color: var(--recap-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+}
+
+.session-launch-share-card-glow {
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--recap-glow) 0%, rgba(255, 107, 53, 0) 70%);
+  pointer-events: none;
+}
+
+.session-launch-share-watermark {
+  position: absolute;
+  bottom: -48px;
+  right: -48px;
+  color: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 0;
+}
+
+.session-launch-share-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  z-index: 1;
+}
+
+.session-launch-share-card-brand {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--recap-accent);
+  text-transform: uppercase;
+}
+
+.session-launch-share-card-tag {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--recap-muted);
+}
+
+.session-launch-share-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  z-index: 1;
+  margin-top: 24px;
+}
+
+.session-launch-share-card-cover-frame {
+  position: relative;
+  width: 520px;
+  height: 700px;
+  border-radius: 20px;
+  background-size: cover;
+  background-position: center top;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  z-index: 1;
+  flex-shrink: 0;
+  margin-bottom: 32px;
+}
+
+.session-launch-share-card-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.session-launch-share-card-title {
+  font-size: 52px;
+  font-weight: 900;
+  text-align: center;
+  margin: 0;
+  color: var(--recap-text);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.4);
+  max-width: 900px;
+  line-height: 1.1;
+}
+
+.session-launch-share-card-platform {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--recap-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.session-launch-share-card-badges {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.session-launch-share-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--recap-surface);
+  color: var(--recap-text);
+}
+
+.live-badge {
+  background: rgba(255, 0, 60, 0.16);
+  border-color: rgba(255, 0, 60, 0.45);
+  color: #ff4d4d;
+}
+
+.stream-badge {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #818cf8;
+}
+
+.session-launch-share-card-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 1;
+  margin-top: auto;
+  font-size: 14px;
+  color: var(--recap-muted);
+}

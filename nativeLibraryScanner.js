@@ -1945,6 +1945,10 @@ const scanBSGLibrary = () => {
   return games;
 };
 
+const getSupportedScanPlatforms = (platform = process.platform) => platform === 'win32'
+  ? ['steam', 'epic', 'gog', 'ea', 'uplay', 'battleNet', 'rockstar', 'xbox', 'playstation', 'bsg', 'riot', 'curseForge', 'amazon', 'itch']
+  : ['steam'];
+
 const safeRunPlatformScanner = (label, scanner) => {
   if (typeof scanner !== 'function') {
     console.warn(`[Scanner] ${label} scanner is unavailable.`);
@@ -1962,6 +1966,36 @@ const safeRunPlatformScanner = (label, scanner) => {
 
 const scanAllLibraries = async () => {
   scannerDebug('[Scanner] Starting scanAllLibraries...');
+
+  if (getSupportedScanPlatforms().length === 1) {
+    const steamGames = safeRunPlatformScanner('Steam', scanSteamLibraryNew || scanSteamLibrary)
+      .map((game) => enrichGameWithCollectionTrust(game));
+    const deduped = dedupeGames(filterCrossPlatformDuplicates(steamGames));
+    global.lastScanDebug = {
+      summary: {
+        totalGamesBeforeDedupe: steamGames.length,
+        totalGamesAfterCrossPlatformDedupe: deduped.length,
+        totalGamesAfterDedupe: deduped.length,
+        scannedPlatformCount: 1,
+        successfulPlatformCount: deduped.length > 0 ? 1 : 0,
+        emptyPlatformCount: deduped.length > 0 ? 0 : 1,
+        errorPlatformCount: 0,
+        lastScanAt: Date.now(),
+      },
+      activeDrives: [],
+      paths: {},
+      platformStatus: {
+        steam: {
+          platform: 'Steam',
+          scanStatus: deduped.length > 0 ? 'found' : 'empty',
+          gameCount: deduped.length,
+        },
+      },
+      platformCounts: { steam: deduped.length },
+      linuxBeta: true,
+    };
+    return deduped;
+  }
 
   scannerDebug('[Scanner] Testing getGameGenres function...');
   try {
@@ -2178,5 +2212,6 @@ const scanAllLibraries = async () => {
 };
 
 module.exports = {
-  scanAllLibraries
+  scanAllLibraries,
+  getSupportedScanPlatforms
 };

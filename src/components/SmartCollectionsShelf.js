@@ -103,8 +103,8 @@ const SmartCollectionCard = ({ collection, onLaunchGame, onDismiss }) => {
       ) : (
         <div className="smart-collection-games">
           {displayGames.map((game) => {
-            const artwork = resolveGameArtwork(game);
-            const placeholder = getGameArtworkPlaceholder(game);
+            const artwork = resolveGameArtwork(game, { surface: 'portrait' });
+            const placeholder = getGameArtworkPlaceholder({ game, surface: 'portrait' });
             return (
               <button
                 key={game.appid || game.name}

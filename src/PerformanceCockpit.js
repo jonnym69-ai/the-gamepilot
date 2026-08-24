@@ -440,7 +440,7 @@ function PerformanceCockpit({
                 readinessScore < 60 &&
                 "🎯 Capable system. Entry-level gaming performance."}
               {readinessScore < 40 &&
-                "� Budget warrior. Stick to lighter games and older titles."}
+                "💰 Budget warrior. Stick to lighter games and older titles."}
             </p>
           </div>
 
@@ -524,7 +524,7 @@ function PerformanceCockpit({
 
               {personaSynergy.length === 0 && (
                 <p className="persona-description">
-                  Start tracking a few moods and we’ll spotlight games that suit
+                  Start tracking a few moods and we'll spotlight games that suit
                   your identity and run brilliantly on this PC.
                 </p>
               )}

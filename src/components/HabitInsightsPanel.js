@@ -16,6 +16,7 @@ import { StatsAggregationService } from '../services/StatsAggregationService';
 import { GameCurationService } from '../services/GameCurationService';
 import { GamingIdentity } from '../GamingIdentity';
 import GamingPersonaService from '../services/GamingPersonaService';
+import { isGameUnplayed } from '../services/RecommendationEngine';
 import './HabitInsightsPanel.css';
 
 const InsightCard = ({ icon: Icon, title, value, subtitle, tone = 'neutral' }) => (
@@ -49,7 +50,12 @@ const HabitInsightsPanel = ({ library = [] }) => {
     const primary = gamingPersona?.primaryPersona;
     const dashboard = StatsAggregationService.getDashboardData(library);
     const allTime = dashboard?.periods?.all;
-    const habit = allTime?.habitInsights;
+    // Recent habit window: prefer this week, fall back to this month, then
+    // all-time — so the patterns reflect current play, not ancient history.
+    const recentPeriod = ['weekly', 'monthly']
+      .map((key) => dashboard?.periods?.[key])
+      .find((period) => (period?.sessions || 0) > 0) || allTime;
+    const habit = recentPeriod?.habitInsights;
     const enrichedLibrary = GameCurationService.enrichLibrary(library);
     const tasteClusters = GamingIdentity.detectTasteClusters(GamingIdentity.getSignatureGames(5));
 
@@ -89,26 +95,39 @@ const HabitInsightsPanel = ({ library = [] }) => {
         ? 'decreasing'
         : 'stable';
 
-    // Peak time window
+    // Peak time window — from the current-rotation persona's recent session
+    // pool, falling back to all-time behavior stats when no sessions exist.
+    const recentPeakHour = Number.isFinite(gamingPersona?.signals?.peakHour)
+      ? gamingPersona.signals.peakHour
+      : null;
     const peakHours = UserBehaviorProfile.getPeakPlayHours(3);
-    const peakWindow = peakHours.length > 0
-      ? `${peakHours[0].timeOfDay} (${peakHours[0].hour}:00)`
-      : 'Not enough data';
+    const peakWindow = recentPeakHour !== null
+      ? `${UserBehaviorProfile.getTimeOfDay(recentPeakHour)} (${recentPeakHour}:00)`
+      : peakHours.length > 0
+        ? `${peakHours[0].timeOfDay} (${peakHours[0].hour}:00)`
+        : 'Not enough data';
 
-    // Mood consistency
+    // Mood consistency — from sessions in the recent period when available,
+    // else the all-time behavior profile.
+    const recentMoodEntries = Object.entries(recentPeriod?.moodCounts || {})
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
     const topMoods = UserBehaviorProfile.getTopMoods(3);
-    const moodConsistency = topMoods.length > 0
-      ? topMoods.map((m) => `${m.mood} (${m.count} sessions)`).join(' · ')
-      : 'Still learning';
+    const moodConsistency = recentMoodEntries.length > 0
+      ? recentMoodEntries.map(([mood, count]) => `${mood} (${count} session${count === 1 ? '' : 's'})`).join(' · ')
+      : topMoods.length > 0
+        ? topMoods.map((m) => `${m.mood} (${m.count} sessions)`).join(' · ')
+        : 'Still learning';
 
     // Backlog health
-    const unplayed = enrichedLibrary.filter((g) => !g.time_played && !g.launch_count).length;
+    const unplayed = enrichedLibrary.filter((g) => isGameUnplayed(g)).length;
     const backlogRatio = library.length > 0 ? Math.round((unplayed / library.length) * 100) : 0;
 
     // Completion velocity
     const completedCount = enrichedLibrary.filter((g) => {
       const c = GameCurationService.getGameCompletion(g.name);
-      return c.status === 'completed' || c.status === '100%';
+      return ['finished', 'beaten', 'completed', '100%'].includes(c.status);
     }).length;
 
     // Time-of-day heatmap data
@@ -162,6 +181,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
       gamingPersona,
       primary,
       habit,
+      habitPeriodLabel: recentPeriod?.label || null,
       abandonmentRate,
       genreCount,
       sessionTrend,
@@ -196,11 +216,11 @@ const HabitInsightsPanel = ({ library = [] }) => {
     gamingPersona,
     primary,
     habit,
+    habitPeriodLabel,
     abandonmentRate,
     genreCount,
     sessionTrend,
     recentAvg,
-    overallAvg,
     peakWindow,
     moodConsistency,
     unplayed,
@@ -242,7 +262,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
           icon={Clock}
           title="Peak Gaming Time"
           value={peakWindow}
-          subtitle={`Avg session: ${overallAvg} min`}
+          subtitle={`Recent avg session: ${recentAvg} min`}
           tone="neutral"
         />
         <InsightCard
@@ -264,7 +284,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
       <div className="habit-patterns-section">
         <h4>
           <Sparkles size={16} />
-          Detected Patterns
+          Detected Patterns{habitPeriodLabel ? ` · ${habitPeriodLabel}` : ''}
         </h4>
         <div className="habit-patterns-list">
           <PatternRow

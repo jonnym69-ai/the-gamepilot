@@ -101,10 +101,10 @@ function Themes() {
     setAutoSeasonal(!autoSeasonal);
   };
 
-  const rewardSummary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
-  const themeTierProgression = useMemo(() => ProgressionUnlockService.getThemeTierProgression(), []);
-  const unlockableThemes = useMemo(() => ProgressionUnlockService.getUnlockableThemes(), []);
-  const seasonalChallenges = useMemo(() => SeasonalRewardService.getActiveChallenges(), []);
+  const rewardSummary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary() || {}, []);
+  const themeTierProgression = useMemo(() => ProgressionUnlockService.getThemeTierProgression() || {}, []);
+  const unlockableThemes = useMemo(() => ProgressionUnlockService.getUnlockableThemes() || [], []);
+  const seasonalChallenges = useMemo(() => SeasonalRewardService.getActiveChallenges() || [], []);
   const currentChallenge = seasonalChallenges.find(c => c.isActive);
 
   const themeCards = useMemo(() => {
@@ -115,7 +115,7 @@ function Themes() {
       name: themeMeta.name,
       description: 'Core theme available immediately.',
       preview: moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.card
-        ? `linear-gradient(135deg, ${moodThemes.find((entry) => entry.id === themeMeta.id).palette.primary}, ${moodThemes.find((entry) => entry.id === themeMeta.id).palette.accent})`
+        ? `linear-gradient(135deg, ${moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.primary}, ${moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.accent})`
         : null,
       unlocked: true,
       requiredXP: 0,

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
 import StorageService from '../services/StorageService';
+import DateTimeFormatService from '../services/DateTimeFormatService';
 import './DailyDoodleTitle.css';
 
 const DEFAULT_WORDMARK = 'GamePilot';
@@ -391,21 +392,13 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       weekday: 'long',
       timeZone: preferredTimeZone
     }).format(currentDateTime);
-    const monthDay = new Intl.DateTimeFormat('en-GB', {
-      month: 'long',
-      day: 'numeric',
-      timeZone: preferredTimeZone
-    }).format(currentDateTime);
-    return `${weekday} • ${monthDay}`;
+    const formattedDate = DateTimeFormatService.formatDate(currentDateTime);
+    return `${weekday} • ${formattedDate}`;
   }, [currentDateTime, preferredTimeZone]);
 
   const timeLabel = useMemo(() => (
-    new Intl.DateTimeFormat('en-GB', {
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: preferredTimeZone
-    }).format(currentDateTime)
-  ), [currentDateTime, preferredTimeZone]);
+    DateTimeFormatService.formatTime(currentDateTime)
+  ), [currentDateTime]);
 
   const timeZoneLabel = useMemo(() => {
     const parts = new Intl.DateTimeFormat('en-GB', {

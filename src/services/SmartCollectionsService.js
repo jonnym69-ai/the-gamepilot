@@ -15,7 +15,7 @@
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { StatsAggregationService } from './StatsAggregationService';
 import { GameCurationService } from './GameCurationService';
-import { RecommendationEngine } from './RecommendationEngine';
+import { RecommendationEngine, isGameUnplayed } from './RecommendationEngine';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import StorageService from './StorageService';
 
@@ -171,7 +171,7 @@ export class SmartCollectionsService {
         const lastPlayed = getLastPlayedTimestamp(g);
         const days = daysSince(lastPlayed);
         const completion = GameCurationService.getGameCompletion(g.name);
-        const isComplete = completion.status === 'completed' || completion.status === '100%';
+        const isComplete = ['finished', 'beaten', 'completed', '100%'].includes(completion.status);
         return hasPlaytime && days > 14 && days < 180 && !isComplete;
       })
       .sort((a, b) => daysSince(getLastPlayedTimestamp(a)) - daysSince(getLastPlayedTimestamp(b)))
@@ -198,12 +198,7 @@ export class SmartCollectionsService {
     const dominantMood = persona?.dominantMood;
 
     const games = library
-      .filter((g) => {
-        const noPlaytime = !g?.time_played || g.time_played === 0;
-        const noLaunches = !g?.launch_count || g.launch_count === 0;
-        const noLastPlayed = getLastPlayedTimestamp(g) === 0;
-        return noPlaytime && noLaunches && noLastPlayed;
-      })
+      .filter((g) => isGameUnplayed(g))
       .map((g) => {
         const score = RecommendationEngine.scoreGameByBehavior(
           g,
@@ -264,7 +259,7 @@ export class SmartCollectionsService {
     const games = library
       .filter((g) => {
         const completion = GameCurationService.getGameCompletion(g.name);
-        const isComplete = completion.status === 'completed' || completion.status === '100%';
+        const isComplete = ['finished', 'beaten', 'completed', '100%'].includes(completion.status);
         const timePlayed = Number(g?.time_played || 0);
         const estimated = PersonaPerformanceInsights.estimateSessionMinutes(g);
         return isComplete && timePlayed > 0 && timePlayed <= 360 && estimated && estimated <= 240;
@@ -370,7 +365,7 @@ export class SmartCollectionsService {
       .filter((g) => {
         const estimated = PersonaPerformanceInsights.estimateSessionMinutes(g);
         const completion = GameCurationService.getGameCompletion(g.name);
-        const isComplete = completion.status === 'completed' || completion.status === '100%';
+        const isComplete = ['finished', 'beaten', 'completed', '100%'].includes(completion.status);
         return estimated && estimated <= targetMinutes + 15 && !isComplete;
       })
       .map((g) => {
@@ -475,7 +470,7 @@ export class SmartCollectionsService {
         const timePlayed = Number(g?.time_played || 0);
         const estimated = PersonaPerformanceInsights.estimateSessionMinutes(g);
         const completion = GameCurationService.getGameCompletion(g.name);
-        const isComplete = completion.status === 'completed' || completion.status === '100%';
+        const isComplete = ['finished', 'beaten', 'completed', '100%'].includes(completion.status);
         const isAbandoned = completion.status === 'abandoned';
         const ratio = estimated > 0 ? timePlayed / estimated : 1;
         return (ratio < 0.3 && timePlayed > 10 && !isComplete) || isAbandoned;
@@ -507,18 +502,18 @@ export class SmartCollectionsService {
     const games = library
       .filter((g) => {
         const completion = GameCurationService.getGameCompletion(g.name);
-        const isComplete = completion.status === 'completed' || completion.status === '100%';
+        const isComplete = ['finished', 'beaten', 'completed', '100%'].includes(completion.status);
         if (!isComplete || !completion.history?.length) return false;
         const lastComplete = completion.history
-          .filter((h) => h.status === 'completed' || h.status === '100%')
+          .filter((h) => ['finished', 'beaten', 'completed', '100%'].includes(h.status))
           .pop();
         return lastComplete && daysSince(lastComplete.timestamp) < 30;
       })
       .sort((a, b) => {
         const aHist = GameCurationService.getGameCompletion(a.name).history;
         const bHist = GameCurationService.getGameCompletion(b.name).history;
-        const aLast = aHist.filter((h) => h.status === 'completed' || h.status === '100%').pop();
-        const bLast = bHist.filter((h) => h.status === 'completed' || h.status === '100%').pop();
+        const aLast = aHist.filter((h) => ['finished', 'beaten', 'completed', '100%'].includes(h.status)).pop();
+        const bLast = bHist.filter((h) => ['finished', 'beaten', 'completed', '100%'].includes(h.status)).pop();
         return (bLast?.timestamp || 0) - (aLast?.timestamp || 0);
       })
       .slice(0, 8);
