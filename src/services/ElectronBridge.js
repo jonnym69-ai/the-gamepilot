@@ -24,7 +24,7 @@ const waitForElectronAPI = async ({ retries = 10, delayMs = 250 } = {}) => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
     const retryApi = getElectronAPI();
     if (retryApi) {
-      console.log(`✅ Electron API became available after ${attempt} retry attempt(s).`);
+      console.warn(`Electron API became available after ${attempt} retry attempt(s).`);
       return retryApi;
     }
   }

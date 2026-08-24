@@ -245,7 +245,7 @@ export class PlaytimeAutoLogger {
         };
         processSessionEnd(gameName, playtimeMinutes, stats);
       } catch (e) {
-        console.log('Identity enhancement processing skipped:', e);
+        console.warn('Identity enhancement processing skipped:', e);
       }
     }
 

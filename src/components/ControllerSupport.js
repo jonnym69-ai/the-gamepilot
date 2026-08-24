@@ -199,12 +199,10 @@ function ControllerSupport({ children, onControllerInput }) {
 
   useEffect(() => {
     const handleConnected = (e) => {
-      console.log('Controller connected:', e.gamepad.id);
       emitControllerInput('connected', e.gamepad.id);
     };
 
     const handleDisconnected = (e) => {
-      console.log('Controller disconnected:', e.gamepad.id);
       emitControllerInput('disconnected', e.gamepad.id);
     };
 

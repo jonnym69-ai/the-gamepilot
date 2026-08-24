@@ -146,7 +146,7 @@ export class GameLaunchCoordinatorService {
 
       GamingIdentity.updateGamingIdentity();
     } catch (error) {
-      console.log('Error tracking launch rewards:', error);
+      console.error('Error tracking launch rewards:', error);
     }
   }
 

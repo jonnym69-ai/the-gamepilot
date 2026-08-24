@@ -4,7 +4,6 @@ import './App.css';
 import moodThemes from './themes/moodThemes.json';
 import { ThemeProvider } from './ThemeContext';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
-import { OfflineManager } from './OfflineManager';
 import ControllerSupport from './components/ControllerSupport';
 import ErrorBoundary from './components/ErrorBoundary';
 import { GameLaunchCoordinatorService } from './services/GameLaunchCoordinatorService';
@@ -159,8 +158,6 @@ function AppContent() {
   });
   const [loading, setLoading] = useState(false);
   const [lastPlayedGame, setLastPlayedGame] = useState(null);
-  const [isOnline, setIsOnline] = useState(OfflineManager.isOnline);
-  const [syncStatus, setSyncStatus] = useState(OfflineManager.getSyncStatus());
   const [activeSessions, setActiveSessions] = useState([]);
   const [bigScreenMode, setBigScreenMode] = useState(
     () => localStorage.getItem('gamepilot-bigScreenMode') === 'true'
@@ -283,31 +280,6 @@ function AppContent() {
 
     window.addEventListener('themeChange', handleThemeChange);
     return () => window.removeEventListener('themeChange', handleThemeChange);
-  }, []);
-
-  // Offline status monitoring
-  useEffect(() => {
-    const unsubscribe = OfflineManager.onStatusChange((online) => {
-      setIsOnline(online);
-      setSyncStatus(OfflineManager.getSyncStatus());
-    });
-
-    return unsubscribe;
-  }, []);
-
-  // Refresh sync status when the app becomes active again
-  useEffect(() => {
-    const refreshSyncStatus = () => {
-      setSyncStatus(OfflineManager.getSyncStatus());
-    };
-
-    window.addEventListener('focus', refreshSyncStatus);
-    document.addEventListener('visibilitychange', refreshSyncStatus);
-
-    return () => {
-      window.removeEventListener('focus', refreshSyncStatus);
-      document.removeEventListener('visibilitychange', refreshSyncStatus);
-    };
   }, []);
 
   // Initialize keyboard shortcuts
@@ -773,7 +745,7 @@ function AppContent() {
   useEffect(() => {
     if (!window.electronAPI?.onSystemShutdown) return undefined;
     const unsubscribe = window.electronAPI.onSystemShutdown(() => {
-      console.log('[Session] System shutdown imminent — ending all active sessions');
+      console.warn('[Session] System shutdown imminent — ending all active sessions');
       Object.keys(PlaytimeAutoLogger.getActiveSessions()).forEach((gameName) => {
         handleEndSession(gameName, { shutdownSession: true });
       });
@@ -1317,8 +1289,8 @@ function AppContent() {
         </div>
       )}>
       <Routes>
-        <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
-        <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} isOnline={isOnline} syncStatus={syncStatus} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
+        <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
+        <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
         <Route path="/library" element={<Library library={library} setLibrary={setLibrary} onLibraryUpdated={handleLibraryUpdated} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onScanLibrary={scanLocalLibrary} scanLocalLibrary={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} onUpdateCollections={handleUpdateCollections} onToggleHidden={handleToggleHidden} onUpdateCompletion={handleUpdateCompletion} onUpdateNotes={handleUpdateNotes} onUpdateCoverArt={handleUpdateCoverArt} onAddSessionNote={handleAddSessionNote} onTogglePlayedElsewhere={handleTogglePlayedElsewhere} loading={loading} />} />
         <Route path="/stats" element={<Stats library={library} />} />
         <Route path="/gaming-dna" element={<Navigate to="/profile" replace />} />

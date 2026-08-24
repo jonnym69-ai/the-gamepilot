@@ -11,7 +11,7 @@ export class LauncherService {
       if (process.env.NODE_ENV === 'production') {
         const retryAPI = await waitForElectronAPI({ retries: 4, delayMs: 500 });
         if (retryAPI && typeof retryAPI.launchGame === 'function') {
-          console.log('✅ Electron API available after retry for game launch.');
+          console.warn('Electron API available after retry for game launch.');
           const result = await retryAPI.launchGame(game);
           return result || { success: false, message: 'Unknown launch response after retry' };
         } else {

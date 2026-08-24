@@ -296,14 +296,7 @@ export class RollingAchievementsTracker {
       data.yearly.lastUpdated = Date.now();
 
       this.saveData(data);
-      
-      console.log('[RollingAchievements] Playtime updated:', {
-        daily: `${data.daily.playtime}min on ${data.daily.date}`,
-        weekly: `${data.weekly.playtime}min for week ${data.weekly.weekStart}`,
-        monthly: `${data.monthly.playtime}min for ${data.monthly.month}/${data.monthly.year}`,
-        yearly: `${data.yearly.playtime}min for ${data.yearly.year}`
-      });
-      
+
       // Trigger window event for UI updates
       window.dispatchEvent(new CustomEvent('rollingAchievementsUpdated', { 
         detail: { minutes, period: 'all' } 
