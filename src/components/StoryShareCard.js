@@ -53,14 +53,20 @@ export function StoryShareCard({ stories = [], period = 'weekly', username = 'Pi
           )}
         </div>
 
-        <ul className="story-share-card-list">
-          {stories.map((story, index) => (
-            <li key={index} className="story-share-card-item">
-              <span className="story-share-card-bullet" />
-              <span>{story}</span>
-            </li>
-          ))}
-        </ul>
+        {stories.length === 0 ? (
+          <div className="story-share-card-empty">
+            No gaming stories this period — time to make some memories.
+          </div>
+        ) : (
+          <ul className="story-share-card-list">
+            {stories.map((story, index) => (
+              <li key={index} className="story-share-card-item">
+                <span className="story-share-card-bullet" />
+                <span>{story}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="story-share-card-footer">

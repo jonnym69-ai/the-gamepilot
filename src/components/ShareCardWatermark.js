@@ -5,7 +5,10 @@ const SHARE_CARD_WATERMARK_CONTEXTS = {
   toprated: 'top-rated picks',
   year: 'yearly recap',
   identity: 'gaming identity',
-  story: 'gaming stories'
+  story: 'gaming stories',
+  game: 'game card',
+  multigame: 'multi-game card',
+  habits: 'play habits',
 };
 
 const WATERMARK_CONFIGS = {

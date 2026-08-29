@@ -13,8 +13,7 @@ export function buildSessionLaunchShareData(game = {}) {
   return {
     name: safeGame.name || 'Unknown Game',
     coverUrl: resolveGameArtwork(safeGame, { surface: 'portrait' }),
-    platform,
-    isStreaming: true
+    platform
   };
 }
 
@@ -51,9 +50,6 @@ export function SessionLaunchShareCard({ game = {}, watermark = 'gamepilot' }) {
           <span className="session-launch-share-card-badge live-badge">
             <Radio size={16} />
             Starting Session
-          </span>
-          <span className="session-launch-share-card-badge stream-badge">
-            Might be streaming
           </span>
         </div>
       </div>

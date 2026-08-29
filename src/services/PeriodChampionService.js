@@ -18,6 +18,7 @@ import StorageService from './StorageService';
 import SessionRepository from './SessionRepository';
 import GamingPersonaService from './GamingPersonaService';
 import { resolveGameArtworkBundle } from './GameArtworkService';
+import { generateAndStoreSpeech } from './ChampionSpeechService';
 
 const STORAGE_KEYS = {
   week: 'champions-week',
@@ -499,6 +500,9 @@ const PeriodChampionService = {
       freezePersona: true,
     });
     if (!champion) return null;
+
+    // Generate an acceptance speech for the newly crowned champion
+    try { generateAndStoreSpeech(champion, library); } catch { /* non-critical */ }
 
     locked.push(champion);
     writeLocked(period, locked);

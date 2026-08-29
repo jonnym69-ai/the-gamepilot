@@ -253,6 +253,21 @@ body.dynamic-cover-bg .profile-card {
   backdrop-filter: blur(8px) !important;
 }
 
+/* Make page-level backgrounds transparent so the cover art shows through */
+body.dynamic-cover-bg .home-page,
+body.dynamic-cover-bg .profile-page,
+body.dynamic-cover-bg .settings-container,
+body.dynamic-cover-bg .habits-page,
+body.dynamic-cover-bg .timeline-page,
+body.dynamic-cover-bg .year-review-page,
+body.dynamic-cover-bg .achievements-container,
+body.dynamic-cover-bg .feedback-page,
+body.dynamic-cover-bg .rewards-page,
+body.dynamic-cover-bg .performance-cockpit,
+body.dynamic-cover-bg .swipe-deck-page {
+  background: transparent !important;
+}
+
 /* Pro: animated dynamic backdrop from cover art colors */
 body.dynamic-backdrop-active {
   background: var(--dynamic-backdrop, var(--bg-primary, #0d1224));

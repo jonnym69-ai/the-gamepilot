@@ -1,0 +1,56 @@
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.streak-badge::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #f59e0b, #ef4444);
+}
+
+.streak-badge-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.streak-badge-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.streak-badge-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.streak-badge-roast {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .streak-badge-roast {
+    white-space: normal;
+  }
+}

@@ -1,0 +1,153 @@
+.rivalry-banner {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rivalry-banner::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #a855f7, #ec4899);
+}
+
+.rivalry-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.rivalry-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #a855f7;
+}
+
+.rivalry-rounds {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(168, 85, 247, 0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.rivalry-matchup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rivalry-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rivalry-game-art {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.rivalry-game-art-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--card-elevated, #333), var(--card, #222));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.rivalry-game-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.rivalry-game-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rivalry-vs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rivalry-vs-text {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #a855f7;
+}
+
+.rivalry-margin {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rivalry-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 14px;
+  background: var(--card-elevated, rgba(255, 255, 255, 0.06));
+}
+
+.rivalry-bar-a {
+  background: linear-gradient(90deg, #a855f7, #7c3aed);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rivalry-bar-b {
+  background: linear-gradient(90deg, #ec4899, #db2777);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (max-width: 768px) {
+  .rivalry-game-name {
+    font-size: 12px;
+  }
+
+  .rivalry-game-art,
+  .rivalry-game-art-placeholder {
+    width: 40px;
+    height: 40px;
+  }
+}

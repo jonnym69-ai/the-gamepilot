@@ -35,6 +35,11 @@ import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from './services/UserBeha
 import { HabitTrackerService } from './services/HabitTrackerService';
 import StorageService from './services/StorageService';
 import PeriodChampionService from './services/PeriodChampionService';
+import { generateSessionRoast } from './services/SessionRoastService';
+import { generateRivalryToast } from './services/RivalryService';
+import { checkStreakMilestone, updateStreakCharacterization } from './services/StreakCharacterizerService';
+import { storeSnapshot, checkIdentityShiftToast } from './services/IdentityShiftService';
+import { getSpeech } from './services/ChampionSpeechService';
 import WishlistService from './services/WishlistService';
 import { assignMoodToGame as importedAssignMoodToGame } from './services/MoodAssignmentService';
 import { resolveGameArtwork } from './services/GameArtworkService';
@@ -182,7 +187,7 @@ function AppContent() {
   const [gamingStory, setGamingStory] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(() => StorageService.getString('minimizeOnLaunch') === 'true');
-  const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+  const { success: toastSuccess, error: toastError, info: toastInfo, roast: toastRoast } = useToast();
 
   // Memoization caches for performance
   const playtimeStatsCache = useRef(new Map());
@@ -199,9 +204,25 @@ function AppContent() {
   useEffect(() => {
     if (!sessionStorageReady) return;
     try {
-      PeriodChampionService.lockChampionsIfNeeded({ library });
+      const newlyLocked = PeriodChampionService.lockChampionsIfNeeded({ library });
+      if (Array.isArray(newlyLocked) && newlyLocked.length > 0) {
+        const personalityEnabled = StorageService.getString('personalityToastsEnabled', 'true') === 'true';
+        if (personalityEnabled) {
+          newlyLocked.forEach((champion) => {
+            const speech = getSpeech(champion.period, champion.periodKey);
+            if (speech?.speech) {
+              const periodLabel = champion.period === 'week' ? 'Weekly'
+                : champion.period === 'month' ? 'Monthly' : 'Yearly';
+              setTimeout(() => toastRoast(
+                `${periodLabel} Champion: ${champion.game.name}. "${speech.speech}"`,
+                7000
+              ), 1000);
+            }
+          });
+        }
+      }
     } catch { /* non-critical */ }
-  }, [library, sessionStorageReady]);
+  }, [library, sessionStorageReady, toastRoast]);
 
   useEffect(() => {
     playtimeStatsCache.current.clear();
@@ -761,7 +782,51 @@ function AppContent() {
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
       const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-      toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+
+      // Generate personality-driven roast toast for real sessions
+      const personalityEnabled = StorageService.getString('personalityToastsEnabled', 'true') === 'true';
+      if (personalityEnabled && !detail?.recoveredSession && !detail?.shutdownSession && minutes > 0) {
+        try {
+          const roast = generateSessionRoast(detail);
+          if (roast?.message) {
+            toastRoast(roast.message, 6000);
+          } else {
+            toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+          }
+        } catch {
+          toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+        }
+      } else {
+        toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+      }
+
+      // Check for active rivalry (throttled to once per day inside the service)
+      if (personalityEnabled && !detail?.recoveredSession && !detail?.shutdownSession) {
+        try {
+          const rivalryToast = generateRivalryToast();
+          if (rivalryToast?.message) {
+            setTimeout(() => toastRoast(rivalryToast.message, 6000), 1500);
+          }
+        } catch { /* non-critical */ }
+
+        // Check for streak milestone (throttled inside the service)
+        try {
+          updateStreakCharacterization();
+          const milestone = checkStreakMilestone();
+          if (milestone?.message) {
+            setTimeout(() => toastRoast(milestone.message, 6000), 3000);
+          }
+        } catch { /* non-critical */ }
+
+        // Store persona snapshot and check for identity shift (throttled per quarter)
+        try {
+          storeSnapshot();
+          const shift = checkIdentityShiftToast();
+          if (shift?.message) {
+            setTimeout(() => toastRoast(shift.message, 7000), 4500);
+          }
+        } catch { /* non-critical */ }
+      }
       const feedbackPreferences = UserBehaviorProfile.getFeedbackPreferences();
       if (detail.recommendationType
         && feedbackPreferences.sessionPromptEnabled
@@ -781,7 +846,7 @@ function AppContent() {
 
     window.addEventListener('gamepilot:session-ended', handleSessionEnded);
     return () => window.removeEventListener('gamepilot:session-ended', handleSessionEnded);
-  }, [toastSuccess]);
+  }, [toastSuccess, toastRoast]);
 
   useEffect(() => {
     setStillPlayingDeadlines((previousDeadlines) => {

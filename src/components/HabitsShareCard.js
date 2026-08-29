@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, Clock, Calendar, Moon, Sunrise, RotateCcw, Gamepad2 } from 'lucide-react';
 import { ShareCardWatermark } from './ShareCardWatermark';
+import { formatPlaytime } from '../utils/formatPlaytime';
 import './HabitsShareCard.css';
 
 export const HABITS_SHARE_CARD_SIZE_PX = 1080;
@@ -35,7 +36,7 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
                 Longest Session
               </div>
               <strong>{h.longestSession.gameName}</strong>
-              <span>{h.longestSession.playtimeMinutes} min</span>
+              <span>{formatPlaytime(h.longestSession.playtimeMinutes)}</span>
             </div>
           )}
 
@@ -46,7 +47,7 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
                 Most Active Day
               </div>
               <strong>{h.busiestDay.dateLabel}</strong>
-              <span>{h.busiestDay.playtimeMinutes} min · {h.busiestDay.sessions} sessions</span>
+              <span>{formatPlaytime(h.busiestDay.playtimeMinutes)} · {h.busiestDay.sessions} sessions</span>
             </div>
           )}
 
@@ -57,7 +58,7 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
                 Most Returned To
               </div>
               <strong>{h.mostReturnedTo.name}</strong>
-              <span>{h.mostReturnedTo.sessions} sessions · {h.mostReturnedTo.totalPlaytime} min</span>
+              <span>{h.mostReturnedTo.sessions} sessions · {formatPlaytime(h.mostReturnedTo.totalPlaytime)}</span>
             </div>
           )}
 

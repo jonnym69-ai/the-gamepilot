@@ -50,6 +50,8 @@ import {
   RecentSessionsSummary,
   CurrentChampionCard,
 } from './components/IdentityWidgets';
+import RivalryBanner from './components/RivalryBanner';
+import StreakBadge from './components/StreakBadge';
 import GettingStartedModal from './components/GettingStartedModal';
 import {
   readGettingStartedPreferences,
@@ -1252,6 +1254,10 @@ function Home({
           onOptOut={handleOptOutWelcomeBack}
         />
       )}
+
+      <RivalryBanner />
+
+      <StreakBadge />
 
       {isDashboard ? (
         <>

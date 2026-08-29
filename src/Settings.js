@@ -65,6 +65,12 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [recommendationOutcomePromptsEnabled, setRecommendationOutcomePromptsEnabled] = useState(
     () => UserBehaviorProfile.getFeedbackPreferences().sessionPromptEnabled
   );
+  const [personalityToastsEnabled, setPersonalityToastsEnabled] = useState(
+    () => StorageService.getString('personalityToastsEnabled', 'true') === 'true'
+  );
+  const [toastDurationPreference, setToastDurationPreference] = useState(
+    () => StorageService.getString('toastDurationPreference', 'short')
+  );
   const { success, error: toastError } = useToast();
 
   const refreshShortcutSettings = useCallback(() => {
@@ -600,6 +606,56 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     </div>
                     <p className="setting-description">
                       When you open GamePilot for the first time in a session, show a pop-up with a game recommendation based on what you've been playing — served with your persona roast.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Personality toasts</label>
+                    <div className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={personalityToastsEnabled}
+                        onChange={() => {
+                          const next = !personalityToastsEnabled;
+                          setPersonalityToastsEnabled(next);
+                          StorageService.setString('personalityToastsEnabled', next ? 'true' : 'false');
+                        }}
+                        id="personality-toasts-toggle"
+                      />
+                      <label htmlFor="personality-toasts-toggle" className="toggle-slider"></label>
+                    </div>
+                    <p className="setting-description">
+                      Show personality-driven roast toasts after sessions, when streaks hit milestones, when rivalries heat up, and when your gaming identity shifts. Disable for plain session notifications only.
+                    </p>
+                  </div>
+
+                  <div className="setting-item">
+                    <label>Toast duration</label>
+                    <div className="segmented-control" role="radiogroup" aria-label="Toast duration">
+                      {[
+                        { value: 'short', label: 'Short', hint: '3s' },
+                        { value: 'long', label: 'Long', hint: '8s' },
+                        { value: 'persistent', label: 'Until dismissed', hint: 'no timeout' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={toastDurationPreference === opt.value}
+                          className={`segmented-option ${toastDurationPreference === opt.value ? 'segmented-option-active' : ''}`}
+                          onClick={() => {
+                            setToastDurationPreference(opt.value);
+                            StorageService.setString('toastDurationPreference', opt.value);
+                            success(`Toast duration set to ${opt.label} (${opt.hint})`);
+                          }}
+                        >
+                          <span className="segmented-option-label">{opt.label}</span>
+                          <span className="segmented-option-hint">{opt.hint}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="setting-description">
+                      Control how long notifications stay on screen. "Until dismissed" keeps toasts visible until you click the × button — useful for roasts you don't want to miss.
                     </p>
                   </div>
                   </div>

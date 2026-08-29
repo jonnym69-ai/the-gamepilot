@@ -28,6 +28,27 @@ const TopGameRow = ({ index, game }) => {
   );
 };
 
+export function buildYearInReviewShareCaption(snapshot, year, username = 'Pilot') {
+  if (!snapshot) return `${username || 'Pilot'} · Year in Review`;
+
+  const playtime = formatPlaytime(snapshot?.summary?.playtimeMinutes);
+  const sessions = snapshot?.summary?.sessions ?? 0;
+  const activeDays = snapshot?.summary?.activeDays ?? 0;
+  const topGames = (snapshot?.topGames || []).slice(0, 3);
+  const topGameNames = topGames.map((g) => g.name).filter(Boolean).join(' · ');
+  const persona = snapshot?.persona?.identityLabel || 'Player';
+  const topMood = snapshot?.persona?.dominantMood || '—';
+
+  const templates = [
+    `My ${year} in games: ${playtime} across ${sessions} sessions. GamePilot says I played like a ${persona}.`,
+    `${playtime}. ${sessions} sessions. ${activeDays} active days. GamePilot calls me a ${persona}. I'd argue it's just ${topMood} energy.`,
+    `This year I logged ${playtime} of playtime. Top games: ${topGameNames || 'too many to name'}. My identity: ${persona}.`,
+    `${year} recap 🎮 ${playtime} · ${sessions} sessions · ${activeDays} active days · played like a ${persona}`,
+  ];
+
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
 export function YearInReviewShareCard({ snapshot, year, username, showCover = true, watermark = 'gamepilot' }) {
   if (!snapshot) return null;
 

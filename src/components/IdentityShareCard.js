@@ -60,6 +60,29 @@ export function buildIdentityShareData(profile = {}, evolution = null) {
   };
 }
 
+export function buildIdentityShareCaption(data = {}) {
+  const name = data.username || 'Pilot';
+  const label = data.identityLabel || 'Uncharted Pilot';
+  const genre = data.favoriteGenre || 'a mix of games';
+  const mood = data.favoriteMood || 'varied moods';
+  const playtime = data.totalPlaytime ? formatPlaytime(data.totalPlaytime) : 'no time yet';
+  const games = data.librarySize || 0;
+  const sessions = data.sessions || 0;
+
+  const templates = [
+    `According to GamePilot, I'm a ${label} who plays ${genre}. ${playtime} across ${sessions} sessions proves it 🎮`,
+    `GamePilot called me a ${label}. I blame ${genre} and my ${mood} moods. ${playtime} well spent 🔥`,
+    `My gaming identity: ${label}. Favorite vibe: ${mood}. Favorite genre: ${genre}. Total playtime: ${playtime}. No notes.`,
+    `${name} · ${label} · ${playtime} · ${games} games. That's the whole pitch.`,
+  ];
+
+  if (data.evolution?.summary) {
+    templates.push(`My gaming identity shifted: ${data.evolution.summary}`);
+  }
+
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
 const resolvePlaytime = (game) => {
   const value = Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0);
   return Number.isFinite(value) ? value : 0;

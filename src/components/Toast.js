@@ -1,5 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './Toast.css';
+import StorageService from '../services/StorageService';
+
+// Resolves the effective auto-dismiss duration based on the user's preference.
+// - 'short'      → 3000ms
+// - 'long'       → 8000ms
+// - 'persistent' → 0 (no auto-timeout; only the close button dismisses)
+// Unset/unknown  → fall back to the caller-supplied duration (preserves existing behavior).
+const resolveToastDuration = (callerDuration) => {
+  const pref = StorageService.getString('toastDurationPreference', '');
+  if (pref === 'short') return 3000;
+  if (pref === 'long') return 8000;
+  if (pref === 'persistent') return 0;
+  return callerDuration;
+};
 
 const ToastContext = React.createContext();
 
@@ -28,12 +42,13 @@ export const ToastProvider = ({ children }) => {
   const addToast = useCallback((message, type = 'info', duration = 3000) => {
     nextId.current += 1;
     const id = `toast-${Date.now()}-${nextId.current}`;
-    const newToast = { id, message: String(message || ''), type, duration };
+    const effectiveDuration = resolveToastDuration(duration);
+    const newToast = { id, message: String(message || ''), type, duration: effectiveDuration };
 
     setToasts((current) => [...current.slice(-3), newToast]);
 
-    if (duration > 0) {
-      const timer = window.setTimeout(() => removeToast(id), duration);
+    if (effectiveDuration > 0) {
+      const timer = window.setTimeout(() => removeToast(id), effectiveDuration);
       timers.current.set(id, timer);
     }
 
@@ -52,6 +67,7 @@ export const ToastProvider = ({ children }) => {
     error: (message, duration) => addToast(message, 'error', duration),
     warning: (message, duration) => addToast(message, 'warning', duration),
     info: (message, duration) => addToast(message, 'info', duration),
+    roast: (message, duration) => addToast(message, 'roast', duration),
     toasts
   }), [addToast, removeToast, toasts]);
 
@@ -87,19 +103,23 @@ const Toast = ({ toast, removeToast }) => {
   };
 
   const isUrgent = toast.type === 'error' || toast.type === 'warning';
+  const isRoast = toast.type === 'roast';
+  const isPersistent = !toast.duration; // duration 0 = no auto-timeout
 
   return (
     <div
-      className={`toast toast-${toast.type} ${isVisible ? 'toast-visible' : ''}`}
+      className={`toast toast-${toast.type} ${isVisible ? 'toast-visible' : ''} ${isPersistent ? 'toast-persistent' : ''}`}
       role={isUrgent ? 'alert' : 'status'}
       aria-atomic="true"
     >
       <div className="toast-content">
+        {isRoast && <span className="toast-roast-icon" aria-hidden="true">GP</span>}
         <span className="toast-message">{toast.message}</span>
         <button className="toast-close" onClick={handleClose} type="button" aria-label="Dismiss notification">
           <span aria-hidden="true">×</span>
         </button>
       </div>
+      {isPersistent && <span className="toast-dismiss-hint" aria-hidden="true">Click × to dismiss</span>}
     </div>
   );
 };
