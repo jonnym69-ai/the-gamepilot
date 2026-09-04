@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LazyImage from "./components/LazyImage";
+import { getGameArtworkPlaceholder } from "./services/GameArtworkService";
 import { Link } from "react-router-dom";
 import NavBar from "./NavBar";
 import SpecCard from "./components/SpecCard";
@@ -713,7 +714,7 @@ function PerformanceCockpit({
                         <LazyImage
                           src={item.gameImage}
                           alt={item.gameName}
-                          placeholder="https://placehold.co/60x60.png?text=?"
+                          placeholder={getGameArtworkPlaceholder({ width: 60, height: 60 })}
                           style={{
                             width: "56px",
                             height: "56px",

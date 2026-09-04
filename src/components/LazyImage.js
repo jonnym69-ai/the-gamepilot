@@ -63,7 +63,7 @@ const isImageFailed = (url) => {
 };
 
 const optimizeImageSrc = (url) => {
-  if (!url || url.includes('placehold.co')) return url;
+  if (!url || url.startsWith('data:') || url.includes('placehold.co')) return url;
   if (url.includes('steamstatic.com')) {
     const separator = url.includes('?') ? '&' : '?';
     return `${url}${separator}quality=80&format=webp`;

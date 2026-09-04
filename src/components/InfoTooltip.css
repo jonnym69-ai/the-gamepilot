@@ -1,0 +1,97 @@
+/* InfoTooltip — hover/focus help cards */
+
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tooltip-card {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--card-bg, #16181f);
+  border: 1px solid var(--border-color, #2a2d35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  color: var(--text-primary, #f4f4f6);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 9500;
+}
+
+.info-tooltip-card::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--border-color, #2a2d35);
+}
+
+.info-tooltip[data-placement='bottom'] .info-tooltip-card {
+  bottom: auto;
+  top: calc(100% + 10px);
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.info-tooltip[data-placement='bottom'] .info-tooltip-card::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--border-color, #2a2d35);
+}
+
+.info-tooltip[data-placement='right'] .info-tooltip-card {
+  bottom: auto;
+  top: 50%;
+  left: calc(100% + 10px);
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.info-tooltip[data-placement='right'] .info-tooltip-card::after {
+  top: 50%;
+  left: auto;
+  right: 100%;
+  transform: translateY(-50%);
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-right-color: var(--border-color, #2a2d35);
+}
+
+.info-tooltip[data-placement='right']:hover .info-tooltip-card,
+.info-tooltip[data-placement='right']:focus-within .info-tooltip-card {
+  transform: translateY(-50%) translateX(0);
+}
+
+.info-tooltip:hover .info-tooltip-card,
+.info-tooltip:focus-within .info-tooltip-card {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.info-tooltip-title {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.info-tooltip-description {
+  display: block;
+  color: var(--text-secondary, #b6b8c2);
+}
+
+body.reduced-motion .info-tooltip-card {
+  transition: none;
+}

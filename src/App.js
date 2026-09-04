@@ -28,6 +28,8 @@ import CaptainLogModal from './components/CaptainLogModal';
 import { AchievementTracker } from './AchievementSystem';
 import { EasterEggService } from './services/EasterEggService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
+import SeasonalHideAndSeek from './components/SeasonalHideAndSeek';
+import GuidedTour from './components/GuidedTour';
 import CalendarXPService from './services/CalendarXPService';
 import { GameCurationService } from './services/GameCurationService';
 import { GameRatingService } from './services/GameRatingService';
@@ -1365,7 +1367,7 @@ function AppContent() {
         <Route path="/profile" element={<Profile library={library} />} />
         <Route path="/year-in-review" element={<YearInReview library={library} />} />
         <Route path="/timeline" element={<Timeline library={library} />} />
-        <Route path="/gaming-links" element={<GamingLinks theme={theme} />} />
+        <Route path="/gaming-links" element={<GamingLinks theme={theme} library={library} onUpdateCoverArt={handleUpdateCoverArt} />} />
         <Route path="/donate" element={<Donate theme={theme} />} />
         <Route path="/library-intelligence" element={<Navigate to="/recommendations" replace />} />
         <Route path="/achievements" element={<Achievements theme={theme} />} />
@@ -1399,6 +1401,8 @@ function AppContent() {
           onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
         />
       )}
+      <SeasonalHideAndSeek />
+      {!loading && <GuidedTour />}
     </div>
   );
 }

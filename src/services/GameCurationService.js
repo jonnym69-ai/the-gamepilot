@@ -12,6 +12,7 @@ const KEYS = {
   completion: 'completionHistoryV1',
   notes: 'librarianNotesV1',
   coverArt: 'coverArtOverridesV1',
+  moodOverride: 'moodOverridesV1',
   sessionNotes: 'sessionNotesV1',
   duplicates: 'duplicateMergesV1',
   scanTimestamps: 'scanTimestampsV1',
@@ -213,6 +214,23 @@ function setCoverArtOverride(gameKey, url) {
   StorageService.set(KEYS.coverArt, all);
 }
 
+// ---------- Mood Override ----------
+
+function getMoodOverride(gameKey) {
+  const all = StorageService.get(KEYS.moodOverride, {});
+  return all[gameKey] || null;
+}
+
+function setMoodOverride(gameKey, mood) {
+  const all = StorageService.get(KEYS.moodOverride, {});
+  if (!mood || !mood.trim()) {
+    delete all[gameKey];
+  } else {
+    all[gameKey] = mood.trim();
+  }
+  StorageService.set(KEYS.moodOverride, all);
+}
+
 // ---------- Session Notes ----------
 
 function getSessionNotes(gameKey) {
@@ -322,6 +340,7 @@ function enrichGame(game) {
   const completion = getGameCompletion(key);
   const notes = getGameNotes(key);
   const coverArt = getCoverArtOverride(key);
+  const moodOverride = getMoodOverride(key);
   const sessionNotesList = getSessionNotes(key);
   const dateAdded = getDateAdded(key);
   const hidden = isGameHidden(key);
@@ -335,6 +354,7 @@ function enrichGame(game) {
     completionHistory: completion.history,
     userNotes: notes,
     coverArtOverride: coverArt,
+    moodOverride,
     sessionNotes: sessionNotesList,
     dateAdded,
     isHidden: hidden,
@@ -390,6 +410,9 @@ export const GameCurationService = {
   // Cover art
   getCoverArtOverride,
   setCoverArtOverride,
+  // Mood override
+  getMoodOverride,
+  setMoodOverride,
   // Session notes
   getSessionNotes,
   addSessionNote,

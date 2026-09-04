@@ -22,6 +22,106 @@
   margin-bottom: 24px;
 }
 
+.habits-seasonal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.habits-seasonal-card {
+  background: var(--card-bg, #1a1d24);
+  border: 1px solid var(--border-color, #2a2d35);
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.habits-seasonal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.habits-seasonal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.habits-seasonal-icon {
+  font-size: 24px;
+}
+
+.habits-seasonal-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--accent-color, #ff6b35);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.habits-seasonal-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary, #fff);
+}
+
+.habits-seasonal-reward-pill {
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.habits-seasonal-desc {
+  font-size: 13px;
+  color: var(--text-secondary, #9aa0a6);
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.habits-seasonal-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.habits-seasonal-progress-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.habits-seasonal-progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.habits-seasonal-progress-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+}
+
 .habits-streak-card {
   display: flex;
   align-items: center;

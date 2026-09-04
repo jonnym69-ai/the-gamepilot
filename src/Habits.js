@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Flame, Target, TrendingUp, Calendar, Clock, Gamepad2, Award,
   ChevronLeft, ChevronRight, Plus, Trash2, Edit3, CheckCircle2,
-  Lightbulb, Star, Trophy
+  Lightbulb, Star, Trophy, Sparkles, Gift
 } from 'lucide-react';
 import { HabitTrackerService } from './services/HabitTrackerService';
+import { SeasonalRewardService } from './services/SeasonalRewardService';
 import { useToast } from './components/Toast';
 import { CelebrationOverlay } from './components/CelebrationEffects';
 import NavBar from './NavBar';
@@ -209,12 +210,63 @@ const Habits = ({ library = [] }) => {
     return [...set].sort();
   }, [library]);
 
+  const seasonalChallenges = useMemo(() => {
+    return SeasonalRewardService.getActiveChallenges().filter((c) => c.isActive);
+  }, []);
+
   return (
     <div className="habits-page">
       <NavBar />
       <div className="habits-content">
         <h1 className="habits-title">Gaming Habits</h1>
         <p className="habits-subtitle">Track your play patterns, set goals, and build better gaming habits.</p>
+
+        {/* Active Seasonal Quest Banner */}
+        {seasonalChallenges.length > 0 && (
+          <div className="habits-seasonal-container">
+            {seasonalChallenges.map((challenge) => (
+              <div 
+                key={challenge.id} 
+                className="habits-seasonal-card"
+                style={{
+                  borderLeft: `4px solid ${challenge.accentColor || 'var(--button-primary-bg)'}`
+                }}
+              >
+                <div className="habits-seasonal-header">
+                  <div className="habits-seasonal-title-wrap">
+                    <span className="habits-seasonal-icon">{challenge.icon || '🌟'}</span>
+                    <div>
+                      <div className="habits-seasonal-badge">
+                        <Sparkles size={12} /> Seasonal Event Quest
+                      </div>
+                      <h3 className="habits-seasonal-name">{challenge.name}</h3>
+                    </div>
+                  </div>
+                  <div className="habits-seasonal-reward-pill">
+                    <Gift size={14} /> Reward: {challenge.reward.name}
+                  </div>
+                </div>
+
+                <p className="habits-seasonal-desc">{challenge.description}</p>
+
+                <div className="habits-seasonal-progress-row">
+                  <div className="habits-seasonal-progress-bar-bg">
+                    <div 
+                      className="habits-seasonal-progress-bar-fill" 
+                      style={{ 
+                        width: `${challenge.progressPercent}%`,
+                        background: challenge.accentColor || 'var(--button-primary-bg)'
+                      }} 
+                    />
+                  </div>
+                  <span className="habits-seasonal-progress-count">
+                    {challenge.unlocked ? 'Unlocked! 🎉' : `${challenge.plays || 0} / ${challenge.requirement.count}`}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Streak Card */}
         <div className="habits-streak-card">

@@ -337,6 +337,7 @@ const addGameIfUnique = (games, game) => {
 
 const NON_GAME_FOLDER_TOKENS = [
   'launcher', 'launchers', 'social club', 'rockstar games launcher',
+  'gog galaxy', 'galaxyclient', 'ubisoft connect', 'ubisoftconnect', 'riot client',
   'commonredist', 'redistributables', 'redistributable', 'installer',
   'installers', 'prerequisite', 'prerequisites', 'prereq', 'support',
   'tools', 'tool', 'cache', 'logs', 'log', 'updater', 'updates',
@@ -838,13 +839,16 @@ const scanGOGLibrary = () => {
         .map((candidate) => String(candidate || '').trim().replace(/^"|"$/g, ''))
         .find((candidate) => candidate && fs.existsSync(candidate));
 
-      if (resolvedInstallDir) {
-        addUniquePath(fallbackPaths, resolvedInstallDir);
-      }
-
       const resolvedName = displayName || path.basename(resolvedInstallDir || '') || '';
       if (!resolvedName || isLikelyNonGameFolder(resolvedName)) {
+        // Launcher client apps (e.g. GOG Galaxy itself) register uninstall
+        // entries here too. Bail before the install dir is added to fallback
+        // scan paths so the client folder is never treated as a game library.
         return;
+      }
+
+      if (resolvedInstallDir) {
+        addUniquePath(fallbackPaths, resolvedInstallDir);
       }
 
       const resolvedExecutablePath = [

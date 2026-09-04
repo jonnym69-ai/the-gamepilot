@@ -50,7 +50,7 @@ const PERIOD_STORY_TITLES = {
   yearly: 'Story of Your Year'
 };
 
-const PERIOD_STORY_SCHEMA_VERSION = 3;
+const PERIOD_STORY_SCHEMA_VERSION = 4;
 
 const GENRE_TEMPLATES = {
   'Survival': {
@@ -294,10 +294,59 @@ const buildGenreArcLine = (genreFingerprint = [], topGames = []) => {
   return `This chapter reads like ${primary.arc || `a ${topGenres[0]} arc`}, drifting through ${topGenres[1]} and ${topGenres[2]} along the way.`;
 };
 
+// Index the library by app id and name so period stories can resolve cover
+// art for games the session log only captured by name. Session-derived
+// coverUrls are frequently empty (Steam games carry just an appid).
+const buildLibraryCoverIndex = () => {
+  try {
+    const library = StorageService.get('library', []);
+    if (!Array.isArray(library)) return new Map();
+    const index = new Map();
+    library.forEach((game) => {
+      if (!game) return;
+      if (game.name) {
+        const nameKey = `name:${String(game.name).toLowerCase()}`;
+        if (!index.has(nameKey)) index.set(nameKey, game);
+      }
+      const appId = game.appid ?? game.app_id ?? game.steamAppId;
+      if (appId !== undefined && appId !== null) {
+        const idKey = `id:${String(appId)}`;
+        if (!index.has(idKey)) index.set(idKey, game);
+      }
+    });
+    return index;
+  } catch {
+    return new Map();
+  }
+};
+
+const resolvePeriodGameCover = (entry, libraryIndex) => {
+  if (entry.coverUrl) return entry.coverUrl;
+  const lookupKeys = [];
+  const gameId = entry.gameId ?? entry.id ?? null;
+  if (gameId !== undefined && gameId !== null) {
+    lookupKeys.push(`id:${String(gameId)}`);
+  }
+  const gameName = entry.gameName || entry.name;
+  if (gameName) {
+    lookupKeys.push(`name:${String(gameName).toLowerCase()}`);
+  }
+  for (const key of lookupKeys) {
+    const match = libraryIndex.get(key);
+    if (match) {
+      const artwork = resolveGameArtwork(match, { surface: 'hero' });
+      if (artwork) return artwork;
+    }
+  }
+  return '';
+};
+
 const getPeriodTopGames = (periodData, limit = 3) => {
   if (!periodData || !Array.isArray(periodData.topGames)) {
     return [];
   }
+
+  const libraryCoverIndex = buildLibraryCoverIndex();
 
   // Prefer recently played games from this period, not lifetime library leaders.
   // Hours still break ties so a heavy recent sit-down can outrank a brief one.
@@ -311,7 +360,7 @@ const getPeriodTopGames = (periodData, limit = 3) => {
         hours: Math.round((entry.minutes || entry.totalPlaytime || 0) / 60),
         minutes: Math.round(entry.minutes || entry.totalPlaytime || 0),
         genre: entry.genre || null,
-        coverUrl: entry.coverUrl || '',
+        coverUrl: resolvePeriodGameCover(entry, libraryCoverIndex),
         lastPlayed: Number.isFinite(lastPlayedMs) ? lastPlayedMs : 0,
         sessions: entry.sessions || entry.playCount || 0
       };
@@ -357,7 +406,7 @@ const getTopGames = (library, limit = 5) => {
       name: game.name || game.title,
       hours: getGameHours(game),
       genre: getGameGenre(game),
-      coverUrl: resolveGameArtwork(game, { surface: 'library_card' })
+      coverUrl: resolveGameArtwork(game, { surface: 'hero' })
     }))
     .filter((game) => game.hours > 0)
     .sort((a, b) => b.hours - a.hours)
@@ -680,7 +729,13 @@ export const GamingStoryService = {
     }
 
     if (publicIdentity?.subTraits?.length > 0) {
-      narrativeParts.push(`Traits: ${publicIdentity.subTraits.slice(0, 3).join(', ')}.`);
+      const traitLabels = publicIdentity.subTraits
+        .map((trait) => (typeof trait === 'string' ? trait : trait?.label))
+        .filter(Boolean)
+        .slice(0, 3);
+      if (traitLabels.length > 0) {
+        narrativeParts.push(`Traits: ${traitLabels.join(', ')}.`);
+      }
     }
 
     narrativeParts.push('That voice is what GamePilot uses to pick — and roast — your next session.');

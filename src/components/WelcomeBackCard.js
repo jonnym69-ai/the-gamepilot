@@ -92,9 +92,14 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
             {/* Anchor game (Last Played) */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: '1' }}>
-              <span style={{ fontSize: '0.65rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a29bfe' }}>
-                ⏱️ Last Played{lastSessionDuration ? ` · ${lastSessionDuration}` : ''}
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#a29bfe' }}>
+                ⏱️ Last Played
               </span>
+              {lastSessionDuration && (
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+                  {lastSessionDuration}
+                </span>
+              )}
               <img
                 src={anchorArt}
                 alt={anchorGame?.name || 'anchor'}

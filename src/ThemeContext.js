@@ -3,6 +3,7 @@ import moodThemes from './themes/moodThemes.json';
 import { AchievementTracker } from './AchievementSystem';
 import StorageService from './services/StorageService';
 import InterfacePreferencesService from './services/InterfacePreferencesService';
+import { SeasonalRewardService } from './services/SeasonalRewardService';
 
 // Helper function to determine if text should be white or based on theme color
 const getContrastColor = (bgColor) => {
@@ -261,6 +262,15 @@ export const ThemeProvider = ({ children }) => {
 
     if (savedTheme) {
       console.warn(`Invalid saved theme '${savedTheme}', falling back to dark. Available themes:`, Object.keys(allThemes));
+    }
+
+    // Check if autoSeasonalTheme is enabled
+    const autoSeasonal = StorageService.getString('autoSeasonalTheme');
+    if (autoSeasonal === 'true') {
+      const seasonalTheme = SeasonalRewardService.getSeasonThemeId();
+      if (seasonalTheme && allThemes[seasonalTheme]) {
+        return seasonalTheme;
+      }
     }
 
     return 'dark';

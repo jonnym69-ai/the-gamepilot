@@ -1,0 +1,221 @@
+.energy-vibe-picker {
+  background: var(--card-bg, rgba(20, 24, 33, 0.7));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.vibe-header {
+  margin-bottom: 16px;
+}
+
+.vibe-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.vibe-icon-sparkle {
+  color: var(--accent-primary, #ff6b35);
+}
+
+.vibe-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+}
+
+.vibe-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.vibe-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.vibe-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
+  color: var(--text-primary, #e2e8f0);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vibe-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--vibe-accent, var(--accent-primary, #ff6b35));
+}
+
+.vibe-tab-btn.active {
+  background: color-mix(in srgb, var(--vibe-accent, #ff6b35) 15%, transparent);
+  border-color: var(--vibe-accent, var(--accent-primary, #ff6b35));
+  color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--vibe-accent, #ff6b35) 20%, transparent);
+}
+
+.vibe-active-banner {
+  border-left: 3px solid var(--accent-primary, #ff6b35);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.vibe-active-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.vibe-active-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.vibe-games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.vibe-game-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.vibe-game-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-primary, #ff6b35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.vibe-card-cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.vibe-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.vibe-game-card:hover .vibe-card-img {
+  transform: scale(1.05);
+}
+
+.vibe-card-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.vibe-card-quick-launch {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-primary, #ff6b35);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+}
+
+.vibe-game-card:hover .vibe-card-quick-launch {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.vibe-card-quick-launch:hover {
+  transform: scale(1.15);
+  background: #ff8c42;
+}
+
+.vibe-card-details {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vibe-card-name {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vibe-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.vibe-card-genre {
+  color: var(--accent-primary, #ff6b35);
+  font-weight: 500;
+}
+
+.vibe-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--text-secondary, #94a3b8);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .vibe-games-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

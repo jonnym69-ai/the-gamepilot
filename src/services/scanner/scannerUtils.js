@@ -77,6 +77,7 @@ const queryRegistryValue = (registryKey, valueName) => {
 
 const NON_GAME_FOLDER_TOKENS = [
   'launcher', 'launchers', 'social club', 'rockstar games launcher',
+  'gog galaxy', 'galaxyclient', 'ubisoft connect', 'ubisoftconnect', 'riot client',
   'commonredist', 'redistributables', 'redistributable', 'installer',
   'installers', 'prerequisite', 'prerequisites', 'prereq', 'support',
   'tools', 'tool', 'cache', 'logs', 'log', 'updater', 'updates',

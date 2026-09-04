@@ -1,0 +1,193 @@
+.circadian-clock-panel {
+  background: var(--card-bg, rgba(20, 24, 33, 0.7));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.circadian-header {
+  margin-bottom: 20px;
+}
+
+.circadian-badge-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 107, 53, 0.12);
+  color: var(--accent-primary, #ff6b35);
+  margin-bottom: 8px;
+}
+
+.circadian-icon {
+  color: var(--accent-primary, #ff6b35);
+}
+
+.circadian-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.circadian-title {
+  margin: 4px 0 6px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary, #f8fafc);
+}
+
+.circadian-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.5;
+}
+
+.circadian-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.circadian-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.circadian-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-glow, var(--accent-primary, #ff6b35));
+}
+
+.circadian-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.circadian-card-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 500;
+}
+
+.circadian-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+}
+
+.circadian-card-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.circadian-card-hours {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary, #f8fafc);
+}
+
+.circadian-card-percent {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.circadian-progress-track {
+  height: 6px;
+  width: 100%;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.circadian-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.circadian-insights-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.circadian-insight-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.insight-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.insight-icon.flame {
+  color: #ef4444;
+}
+
+.insight-icon.cadence {
+  color: #38bdf8;
+}
+
+.insight-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.insight-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary, #94a3b8);
+  letter-spacing: 0.04em;
+}
+
+.insight-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+}
+
+.insight-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.circadian-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  color: var(--text-secondary, #94a3b8);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .circadian-insights-row {
+    grid-template-columns: 1fr;
+  }
+}

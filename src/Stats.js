@@ -13,6 +13,7 @@ import { HabitTrackerService } from './services/HabitTrackerService';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
 import TimeOfDayHeatmap from './components/TimeOfDayHeatmap';
+import CircadianClockPanel from './components/CircadianClockPanel';
 import CollapsibleSection from './components/CollapsibleSection';
 import { ProfileService } from './services/ProfileService';
 import { LocalShareService } from './services/LocalShareService';
@@ -510,13 +511,14 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               }}
             />
           </div>
+
           <div className="habit-insights-grid">
-            <div className="habit-insight-card habit-insight-featured">
+            <div className="habit-insight-card">
               <span>Longest session</span>
               <strong>{habitInsights.longestSession?.gameName || '—'}</strong>
               <p>
                 {habitInsights.longestSession
-                  ? `${habitInsights.longestSession.playtimeMinutes} min${habitInsights.longestSession.dateLabel ? ` · ${habitInsights.longestSession.dateLabel}` : ''}`
+                  ? `${habitInsights.longestSession.playtimeMinutes} min (${Math.round((habitInsights.longestSession.playtimeMinutes / 60) * 10) / 10}h)`
                   : 'Finish a tracked session to reveal your biggest single sitting.'}
               </p>
             </div>
@@ -554,6 +556,8 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               <p>Games with more than one tracked session in this period.</p>
             </div>
           </div>
+
+          <CircadianClockPanel library={safeLibrary} />
         </CollapsibleSection>
 
         <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>

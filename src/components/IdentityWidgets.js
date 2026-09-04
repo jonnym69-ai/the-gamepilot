@@ -11,6 +11,11 @@ import { getBlendedPlaytimeMinutes } from '../services/gameClassification';
 import { MiniProgressRing, formatSessionStyle } from './HomeSectionPrimitives';
 import SessionRepository from '../services/SessionRepository';
 import PeriodChampionService from '../services/PeriodChampionService';
+import { LocalShareService } from '../services/LocalShareService';
+import { ProfileService } from '../services/ProfileService';
+import ShareMenu from './ShareMenu';
+import ChampionShareCard from './ChampionShareCard';
+import html2canvas from 'html2canvas';
 
 function formatDuration(minutes) {
   if (!minutes || minutes <= 0) return null;
@@ -576,6 +581,10 @@ const formatChampionHours = (minutes) => {
 
 export function CurrentChampionCard({ library = [] }) {
   const navigate = useNavigate();
+  const shareCardRef = React.useRef(null);
+  const [isCapturing, setIsCapturing] = React.useState(false);
+  const username = ProfileService.getCurrentUsername();
+
   const weekChampion = React.useMemo(
     () => PeriodChampionService.getLiveChampion('week', { library }),
     [library]
@@ -600,9 +609,60 @@ export function CurrentChampionCard({ library = [] }) {
   return (
     <div className="results-section">
       <div className="result-card champion-card">
-        <div className="champion-card-header">
-          <h3 className="result-title">🏆 This Week's Champion</h3>
-          {isLive && <span className="champion-live-badge">Live</span>}
+        <div className="champion-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3 className="result-title">🏆 This Week's Champion</h3>
+            {isLive && <span className="champion-live-badge">Live</span>}
+          </div>
+          <ShareMenu
+            triggerLabel="Share Champion"
+            imageAvailable
+            disabled={isCapturing}
+            onCopyText={async () => {
+              const text = `🏆 My Weekly Champion on GamePilot: ${weekChampion.game?.name || 'Unknown'} (${hours} played)!\n"${roastLine || ''}"\nPowered by GamePilot`;
+              return LocalShareService.copyTextToClipboard(text);
+            }}
+            onCopyImage={async () => {
+              if (!shareCardRef.current) return false;
+              setIsCapturing(true);
+              try {
+                const canvas = await html2canvas(shareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                if (!blob) return false;
+                return LocalShareService.copyImageToClipboard(blob);
+              } catch (err) {
+                console.error(err);
+                return false;
+              } finally {
+                setIsCapturing(false);
+              }
+            }}
+            onSaveImage={async () => {
+              if (!shareCardRef.current) return;
+              setIsCapturing(true);
+              try {
+                const canvas = await html2canvas(shareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                if (!blob) return;
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `champion-${weekChampion.game?.name || 'game'}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setIsCapturing(false);
+              }
+            }}
+            onShareText={async (channel) => {
+              const text = `🏆 My Weekly Champion on GamePilot: ${weekChampion.game?.name || 'Unknown'} (${hours} played)!\n"${roastLine || ''}"\nPowered by GamePilot`;
+              return LocalShareService.openShareIntent(channel, text);
+            }}
+          />
         </div>
         <div className="champion-card-body">
           <div className="champion-portrait">
@@ -671,6 +731,17 @@ export function CurrentChampionCard({ library = [] }) {
         >
           View full timeline →
         </button>
+
+        {/* Hidden Render Target for Champion Share Image */}
+        <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+          <div ref={shareCardRef}>
+            <ChampionShareCard
+              champion={weekChampion}
+              periodType="week"
+              username={username}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@
  */
 
 import CalendarXPService from './CalendarXPService';
-import { SeasonalRewardService } from './SeasonalRewardService';
+import { SeasonalRewardService, isEasterActive, getEasterDate } from './SeasonalRewardService';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -80,24 +80,24 @@ export const SpecialEventsService = {
       events.push({
         id: 'christmas',
         name: 'Christmas Day',
-        description: 'Holiday XP bundle plus 5 free spins.',
+        description: 'Holiday XP bundle plus a festive Winter Frost theme challenge.',
         icon: 'christmas',
         category: 'Holiday',
         active: days === 0,
         daysUntil: days,
         targetDate: target,
         xpReward: 650,
-        bonus: '+5 free spins'
+        bonus: 'Winter Frost theme'
       });
     }
 
-    // Halloween (Oct 31 — but seasonal event is whole of October)
+    // Halloween (Oct 31 — active October only)
     {
       const target = nextOccurrence(9, 31);
       const days = daysBetween(today, target);
       events.push({
         id: 'halloween',
-        name: 'Halloween Event',
+        name: 'Haunted Harvest',
         description: 'Spooky season XP bonus + Haunted Harvest theme challenge (5 horror games unlocks Autumn Harvest theme).',
         icon: 'halloween',
         category: 'Seasonal',
@@ -105,18 +105,38 @@ export const SpecialEventsService = {
         daysUntil: days,
         targetDate: target,
         xpReward: 200,
-        bonus: 'Autumn Harvest theme (5 horror games)'
+        bonus: 'Autumn Harvest theme'
       });
     }
 
-    // Winter (Dec, +300 XP) — separate from Christmas
+    // Easter (dynamic — 30 days before Easter Sunday through Easter day)
+    {
+      const easterThisYear = getEasterDate(today.getFullYear());
+      const easterNextYear = getEasterDate(today.getFullYear() + 1);
+      const target = easterThisYear > today ? easterThisYear : easterNextYear;
+      const days = daysBetween(today, target);
+      events.push({
+        id: 'easter',
+        name: 'Easter Egg Hunt',
+        description: 'Discover hidden indie gems and puzzle games to claim extra bonus XP.',
+        icon: 'easter',
+        category: 'Holiday',
+        active: isEasterActive(today),
+        daysUntil: days,
+        targetDate: target,
+        xpReward: 350,
+        bonus: 'Egg Hunter Badge'
+      });
+    }
+
+    // Winter (December only)
     {
       const target = nextOccurrence(11, 1);
       const days = daysBetween(today, target);
       events.push({
         id: 'winter',
         name: 'Winter Wonderland',
-        description: 'December XP bonus + Winter Frost theme challenge (5 games during holidays).',
+        description: 'Holiday XP bonus + Winter Frost theme challenge (5 games during winter season).',
         icon: 'winter',
         category: 'Seasonal',
         active: today.getMonth() === 11,
@@ -127,17 +147,17 @@ export const SpecialEventsService = {
       });
     }
 
-    // Spring (Apr, +200 XP)
+    // Spring (Mar-May)
     {
-      const target = nextOccurrence(3, 1);
+      const target = nextOccurrence(2, 1);
       const days = daysBetween(today, target);
       events.push({
         id: 'spring',
         name: 'Spring Renewal',
-        description: 'April XP bonus + Spring Bloom theme challenge (3 new games).',
+        description: 'Spring XP bonus + Spring Bloom theme challenge (3 new games).',
         icon: 'spring',
         category: 'Seasonal',
-        active: today.getMonth() === 3,
+        active: [2, 3, 4].includes(today.getMonth()),
         daysUntil: days,
         targetDate: target,
         xpReward: 200,
@@ -145,17 +165,17 @@ export const SpecialEventsService = {
       });
     }
 
-    // Summer (Jul, +250 XP)
+    // Summer (Jun-Aug)
     {
-      const target = nextOccurrence(6, 1);
+      const target = nextOccurrence(5, 1);
       const days = daysBetween(today, target);
       events.push({
         id: 'summer',
         name: 'Summer Sizzle',
-        description: 'July XP bonus + Summer Heat theme challenge (5 action/shooter games).',
+        description: 'Summer XP bonus + Summer Heat theme challenge (5 action/shooter games).',
         icon: 'summer',
         category: 'Seasonal',
-        active: today.getMonth() === 6,
+        active: [5, 6, 7].includes(today.getMonth()),
         daysUntil: days,
         targetDate: target,
         xpReward: 250,
@@ -199,6 +219,7 @@ export const SpecialEventsService = {
           if (event.id === 'winter') return c.id === 'winter_holiday';
           if (event.id === 'spring') return c.id === 'spring_bloom';
           if (event.id === 'summer') return c.id === 'summer_heat';
+          if (event.id === 'easter') return c.id === 'easter';
           return false;
         });
         if (challenge) {

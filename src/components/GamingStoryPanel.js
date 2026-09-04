@@ -23,6 +23,7 @@ function GamingStoryPanel({ story }) {
   const safeGenreFingerprint = Array.isArray(genreFingerprint) ? genreFingerprint : [];
   const safeMoodFingerprint = Array.isArray(moodFingerprint) ? moodFingerprint : [];
   const safeTasteClusters = Array.isArray(tasteClusters) ? tasteClusters : [];
+  const coverGames = safeTopGames.filter((game) => game && game.coverUrl).slice(0, 3);
   const quietPeriodLabel = {
     daily: 'day',
     weekly: 'week',
@@ -32,20 +33,22 @@ function GamingStoryPanel({ story }) {
 
   return (
     <div className="gaming-story-panel">
-      <div className="gaming-story-panel-covers">
-        {safeTopGames.map((game, index) => (
-          <div
-            key={game.name}
-            className="gaming-story-panel-cover"
-            style={{
-              backgroundImage: `url(${game.coverUrl})`,
-              zIndex: safeTopGames.length - index
-            }}
-            aria-hidden="true"
-          />
-        ))}
-        <div className="gaming-story-panel-gradient" aria-hidden="true" />
-      </div>
+      {coverGames.length > 0 && (
+        <div className="gaming-story-panel-covers">
+          {coverGames.map((game, index) => (
+            <div
+              key={game.name}
+              className="gaming-story-panel-cover"
+              style={{
+                backgroundImage: `url(${game.coverUrl})`,
+                zIndex: coverGames.length - index
+              }}
+              aria-hidden="true"
+            />
+          ))}
+          <div className="gaming-story-panel-gradient" aria-hidden="true" />
+        </div>
+      )}
 
       <div className="gaming-story-panel-content">
         <div className="gaming-story-panel-header">

@@ -14,6 +14,7 @@ import { getFamiliarityBias, setFamiliarityBias } from './services/Recommendatio
 import { RetentionQuestService } from './services/RetentionQuestService';
 import { getGameArtworkPlaceholder, resolveGameArtwork, resolveGameArtworkBundle } from './services/GameArtworkService';
 import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
+import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import './Home.css';
 import './LibraryValue.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
@@ -21,8 +22,14 @@ import LazyImage from './components/LazyImage';
 import WishlistSection from './components/WishlistSection';
 import NostalgiaCard from './components/NostalgiaCard';
 import PatchNotesBadge from './components/PatchNotesBadge';
+import EnergyVibePicker from './components/EnergyVibePicker';
 import LibrarianHubCarousel from './components/LibrarianHubCarousel';
 import WeeklyRecapNudge from './components/WeeklyRecapNudge';
+import WeeklyDigestCard from './components/WeeklyDigestCard';
+import MilestoneToast from './components/MilestoneToast';
+import SmartNudgeCard from './components/SmartNudgeCard';
+import { MilestoneService } from './services/MilestoneService';
+import './components/EngagementWidgets.css';
 import WelcomeBackCard from './components/WelcomeBackCard';
 import { SessionService } from './services/SessionService';
 import { WelcomeBackService } from './services/WelcomeBackService';
@@ -63,6 +70,59 @@ import {
 // Use centralized platform constants
 const platformIcons = PLATFORM_ICONS;
 const platformColors = PLATFORM_COLORS;
+
+const HOME_LAYOUT_PRESETS = Object.freeze({
+  mission_control: {
+    heroPadding: '40px 24px 32px',
+    heroSubtitleSize: '1.35rem',
+    sectionGap: '24px',
+    cardGap: '16px',
+    contentMaxWidth: 'none',
+    heroDisplay: 'flex',
+    widgetsDisplay: 'block',
+    twoColumn: false
+  },
+  focus_finder: {
+    heroPadding: '20px 24px 16px',
+    heroSubtitleSize: '1.05rem',
+    sectionGap: '14px',
+    cardGap: '10px',
+    contentMaxWidth: '820px',
+    heroDisplay: 'flex',
+    widgetsDisplay: 'none',
+    twoColumn: false
+  },
+  dashboard_split: {
+    heroPadding: '32px 24px 24px',
+    heroSubtitleSize: '1.25rem',
+    sectionGap: '20px',
+    cardGap: '14px',
+    contentMaxWidth: 'none',
+    heroDisplay: 'flex',
+    widgetsDisplay: 'block',
+    twoColumn: true
+  },
+  streamer_overlay: {
+    heroPadding: '16px 24px 12px',
+    heroSubtitleSize: '0.95rem',
+    sectionGap: '12px',
+    cardGap: '10px',
+    contentMaxWidth: '900px',
+    heroDisplay: 'flex',
+    widgetsDisplay: 'none',
+    twoColumn: false
+  },
+  arcade_cabinet: {
+    heroPadding: '48px 24px 36px',
+    heroSubtitleSize: '1.5rem',
+    sectionGap: '28px',
+    cardGap: '20px',
+    contentMaxWidth: 'none',
+    heroDisplay: 'flex',
+    widgetsDisplay: 'block',
+    twoColumn: false
+  }
+});
 
 function Home({
   mode = 'home',
@@ -106,9 +166,31 @@ function Home({
   const [buyRecommendations, setBuyRecommendations] = useState(null);
   const [buyRecommendationsLoading, setBuyRecommendationsLoading] = useState(false);
   const [surpriseShelfIndex, setSurpriseShelfIndex] = useState(null);
+  const [activeMilestones, setActiveMilestones] = useState([]);
+  const [homeLayoutId, setHomeLayoutId] = useState(() => {
+    try {
+      const customization = ProgressionUnlockService.getRewardPresentationCustomization();
+      return customization?.selectedHomeLayout || 'mission_control';
+    } catch {
+      return 'mission_control';
+    }
+  });
   const [surpriseCycling, setSurpriseCycling] = useState(false);
   const [welcomeBackData, setWelcomeBackData] = useState(null);
   const [welcomeBackVisible, setWelcomeBackVisible] = useState(false);
+
+  useEffect(() => {
+    const handlePresentationUpdate = () => {
+      try {
+        const customization = ProgressionUnlockService.getRewardPresentationCustomization();
+        setHomeLayoutId(customization?.selectedHomeLayout || 'mission_control');
+      } catch {
+        // keep current layout
+      }
+    };
+    window.addEventListener('gamepilot:reward-presentation-updated', handlePresentationUpdate);
+    return () => window.removeEventListener('gamepilot:reward-presentation-updated', handlePresentationUpdate);
+  }, []);
 
   const safeLibrary = useMemo(() => (Array.isArray(library) ? library : []), [library]);
 
@@ -1157,15 +1239,41 @@ function Home({
     setWelcomeBackVisible(false);
   }, []);
 
+  // Check for milestones when library or sessions change
+  useEffect(() => {
+    if (!Array.isArray(library) || library.length === 0) return;
+    const reached = MilestoneService.checkMilestones(library);
+    if (reached.length > 0) {
+      setActiveMilestones(reached);
+    }
+  }, [library]);
+
   const handleOptOutWelcomeBack = useCallback(() => {
     SessionService.setWelcomeBackOptedOut(true);
   }, []);
 
+  const homeLayoutPreset = HOME_LAYOUT_PRESETS[homeLayoutId] || HOME_LAYOUT_PRESETS.mission_control;
+  const homeLayoutClass = `home-layout-${homeLayoutId}`;
+
+  const homeRootStyle = {
+    '--home-hero-padding': homeLayoutPreset.heroPadding,
+    '--home-hero-subtitle-size': homeLayoutPreset.heroSubtitleSize,
+    '--home-section-gap': homeLayoutPreset.sectionGap,
+    '--home-card-gap': homeLayoutPreset.cardGap,
+    '--home-content-max-width': homeLayoutPreset.contentMaxWidth
+  };
+
   return (
     <div
-      className={`home-page ${theme}`}
+      className={`home-page ${theme} ${homeLayoutClass}`}
+      style={homeRootStyle}
     >
       <NavBar />
+
+      <MilestoneToast
+        milestones={activeMilestones}
+        onDismiss={() => setActiveMilestones([])}
+      />
       
       {/* Hero Section */}
       <div className="home-hero">
@@ -1255,17 +1363,22 @@ function Home({
         />
       )}
 
-      <RivalryBanner />
+      <div className="home-engagement-widgets">
+        <RivalryBanner />
 
-      <StreakBadge />
+        <StreakBadge />
+
+        <NostalgiaCard library={library} />
+        <PatchNotesBadge library={library} />
+        <WeeklyRecapNudge />
+
+        <WeeklyDigestCard library={library} />
+
+        <SmartNudgeCard library={library} onLaunchGame={onLaunchGame} />
+      </div>
 
       {isDashboard ? (
         <>
-          <NostalgiaCard library={library} />
-          <PatchNotesBadge library={library} />
-
-          <WeeklyRecapNudge />
-
           <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
 
           {similarToRecentShelf}
@@ -1343,6 +1456,13 @@ function Home({
             formatLastPlayed={formatLastPlayed}
           />
 
+          {Array.isArray(library) && library.length > 0 && (
+            <EnergyVibePicker
+              library={library}
+              onLaunchGame={onLaunchGame}
+            />
+          )}
+
           <CollapsibleSection
             title="Tools & Recommendations"
             subtitle="Mood filters, Perfect Play, Surprise Me, and Rediscover."
@@ -1415,6 +1535,20 @@ function Home({
           <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
 
           {similarToRecentShelf}
+
+          {Array.isArray(library) && library.length > 0 && (
+            <EnergyVibePicker
+              library={library}
+              onLaunchGame={onLaunchGame}
+            />
+          )}
+
+          <FamiliarOrFreshNudge
+            library={library}
+            onLaunchGame={onLaunchGame}
+            formatPlaytime={formatPlaytime}
+            formatLastPlayed={formatLastPlayed}
+          />
 
           <HomeSection
             eyebrow="Your Library"

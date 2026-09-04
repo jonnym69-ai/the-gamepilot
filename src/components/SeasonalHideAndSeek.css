@@ -1,0 +1,208 @@
+/* Seasonal Hide & Seek — floating items + tracker badge */
+
+.seasonal-hide-seek-item {
+  position: fixed;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  opacity: 0.35;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: seasonal-hide-seek-float 4s ease-in-out infinite;
+  pointer-events: auto;
+}
+
+.seasonal-hide-seek-item:hover {
+  opacity: 1;
+  transform: scale(1.3);
+  animation-play-state: paused;
+}
+
+.seasonal-hide-seek-emoji {
+  font-size: 20px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes seasonal-hide-seek-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Tracker badge — fixed bottom right */
+.seasonal-hide-seek-tracker {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 220px;
+  background: var(--card-bg, #1a1d24);
+  border: 1px solid var(--border-color, #2a2d35);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  z-index: 10000;
+  animation: seasonal-hide-seek-slide-in 0.4s ease;
+}
+
+@keyframes seasonal-hide-seek-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.seasonal-hide-seek-tracker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.seasonal-hide-seek-tracker-icon {
+  font-size: 20px;
+}
+
+.seasonal-hide-seek-tracker-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.seasonal-hide-seek-tracker-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seasonal-hide-seek-tracker-sub {
+  font-size: 11px;
+  color: var(--text-secondary, #9aa0a6);
+}
+
+.seasonal-hide-seek-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #9aa0a6);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.seasonal-hide-seek-dismiss:hover {
+  color: var(--text-primary, #fff);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.seasonal-hide-seek-tracker-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.seasonal-hide-seek-tracker-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff6b35, #f093fb);
+  transition: width 0.4s ease;
+}
+
+.seasonal-hide-seek-tracker-items {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.seasonal-hide-seek-tracker-dot {
+  font-size: 14px;
+  opacity: 0.25;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.seasonal-hide-seek-tracker-dot.found {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Celebration toast */
+.seasonal-hide-seek-toast {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--card-bg, #1a1d24);
+  border: 1px solid var(--border-color, #2a2d35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  animation: seasonal-hide-seek-toast-in 0.3s ease;
+  max-width: 280px;
+}
+
+.seasonal-hide-seek-toast.complete {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), var(--card-bg, #1a1d24));
+}
+
+@keyframes seasonal-hide-seek-toast-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.seasonal-hide-seek-toast-emoji {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.seasonal-hide-seek-toast div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.seasonal-hide-seek-toast strong {
+  font-size: 14px;
+  color: var(--text-primary, #fff);
+}
+
+.seasonal-hide-seek-toast span {
+  font-size: 12px;
+  color: var(--text-secondary, #9aa0a6);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .seasonal-hide-seek-tracker {
+    width: 180px;
+    bottom: 12px;
+    right: 12px;
+  }
+
+  .seasonal-hide-seek-emoji {
+    font-size: 16px;
+  }
+}
+
+/* Reduced motion */
+body.reduced-motion .seasonal-hide-seek-item {
+  animation: none;
+}
+
+body.reduced-motion .seasonal-hide-seek-tracker {
+  animation: none;
+}
+
+body.reduced-motion .seasonal-hide-seek-toast {
+  animation: none;
+}

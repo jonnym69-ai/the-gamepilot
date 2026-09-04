@@ -39,6 +39,14 @@ describe('Scanner Utils', () => {
       expect(isLikelyNonGameFolder('Social Club')).toBe(true);
     });
 
+    test('returns true for launcher client apps', () => {
+      expect(isLikelyNonGameFolder('GOG Galaxy')).toBe(true);
+      expect(isLikelyNonGameFolder('GOG Galaxy 2.0')).toBe(true);
+      expect(isLikelyNonGameFolder('GalaxyClient')).toBe(true);
+      expect(isLikelyNonGameFolder('Ubisoft Connect')).toBe(true);
+      expect(isLikelyNonGameFolder('Riot Client')).toBe(true);
+    });
+
     test('returns true for redistributable folders', () => {
       expect(isLikelyNonGameFolder('CommonRedist')).toBe(true);
       expect(isLikelyNonGameFolder('redistributables')).toBe(true);
@@ -49,6 +57,7 @@ describe('Scanner Utils', () => {
       expect(isLikelyNonGameFolder('Elden Ring')).toBe(false);
       expect(isLikelyNonGameFolder('GTA V')).toBe(false);
       expect(isLikelyNonGameFolder('FIFA 24')).toBe(false);
+      expect(isLikelyNonGameFolder('Galaxy on Fire 2')).toBe(false);
     });
   });
 

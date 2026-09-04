@@ -3545,3 +3545,32 @@ body.compact-mode .empty-library-header p {
     animation: none;
   }
 }
+
+/* ===== Polish pass: shared elevation + interaction consistency ===== */
+:root {
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.22), 0 2px 10px rgba(0, 0, 0, 0.12);
+  --elevation-2: 0 2px 6px rgba(0, 0, 0, 0.26), 0 12px 32px rgba(0, 0, 0, 0.18);
+  --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.App .filter-select,
+.App .filter-toggle,
+.App .library-filter-toggle,
+.App select {
+  transition:
+    border-color var(--transition-fast, 0.15s ease),
+    background-color var(--transition-fast, 0.15s ease),
+    box-shadow var(--transition-fast, 0.15s ease),
+    transform var(--transition-fast, 0.15s ease);
+}
+
+.App .filter-select:hover,
+.App select:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.App .filter-select:focus-visible,
+.App select:focus-visible {
+  border-color: var(--accent-primary, #ff6b35);
+}
+

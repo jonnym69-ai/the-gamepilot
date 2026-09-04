@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import NavBar from './NavBar';
-import { ExternalLink, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { ExternalLink, Plus, Trash2, RotateCcw, ImageOff, Upload } from 'lucide-react';
 import StorageService from './services/StorageService';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import { hasMissingCoverArt, fileToCoverDataUri } from './services/GameArtworkService';
+import { PLATFORM_COLORS } from './constants/PlatformConstants';
 import './GamingLinks.css';
 
 const FAVICON_BASE = 'https://www.google.com/s2/favicons?domain=';
@@ -26,6 +28,17 @@ const CATEGORY_COLORS = {
   Other: '#6b7280'
 };
 
+const NOOP = () => {};
+
+// External search destinations for the Cover Art Rescue portal. GamePilot never
+// calls these itself — links open in the user's browser, keeping the app's
+// no-account, no-data-collection promise intact.
+const COVER_ART_SEARCH_TARGETS = (gameName) => ([
+  { id: 'steamgriddb', label: 'SteamGridDB', url: `https://www.steamgriddb.com/search/grids/${encodeURIComponent(gameName)}` },
+  { id: 'steam', label: 'Steam Store', url: `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}` },
+  { id: 'google', label: 'Google Images', url: `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(`${gameName} game cover art`)}` }
+]);
+
 const getEquippedLayout = () => {
   try {
     const customization = ProgressionUnlockService.getRewardPresentationCustomization();
@@ -48,9 +61,12 @@ const getEquippedFeature = () => {
   }
 };
 
-function GamingLinks({ theme = 'dark' }) {
+function GamingLinks({ theme = 'dark', library = [], onUpdateCoverArt = NOOP }) {
   const [equippedLayout, setEquippedLayout] = useState(() => getEquippedLayout());
   const [equippedFeature, setEquippedFeature] = useState(() => getEquippedFeature());
+  const [coverUrlDrafts, setCoverUrlDrafts] = useState({});
+  const [coverBusyNames, setCoverBusyNames] = useState(() => new Set());
+  const [coverRescueError, setCoverRescueError] = useState('');
 
   useEffect(() => {
     const handler = () => {
@@ -146,6 +162,45 @@ function GamingLinks({ theme = 'dark' }) {
     });
     return groups;
   }, [links]);
+
+  const missingCoverGames = useMemo(() => (
+    Array.isArray(library)
+      ? library.filter((game) => game && !game.isHidden && hasMissingCoverArt(game))
+      : []
+  ), [library]);
+
+  const handleSetCoverUrl = (game) => {
+    const url = String(coverUrlDrafts[game.name] || '').trim();
+    if (!game?.name || !url) {
+      return;
+    }
+    onUpdateCoverArt(game.name, url);
+    setCoverUrlDrafts((prev) => ({ ...prev, [game.name]: '' }));
+    setCoverRescueError('');
+  };
+
+  const handleCoverFilePicked = async (game, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !game?.name) {
+      return;
+    }
+
+    setCoverBusyNames((prev) => new Set(prev).add(game.name));
+    try {
+      const dataUri = await fileToCoverDataUri(file);
+      onUpdateCoverArt(game.name, dataUri);
+      setCoverRescueError('');
+    } catch (error) {
+      setCoverRescueError(error?.message || 'Could not use that image.');
+    } finally {
+      setCoverBusyNames((prev) => {
+        const next = new Set(prev);
+        next.delete(game.name);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className={`${pageClassName} gl-page`}>
@@ -248,6 +303,87 @@ function GamingLinks({ theme = 'dark' }) {
             </div>
           </div>
         ))}
+
+        {/* Cover Art Rescue portal: surfaced games with no resolvable art */}
+        {missingCoverGames.length > 0 && (
+          <div className="gl-category gl-cover-rescue">
+            <div className="gl-category-header">
+              <span className="gl-category-badge gl-cover-rescue-badge">
+                <ImageOff size={14} /> Cover Art Rescue
+              </span>
+              <span className="gl-category-count">
+                {missingCoverGames.length} game{missingCoverGames.length !== 1 ? 's' : ''} missing art
+              </span>
+            </div>
+            <p className="gl-cover-rescue-hint">
+              These scanned games have no cover art. Search for art in your browser, then paste the
+              image URL or upload a local file. Covers are stored on this machine only and always win
+              over scanner art.
+            </p>
+            <div className="gl-cover-list">
+              {missingCoverGames.map((game) => {
+                const platformLabel = game.brandPlatform || game.platform || 'Unknown';
+                const draftValue = String(coverUrlDrafts[game.name] || '');
+                return (
+                  <div key={game.name} className="gl-cover-row">
+                    <div className="gl-cover-game">
+                      <span
+                        className="gl-cover-platform"
+                        style={{ backgroundColor: PLATFORM_COLORS[platformLabel] || PLATFORM_COLORS.Unknown }}
+                      >
+                        {platformLabel}
+                      </span>
+                      <span className="gl-cover-name" title={game.name}>{game.name}</span>
+                    </div>
+                    <div className="gl-cover-search">
+                      {COVER_ART_SEARCH_TARGETS(game.name).map((target) => (
+                        <a
+                          key={target.id}
+                          href={target.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="gl-cover-search-btn"
+                        >
+                          <ExternalLink size={12} /> {target.label}
+                        </a>
+                      ))}
+                    </div>
+                    <div className="gl-cover-set">
+                      <input
+                        type="text"
+                        placeholder="Paste image URL..."
+                        value={draftValue}
+                        onChange={(e) => setCoverUrlDrafts((prev) => ({ ...prev, [game.name]: e.target.value }))}
+                        className="gl-form-input url gl-cover-input"
+                      />
+                      <button
+                        onClick={() => handleSetCoverUrl(game)}
+                        disabled={!draftValue.trim()}
+                        className="gl-form-btn gl-cover-set-btn"
+                      >
+                        Set
+                      </button>
+                      <label
+                        className={`gl-form-btn gl-cover-upload-btn${coverBusyNames.has(game.name) ? ' is-busy' : ''}`}
+                        title="Pick a local image file — stored offline in your GamePilot data"
+                      >
+                        <Upload size={14} />
+                        {coverBusyNames.has(game.name) ? 'Working...' : 'Upload'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleCoverFilePicked(game, e)}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {coverRescueError && <p className="gl-cover-rescue-error">{coverRescueError}</p>}
+          </div>
+        )}
 
         {/* Control buttons */}
         <div className="gl-controls">

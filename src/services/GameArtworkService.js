@@ -111,6 +111,15 @@ export const resolveGameArtwork = (game = {}, options = {}) => {
   return candidates[0] || '';
 };
 
+const escapeSvgText = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&apos;');
+
+// Placeholder art is generated inline as an SVG data URI so blank tiles render
+// with zero network calls — the app stays fully usable offline.
 export const getGameArtworkPlaceholder = (options = {}) => {
   const game = options.game || {};
   const surface = options.surface || 'library_card';
@@ -120,10 +129,71 @@ export const getGameArtworkPlaceholder = (options = {}) => {
   const dimensions = SURFACE_DIMENSIONS[surface] || SURFACE_DIMENSIONS.library_card;
   const width = options.width || dimensions.width;
   const height = options.height || dimensions.height;
-  const bgColor = fallbackColor.replace('#', '');
+  const fontSize = Math.max(12, Math.round(Math.min(width, height) * 0.42));
 
-  return `https://placehold.co/${width}x${height}/${bgColor}/ffffff?text=${encodeURIComponent(icon)}`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img"><rect width="${width}" height="${height}" fill="${fallbackColor}"/><rect width="${width}" height="${height}" fill="rgba(0,0,0,0.28)"/><text x="50%" y="52%" fill="rgba(255,255,255,0.92)" font-family="'Segoe UI Emoji','Segoe UI',Arial,sans-serif" font-size="${fontSize}" text-anchor="middle" dominant-baseline="central">${escapeSvgText(icon)}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 };
+
+// A game "misses" cover art when nothing can be resolved for it: no custom
+// override, no stored image URL, and no Steam appid to build a CDN link from.
+export const hasMissingCoverArt = (game) => {
+  if (!game || typeof game !== 'object') {
+    return true;
+  }
+  try {
+    return !resolveGameArtwork(game);
+  } catch {
+    return true;
+  }
+};
+
+// Reads a local image file and downscales it to a compact JPEG data URI so
+// custom covers work fully offline without bloating local storage. Falls back
+// to the raw data URI if canvas processing is unavailable.
+export const fileToCoverDataUri = (file, { maxDimension = 600, quality = 0.82 } = {}) => new Promise((resolve, reject) => {
+  if (!file || !/^image\//i.test(String(file.type || ''))) {
+    reject(new Error('Please pick an image file.'));
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onerror = () => reject(new Error('Could not read the selected file.'));
+  reader.onload = () => {
+    const rawUri = String(reader.result || '');
+    if (!rawUri.startsWith('data:')) {
+      reject(new Error('Could not read the selected file.'));
+      return;
+    }
+
+    const image = new Image();
+    image.onerror = () => reject(new Error('Could not load the selected image.'));
+    image.onload = () => {
+      try {
+        const longest = Math.max(image.naturalWidth || 0, image.naturalHeight || 0);
+        const scale = longest > maxDimension ? maxDimension / longest : 1;
+        const width = Math.max(1, Math.round((image.naturalWidth || maxDimension) * scale));
+        const height = Math.max(1, Math.round((image.naturalHeight || maxDimension) * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+        if (!context) {
+          resolve(rawUri);
+          return;
+        }
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch {
+        resolve(rawUri);
+      }
+    };
+    image.src = rawUri;
+  };
+  reader.readAsDataURL(file);
+});
 
 export const getArtworkForSurface = (game = {}, surface = 'library_card') => {
   const src = resolveGameArtwork(game, { surface });

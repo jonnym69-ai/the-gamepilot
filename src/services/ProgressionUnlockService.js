@@ -522,6 +522,22 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
     requiredXP: 4600,
     rewardType: 'utility',
     preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.18), rgba(255, 107, 53, 0.24))'
+  },
+  {
+    id: 'streamer_overlay',
+    name: 'Streamer Overlay',
+    description: 'Ultra-compact single-column layout that keeps the focus on what you are playing now.',
+    requiredXP: 8000,
+    rewardType: 'utility',
+    preview: 'linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(59, 130, 246, 0.22))'
+  },
+  {
+    id: 'arcade_cabinet',
+    name: 'Arcade Cabinet',
+    description: 'Bold, spacious retro styling with chunkier sections and neon hero glow.',
+    requiredXP: 12000,
+    rewardType: 'utility',
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.18))'
   }
 ]);
 

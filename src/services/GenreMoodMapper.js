@@ -64,6 +64,11 @@ export class GenreMoodMapper {
     const genresForMood = this.getGenresForMood(mood);
     
     return library.filter(game => {
+      // User override takes priority
+      if (typeof game?.moodOverride === 'string' && game.moodOverride.trim()) {
+        return game.moodOverride.trim() === mood;
+      }
+
       const normalizedGenres = mapGameGenresToValid(game.genres);
       if (!normalizedGenres.length) {
         return false;

@@ -2,16 +2,74 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
 import StorageService from '../services/StorageService';
 import DateTimeFormatService from '../services/DateTimeFormatService';
+import GamingPersonaService from '../services/GamingPersonaService';
+import PeriodChampionService from '../services/PeriodChampionService';
+import { HabitTrackerService } from '../services/HabitTrackerService';
 import './DailyDoodleTitle.css';
 
 const DEFAULT_WORDMARK = 'GamePilot';
 const LOGO_SRC = `${process.env.PUBLIC_URL}/gamepilotlogo.png`;
 
+// Special holiday & event doodles that trigger on specific days like Google Doodles
+const SPECIAL_EVENT_DOODLES = [
+  {
+    id: 'spooky-halloween',
+    name: 'Spooky Season',
+    accent: '',
+    isEventMatch: (d) => d.getMonth() === 9 && d.getDate() >= 25, // Late Oct
+    fontFamily: '"Creepster", "Impact", "Inter", sans-serif',
+    background: 'linear-gradient(135deg, rgba(20,5,30,0.95), rgba(45,10,5,0.95))',
+    border: '1px solid rgba(255, 117, 24, 0.5)',
+    shadow: '0 20px 45px rgba(255, 117, 24, 0.3)',
+    letterPalette: [
+      { gradient: 'linear-gradient(180deg, #ff7518 0%, #f72585 100%)', shadow: '0 8px 18px rgba(255,117,24,0.7)', tilt: -5 },
+      { gradient: 'linear-gradient(180deg, #9d4edd 0%, #3a0ca3 100%)', shadow: '0 8px 18px rgba(157,78,221,0.6)', tilt: 4 },
+      { gradient: 'linear-gradient(180deg, #70e000 0%, #38b000 100%)', shadow: '0 8px 18px rgba(112,224,0,0.6)', tilt: -3 }
+    ],
+    metaStyle: { color: '#ffaa44', letterSpacing: '0.15em', textTransform: 'uppercase' },
+    pattern: 'grid'
+  },
+  {
+    id: 'winter-solstice',
+    name: 'Winter Holiday Quest',
+    accent: '',
+    isEventMatch: (d) => d.getMonth() === 11 && d.getDate() >= 18, // Late Dec
+    fontFamily: '"Inter", "Segoe UI", sans-serif',
+    background: 'linear-gradient(135deg, rgba(10,25,47,0.96), rgba(20,50,90,0.94))',
+    border: '1px solid rgba(100, 210, 255, 0.4)',
+    shadow: '0 20px 45px rgba(100, 210, 255, 0.3)',
+    letterPalette: [
+      { gradient: 'linear-gradient(180deg, #e0f2fe 0%, #7dd3fc 100%)', shadow: '0 8px 18px rgba(125,211,252,0.7)', tilt: -2 },
+      { gradient: 'linear-gradient(180deg, #38bdf8 0%, #0284c7 100%)', shadow: '0 8px 18px rgba(56,189,248,0.6)', tilt: 3 },
+      { gradient: 'linear-gradient(180deg, #fae8ff 0%, #f472b6 100%)', shadow: '0 8px 18px rgba(244,114,182,0.5)', tilt: -1 }
+    ],
+    metaStyle: { color: '#bae6fd', letterSpacing: '0.1em', textTransform: 'uppercase' },
+    pattern: 'stars'
+  },
+  {
+    id: 'friday-night-rush',
+    name: 'Friday Night Gaming',
+    accent: '',
+    isEventMatch: (d) => d.getDay() === 5 && d.getHours() >= 17, // Friday after 5pm
+    fontFamily: '"Space Mono", monospace',
+    background: 'linear-gradient(135deg, rgba(25,10,40,0.95), rgba(70,15,30,0.95))',
+    border: '1px solid rgba(255, 75, 75, 0.5)',
+    shadow: '0 20px 45px rgba(255, 75, 75, 0.35)',
+    letterPalette: [
+      { gradient: 'linear-gradient(180deg, #ff4b4b 0%, #ff8533 100%)', shadow: '0 8px 18px rgba(255,75,75,0.7)', tilt: -6 },
+      { gradient: 'linear-gradient(180deg, #ffd166 0%, #06d6a0 100%)', shadow: '0 8px 18px rgba(255,209,102,0.6)', tilt: 5 },
+      { gradient: 'linear-gradient(180deg, #118ab2 0%, #073b4c 100%)', shadow: '0 8px 18px rgba(17,138,178,0.6)', tilt: -3 }
+    ],
+    metaStyle: { color: '#ffb4a2', letterSpacing: '0.18em', textTransform: 'uppercase' },
+    pattern: 'pixels'
+  }
+];
+
 const DOODLE_LIBRARY = [
   {
     id: 'synthwave-runway',
     name: 'Neon Runway',
-    accent: '🚀',
+    accent: '',
     fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", system-ui, sans-serif',
     background: 'linear-gradient(135deg, rgba(15,10,45,0.95), rgba(40,12,76,0.95))',
     border: '1px solid rgba(255,0,214,0.35)',
@@ -43,7 +101,7 @@ const DOODLE_LIBRARY = [
   {
     id: 'pixel-parade',
     name: 'Pixel Parade',
-    accent: '🕹️',
+    accent: '',
     fontFamily: '"Space Mono", "Roboto Mono", "SF Mono", "Consolas", monospace',
     background: 'linear-gradient(120deg, rgba(12,12,12,0.95), rgba(28,28,40,0.95))',
     border: '1px solid rgba(255,255,255,0.15)',
@@ -75,7 +133,7 @@ const DOODLE_LIBRARY = [
   {
     id: 'nebula-script',
     name: 'Nebula Script',
-    accent: '🌌',
+    accent: '',
     fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", system-ui, sans-serif',
     background: 'linear-gradient(135deg, rgba(3,7,30,0.95), rgba(20,33,61,0.95))',
     border: '1px solid rgba(118,93,255,0.35)',
@@ -107,7 +165,7 @@ const DOODLE_LIBRARY = [
   {
     id: 'circuit-glow',
     name: 'Circuit Glow',
-    accent: '💡',
+    accent: '',
     fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", system-ui, sans-serif',
     background: 'linear-gradient(140deg, rgba(5,17,38,0.95), rgba(7,36,64,0.92))',
     border: '1px solid rgba(0,255,135,0.3)',
@@ -139,7 +197,7 @@ const DOODLE_LIBRARY = [
   {
     id: 'sunset-brush',
     name: 'Sunset Brush',
-    accent: '🎨',
+    accent: '',
     fontFamily: '"Poppins", "Inter", "Segoe UI", "Roboto", system-ui, sans-serif',
     background: 'linear-gradient(135deg, rgba(255,140,66,0.92), rgba(255,94,98,0.9))',
     border: '1px solid rgba(255,255,255,0.35)',
@@ -168,14 +226,6 @@ const DOODLE_LIBRARY = [
     },
     pattern: 'brush'
   }
-];
-
-const DOODLE_TRANSITIONS = [
-  'slide-up',
-  'slide-right',
-  'zoom-pop',
-  'tilt-drop',
-  'fade-glow'
 ];
 
 const THEME_DOODLE_MAP = {
@@ -243,14 +293,13 @@ const THEME_TRANSITION_MAP = {
 // Returns true when a CSS colour string is perceptually light
 const isColorLight = (colorStr) => {
   if (!colorStr) return false;
-  // Parse the first hex or rgb value from a gradient/solid string
-  const hex = colorStr.match(/#([a-f\d]{6}|[a-f\d]{3})/i)?.[1];
+  const hex = colorStr.match(/#([0-9a-fA-F]{3,8})/);
   if (hex) {
-    const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+    let full = hex[1];
+    if (full.length === 3) full = full.split('').map((c) => c + c).join('');
     const r = parseInt(full.slice(0, 2), 16);
     const g = parseInt(full.slice(2, 4), 16);
     const b = parseInt(full.slice(4, 6), 16);
-    // Perceived luminance (WCAG)
     return (0.299 * r + 0.587 * g + 0.114 * b) > 155;
   }
   const rgb = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -284,14 +333,15 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const [doodleWordmark, setDoodleWordmark] = useState(
     () => StorageService.getString('doodleWordmark', DEFAULT_WORDMARK)
   );
+  const [shuffleIndex, setShuffleIndex] = useState(0);
+  const [isSparkling, setIsSparkling] = useState(false);
   const doodleEnabled = StorageService.getString('enableDailyDoodle') !== 'false';
   const preferredTimeZone = StorageService.getString('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const resolvedLogoAnimation = selectedLogoAnimation || 'synthwave-runway';
 
-
   useEffect(() => {
     const syncSignature = () => setDaySignature(getDayOfYear());
-    const interval = setInterval(syncSignature, 1000 * 60 * 30); // refresh twice per hour
+    const interval = setInterval(syncSignature, 1000 * 60 * 30);
     return () => clearInterval(interval);
   }, []);
 
@@ -338,7 +388,16 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     };
   }, []);
 
+  // Check for Google-style special event doodles on matching days
+  const activeEventDoodle = useMemo(() => {
+    return SPECIAL_EVENT_DOODLES.find((d) => d.isEventMatch(currentDateTime));
+  }, [currentDateTime]);
+
   const doodle = useMemo(() => {
+    if (activeEventDoodle) {
+      return activeEventDoodle;
+    }
+
     const dayIndex = daySignature % DOODLE_LIBRARY.length;
     if (normalizedTheme) {
       const mappedId = THEME_DOODLE_MAP[normalizedTheme];
@@ -350,7 +409,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     }
 
     return DOODLE_LIBRARY[dayIndex];
-  }, [daySignature, normalizedTheme]);
+  }, [activeEventDoodle, daySignature, normalizedTheme]);
 
   // Final light-bg decision now that we have the resolved doodle
   const isLight = useMemo(() => {
@@ -365,13 +424,10 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const transitionVariant = useMemo(() => {
     if (normalizedTheme) {
       const mappedTransition = THEME_TRANSITION_MAP[normalizedTheme];
-      if (mappedTransition) {
-        return mappedTransition;
-      }
+      if (mappedTransition) return mappedTransition;
     }
-    const index = (daySignature + 3) % DOODLE_TRANSITIONS.length;
-    return DOODLE_TRANSITIONS[index];
-  }, [normalizedTheme, daySignature]);
+    return 'fade-glow';
+  }, [normalizedTheme]);
 
   const [mounted, setMounted] = useState(false);
 
@@ -381,9 +437,57 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     return () => cancelAnimationFrame(frame);
   }, [normalizedTheme, doodle.id, transitionVariant]);
 
+  // Pull personality insights for rich attitude quotes
+  const personalityInsights = useMemo(() => {
+    try {
+      const persona = GamingPersonaService.getPersona();
+      const primary = persona?.primaryPersona;
+      const champion = PeriodChampionService.getLiveChampion('week', {});
+      const streaks = HabitTrackerService.getStreaks();
+      const hour = currentDateTime.getHours();
+
+      let timeGreeting = 'Ready for a session?';
+      if (hour >= 0 && hour < 5) timeGreeting = '🌙 Late night operator — sleep is just a loading screen.';
+      else if (hour >= 5 && hour < 12) timeGreeting = '☕ Morning coffee & questing window open.';
+      else if (hour >= 12 && hour < 18) timeGreeting = '☀️ Afternoon cadence active.';
+      else timeGreeting = '🔥 Prime time gaming hours.';
+
+      // Keep roast punchy so it doesn't overflow container
+      let roastShort = primary?.roast || null;
+      if (roastShort && roastShort.length > 90) {
+        roastShort = roastShort.slice(0, 87) + '...';
+      }
+
+      const quotes = [
+        welcomeMessage,
+        roastShort ? `"${roastShort}"` : null,
+        champion?.gameName ? `🏆 ${champion.gameName} leads your week with ${Math.round(champion.minutes / 60)}h` : null,
+        streaks?.currentStreak > 1 ? `🔥 ${streaks.currentStreak}-day gaming streak ongoing` : null,
+        timeGreeting
+      ].filter(Boolean);
+
+      return {
+        personaLabel: primary?.label || 'Pilot',
+        timeGreeting,
+        quotes
+      };
+    } catch {
+      return {
+        personaLabel: 'Pilot',
+        timeGreeting: 'Ready to play?',
+        quotes: [welcomeMessage || 'Ready to find your perfect play?']
+      };
+    }
+  }, [currentDateTime, welcomeMessage]);
+
   const handleDoodleClick = () => {
+    setIsSparkling(true);
+    setShuffleIndex((prev) => (prev + 1) % Math.max(1, personalityInsights.quotes.length));
     setMounted(false);
-    const frame = requestAnimationFrame(() => setMounted(true));
+    const frame = requestAnimationFrame(() => {
+      setMounted(true);
+      setTimeout(() => setIsSparkling(false), 500);
+    });
     return () => cancelAnimationFrame(frame);
   };
 
@@ -417,7 +521,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       return (
         <span
           key={`${doodle.id}-letter-${char}-${index}`}
-          className="doodle-letter"
+          className={`doodle-letter ${isSparkling ? 'letter-squish' : ''}`}
           style={{
             backgroundImage: style.gradient,
             textShadow: style.shadow,
@@ -428,7 +532,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
         </span>
       );
     });
-  }, [doodle, wordmark]);
+  }, [doodle, wordmark, isSparkling]);
 
   // Reward-derived styling
   const rewardShellStyles = useMemo(() => {
@@ -449,10 +553,13 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const avatarSrc = profilePic || LOGO_SRC;
   const avatarAlt = profilePic ? `${username || 'Player'} avatar` : 'GamePilot logo';
 
+  const activeQuote = personalityInsights.quotes[shuffleIndex % personalityInsights.quotes.length];
+
   const wrapperClasses = [
     'daily-doodle',
     `transition-${transitionVariant}`,
-    mounted ? 'daily-doodle--enter' : ''
+    mounted ? 'daily-doodle--enter' : '',
+    activeEventDoodle ? 'doodle-special-event' : ''
   ]
     .filter(Boolean)
     .join(' ');
@@ -464,13 +571,14 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   }
 
   return (
-    <div 
-      className={wrapperClasses} 
+    <div
+      className={wrapperClasses}
       aria-label={`GamePilot daily doodle - ${doodle.name}`}
       onClick={handleDoodleClick}
       style={{ cursor: 'pointer' }}
       role="button"
       tabIndex={0}
+      title="Click to tap & shuffle daily gamer insights"
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDoodleClick(); }}
     >
       <div
@@ -504,12 +612,13 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
           </div>
         </div>
         <div className="doodle-meta" style={{ ...doodle.metaStyle, '--identity-accent': 'var(--accent)', ...(isLight ? { color: 'rgba(30,20,10,0.85)', textShadow: '0 1px 3px rgba(255,255,255,0.5)' } : {}) }}>
-          <span className="doodle-meta-label">{doodle.name} — {dayLabel}</span>
+          <div className="doodle-meta-badges">
+            <span className="doodle-meta-label">{doodle.name} — {dayLabel}</span>
+            {activeEventDoodle && <span className="doodle-event-tag">Special Doodle</span>}
+          </div>
           <span className="doodle-meta-datetime">{timeLabel} <span className="doodle-meta-timezone">{timeZoneLabel}</span></span>
           <span className="doodle-meta-greeting">{greeting}</span>
-          {welcomeMessage && (
-            <span className="doodle-meta-tagline">{welcomeMessage}</span>
-          )}
+          <span className="doodle-meta-tagline doodle-quote-active">{activeQuote}</span>
         </div>
       </div>
     </div>

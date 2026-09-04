@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Trash2, Globe, Trophy, Sparkles } from 'lucide-react';
+import { X, Star, Clock, Calendar, Play, ExternalLink, Heart, Pin, Trash2, Globe, Trophy, Sparkles, Upload } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
 import { openExternalUrl } from '../services/ElectronBridge';
@@ -11,7 +11,8 @@ import { PlaytimeAutoLogger } from '../services/PlaytimeAutoLogger';
 import HowLongToBeatService from '../services/HowLongToBeatService';
 import { RecommendationEngine } from '../services/RecommendationEngine';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
-import { getGameArtworkPlaceholder, resolveGameArtwork } from '../services/GameArtworkService';
+import { getGameArtworkPlaceholder, resolveGameArtwork, fileToCoverDataUri } from '../services/GameArtworkService';
+import { MOODS, getMoodForGame } from '../constants/GenresMoods';
 import LazyImage from './LazyImage';
 import { GameShareCard, buildGameShareCaption, buildGameShareData } from './GameShareCard';
 import { SessionLaunchShareCard } from './SessionLaunchShareCard';
@@ -24,6 +25,12 @@ import UninstallModal from './UninstallModal';
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
 import { useToast } from './Toast';
 import './GameModal.css';
+
+const COVER_SEARCH_LINKS = (gameName) => ([
+  { id: 'steamgriddb', label: 'SteamGridDB', url: `https://www.steamgriddb.com/search/grids/${encodeURIComponent(gameName)}` },
+  { id: 'steam', label: 'Steam Store', url: `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}` },
+  { id: 'google', label: 'Google Images', url: `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(`${gameName} game cover art`)}` }
+]);
 
 const REPLAY_INTENT_OPTIONS = ['none', 'soon', 'active', 'finished', 'endless'];
 
@@ -42,7 +49,7 @@ const getRatingLabel = (value) => {
 };
 
 const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame, onToggleFavorite, isFavorite = false, onTogglePin, onUpdatePrice, onUpdateRating, onUpdateCollections, onToggleHidden, onUpdateCompletion, onUpdateNotes, onUpdateCoverArt, onAddSessionNote, onTogglePlayedElsewhere, bigScreen = false }) => {
-  const { success: toastSuccess } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [screenshots, setScreenshots] = useState([]);
@@ -59,6 +66,7 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
   const [selectedCollections, setSelectedCollections] = useState(game?.userCollections || []);
   const [completionStatus, setCompletionStatus] = useState(game?.completionStatus || 'not-started');
   const [coverArtUrl, setCoverArtUrl] = useState(game?.coverArtOverride || '');
+  const [moodOverride, setMoodOverride] = useState(game?.moodOverride || '');
   const [playedElsewhere, setPlayedElsewhere] = useState(Boolean(game?.playedElsewhere));
   const [sessionNoteText, setSessionNoteText] = useState('');
   const fetchedGameId = React.useRef(null);
@@ -197,6 +205,34 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
     if (!game || !onUpdateCoverArt) return;
     onUpdateCoverArt(game.name, coverArtUrl);
   }, [game, onUpdateCoverArt, coverArtUrl]);
+
+  const handleCoverArtClear = useCallback(() => {
+    if (!game || !onUpdateCoverArt) return;
+    setCoverArtUrl('');
+    onUpdateCoverArt(game.name, '');
+  }, [game, onUpdateCoverArt]);
+
+  const handleMoodOverrideChange = useCallback((e) => {
+    const value = e.target.value;
+    setMoodOverride(value);
+    if (!game) return;
+    GameCurationService.setMoodOverride(game.name, value);
+  }, [game]);
+
+  const handleCoverFilePicked = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !game || !onUpdateCoverArt) return;
+    try {
+      const dataUri = await fileToCoverDataUri(file);
+      setCoverArtUrl(dataUri);
+      onUpdateCoverArt(game.name, dataUri);
+    } catch (error) {
+      if (toastError) {
+        toastError(error?.message || 'Could not use that image.');
+      }
+    }
+  }, [game, onUpdateCoverArt, toastError]);
 
   const handleAddSessionNoteLocal = useCallback(() => {
     if (!game || !onAddSessionNote || !sessionNoteText.trim()) return;
@@ -548,7 +584,7 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
     return <div style={{ display: 'none' }} aria-hidden="true" />;
   }
 
-  const iconSource = game.icon || game.iconUrl || 'https://placehold.co/96x96.jpg?text=Game';
+  const iconSource = game.icon || game.iconUrl || getGameArtworkPlaceholder({ game, surface: 'profile_icon' });
   const platformLabel = game.brandPlatform || game.platform || 'Unknown Platform';
   const genreLabels = gameDetails?.genres?.map((entry) => entry.description).filter(Boolean)
     || (Array.isArray(game.genres) ? game.genres.filter(Boolean) : []);
@@ -572,7 +608,7 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
               alt={game.name} 
               className="game-modal-icon"
               onError={(e) => {
-                e.target.src = 'https://placehold.co/60x60.jpg?text=Loading...';
+                e.target.src = getGameArtworkPlaceholder({ game, surface: 'profile_icon' });
               }}
             />
             <div className="game-modal-title-copy">
@@ -606,7 +642,7 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
                           alt={`Screenshot ${currentScreenshot + 1}`}
                           className="screenshot-main-img"
                           onError={(e) => {
-                            e.target.src = 'https://placehold.co/800x400.jpg?text=Loading...';
+                            e.target.src = getGameArtworkPlaceholder({ game, surface: 'hero' });
                           }}
                         />
                       </div>
@@ -620,7 +656,7 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
                               className={`game-thumbnail ${index === currentScreenshot ? 'active' : ''}`}
                               onClick={() => setCurrentScreenshot(index)}
                               onError={(e) => {
-                                e.target.src = 'https://placehold.co/80x45.jpg?text=Loading...';
+                                e.target.src = getGameArtworkPlaceholder({ game, surface: 'library_card' });
                               }}
                             />
                           ))}
@@ -634,7 +670,7 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
                         alt={game.name}
                         className="game-hero-art"
                         onError={(e) => {
-                          e.target.src = 'https://placehold.co/160x160.jpg?text=Game';
+                          e.target.src = getGameArtworkPlaceholder({ game, surface: 'profile_icon' });
                         }}
                       />
                       <div className="game-hero-copy">
@@ -1002,16 +1038,88 @@ const GameModal = ({ game, library = [], isOpen, onClose, onLaunch, onSelectGame
 
                 <div className="game-info-panel">
                   <h3>Cover Art Override</h3>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     <input
                       type="text"
                       placeholder="Paste image URL..."
                       value={coverArtUrl}
                       onChange={(e) => setCoverArtUrl(e.target.value)}
-                      style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                      style={{ flex: 1, minWidth: '180px', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
                     />
                     <button onClick={handleCoverArtSave} className="export-button" style={{ padding: '6px 12px' }}>Save</button>
+                    {coverArtUrl && (
+                      <button onClick={handleCoverArtClear} className="export-button" style={{ padding: '6px 12px', opacity: 0.7 }}>Clear</button>
+                    )}
+                    <label
+                      className="export-button"
+                      title="Pick a local image file — stored offline in your GamePilot data"
+                      style={{ padding: '6px 12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Upload size={14} /> Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleCoverFilePicked}
+                      />
+                    </label>
                   </div>
+                  {coverArtUrl && (
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <img
+                        src={coverArtUrl}
+                        alt="Cover preview"
+                        style={{ width: '48px', height: '72px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border)' }}
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline'; }}
+                      />
+                      <span style={{ display: 'none', fontSize: '12px', color: '#ff8a6b' }}>
+                        This URL can't be loaded as an image. Right-click the image in your browser and choose "Copy image address".
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {COVER_SEARCH_LINKS(game.name).map((target) => (
+                      <a
+                        key={target.id}
+                        href={target.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="export-button"
+                        style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <ExternalLink size={11} /> {target.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="game-info-panel">
+                  <h3>Mood</h3>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                      value={moodOverride}
+                      onChange={handleMoodOverrideChange}
+                      className="filter-select"
+                      style={{ width: 'auto', minWidth: '160px', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                    >
+                      <option value="">Auto ({getMoodForGame(game?.genres) || 'Unknown'})</option>
+                      {MOODS.map((mood) => (
+                        <option key={mood} value={mood}>{mood}</option>
+                      ))}
+                    </select>
+                    {moodOverride && (
+                      <button
+                        onClick={() => handleMoodOverrideChange({ target: { value: '' } })}
+                        className="export-button"
+                        style={{ padding: '6px 12px', opacity: 0.7 }}
+                      >
+                        Reset to Auto
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: '6px 0 0' }}>
+                    Override the auto-detected mood if it doesn't feel right. Used for mood filters and recommendations.
+                  </p>
                 </div>
 
                 <div className="game-info-panel">

@@ -256,10 +256,12 @@
   font-weight: 500;
   color: var(--identity-accent, var(--accent, inherit));
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
   max-width: 100%;
 }
 
@@ -824,16 +826,54 @@
 }
 
 .doodle-shell--light .doodle-trail {
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.06) 0%, transparent 60%);
+background: radial-gradient(circle, rgba(0, 0, 0, 0.06) 0%, transparent 60%);
+}
+
+.doodle-meta-badges {
+display: flex;
+align-items: center;
+gap: 8px;
+flex-wrap: wrap;
+}
+
+.doodle-event-tag {
+display: inline-flex;
+align-items: center;
+background: rgba(255, 117, 24, 0.2);
+border: 1px solid rgba(255, 117, 24, 0.5);
+color: #ffaa44;
+padding: 2px 8px;
+border-radius: 12px;
+font-size: 0.72rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.05em;
+animation: pulse 2s infinite ease-in-out;
+}
+
+.doodle-letter.letter-squish {
+animation: doodle-letter-squish 0.4s ease;
+}
+
+@keyframes doodle-letter-squish {
+0% { transform: scale(1) rotate(0deg); }
+50% { transform: scale(0.85, 1.25) translateY(-4px); }
+100% { transform: scale(1); }
+}
+
+.doodle-quote-active {
+font-style: italic;
+opacity: 0.95;
+transition: opacity 0.25s ease;
 }
 
 @media (max-width: 640px) {
-  .doodle-shell {
-    padding: 20px 18px;
-    border-radius: 22px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+.doodle-shell {
+padding: 20px 18px;
+border-radius: 22px;
+flex-direction: column;
+align-items: flex-start;
+gap: 12px;
   }
 
   .doodle-left {

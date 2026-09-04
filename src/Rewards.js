@@ -4,13 +4,28 @@ import { useToast } from './components/Toast';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { PersonaService } from './services/PersonaService';
 import { SpecialEventsService } from './services/SpecialEventsService';
-import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper } from 'lucide-react';
+import { SeasonalHideAndSeekService } from './services/SeasonalHideAndSeekService';
+import { AchievementTracker } from './AchievementSystem';
+import { Gamepad2, Library, LayoutGrid, Zap, PlayCircle, Check, Link2, Sparkles, Calendar, Cake, Snowflake, Ghost, Sun, Flower2, PartyPopper, Award } from 'lucide-react';
+import InfoTooltip from './components/InfoTooltip';
 import './Rewards.css';
 
 const handleRewardCardKeyDown = (event, unlocked, onSelect) => {
   if (!unlocked || (event.key !== 'Enter' && event.key !== ' ')) return;
   event.preventDefault();
   onSelect();
+};
+
+const SECTION_HELP = {
+  profileIdentity: 'Equip your profile frame, banner, and title, and pin achievement badges to your showcase.',
+  personas: 'One-click identity presets that equip a matching theme, frame, banner, and title together.',
+  specialEvents: 'Birthday, holiday, and seasonal events — active events grant XP and challenges.',
+  cardStyles: 'Change how game cards look across Home, Library, and recommendations.',
+  libraryView: 'Adjust the density and layout of your Library grid.',
+  homeLayout: 'Choose which panels appear on your Home page and in what order.',
+  recommendationStyle: 'Tune how recommendations are ranked and presented for your playstyle.',
+  gamingLinks: 'Enable and arrange the quick-launch gaming links panel.',
+  logoAnimation: 'Pick the animated glow treatment for your avatar bubble in the Home hero banner.'
 };
 
 // Sample game card for preview
@@ -84,7 +99,7 @@ const LogoAnimationPanel = ({ animations, selectedAnimation, onSelect }) => (
   <div className="rewards-panel">
     <div className="rewards-panel-header">
       <h2>Logo Animation</h2>
-      <p>Choose your startup title animation style</p>
+      <p>Pick the animated glow treatment for your avatar bubble in the Home page hero banner</p>
     </div>
     <div className="rewards-card-grid">
       {animations.map((anim) => (
@@ -138,6 +153,195 @@ const LogoAnimationPanel = ({ animations, selectedAnimation, onSelect }) => (
     </div>
   </div>
 );
+
+// Profile Identity Panel — equip frame, banner, title, and showcase badges
+const ProfileIdentityPanel = ({
+  frames,
+  banners,
+  titles,
+  showcaseSlots,
+  profileCustomization,
+  unlockedAchievements,
+  onSelectFrame,
+  onSelectBanner,
+  onSelectTitle,
+  onToggleShowcaseAchievement
+}) => {
+  const selectedFrameId = profileCustomization?.selectedFrame;
+  const selectedBannerId = profileCustomization?.selectedBanner;
+  const selectedTitleId = profileCustomization?.selectedTitle;
+  const showcasedIds = profileCustomization?.showcasedAchievements || [];
+  const unlockedSlotCount = showcaseSlots.filter((slot) => slot.unlocked).length;
+
+  return (
+    <div className="rewards-panel">
+      <div className="rewards-panel-header">
+        <h2>Profile Identity</h2>
+        <p>Equip the frame, banner, title, and achievement badges displayed on your Profile page.</p>
+      </div>
+
+      <h3 className="rewards-identity-subheading">Avatar Frames</h3>
+      <div className="rewards-card-grid">
+        {frames.map((frame) => (
+          <div
+            key={frame.id}
+            className={`rewards-card-item ${selectedFrameId === frame.id ? 'active' : ''} ${!frame.unlocked ? 'locked' : ''}`}
+            onClick={() => frame.unlocked && onSelectFrame(frame.id)}
+            onKeyDown={(event) => handleRewardCardKeyDown(event, frame.unlocked, () => onSelectFrame(frame.id))}
+            role="button"
+            tabIndex={frame.unlocked ? 0 : -1}
+            aria-disabled={!frame.unlocked}
+            aria-pressed={selectedFrameId === frame.id}
+            aria-label={`${frame.name}${frame.unlocked ? '' : `, locked until ${frame.requiredXP?.toLocaleString() || 0} XP`}`}
+          >
+            <div className="rewards-identity-preview">
+              <div
+                className="rewards-frame-bubble"
+                style={{
+                  border: `3px solid ${frame.accentColor || 'var(--border-color)'}`,
+                  boxShadow: frame.shadowColor ? `0 0 18px ${frame.shadowColor}` : 'none'
+                }}
+              >
+                <Gamepad2 size={26} />
+              </div>
+              {selectedFrameId === frame.id && (
+                <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                  <Check size={14} />
+                </div>
+              )}
+              {!frame.unlocked && (
+                <div className="reward-locked-overlay">
+                  <div className="reward-lock-icon">🔒</div>
+                  <span>Unlocks at {frame.requiredXP?.toLocaleString()} XP</span>
+                </div>
+              )}
+            </div>
+            <div className="rewards-card-info">
+              <h3>{frame.name}</h3>
+              <p>{frame.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h3 className="rewards-identity-subheading">Profile Banners</h3>
+      <div className="rewards-card-grid">
+        {banners.map((banner) => (
+          <div
+            key={banner.id}
+            className={`rewards-card-item ${selectedBannerId === banner.id ? 'active' : ''} ${!banner.unlocked ? 'locked' : ''}`}
+            onClick={() => banner.unlocked && onSelectBanner(banner.id)}
+            onKeyDown={(event) => handleRewardCardKeyDown(event, banner.unlocked, () => onSelectBanner(banner.id))}
+            role="button"
+            tabIndex={banner.unlocked ? 0 : -1}
+            aria-disabled={!banner.unlocked}
+            aria-pressed={selectedBannerId === banner.id}
+            aria-label={`${banner.name}${banner.unlocked ? '' : `, locked until ${banner.requiredXP?.toLocaleString() || 0} XP`}`}
+          >
+            <div className="rewards-identity-preview">
+              <div className="rewards-banner-swatch" style={{ background: banner.preview || 'var(--card-bg)' }}>
+                <span className="rewards-banner-swatch-label">{banner.name}</span>
+              </div>
+              {selectedBannerId === banner.id && (
+                <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                  <Check size={14} />
+                </div>
+              )}
+              {!banner.unlocked && (
+                <div className="reward-locked-overlay">
+                  <div className="reward-lock-icon">🔒</div>
+                  <span>Unlocks at {banner.requiredXP?.toLocaleString()} XP</span>
+                </div>
+              )}
+            </div>
+            <div className="rewards-card-info">
+              <h3>{banner.name}</h3>
+              <p>{banner.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h3 className="rewards-identity-subheading">Titles</h3>
+      <div className="rewards-card-grid">
+        {titles.map((title) => (
+          <div
+            key={title.id}
+            className={`rewards-card-item ${selectedTitleId === title.id ? 'active' : ''} ${!title.unlocked ? 'locked' : ''}`}
+            onClick={() => title.unlocked && onSelectTitle(title.id)}
+            onKeyDown={(event) => handleRewardCardKeyDown(event, title.unlocked, () => onSelectTitle(title.id))}
+            role="button"
+            tabIndex={title.unlocked ? 0 : -1}
+            aria-disabled={!title.unlocked}
+            aria-pressed={selectedTitleId === title.id}
+            aria-label={`${title.name}${title.unlocked ? '' : `, locked until ${title.requiredXP?.toLocaleString() || 0} XP`}`}
+          >
+            <div className="rewards-identity-preview">
+              <div className={`rewards-title-pill ${selectedTitleId === title.id ? 'equipped' : ''}`}>
+                {title.name}
+              </div>
+              {selectedTitleId === title.id && (
+                <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                  <Check size={14} />
+                </div>
+              )}
+              {!title.unlocked && (
+                <div className="reward-locked-overlay">
+                  <div className="reward-lock-icon">🔒</div>
+                  <span>Unlocks at {title.requiredXP?.toLocaleString()} XP</span>
+                </div>
+              )}
+            </div>
+            <div className="rewards-card-info">
+              <h3>{title.name}</h3>
+              <p>{title.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h3 className="rewards-identity-subheading">Achievement Showcase</h3>
+      <p className="rewards-showcase-sub">
+        {unlockedSlotCount} slot{unlockedSlotCount === 1 ? '' : 's'} unlocked — {showcasedIds.length} in use. Tap an unlocked achievement to pin or unpin it on your Profile.
+      </p>
+      {unlockedAchievements.length === 0 ? (
+        <p className="rewards-showcase-empty">No unlocked achievements yet — complete achievements to pin them here.</p>
+      ) : (
+        <div className="rewards-showcase-chip-row">
+          {unlockedAchievements.map((achievement) => {
+            const isShowcased = showcasedIds.includes(achievement.id);
+            const atLimit = !isShowcased && showcasedIds.length >= unlockedSlotCount;
+            return (
+              <button
+                key={achievement.id}
+                className={`rewards-showcase-chip-btn ${isShowcased ? 'showcased' : ''} ${atLimit ? 'at-limit' : ''}`}
+                onClick={() => onToggleShowcaseAchievement(achievement.id)}
+                aria-pressed={isShowcased}
+                title={isShowcased ? 'Unpin from profile' : atLimit ? 'Showcase slots full' : 'Pin to profile'}
+              >
+                <Award size={13} />
+                <span className="rewards-showcase-chip-name">{achievement.name}</span>
+                {achievement.points > 0 && <span className="rewards-showcase-chip-points">+{achievement.points} XP</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <h3 className="rewards-identity-subheading">Showcase Slots</h3>
+      <div className="rewards-showcase-slot-row">
+        {showcaseSlots.map((slot) => (
+          <div key={slot.id} className={`rewards-showcase-slot ${slot.unlocked ? 'unlocked' : 'locked'}`}>
+            <span className="rewards-showcase-slot-number">{slot.slotNumber}</span>
+            <span className="rewards-showcase-slot-status">
+              {slot.unlocked ? 'Unlocked' : `${slot.requiredXP?.toLocaleString()} XP`}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // Library View Panel
 const LibraryViewPanel = ({ variants, selectedId, onSelect }) => (
@@ -204,7 +408,7 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
   <div className="rewards-panel">
     <div className="rewards-panel-header">
       <h2>Home Layout</h2>
-      <p>Alternate layouts for the Home dashboard</p>
+      <p>Alternate layouts for the Home dashboard — changes hero size, spacing, widget visibility, and content arrangement.</p>
     </div>
     <div className="rewards-card-grid">
       {layouts.map((layout) => (
@@ -227,16 +431,56 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
             borderRadius: '12px',
             border: selectedId === layout.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)'
           }}>
-            <div className="reward-home-hero" />
-            <div className="reward-home-row">
-              <div className="reward-home-widget reward-home-widget-large" />
-              <div className="reward-home-widget" />
-            </div>
-            <div className="reward-home-row reward-home-row-small">
-              <div className="reward-home-widget" />
-              <div className="reward-home-widget" />
-              <div className="reward-home-widget" />
-            </div>
+            {layout.id === 'focus_finder' || layout.id === 'streamer_overlay' ? (
+              <>
+                <div className="reward-home-hero" style={{ height: '28px', marginBottom: '10px' }} />
+                <div className="reward-home-row" style={{ marginBottom: '6px' }}>
+                  <div className="reward-home-widget reward-home-widget-large" style={{ height: '40px' }} />
+                </div>
+                <div className="reward-home-row reward-home-row-small">
+                  <div className="reward-home-widget" style={{ height: '24px' }} />
+                  <div className="reward-home-widget" style={{ height: '24px' }} />
+                </div>
+              </>
+            ) : layout.id === 'dashboard_split' ? (
+              <>
+                <div className="reward-home-hero" style={{ height: '36px', marginBottom: '12px' }} />
+                <div className="reward-home-row" style={{ gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div className="reward-home-widget reward-home-widget-large" style={{ height: '50px' }} />
+                  <div className="reward-home-widget" style={{ height: '50px' }} />
+                </div>
+                <div className="reward-home-row reward-home-row-small" style={{ marginTop: '8px' }}>
+                  <div className="reward-home-widget" style={{ height: '24px' }} />
+                  <div className="reward-home-widget" style={{ height: '24px' }} />
+                </div>
+              </>
+            ) : layout.id === 'arcade_cabinet' ? (
+              <>
+                <div className="reward-home-hero" style={{ height: '52px', marginBottom: '16px', border: '2px solid rgba(255, 107, 53, 0.3)' }} />
+                <div className="reward-home-row" style={{ marginBottom: '10px' }}>
+                  <div className="reward-home-widget reward-home-widget-large" style={{ height: '56px', borderRadius: '14px' }} />
+                  <div className="reward-home-widget" style={{ height: '56px', borderRadius: '14px' }} />
+                </div>
+                <div className="reward-home-row reward-home-row-small">
+                  <div className="reward-home-widget" style={{ height: '32px', borderRadius: '14px' }} />
+                  <div className="reward-home-widget" style={{ height: '32px', borderRadius: '14px' }} />
+                  <div className="reward-home-widget" style={{ height: '32px', borderRadius: '14px' }} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="reward-home-hero" />
+                <div className="reward-home-row">
+                  <div className="reward-home-widget reward-home-widget-large" />
+                  <div className="reward-home-widget" />
+                </div>
+                <div className="reward-home-row reward-home-row-small">
+                  <div className="reward-home-widget" />
+                  <div className="reward-home-widget" />
+                  <div className="reward-home-widget" />
+                </div>
+              </>
+            )}
             {selectedId === layout.id && (
               <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
                 <Check size={14} />
@@ -390,6 +634,7 @@ const EVENT_ICON_MAP = {
   winter: Snowflake,
   summer: Sun,
   spring: Flower2,
+  easter: Sparkles,
   anniversary: PartyPopper
 };
 
@@ -400,6 +645,7 @@ const EVENT_ACCENT_MAP = {
   winter: '#3b82f6',
   summer: '#facc15',
   spring: '#22c55e',
+  easter: '#f59e0b',
   anniversary: '#8b5cf6'
 };
 
@@ -414,12 +660,67 @@ const formatDaysUntil = (event) => {
   return `In ${Math.round(event.daysUntil / 30)} months`;
 };
 
-const SpecialEventsPanel = ({ events }) => (
+const SpecialEventsPanel = ({ events }) => {
+  const hideSeekProgress = useMemo(() => SeasonalHideAndSeekService.getActiveProgress(), []);
+
+  return (
   <div className="rewards-panel">
     <div className="rewards-panel-header">
       <h2>Special Events</h2>
       <p>Time-based reward events: birthday, holidays, seasonal challenges. Active events grant XP automatically when you check in.</p>
     </div>
+
+    {hideSeekProgress && (
+      <div className="rewards-hide-seek-card" style={{
+        marginBottom: '20px',
+        padding: '16px 20px',
+        borderRadius: '14px',
+        border: `1px solid ${hideSeekProgress.completed ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
+        background: hideSeekProgress.completed
+          ? 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))'
+          : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        flexWrap: 'wrap'
+      }}>
+        <span style={{ fontSize: '32px' }}>{hideSeekProgress.icon}</span>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '2px' }}>
+            {hideSeekProgress.name}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #9aa0a6)', marginBottom: '8px' }}>
+            {hideSeekProgress.completed
+              ? `Complete! You found all ${hideSeekProgress.totalItems} ${hideSeekProgress.itemName}s.`
+              : `Find ${hideSeekProgress.totalItems - hideSeekProgress.found.length} more hidden ${hideSeekProgress.itemName}s around GamePilot!`}
+          </div>
+          <div style={{ height: '6px', borderRadius: '999px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+            <div style={{
+              width: `${hideSeekProgress.progressPercent}%`,
+              height: '100%',
+              borderRadius: 'inherit',
+              background: hideSeekProgress.completed ? '#22c55e' : 'linear-gradient(90deg, #ff6b35, #f093fb)',
+              transition: 'width 0.3s ease'
+            }} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', maxWidth: '120px' }}>
+          {Array.from({ length: hideSeekProgress.totalItems }, (_, i) => (
+            <span
+              key={i}
+              style={{
+                fontSize: '16px',
+                opacity: hideSeekProgress.found.includes(`${hideSeekProgress.id}-item-${i}`) ? 1 : 0.2,
+                transition: 'opacity 0.3s ease'
+              }}
+            >
+              {hideSeekProgress.itemEmoji}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
+
     <div className="rewards-card-grid">
       {events.map((event) => {
         const Icon = EVENT_ICON_MAP[event.icon] || Calendar;
@@ -520,7 +821,8 @@ const SpecialEventsPanel = ({ events }) => (
       })}
     </div>
   </div>
-);
+  );
+};
 
 // Pilot Personas Panel - one-click bundles that equip multiple cosmetics together
 const PilotPersonasPanel = ({ personas, onApply }) => (
@@ -693,6 +995,7 @@ function Rewards() {
   const [personas, setPersonas] = useState(() => PersonaService.getPersonas());
   const [specialEvents, setSpecialEvents] = useState(() => SpecialEventsService.getUpcomingEvents());
   const [presentationCustomization, setPresentationCustomization] = useState(() => ProgressionUnlockService.getRewardPresentationCustomization());
+  const [profileCatalog, setProfileCatalog] = useState(() => ProgressionUnlockService.getProfileRewardCatalog());
 
   const summary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
   const nextUnlockPath = summary?.upcomingUnlocks || [];
@@ -713,6 +1016,20 @@ function Rewards() {
 
     return logoAnimations.find((animation) => animation.unlocked)?.id || logoAnimations[0]?.id || 'synthwave-runway';
   }, [logoAnimations, presentationCustomization]);
+
+  const unlockedAchievementOptions = useMemo(() => {
+    const pointsMap = AchievementTracker.getAchievementPoints();
+    return (AchievementTracker.getUnlockedAchievements() || []).map((achievementId) => {
+      const achievement = AchievementTracker.getAchievementById(achievementId);
+      if (!achievement) return null;
+      return {
+        id: achievementId,
+        name: achievement.name,
+        description: achievement.description,
+        points: pointsMap[achievementId] || 0
+      };
+    }).filter(Boolean);
+  }, []);
   
   // Refresh presentation rewards data
   const refreshPresentationRewards = useCallback(() => {
@@ -726,10 +1043,16 @@ function Rewards() {
     setPersonas(PersonaService.getPersonas());
     setSpecialEvents(SpecialEventsService.getUpcomingEvents());
     setPresentationCustomization(ProgressionUnlockService.getRewardPresentationCustomization());
+    setProfileCatalog(ProgressionUnlockService.getProfileRewardCatalog());
   }, []);
   // Get dynamic counts
   const sectionCounts = useMemo(() => {
     const availableAnims = logoAnimations.filter((a) => a.unlocked).length;
+    const identityFrames = profileCatalog?.frames || [];
+    const identityBanners = profileCatalog?.banners || [];
+    const identityTitles = profileCatalog?.titles || [];
+    const identitySlots = profileCatalog?.showcaseSlots || [];
+    const identityItems = [...identityFrames, ...identityBanners, ...identityTitles, ...identitySlots];
     return {
       cardStyles: {
         current: cardStyles.filter((style) => style.unlocked).length,
@@ -759,9 +1082,13 @@ function Rewards() {
         current: specialEvents.filter(e => e.active).length,
         total: specialEvents.length
       },
-      logoAnimation: { current: availableAnims, total: logoAnimations.length }
+      logoAnimation: { current: availableAnims, total: logoAnimations.length },
+      profileIdentity: {
+        current: identityItems.filter((item) => item.unlocked).length,
+        total: identityItems.length
+      }
     };
-  }, [cardStyles, gamingLinksFeatures, gamingLinksLayouts, homeLayouts, libraryVariants, logoAnimations, personas, recommendationPacks, specialEvents]);
+  }, [cardStyles, gamingLinksFeatures, gamingLinksLayouts, homeLayouts, libraryVariants, logoAnimations, personas, profileCatalog, recommendationPacks, specialEvents]);
 
   const handleSelectAnimation = useCallback((id) => {
     const result = ProgressionUnlockService.selectLogoAnimation(id);
@@ -843,6 +1170,56 @@ function Rewards() {
     }
   }, [success, toastError, refreshPresentationRewards]);
 
+  const handleSelectProfileFrame = useCallback((frameId) => {
+    const result = ProgressionUnlockService.selectProfileFrame(frameId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
+  const handleSelectProfileBanner = useCallback((bannerId) => {
+    const result = ProgressionUnlockService.selectProfileBanner(bannerId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
+  const handleSelectProfileTitle = useCallback((titleId) => {
+    const result = ProgressionUnlockService.selectProfileTitle(titleId);
+    if (result.success) {
+      success(result.message);
+      refreshPresentationRewards();
+    } else {
+      toastError(result.message);
+    }
+  }, [success, toastError, refreshPresentationRewards]);
+
+  const handleToggleShowcaseAchievement = useCallback((achievementId) => {
+    const current = profileCatalog?.customization?.showcasedAchievements || [];
+    const maxSlots = (profileCatalog?.showcaseSlots || []).filter((slot) => slot.unlocked).length;
+    let next;
+
+    if (current.includes(achievementId)) {
+      next = current.filter((id) => id !== achievementId);
+    } else {
+      if (current.length >= maxSlots) {
+        toastError(`Only ${maxSlots} showcase slot${maxSlots === 1 ? '' : 's'} unlocked. Keep earning XP to pin more badges.`);
+        return;
+      }
+      next = [...current, achievementId];
+    }
+
+    ProgressionUnlockService.setShowcasedAchievements(next);
+    success(next.includes(achievementId) ? 'Badge pinned to profile.' : 'Badge unpinned.');
+    refreshPresentationRewards();
+  }, [profileCatalog, success, toastError, refreshPresentationRewards]);
+
   const renderPanel = () => {
     switch (activeSection) {
       case 'cardStyles':
@@ -876,6 +1253,21 @@ function Rewards() {
         />;
       case 'personas':
         return <PilotPersonasPanel personas={personas} onApply={handleApplyPersona} />;
+      case 'profileIdentity':
+        return (
+          <ProfileIdentityPanel
+            frames={profileCatalog?.frames || []}
+            banners={profileCatalog?.banners || []}
+            titles={profileCatalog?.titles || []}
+            showcaseSlots={profileCatalog?.showcaseSlots || []}
+            profileCustomization={profileCatalog?.customization}
+            unlockedAchievements={unlockedAchievementOptions}
+            onSelectFrame={handleSelectProfileFrame}
+            onSelectBanner={handleSelectProfileBanner}
+            onSelectTitle={handleSelectProfileTitle}
+            onToggleShowcaseAchievement={handleToggleShowcaseAchievement}
+          />
+        );
       case 'specialEvents':
         return <SpecialEventsPanel events={specialEvents} />;
       case 'logoAnimation':
@@ -893,13 +1285,19 @@ function Rewards() {
         {/* Header */}
         <div className="rewards-header">
           <div>
-            <span className="rewards-kicker">CUSTOMIZE</span>
-            <h1>Presentation</h1>
-            <p>Equip and activate your unlocked rewards to customize GamePilot's look and feel.</p>
+            <span className="rewards-kicker">CUSTOMIZE & PROGRESSION</span>
+            <h1>Rewards & Presentation</h1>
+            <p>Equip and activate your unlocked styles, preview live theme roadmaps, and track seasonal events.</p>
           </div>
-          <div className="rewards-level-badge">
-            <span className="rewards-level">Level {summary?.level ?? 0}</span>
-            <span className="rewards-xp">{summary?.xp?.toLocaleString() ?? 0} XP</span>
+          <div className="rewards-header-stats">
+            <div className="rewards-stat-pill">
+              <span className="rewards-stat-value">Level {summary?.level ?? 0}</span>
+              <span className="rewards-stat-sub">{summary?.xp?.toLocaleString() ?? 0} XP</span>
+            </div>
+            <div className="rewards-stat-pill">
+              <span className="rewards-stat-value">{summary?.unlockedCounts?.total ?? 0}/{summary?.totalCounts?.total ?? 0}</span>
+              <span className="rewards-stat-sub">Unlocked</span>
+            </div>
           </div>
         </div>
 
@@ -941,6 +1339,7 @@ function Rewards() {
           {/* Left Sidebar */}
           <div className="rewards-sidebar">
             {[
+              { id: 'profileIdentity', label: 'Profile Identity', icon: Award },
               { id: 'personas', label: 'Pilot Personas', icon: Sparkles },
               { id: 'specialEvents', label: 'Special Events', icon: Calendar },
               { id: 'cardStyles', label: 'Card Styles', icon: Gamepad2 },
@@ -955,17 +1354,24 @@ function Rewards() {
               const counts = sectionCounts[section.id];
 
               return (
-                <button
+                <InfoTooltip
                   key={section.id}
-                  className={`rewards-section-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => setActiveSection(section.id)}
+                  title={section.label}
+                  description={SECTION_HELP[section.id]}
+                  placement="right"
+                  className="rewards-section-tooltip"
                 >
-                  <Icon size={18} />
-                  <span className="rewards-section-label">{section.label}</span>
-                  <span className="rewards-section-count">
-                    {counts?.current ?? 0}/{counts?.total ?? 0}
-                  </span>
-                </button>
+                  <button
+                    className={`rewards-section-btn ${isActive ? 'active' : ''}`}
+                    onClick={() => setActiveSection(section.id)}
+                  >
+                    <Icon size={18} />
+                    <span className="rewards-section-label">{section.label}</span>
+                    <span className="rewards-section-count">
+                      {counts?.current ?? 0}/{counts?.total ?? 0}
+                    </span>
+                  </button>
+                </InfoTooltip>
               );
             })}
           </div>

@@ -9,7 +9,9 @@ export const STORY_SHARE_CARD_SIZE_PX = 1080;
 
 export function StoryShareCard({ stories = [], period = 'weekly', username = 'Pilot', totalPlaytime = 0, topGame = null, showCover = true, watermark = 'gamepilot' }) {
   const periodTitle = period === 'weekly' ? 'This Week' : period === 'monthly' ? 'This Month' : 'Story Recap';
-  const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'portrait' }) : null;
+  const coverUrl = showCover && topGame
+    ? (topGame.coverUrl || resolveGameArtwork(topGame, { surface: 'portrait' }))
+    : null;
 
   return (
     <div className="story-share-card" style={{ width: STORY_SHARE_CARD_SIZE_PX, height: STORY_SHARE_CARD_SIZE_PX }}>

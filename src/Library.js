@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useContext, useEffect, useCallback, useRef } from 'react';
 import html2canvas from 'html2canvas';
-import { Search, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye } from 'lucide-react';
+import { Search, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye, ImageOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
 import GameModal from './components/GameModal';
@@ -33,7 +33,7 @@ import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { GameCurationService } from './services/GameCurationService';
 import EmulatorLibraryService from './services/EmulatorLibraryService';
 import { mergeLibraryUpdates } from './services/LibraryDataService';
-import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
+import { getGameArtworkPlaceholder, resolveGameArtwork, hasMissingCoverArt } from './services/GameArtworkService';
 import { formatPrice } from './CurrencyConverter';
 import { formatPlaytime } from './utils/formatPlaytime';
 import useInterfacePreferences from './hooks/useInterfacePreferences';
@@ -48,6 +48,11 @@ const RECENTLY_ADDED_WINDOW_DAYS = 14;
 const getResolvedMood = (game) => {
   if (!game || typeof game !== 'object') {
     return 'Relaxed';
+  }
+
+  // User override always wins
+  if (typeof game.moodOverride === 'string' && game.moodOverride.trim()) {
+    return game.moodOverride.trim();
   }
 
   // Always derive mood fresh from current genres + mapping
@@ -295,6 +300,7 @@ function Library({
   const [localFilterReplayIntent, setLocalFilterReplayIntent] = useState('');
   const [localFilterCompletion, setLocalFilterCompletion] = useState('');
   const [showHidden, setShowHidden] = useState(false);
+  const [missingCoverOnly, setMissingCoverOnly] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [selectedGameIndex, setSelectedGameIndex] = useState(-1);
   const [librarianPick, setLibrarianPick] = useState(null);
@@ -989,6 +995,7 @@ function Library({
     setFilterMaxTime('');
     setLocalFilterReplayIntent('');
     setShowHidden(false);
+    setMissingCoverOnly(false);
     setDisplayCount(50);
     setSelectedGameIndex(0);
   };
@@ -1032,6 +1039,12 @@ function Library({
     setSelectedGameIndex(0);
   };
 
+  const missingCoverCount = useMemo(() => (
+    Array.isArray(library)
+      ? library.filter((game) => game && !game.isHidden && hasMissingCoverArt(game)).length
+      : 0
+  ), [library]);
+
   const filteredAndSortedGames = useMemo(() => {
     if (!Array.isArray(library)) return [];
     
@@ -1056,9 +1069,10 @@ function Library({
         : gamePlaytime > 0 && gamePlaytime <= maxTimeFilter;
       const matchesReplayIntent = !localFilterReplayIntent || (game.replayIntent || 'none') === localFilterReplayIntent;
       const matchesHidden = showHidden ? true : !(game.isHidden || false);
+      const matchesCover = !missingCoverOnly || hasMissingCoverArt(game);
 
       return matchesSearch && matchesMood && matchesGenre && matchesPlatform &&
-             matchesMaxTime && matchesReplayIntent && matchesHidden;
+             matchesMaxTime && matchesReplayIntent && matchesHidden && matchesCover;
     });
 
     const hltbCache = HowLongToBeatService.getCacheSnapshot();
@@ -1122,7 +1136,7 @@ function Library({
     });
 
     return filtered;
-  }, [library, localSearchQuery, localFilterMood, localFilterGenre, localFilterPlatform, localFilterMaxTime, localFilterReplayIntent, showHidden, localSortBy, favorites]);
+  }, [library, localSearchQuery, localFilterMood, localFilterGenre, localFilterPlatform, localFilterMaxTime, localFilterReplayIntent, showHidden, missingCoverOnly, localSortBy, favorites]);
 
   const displayedGames = useMemo(() => {
     return filteredAndSortedGames.slice(0, displayCount);
@@ -1521,7 +1535,7 @@ function Library({
       .sort((a, b) => getLastPlayedSortValue(b.last_played) - getLastPlayedSortValue(a.last_played))
       .slice(0, 7)
   ), [library]);
-  const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0);
+  const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0) + (missingCoverOnly ? 1 : 0);
 
   return (
     <div className={`App ${theme} library-page library-presentation-${libraryPresentationId} library-card-style-${libraryCardStyle}`} style={libraryRootStyle}>
@@ -2013,12 +2027,23 @@ function Library({
           <label>Hidden</label>
           <button
             onClick={() => setShowHidden((s) => !s)}
-            className={`filter-toggle ${showHidden ? 'active' : ''}`}
-            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer' }}
+            className={`library-filter-toggle ${showHidden ? 'active' : ''}`}
           >
             {showHidden ? 'Showing Hidden' : 'Show Hidden'}
           </button>
         </div>
+        {missingCoverCount > 0 && (
+          <div className="filter-group">
+            <label>Cover Art</label>
+            <button
+              onClick={() => setMissingCoverOnly((s) => !s)}
+              className={`library-filter-toggle ${missingCoverOnly ? 'active' : ''}`}
+              title="Games with no resolvable cover art — open a game to add one via Cover Art Override"
+            >
+              {missingCoverOnly ? `Only Missing (${missingCoverCount})` : `Missing · ${missingCoverCount}`}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="library-context-bar">
@@ -2166,6 +2191,7 @@ function Library({
           const resolvedMood = getResolvedMood(game);
           const gameValue = getGameValue(game);
           const isRecentlyAdded = GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS);
+          const needsCoverArt = hasMissingCoverArt(game);
 
           return (
           <div 
@@ -2217,7 +2243,8 @@ function Library({
                 borderRadius: '8px',
                 overflow: 'hidden',
                 flexShrink: 0,
-                backgroundColor: '#1a1a1a'
+                backgroundColor: '#1a1a1a',
+                position: 'relative'
             } : {
                 width: '120px',
                 aspectRatio: '231 / 87',
@@ -2226,7 +2253,8 @@ function Library({
                 borderRadius: '6px',
                 overflow: 'hidden',
                 flexShrink: 0,
-                backgroundColor: '#1a1a1a'
+                backgroundColor: '#1a1a1a',
+                position: 'relative'
             }}>
                 <LazyImage 
                     src={resolveGameArtwork(game, { surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card' })}
@@ -2239,6 +2267,15 @@ function Library({
                     placeholder={getGameArtworkPlaceholder({ game, surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card' })}
                     style={{ height: '100%', width: '100%', objectFit: 'cover' }}
                 />
+                {needsCoverArt && (
+                  <div
+                    className="game-card-cover-hint"
+                    title="No cover art found — click to add one via Cover Art Override"
+                    onClick={(e) => { e.stopPropagation(); openGameModal(game); }}
+                  >
+                    <ImageOff size={14} /> Add Cover
+                  </div>
+                )}
               </div>
               <div className="game-info" style={{ flexGrow: 1 }}>
                 <div className="library-game-title-row">

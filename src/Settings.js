@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Eye, SlidersHorizontal, Archive } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Eye, SlidersHorizontal, Archive, Info, MessageSquarePlus, ExternalLink, RefreshCw, Compass } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
@@ -26,6 +26,8 @@ import BackupRestoreDashboard from './components/BackupRestoreDashboard';
 import DiscordPresenceService from './services/DiscordPresenceService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import './Settings.css';
+
+const APP_VERSION = '1.9.0';
 
 function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
   const navigate = useNavigate();
@@ -54,7 +56,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState(() => LocalShareService.getDiscordWebhookUrl());
   const [webhookTestLoading, setWebhookTestLoading] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
-  const [previewTheme] = useState(currentTheme);
   const [customBgImage, setCustomBgImage] = useState('');
   const [customBgOverlay, setCustomBgOverlay] = useState(30);
   const [customBgPreview, setCustomBgPreview] = useState('');
@@ -485,7 +486,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                           <div
                             className="theme-preview"
                             style={{
-                              background: availableThemes[previewTheme]?.preview || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              background: availableThemes[currentTheme]?.preview || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                               width: '100%',
                               height: '100%',
                               borderRadius: '8px',
@@ -497,7 +498,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
 
                         <div className="theme-wheel-info" style={{ gap: '10px' }}>
                           <div className="theme-wheel-name">
-                            {availableThemes[previewTheme]?.name || currentTheme || 'Current Theme'}
+                            {availableThemes[currentTheme]?.name || currentTheme || 'Current Theme'}
                           </div>
                           <div className="theme-wheel-index">
                             {Object.keys(availableThemes).length} themes available in your collection
@@ -510,7 +511,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                             type="button"
                             className="save-btn"
                             onClick={() => {
-                              window.location.hash = '#/themes';
+                              navigate('/themes');
                             }}
                           >
                             Open Themes Page
@@ -1363,6 +1364,65 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       <Heart size={16} />
                       Open Founders Lounge
                     </button>
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              {/* About & Feedback Section */}
+              <CollapsibleSection
+                title="About & Feedback"
+                subtitle={`GamePilot v${APP_VERSION} · Local-first gaming librarian`}
+                badge={`v${APP_VERSION}`}
+                icon={<Info size={18} />}
+                className="settings-folder"
+              >
+                <div className="settings-section">
+                  <div className="section-header">
+                    <Info size={20} />
+                    <h2>About GamePilot</h2>
+                  </div>
+                  <div className="about-settings">
+                    <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <div>
+                          <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>GamePilot v{APP_VERSION}</strong>
+                          <p className="setting-description" style={{ margin: '4px 0 0' }}>
+                            Local-first PC gaming librarian and personality companion. Zero cloud tracking, offline analytics.
+                          </p>
+                        </div>
+                        <span className="collapsible-folder-badge" style={{ alignSelf: 'flex-start' }}>v{APP_VERSION}</span>
+                      </div>
+                    </div>
+
+                    <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
+                      <label>Share Ideas or Report Issues</label>
+                      <p className="setting-description">
+                        Have a feature idea, scanner suggestion, or bug to report? Help us make GamePilot the best librarian for your game collection.
+                      </p>
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/feedback')}
+                          className="data-button export"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                        >
+                          <MessageSquarePlus size={16} />
+                          Open Feedback Hub
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate('/');
+                            window.dispatchEvent(new CustomEvent('gamepilot:start-guided-tour'));
+                          }}
+                          className="data-button export"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                        >
+                          <Compass size={16} />
+                          Replay Guided Tour
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CollapsibleSection>
