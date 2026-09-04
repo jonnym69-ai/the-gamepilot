@@ -19,6 +19,26 @@
 
 # one-off dev/codemod scripts (not part of the app)
 /fix-*.js
+/patch-wishlist.js
+/patch-wishlist.mjs
+/simple-test.js
+
+# stale root-level duplicates (real files are in src/)
+/Home.css
+/HomeDashboardSections.js
+/Library.css
+/PerformanceCockpit.css
+/Profile.css
+/Settings.css
+
+# internal docs and dev notes
+KIMI_HANDOFF.md
+API_KEYS.md
+RELEASE_CHECKLIST.md
+social-links-polish-notes.txt
+rec-eng-test.txt
+.rgignore
+test_library.json
 
 # misc
 .DS_Store
