@@ -55,8 +55,11 @@ A gaming identity that learns your habits, recommendations that explain *why*, a
 - Tunable novelty, diversity, and exploration controls
 
 ### ⚔️ Gaming Identity & Progression
-- A behavioural profile that learns how you actually play
+- Adaptive persona driven by recent play — not stale lifetime favourites
+- Hall of Champions: weekly, monthly, and yearly champions from tracked sessions
 - XP, achievements, challenges, and rewards layered over your backlog
+- Home layout rewards that visually change the Home page (Mission Control, Focus Finder, Dashboard Split, Streamer Overlay, Arcade Cabinet)
+- Play-to-unlock progression: themes, card styles, library layouts, logo animations, and more
 
 ### � Game Compatibility & Performance
 - 770+ game database with detailed system requirements
@@ -67,8 +70,18 @@ A gaming identity that learns your habits, recommendations that explain *why*, a
 - Calculate total library value with multi-currency support
 - Real-time price conversion from Steam pricing
 
+### 🎮 Retention & Engagement
+- Year in Review with Champion Journey and visual annual story
+- Weekly digest cards, milestone toasts, and smart nudge reminders
+- Daily doodle, streak badges, and nostalgia cards
+- Seasonal events and hide-and-seek rewards
+- Guided tour for new users
+
 ### Customization
 - Multiple themes, dark/light mode, big-screen (TV) mode, and flexible layouts
+- Home layout reward variants with distinct visual styling per layout
+- Energy Vibe Picker for mood-based game discovery
+- Command palette (press `/` anywhere to search games and pages)
 
 ## Installation
 
@@ -212,7 +225,28 @@ For issues, questions, or suggestions, contact the author directly.
 
 ## Changelog
 
-### v1.7.0 (Current)
+### v1.9.0 (Current)
+- ✅ Recent-play gaming personas — adaptive identity driven by tracked sessions, not stale lifetime favourites
+- ✅ Hall of Champions — weekly, monthly, and yearly champions with portrait-led history and shareable cards
+- ✅ Expanded Year in Review with Champion Journey and annual champion boards
+- ✅ Smarter recommendations — "Because you played" shelf, rotation-aware scoring, richer explanations
+- ✅ Achievement overhaul — curated attainable achievements, rarity, category filters, sorting
+- ✅ Home layout rewards — 5 visually distinct layouts (Mission Control, Focus Finder, Dashboard Split, Streamer Overlay, Arcade Cabinet)
+- ✅ Engagement widgets — weekly digest, milestone toasts, smart nudge reminders, nostalgia cards
+- ✅ Seasonal events and hide-and-seek rewards
+- ✅ Discord Rich Presence support
+- ✅ Passive game watcher for background session tracking
+- ✅ Session database split for robust local persistence
+- ✅ Linux / Steam Deck beta with Steam library discovery and Proton-aware launching
+- ✅ Library and interface cleanup — consolidated pages, portrait artwork, streamlined navigation
+
+### v1.8.0
+- ✅ Expanded persona roasts with new archetypes and hybrid labels
+- ✅ Shareable champion and story cards
+- ✅ Session hardening with stale-session pruning
+- ✅ UI cleanup and polish across Home, Profile, and Stats
+
+### v1.7.0
 - ✅ Gaming identity now grounded in real play data — dominant genre, game count, hours played, and top games
 - ✅ Home page Habit Insights shows taste clusters (Souls-like, Roguelike, Platformer, etc.) based on signature games
 - ✅ Insights mood display now shows top 3 moods with accurate "sessions" labelling
