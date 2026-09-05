@@ -29,9 +29,35 @@ A gaming identity that learns your habits, recommendations that explain *why*, a
 
 ## Screenshots
 
-> Screenshots live in the [`screenshots/`](screenshots/) folder.
+> All screenshots are from v1.9.0 on Windows.
 
-![GamePilot library view](screenshots/page-2026-04-15T23-41-57-768Z.png)
+### Welcome Guided Tour
+
+![Welcome Guided Tour](screenshots/GamePilot%20Welcome%20Guided%20Tour.gif)
+
+### Home — First thing you see
+
+![Home](screenshots/Gamepilot%20Home%20%28First%20thing%20you%20see%29.gif)
+
+### Insights & Persona
+
+![Insights & Persona](screenshots/Gamepilot%202nd%20thing%20you%20see%20insights%20persona.gif)
+
+### Library Today
+
+![Library Today](screenshots/GamePilot%20Your%20Library%20Today.gif)
+
+### Champions
+
+![Champions](screenshots/GamePilot%20Champions%20section.gif)
+
+### Perfect Play & Backlog Buster
+
+![Perfect Play](screenshots/GamePilot%20Perfect%20Play%20Backlog%20Buster.gif)
+
+### Wishlist
+
+![Wishlist](screenshots/GamePilot%20Wishlist%20Section.gif)
 
 ---
 
