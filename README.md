@@ -25,16 +25,6 @@ Playtime, longest sessions, busiest days, and top games — always on, not a onc
 **⚔️ Your library, leveled up.**
 A gaming identity that learns your habits, recommendations that explain *why*, and XP / achievements / rewards that make your backlog fun.
 
----
-
-## Screenshots
-
-> Screenshots live in the [`screenshots/`](screenshots/) folder.
-
-![GamePilot library view](screenshots/page-2026-04-15T23-41-57-768Z.png)
-
----
-
 ## Features
 
 ### 📚 Library Management
