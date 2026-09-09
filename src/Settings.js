@@ -25,9 +25,8 @@ import { ScanReportPanel } from './components/ScanReportPanel';
 import BackupRestoreDashboard from './components/BackupRestoreDashboard';
 import DiscordPresenceService from './services/DiscordPresenceService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
+import { APP_VERSION } from './appVersion';
 import './Settings.css';
-
-const APP_VERSION = '1.9.0';
 
 function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
   const navigate = useNavigate();

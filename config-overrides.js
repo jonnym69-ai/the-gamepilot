@@ -1,4 +1,5 @@
 const webpack = require('webpack');
+const { version } = require('./package.json');
 
 module.exports = function override(config) {
   const fallback = config.resolve.fallback || {};
@@ -24,6 +25,10 @@ module.exports = function override(config) {
     new webpack.ProvidePlugin({
       process: 'process/browser.js',
       Buffer: ['buffer', 'Buffer']
+    }),
+    // Single source of truth for the app version: package.json.
+    new webpack.DefinePlugin({
+      __APP_VERSION__: JSON.stringify(version)
     })
   ]);
   

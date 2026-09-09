@@ -1,0 +1,9 @@
+build/
+dist/
+node_modules/
+package-lock.json
+*.min.js
+*.min.css
+public/
+src/themes/moodThemes.json
+.github/workflows/

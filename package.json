@@ -7,10 +7,6 @@
   "homepage": "./",
   "author": "GamePilot Team",
   "dependencies": {
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.5",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
@@ -31,8 +27,7 @@
     "stream-http": "^3.2.0",
     "systeminformation": "^5.31.4",
     "url": "^0.11.4",
-    "util": "^0.12.5",
-    "web-vitals": "^2.1.4"
+    "util": "^0.12.5"
   },
   "scripts": {
     "start": "react-app-rewired start",
@@ -46,7 +41,9 @@
     "build-electron": "npm run build && electron-builder",
     "build-electron-win": "npm run build && electron-builder --win",
     "build-electron-mac": "npm run build && electron-builder --mac",
-    "build-electron-linux": "npm run build && electron-builder --linux"
+    "build-electron-linux": "npm run build && electron-builder --linux",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,json}\" \"*.js\" \"config-overrides.js\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css,json}\" \"*.js\" \"config-overrides.js\""
   },
   "eslintConfig": {
     "extends": [
@@ -67,10 +64,15 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^13.5.0",
     "concurrently": "^9.2.1",
     "electron": "^40.6.0",
     "electron-builder": "^26.15.3",
     "electron-reloader": "^1.2.3",
+    "prettier": "^3.3.3",
     "react-app-rewired": "^2.2.1",
     "wait-on": "^9.0.4"
   },
@@ -88,6 +90,7 @@
       "build/**/*",
       "node_modules/**/*",
       "electron.js",
+      "logger.js",
       "discordPresence.js",
       "sessionDatabase.js",
       "launchHandler.js",
