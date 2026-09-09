@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import './App.css';
-import moodThemes from './themes/moodThemes.json';
 import { ThemeProvider } from './ThemeContext';
-import { KeyboardShortcuts } from './KeyboardShortcuts';
 import ControllerSupport from './components/ControllerSupport';
 import ErrorBoundary from './components/ErrorBoundary';
 import { GameLaunchCoordinatorService } from './services/GameLaunchCoordinatorService';
@@ -22,13 +20,11 @@ import { SteamGenreEnrichmentService } from './services/SteamGenreEnrichmentServ
 import TrayMenuService from './services/TrayMenuService';
 import { ToastProvider, useToast } from './components/Toast';
 import { AchievementTracker } from './AchievementSystem';
-import { EasterEggService } from './services/EasterEggService';
-import { SeasonalRewardService } from './services/SeasonalRewardService';
 import SeasonalHideAndSeek from './components/SeasonalHideAndSeek';
+import { SeasonalRewardService } from './services/SeasonalRewardService';
 import GuidedTour from './components/GuidedTour';
 import CalendarXPService from './services/CalendarXPService';
 import { GameCurationService } from './services/GameCurationService';
-import { GameRatingService } from './services/GameRatingService';
 import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import StorageService from './services/StorageService';
@@ -48,6 +44,10 @@ import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
 import GamingStoryCard from './components/GamingStoryCard';
 import { GamingStoryService } from './services/GamingStoryService';
+import useLibraryFilters from './hooks/useLibraryFilters';
+import useTheme from './hooks/useTheme';
+import useGlobalInput from './hooks/useGlobalInput';
+import useLibraryCuration from './hooks/useLibraryCuration';
 
 // Core pages loaded eagerly.
 const Home = lazy(() => import('./Home'));
@@ -77,15 +77,7 @@ const Feedback = lazy(() => import('./Feedback'));
 // One-time migration: copy legacy 'gameLibrary' key to prefixed 'gamepilot-library'
 StorageService.migrate();
 
-const FAVORITES_STORAGE_KEY = 'favorites';
 const STILL_PLAYING_PROMPT_DELAY_MS = 15 * 60 * 1000;
-
-const VALID_THEME_IDS = new Set(['light', 'dark', ...moodThemes.map((themeConfig) => themeConfig?.id).filter(Boolean)]);
-
-const resolveThemeClassName = (themeId) => {
-  const normalizedThemeId = typeof themeId === 'string' ? themeId.trim() : '';
-  return VALID_THEME_IDS.has(normalizedThemeId) ? normalizedThemeId : 'dark';
-};
 
 const getDateBucketKeys = (timestampValue) => {
   const date = new Date(normalizeLastPlayedValue(timestampValue) || Date.now());
@@ -103,18 +95,6 @@ const incrementPlaytimeBucket = (bucket, key, minutes) => ({
   ...(bucket || {}),
   [key]: normalizeTrackedNumber(bucket?.[key]) + normalizeTrackedNumber(minutes),
 });
-
-const CONTROLLER_NAV_ROUTES = [
-  '/',
-  '/library',
-  '/recommendations',
-  '/stats',
-  '/profile',
-  '/year-in-review',
-  '/timeline',
-  '/settings',
-  '/feedback',
-];
 
 export default function App() {
   return (
@@ -136,21 +116,12 @@ function StartupQuestionnaireRoute() {
 }
 
 function AppContent() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [library, setLibrary] = useState([]);
-  const [filterMood, setFilterMood] = useState('');
-  const [filterTime, setFilterTime] = useState('');
-  const [filterGenre, setFilterGenre] = useState('');
-  const [theme, setTheme] = useState(() => {
-    // Get theme from localStorage or default to 'relaxed'
-    const savedTheme = localStorage.getItem('gamepilot-theme');
-    return savedTheme || 'relaxed';
-  });
+  const { filterMood, setFilterMood, filterTime, setFilterTime, filterGenre, setFilterGenre } = useLibraryFilters();
+  const { theme, setTheme, bigScreenMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const [lastPlayedGame, setLastPlayedGame] = useState(null);
   const [activeSessions, setActiveSessions] = useState([]);
-  const [bigScreenMode, setBigScreenMode] = useState(() => localStorage.getItem('gamepilot-bigScreenMode') === 'true');
   const [hasLoadedLibrary, setHasLoadedLibrary] = useState(false);
   const [stillPlayingPrompt, setStillPlayingPrompt] = useState(null);
   const [recommendationOutcomePrompt, setRecommendationOutcomePrompt] = useState(null);
@@ -221,153 +192,7 @@ function AppContent() {
     return () => window.clearTimeout(timer);
   }, [library]);
 
-  useEffect(() => {
-    const currentPath = location.pathname || '/';
-
-    const handleGlobalControllerNavigation = (event) => {
-      const action = event?.detail?.action;
-      if (!action) {
-        return;
-      }
-
-      window.setTimeout(() => {
-        if (event.defaultPrevented) {
-          return;
-        }
-
-        if (action === 'scroll_down') {
-          window.scrollBy({ top: 220, behavior: 'smooth' });
-          return;
-        }
-
-        if (action === 'scroll_up') {
-          window.scrollBy({ top: -220, behavior: 'smooth' });
-          return;
-        }
-
-        if (currentPath === '/library') {
-          return;
-        }
-
-        const currentRouteIndex = Math.max(0, CONTROLLER_NAV_ROUTES.indexOf(currentPath));
-
-        if (action === 'page_next') {
-          const nextRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex + 1) % CONTROLLER_NAV_ROUTES.length];
-          navigate(nextRoute);
-          return;
-        }
-
-        if (action === 'page_previous') {
-          const previousRoute =
-            CONTROLLER_NAV_ROUTES[
-              (currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length
-            ];
-          navigate(previousRoute);
-        }
-      }, 0);
-    };
-
-    window.addEventListener('controllerInput', handleGlobalControllerNavigation);
-    return () => window.removeEventListener('controllerInput', handleGlobalControllerNavigation);
-  }, [location.pathname, navigate]);
-
-  // Listen for theme changes from navbar
-  useEffect(() => {
-    const handleThemeChange = (event) => {
-      setTheme(event.detail);
-    };
-
-    window.addEventListener('themeChange', handleThemeChange);
-    return () => window.removeEventListener('themeChange', handleThemeChange);
-  }, []);
-
-  // Initialize keyboard shortcuts
-  useEffect(() => {
-    const focusSearchInput = () => {
-      // Focus search input if we're on the library page
-      const searchInput = document.querySelector('input[placeholder*="search" i], input[placeholder*="Search" i]');
-      if (searchInput) {
-        searchInput.focus();
-        searchInput.select();
-      }
-    };
-
-    KeyboardShortcuts.registerAction('focus_search', 'Ctrl+K', focusSearchInput, 'Focus search');
-
-    KeyboardShortcuts.registerAction(
-      'go_library',
-      'Ctrl+L',
-      () => {
-        window.location.hash = '#/library';
-      },
-      'Go to Library'
-    );
-
-    KeyboardShortcuts.registerAction(
-      'go_home',
-      'Ctrl+H',
-      () => {
-        window.location.hash = '#/';
-      },
-      'Go to Home'
-    );
-
-    KeyboardShortcuts.registerAction(
-      'go_profile',
-      'Ctrl+P',
-      () => {
-        window.location.hash = '#/profile';
-      },
-      'Go to Profile'
-    );
-
-    KeyboardShortcuts.registerAction(
-      'go_stats',
-      'Ctrl+S',
-      () => {
-        window.location.hash = '#/stats';
-      },
-      'Go to Stats'
-    );
-
-    KeyboardShortcuts.registerAction(
-      'go_settings',
-      'Ctrl+T',
-      () => {
-        window.location.hash = '#/settings';
-      },
-      'Go to Settings'
-    );
-
-    KeyboardShortcuts.registerAction(
-      'show_shortcuts',
-      '?',
-      () => {
-        KeyboardShortcuts.showHelp();
-      },
-      'Show keyboard shortcuts'
-    );
-
-    return () => {
-      KeyboardShortcuts.unregisterAction('focus_search');
-      KeyboardShortcuts.unregisterAction('go_library');
-      KeyboardShortcuts.unregisterAction('go_home');
-      KeyboardShortcuts.unregisterAction('go_profile');
-      KeyboardShortcuts.unregisterAction('go_stats');
-      KeyboardShortcuts.unregisterAction('go_settings');
-      KeyboardShortcuts.unregisterAction('show_shortcuts');
-    };
-  }, []);
-
-  // Listen for easter egg inputs
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      EasterEggService.handleKeyPress(e.key);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  useGlobalInput();
 
   // Process calendar rewards in the background (rechecks whenever the library changes).
   useEffect(() => {
@@ -379,53 +204,6 @@ function AppContent() {
       console.warn('Calendar auto-reward check failed:', e);
     }
   }, [library]);
-
-  // Apply theme globally and save to localStorage
-  useEffect(() => {
-    const animationsEnabled = localStorage.getItem('animationsEnabled') !== 'false';
-
-    // Clear any invalid cached theme
-    const savedTheme = localStorage.getItem('gamepilot-theme');
-    if (savedTheme && !VALID_THEME_IDS.has(savedTheme)) {
-      localStorage.removeItem('gamepilot-theme');
-    }
-
-    const themeClass = resolveThemeClassName(theme);
-    const bigScreenMode = localStorage.getItem('gamepilot-bigScreenMode') === 'true';
-    const newBodyClass = `App ${themeClass}${animationsEnabled ? '' : ' no-animations'}${bigScreenMode ? ' big-screen-mode' : ''}`;
-
-    if (theme !== themeClass) {
-      setTheme(themeClass);
-    }
-
-    // Only update if the class has actually changed
-    if (document.body.className !== newBodyClass) {
-      document.body.className = newBodyClass;
-      localStorage.setItem('gamepilot-theme', themeClass);
-    }
-  }, [theme]);
-
-  // React to big-screen mode toggle from ThemeContext
-  useEffect(() => {
-    const handleBigScreenToggle = () => {
-      const animationsEnabled = localStorage.getItem('animationsEnabled') !== 'false';
-      const themeClass = resolveThemeClassName(theme);
-      const bigScreenMode = localStorage.getItem('gamepilot-bigScreenMode') === 'true';
-      const newBodyClass = `App ${themeClass}${animationsEnabled ? '' : ' no-animations'}${bigScreenMode ? ' big-screen-mode' : ''}`;
-      if (document.body.className !== newBodyClass) {
-        document.body.className = newBodyClass;
-      }
-    };
-    window.addEventListener('gamepilot:bigscreen-toggled', handleBigScreenToggle);
-    const handleBigScreenState = (e) => {
-      setBigScreenMode(!!e?.detail?.enabled);
-    };
-    window.addEventListener('gamepilot:bigscreen-toggled', handleBigScreenState);
-    return () => {
-      window.removeEventListener('gamepilot:bigscreen-toggled', handleBigScreenToggle);
-      window.removeEventListener('gamepilot:bigscreen-toggled', handleBigScreenState);
-    };
-  }, [theme]);
 
   // --- Utility Functions ---
   const saveLibrary = useCallback((libraryData) => {
@@ -1111,207 +889,18 @@ function AppContent() {
     return () => window.removeEventListener('gamepilot:launch-game', onLaunchRequest);
   }, [handleLaunchGame]);
 
-  const handleUpdateRating = useCallback(
-    (gameName, userRating, replayIntent, extra = {}) => {
-      const updatedLibrary = normalizeLibraryData(
-        (library || []).map((game) => {
-          if (!game || game.name !== gameName) {
-            return game;
-          }
-
-          const gameId = String(game.appid || game.name || '');
-          if (gameId) {
-            GameRatingService.setRating(gameId, {
-              value: typeof userRating === 'number' ? userRating : game.userRating,
-              wouldReplay: extra?.wouldReplay,
-              tags: extra?.tags,
-            });
-          }
-
-          return {
-            ...game,
-            userRating: typeof userRating === 'number' ? userRating : game.userRating,
-            replayIntent: replayIntent ?? game.replayIntent,
-            wouldReplay: extra?.wouldReplay ?? game.wouldReplay,
-            userRatingTags: extra?.tags ?? game.userRatingTags,
-          };
-        })
-      );
-
-      setLibrary(updatedLibrary);
-      saveLibrary(updatedLibrary);
-      AchievementTracker.checkAndUnlockAchievements();
-
-      if (typeof userRating === 'number' && userRating > 0) {
-        const targetGame = (library || []).find((g) => g?.name === gameName);
-        if (targetGame) {
-          UserBehaviorProfile.trackRating({
-            gameId: String(targetGame.appid || targetGame.name || ''),
-            rating: userRating,
-            wouldReplay: extra?.wouldReplay,
-            tags: extra?.tags,
-            mood: targetGame.mood || null,
-            genres: Array.isArray(targetGame.genres) ? targetGame.genres : [],
-          });
-        }
-      }
-    },
-    [library, saveLibrary]
-  );
-
-  const handleToggleFavorite = useCallback((favoriteKey) => {
-    if (!favoriteKey) {
-      return;
-    }
-
-    try {
-      const currentFavorites = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]');
-      const normalizedFavorites = Array.isArray(currentFavorites) ? currentFavorites : [];
-      const nextFavorites = normalizedFavorites.includes(favoriteKey)
-        ? normalizedFavorites.filter((entry) => entry !== favoriteKey)
-        : [...normalizedFavorites, favoriteKey];
-      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error);
-    }
-  }, []);
-
-  const handleRemoveGames = useCallback(
-    (gameIds = []) => {
-      const normalizedIds = Array.isArray(gameIds) ? gameIds.map((id) => String(id)).filter(Boolean) : [];
-      if (normalizedIds.length === 0) {
-        return;
-      }
-
-      const removalSet = new Set(normalizedIds);
-      const updatedLibrary = normalizeLibraryData(
-        (library || []).filter((game) => !removalSet.has(String(game?.appid || game?.name)))
-      );
-      setLibrary(updatedLibrary);
-      saveLibrary(updatedLibrary);
-    },
-    [library, saveLibrary]
-  );
-
-  // --- Curation handlers ---
-  const handleUpdateCollections = useCallback(
-    (gameName, collectionIds) => {
-      GameCurationService.setGameCollections(gameName, collectionIds);
-      setLibrary((prev) => {
-        const updatedLibrary = normalizeLibraryData(
-          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
-        );
-        saveLibrary(updatedLibrary);
-        return updatedLibrary;
-      });
-    },
-    [saveLibrary]
-  );
-
-  const handleToggleHidden = useCallback(
-    (gameName) => {
-      const isHidden = GameCurationService.toggleHiddenGame(gameName);
-      setLibrary((prev) => {
-        const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? { ...g, isHidden } : g)));
-        saveLibrary(updatedLibrary);
-        return updatedLibrary;
-      });
-    },
-    [saveLibrary]
-  );
-
-  const handleUpdateCompletion = useCallback(
-    (gameName, status, note) => {
-      const completedStatuses = new Set(['beaten', 'completed', '100%']);
-      const isCompletionStatus = completedStatuses.has(
-        String(status || '')
-          .trim()
-          .toLowerCase()
-      );
-      GameCurationService.setGameCompletion(gameName, status, note);
-      setLibrary((prev) => {
-        const priorGame = prev.find((g) => g.name === gameName);
-        const wasCompleted = completedStatuses.has(
-          String(priorGame?.completionStatus || '')
-            .trim()
-            .toLowerCase()
-        );
-        const hadPlaytime = Number(priorGame?.time_played || 0) > 0;
-        const updatedLibrary = normalizeLibraryData(
-          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
-        );
-        saveLibrary(updatedLibrary);
-        AchievementTracker.checkAndUnlockAchievements();
-        if (isCompletionStatus && hadPlaytime && !wasCompleted) {
-          AchievementTracker.trackBacklogMilestone('finish_started');
-          AchievementTracker.checkAndUnlockAchievements();
-        }
-        return updatedLibrary;
-      });
-    },
-    [saveLibrary]
-  );
-
-  const handleUpdateNotes = useCallback(
-    (gameName, text) => {
-      GameCurationService.setGameNotes(gameName, text);
-      setLibrary((prev) => {
-        const updatedLibrary = normalizeLibraryData(
-          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
-        );
-        saveLibrary(updatedLibrary);
-        return updatedLibrary;
-      });
-    },
-    [saveLibrary]
-  );
-
-  const handleUpdateCoverArt = useCallback(
-    (gameName, url) => {
-      GameCurationService.setCoverArtOverride(gameName, url);
-      setLibrary((prev) => {
-        const updatedLibrary = normalizeLibraryData(
-          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
-        );
-        saveLibrary(updatedLibrary);
-        return updatedLibrary;
-      });
-    },
-    [saveLibrary]
-  );
-
-  const handleAddSessionNote = useCallback(
-    (gameName, text) => {
-      GameCurationService.addSessionNote(gameName, text);
-      setLibrary((prev) => {
-        const updatedLibrary = normalizeLibraryData(
-          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
-        );
-        saveLibrary(updatedLibrary);
-        return updatedLibrary;
-      });
-    },
-    [saveLibrary]
-  );
-
-  const handleTogglePlayedElsewhere = useCallback(
-    (gameName) => {
-      const next = GameCurationService.togglePlayedElsewhere(gameName);
-      setLibrary((prev) => {
-        const updatedLibrary = normalizeLibraryData(
-          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
-        );
-        saveLibrary(updatedLibrary);
-        return updatedLibrary;
-      });
-      toastSuccess(
-        next
-          ? `${gameName} marked as played elsewhere — no longer counts as unplayed.`
-          : `${gameName} unmarked — counts as unplayed again.`
-      );
-    },
-    [saveLibrary, toastSuccess]
-  );
+  const {
+    handleUpdateRating,
+    handleToggleFavorite,
+    handleRemoveGames,
+    handleUpdateCollections,
+    handleToggleHidden,
+    handleUpdateCompletion,
+    handleUpdateNotes,
+    handleUpdateCoverArt,
+    handleAddSessionNote,
+    handleTogglePlayedElsewhere,
+  } = useLibraryCuration({ library, setLibrary, saveLibrary, toastSuccess });
 
   return (
     <div className="App-container">
