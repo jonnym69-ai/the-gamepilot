@@ -2,25 +2,6 @@ import React from 'react';
 import LazyImage from './LazyImage';
 import { GamingIdentity } from '../GamingIdentity';
 
-export function MiniProgressRing({ percent, size = 36, stroke = 4, color = '#8ab4f8' }) {
-  const radius = (size - stroke) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percent / 100) * circumference;
-  return (
-    <svg width={size} height={size} style={{ flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} fill="none" stroke="rgba(255,255,255,0.12)" />
-      <circle
-        cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} fill="none"
-        strokeDasharray={circumference} strokeDashoffset={offset} stroke={color}
-        strokeLinecap="round" style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-      />
-      <text x="50%" y="50%" dy="0.3em" textAnchor="middle" fill="currentColor" fontSize={size * 0.35} fontWeight={700}>
-        {percent}%
-      </text>
-    </svg>
-  );
-}
-
 export function IdentityMatchBadge({ game, mood, genre }) {
   try {
     const identity = React.useMemo(() => {

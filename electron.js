@@ -2911,7 +2911,7 @@ function createWindow() {
                 type: 'info',
                 title: 'About GamePilot',
                 message: 'GamePilot',
-                detail: 'A comprehensive PC gaming library manager\n\nCreated by Jonathan Morris\n\nVersion 1.0.0'
+                detail: `A comprehensive PC gaming library manager\n\nCreated by Jonathan Morris\n\nVersion ${app.getVersion()}`
               });
             }
           }

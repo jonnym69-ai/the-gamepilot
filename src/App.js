@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import './App.css';
 import moodThemes from './themes/moodThemes.json';
@@ -21,10 +21,6 @@ import { PlaytimeEnrichmentService } from './services/PlaytimeEnrichmentService'
 import { SteamGenreEnrichmentService } from './services/SteamGenreEnrichmentService';
 import TrayMenuService from './services/TrayMenuService';
 import { ToastProvider, useToast } from './components/Toast';
-import LevelUpToast from './components/LevelUpToast';
-import WeeklySummaryToast from './components/WeeklySummaryToast';
-import CaptainLogModal from './components/CaptainLogModal';
-// Phase 0: DailyEngagementService kept available via other modules; not auto-toasted here.
 import { AchievementTracker } from './AchievementSystem';
 import { EasterEggService } from './services/EasterEggService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
@@ -170,22 +166,9 @@ function AppContent() {
     () => localStorage.getItem('gamepilot-bigScreenMode') === 'true'
   );
   const [hasLoadedLibrary, setHasLoadedLibrary] = useState(false);
-  // Phase 0: noise/modal UI silenced (components retained behind false mounts).
-  const showLevelUp = false;
-  const showWeeklySummary = false;
-  const weeklyStats = null;
-  const captainLogPrompt = null;
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [previousLevel, setPreviousLevel] = useState(1);
   const [stillPlayingPrompt, setStillPlayingPrompt] = useState(null);
   const [recommendationOutcomePrompt, setRecommendationOutcomePrompt] = useState(null);
   const [stillPlayingDeadlines, setStillPlayingDeadlines] = useState({});
-  const setShowLevelUp = () => {};
-  const setShowWeeklySummary = () => {};
-  const setCaptainLogPrompt = () => {};
-  void setShowLevelUp;
-  void setShowWeeklySummary;
-  void setCaptainLogPrompt;
   const [gamingStory, setGamingStory] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(() => StorageService.getString('minimizeOnLaunch') === 'true');
@@ -356,24 +339,15 @@ function AppContent() {
   // Listen for easter egg inputs
   useEffect(() => {
     const handleKeyDown = (e) => {
-      const result = EasterEggService.handleKeyPress(e.key);
-      if (result?.type === 'activated') {
-        // Easter egg activated
-      }
+      EasterEggService.handleKeyPress(e.key);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Phase 0: keep XP/calendar systems alive quietly; do not surface toast noise.
+  // Process calendar rewards in the background (rechecks whenever the library changes).
   useEffect(() => {
-    const xpStats = AchievementTracker.getXPStats();
-    const newLevel = xpStats.level || 1;
-    setCurrentLevel(newLevel);
-    setPreviousLevel(newLevel);
-
-    // Calendar rewards can still process in the background without UI fanfare.
     try {
       CalendarXPService.processBirthdayReward();
       CalendarXPService.checkAnniversaryReward();
@@ -381,7 +355,7 @@ function AppContent() {
     } catch (e) {
       console.warn('Calendar auto-reward check failed:', e);
     }
-  }, [library, previousLevel]);
+  }, [library]);
 
   // Apply theme globally and save to localStorage
   useEffect(() => {
@@ -391,7 +365,6 @@ function AppContent() {
     const savedTheme = localStorage.getItem('gamepilot-theme');
     if (savedTheme && !VALID_THEME_IDS.has(savedTheme)) {
       localStorage.removeItem('gamepilot-theme');
-      // Cleared invalid cached theme
     }
 
     const themeClass = resolveThemeClassName(theme);
@@ -404,7 +377,6 @@ function AppContent() {
 
     // Only update if the class has actually changed
     if (document.body.className !== newBodyClass) {
-      // Theme applied
       document.body.className = newBodyClass;
       localStorage.setItem('gamepilot-theme', themeClass);
     }
@@ -843,7 +815,6 @@ function AppContent() {
           setRecommendationOutcomePrompt({ ...detail, recommendationSession });
         }
       }
-      // Phase 0: Captain's Log stays in code but is not prompted after sessions.
     };
 
     window.addEventListener('gamepilot:session-ended', handleSessionEnded);
@@ -1054,10 +1025,8 @@ function AppContent() {
         setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
         toastSuccess(`${game.name} launched. Session tracking is active.`);
 
-        const seasonalReward = SeasonalRewardService.trackGamePlay(game);
-        if (seasonalReward) {
-          // Seasonal reward unlocked
-        }
+        // Record the play for seasonal reward tracking (reward toast is shown elsewhere).
+        SeasonalRewardService.trackGamePlay(game);
 
         if (minimizeOnLaunch && window.electronAPI?.minimizeWindow) {
           window.electronAPI.minimizeWindow().catch(() => {});
@@ -1243,33 +1212,6 @@ function AppContent() {
         <GamingStoryCard
           story={gamingStory}
           onContinue={() => setGamingStory(null)}
-        />
-      )}
-      {/* Phase 0: XP / weekly summary / captain log UI silenced (code retained). */}
-      {false && (
-        <LevelUpToast
-          show={showLevelUp}
-          level={currentLevel}
-          xpTotal={AchievementTracker.getXPStats().totalXP}
-          onClose={() => setShowLevelUp(false)}
-        />
-      )}
-      {false && (
-        <WeeklySummaryToast
-          show={showWeeklySummary}
-          stats={weeklyStats}
-          onClose={() => setShowWeeklySummary(false)}
-        />
-      )}
-      {false && (
-        <CaptainLogModal
-          isOpen={!!captainLogPrompt}
-          onClose={() => setCaptainLogPrompt(null)}
-          gameName={captainLogPrompt?.gameName}
-          gameId={captainLogPrompt?.gameId}
-          sessionTimestamp={captainLogPrompt?.sessionTimestamp}
-          sessionMood={captainLogPrompt?.sessionMood}
-          sessionMinutes={captainLogPrompt?.sessionMinutes}
         />
       )}
       {loading && (

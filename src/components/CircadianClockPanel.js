@@ -25,7 +25,6 @@ export function CircadianClockPanel({ library = [] }) {
     };
 
     let weekendMinutes = 0;
-    let weekdayMinutes = 0;
 
     sessions.forEach((s) => {
       const duration = s.playtimeMinutes || 0;
@@ -43,8 +42,6 @@ export function CircadianClockPanel({ library = [] }) {
 
         if (day === 0 || day === 6) {
           weekendMinutes += duration;
-        } else {
-          weekdayMinutes += duration;
         }
 
         if (hour >= 0 && hour < 6) {

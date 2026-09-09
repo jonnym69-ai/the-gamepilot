@@ -8,7 +8,7 @@ import { resolveGameArtworkBundle } from '../services/GameArtworkService';
 import { StartupPersonalizationService } from '../services/StartupPersonalizationService';
 import { isGameUnplayed } from '../services/RecommendationEngine';
 import { getBlendedPlaytimeMinutes } from '../services/gameClassification';
-import { MiniProgressRing, formatSessionStyle } from './HomeSectionPrimitives';
+import { formatSessionStyle } from './HomeSectionPrimitives';
 import SessionRepository from '../services/SessionRepository';
 import PeriodChampionService from '../services/PeriodChampionService';
 import { LocalShareService } from '../services/LocalShareService';
@@ -381,39 +381,6 @@ export function WeeklyPlaySnapshot({ weeklyStats, streaks }) {
               <span className="weekly-play-label">Streak</span>
             </div>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function HabitGoalsMiniCard({ goalProgress }) {
-  const activeGoals = [
-    ...(goalProgress?.weekly || []),
-    ...(goalProgress?.monthly || [])
-  ].filter((g) => !g.completed);
-
-  if (activeGoals.length === 0) return null;
-
-  const colorForPeriod = (period) =>
-    period === 'week' ? '#8ab4f8' : '#c58af9';
-
-  return (
-    <div className="results-section">
-      <div className="result-card habit-goals-card">
-        <h3 className="result-title">🎯 Active Goals</h3>
-        <div className="habit-goals-list">
-          {activeGoals.slice(0, 4).map((goal) => (
-            <div key={goal.id} className="habit-goal-row">
-              <MiniProgressRing percent={goal.percent} color={colorForPeriod(goal.period)} />
-              <div className="habit-goal-info">
-                <span className="habit-goal-label">{goal.label}</span>
-                <span className="habit-goal-sub">
-                  {goal.current} / {goal.target} {goal.period === 'week' ? 'this week' : 'this month'}
-                </span>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

@@ -51,7 +51,6 @@ import {
   IdentitySnapshotCard,
   CurrentEraCard,
   WeeklyPlaySnapshot,
-  HabitGoalsMiniCard,
   BecauseYouAreSection,
   FamiliarOrFreshNudge,
   RecentSessionsSummary,
@@ -160,7 +159,6 @@ function Home({
   const [sessionFeedbackPrompt, setSessionFeedbackPrompt] = useState(null);
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const [personaSnapshot, setPersonaSnapshot] = useState(null);
-  const [goalProgress, setGoalProgress] = useState({ weekly: [], monthly: [] });
   const [streaks, setStreaks] = useState({ current: 0, longest: 0 });
   const [weeklyHabitStats, setWeeklyHabitStats] = useState({ totalHours: 0, sessions: 0, daysPlayed: 0, uniqueGames: 0 });
   const [buyRecommendations, setBuyRecommendations] = useState(null);
@@ -236,11 +234,6 @@ function Home({
       setPersonaSnapshot(UserBehaviorProfile.getPersonaSnapshot());
     } catch (e) {
       console.error('Home: failed to load persona snapshot', e);
-    }
-    try {
-      setGoalProgress(HabitTrackerService.getGoalProgress());
-    } catch (e) {
-      console.error('Home: failed to load goal progress', e);
     }
     try {
       setStreaks(HabitTrackerService.getStreaks());
@@ -1618,7 +1611,6 @@ function Home({
               getGameCardClass={getGameCardClass}
             />
             <IdentitySnapshotCard persona={personaSnapshot} />
-            {false && <HabitGoalsMiniCard goalProgress={goalProgress} />}
           </HomeSection>
 
           <HomeSection

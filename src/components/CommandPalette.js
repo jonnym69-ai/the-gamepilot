@@ -8,7 +8,7 @@ import { getLaunchSources } from '../services/LibraryDataService';
 import { scoreCommandMatch } from './commandPaletteMatch';
 import './CommandPalette.css';
 
-// Phase 0.5: product IA only — Home, Library, Recs, Stats, Profile, Settings, Year in Review, Feedback.
+// The command palette only routes to the curated product pages, not every route.
 const NAV_COMMANDS = [
   { id: 'nav-home', label: 'Go to Home', icon: Home, path: '/', keywords: 'home dashboard' },
   { id: 'nav-library', label: 'Go to Library', icon: LibraryIcon, path: '/library', keywords: 'library games browse' },

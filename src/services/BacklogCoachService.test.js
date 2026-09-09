@@ -13,16 +13,6 @@ const makeGame = (overrides = {}) => ({
   ...overrides
 });
 
-const makeSession = ({ minutes = 30, gameName = 'Game', hoursAgo = 1 } = {}) => {
-  const start = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
-  return {
-    sessionId: `${gameName}-${start.getTime()}-${Math.random()}`,
-    gameName,
-    startTime: start.toISOString(),
-    playtimeMinutes: minutes
-  };
-};
-
 describe('BacklogCoachService', () => {
   beforeEach(() => {
     localStorage.clear();
