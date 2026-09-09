@@ -94,6 +94,7 @@
       "node_modules/**/*",
       "electron.js",
       "logger.js",
+      "electron/**/*",
       "discordPresence.js",
       "sessionDatabase.js",
       "launchHandler.js",
