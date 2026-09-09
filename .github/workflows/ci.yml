@@ -37,6 +37,10 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: CSS lint (non-blocking, reports duplicate selectors)
+        run: npm run lint:css
+        continue-on-error: true
+
       - name: Run tests
         run: npx react-scripts test --watchAll=false --ci
 
