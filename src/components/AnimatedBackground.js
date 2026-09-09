@@ -33,7 +33,7 @@ const AnimatedBackground = ({ themeId }) => {
       intensity: theme.animation.intensity || 0.6,
       speed: theme.animation.speed || 'medium',
       particleCount: theme.animation.particleCount || DEFAULT_PARTICLES,
-      config: theme.animation
+      config: theme.animation,
     };
   }, [themeId]);
 
@@ -55,7 +55,7 @@ const AnimatedBackground = ({ themeId }) => {
             height: `${size}px`,
             animationDelay: `${delay}s`,
             animationDuration: `${duration}s`,
-            background: animationConfig.color
+            background: animationConfig.color,
           }}
         />
       );
@@ -161,7 +161,7 @@ const AnimatedBackground = ({ themeId }) => {
             className="pulse-layer"
             style={{
               '--pulse-color': animationConfig.color,
-              '--pulse-intensity': animationConfig.intensity
+              '--pulse-intensity': animationConfig.intensity,
             }}
           />
         );
@@ -173,7 +173,7 @@ const AnimatedBackground = ({ themeId }) => {
   const backgroundClasses = [
     'animated-background',
     `animated-${animationConfig.type}`,
-    `speed-${animationConfig.speed}`
+    `speed-${animationConfig.speed}`,
   ];
 
   if (animationConfig.type === 'waves') {

@@ -21,7 +21,11 @@
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .librarian-hub-tab:hover {
@@ -76,8 +80,13 @@
   padding: 4px 0 12px;
   scrollbar-width: thin;
 }
-.librarian-hub-recently-played-shelf::-webkit-scrollbar { height: 6px; }
-.librarian-hub-recently-played-shelf::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+.librarian-hub-recently-played-shelf::-webkit-scrollbar {
+  height: 6px;
+}
+.librarian-hub-recently-played-shelf::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
 
 .librarian-hub-recently-played-card {
   flex-shrink: 0;

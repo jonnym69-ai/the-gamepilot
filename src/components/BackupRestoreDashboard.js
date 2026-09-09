@@ -9,7 +9,7 @@ import {
   Save,
   Shield,
   TriangleAlert,
-  Upload
+  Upload,
 } from 'lucide-react';
 import BackupService from '../services/BackupService';
 import './BackupRestoreDashboard.css';
@@ -83,8 +83,8 @@ export function BackupRestoreDashboard() {
         <div>
           <h3>Local Backup & Restore</h3>
           <p>
-            Your GamePilot data stays on your device. Export everything to a JSON file for safekeeping, or restore
-            from a previous backup.
+            Your GamePilot data stays on your device. Export everything to a JSON file for safekeeping, or restore from
+            a previous backup.
           </p>
         </div>
       </div>

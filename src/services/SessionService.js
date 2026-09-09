@@ -9,17 +9,13 @@ const FRESH_SESSION_GAP_MS = 4 * 60 * 60 * 1000;
 function isSameCalendarDay(ts1, ts2) {
   const d1 = new Date(ts1);
   const d2 = new Date(ts2);
-  return (
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate()
-  );
+  return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 }
 
 function isFreshSession(lastTs, now = Date.now()) {
   if (!lastTs || Number.isNaN(lastTs)) return true;
   if (isSameCalendarDay(lastTs, now)) {
-    return (now - lastTs) >= FRESH_SESSION_GAP_MS;
+    return now - lastTs >= FRESH_SESSION_GAP_MS;
   }
   return true;
 }
@@ -59,7 +55,7 @@ export const SessionService = {
   dismissWelcomeBack,
   isWelcomeBackOptedOut,
   setWelcomeBackOptedOut,
-  FRESH_SESSION_GAP_MS
+  FRESH_SESSION_GAP_MS,
 };
 
 export default SessionService;

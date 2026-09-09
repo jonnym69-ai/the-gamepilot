@@ -8,7 +8,7 @@ const {
   findExecutableDeep,
   collectNestedGameDirectories,
   createTrackedDefaults,
-  getActiveDrives
+  getActiveDrives,
 } = require('./scannerUtils');
 
 let getGameGenres;
@@ -20,7 +20,8 @@ try {
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
-    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires')) return ['Strategy'];
+    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires'))
+      return ['Strategy'];
     if (name.includes('action') || name.includes('far cry') || name.includes('resident evil')) return ['Action'];
     if (name.includes('adventure') || name.includes('tomb raider') || name.includes('zelda')) return ['Adventure'];
     if (name.includes('simulation') || name.includes('sims') || name.includes('cities')) return ['Simulation'];
@@ -44,57 +45,57 @@ const getRockstarInstallPaths = () => {
     paths.push(`${drive}:\\Games\\Rockstar`);
   });
   paths.push(`${process.env.LOCALAPPDATA || ''}\\Rockstar Games`);
-  
+
   // Also check specific known Rockstar game locations
   getActiveDrives().forEach((drive) => {
     paths.push(`${drive}:\\Red Dead Redemption 2`);
     paths.push(`${drive}:\\RDR 2`);
     paths.push(`${drive}:\\Games\\Red Dead Redemption 2`);
   });
-  
+
   return paths.filter(Boolean);
 };
 
 const SYSTEM_FOLDER_PATTERNS = [
-  'program files', 'program files (x86)', 'windows', 'users', 'documents and settings',
-  'appdata', 'application data', 'local settings', 'programdata', 'perflogs',
-  'system volume', 'recycle.bin', '$recycle.bin'
+  'program files',
+  'program files (x86)',
+  'windows',
+  'users',
+  'documents and settings',
+  'appdata',
+  'application data',
+  'local settings',
+  'programdata',
+  'perflogs',
+  'system volume',
+  'recycle.bin',
+  '$recycle.bin',
 ];
 
 const isSystemPath = (filePath) => {
   const normalized = filePath.toLowerCase();
-  return SYSTEM_FOLDER_PATTERNS.some(pattern => normalized.includes(pattern));
+  return SYSTEM_FOLDER_PATTERNS.some((pattern) => normalized.includes(pattern));
 };
 
-const ROCKSTAR_BLOCKED_PATH_PATTERNS = [
-  '\\windows',
-  '\\perflogs',
-  '\\$recycle.bin',
-  '\\system volume information'
-];
+const ROCKSTAR_BLOCKED_PATH_PATTERNS = ['\\windows', '\\perflogs', '\\$recycle.bin', '\\system volume information'];
 
 const isBlockedRockstarPath = (filePath) => {
-  const normalized = String(filePath || '').replace(/\//g, '\\').trim().toLowerCase();
+  const normalized = String(filePath || '')
+    .replace(/\//g, '\\')
+    .trim()
+    .toLowerCase();
   if (!normalized) {
     return true;
   }
 
-  return ROCKSTAR_BLOCKED_PATH_PATTERNS.some((pattern) => (
-    normalized === pattern.slice(1)
-    || normalized.endsWith(pattern)
-    || normalized.includes(`${pattern}\\`)
-  ));
+  return ROCKSTAR_BLOCKED_PATH_PATTERNS.some(
+    (pattern) => normalized === pattern.slice(1) || normalized.endsWith(pattern) || normalized.includes(`${pattern}\\`)
+  );
 };
 
-const ROCKSTAR_REGISTRY_ROOTS = [
-  'HKLM\\SOFTWARE\\WOW6432Node\\Rockstar Games',
-  'HKLM\\SOFTWARE\\Rockstar Games'
-];
+const ROCKSTAR_REGISTRY_ROOTS = ['HKLM\\SOFTWARE\\WOW6432Node\\Rockstar Games', 'HKLM\\SOFTWARE\\Rockstar Games'];
 
-const ROCKSTAR_REGISTRY_SKIP_TOKENS = [
-  'launcher',
-  'social club'
-];
+const ROCKSTAR_REGISTRY_SKIP_TOKENS = ['launcher', 'social club'];
 
 const parseRegistryInstallEntries = (registryRoot, valueName) => {
   const output = runCommand(`reg query "${registryRoot}" /s /v ${valueName}`);
@@ -119,7 +120,7 @@ const parseRegistryInstallEntries = (registryRoot, valueName) => {
     if (match && currentKey) {
       entries.push({
         registryKey: currentKey,
-        installDir: match[1].trim()
+        installDir: match[1].trim(),
       });
     }
   });
@@ -169,7 +170,7 @@ const getRockstarRegistryGames = () => {
         executablePath,
         installDir,
         launchId: gameName,
-        ...createTrackedDefaults()
+        ...createTrackedDefaults(),
       });
     });
   });
@@ -221,7 +222,7 @@ const scanRockstarLibrary = () => {
             executablePath: executablePath,
             installDir: gamePath,
             launchId: folder,
-            ...createTrackedDefaults()
+            ...createTrackedDefaults(),
           });
         }
       } catch (error) {

@@ -10,7 +10,7 @@ import {
   Monitor,
   Trophy,
   Clock,
-  Square
+  Square,
 } from 'lucide-react';
 import { RecommendationEngine } from '../services/RecommendationEngine';
 import { GamingIdentity } from '../GamingIdentity';
@@ -31,9 +31,20 @@ const BLADES = [
 ];
 
 export default function BigScreenMode({
-  library, onLaunchGame, activeSessions, onEndSession, lastPlayedGame,
-  onUpdateRating, onToggleFavorite, onUpdateCollections, onToggleHidden,
-  onUpdateCompletion, onUpdateNotes, onUpdateCoverArt, onAddSessionNote, onTogglePlayedElsewhere
+  library,
+  onLaunchGame,
+  activeSessions,
+  onEndSession,
+  lastPlayedGame,
+  onUpdateRating,
+  onToggleFavorite,
+  onUpdateCollections,
+  onToggleHidden,
+  onUpdateCompletion,
+  onUpdateNotes,
+  onUpdateCoverArt,
+  onAddSessionNote,
+  onTogglePlayedElsewhere,
 }) {
   const { toggleBigScreenMode, currentTheme } = useTheme();
   const [activeBlade, setActiveBlade] = useState(0);
@@ -49,34 +60,47 @@ export default function BigScreenMode({
   // activeSessions is an object keyed by game name: { gameName: { startTime, ... } }
   const activeSessionList = useMemo(() => {
     if (!activeSessions || typeof activeSessions !== 'object') return [];
-    return Object.entries(activeSessions).map(([gameName, session]) => {
-      const game = safeLibrary.find((g) => g?.name === gameName) || { name: gameName };
-      return { game, session, gameName };
-    }).filter((entry) => entry.game);
+    return Object.entries(activeSessions)
+      .map(([gameName, session]) => {
+        const game = safeLibrary.find((g) => g?.name === gameName) || { name: gameName };
+        return { game, session, gameName };
+      })
+      .filter((entry) => entry.game);
   }, [activeSessions, safeLibrary]);
 
-  const activeSessionNames = useMemo(
-    () => activeSessionList.map((s) => s.gameName),
-    [activeSessionList]
-  );
+  const activeSessionNames = useMemo(() => activeSessionList.map((s) => s.gameName), [activeSessionList]);
 
   const backlogResult = useMemo(() => {
     if (safeLibrary.length === 0) return null;
     try {
       return RecommendationEngine.getBacklogBusterResult(safeLibrary, null, null, 12);
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }, [safeLibrary]);
 
   const personaSnapshot = useMemo(() => {
-    try { return GamingPersonaService.getPublicIdentity(); } catch { return null; }
+    try {
+      return GamingPersonaService.getPublicIdentity();
+    } catch {
+      return null;
+    }
   }, []);
 
   const profile = useMemo(() => {
-    try { return GamingIdentity.getProfile(); } catch { return null; }
+    try {
+      return GamingIdentity.getProfile();
+    } catch {
+      return null;
+    }
   }, []);
 
   const signatureGames = useMemo(() => {
-    try { return GamingIdentity.getSignatureGames(4); } catch { return []; }
+    try {
+      return GamingIdentity.getSignatureGames(4);
+    } catch {
+      return [];
+    }
   }, []);
 
   // Continue Playing: the last played game (or active session game)
@@ -122,7 +146,9 @@ export default function BigScreenMode({
         .sort((a, b) => b.score - a.score)
         .slice(0, 12);
       return scored.length > 0 ? scored : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }, [continuePlayingGame, safeLibrary]);
 
   const currentGames = useMemo(() => {
@@ -158,9 +184,10 @@ export default function BigScreenMode({
       const h = Math.floor(totalSec / 3600);
       const m = Math.floor((totalSec % 3600) / 60);
       const s = totalSec % 60;
-      setSessionClock(h > 0
-        ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-        : `${m}:${String(s).padStart(2, '0')}`
+      setSessionClock(
+        h > 0
+          ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+          : `${m}:${String(s).padStart(2, '0')}`
       );
     };
     tick();
@@ -185,37 +212,40 @@ export default function BigScreenMode({
     return Math.max(1, Math.round((gridWidth + gap) / (cardWidth + gap)));
   }, []);
 
-  const moveFocus = useCallback((direction) => {
-    const gameCount = currentGames.length;
-    const cols = getGridColumns();
-    if (direction === 'right') {
-      if (gameCount > 0 && focusedGameIndex < gameCount - 1) {
-        setFocusedGameIndex((prev) => prev + 1);
-      } else {
-        setActiveBlade((prev) => (prev + 1) % BLADES.length);
+  const moveFocus = useCallback(
+    (direction) => {
+      const gameCount = currentGames.length;
+      const cols = getGridColumns();
+      if (direction === 'right') {
+        if (gameCount > 0 && focusedGameIndex < gameCount - 1) {
+          setFocusedGameIndex((prev) => prev + 1);
+        } else {
+          setActiveBlade((prev) => (prev + 1) % BLADES.length);
+        }
+      } else if (direction === 'left') {
+        if (focusedGameIndex > 0) {
+          setFocusedGameIndex((prev) => prev - 1);
+        } else {
+          setActiveBlade((prev) => (prev - 1 + BLADES.length) % BLADES.length);
+        }
+      } else if (direction === 'down') {
+        if (gameCount === 0) return;
+        if (focusedGameIndex + cols < gameCount) {
+          setFocusedGameIndex((prev) => prev + cols);
+        } else if (focusedGameIndex < gameCount - 1) {
+          // Move to last item in grid if can't go full row down
+          setFocusedGameIndex(gameCount - 1);
+        }
+      } else if (direction === 'up') {
+        if (focusedGameIndex - cols >= 0) {
+          setFocusedGameIndex((prev) => prev - cols);
+        } else {
+          setFocusedGameIndex(0);
+        }
       }
-    } else if (direction === 'left') {
-      if (focusedGameIndex > 0) {
-        setFocusedGameIndex((prev) => prev - 1);
-      } else {
-        setActiveBlade((prev) => (prev - 1 + BLADES.length) % BLADES.length);
-      }
-    } else if (direction === 'down') {
-      if (gameCount === 0) return;
-      if (focusedGameIndex + cols < gameCount) {
-        setFocusedGameIndex((prev) => prev + cols);
-      } else if (focusedGameIndex < gameCount - 1) {
-        // Move to last item in grid if can't go full row down
-        setFocusedGameIndex(gameCount - 1);
-      }
-    } else if (direction === 'up') {
-      if (focusedGameIndex - cols >= 0) {
-        setFocusedGameIndex((prev) => prev - cols);
-      } else {
-        setFocusedGameIndex(0);
-      }
-    }
-  }, [focusedGameIndex, currentGames, getGridColumns]);
+    },
+    [focusedGameIndex, currentGames, getGridColumns]
+  );
 
   const activate = useCallback(() => {
     const game = currentGames[focusedGameIndex];
@@ -224,37 +254,56 @@ export default function BigScreenMode({
     }
   }, [focusedGameIndex, currentGames]);
 
-  const handleKeyDown = useCallback((e) => {
-    if (detailGame) return; // detail view handles its own keys
-    if (e.key === 'ArrowRight') { e.preventDefault(); moveFocus('right'); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); moveFocus('left'); }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); moveFocus('down'); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus('up'); }
-    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
-    else if (e.key === 'Escape') { e.preventDefault(); toggleBigScreenMode(); }
-  }, [moveFocus, activate, toggleBigScreenMode, detailGame]);
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (detailGame) return; // detail view handles its own keys
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        moveFocus('right');
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        moveFocus('left');
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveFocus('down');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveFocus('up');
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activate();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        toggleBigScreenMode();
+      }
+    },
+    [moveFocus, activate, toggleBigScreenMode, detailGame]
+  );
 
   // Controller input — capture phase intercepts before ControllerSupport
-  const handleControllerInput = useCallback((e) => {
-    if (detailGame) return; // detail view handles its own input
-    const action = e?.detail?.action;
-    if (!action) return;
+  const handleControllerInput = useCallback(
+    (e) => {
+      if (detailGame) return; // detail view handles its own input
+      const action = e?.detail?.action;
+      if (!action) return;
 
-    const handled = ['up', 'down', 'left', 'right', 'confirm', 'cancel', 'page_next', 'page_previous'];
-    if (!handled.includes(action)) return;
+      const handled = ['up', 'down', 'left', 'right', 'confirm', 'cancel', 'page_next', 'page_previous'];
+      if (!handled.includes(action)) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (action === 'up') moveFocus('up');
-    else if (action === 'down') moveFocus('down');
-    else if (action === 'left') moveFocus('left');
-    else if (action === 'right') moveFocus('right');
-    else if (action === 'confirm') activate();
-    else if (action === 'cancel') toggleBigScreenMode();
-    else if (action === 'page_next') setActiveBlade((prev) => (prev + 1) % BLADES.length);
-    else if (action === 'page_previous') setActiveBlade((prev) => (prev - 1 + BLADES.length) % BLADES.length);
-  }, [moveFocus, activate, toggleBigScreenMode, detailGame]);
+      if (action === 'up') moveFocus('up');
+      else if (action === 'down') moveFocus('down');
+      else if (action === 'left') moveFocus('left');
+      else if (action === 'right') moveFocus('right');
+      else if (action === 'confirm') activate();
+      else if (action === 'cancel') toggleBigScreenMode();
+      else if (action === 'page_next') setActiveBlade((prev) => (prev + 1) % BLADES.length);
+      else if (action === 'page_previous') setActiveBlade((prev) => (prev - 1 + BLADES.length) % BLADES.length);
+    },
+    [moveFocus, activate, toggleBigScreenMode, detailGame]
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -286,18 +335,24 @@ export default function BigScreenMode({
     }
   }, [focusedGameIndex, activeBlade]);
 
-  const handleLaunchFromDetail = useCallback((game) => {
-    onLaunchGame?.(game);
-  }, [onLaunchGame]);
+  const handleLaunchFromDetail = useCallback(
+    (game) => {
+      onLaunchGame?.(game);
+    },
+    [onLaunchGame]
+  );
 
   const handleCloseDetail = useCallback(() => {
     setDetailGame(null);
   }, []);
 
-  const handleSelectGame = useCallback((index) => {
-    setFocusedGameIndex(index);
-    setDetailGame(currentGames[index]);
-  }, [currentGames]);
+  const handleSelectGame = useCallback(
+    (index) => {
+      setFocusedGameIndex(index);
+      setDetailGame(currentGames[index]);
+    },
+    [currentGames]
+  );
 
   const blade = BLADES[activeBlade];
   const focusedGame = currentGames[focusedGameIndex];
@@ -340,7 +395,10 @@ export default function BigScreenMode({
               <div className="bs-continue-meta">
                 <div className="bs-continue-meta-item">
                   <Clock size={22} />
-                  <span>{minutes > 0 ? `${Math.floor(minutes / 60)}h ${Math.round(minutes % 60)}m` : 'Not played yet'} played</span>
+                  <span>
+                    {minutes > 0 ? `${Math.floor(minutes / 60)}h ${Math.round(minutes % 60)}m` : 'Not played yet'}{' '}
+                    played
+                  </span>
                 </div>
                 {game.launch_count > 0 && (
                   <div className="bs-continue-meta-item">
@@ -351,7 +409,9 @@ export default function BigScreenMode({
                 {genres.length > 0 && (
                   <div className="bs-continue-genres">
                     {genres.slice(0, 4).map((g) => (
-                      <span key={g} className="bs-continue-genre-tag">{g}</span>
+                      <span key={g} className="bs-continue-genre-tag">
+                        {g}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -369,10 +429,7 @@ export default function BigScreenMode({
                     <span className="bs-continue-session-label">Live Session</span>
                     <span className="bs-continue-session-clock">{sessionClock}</span>
                   </div>
-                  <button
-                    className="bs-detail-btn bs-detail-btn-end"
-                    onClick={() => onEndSession?.(game.name)}
-                  >
+                  <button className="bs-detail-btn bs-detail-btn-end" onClick={() => onEndSession?.(game.name)}>
                     <Square size={22} fill="currentColor" />
                     <span>End Session</span>
                   </button>
@@ -419,9 +476,7 @@ export default function BigScreenMode({
               <span>Backlog</span>
             </div>
           </div>
-          {backlogResult?.message && (
-            <p className="bs-blade-message">{backlogResult.message}</p>
-          )}
+          {backlogResult?.message && <p className="bs-blade-message">{backlogResult.message}</p>}
           <div className="bs-games-grid" ref={gridRef}>
             {currentGames.map((game, i) => (
               <BigScreenGameCard
@@ -581,11 +636,7 @@ export default function BigScreenMode({
           <span>GamePilot</span>
         </div>
         <div className="bs-header-actions">
-          <button
-            className="bs-header-btn"
-            onClick={toggleBigScreenMode}
-            title="Exit TV Mode (Esc)"
-          >
+          <button className="bs-header-btn" onClick={toggleBigScreenMode} title="Exit TV Mode (Esc)">
             <Monitor size={20} />
             <span>Exit TV Mode</span>
           </button>

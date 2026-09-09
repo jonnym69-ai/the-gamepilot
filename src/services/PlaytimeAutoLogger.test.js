@@ -8,8 +8,8 @@ jest.mock('./RollingAchievementsTracker', () => ({
   RollingAchievementsTracker: {
     updatePlaytime: jest.fn(),
     incrementSession: jest.fn(),
-    trackGamePlayed: jest.fn()
-  }
+    trackGamePlayed: jest.fn(),
+  },
 }));
 
 jest.mock('./UserBehaviorProfile', () => ({
@@ -19,17 +19,17 @@ jest.mock('./UserBehaviorProfile', () => ({
     trackSessionLength: jest.fn(),
     trackSelection: jest.fn(),
     trackCompletion: jest.fn(),
-    saveProfile: jest.fn()
-  }
+    saveProfile: jest.fn(),
+  },
 }));
 
 jest.mock('./GamingIdentityEnhancements', () => ({
-  processSessionEnd: jest.fn()
+  processSessionEnd: jest.fn(),
 }));
 
 jest.mock('../constants/GenresMoods', () => ({
   getMoodForGame: jest.fn(() => 'Focused'),
-  mapGameGenresToValid: jest.fn((genres) => genres || [])
+  mapGameGenresToValid: jest.fn((genres) => genres || []),
 }));
 
 describe('PlaytimeAutoLogger session durability', () => {
@@ -66,7 +66,7 @@ describe('PlaytimeAutoLogger session durability', () => {
       gameId: 'game-1',
       sessionId: 'stable-session-id',
       metadata: {},
-      paused: false
+      paused: false,
     };
     SessionRepository.saveActiveSessions({ 'Test Game': session });
 
@@ -90,8 +90,8 @@ describe('PlaytimeAutoLogger session durability', () => {
         gameId: 'game-2',
         sessionId: 'interrupted-session-id',
         metadata: {},
-        paused: false
-      }
+        paused: false,
+      },
     });
 
     const [result] = PlaytimeAutoLogger.recoverInterruptedSessions();
@@ -106,13 +106,13 @@ describe('PlaytimeAutoLogger session durability', () => {
       sessionId: `existing-${index}`,
       gameName: 'Archive Game',
       playtimeMinutes: 1,
-      timestamp: new Date(2020, 0, 1, 0, index).toISOString()
+      timestamp: new Date(2020, 0, 1, 0, index).toISOString(),
     }));
     SessionRepository.replaceHistory(history);
 
     const written = PlaytimeAutoLogger.logSessionToHistory('New Game', 10, 'new-game', {
       sessionId: 'new-session',
-      endTime: new Date().toISOString()
+      endTime: new Date().toISOString(),
     });
 
     expect(written).toBe(true);

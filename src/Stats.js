@@ -50,7 +50,10 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
   const [isCapturingHabits, setIsCapturingHabits] = useState(false);
   const refreshTimeoutsRef = useRef(new Set());
 
-  const calculateDashboardData = useCallback(() => StatsAggregationService.getDashboardData(safeLibrary), [safeLibrary]);
+  const calculateDashboardData = useCallback(
+    () => StatsAggregationService.getDashboardData(safeLibrary),
+    [safeLibrary]
+  );
 
   const calculateLibraryStats = useCallback(() => {
     let storedPrices = {};
@@ -62,7 +65,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
     const totalValue = safeLibrary.reduce((total, game) => {
       let gamePrice = 0;
-      
+
       if (game.priceNumeric) {
         gamePrice = game.priceNumeric;
       } else if (game.price) {
@@ -74,25 +77,25 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           gamePrice = storedPrice.priceNumeric;
         }
       }
-      
+
       return total + gamePrice;
     }, 0);
 
-    const pricedGames = safeLibrary.filter(game => {
+    const pricedGames = safeLibrary.filter((game) => {
       if (game.priceNumeric || game.price) return true;
       return storedPrices[game.appid]?.priceNumeric;
     }).length;
 
     // Platform distribution
     const platformCounts = {};
-    safeLibrary.forEach(game => {
+    safeLibrary.forEach((game) => {
       const platform = game.platform || 'Unknown';
       platformCounts[platform] = (platformCounts[platform] || 0) + 1;
     });
 
     // Mood distribution (derive from genres if stored mood is missing)
     const moodCounts = {};
-    safeLibrary.forEach(game => {
+    safeLibrary.forEach((game) => {
       const mood = game.mood || getMoodForGame(game.genres);
       if (!mood) return;
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
@@ -100,9 +103,9 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
 
     // Genre distribution (CORRECTED SYNTAX BLOCK)
     const genreCounts = {};
-    safeLibrary.forEach(game => {
+    safeLibrary.forEach((game) => {
       if (game.genres && Array.isArray(game.genres)) {
-        game.genres.forEach(genre => {
+        game.genres.forEach((genre) => {
           if (genre && genre !== 'Unknown') {
             genreCounts[genre] = (genreCounts[genre] || 0) + 1;
           }
@@ -110,14 +113,17 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       }
     });
 
-    const mostCommonPlatform = Object.keys(platformCounts).reduce((a, b) =>
-      platformCounts[a] > platformCounts[b] ? a : b, 'Unknown');
+    const mostCommonPlatform = Object.keys(platformCounts).reduce(
+      (a, b) => (platformCounts[a] > platformCounts[b] ? a : b),
+      'Unknown'
+    );
 
-    const mostCommonMood = Object.keys(moodCounts).reduce((a, b) =>
-      moodCounts[a] > moodCounts[b] ? a : b, 'Unknown');
+    const mostCommonMood = Object.keys(moodCounts).reduce((a, b) => (moodCounts[a] > moodCounts[b] ? a : b), 'Unknown');
 
-    const mostCommonGenre = Object.keys(genreCounts).reduce((a, b) =>
-      genreCounts[a] > genreCounts[b] ? a : b, 'Unknown');
+    const mostCommonGenre = Object.keys(genreCounts).reduce(
+      (a, b) => (genreCounts[a] > genreCounts[b] ? a : b),
+      'Unknown'
+    );
 
     return {
       totalGames: safeLibrary.length,
@@ -132,7 +138,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       mostCommonGenre,
       uniquePlatforms: Object.keys(platformCounts).length,
       uniqueMoods: Object.keys(moodCounts).length,
-      uniqueGenres: Object.keys(genreCounts).length
+      uniqueGenres: Object.keys(genreCounts).length,
     };
   }, [safeLibrary, currency]);
 
@@ -148,34 +154,36 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       console.error('Stats refresh failed:', refreshError);
       showError('Stats could not be refreshed. Your saved data is unchanged.');
     }
-  }, [
-    calculateDashboardData,
-    calculateLibraryStats,
-    showError
-  ]);
+  }, [calculateDashboardData, calculateLibraryStats, showError]);
 
-  const scheduleRefresh = useCallback((delay = 0) => {
-    if (typeof window === 'undefined') {
-      refreshStats();
-      return () => {};
-    }
+  const scheduleRefresh = useCallback(
+    (delay = 0) => {
+      if (typeof window === 'undefined') {
+        refreshStats();
+        return () => {};
+      }
 
-    const timeoutId = window.setTimeout(() => {
-      refreshTimeoutsRef.current.delete(timeoutId);
-      refreshStats();
-    }, delay);
-    refreshTimeoutsRef.current.add(timeoutId);
+      const timeoutId = window.setTimeout(() => {
+        refreshTimeoutsRef.current.delete(timeoutId);
+        refreshStats();
+      }, delay);
+      refreshTimeoutsRef.current.add(timeoutId);
 
-    return () => {
-      window.clearTimeout(timeoutId);
-      refreshTimeoutsRef.current.delete(timeoutId);
-    };
-  }, [refreshStats]);
+      return () => {
+        window.clearTimeout(timeoutId);
+        refreshTimeoutsRef.current.delete(timeoutId);
+      };
+    },
+    [refreshStats]
+  );
 
-  useEffect(() => () => {
-    refreshTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
-    refreshTimeoutsRef.current.clear();
-  }, []);
+  useEffect(
+    () => () => {
+      refreshTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      refreshTimeoutsRef.current.clear();
+    },
+    []
+  );
 
   useEffect(() => {
     refreshStats();
@@ -251,9 +259,7 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               <RefreshCcw size={16} />
               <span>Refresh stats</span>
             </button>
-            {lastRefresh && (
-              <span className="stats-last-refresh">Updated {formatRelativeTime(lastRefresh)}</span>
-            )}
+            {lastRefresh && <span className="stats-last-refresh">Updated {formatRelativeTime(lastRefresh)}</span>}
           </div>
         </div>
 
@@ -292,7 +298,8 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                   const totalHours = safeLibrary.reduce((sum, g) => sum + (g.time_played || 0), 0) / 60;
                   if (totalHours >= 1000) return `${(totalHours / 1000).toFixed(1)}k`;
                   return `${Math.round(totalHours)}`;
-                })()}h
+                })()}
+                h
               </strong>
               <span className="stats-summary-detail">across your library</span>
             </div>
@@ -301,7 +308,12 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               <strong className="stats-summary-value">
                 {(() => {
                   const COMPLETED_STATUSES = ['finished', 'beaten', 'completed', '100%'];
-                  const completed = safeLibrary.filter((g) => g.completed || COMPLETED_STATUSES.includes(g.completionStatus) || COMPLETED_STATUSES.includes(g.replayIntent)).length;
+                  const completed = safeLibrary.filter(
+                    (g) =>
+                      g.completed ||
+                      COMPLETED_STATUSES.includes(g.completionStatus) ||
+                      COMPLETED_STATUSES.includes(g.replayIntent)
+                  ).length;
                   const rate = safeLibrary.length ? Math.round((completed / safeLibrary.length) * 100) : 0;
                   return `${rate}%`;
                 })()}
@@ -309,29 +321,37 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
               <span className="stats-summary-detail">
                 {(() => {
                   const COMPLETED_STATUSES = ['finished', 'beaten', 'completed', '100%'];
-                  return safeLibrary.filter((g) => g.completed || COMPLETED_STATUSES.includes(g.completionStatus) || COMPLETED_STATUSES.includes(g.replayIntent)).length;
-                })()} games done
+                  return safeLibrary.filter(
+                    (g) =>
+                      g.completed ||
+                      COMPLETED_STATUSES.includes(g.completionStatus) ||
+                      COMPLETED_STATUSES.includes(g.replayIntent)
+                  ).length;
+                })()}{' '}
+                games done
               </span>
             </div>
             <div className="stats-summary-card">
               <span className="stats-summary-label">Top Platform</span>
               <strong className="stats-summary-value">{libraryStats?.mostCommonPlatform || '—'}</strong>
               <span className="stats-summary-detail">
-                {libraryStats?.mostCommonPlatform ? `${Math.round((libraryStats.platformCounts[libraryStats.mostCommonPlatform] / safeLibrary.length) * 100)}% of library` : ''}
+                {libraryStats?.mostCommonPlatform
+                  ? `${Math.round((libraryStats.platformCounts[libraryStats.mostCommonPlatform] / safeLibrary.length) * 100)}% of library`
+                  : ''}
               </span>
             </div>
             <div className="stats-summary-card">
               <span className="stats-summary-label">Top Genre</span>
               <strong className="stats-summary-value">{libraryStats?.mostCommonGenre || '—'}</strong>
               <span className="stats-summary-detail">
-                {libraryStats?.mostCommonGenre ? `${Math.round((libraryStats.genreCounts[libraryStats.mostCommonGenre] / safeLibrary.length) * 100)}% of library` : ''}
+                {libraryStats?.mostCommonGenre
+                  ? `${Math.round((libraryStats.genreCounts[libraryStats.mostCommonGenre] / safeLibrary.length) * 100)}% of library`
+                  : ''}
               </span>
             </div>
             <div className="stats-summary-card">
               <span className="stats-summary-label">Best Streak</span>
-              <strong className="stats-summary-value">
-                {dashboardData?.periods?.all?.bestStreak || 0}d
-              </strong>
+              <strong className="stats-summary-value">{dashboardData?.periods?.all?.bestStreak || 0}d</strong>
               <span className="stats-summary-detail">consecutive days</span>
             </div>
           </div>
@@ -384,7 +404,10 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           icon={<TrendingUp size={18} />}
           className="stats-section stats-habit-insights"
         >
-          <div className="habit-insights-share-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <div
+            className="habit-insights-share-bar"
+            style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}
+          >
             <ShareMenu
               triggerLabel="Share Habits"
               imageAvailable
@@ -394,15 +417,23 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                   const lines = [];
                   lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
                   if (habitInsights.longestSession) {
-                    lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                    lines.push(
+                      `Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`
+                    );
                   }
                   if (habitInsights.busiestDay) {
-                    lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                    lines.push(
+                      `Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`
+                    );
                   }
                   if (habitInsights.mostReturnedTo) {
-                    lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                    lines.push(
+                      `Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`
+                    );
                   }
-                  lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                  lines.push(
+                    `${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`
+                  );
                   lines.push('Powered by GamePilot');
                   text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
                 }
@@ -414,46 +445,81 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 if (!habitsCardRef.current) return false;
                 setIsCapturingHabits(true);
                 try {
-                  const canvas = await html2canvas(habitsCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                  const canvas = await html2canvas(habitsCardRef.current, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false,
+                  });
                   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                  if (!blob) { success('Could not generate habits card.'); return false; }
+                  if (!blob) {
+                    success('Could not generate habits card.');
+                    return false;
+                  }
                   const copied = await LocalShareService.copyImageToClipboard(blob);
                   success(copied ? 'Habits card copied to clipboard.' : 'Could not copy habits card.');
                   return copied;
-                } catch (err) { console.error(err); success('Could not generate habits card.'); return false; }
-                finally { setIsCapturingHabits(false); }
+                } catch (err) {
+                  console.error(err);
+                  success('Could not generate habits card.');
+                  return false;
+                } finally {
+                  setIsCapturingHabits(false);
+                }
               }}
               onSaveImage={async () => {
                 if (!habitsCardRef.current) return;
                 setIsCapturingHabits(true);
                 try {
-                  const canvas = await html2canvas(habitsCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                  const canvas = await html2canvas(habitsCardRef.current, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false,
+                  });
                   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                  if (!blob) { success('Could not generate habits card.'); return; }
+                  if (!blob) {
+                    success('Could not generate habits card.');
+                    return;
+                  }
                   const url = URL.createObjectURL(blob);
                   const link = document.createElement('a');
                   link.href = url;
                   link.download = `gamepilot-habits-${new Date().toISOString().split('T')[0]}.png`;
-                  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
                   URL.revokeObjectURL(url);
                   success('Habits card saved.');
-                } catch (err) { console.error(err); success('Could not generate habits card.'); }
-                finally { setIsCapturingHabits(false); }
+                } catch (err) {
+                  console.error(err);
+                  success('Could not generate habits card.');
+                } finally {
+                  setIsCapturingHabits(false);
+                }
               }}
               onShareText={async (channel, text = null) => {
                 if (!text) {
                   const lines = [];
                   lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
                   if (habitInsights.longestSession) {
-                    lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                    lines.push(
+                      `Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`
+                    );
                   }
                   if (habitInsights.busiestDay) {
-                    lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                    lines.push(
+                      `Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`
+                    );
                   }
                   if (habitInsights.mostReturnedTo) {
-                    lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                    lines.push(
+                      `Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`
+                    );
                   }
-                  lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                  lines.push(
+                    `${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`
+                  );
                   lines.push('Powered by GamePilot');
                   text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
                 }
@@ -465,15 +531,23 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                   const lines = [];
                   lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
                   if (habitInsights.longestSession) {
-                    lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                    lines.push(
+                      `Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`
+                    );
                   }
                   if (habitInsights.busiestDay) {
-                    lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                    lines.push(
+                      `Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`
+                    );
                   }
                   if (habitInsights.mostReturnedTo) {
-                    lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                    lines.push(
+                      `Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`
+                    );
                   }
-                  lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                  lines.push(
+                    `${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`
+                  );
                   lines.push('Powered by GamePilot');
                   text = ProfileService.appendSocialLinksToShareText(lines.join('\n'));
                 }
@@ -484,15 +558,23 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 const lines = [];
                 lines.push(`My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`);
                 if (habitInsights.longestSession) {
-                  lines.push(`Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`);
+                  lines.push(
+                    `Longest session: ${habitInsights.longestSession.gameName} (${habitInsights.longestSession.playtimeMinutes} min)`
+                  );
                 }
                 if (habitInsights.busiestDay) {
-                  lines.push(`Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`);
+                  lines.push(
+                    `Busiest day: ${habitInsights.busiestDay.dateLabel} (${habitInsights.busiestDay.playtimeMinutes} min, ${habitInsights.busiestDay.sessions} sessions)`
+                  );
                 }
                 if (habitInsights.mostReturnedTo) {
-                  lines.push(`Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`);
+                  lines.push(
+                    `Most returned to: ${habitInsights.mostReturnedTo.name} (${habitInsights.mostReturnedTo.sessions} sessions)`
+                  );
                 }
-                lines.push(`${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`);
+                lines.push(
+                  `${habitInsights.lateNightSessions || 0} late-night runs · ${habitInsights.weekendSessions || 0} weekend sessions · ${habitInsights.repeatGames || 0} repeat games`
+                );
                 lines.push('Powered by GamePilot');
                 return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
               }}
@@ -500,14 +582,32 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
                 if (!habitsCardRef.current) return;
                 setIsCapturingHabits(true);
                 try {
-                  const canvas = await html2canvas(habitsCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                  const canvas = await html2canvas(habitsCardRef.current, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false,
+                  });
                   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                  if (!blob) { success('Could not generate habits card.'); return; }
-                  const file = new File([blob], `gamepilot-habits-${new Date().toISOString().split('T')[0]}.png`, { type: 'image/png' });
-                  const result = await LocalShareService.shareWithNativeShare({ title: 'My Play Habits', text: text || `My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`, files: [file] });
+                  if (!blob) {
+                    success('Could not generate habits card.');
+                    return;
+                  }
+                  const file = new File([blob], `gamepilot-habits-${new Date().toISOString().split('T')[0]}.png`, {
+                    type: 'image/png',
+                  });
+                  const result = await LocalShareService.shareWithNativeShare({
+                    title: 'My Play Habits',
+                    text: text || `My Play Habits — ${selectedStats?.rangeLabel || 'All Time'}`,
+                    files: [file],
+                  });
                   success(result.success ? 'Native share opened.' : result.message || 'Could not share.');
-                } catch (err) { console.error(err); success('Could not generate habits card.'); }
-                finally { setIsCapturingHabits(false); }
+                } catch (err) {
+                  console.error(err);
+                  success('Could not generate habits card.');
+                } finally {
+                  setIsCapturingHabits(false);
+                }
               }}
             />
           </div>
@@ -581,24 +681,15 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             <>
               <div className="charts-grid">
                 {Object.keys(libraryStats.platformCounts).length > 0 && (
-                  <PieChart 
-                    data={libraryStats.platformCounts}
-                    title="🎮 Platform Distribution"
-                  />
+                  <PieChart data={libraryStats.platformCounts} title="🎮 Platform Distribution" />
                 )}
 
                 {Object.keys(libraryStats.genreCounts).length > 0 && (
-                  <BarChart 
-                    data={libraryStats.genreCounts}
-                    title="🎨 Genre Distribution"
-                  />
+                  <BarChart data={libraryStats.genreCounts} title="🎨 Genre Distribution" />
                 )}
 
                 {Object.keys(libraryStats.moodCounts).length > 0 && (
-                  <PieChart 
-                    data={libraryStats.moodCounts}
-                    title="😌 Mood Distribution"
-                  />
+                  <PieChart data={libraryStats.moodCounts} title="😌 Mood Distribution" />
                 )}
               </div>
 
@@ -644,14 +735,15 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
           )}
         </CollapsibleSection>
 
-        {safeLibrary.length === 0 && habitProgress.totalSessions === 0 && (dashboardData?.totalSessionsRecorded || 0) === 0 && (
-          <EmptyState
-            icon="📈"
-            title={getEmptyLibraryFallback('Stats').message}
-            description="Start building your game library and logging a few sessions to unlock richer analytics, streaks, usage insights, and habit trends."
-          />
-        )}
-
+        {safeLibrary.length === 0 &&
+          habitProgress.totalSessions === 0 &&
+          (dashboardData?.totalSessionsRecorded || 0) === 0 && (
+            <EmptyState
+              icon="📈"
+              title={getEmptyLibraryFallback('Stats').message}
+              description="Start building your game library and logging a few sessions to unlock richer analytics, streaks, usage insights, and habit trends."
+            />
+          )}
       </div>
     </div>
   );

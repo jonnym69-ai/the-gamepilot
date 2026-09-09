@@ -13,7 +13,7 @@ const GOAL_COMPLETIONS_KEY = 'gamepilot_goal_completions_v1';
 
 const GOAL_XP_RATES = {
   weekly: 10,
-  monthly: 15
+  monthly: 15,
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -33,7 +33,7 @@ const getISOWeek = (date = new Date()) => {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return `${d.getUTCFullYear()}-W${String(Math.ceil((((d - yearStart) / 86400000) + 1) / 7)).padStart(2, '0')}`;
+  return `${d.getUTCFullYear()}-W${String(Math.ceil(((d - yearStart) / 86400000 + 1) / 7)).padStart(2, '0')}`;
 };
 
 const loadHabits = () => {
@@ -112,17 +112,19 @@ const getGoalXpReward = (goal) => {
 
 const dispatchGoalCompleted = (goal, xp) => {
   if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent('gamepilot:goal-completed', {
-    detail: {
-      goalId: goal.id,
-      label: goal.label,
-      period: goal.period,
-      target: goal.target,
-      type: goal.type,
-      xp,
-      completedAt: new Date().toISOString()
-    }
-  }));
+  window.dispatchEvent(
+    new CustomEvent('gamepilot:goal-completed', {
+      detail: {
+        goalId: goal.id,
+        label: goal.label,
+        period: goal.period,
+        target: goal.target,
+        type: goal.type,
+        xp,
+        completedAt: new Date().toISOString(),
+      },
+    })
+  );
 };
 
 const GOAL_TYPE_LABELS = {
@@ -149,15 +151,64 @@ const getGoalStorageKey = (period) => {
 
 const getDefaultGoals = () => ({
   weekly: [
-    { id: 'w_play_days', label: 'Play at least 3 days this week', target: 3, type: 'days', period: 'week', active: true },
-    { id: 'w_play_hours', label: 'Play at least 5 hours this week', target: 5, type: 'hours', period: 'week', active: true },
-    { id: 'w_sessions', label: 'Play at least 5 sessions this week', target: 5, type: 'sessions', period: 'week', active: false },
-    { id: 'w_try_genre', label: 'Try a new genre this week', target: 1, type: 'new_genre', period: 'week', active: false },
+    {
+      id: 'w_play_days',
+      label: 'Play at least 3 days this week',
+      target: 3,
+      type: 'days',
+      period: 'week',
+      active: true,
+    },
+    {
+      id: 'w_play_hours',
+      label: 'Play at least 5 hours this week',
+      target: 5,
+      type: 'hours',
+      period: 'week',
+      active: true,
+    },
+    {
+      id: 'w_sessions',
+      label: 'Play at least 5 sessions this week',
+      target: 5,
+      type: 'sessions',
+      period: 'week',
+      active: false,
+    },
+    {
+      id: 'w_try_genre',
+      label: 'Try a new genre this week',
+      target: 1,
+      type: 'new_genre',
+      period: 'week',
+      active: false,
+    },
   ],
   monthly: [
-    { id: 'm_finish_game', label: 'Finish 1 game this month', target: 1, type: 'completions', period: 'month', active: true },
-    { id: 'm_play_hours', label: 'Play at least 20 hours this month', target: 20, type: 'hours', period: 'month', active: true },
-    { id: 'm_different_games', label: 'Play at least 5 different games', target: 5, type: 'unique_games', period: 'month', active: false },
+    {
+      id: 'm_finish_game',
+      label: 'Finish 1 game this month',
+      target: 1,
+      type: 'completions',
+      period: 'month',
+      active: true,
+    },
+    {
+      id: 'm_play_hours',
+      label: 'Play at least 20 hours this month',
+      target: 20,
+      type: 'hours',
+      period: 'month',
+      active: true,
+    },
+    {
+      id: 'm_different_games',
+      label: 'Play at least 5 different games',
+      target: 5,
+      type: 'unique_games',
+      period: 'month',
+      active: false,
+    },
     { id: 'm_streak', label: '7-day gaming streak', target: 7, type: 'streak', period: 'month', active: false },
   ],
 });
@@ -193,9 +244,8 @@ const calculateGoalCurrent = (goal, habits, weeklyStats, monthlyStats) => {
     case 'unique_games':
       return stats.uniqueGames;
     case 'new_genre': {
-      const prevStats = period === 'week'
-        ? HabitTrackerService.getWeeklyStats(1)
-        : HabitTrackerService.getMonthlyStats(1);
+      const prevStats =
+        period === 'week' ? HabitTrackerService.getWeeklyStats(1) : HabitTrackerService.getMonthlyStats(1);
       const currentGenres = new Set(stats.genres);
       const prevGenres = new Set(prevStats.genres);
       return [...currentGenres].filter((g) => !prevGenres.has(g)).length;
@@ -472,13 +522,13 @@ export const HabitTrackerService = {
           completedAt: new Date().toISOString(),
           xp,
           target: goal.target,
-          label: goal.label
+          label: goal.label,
         };
         newlyCompleted.push({
           ...goal,
           xp,
           completionKey,
-          current
+          current,
         });
       }
 
@@ -488,7 +538,7 @@ export const HabitTrackerService = {
         percent: Math.min(100, Math.round((current / goal.target) * 100)),
         completed,
         rewarded: alreadyCompleted,
-        xp: alreadyCompleted ? 0 : (completed ? xp : 0)
+        xp: alreadyCompleted ? 0 : completed ? xp : 0,
       };
     };
 
@@ -511,7 +561,7 @@ export const HabitTrackerService = {
             label: goal.label,
             period: goal.period,
             target: goal.target,
-            type: goal.type
+            type: goal.type,
           });
         }
         dispatchGoalCompleted(goal, goal.xp);
@@ -676,7 +726,9 @@ export const HabitTrackerService = {
     // Genre suggestion from top genre
     const genreCounts = {};
     Object.values(habits.daily || {}).forEach((day) => {
-      day.genres?.forEach((g) => { genreCounts[g] = (genreCounts[g] || 0) + (day.minutes || 0); });
+      day.genres?.forEach((g) => {
+        genreCounts[g] = (genreCounts[g] || 0) + (day.minutes || 0);
+      });
     });
     const topGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0];
     if (topGenre && topGenre[1] > 120 && !hasGoal('genre_time', 'month')) {
@@ -709,7 +761,7 @@ export const HabitTrackerService = {
           ...value,
           period,
           periodKey,
-          goalId
+          goalId,
         };
       })
       .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
@@ -734,7 +786,7 @@ export const HabitTrackerService = {
       totalXP: entries.reduce((sum, c) => sum + (c.xp || 0), 0),
       weeklyCompleted: weekly.length,
       monthlyCompleted: monthly.length,
-      currentPeriodCompleted: this.getCurrentPeriodCompletedCount()
+      currentPeriodCompleted: this.getCurrentPeriodCompletedCount(),
     };
   },
 
@@ -763,7 +815,9 @@ export const HabitTrackerService = {
     dates.forEach((date) => {
       const d = new Date(date);
       dayOfWeekCounts[d.getDay()] += 1;
-      daily[date].genres?.forEach((g) => { genreCounts[g] = (genreCounts[g] || 0) + 1; });
+      daily[date].genres?.forEach((g) => {
+        genreCounts[g] = (genreCounts[g] || 0) + 1;
+      });
     });
 
     const topDay = Object.entries(dayOfWeekCounts).sort((a, b) => b[1] - a[1])[0];
@@ -785,7 +839,10 @@ export const HabitTrackerService = {
     const totalHours = Object.values(daily).reduce((sum, d) => sum + (d.minutes || 0), 0) / 60;
     const avgHoursPerDay = totalHours / dates.length;
     if (avgHoursPerDay > 0) {
-      insights.push({ type: 'average', text: `You average ${Math.round(avgHoursPerDay * 10) / 10} hours per gaming day.` });
+      insights.push({
+        type: 'average',
+        text: `You average ${Math.round(avgHoursPerDay * 10) / 10} hours per gaming day.`,
+      });
     }
 
     return insights;

@@ -1,6 +1,7 @@
 import StorageService from './StorageService';
 
-const EPIC_FEED_URL = 'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US';
+const EPIC_FEED_URL =
+  'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US';
 const EPIC_FREE_GAMES_URL = 'https://store.epicgames.com/free-games';
 const STEAM_FEATURED_URL = 'https://store.steampowered.com/api/featuredcategories/';
 const GOG_FREEBIES_URL = 'https://www.gog.com/games/ajax/filtered?priceRange=0,0&discounted=true&page=1';
@@ -26,7 +27,8 @@ const normalizeEpicGames = (elements = []) => {
       return isFree || hasFreePromo;
     })
     .map((element) => {
-      const offer = element?.promotions?.promotionalOffers?.[0]?.promotionalOffers?.[0] ||
+      const offer =
+        element?.promotions?.promotionalOffers?.[0]?.promotionalOffers?.[0] ||
         element?.promotions?.upcomingPromotionalOffers?.[0]?.promotionalOffers?.[0];
       const mysteryGame = isMysteryGame(element);
 
@@ -34,16 +36,19 @@ const normalizeEpicGames = (elements = []) => {
         id: `epic-${element.id}`,
         title: element.title,
         description: element.description,
-        image: element.keyImages?.find((img) => img.type === 'DieselStoreFrontWide')?.url ||
-          element.keyImages?.[0]?.url || '',
-        url: !mysteryGame && element.productSlug
-          ? `https://store.epicgames.com/p/${element.productSlug}`
-          : EPIC_FREE_GAMES_URL,
+        image:
+          element.keyImages?.find((img) => img.type === 'DieselStoreFrontWide')?.url ||
+          element.keyImages?.[0]?.url ||
+          '',
+        url:
+          !mysteryGame && element.productSlug
+            ? `https://store.epicgames.com/p/${element.productSlug}`
+            : EPIC_FREE_GAMES_URL,
         isMysteryGame: mysteryGame,
         startDate: offer?.startDate,
         endDate: offer?.endDate,
         source: 'Epic',
-        platformIcon: '🎮'
+        platformIcon: '🎮',
       };
     });
 };
@@ -66,20 +71,18 @@ const normalizeSteamFreeGame = (item, type = 'free-to-play') => {
 
   const discount = Number(item.discount_percent || item.discount || 0);
   const isFreeToKeep = discount >= 100 || item.is_free_weekend || item.is_free_to_keep;
-  const endDate = item.discount_expiration
-    ? new Date(item.discount_expiration * 1000).toISOString()
-    : null;
+  const endDate = item.discount_expiration ? new Date(item.discount_expiration * 1000).toISOString() : null;
 
   return {
     id: `steam-${id}`,
     title: item.name || 'Unknown Game',
-    description: item?.short_description || (
-      type === 'free-to-keep'
+    description:
+      item?.short_description ||
+      (type === 'free-to-keep'
         ? 'Free to keep on Steam for a limited time'
         : type === 'free-weekend'
           ? 'Free to play this weekend on Steam'
-          : 'Free to play on Steam'
-    ),
+          : 'Free to play on Steam'),
     image: item?.small_capsule_image || item?.header_image || item?.large_capsule_image || '',
     url: `https://store.steampowered.com/app/${id}`,
     isMysteryGame: false,
@@ -87,7 +90,7 @@ const normalizeSteamFreeGame = (item, type = 'free-to-play') => {
     endDate,
     source: 'Steam',
     platformIcon: '☁️',
-    type: isFreeToKeep ? 'free-to-keep' : type
+    type: isFreeToKeep ? 'free-to-keep' : type,
   };
 };
 
@@ -111,10 +114,7 @@ const fetchSteamFreeGames = async () => {
       const discount = Number(item.discount_percent || item.discount || 0);
       const isFree = discount >= 100 || item.is_free_weekend || item.is_free_to_keep;
       if (!isFree) continue;
-      const normalized = normalizeSteamFreeGame(
-        item,
-        item.is_free_weekend ? 'free-weekend' : 'free-to-keep'
-      );
+      const normalized = normalizeSteamFreeGame(item, item.is_free_weekend ? 'free-weekend' : 'free-to-keep');
       if (normalized) results.push(normalized);
     }
 
@@ -150,7 +150,7 @@ const normalizeGOGProduct = (product) => {
     endDate: null,
     source: 'GOG',
     platformIcon: '🦎',
-    type: 'free-to-keep'
+    type: 'free-to-keep',
   };
 };
 
@@ -183,14 +183,10 @@ export const FreeGameRadar = {
     const [epicGames, steamGames, gogGames] = await Promise.all([
       fetchEpicFreeGames(),
       fetchSteamFreeGames(),
-      fetchGOGFreeGames()
+      fetchGOGFreeGames(),
     ]);
 
-    const allGames = [
-      ...epicGames,
-      ...steamGames,
-      ...gogGames
-    ].sort((a, b) => {
+    const allGames = [...epicGames, ...steamGames, ...gogGames].sort((a, b) => {
       // Sort by end date (ending soonest first), then by source
       const endA = a.endDate ? new Date(a.endDate).getTime() : Infinity;
       const endB = b.endDate ? new Date(b.endDate).getTime() : Infinity;

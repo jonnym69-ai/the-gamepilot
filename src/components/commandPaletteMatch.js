@@ -1,9 +1,10 @@
 import { getCanonicalGameKey } from '../services/LibraryDataService';
 
-const stripToCanonical = (value) => String(value || '')
-  .toLowerCase()
-  .replace(/[\u2122\u00ae\u00a9]/g, '')
-  .replace(/[^a-z0-9]+/g, '');
+const stripToCanonical = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[\u2122\u00ae\u00a9]/g, '')
+    .replace(/[^a-z0-9]+/g, '');
 
 /**
  * Scored match for a CommandPalette entry.

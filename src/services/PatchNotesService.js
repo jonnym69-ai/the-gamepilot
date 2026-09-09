@@ -55,13 +55,13 @@ export const PatchNotesService = {
       const items = json?.appnews?.newsitems || [];
 
       const notes = items
-        .filter(item => item.feed_type === 1) // patch notes feed type
-        .map(item => ({
+        .filter((item) => item.feed_type === 1) // patch notes feed type
+        .map((item) => ({
           title: item.title,
           url: item.url,
           date: new Date(item.date * 1000).toISOString(),
           author: item.author || 'Valve',
-          contents: item.contents?.substring(0, 500) || ''
+          contents: item.contents?.substring(0, 500) || '',
         }));
 
       cache[appId] = { data: notes, cachedAt: Date.now() };
@@ -83,14 +83,14 @@ export const PatchNotesService = {
     const dismissed = getDismissedMap();
     const gameDismissed = dismissed[appId] || {};
 
-    const unseen = notes.filter(n => !gameDismissed[n.url]);
+    const unseen = notes.filter((n) => !gameDismissed[n.url]);
 
     return {
       available: true,
       appId,
       totalNotes: notes.length,
       unseenCount: unseen.length,
-      notes: unseen.slice(0, 3)
+      notes: unseen.slice(0, 3),
     };
   },
 
@@ -103,7 +103,7 @@ export const PatchNotesService = {
 
   async checkLibrary(library) {
     const results = [];
-    const gamesToCheck = library.filter(g => getSteamAppId(g)).slice(0, 10);
+    const gamesToCheck = library.filter((g) => getSteamAppId(g)).slice(0, 10);
 
     for (const game of gamesToCheck) {
       const notes = await this.getPatchNotesForGame(game);
@@ -111,13 +111,13 @@ export const PatchNotesService = {
         results.push({
           gameName: game.name || game.appname,
           appId: notes.appId,
-          ...notes
+          ...notes,
         });
       }
     }
 
     return results;
-  }
+  },
 };
 
 export default PatchNotesService;

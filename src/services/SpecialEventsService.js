@@ -40,9 +40,7 @@ export const SpecialEventsService = {
       const target = nextOccurrence(birthday.month, birthday.day);
       const days = daysBetween(today, target);
       const isToday = days === 0;
-      const claimed = isToday && CalendarXPService.processBirthdayReward
-        ? false
-        : false; // claim status is checked dynamically via CalendarXPService
+      const claimed = isToday && CalendarXPService.processBirthdayReward ? false : false; // claim status is checked dynamically via CalendarXPService
       events.push({
         id: 'birthday',
         name: 'Your Birthday',
@@ -54,7 +52,7 @@ export const SpecialEventsService = {
         targetDate: target,
         xpReward: 900,
         bonus: '+125 XP per year since joining',
-        claimed
+        claimed,
       });
     } else {
       events.push({
@@ -69,7 +67,7 @@ export const SpecialEventsService = {
         xpReward: 900,
         bonus: 'Set in Profile',
         claimed: false,
-        actionHint: 'Go to Profile → Edit Profile and set your birthday.'
+        actionHint: 'Go to Profile → Edit Profile and set your birthday.',
       });
     }
 
@@ -87,7 +85,7 @@ export const SpecialEventsService = {
         daysUntil: days,
         targetDate: target,
         xpReward: 650,
-        bonus: 'Winter Frost theme'
+        bonus: 'Winter Frost theme',
       });
     }
 
@@ -98,14 +96,15 @@ export const SpecialEventsService = {
       events.push({
         id: 'halloween',
         name: 'Haunted Harvest',
-        description: 'Spooky season XP bonus + Haunted Harvest theme challenge (5 horror games unlocks Autumn Harvest theme).',
+        description:
+          'Spooky season XP bonus + Haunted Harvest theme challenge (5 horror games unlocks Autumn Harvest theme).',
         icon: 'halloween',
         category: 'Seasonal',
         active: today.getMonth() === 9,
         daysUntil: days,
         targetDate: target,
         xpReward: 200,
-        bonus: 'Autumn Harvest theme'
+        bonus: 'Autumn Harvest theme',
       });
     }
 
@@ -125,7 +124,7 @@ export const SpecialEventsService = {
         daysUntil: days,
         targetDate: target,
         xpReward: 350,
-        bonus: 'Egg Hunter Badge'
+        bonus: 'Egg Hunter Badge',
       });
     }
 
@@ -143,7 +142,7 @@ export const SpecialEventsService = {
         daysUntil: days,
         targetDate: target,
         xpReward: 300,
-        bonus: 'Winter Frost theme'
+        bonus: 'Winter Frost theme',
       });
     }
 
@@ -161,7 +160,7 @@ export const SpecialEventsService = {
         daysUntil: days,
         targetDate: target,
         xpReward: 200,
-        bonus: 'Spring Bloom theme'
+        bonus: 'Spring Bloom theme',
       });
     }
 
@@ -179,7 +178,7 @@ export const SpecialEventsService = {
         daysUntil: days,
         targetDate: target,
         xpReward: 250,
-        bonus: 'Summer Heat theme'
+        bonus: 'Summer Heat theme',
       });
     }
 
@@ -198,7 +197,7 @@ export const SpecialEventsService = {
         daysUntil: days,
         targetDate: target,
         xpReward: 500,
-        bonus: 'Anniversary badge'
+        bonus: 'Anniversary badge',
       });
     }
 
@@ -227,7 +226,7 @@ export const SpecialEventsService = {
             plays: challenge.plays,
             required: challenge.requirement.count,
             unlocked: challenge.unlocked,
-            progressPercent: challenge.progressPercent
+            progressPercent: challenge.progressPercent,
           };
         }
       }
@@ -243,7 +242,7 @@ export const SpecialEventsService = {
    */
   getActiveCount() {
     return this.getUpcomingEvents().filter((e) => e.active).length;
-  }
+  },
 };
 
 export default SpecialEventsService;

@@ -14,6 +14,6 @@ export const getDateKey = (referenceDate = new Date(), timeZone = getPreferredTi
     timeZone,
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   }).format(date);
 };

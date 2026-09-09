@@ -10,19 +10,20 @@ const createTrackedDefaults = () => ({
     daily: {},
     weekly: {},
     monthly: {},
-    yearly: {}
-  }
+    yearly: {},
+  },
 });
 
-const sanitizeScannedGameName = (value) => String(value || '')
-  .replace(/Ôäó/g, '™')
-  .replace(/┬«/g, '®')
-  .replace(/┬®/g, '©')
-  .replace(/ÔÇÖ/g, '’')
-  .replace(/ÔÇ£|ÔÇØ/g, '"')
-  .replace(/ÔÇô|ÔÇö/g, '-')
-  .replace(/\s+/g, ' ')
-  .trim();
+const sanitizeScannedGameName = (value) =>
+  String(value || '')
+    .replace(/Ôäó/g, '™')
+    .replace(/┬«/g, '®')
+    .replace(/┬®/g, '©')
+    .replace(/ÔÇÖ/g, '’')
+    .replace(/ÔÇ£|ÔÇØ/g, '"')
+    .replace(/ÔÇô|ÔÇö/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const enrichScannedGame = (game, assignMoodToGame) => {
   if (!game || typeof game !== 'object') {
@@ -38,7 +39,7 @@ const enrichScannedGame = (game, assignMoodToGame) => {
     ...game,
     name: gameName,
     genres: selectedGenres,
-    mood: assignMoodToGame(gameName, selectedGenres) || null
+    mood: assignMoodToGame(gameName, selectedGenres) || null,
   };
 };
 
@@ -51,18 +52,16 @@ const normalizeScanDebug = (debug, games = []) => {
         successfulPlatformCount: 0,
         emptyPlatformCount: 0,
         errorPlatformCount: 0,
-        lastScanAt: Date.now()
+        lastScanAt: Date.now(),
       },
       platformStatus: {},
       platformCounts: {},
       paths: {},
-      activeDrives: []
+      activeDrives: [],
     };
   }
 
-  const platformStatus = debug.platformStatus && typeof debug.platformStatus === 'object'
-    ? debug.platformStatus
-    : {};
+  const platformStatus = debug.platformStatus && typeof debug.platformStatus === 'object' ? debug.platformStatus : {};
   const statusEntries = Object.values(platformStatus);
   const successfulPlatformCount = statusEntries.filter((entry) => entry?.scanStatus === 'found').length;
   const emptyPlatformCount = statusEntries.filter((entry) => entry?.scanStatus === 'empty').length;
@@ -77,18 +76,12 @@ const normalizeScanDebug = (debug, games = []) => {
       emptyPlatformCount,
       errorPlatformCount,
       lastScanAt: Date.now(),
-      ...(debug.summary || {})
+      ...(debug.summary || {}),
     },
     platformStatus,
-    platformCounts: debug.platformCounts && typeof debug.platformCounts === 'object'
-      ? debug.platformCounts
-      : {},
-    paths: debug.paths && typeof debug.paths === 'object'
-      ? debug.paths
-      : {},
-    activeDrives: Array.isArray(debug.activeDrives)
-      ? debug.activeDrives
-      : []
+    platformCounts: debug.platformCounts && typeof debug.platformCounts === 'object' ? debug.platformCounts : {},
+    paths: debug.paths && typeof debug.paths === 'object' ? debug.paths : {},
+    activeDrives: Array.isArray(debug.activeDrives) ? debug.activeDrives : [],
   };
 };
 
@@ -104,9 +97,7 @@ export class LibraryScannerService {
 
   static async scanAllLibraries(assignMoodToGame, options = {}) {
     const nativeGames = await this.getNativeScannedLibraries(options);
-    return nativeGames
-      .map((game) => enrichScannedGame(game, assignMoodToGame))
-      .filter(Boolean);
+    return nativeGames.map((game) => enrichScannedGame(game, assignMoodToGame)).filter(Boolean);
   }
 
   static async getNativeScannedLibraries(options = {}) {
@@ -115,13 +106,11 @@ export class LibraryScannerService {
     }
 
     const now = Date.now();
-    if ((now - this.RAW_SCAN_CACHE_TIMESTAMP) < this.RAW_SCAN_CACHE_TTL_MS) {
+    if (now - this.RAW_SCAN_CACHE_TIMESTAMP < this.RAW_SCAN_CACHE_TTL_MS) {
       return this.RAW_SCAN_CACHE;
     }
 
-    const electronAPI = process.env.NODE_ENV === 'production'
-      ? await waitForElectronAPI()
-      : getElectronAPI();
+    const electronAPI = process.env.NODE_ENV === 'production' ? await waitForElectronAPI() : getElectronAPI();
     if (!electronAPI || typeof electronAPI.scanGameLibraries !== 'function') {
       return [];
     }
@@ -141,16 +130,19 @@ export class LibraryScannerService {
       this.RAW_SCAN_CACHE_TIMESTAMP = now;
       return this.RAW_SCAN_CACHE;
     } catch (error) {
-      this.LAST_SCAN_DEBUG = normalizeScanDebug({
-        error: error?.message || 'Unknown scan error',
-        summary: {
-          totalGamesAfterDedupe: 0,
-          scannedPlatformCount: 0,
-          successfulPlatformCount: 0,
-          emptyPlatformCount: 0,
-          errorPlatformCount: 1
-        }
-      }, []);
+      this.LAST_SCAN_DEBUG = normalizeScanDebug(
+        {
+          error: error?.message || 'Unknown scan error',
+          summary: {
+            totalGamesAfterDedupe: 0,
+            scannedPlatformCount: 0,
+            successfulPlatformCount: 0,
+            emptyPlatformCount: 0,
+            errorPlatformCount: 1,
+          },
+        },
+        []
+      );
       return [];
     }
   }

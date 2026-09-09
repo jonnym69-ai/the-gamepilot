@@ -9,7 +9,6 @@ import { HardwareScoring } from './HardwareScoring';
 import { GameRequirementsHeuristics } from './GameRequirementsHeuristics';
 
 export class GameRequirements {
-
   static gameDatabase = {};
   static normalizedNameIndex = null;
   static isDatabaseLoaded = false;
@@ -44,7 +43,9 @@ export class GameRequirements {
    * Fire-and-forget prefetch. Safe to call from page mounts to warm the cache.
    */
   static prefetchDatabase() {
-    this.ensureDatabaseLoaded().catch(() => { /* swallow; logged above */ });
+    this.ensureDatabaseLoaded().catch(() => {
+      /* swallow; logged above */
+    });
   }
 
   static normalizeLookupValue(value = '') {
@@ -71,7 +72,15 @@ export class GameRequirements {
 
   static getLookupKey(gameOrId) {
     if (gameOrId && typeof gameOrId === 'object') {
-      return gameOrId.appid || gameOrId.app_id || gameOrId.steamAppId || gameOrId.id || gameOrId.name || gameOrId.title || 'unknown';
+      return (
+        gameOrId.appid ||
+        gameOrId.app_id ||
+        gameOrId.steamAppId ||
+        gameOrId.id ||
+        gameOrId.name ||
+        gameOrId.title ||
+        'unknown'
+      );
     }
 
     const safeValue = gameOrId != null ? String(gameOrId) : 'unknown';
@@ -111,7 +120,7 @@ export class GameRequirements {
         return {
           id: candidate,
           requirements: this.gameDatabase[candidate],
-          matchType: 'id'
+          matchType: 'id',
         };
       }
     }
@@ -123,30 +132,34 @@ export class GameRequirements {
         return {
           id: matchedId,
           requirements: this.gameDatabase[matchedId],
-          matchType: 'name'
+          matchType: 'name',
         };
       }
     }
 
     return null;
   }
-  
+
   static interpolateRequirements(minimum, recommended) {
     if (!minimum || !recommended) return null;
     return {
-      cpuScore: typeof minimum.cpuScore === 'number' && typeof recommended.cpuScore === 'number'
-        ? Math.round((minimum.cpuScore + recommended.cpuScore) / 2)
-        : undefined,
-      gpuScore: typeof minimum.gpuScore === 'number' && typeof recommended.gpuScore === 'number'
-        ? Math.round((minimum.gpuScore + recommended.gpuScore) / 2)
-        : undefined,
-      ram: typeof minimum.ram === 'number' && typeof recommended.ram === 'number'
-        ? Math.round((minimum.ram + recommended.ram) / 2)
-        : undefined,
-      storage: typeof minimum.storage === 'number' && typeof recommended.storage === 'number'
-        ? Math.round((minimum.storage + recommended.storage) / 2)
-        : undefined,
-      requiresSSD: recommended.requiresSSD || minimum.requiresSSD || false
+      cpuScore:
+        typeof minimum.cpuScore === 'number' && typeof recommended.cpuScore === 'number'
+          ? Math.round((minimum.cpuScore + recommended.cpuScore) / 2)
+          : undefined,
+      gpuScore:
+        typeof minimum.gpuScore === 'number' && typeof recommended.gpuScore === 'number'
+          ? Math.round((minimum.gpuScore + recommended.gpuScore) / 2)
+          : undefined,
+      ram:
+        typeof minimum.ram === 'number' && typeof recommended.ram === 'number'
+          ? Math.round((minimum.ram + recommended.ram) / 2)
+          : undefined,
+      storage:
+        typeof minimum.storage === 'number' && typeof recommended.storage === 'number'
+          ? Math.round((minimum.storage + recommended.storage) / 2)
+          : undefined,
+      requiresSSD: recommended.requiresSSD || minimum.requiresSSD || false,
     };
   }
 
@@ -159,13 +172,14 @@ export class GameRequirements {
     }
     const resolvedGame = this.resolveGameRequirements(gameId);
     const requirements = resolvedGame?.requirements;
-    const displayName = gameId && typeof gameId === 'object'
-      ? gameId.name || gameId.title || requirements?.name || 'Unknown Game'
-      : requirements?.name || String(gameId || 'Unknown Game');
+    const displayName =
+      gameId && typeof gameId === 'object'
+        ? gameId.name || gameId.title || requirements?.name || 'Unknown Game'
+        : requirements?.name || String(gameId || 'Unknown Game');
     const lookupKey = resolvedGame?.id || this.getLookupKey(gameId);
     const scores = HardwareScoring.getOverallScore(systemInfo);
     const gameObj = gameId && typeof gameId === 'object' ? gameId : { name: displayName };
-    
+
     if (!requirements) {
       const heuristicReqs = GameRequirementsHeuristics.estimateRequirements(gameObj);
       const mediumReqs = this.interpolateRequirements(heuristicReqs.minimum, heuristicReqs.recommended);
@@ -193,25 +207,25 @@ export class GameRequirements {
         requirements: heuristicReqs,
         isEstimate: true,
         matchType: heuristicReqs.source || 'estimate',
-        lookupKey
+        lookupKey,
       };
     }
-    
+
     const mediumReqs = this.interpolateRequirements(requirements.minimum, requirements.recommended);
     const meetsMinimum = this.meetsRequirements(requirements.minimum, scores, systemInfo);
     const meetsMedium = mediumReqs ? this.meetsRequirements(mediumReqs, scores, systemInfo) : { passes: false };
     const meetsRecommended = this.meetsRequirements(requirements.recommended, scores, systemInfo);
     const meetsUltra = this.meetsRequirements(requirements.ultra, scores, systemInfo);
-    
+
     let settingsLevel = 'cannot_run';
     if (meetsMinimum.passes) settingsLevel = 'low';
     if (meetsMedium.passes) settingsLevel = 'medium';
     if (meetsRecommended.passes) settingsLevel = 'high';
     if (meetsUltra.passes) settingsLevel = 'ultra';
-    
+
     const bottlenecks = this.detectBottlenecks(requirements, scores, systemInfo, settingsLevel);
     const estimatedFPS = this.estimateFPS(settingsLevel, scores.overall);
-    
+
     return {
       compatible: meetsMinimum.passes,
       settingsLevel,
@@ -222,91 +236,119 @@ export class GameRequirements {
       requirements: requirements,
       isEstimate: false,
       matchType: resolvedGame?.matchType || 'id',
-      lookupKey
+      lookupKey,
     };
   }
-  
+
   static meetsRequirements(reqLevel, scores, systemInfo) {
     const issues = [];
-    
+
     if (!reqLevel || typeof reqLevel !== 'object') {
-      return { passes: false, issues: [{ component: 'Requirements', required: 'Valid requirements object', actual: 'Missing or invalid' }] };
+      return {
+        passes: false,
+        issues: [{ component: 'Requirements', required: 'Valid requirements object', actual: 'Missing or invalid' }],
+      };
     }
-    
+
     if (!scores || typeof scores !== 'object') {
-      return { passes: false, issues: [{ component: 'Scores', required: 'Valid scores object', actual: 'Missing or invalid' }] };
+      return {
+        passes: false,
+        issues: [{ component: 'Scores', required: 'Valid scores object', actual: 'Missing or invalid' }],
+      };
     }
-    
+
     if (!systemInfo || typeof systemInfo !== 'object') {
-      return { passes: false, issues: [{ component: 'System Info', required: 'Valid system info object', actual: 'Missing or invalid' }] };
+      return {
+        passes: false,
+        issues: [{ component: 'System Info', required: 'Valid system info object', actual: 'Missing or invalid' }],
+      };
     }
-    
+
     if (typeof scores.cpu === 'number' && typeof reqLevel.cpuScore === 'number' && scores.cpu < reqLevel.cpuScore) {
       issues.push({ component: 'CPU', required: reqLevel.cpuScore, actual: scores.cpu });
     }
-    
+
     if (typeof scores.gpu === 'number' && typeof reqLevel.gpuScore === 'number' && scores.gpu < reqLevel.gpuScore) {
       issues.push({ component: 'GPU', required: reqLevel.gpuScore, actual: scores.gpu });
     }
-    
-    if (systemInfo.ram && typeof systemInfo.ram.total === 'number' && typeof reqLevel.ram === 'number' && systemInfo.ram.total < reqLevel.ram) {
+
+    if (
+      systemInfo.ram &&
+      typeof systemInfo.ram.total === 'number' &&
+      typeof reqLevel.ram === 'number' &&
+      systemInfo.ram.total < reqLevel.ram
+    ) {
       issues.push({ component: 'RAM', required: reqLevel.ram, actual: systemInfo.ram.total });
     }
-    
+
     if (reqLevel.requiresSSD) {
       const storageDevices = Array.isArray(systemInfo.storage) ? systemInfo.storage : [];
-      const hasNVMe = storageDevices.some(d => d && d.isNVMe);
-      const hasSSD = storageDevices.some(d => d && d.isSSD);
+      const hasNVMe = storageDevices.some((d) => d && d.isNVMe);
+      const hasSSD = storageDevices.some((d) => d && d.isSSD);
       if (!hasNVMe && !hasSSD) {
         issues.push({ component: 'Storage', required: 'SSD', actual: 'HDD' });
       }
     }
-    
+
     return {
       passes: issues.length === 0,
-      issues
+      issues,
     };
   }
-  
+
   static detectBottlenecks(requirements, scores, systemInfo, settingsLevel) {
     const bottlenecks = [];
-    
-    if (!requirements || typeof requirements !== 'object' || !scores || typeof scores !== 'object' || !systemInfo || typeof systemInfo !== 'object') {
+
+    if (
+      !requirements ||
+      typeof requirements !== 'object' ||
+      !scores ||
+      typeof scores !== 'object' ||
+      !systemInfo ||
+      typeof systemInfo !== 'object'
+    ) {
       return bottlenecks;
     }
-    
-    const nextLevel = settingsLevel === 'low'
-      ? requirements.recommended
-      : settingsLevel === 'high'
-        ? requirements.ultra
-        : settingsLevel === 'cannot_run'
-          ? requirements.minimum
-          : null;
-    const targetLabel = settingsLevel === 'low'
-      ? 'High'
-      : settingsLevel === 'high'
-        ? 'Ultra'
-        : settingsLevel === 'cannot_run'
-          ? 'Minimum'
-          : null;
-    
+
+    const nextLevel =
+      settingsLevel === 'low'
+        ? requirements.recommended
+        : settingsLevel === 'high'
+          ? requirements.ultra
+          : settingsLevel === 'cannot_run'
+            ? requirements.minimum
+            : null;
+    const targetLabel =
+      settingsLevel === 'low'
+        ? 'High'
+        : settingsLevel === 'high'
+          ? 'Ultra'
+          : settingsLevel === 'cannot_run'
+            ? 'Minimum'
+            : null;
+
     if (!nextLevel || !targetLabel) {
       return bottlenecks;
     }
-    
-    const cpuGap = typeof nextLevel.cpuScore === 'number' && typeof scores.cpu === 'number' ? nextLevel.cpuScore - scores.cpu : 0;
-    const gpuGap = typeof nextLevel.gpuScore === 'number' && typeof scores.gpu === 'number' ? nextLevel.gpuScore - scores.gpu : 0;
-    const ramGap = typeof nextLevel.ram === 'number' && systemInfo.ram && typeof systemInfo.ram.total === 'number' ? nextLevel.ram - systemInfo.ram.total : 0;
+
+    const cpuGap =
+      typeof nextLevel.cpuScore === 'number' && typeof scores.cpu === 'number' ? nextLevel.cpuScore - scores.cpu : 0;
+    const gpuGap =
+      typeof nextLevel.gpuScore === 'number' && typeof scores.gpu === 'number' ? nextLevel.gpuScore - scores.gpu : 0;
+    const ramGap =
+      typeof nextLevel.ram === 'number' && systemInfo.ram && typeof systemInfo.ram.total === 'number'
+        ? nextLevel.ram - systemInfo.ram.total
+        : 0;
     const storageDevices = Array.isArray(systemInfo.storage) ? systemInfo.storage : [];
-    const hasNVMe = storageDevices.some(d => d && d.isNVMe);
-    const hasSSD = storageDevices.some(d => d && d.isSSD);
-    
+    const hasNVMe = storageDevices.some((d) => d && d.isNVMe);
+    const hasSSD = storageDevices.some((d) => d && d.isSSD);
+
     if (cpuGap > 5) {
       bottlenecks.push({
         component: 'CPU',
         impact: cpuGap > 20 ? 'high' : cpuGap > 10 ? 'medium' : 'low',
         message: `CPU is ${cpuGap} points below ${targetLabel} settings`,
-        scoreGap: cpuGap
+        scoreGap: cpuGap,
       });
     }
 
@@ -315,7 +357,7 @@ export class GameRequirements {
         component: 'GPU',
         impact: gpuGap > 20 ? 'high' : gpuGap > 10 ? 'medium' : 'low',
         message: `GPU is ${gpuGap} points below ${targetLabel} settings`,
-        scoreGap: gpuGap
+        scoreGap: gpuGap,
       });
     }
 
@@ -324,7 +366,7 @@ export class GameRequirements {
         component: 'RAM',
         impact: ramGap >= 8 ? 'high' : 'medium',
         message: `Need ${ramGap}GB more RAM for ${targetLabel} settings`,
-        scoreGap: ramGap
+        scoreGap: ramGap,
       });
     }
 
@@ -333,20 +375,20 @@ export class GameRequirements {
         component: 'Storage',
         impact: settingsLevel === 'cannot_run' ? 'high' : 'medium',
         message: `Need SSD-class storage for ${targetLabel} settings`,
-        scoreGap: 1
+        scoreGap: 1,
       });
     }
-    
+
     bottlenecks.sort((a, b) => {
       const impactOrder = { high: 3, medium: 2, low: 1 };
       const aImpact = impactOrder[a.impact] || 0;
       const bImpact = impactOrder[b.impact] || 0;
       return bImpact - aImpact;
     });
-    
+
     return bottlenecks;
   }
-  
+
   static estimateFPS(settingsLevel, overallScore) {
     if (settingsLevel === 'cannot_run') return '< 30';
     if (settingsLevel === 'low') return '30-45';
@@ -368,12 +410,12 @@ export class GameRequirements {
 
   static getSettingsLabel(settingsLevel) {
     const labels = {
-      'ultra': { text: 'Ultra', description: 'Maxed out settings', color: '#00e676', emoji: '🔥' },
-      'high': { text: 'High', description: 'High settings', color: '#4caf50', emoji: '⚡' },
-      'medium': { text: 'Medium', description: 'Balanced settings', color: '#8ab4f8', emoji: '✨' },
-      'low': { text: 'Low', description: 'Low settings', color: '#2196f3', emoji: '👍' },
-      'cannot_run': { text: 'Below Minimum', description: 'Below minimum requirements', color: '#f44336', emoji: '⛔' },
-      'unknown': { text: 'Unknown', description: 'No data available', color: '#9e9e9e', emoji: '❓' }
+      ultra: { text: 'Ultra', description: 'Maxed out settings', color: '#00e676', emoji: '🔥' },
+      high: { text: 'High', description: 'High settings', color: '#4caf50', emoji: '⚡' },
+      medium: { text: 'Medium', description: 'Balanced settings', color: '#8ab4f8', emoji: '✨' },
+      low: { text: 'Low', description: 'Low settings', color: '#2196f3', emoji: '👍' },
+      cannot_run: { text: 'Below Minimum', description: 'Below minimum requirements', color: '#f44336', emoji: '⛔' },
+      unknown: { text: 'Unknown', description: 'No data available', color: '#9e9e9e', emoji: '❓' },
     };
     return labels[settingsLevel] || labels.unknown;
   }

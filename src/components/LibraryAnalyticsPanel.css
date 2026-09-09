@@ -58,8 +58,8 @@
   gap: 12px;
   padding: 14px;
   border-radius: 12px;
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.1));
-  background: var(--bg-card, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.1));
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
 }
 
 .insight-icon {
@@ -67,10 +67,18 @@
   margin-top: 2px;
 }
 
-.insight-success { border-left: 3px solid #22c55e; }
-.insight-warning { border-left: 3px solid #f59e0b; }
-.insight-tip { border-left: 3px solid #3b82f6; }
-.insight-info { border-left: 3px solid #8b5cf6; }
+.insight-success {
+  border-left: 3px solid #22c55e;
+}
+.insight-warning {
+  border-left: 3px solid #f59e0b;
+}
+.insight-tip {
+  border-left: 3px solid #3b82f6;
+}
+.insight-info {
+  border-left: 3px solid #8b5cf6;
+}
 
 .insight-content strong {
   display: block;
@@ -92,8 +100,8 @@
   gap: 24px;
   padding: 20px;
   border-radius: 14px;
-  background: var(--bg-card, rgba(255,255,255,0.05));
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.1));
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.1));
 }
 
 .diversity-score-ring {
@@ -143,7 +151,7 @@
 
 .analytics-mini-bar {
   height: 4px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -169,8 +177,8 @@
   gap: 4px;
   padding: 14px;
   border-radius: 12px;
-  background: var(--bg-card, rgba(255,255,255,0.05));
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.1));
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.1));
 }
 
 .pattern-value {
@@ -222,7 +230,7 @@
   flex: 1;
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.1), var(--accent-color, #ff6b35));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), var(--accent-color, #ff6b35));
 }
 
 /* Backlog */
@@ -259,8 +267,8 @@
   gap: 12px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--bg-card, rgba(255,255,255,0.05));
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
   font-size: 0.85rem;
 }
 
@@ -309,14 +317,20 @@
   gap: 6px;
   padding: 16px;
   border-radius: 12px;
-  background: var(--bg-card, rgba(255,255,255,0.05));
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.1));
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.1));
   text-align: center;
 }
 
-.genre-card.best { border-color: rgba(34, 197, 94, 0.4); }
-.genre-card.worst { border-color: rgba(245, 158, 11, 0.4); }
-.genre-card.top { border-color: rgba(139, 92, 246, 0.4); }
+.genre-card.best {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+.genre-card.worst {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.genre-card.top {
+  border-color: rgba(139, 92, 246, 0.4);
+}
 
 .genre-card strong {
   font-size: 0.95rem;
@@ -343,7 +357,7 @@
 
 .library-analytics-modal {
   background: var(--bg-primary, #1a1a2e);
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.1));
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.1));
   border-radius: 18px;
   width: 100%;
   max-width: 960px;
@@ -359,7 +373,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border-primary, rgba(255,255,255,0.1));
+  border-bottom: 1px solid var(--border-primary, rgba(255, 255, 255, 0.1));
 }
 
 .library-analytics-modal-header h2 {
@@ -378,7 +392,9 @@
   padding: 6px;
   border-radius: 8px;
   opacity: 0.7;
-  transition: opacity 0.2s ease, background 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease;
 }
 
 .analytics-close-btn:hover {
@@ -417,7 +433,9 @@
   font-weight: 700;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .library-launch-button:hover {
@@ -430,9 +448,12 @@
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
-  color: var(--text-secondary, rgba(255,255,255,0.55));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.55));
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;

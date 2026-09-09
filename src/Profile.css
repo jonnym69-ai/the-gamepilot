@@ -30,7 +30,7 @@
   font-weight: 800;
   margin: 0;
   color: var(--header-text) !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
   letter-spacing: -0.02em;
 }
 
@@ -337,13 +337,13 @@
 }
 
 .save-button {
-  background: linear-gradient(135deg, #28a745, #4CAF50);
+  background: linear-gradient(135deg, #28a745, #4caf50);
   color: white;
   box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
 }
 
 .save-button:hover {
-  background: linear-gradient(135deg, #218838, #2E7D32);
+  background: linear-gradient(135deg, #218838, #2e7d32);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
 }
@@ -382,7 +382,10 @@
 
 .founder-profile-card {
   border-color: var(--founder-border, rgba(255, 107, 53, 0.22));
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--founder-surface, rgba(255, 107, 53, 0.14)), 0 0 34px var(--founder-glow, rgba(255, 107, 53, 0.16));
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25),
+    0 0 0 1px var(--founder-surface, rgba(255, 107, 53, 0.14)),
+    0 0 34px var(--founder-glow, rgba(255, 107, 53, 0.16));
 }
 
 .founder-profile-card::after {
@@ -413,7 +416,9 @@
   background: var(--profile-banner-preview);
   color: white;
   text-align: left;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 12px 30px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 30px rgba(0, 0, 0, 0.18);
   overflow: hidden;
   position: relative;
   isolation: isolate;
@@ -424,11 +429,15 @@
 
 .founder-identity-banner {
   border: 1px solid var(--founder-border-strong, rgba(255, 107, 53, 0.32));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 12px 30px rgba(0, 0, 0, 0.18), 0 0 28px var(--founder-glow, rgba(255, 107, 53, 0.12));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 12px 30px rgba(0, 0, 0, 0.18),
+    0 0 28px var(--founder-glow, rgba(255, 107, 53, 0.12));
 }
 
 .founder-identity-banner::after {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 45%), var(--founder-banner, linear-gradient(135deg, rgba(255, 107, 53, 0.22), transparent));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 45%),
+    var(--founder-banner, linear-gradient(135deg, rgba(255, 107, 53, 0.22), transparent));
   mix-blend-mode: screen;
 }
 
@@ -662,7 +671,10 @@
   background: linear-gradient(135deg, rgba(255, 107, 53, 0.14), rgba(240, 147, 251, 0.08));
   border: 1px solid rgba(255, 107, 53, 0.14);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.12);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .next-reward-card:hover {
@@ -783,7 +795,11 @@
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .reward-path-item:hover {
@@ -803,7 +819,9 @@
   background: rgba(255, 107, 53, 0.16);
   color: var(--accent-primary, #ff6b35);
   font-weight: 800;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .reward-path-item:hover .reward-path-step {
@@ -952,7 +970,12 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, opacity 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .reward-option-card:hover:not(:disabled) {
@@ -1000,7 +1023,9 @@
   overflow: hidden;
   background-size: 165% 165%;
   background-position: 0% 50%;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 24px rgba(0, 0, 0, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.14);
   animation: profileBannerGradientShift 12s ease-in-out infinite alternate;
 }
 
@@ -1121,7 +1146,12 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, opacity 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .showcase-selector-chip:hover:not(:disabled) {
@@ -1183,7 +1213,12 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--accent-primary, #ff6b35), var(--accent-secondary, #ff8c42), var(--gradient-accent, #f093fb));
+  background: linear-gradient(
+    90deg,
+    var(--accent-primary, #ff6b35),
+    var(--accent-secondary, #ff8c42),
+    var(--gradient-accent, #f093fb)
+  );
 }
 
 .datetime-card h3,
@@ -1513,7 +1548,12 @@
   padding: 9px 14px;
   cursor: pointer;
   font-weight: 600;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .startup-personalization-chip:hover {
@@ -1524,7 +1564,9 @@
 .startup-personalization-chip.selected {
   border-color: #ffb36b;
   background: linear-gradient(160deg, rgba(255, 107, 53, 0.28), rgba(255, 179, 107, 0.12));
-  box-shadow: 0 0 0 2px rgba(255, 154, 90, 0.24), 0 12px 24px rgba(255, 107, 53, 0.18);
+  box-shadow:
+    0 0 0 2px rgba(255, 154, 90, 0.24),
+    0 12px 24px rgba(255, 107, 53, 0.18);
   color: #fff3eb;
   transform: translateY(-1px) scale(1.01);
 }
@@ -1655,8 +1697,12 @@
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes profileBannerGradientShift {
@@ -1969,7 +2015,7 @@
   outline-offset: 2px;
 }
 
-.widget-toggle input[type="checkbox"] {
+.widget-toggle input[type='checkbox'] {
   width: 16px;
   height: 16px;
   accent-color: var(--text-accent);
@@ -2061,20 +2107,20 @@
     gap: 12px;
     align-items: flex-start;
   }
-  
+
   .theme-options,
   .layout-options {
     justify-content: center;
   }
-  
+
   .widget-toggles {
     grid-template-columns: 1fr;
   }
-  
+
   .customization-actions {
     flex-direction: column;
   }
-  
+
   .save-customization-button,
   .reset-customization-button {
     width: 100%;
@@ -2353,7 +2399,7 @@
   padding: 12px 0;
   width: 100%;
   min-width: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: transparent;
   border-left: none;
   border-right: none;
@@ -2368,7 +2414,7 @@
 .profile-most-played-row:hover {
   transform: none;
   box-shadow: none;
-  border-color: transparent transparent rgba(255,255,255,0.08) transparent;
+  border-color: transparent transparent rgba(255, 255, 255, 0.08) transparent;
 }
 
 .profile-most-played-game {
@@ -2395,7 +2441,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .profile-most-played-info h4 {
@@ -2521,7 +2567,10 @@
   justify-content: space-between;
   gap: 1rem;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .active-session-card:hover {
@@ -3054,7 +3103,7 @@
 }
 
 .status-message svg {
-  color: #4CAF50;
+  color: #4caf50;
   flex-shrink: 0;
 }
 
@@ -3309,8 +3358,13 @@ body.big-screen-mode .profile-section.selected {
 }
 
 @keyframes pulse-border {
-  0%, 100% { border-color: rgba(245, 183, 0, 0.5); }
-  50% { border-color: rgba(245, 183, 0, 0.8); }
+  0%,
+  100% {
+    border-color: rgba(245, 183, 0, 0.5);
+  }
+  50% {
+    border-color: rgba(245, 183, 0, 0.8);
+  }
 }
 
 .collection-card-header {
@@ -3634,10 +3688,18 @@ body.big-screen-mode .profile-section.selected {
   border-left: 3px solid #808080;
 }
 
-.profile-achievement-recent-item.rarity-common { border-left-color: #808080; }
-.profile-achievement-recent-item.rarity-rare { border-left-color: #0066cc; }
-.profile-achievement-recent-item.rarity-epic { border-left-color: #9933cc; }
-.profile-achievement-recent-item.rarity-legendary { border-left-color: #ff6600; }
+.profile-achievement-recent-item.rarity-common {
+  border-left-color: #808080;
+}
+.profile-achievement-recent-item.rarity-rare {
+  border-left-color: #0066cc;
+}
+.profile-achievement-recent-item.rarity-epic {
+  border-left-color: #9933cc;
+}
+.profile-achievement-recent-item.rarity-legendary {
+  border-left-color: #ff6600;
+}
 
 .profile-achievement-recent-icon {
   font-size: 1.3rem;
@@ -4187,7 +4249,7 @@ body.big-screen-mode .profile-section.selected {
 /* Signature Games Section */
 .dna-signature-games-section {
   background: var(--card, #1a1a2e);
-  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   border-radius: 20px;
   padding: 24px 28px;
   margin-bottom: 24px;
@@ -4210,9 +4272,9 @@ body.big-screen-mode .profile-section.selected {
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
   border-radius: 14px;
-  border: 1px solid var(--border-color, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.04));
 }
 
 .dna-signature-game-rank {
@@ -4259,7 +4321,7 @@ body.big-screen-mode .profile-section.selected {
 /* Taste Clusters Section */
 .dna-taste-clusters-section {
   background: var(--card, #1a1a2e);
-  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   border-radius: 20px;
   padding: 24px 28px;
   margin-bottom: 24px;
@@ -4276,9 +4338,9 @@ body.big-screen-mode .profile-section.selected {
   flex-direction: column;
   gap: 4px;
   padding: 14px 18px;
-  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
   border-radius: 14px;
-  border: 1px solid var(--border-color, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.04));
 }
 
 .dna-taste-cluster-header {
@@ -4326,8 +4388,8 @@ body.big-screen-mode .profile-section.selected {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-secondary, rgba(255,255,255,0.04));
-  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   border-radius: 12px;
   padding: 8px 14px;
   font-size: 0.85rem;
@@ -4344,7 +4406,7 @@ body.big-screen-mode .profile-section.selected {
 
 /* Gamer Signature Section */
 .dna-signature {
-  background: linear-gradient(135deg, rgba(255,107,53,0.06) 0%, rgba(255,107,53,0.02) 100%);
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.06) 0%, rgba(255, 107, 53, 0.02) 100%);
   border: 1px solid rgba(255, 107, 53, 0.15);
   border-radius: 20px;
   padding: 24px 28px;

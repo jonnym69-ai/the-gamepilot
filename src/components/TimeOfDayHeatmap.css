@@ -70,7 +70,9 @@
 .time-of-day-cell {
   height: 28px;
   border-radius: 3px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
   cursor: default;
 }
 

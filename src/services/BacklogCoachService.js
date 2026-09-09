@@ -28,9 +28,12 @@ const SAMPLED_SESSIONS = 5;
 const BACKLOG_SNAPSHOT_KEY = 'backlogCoachSnapshot';
 const BACKLOG_EVENTS_KEY = 'backlogCoachClearEvents';
 
-const getGameKey = (game) => getCanonicalGameKey(game)
-  || String(game?.appid || game?.name || '').trim().toLowerCase()
-  || null;
+const getGameKey = (game) =>
+  getCanonicalGameKey(game) ||
+  String(game?.appid || game?.name || '')
+    .trim()
+    .toLowerCase() ||
+  null;
 
 const getShelfAgeDays = (game) => {
   const added = game?.dateAdded || game?.addedAt || game?.firstSeen;
@@ -55,7 +58,9 @@ export class BacklogCoachService {
         if (!key) return;
         counts[key] = (counts[key] || 0) + 1;
       });
-    } catch { /* session history optional */ }
+    } catch {
+      /* session history optional */
+    }
     return counts;
   }
 
@@ -65,7 +70,9 @@ export class BacklogCoachService {
     try {
       const completedGames = StorageService.get('completedGames', []);
       if (Array.isArray(completedGames) && completedGames.some((cg) => (cg?.name || cg) === game.name)) return false;
-    } catch { /* completed list optional */ }
+    } catch {
+      /* completed list optional */
+    }
     if (getBlendedPlaytimeMinutes(game) >= SAMPLED_MINUTES) return false;
     const sessions = sessionCounts[getGameKey(game)] || 0;
     if (sessions >= SAMPLED_SESSIONS) return false;
@@ -81,7 +88,9 @@ export class BacklogCoachService {
       if (weekly?.totalMinutes > 0) return { weeklyMinutes: weekly.totalMinutes, source: 'week' };
       const monthly = HabitTrackerService.getMonthlyStats(0);
       if (monthly?.totalMinutes > 0) return { weeklyMinutes: monthly.totalMinutes / 4.3, source: 'month' };
-    } catch { /* habit data optional */ }
+    } catch {
+      /* habit data optional */
+    }
     return { weeklyMinutes: 0, source: null };
   }
 
@@ -100,7 +109,10 @@ export class BacklogCoachService {
       reasons.push("Matches what you're into right now");
     }
 
-    if (ctx.recentGenre && genres.some((g) => g === ctx.recentGenre || g.includes(ctx.recentGenre) || ctx.recentGenre.includes(g))) {
+    if (
+      ctx.recentGenre &&
+      genres.some((g) => g === ctx.recentGenre || g.includes(ctx.recentGenre) || ctx.recentGenre.includes(g))
+    ) {
       score += 10;
       reasons.push(`In step with your current ${ctx.recentGenre} phase`);
     }
@@ -210,17 +222,19 @@ export class BacklogCoachService {
     try {
       const persona = GamingPersonaService.getPersona();
       const personaId = persona?.primaryPersona?.id || null;
-      affinityGenres = personaId ? (PERSONA_AFFINITY_GENRES[personaId] || []) : [];
-      recentGenre = persona?.signals?.dominantGenre
-        ? String(persona.signals.dominantGenre).toLowerCase()
-        : null;
-    } catch { /* persona optional */ }
+      affinityGenres = personaId ? PERSONA_AFFINITY_GENRES[personaId] || [] : [];
+      recentGenre = persona?.signals?.dominantGenre ? String(persona.signals.dominantGenre).toLowerCase() : null;
+    } catch {
+      /* persona optional */
+    }
 
     let focusGenres = [];
     try {
       const focus = RecommendationEngine.getCurrentPlayFocus();
-      focusGenres = focus?.active ? (focus.genres || []) : [];
-    } catch { /* focus optional */ }
+      focusGenres = focus?.active ? focus.genres || [] : [];
+    } catch {
+      /* focus optional */
+    }
 
     let validRecent = [];
     let now = Date.now();
@@ -228,16 +242,32 @@ export class BacklogCoachService {
       const state = RecommendationEngine.getRecentRecommendationState();
       validRecent = state?.validRecent || [];
       now = state?.now || now;
-    } catch { /* recency guard optional */ }
+    } catch {
+      /* recency guard optional */
+    }
 
     const scored = backlog
-      .map((game) => this.scoreGame(game, { affinityGenres, recentGenre, focusGenres, weeklyMinutes: pace.weeklyMinutes, validRecent }))
+      .map((game) =>
+        this.scoreGame(game, {
+          affinityGenres,
+          recentGenre,
+          focusGenres,
+          weeklyMinutes: pace.weeklyMinutes,
+          validRecent,
+        })
+      )
       .sort((a, b) => b.score - a.score);
 
     const queue = scored.slice(0, count);
     try {
-      RecommendationEngine.persistRecentRecommendations(queue.map((entry) => entry.game), validRecent, now);
-    } catch { /* recency guard optional */ }
+      RecommendationEngine.persistRecentRecommendations(
+        queue.map((entry) => entry.game),
+        validRecent,
+        now
+      );
+    } catch {
+      /* recency guard optional */
+    }
 
     // "Hours to clear" under the sampled definition: each backlog game needs
     // at most its remaining-to-sampled minutes, capped by its real estimated
@@ -252,13 +282,15 @@ export class BacklogCoachService {
 
     const tonightPick = queue[0] || null;
     const messages = [
-      `${backlog.length} game${backlog.length === 1 ? '' : 's'} in your backlog — about ${hoursToClear}h to give them all a fair shot.`
+      `${backlog.length} game${backlog.length === 1 ? '' : 's'} in your backlog — about ${hoursToClear}h to give them all a fair shot.`,
     ];
     if (progress.clearedThisMonth > 0) {
       messages.push(`${progress.clearedThisMonth} cleared this month.`);
     }
     if (tonightPick) {
-      messages.push(`Tonight's pick: ${tonightPick.game.name} — ${tonightPick.reasons[0].charAt(0).toLowerCase()}${tonightPick.reasons[0].slice(1)}.`);
+      messages.push(
+        `Tonight's pick: ${tonightPick.game.name} — ${tonightPick.reasons[0].charAt(0).toLowerCase()}${tonightPick.reasons[0].slice(1)}.`
+      );
     }
 
     return {
@@ -270,10 +302,10 @@ export class BacklogCoachService {
         clearedThisMonth: progress.clearedThisMonth,
         clearedTotal: progress.clearedTotal,
         sampledMinutes: SAMPLED_MINUTES,
-        sampledSessions: SAMPLED_SESSIONS
+        sampledSessions: SAMPLED_SESSIONS,
       },
       recentCleared: progress.events,
-      message: messages.join(' ')
+      message: messages.join(' '),
     };
   }
 }

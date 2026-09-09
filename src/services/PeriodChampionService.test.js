@@ -22,8 +22,14 @@ jest.mock('./StorageService', () => {
     default: {
       _store: store,
       get: jest.fn((key, def) => (store.has(key) ? store.get(key) : def)),
-      set: jest.fn((key, value) => { store.set(key, value); return true; }),
-      remove: jest.fn((key) => { store.delete(key); return true; }),
+      set: jest.fn((key, value) => {
+        store.set(key, value);
+        return true;
+      }),
+      remove: jest.fn((key) => {
+        store.delete(key);
+        return true;
+      }),
     },
   };
 });
@@ -55,11 +61,23 @@ jest.mock('./GamingPersonaService', () => ({
 // implementations before every test. Re-establish them here so each
 // test starts with working mocks without having to re-set them individually.
 beforeEach(() => {
-  StorageService.get.mockImplementation((key, def) => (StorageService._store.has(key) ? StorageService._store.get(key) : def));
-  StorageService.set.mockImplementation((key, value) => { StorageService._store.set(key, value); return true; });
-  StorageService.remove.mockImplementation((key) => { StorageService._store.delete(key); return true; });
+  StorageService.get.mockImplementation((key, def) =>
+    StorageService._store.has(key) ? StorageService._store.get(key) : def
+  );
+  StorageService.set.mockImplementation((key, value) => {
+    StorageService._store.set(key, value);
+    return true;
+  });
+  StorageService.remove.mockImplementation((key) => {
+    StorageService._store.delete(key);
+    return true;
+  });
   SessionRepository.getSessionHistory.mockReturnValue([]);
-  resolveGameArtworkBundle.mockReturnValue({ artwork: 'portrait.png', fallbackSrc: 'cover.png', placeholder: 'placeholder.png' });
+  resolveGameArtworkBundle.mockReturnValue({
+    artwork: 'portrait.png',
+    fallbackSrc: 'cover.png',
+    placeholder: 'placeholder.png',
+  });
   GamingPersonaService.getPersona.mockReturnValue({
     primaryPersona: {
       label: 'The Doomsday Prepper who replays everything',
@@ -69,7 +87,9 @@ beforeEach(() => {
     },
     summaryRoast: 'Stockpiling hours like canned goods.',
   });
-  GamingPersonaService.getGameSpecificRoast.mockReturnValue('Project Zomboid called — they want their spokesperson back.');
+  GamingPersonaService.getGameSpecificRoast.mockReturnValue(
+    'Project Zomboid called — they want their spokesperson back.'
+  );
 });
 
 const makeSession = (gameName, minutes, daysAgo, from = new Date('2026-08-20T12:00:00Z')) => ({
@@ -149,9 +169,7 @@ describe('PeriodChampionService live champion', () => {
 
   test('ignores sessions with zero minutes', () => {
     const now = new Date('2026-08-20T12:00:00Z');
-    SessionRepository.getSessionHistory.mockReturnValue([
-      makeSession('Ghost', 0, 1),
-    ]);
+    SessionRepository.getSessionHistory.mockReturnValue([makeSession('Ghost', 0, 1)]);
     expect(PeriodChampionService.getLiveChampion('week', { now })).toBeNull();
   });
 
@@ -250,9 +268,9 @@ describe('PeriodChampionService locking', () => {
     const now = new Date('2026-08-20T12:00:00Z');
     // Sessions in the previous 3 weeks.
     SessionRepository.getSessionHistory.mockReturnValue([
-      makeSession('Project Zomboid', 60 * 20, 6),  // prev week (2026-08-09)
-      makeSession('Rust', 60 * 10, 13),            // 2 weeks ago (2026-08-02)
-      makeSession('Stardew Valley', 60 * 8, 20),   // 3 weeks ago (2026-07-26)
+      makeSession('Project Zomboid', 60 * 20, 6), // prev week (2026-08-09)
+      makeSession('Rust', 60 * 10, 13), // 2 weeks ago (2026-08-02)
+      makeSession('Stardew Valley', 60 * 8, 20), // 3 weeks ago (2026-07-26)
     ]);
     const newlyLocked = PeriodChampionService.lockChampionsIfNeeded({ now, lookback: { week: 4, month: 0, year: 0 } });
     expect(newlyLocked.length).toBe(3);
@@ -264,9 +282,7 @@ describe('PeriodChampionService locking', () => {
 
   test('lockChampionsIfNeeded does not re-lock already-locked periods', () => {
     const now = new Date('2026-08-20T12:00:00Z');
-    SessionRepository.getSessionHistory.mockReturnValue([
-      makeSession('Project Zomboid', 60 * 20, 6),
-    ]);
+    SessionRepository.getSessionHistory.mockReturnValue([makeSession('Project Zomboid', 60 * 20, 6)]);
     PeriodChampionService.lockChampionsIfNeeded({ now, lookback: { week: 2, month: 0, year: 0 } });
     const secondPass = PeriodChampionService.lockChampionsIfNeeded({ now, lookback: { week: 2, month: 0, year: 0 } });
     expect(secondPass).toEqual([]);
@@ -303,17 +319,19 @@ describe('PeriodChampionService getAllChampions', () => {
     const now = new Date('2026-08-20T12:00:00Z');
     const currentKey = PeriodChampionService.getCurrentPeriodKey('week', now);
     // Manually write a locked entry for the current period (edge case: locked early).
-    StorageService._store.set('champions-week', [{
-      period: 'week',
-      periodKey: currentKey,
-      lockedAt: '2026-08-17T00:00:00Z',
-      game: { name: 'Early Lock', artwork: null, platform: null, appId: null },
-      minutes: 100,
-      sessionCount: 1,
-      runnerUp: null,
-      totalPeriodMinutes: 100,
-      personaSnapshot: null,
-    }]);
+    StorageService._store.set('champions-week', [
+      {
+        period: 'week',
+        periodKey: currentKey,
+        lockedAt: '2026-08-17T00:00:00Z',
+        game: { name: 'Early Lock', artwork: null, platform: null, appId: null },
+        minutes: 100,
+        sessionCount: 1,
+        runnerUp: null,
+        totalPeriodMinutes: 100,
+        personaSnapshot: null,
+      },
+    ]);
     SessionRepository.getSessionHistory.mockReturnValue([makeSession('Project Zomboid', 9999, 1)]);
     const all = PeriodChampionService.getAllChampions('week', { now });
     expect(all).toHaveLength(1);
@@ -327,11 +345,19 @@ describe('PeriodChampionService artwork hydration', () => {
   });
 
   test('rehydrates a locked champion portrait from the current library', () => {
-    StorageService._store.set('champions-week', [{
-      period: 'week', periodKey: '2026-08-09', lockedAt: 'x',
-      game: { name: 'Project Zomboid', portrait: null, platform: null, appId: null },
-      minutes: 1200, sessionCount: 4, runnerUp: null, totalPeriodMinutes: 1200, personaSnapshot: null,
-    }]);
+    StorageService._store.set('champions-week', [
+      {
+        period: 'week',
+        periodKey: '2026-08-09',
+        lockedAt: 'x',
+        game: { name: 'Project Zomboid', portrait: null, platform: null, appId: null },
+        minutes: 1200,
+        sessionCount: 4,
+        runnerUp: null,
+        totalPeriodMinutes: 1200,
+        personaSnapshot: null,
+      },
+    ]);
     const library = [{ name: 'Project Zomboid™', appid: '108600', platform: 'Steam' }];
     const [champion] = PeriodChampionService.getLockedChampions('week', { library });
     expect(champion.game.portrait).toBe('portrait.png');
@@ -345,7 +371,11 @@ describe('PeriodChampionService artwork hydration', () => {
     const champion = {
       game: {
         name: 'Legacy Game',
-        artwork: { artwork: 'legacy-portrait.png', fallbackSrc: 'legacy-cover.png', placeholder: 'legacy-placeholder.png' },
+        artwork: {
+          artwork: 'legacy-portrait.png',
+          fallbackSrc: 'legacy-cover.png',
+          placeholder: 'legacy-placeholder.png',
+        },
       },
     };
     resolveGameArtworkBundle.mockReturnValue(null);
@@ -386,21 +416,45 @@ describe('PeriodChampionService getFullTimeline', () => {
   test('merges week, month, and year champions', () => {
     const now = new Date('2026-08-20T12:00:00Z');
     // Seed a locked week, locked month, locked year.
-    StorageService._store.set('champions-week', [{
-      period: 'week', periodKey: '2026-08-09', lockedAt: 'x',
-      game: { name: 'Weekly Game', artwork: null, platform: null, appId: null },
-      minutes: 100, sessionCount: 1, runnerUp: null, totalPeriodMinutes: 100, personaSnapshot: null,
-    }]);
-    StorageService._store.set('champions-month', [{
-      period: 'month', periodKey: '2026-07', lockedAt: 'x',
-      game: { name: 'Monthly Game', artwork: null, platform: null, appId: null },
-      minutes: 500, sessionCount: 5, runnerUp: null, totalPeriodMinutes: 500, personaSnapshot: null,
-    }]);
-    StorageService._store.set('champions-year', [{
-      period: 'year', periodKey: '2025', lockedAt: 'x',
-      game: { name: 'Yearly Game', artwork: null, platform: null, appId: null },
-      minutes: 5000, sessionCount: 50, runnerUp: null, totalPeriodMinutes: 5000, personaSnapshot: null,
-    }]);
+    StorageService._store.set('champions-week', [
+      {
+        period: 'week',
+        periodKey: '2026-08-09',
+        lockedAt: 'x',
+        game: { name: 'Weekly Game', artwork: null, platform: null, appId: null },
+        minutes: 100,
+        sessionCount: 1,
+        runnerUp: null,
+        totalPeriodMinutes: 100,
+        personaSnapshot: null,
+      },
+    ]);
+    StorageService._store.set('champions-month', [
+      {
+        period: 'month',
+        periodKey: '2026-07',
+        lockedAt: 'x',
+        game: { name: 'Monthly Game', artwork: null, platform: null, appId: null },
+        minutes: 500,
+        sessionCount: 5,
+        runnerUp: null,
+        totalPeriodMinutes: 500,
+        personaSnapshot: null,
+      },
+    ]);
+    StorageService._store.set('champions-year', [
+      {
+        period: 'year',
+        periodKey: '2025',
+        lockedAt: 'x',
+        game: { name: 'Yearly Game', artwork: null, platform: null, appId: null },
+        minutes: 5000,
+        sessionCount: 50,
+        runnerUp: null,
+        totalPeriodMinutes: 5000,
+        personaSnapshot: null,
+      },
+    ]);
     const timeline = PeriodChampionService.getFullTimeline({ now });
     expect(timeline).toHaveLength(3);
     // Sorted most-recent-first by periodKey string: 2026-08-09 > 2026-07 > 2025.
@@ -421,5 +475,3 @@ describe('PeriodChampionService clearAll', () => {
     expect(StorageService._store.has('champions-year')).toBe(false);
   });
 });
-
-

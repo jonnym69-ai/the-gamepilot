@@ -12,28 +12,33 @@ const dispatchPresentationCustomizationUpdated = (customization) => {
     return;
   }
 
-  window.dispatchEvent(new CustomEvent('gamepilot:reward-presentation-updated', {
-    detail: customization
-  }));
+  window.dispatchEvent(
+    new CustomEvent('gamepilot:reward-presentation-updated', {
+      detail: customization,
+    })
+  );
 };
 
-const tuneRewardCollection = (collection = []) => Object.freeze(collection.map((reward) => ({
-  ...reward,
-  requiredXP: tuneProgressionRequirement(reward.requiredXP)
-})));
+const tuneRewardCollection = (collection = []) =>
+  Object.freeze(
+    collection.map((reward) => ({
+      ...reward,
+      requiredXP: tuneProgressionRequirement(reward.requiredXP),
+    }))
+  );
 
 const THEME_TIER_XP_REQUIREMENTS = Object.freeze({
   basic: 0,
   plus: tuneProgressionRequirement(1000),
   gold: tuneProgressionRequirement(3600),
   platinum: tuneProgressionRequirement(8200),
-  diamond: tuneProgressionRequirement(15000)
+  diamond: tuneProgressionRequirement(15000),
 });
 
 const CORE_THEME_IDS = Object.freeze(new Set(['dark', 'light']));
 
-const isThemeXPUnlockedContent = (theme) => Boolean(theme) && !CORE_THEME_IDS.has(theme.id) && theme.patreonExclusive !== true;
-
+const isThemeXPUnlockedContent = (theme) =>
+  Boolean(theme) && !CORE_THEME_IDS.has(theme.id) && theme.patreonExclusive !== true;
 
 const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
   {
@@ -42,7 +47,7 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     description: 'A clean frame for fresh pilots.',
     requiredXP: 0,
     accentColor: '#ff6b35',
-    shadowColor: 'rgba(255, 107, 53, 0.35)'
+    shadowColor: 'rgba(255, 107, 53, 0.35)',
   },
   {
     id: 'neon_circuit',
@@ -50,7 +55,7 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     description: 'Arcade energy for regular launches.',
     requiredXP: 800,
     accentColor: '#3dd9ff',
-    shadowColor: 'rgba(61, 217, 255, 0.32)'
+    shadowColor: 'rgba(61, 217, 255, 0.32)',
   },
   {
     id: 'violet_vector',
@@ -58,7 +63,7 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     description: 'A sharper look for tuned-in strategists.',
     requiredXP: 2400,
     accentColor: '#9b5cff',
-    shadowColor: 'rgba(155, 92, 255, 0.34)'
+    shadowColor: 'rgba(155, 92, 255, 0.34)',
   },
   {
     id: 'golden_aegis',
@@ -66,7 +71,7 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     description: 'Prestige plating for high-level players.',
     requiredXP: 6400,
     accentColor: '#f5b700',
-    shadowColor: 'rgba(245, 183, 0, 0.34)'
+    shadowColor: 'rgba(245, 183, 0, 0.34)',
   },
   {
     id: 'crimson_guard',
@@ -74,7 +79,7 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     description: 'A fierce frame for competitive spirits.',
     requiredXP: 4800,
     accentColor: '#dc2626',
-    shadowColor: 'rgba(220, 38, 38, 0.35)'
+    shadowColor: 'rgba(220, 38, 38, 0.35)',
   },
   {
     id: 'emerald_sentinel',
@@ -82,7 +87,7 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     description: 'Guardian frame for the patient collector.',
     requiredXP: 5200,
     accentColor: '#10b981',
-    shadowColor: 'rgba(16, 185, 129, 0.35)'
+    shadowColor: 'rgba(16, 185, 129, 0.35)',
   },
   {
     id: 'platinum_crown',
@@ -90,7 +95,7 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     description: 'The ultimate frame for completionists.',
     requiredXP: 8200,
     accentColor: '#e5e7eb',
-    shadowColor: 'rgba(229, 231, 235, 0.4)'
+    shadowColor: 'rgba(229, 231, 235, 0.4)',
   },
   {
     id: 'diamond_prism',
@@ -99,8 +104,8 @@ const PROFILE_FRAME_UNLOCKS = tuneRewardCollection([
     requiredXP: 12000,
     accentColor: '#a5f3fc',
     shadowColor: 'rgba(165, 243, 252, 0.45)',
-    prestige: true
-  }
+    prestige: true,
+  },
 ]);
 
 const CARD_STYLE_UNLOCKS = tuneRewardCollection([
@@ -113,8 +118,8 @@ const CARD_STYLE_UNLOCKS = tuneRewardCollection([
     preview: {
       border: '1px solid var(--border-color)',
       background: 'var(--card-bg)',
-      shadow: '0 2px 8px rgba(0,0,0,0.1)'
-    }
+      shadow: '0 2px 8px rgba(0,0,0,0.1)',
+    },
   },
   {
     id: 'neon',
@@ -125,8 +130,8 @@ const CARD_STYLE_UNLOCKS = tuneRewardCollection([
     preview: {
       border: '2px solid #00d4ff',
       background: 'linear-gradient(135deg, rgba(0,212,255,0.1) 0%, transparent 100%)',
-      shadow: '0 0 20px rgba(0,212,255,0.3), inset 0 0 20px rgba(0,212,255,0.1)'
-    }
+      shadow: '0 0 20px rgba(0,212,255,0.3), inset 0 0 20px rgba(0,212,255,0.1)',
+    },
   },
   {
     id: 'glass',
@@ -138,8 +143,8 @@ const CARD_STYLE_UNLOCKS = tuneRewardCollection([
       border: '1px solid rgba(255,255,255,0.2)',
       background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
       shadow: '0 8px 32px rgba(0,0,0,0.3)',
-      backdropFilter: 'blur(10px)'
-    }
+      backdropFilter: 'blur(10px)',
+    },
   },
   {
     id: 'retro',
@@ -151,8 +156,8 @@ const CARD_STYLE_UNLOCKS = tuneRewardCollection([
       border: '3px solid #4ade80',
       background: 'var(--card-bg)',
       shadow: '4px 4px 0 #1f2937',
-      borderRadius: '4px'
-    }
+      borderRadius: '4px',
+    },
   },
   {
     id: 'holographic',
@@ -164,21 +169,84 @@ const CARD_STYLE_UNLOCKS = tuneRewardCollection([
       border: '2px solid transparent',
       background: 'linear-gradient(135deg, rgba(255,0,128,0.2) 0%, rgba(0,255,255,0.2) 50%, rgba(255,255,0,0.2) 100%)',
       shadow: '0 0 30px rgba(255,0,128,0.3)',
-      borderImage: 'linear-gradient(135deg, #ff0080, #00ffff, #ffff00) 1'
-    }
-  }
+      borderImage: 'linear-gradient(135deg, #ff0080, #00ffff, #ffff00) 1',
+    },
+  },
 ]);
 
 const LOGO_ANIMATION_UNLOCKS = tuneRewardCollection([
-  { id: 'synthwave-runway', name: 'Neon Runway', description: 'Cyberpunk neon aesthetic', accent: '', requiredXP: 0, rewardType: 'cosmetic' },
-  { id: 'pixel-parade', name: 'Pixel Parade', description: 'Retro 8-bit style', accent: '', requiredXP: 700, rewardType: 'cosmetic' },
-  { id: 'sunset-brush', name: 'Sunset Brush', description: 'Warm gradient flows', accent: '', requiredXP: 1400, rewardType: 'cosmetic' },
-  { id: 'circuit-glow', name: 'Circuit Glow', description: 'Tech grid pattern', accent: '', requiredXP: 2200, rewardType: 'cosmetic' },
-  { id: 'nebula-script', name: 'Nebula Script', description: 'Cosmic space theme', accent: '', requiredXP: 2200, rewardType: 'cosmetic' },
-  { id: 'orbit-comet', name: 'Orbit Comet', description: 'Fast orbital streaks around your doodle avatar bubble.', accent: '', requiredXP: 3200, rewardType: 'cosmetic' },
-  { id: 'moon-tide', name: 'Moon Tide', description: 'Soft lunar drift and cool-toned shimmer for calmer sessions.', accent: '', requiredXP: 4700, rewardType: 'cosmetic' },
-  { id: 'victory-burst', name: 'Victory Burst', description: 'Celebratory spark bursts for high-energy profile flair.', accent: '', requiredXP: 6200, rewardType: 'cosmetic' },
-  { id: 'golden-shine', name: 'Golden Shine', description: 'Prestige gold accent', accent: '', requiredXP: 8500, rewardType: 'cosmetic' }
+  {
+    id: 'synthwave-runway',
+    name: 'Neon Runway',
+    description: 'Cyberpunk neon aesthetic',
+    accent: '',
+    requiredXP: 0,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'pixel-parade',
+    name: 'Pixel Parade',
+    description: 'Retro 8-bit style',
+    accent: '',
+    requiredXP: 700,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'sunset-brush',
+    name: 'Sunset Brush',
+    description: 'Warm gradient flows',
+    accent: '',
+    requiredXP: 1400,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'circuit-glow',
+    name: 'Circuit Glow',
+    description: 'Tech grid pattern',
+    accent: '',
+    requiredXP: 2200,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'nebula-script',
+    name: 'Nebula Script',
+    description: 'Cosmic space theme',
+    accent: '',
+    requiredXP: 2200,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'orbit-comet',
+    name: 'Orbit Comet',
+    description: 'Fast orbital streaks around your doodle avatar bubble.',
+    accent: '',
+    requiredXP: 3200,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'moon-tide',
+    name: 'Moon Tide',
+    description: 'Soft lunar drift and cool-toned shimmer for calmer sessions.',
+    accent: '',
+    requiredXP: 4700,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'victory-burst',
+    name: 'Victory Burst',
+    description: 'Celebratory spark bursts for high-energy profile flair.',
+    accent: '',
+    requiredXP: 6200,
+    rewardType: 'cosmetic',
+  },
+  {
+    id: 'golden-shine',
+    name: 'Golden Shine',
+    description: 'Prestige gold accent',
+    accent: '',
+    requiredXP: 8500,
+    rewardType: 'cosmetic',
+  },
 ]);
 
 const PROFILE_BANNER_UNLOCKS = tuneRewardCollection([
@@ -187,49 +255,49 @@ const PROFILE_BANNER_UNLOCKS = tuneRewardCollection([
     name: 'Pilot Sunset',
     description: 'Warm gradients for the opening stretch.',
     requiredXP: 0,
-    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.2))'
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.2))',
   },
   {
     id: 'midnight_arcade',
     name: 'Midnight Arcade',
     description: 'A neon banner for late-night sessions.',
     requiredXP: 900,
-    preview: 'linear-gradient(135deg, rgba(34, 40, 104, 0.7), rgba(98, 0, 234, 0.45), rgba(0, 212, 255, 0.22))'
+    preview: 'linear-gradient(135deg, rgba(34, 40, 104, 0.7), rgba(98, 0, 234, 0.45), rgba(0, 212, 255, 0.22))',
   },
   {
     id: 'aurora_drift',
     name: 'Aurora Drift',
     description: 'A calmer banner for deep backlog runs.',
     requiredXP: 2600,
-    preview: 'linear-gradient(135deg, rgba(0, 150, 136, 0.55), rgba(76, 175, 80, 0.28), rgba(33, 150, 243, 0.22))'
+    preview: 'linear-gradient(135deg, rgba(0, 150, 136, 0.55), rgba(76, 175, 80, 0.28), rgba(33, 150, 243, 0.22))',
   },
   {
     id: 'victory_wave',
     name: 'Victory Wave',
     description: 'A bright hero banner for milestone hunters.',
     requiredXP: 6800,
-    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.5), rgba(255, 107, 53, 0.35), rgba(255, 255, 255, 0.12))'
+    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.5), rgba(255, 107, 53, 0.35), rgba(255, 255, 255, 0.12))',
   },
   {
     id: 'crimson_arena',
     name: 'Crimson Arena',
     description: 'Competitive energy for ranked sessions.',
     requiredXP: 4200,
-    preview: 'linear-gradient(135deg, rgba(220, 38, 38, 0.6), rgba(153, 27, 27, 0.4), rgba(0, 0, 0, 0.3))'
+    preview: 'linear-gradient(135deg, rgba(220, 38, 38, 0.6), rgba(153, 27, 27, 0.4), rgba(0, 0, 0, 0.3))',
   },
   {
     id: 'emerald_archive',
     name: 'Emerald Archive',
     description: 'Scholarly vibes for deep catalog divers.',
     requiredXP: 4800,
-    preview: 'linear-gradient(135deg, rgba(16, 185, 129, 0.5), rgba(6, 95, 70, 0.35), rgba(0, 0, 0, 0.2))'
+    preview: 'linear-gradient(135deg, rgba(16, 185, 129, 0.5), rgba(6, 95, 70, 0.35), rgba(0, 0, 0, 0.2))',
   },
   {
     id: 'cosmic_horizon',
     name: 'Cosmic Horizon',
     description: 'Infinite possibilities for explorers.',
     requiredXP: 7800,
-    preview: 'linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(59, 130, 246, 0.35), rgba(15, 23, 42, 0.4))'
+    preview: 'linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(59, 130, 246, 0.35), rgba(15, 23, 42, 0.4))',
   },
   {
     id: 'diamond_aurora',
@@ -237,8 +305,8 @@ const PROFILE_BANNER_UNLOCKS = tuneRewardCollection([
     description: 'Iridescent prestige banner reserved for Diamond-tier pilots.',
     requiredXP: 13500,
     preview: 'linear-gradient(135deg, rgba(165, 243, 252, 0.6), rgba(196, 181, 253, 0.45), rgba(252, 165, 165, 0.35))',
-    prestige: true
-  }
+    prestige: true,
+  },
 ]);
 
 const PROFILE_TITLE_UNLOCKS = tuneRewardCollection([
@@ -246,72 +314,74 @@ const PROFILE_TITLE_UNLOCKS = tuneRewardCollection([
     id: 'rookie_pilot',
     name: 'Rookie Pilot',
     description: 'For players building their library rhythm.',
-    requiredXP: 0
+    requiredXP: 0,
   },
   {
     id: 'library_ranger',
     name: 'Library Ranger',
     description: 'Given to players who keep exploring.',
-    requiredXP: 600
+    requiredXP: 600,
   },
   {
     id: 'mood_cartographer',
     name: 'Mood Cartographer',
     description: 'Earned by players who know what fits the night.',
-    requiredXP: 1600
+    requiredXP: 1600,
   },
   {
     id: 'session_strategist',
     name: 'Session Strategist',
     description: 'For players who turn time into progression.',
-    requiredXP: 3800
+    requiredXP: 3800,
   },
   {
     id: 'backlog_legend',
     name: 'Backlog Legend',
     description: 'Reserved for long-haul GamePilot regulars.',
-    requiredXP: 7600
+    requiredXP: 7600,
   },
   {
     id: 'achievement_hunter',
     name: 'Achievement Hunter',
     description: 'For those who chase every milestone.',
-    requiredXP: 3200
+    requiredXP: 3200,
   },
   {
     id: 'completionist',
     name: 'The Completionist',
     description: 'Perfected their library, one game at a time.',
-    requiredXP: 5400
+    requiredXP: 5400,
   },
   {
     id: 'retro_guardian',
     name: 'Retro Guardian',
     description: 'Protector of classics and forgotten gems.',
-    requiredXP: 2000
+    requiredXP: 2000,
   },
   {
     id: 'night_owl',
     name: 'Night Owl',
     description: 'Finds their flow when the world sleeps.',
-    requiredXP: 2800
+    requiredXP: 2800,
   },
   {
     id: 'gamepilot_veteran',
     name: 'GamePilot Veteran',
     description: 'Has seen every update, unlocked every reward.',
-    requiredXP: 9000
+    requiredXP: 9000,
   },
   {
     id: 'diamond_pilot',
     name: 'Diamond Pilot',
     description: 'Prestige title for those who fly above the rest.',
     requiredXP: 15000,
-    prestige: true
-  }
+    prestige: true,
+  },
 ]);
 
-const SHOWCASE_SLOT_XP_REQUIREMENTS = Object.freeze([0, 1200, 3600, 7800].map((requiredXP) => tuneProgressionRequirement(requiredXP)));
+const SHOWCASE_SLOT_XP_REQUIREMENTS = Object.freeze(
+  [0, 1200, 3600, 7800].map((requiredXP) => tuneProgressionRequirement(requiredXP))
+);
 
 const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
   {
@@ -320,7 +390,7 @@ const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
     description: 'Export your full library as JSON or CSV anytime.',
     requiredXP: 0,
     rewardType: 'utility',
-    filters: ['json', 'csv']
+    filters: ['json', 'csv'],
   },
   {
     id: 'platform_filter',
@@ -328,7 +398,7 @@ const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
     description: 'Export only games from specific platforms.',
     requiredXP: 400,
     rewardType: 'utility',
-    filters: ['platforms']
+    filters: ['platforms'],
   },
   {
     id: 'date_filter',
@@ -336,7 +406,7 @@ const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
     description: 'Export games played in the last 7, 30, or 90 days.',
     requiredXP: 800,
     rewardType: 'utility',
-    filters: ['dateRange']
+    filters: ['dateRange'],
   },
   {
     id: 'selection_filter',
@@ -344,7 +414,7 @@ const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
     description: 'Export only the games you hand-pick from your library.',
     requiredXP: 1200,
     rewardType: 'utility',
-    filters: ['selectedGames']
+    filters: ['selectedGames'],
   },
   {
     id: 'stats_only',
@@ -352,7 +422,7 @@ const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
     description: 'Trim exports to just the core stats columns for quick analysis.',
     requiredXP: 1600,
     rewardType: 'utility',
-    filters: ['fields']
+    filters: ['fields'],
   },
   {
     id: 'advanced_export',
@@ -360,8 +430,8 @@ const EXPORT_FILTER_UNLOCKS = tuneRewardCollection([
     description: 'Combine custom date ranges, platforms, selections, and field presets in one export.',
     requiredXP: 2000,
     rewardType: 'utility',
-    filters: ['all']
-  }
+    filters: ['all'],
+  },
 ]);
 
 const RECAP_THEME_UNLOCKS = tuneRewardCollection([
@@ -378,8 +448,8 @@ const RECAP_THEME_UNLOCKS = tuneRewardCollection([
       text: '#f8fafc',
       muted: '#94a3b8',
       surface: 'rgba(255, 255, 255, 0.06)',
-      surfaceBorder: 'rgba(255, 255, 255, 0.1)'
-    }
+      surfaceBorder: 'rgba(255, 255, 255, 0.1)',
+    },
   },
   {
     id: 'midnight',
@@ -394,8 +464,8 @@ const RECAP_THEME_UNLOCKS = tuneRewardCollection([
       text: '#f1f5f9',
       muted: '#93a8c4',
       surface: 'rgba(255, 255, 255, 0.06)',
-      surfaceBorder: 'rgba(148, 197, 255, 0.16)'
-    }
+      surfaceBorder: 'rgba(148, 197, 255, 0.16)',
+    },
   },
   {
     id: 'emerald',
@@ -410,8 +480,8 @@ const RECAP_THEME_UNLOCKS = tuneRewardCollection([
       text: '#f0fdf4',
       muted: '#8fb8a6',
       surface: 'rgba(255, 255, 255, 0.06)',
-      surfaceBorder: 'rgba(52, 211, 153, 0.16)'
-    }
+      surfaceBorder: 'rgba(52, 211, 153, 0.16)',
+    },
   },
   {
     id: 'sunset',
@@ -426,8 +496,8 @@ const RECAP_THEME_UNLOCKS = tuneRewardCollection([
       text: '#fdf2f8',
       muted: '#c89bb0',
       surface: 'rgba(255, 255, 255, 0.07)',
-      surfaceBorder: 'rgba(251, 113, 133, 0.18)'
-    }
+      surfaceBorder: 'rgba(251, 113, 133, 0.18)',
+    },
   },
   {
     id: 'mono',
@@ -442,8 +512,8 @@ const RECAP_THEME_UNLOCKS = tuneRewardCollection([
       text: '#fafafa',
       muted: '#9ca3af',
       surface: 'rgba(255, 255, 255, 0.05)',
-      surfaceBorder: 'rgba(255, 255, 255, 0.12)'
-    }
+      surfaceBorder: 'rgba(255, 255, 255, 0.12)',
+    },
   },
   {
     id: 'aurora',
@@ -458,9 +528,9 @@ const RECAP_THEME_UNLOCKS = tuneRewardCollection([
       text: '#f5f3ff',
       muted: '#a3a8d4',
       surface: 'rgba(255, 255, 255, 0.07)',
-      surfaceBorder: 'rgba(168, 85, 247, 0.18)'
-    }
-  }
+      surfaceBorder: 'rgba(168, 85, 247, 0.18)',
+    },
+  },
 ]);
 
 const LIBRARY_PRESENTATION_UNLOCKS = tuneRewardCollection([
@@ -470,7 +540,7 @@ const LIBRARY_PRESENTATION_UNLOCKS = tuneRewardCollection([
     description: 'Balanced library cards for everyday browsing.',
     requiredXP: 0,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))'
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))',
   },
   {
     id: 'compact_matrix',
@@ -478,7 +548,7 @@ const LIBRARY_PRESENTATION_UNLOCKS = tuneRewardCollection([
     description: 'A denser shelf for scanning more games at once.',
     requiredXP: 900,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.16), rgba(34, 40, 104, 0.35))'
+    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.16), rgba(34, 40, 104, 0.35))',
   },
   {
     id: 'spotlight_showcase',
@@ -486,7 +556,7 @@ const LIBRARY_PRESENTATION_UNLOCKS = tuneRewardCollection([
     description: 'Larger, art-forward cards for featured browsing.',
     requiredXP: 2800,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(240, 147, 251, 0.18), rgba(255, 107, 53, 0.22))'
+    preview: 'linear-gradient(135deg, rgba(240, 147, 251, 0.18), rgba(255, 107, 53, 0.22))',
   },
   {
     id: 'intel_panels',
@@ -494,8 +564,8 @@ const LIBRARY_PRESENTATION_UNLOCKS = tuneRewardCollection([
     description: 'Sharper metadata panels for power users.',
     requiredXP: 7000,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(125, 220, 132, 0.16), rgba(15, 118, 110, 0.32))'
-  }
+    preview: 'linear-gradient(135deg, rgba(125, 220, 132, 0.16), rgba(15, 118, 110, 0.32))',
+  },
 ]);
 
 const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
@@ -505,7 +575,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
     description: 'The default command layout with a full hero and filter stack.',
     requiredXP: 0,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(255, 140, 66, 0.16))'
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(255, 140, 66, 0.16))',
   },
   {
     id: 'focus_finder',
@@ -513,7 +583,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
     description: 'A tighter home layout that prioritizes recommendation inputs.',
     requiredXP: 1100,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.15), rgba(99, 102, 241, 0.26))'
+    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.15), rgba(99, 102, 241, 0.26))',
   },
   {
     id: 'dashboard_split',
@@ -521,7 +591,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
     description: 'A two-column mission view for active recommendation sessions.',
     requiredXP: 4600,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.18), rgba(255, 107, 53, 0.24))'
+    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.18), rgba(255, 107, 53, 0.24))',
   },
   {
     id: 'streamer_overlay',
@@ -529,7 +599,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
     description: 'Ultra-compact single-column layout that keeps the focus on what you are playing now.',
     requiredXP: 8000,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(59, 130, 246, 0.22))'
+    preview: 'linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(59, 130, 246, 0.22))',
   },
   {
     id: 'arcade_cabinet',
@@ -537,8 +607,8 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
     description: 'Bold, spacious retro styling with chunkier sections and neon hero glow.',
     requiredXP: 12000,
     rewardType: 'utility',
-    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.18))'
-  }
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.18))',
+  },
 ]);
 
 const RECOMMENDATION_PACK_UNLOCKS = tuneRewardCollection([
@@ -550,7 +620,7 @@ const RECOMMENDATION_PACK_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     accentColor: '#ff6b35',
     secondaryColor: '#f093fb',
-    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.2))'
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.2))',
   },
   {
     id: 'arcade_signal',
@@ -560,7 +630,7 @@ const RECOMMENDATION_PACK_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     accentColor: '#3dd9ff',
     secondaryColor: '#9b5cff',
-    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.28), rgba(155, 92, 255, 0.22))'
+    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.28), rgba(155, 92, 255, 0.22))',
   },
   {
     id: 'tactical_hud',
@@ -570,7 +640,7 @@ const RECOMMENDATION_PACK_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     accentColor: '#7ddc84',
     secondaryColor: '#0f766e',
-    preview: 'linear-gradient(135deg, rgba(125, 220, 132, 0.24), rgba(15, 118, 110, 0.24))'
+    preview: 'linear-gradient(135deg, rgba(125, 220, 132, 0.24), rgba(15, 118, 110, 0.24))',
   },
   {
     id: 'victory_lights',
@@ -580,8 +650,8 @@ const RECOMMENDATION_PACK_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     accentColor: '#f5b700',
     secondaryColor: '#ff8c42',
-    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.32), rgba(255, 140, 66, 0.22))'
-  }
+    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.32), rgba(255, 140, 66, 0.22))',
+  },
 ]);
 
 const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
@@ -591,7 +661,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: 'Smooth transitions and enhanced hover effects for link containers.',
     requiredXP: 0,
     rewardType: 'cosmetic',
-    features: ['hover-animation', 'enhanced-shadow']
+    features: ['hover-animation', 'enhanced-shadow'],
   },
   {
     id: 'neon_glow',
@@ -600,7 +670,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     requiredXP: 1200,
     rewardType: 'cosmetic',
     accentColor: '#3dd9ff',
-    features: ['neon-border', 'pulse-animation']
+    features: ['neon-border', 'pulse-animation'],
   },
   {
     id: 'category_icons',
@@ -608,7 +678,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: 'Visual icons for each link category (Store, Community, Streaming, etc.).',
     requiredXP: 0,
     rewardType: 'cosmetic',
-    features: ['category-icons']
+    features: ['category-icons'],
   },
   {
     id: 'gradient_cards',
@@ -616,7 +686,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: 'Beautiful gradient backgrounds for link containers.',
     requiredXP: 2200,
     rewardType: 'cosmetic',
-    features: ['gradient-background', 'glass-effect']
+    features: ['gradient-background', 'glass-effect'],
   },
   {
     id: 'particle_effects',
@@ -624,7 +694,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: 'Subtle floating particles around link containers.',
     requiredXP: 4200,
     rewardType: 'cosmetic',
-    features: ['particle-animation']
+    features: ['particle-animation'],
   },
   {
     id: '3d_transforms',
@@ -632,7 +702,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: '3D flip and rotate effects on hover.',
     requiredXP: 5600,
     rewardType: 'cosmetic',
-    features: ['3d-transform', 'perspective']
+    features: ['3d-transform', 'perspective'],
   },
   {
     id: 'glass_panels',
@@ -640,7 +710,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: 'Frosted glass cards with soft blur and edge lighting.',
     requiredXP: 3000,
     rewardType: 'cosmetic',
-    features: ['glassmorphism', 'backdrop-blur', 'edge-lighting']
+    features: ['glassmorphism', 'backdrop-blur', 'edge-lighting'],
   },
   {
     id: 'status_badges',
@@ -648,7 +718,7 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: 'Adds compact badges for quick category and priority scanning.',
     requiredXP: 1800,
     rewardType: 'cosmetic',
-    features: ['status-badges', 'priority-chips']
+    features: ['status-badges', 'priority-chips'],
   },
   {
     id: 'spotlight_rows',
@@ -656,8 +726,8 @@ const GAMING_LINKS_UNLOCKS = tuneRewardCollection([
     description: 'Hero row styling for featured links and seasonal picks.',
     requiredXP: 6800,
     rewardType: 'cosmetic',
-    features: ['featured-row', 'hero-highlight', 'seasonal-accent']
-  }
+    features: ['featured-row', 'hero-highlight', 'seasonal-accent'],
+  },
 ]);
 
 // XP-gated layout + box-style rewards for the Gaming Links page.
@@ -672,7 +742,7 @@ const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     layout: 'grid',
     box: 'rounded',
-    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))'
+    preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))',
   },
   {
     id: 'compact_list',
@@ -682,7 +752,7 @@ const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     layout: 'list',
     box: 'pill',
-    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.18), rgba(34, 40, 104, 0.32))'
+    preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.18), rgba(34, 40, 104, 0.32))',
   },
   {
     id: 'showcase_hero',
@@ -692,7 +762,7 @@ const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     layout: 'hero',
     box: 'rounded',
-    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.2), rgba(255, 107, 53, 0.26))'
+    preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.2), rgba(255, 107, 53, 0.26))',
   },
   {
     id: 'magazine_mosaic',
@@ -702,7 +772,7 @@ const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     layout: 'mosaic',
     box: 'sharp',
-    preview: 'linear-gradient(135deg, rgba(240, 147, 251, 0.22), rgba(155, 92, 255, 0.24))'
+    preview: 'linear-gradient(135deg, rgba(240, 147, 251, 0.22), rgba(155, 92, 255, 0.24))',
   },
   {
     id: 'hex_grid',
@@ -712,7 +782,7 @@ const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     layout: 'hex',
     box: 'hex',
-    preview: 'linear-gradient(135deg, rgba(125, 220, 132, 0.22), rgba(15, 118, 110, 0.32))'
+    preview: 'linear-gradient(135deg, rgba(125, 220, 132, 0.22), rgba(15, 118, 110, 0.32))',
   },
   {
     id: 'arcade_cabinet',
@@ -722,8 +792,8 @@ const GAMING_LINKS_LAYOUT_UNLOCKS = tuneRewardCollection([
     rewardType: 'cosmetic',
     layout: 'arcade',
     box: 'arcade',
-    preview: 'linear-gradient(135deg, rgba(255, 0, 128, 0.22), rgba(0, 212, 255, 0.22))'
-  }
+    preview: 'linear-gradient(135deg, rgba(255, 0, 128, 0.22), rgba(0, 212, 255, 0.22))',
+  },
 ]);
 
 const PROFILE_CUSTOMIZATION_STORAGE_KEY = 'profileCustomization';
@@ -735,7 +805,7 @@ const LEGACY_LOGO_ANIMATION_STORAGE_KEY = 'gamepilot_logo_animation';
 const PROFILE_REWARD_COLLECTIONS = Object.freeze({
   frames: PROFILE_FRAME_UNLOCKS,
   banners: PROFILE_BANNER_UNLOCKS,
-  titles: PROFILE_TITLE_UNLOCKS
+  titles: PROFILE_TITLE_UNLOCKS,
 });
 
 const PRESENTATION_REWARD_COLLECTIONS = Object.freeze({
@@ -747,7 +817,7 @@ const PRESENTATION_REWARD_COLLECTIONS = Object.freeze({
   gamingLinks: GAMING_LINKS_UNLOCKS,
   gamingLinksLayouts: GAMING_LINKS_LAYOUT_UNLOCKS,
   exportFilters: EXPORT_FILTER_UNLOCKS,
-  recapThemes: RECAP_THEME_UNLOCKS
+  recapThemes: RECAP_THEME_UNLOCKS,
 });
 
 const FALLBACK_THEME_TIER = 'basic';
@@ -761,7 +831,6 @@ const toProgressPercent = (current, required) => {
   if (required <= 0) return 100;
   return Math.max(0, Math.min(100, Math.round((current / required) * 100)));
 };
-
 
 const readProfileCustomization = () => {
   try {
@@ -782,7 +851,8 @@ const readPresentationCustomization = () => {
     return {
       ...customization,
       selectedCardStyle: customization.selectedCardStyle || legacyCardStyle || customization.selectedCardStyle,
-      selectedLogoAnimation: customization.selectedLogoAnimation || legacyLogoAnimation || customization.selectedLogoAnimation
+      selectedLogoAnimation:
+        customization.selectedLogoAnimation || legacyLogoAnimation || customization.selectedLogoAnimation,
     };
   } catch (error) {
     return {};
@@ -804,10 +874,10 @@ const getRewardDisplayName = (reward) => reward?.name || reward?.label || '';
 const GLOBAL_UNLOCK_STEP_XP = 200;
 
 const PROGRESSION_SEQUENCE_ORDER = Object.freeze({
-  'Theme': 1,
-  'Frame': 2,
-  'Banner': 3,
-  'Title': 4,
+  Theme: 1,
+  Frame: 2,
+  Banner: 3,
+  Title: 4,
   'Recommendation Pack': 5,
   'Music Pack': 6,
   'Atmosphere Pack': 7,
@@ -821,28 +891,31 @@ const PROGRESSION_SEQUENCE_ORDER = Object.freeze({
   'Gaming Links': 15,
   'Gaming Links Layout': 16,
   'Export Filter': 17,
-  'Recap Theme': 18
+  'Recap Theme': 18,
 });
 
-const buildSequencedUnlockTrack = (rewards = [], currentXP = 0, limit = 8) => rewards
-  .filter((reward) => !reward.unlocked)
-  .sort((left, right) => {
-    const leftSequence = PROGRESSION_SEQUENCE_ORDER[left.category] || Number.MAX_SAFE_INTEGER;
-    const rightSequence = PROGRESSION_SEQUENCE_ORDER[right.category] || Number.MAX_SAFE_INTEGER;
+const buildSequencedUnlockTrack = (rewards = [], currentXP = 0, limit = 8) =>
+  rewards
+    .filter((reward) => !reward.unlocked)
+    .sort((left, right) => {
+      const leftSequence = PROGRESSION_SEQUENCE_ORDER[left.category] || Number.MAX_SAFE_INTEGER;
+      const rightSequence = PROGRESSION_SEQUENCE_ORDER[right.category] || Number.MAX_SAFE_INTEGER;
 
-    return left.requiredXP - right.requiredXP
-      || leftSequence - rightSequence
-      || getRewardDisplayName(left).localeCompare(getRewardDisplayName(right));
-  })
-  .slice(0, limit)
-  .map((reward, index) => ({
-    ...reward,
-    unlockStep: index + 1,
-    remainingXP: Math.max(0, reward.requiredXP - currentXP),
-    displayRemainingXP: Math.max(0, reward.requiredXP - currentXP),
-    displayRequiredXP: reward.requiredXP,
-    isNearlyUnlocked: Math.max(0, reward.requiredXP - currentXP) <= 25
-  }));
+      return (
+        left.requiredXP - right.requiredXP ||
+        leftSequence - rightSequence ||
+        getRewardDisplayName(left).localeCompare(getRewardDisplayName(right))
+      );
+    })
+    .slice(0, limit)
+    .map((reward, index) => ({
+      ...reward,
+      unlockStep: index + 1,
+      remainingXP: Math.max(0, reward.requiredXP - currentXP),
+      displayRemainingXP: Math.max(0, reward.requiredXP - currentXP),
+      displayRequiredXP: reward.requiredXP,
+      isNearlyUnlocked: Math.max(0, reward.requiredXP - currentXP) <= 25,
+    }));
 
 const buildGlobalRewardPool = () => {
   const themeRewards = moodThemes
@@ -854,8 +927,10 @@ const buildGlobalRewardPool = () => {
       description: theme.description,
       category: 'Theme',
       requiredTier: theme.requiredTier || FALLBACK_THEME_TIER,
-      baseRequiredXP: THEME_TIER_XP_REQUIREMENTS[theme.requiredTier || FALLBACK_THEME_TIER] ?? THEME_TIER_XP_REQUIREMENTS[FALLBACK_THEME_TIER],
-      rewardType: 'theme'
+      baseRequiredXP:
+        THEME_TIER_XP_REQUIREMENTS[theme.requiredTier || FALLBACK_THEME_TIER] ??
+        THEME_TIER_XP_REQUIREMENTS[FALLBACK_THEME_TIER],
+      rewardType: 'theme',
     }));
 
   const showcaseRewards = SHOWCASE_SLOT_XP_REQUIREMENTS.map((requiredXP, index) => ({
@@ -866,7 +941,7 @@ const buildGlobalRewardPool = () => {
     category: 'Showcase Slot',
     baseRequiredXP: requiredXP,
     slotNumber: index + 1,
-    rewardType: 'utility'
+    rewardType: 'utility',
   }));
 
   const catalogRewards = [
@@ -874,17 +949,49 @@ const buildGlobalRewardPool = () => {
     ...PROFILE_BANNER_UNLOCKS.map((reward) => ({ trackKey: `Banner:${reward.id}`, category: 'Banner', ...reward })),
     ...PROFILE_TITLE_UNLOCKS.map((reward) => ({ trackKey: `Title:${reward.id}`, category: 'Title', ...reward })),
     ...CARD_STYLE_UNLOCKS.map((reward) => ({ trackKey: `Card Style:${reward.id}`, category: 'Card Style', ...reward })),
-    ...LOGO_ANIMATION_UNLOCKS.map((reward) => ({ trackKey: `Logo Animation:${reward.id}`, category: 'Logo Animation', ...reward })),
-    ...LIBRARY_PRESENTATION_UNLOCKS.map((reward) => ({ trackKey: `Library Variant:${reward.id}`, category: 'Library Variant', ...reward })),
-    ...HOME_LAYOUT_UNLOCKS.map((reward) => ({ trackKey: `Home Layout:${reward.id}`, category: 'Home Layout', ...reward })),
-    ...RECOMMENDATION_PACK_UNLOCKS.map((reward) => ({ trackKey: `Recommendation Pack:${reward.id}`, category: 'Recommendation Pack', ...reward })),
-    ...GAMING_LINKS_UNLOCKS.map((reward) => ({ trackKey: `Gaming Links:${reward.id}`, category: 'Gaming Links', ...reward })),
-    ...GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) => ({ trackKey: `Gaming Links Layout:${reward.id}`, category: 'Gaming Links Layout', ...reward })),
-    ...EXPORT_FILTER_UNLOCKS.map((reward) => ({ trackKey: `Export Filter:${reward.id}`, category: 'Export Filter', ...reward })),
-    ...RECAP_THEME_UNLOCKS.map((reward) => ({ trackKey: `Recap Theme:${reward.id}`, category: 'Recap Theme', ...reward })),
+    ...LOGO_ANIMATION_UNLOCKS.map((reward) => ({
+      trackKey: `Logo Animation:${reward.id}`,
+      category: 'Logo Animation',
+      ...reward,
+    })),
+    ...LIBRARY_PRESENTATION_UNLOCKS.map((reward) => ({
+      trackKey: `Library Variant:${reward.id}`,
+      category: 'Library Variant',
+      ...reward,
+    })),
+    ...HOME_LAYOUT_UNLOCKS.map((reward) => ({
+      trackKey: `Home Layout:${reward.id}`,
+      category: 'Home Layout',
+      ...reward,
+    })),
+    ...RECOMMENDATION_PACK_UNLOCKS.map((reward) => ({
+      trackKey: `Recommendation Pack:${reward.id}`,
+      category: 'Recommendation Pack',
+      ...reward,
+    })),
+    ...GAMING_LINKS_UNLOCKS.map((reward) => ({
+      trackKey: `Gaming Links:${reward.id}`,
+      category: 'Gaming Links',
+      ...reward,
+    })),
+    ...GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) => ({
+      trackKey: `Gaming Links Layout:${reward.id}`,
+      category: 'Gaming Links Layout',
+      ...reward,
+    })),
+    ...EXPORT_FILTER_UNLOCKS.map((reward) => ({
+      trackKey: `Export Filter:${reward.id}`,
+      category: 'Export Filter',
+      ...reward,
+    })),
+    ...RECAP_THEME_UNLOCKS.map((reward) => ({
+      trackKey: `Recap Theme:${reward.id}`,
+      category: 'Recap Theme',
+      ...reward,
+    })),
   ].map((reward) => ({
     ...reward,
-    baseRequiredXP: reward.requiredXP
+    baseRequiredXP: reward.requiredXP,
   }));
 
   return [...themeRewards, ...catalogRewards, ...showcaseRewards]
@@ -892,9 +999,11 @@ const buildGlobalRewardPool = () => {
       const leftSequence = PROGRESSION_SEQUENCE_ORDER[left.category] || Number.MAX_SAFE_INTEGER;
       const rightSequence = PROGRESSION_SEQUENCE_ORDER[right.category] || Number.MAX_SAFE_INTEGER;
 
-      return left.baseRequiredXP - right.baseRequiredXP
-        || leftSequence - rightSequence
-        || getRewardDisplayName(left).localeCompare(getRewardDisplayName(right));
+      return (
+        left.baseRequiredXP - right.baseRequiredXP ||
+        leftSequence - rightSequence ||
+        getRewardDisplayName(left).localeCompare(getRewardDisplayName(right))
+      );
     })
     .reduce((acc, reward, index) => {
       const previousRequiredXP = index > 0 ? acc[index - 1].requiredXP : -GLOBAL_UNLOCK_STEP_XP;
@@ -902,7 +1011,7 @@ const buildGlobalRewardPool = () => {
       acc.push({
         ...reward,
         requiredXP,
-        unlockStep: index + 1
+        unlockStep: index + 1,
       });
       return acc;
     }, []);
@@ -910,10 +1019,12 @@ const buildGlobalRewardPool = () => {
 
 const GLOBAL_SEQUENTIAL_REWARD_TRACK = Object.freeze(buildGlobalRewardPool());
 
-const GLOBAL_SEQUENTIAL_REWARD_LOOKUP = Object.freeze(GLOBAL_SEQUENTIAL_REWARD_TRACK.reduce((acc, reward) => {
-  acc[reward.trackKey] = reward;
-  return acc;
-}, {}));
+const GLOBAL_SEQUENTIAL_REWARD_LOOKUP = Object.freeze(
+  GLOBAL_SEQUENTIAL_REWARD_TRACK.reduce((acc, reward) => {
+    acc[reward.trackKey] = reward;
+    return acc;
+  }, {})
+);
 
 const getSequentialReward = (category, rewardId) => GLOBAL_SEQUENTIAL_REWARD_LOOKUP[`${category}:${rewardId}`] || null;
 
@@ -926,7 +1037,7 @@ const buildSequentialRewardMeta = (category, reward, currentXP) => {
     originalRequiredXP: sequentialReward?.baseRequiredXP ?? reward.requiredXP ?? 0,
     unlockStep: sequentialReward?.unlockStep || null,
     unlocked: currentXP >= requiredXP,
-    progressPercent: toProgressPercent(currentXP, requiredXP)
+    progressPercent: toProgressPercent(currentXP, requiredXP),
   };
 };
 
@@ -989,7 +1100,7 @@ export class ProgressionUnlockService {
         requiredTier: null,
         requiredXP: 0,
         currentXP,
-        progressPercent: 100
+        progressPercent: 100,
       };
     }
 
@@ -1003,7 +1114,7 @@ export class ProgressionUnlockService {
       originalRequiredXP: sequentialTheme?.baseRequiredXP ?? this.getThemeTierRequirement(requiredTier),
       unlockStep: sequentialTheme?.unlockStep || null,
       currentXP,
-      progressPercent: toProgressPercent(currentXP, requiredXP)
+      progressPercent: toProgressPercent(currentXP, requiredXP),
     };
   }
 
@@ -1027,8 +1138,11 @@ export class ProgressionUnlockService {
           progressPercent: unlockMeta.progressPercent,
           unlocked: unlockMeta.unlocked,
           unlockStep: unlockMeta.unlockStep,
-          preview: theme.palette?.background || theme.palette?.surface || 'linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(15, 23, 42, 0.24))',
-          rewardType: 'theme'
+          preview:
+            theme.palette?.background ||
+            theme.palette?.surface ||
+            'linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(15, 23, 42, 0.24))',
+          rewardType: 'theme',
         };
       })
       .sort((left, right) => left.requiredXP - right.requiredXP || left.name.localeCompare(right.name));
@@ -1048,10 +1162,9 @@ export class ProgressionUnlockService {
       unlocked: this.getTotalXP() >= requiredXP,
       progressPercent: toProgressPercent(this.getTotalXP(), requiredXP),
       unlockedThemeCount: unlockableThemes.filter((theme) => theme.unlocked && theme.requiredTier === tier).length,
-      totalThemeCount: unlockableThemes.filter((theme) => theme.requiredTier === tier).length
+      totalThemeCount: unlockableThemes.filter((theme) => theme.requiredTier === tier).length,
     }));
   }
-
 
   static getProfileFrames() {
     const currentXP = this.getTotalXP();
@@ -1082,7 +1195,7 @@ export class ProgressionUnlockService {
         originalRequiredXP: requiredXP,
         unlockStep: sequentialReward?.unlockStep || null,
         unlocked: currentXP >= effectiveRequiredXP,
-        progressPercent: toProgressPercent(currentXP, effectiveRequiredXP)
+        progressPercent: toProgressPercent(currentXP, effectiveRequiredXP),
       };
     });
   }
@@ -1103,7 +1216,11 @@ export class ProgressionUnlockService {
       selectedFrame: getUnlockedRewardIdFromMeta(frames, storedCustomization.selectedFrame),
       selectedBanner: getUnlockedRewardIdFromMeta(banners, storedCustomization.selectedBanner),
       selectedTitle: getUnlockedRewardIdFromMeta(titles, storedCustomization.selectedTitle),
-      showcasedAchievements: sanitizeShowcasedAchievements(storedCustomization.showcasedAchievements, slotCount, unlockedAchievementIds)
+      showcasedAchievements: sanitizeShowcasedAchievements(
+        storedCustomization.showcasedAchievements,
+        slotCount,
+        unlockedAchievementIds
+      ),
     };
 
     const hasStoredCustomization = Object.keys(storedCustomization).length > 0;
@@ -1118,7 +1235,7 @@ export class ProgressionUnlockService {
     const currentCustomization = this.getProfileCustomization();
     const mergedCustomization = {
       ...currentCustomization,
-      ...partialCustomization
+      ...partialCustomization,
     };
     const unlockedAchievementIds = new Set(AchievementTracker.getUnlockedAchievements());
     const slotCount = this.getShowcaseSlotCount();
@@ -1130,7 +1247,11 @@ export class ProgressionUnlockService {
       selectedFrame: getUnlockedRewardIdFromMeta(frames, mergedCustomization.selectedFrame),
       selectedBanner: getUnlockedRewardIdFromMeta(banners, mergedCustomization.selectedBanner),
       selectedTitle: getUnlockedRewardIdFromMeta(titles, mergedCustomization.selectedTitle),
-      showcasedAchievements: sanitizeShowcasedAchievements(mergedCustomization.showcasedAchievements, slotCount, unlockedAchievementIds)
+      showcasedAchievements: sanitizeShowcasedAchievements(
+        mergedCustomization.showcasedAchievements,
+        slotCount,
+        unlockedAchievementIds
+      ),
     };
 
     StorageService.set(PROFILE_CUSTOMIZATION_STORAGE_KEY, sanitizedCustomization);
@@ -1149,7 +1270,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${frame.name} equipped.`,
-      customization: this.updateProfileCustomization({ selectedFrame: frameId })
+      customization: this.updateProfileCustomization({ selectedFrame: frameId }),
     };
   }
 
@@ -1165,7 +1286,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${banner.name} equipped.`,
-      customization: this.updateProfileCustomization({ selectedBanner: bannerId })
+      customization: this.updateProfileCustomization({ selectedBanner: bannerId }),
     };
   }
 
@@ -1181,20 +1302,22 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${title.name} equipped.`,
-      customization: this.updateProfileCustomization({ selectedTitle: titleId })
+      customization: this.updateProfileCustomization({ selectedTitle: titleId }),
     };
   }
 
   static setShowcasedAchievements(achievementIds = []) {
     return {
       success: true,
-      customization: this.updateProfileCustomization({ showcasedAchievements: achievementIds })
+      customization: this.updateProfileCustomization({ showcasedAchievements: achievementIds }),
     };
   }
 
   static getLibraryPresentationVariants() {
     const currentXP = this.getTotalXP();
-    return LIBRARY_PRESENTATION_UNLOCKS.map((reward) => buildSequentialRewardMeta('Library Variant', reward, currentXP));
+    return LIBRARY_PRESENTATION_UNLOCKS.map((reward) =>
+      buildSequentialRewardMeta('Library Variant', reward, currentXP)
+    );
   }
 
   static getCardStyles() {
@@ -1214,7 +1337,9 @@ export class ProgressionUnlockService {
 
   static getRecommendationPacks() {
     const currentXP = this.getTotalXP();
-    return RECOMMENDATION_PACK_UNLOCKS.map((reward) => buildSequentialRewardMeta('Recommendation Pack', reward, currentXP));
+    return RECOMMENDATION_PACK_UNLOCKS.map((reward) =>
+      buildSequentialRewardMeta('Recommendation Pack', reward, currentXP)
+    );
   }
 
   static getGamingLinksFeatures() {
@@ -1224,7 +1349,9 @@ export class ProgressionUnlockService {
 
   static getGamingLinksLayouts() {
     const currentXP = this.getTotalXP();
-    return GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) => buildSequentialRewardMeta('Gaming Links Layout', reward, currentXP));
+    return GAMING_LINKS_LAYOUT_UNLOCKS.map((reward) =>
+      buildSequentialRewardMeta('Gaming Links Layout', reward, currentXP)
+    );
   }
 
   static getExportFilters() {
@@ -1236,16 +1363,17 @@ export class ProgressionUnlockService {
     const storedCustomization = readExportFilterCustomization();
     const exportFilters = this.getExportFilters();
     const unlockedFilterIds = new Set(exportFilters.filter((reward) => reward.unlocked).map((reward) => reward.id));
-    const selectedPreset = storedCustomization.selectedPreset && unlockedFilterIds.has(storedCustomization.selectedPreset)
-      ? storedCustomization.selectedPreset
-      : 'basic_export';
+    const selectedPreset =
+      storedCustomization.selectedPreset && unlockedFilterIds.has(storedCustomization.selectedPreset)
+        ? storedCustomization.selectedPreset
+        : 'basic_export';
 
     const sanitized = {
       selectedPreset,
       defaultFields: storedCustomization.defaultFields || 'standard',
       defaultDateRange: storedCustomization.defaultDateRange || 'all',
       includePrices: Boolean(storedCustomization.includePrices),
-      includePlaytime: storedCustomization.includePlaytime !== false
+      includePlaytime: storedCustomization.includePlaytime !== false,
     };
 
     if (JSON.stringify(storedCustomization) !== JSON.stringify(sanitized)) {
@@ -1268,11 +1396,13 @@ export class ProgressionUnlockService {
       defaultFields: ['minimal', 'standard', 'full'].includes(mergedCustomization.defaultFields)
         ? mergedCustomization.defaultFields
         : currentCustomization.defaultFields,
-      defaultDateRange: ['all', 'last7days', 'last30days', 'last90days', 'lastYear', 'custom'].includes(mergedCustomization.defaultDateRange)
+      defaultDateRange: ['all', 'last7days', 'last30days', 'last90days', 'lastYear', 'custom'].includes(
+        mergedCustomization.defaultDateRange
+      )
         ? mergedCustomization.defaultDateRange
         : currentCustomization.defaultDateRange,
       includePrices: Boolean(mergedCustomization.includePrices),
-      includePlaytime: mergedCustomization.includePlaytime !== false
+      includePlaytime: mergedCustomization.includePlaytime !== false,
     };
 
     StorageService.set(EXPORT_FILTER_CUSTOMIZATION_STORAGE_KEY, sanitized);
@@ -1294,7 +1424,7 @@ export class ProgressionUnlockService {
       success: true,
       message: `${preset.name} equipped as your default export preset.`,
       customization: exportFilterCustomization,
-      presentationCustomization
+      presentationCustomization,
     };
   }
 
@@ -1317,17 +1447,18 @@ export class ProgressionUnlockService {
   static getRecapCustomization() {
     const presentation = this.getRewardPresentationCustomization();
     const themes = this.getRecapThemes();
-    const selectedTheme = themes.find((reward) => reward.id === presentation.selectedRecapTheme && reward.unlocked)
-      || themes.find((reward) => reward.id === 'nebula')
-      || themes[0]
-      || null;
+    const selectedTheme =
+      themes.find((reward) => reward.id === presentation.selectedRecapTheme && reward.unlocked) ||
+      themes.find((reward) => reward.id === 'nebula') ||
+      themes[0] ||
+      null;
 
     return {
       selectedThemeId: selectedTheme?.id || 'nebula',
       palette: selectedTheme?.palette || null,
       visibleStats: presentation.recapVisibleStats,
       useMostPlayedCover: presentation.useMostPlayedCover !== false,
-      shareCardWatermark: presentation.shareCardWatermark || 'gamepilot'
+      shareCardWatermark: presentation.shareCardWatermark || 'gamepilot',
     };
   }
 
@@ -1343,7 +1474,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${theme.name} equipped for your recap card.`,
-      customization: this.updateRewardPresentationCustomization({ selectedRecapTheme: themeId })
+      customization: this.updateRewardPresentationCustomization({ selectedRecapTheme: themeId }),
     };
   }
 
@@ -1391,14 +1522,26 @@ export class ProgressionUnlockService {
       selectedLogoAnimation: getUnlockedRewardIdFromMeta(logoAnimations, storedCustomization.selectedLogoAnimation),
       selectedLibraryVariant: getUnlockedRewardIdFromMeta(libraryVariants, storedCustomization.selectedLibraryVariant),
       selectedHomeLayout: getUnlockedRewardIdFromMeta(homeLayouts, storedCustomization.selectedHomeLayout),
-      selectedRecommendationPack: getUnlockedRewardIdFromMeta(recommendationPacks, storedCustomization.selectedRecommendationPack),
-      selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(this.getGamingLinksFeatures(), storedCustomization.selectedGamingLinksFeatures),
-      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, storedCustomization.selectedGamingLinksLayout),
-      selectedExportFilter: getUnlockedRewardIdFromMeta(this.getExportFilters(), exportFilterCustomization.selectedPreset),
+      selectedRecommendationPack: getUnlockedRewardIdFromMeta(
+        recommendationPacks,
+        storedCustomization.selectedRecommendationPack
+      ),
+      selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(
+        this.getGamingLinksFeatures(),
+        storedCustomization.selectedGamingLinksFeatures
+      ),
+      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(
+        gamingLinksLayouts,
+        storedCustomization.selectedGamingLinksLayout
+      ),
+      selectedExportFilter: getUnlockedRewardIdFromMeta(
+        this.getExportFilters(),
+        exportFilterCustomization.selectedPreset
+      ),
       selectedRecapTheme: getUnlockedRewardIdFromMeta(recapThemes, storedCustomization.selectedRecapTheme),
       recapVisibleStats: sanitizeRecapVisibleStats(storedCustomization.recapVisibleStats),
       useMostPlayedCover: storedCustomization.useMostPlayedCover !== false,
-      shareCardWatermark: sanitizeShareCardWatermark(storedCustomization.shareCardWatermark)
+      shareCardWatermark: sanitizeShareCardWatermark(storedCustomization.shareCardWatermark),
     };
 
     const hasStoredCustomization = Object.keys(storedCustomization).length > 0;
@@ -1413,7 +1556,7 @@ export class ProgressionUnlockService {
     const currentCustomization = this.getRewardPresentationCustomization();
     const mergedCustomization = {
       ...currentCustomization,
-      ...partialCustomization
+      ...partialCustomization,
     };
     const cardStyles = this.getCardStyles();
     const logoAnimations = this.getLogoAnimations();
@@ -1430,14 +1573,23 @@ export class ProgressionUnlockService {
       selectedLogoAnimation: getUnlockedRewardIdFromMeta(logoAnimations, mergedCustomization.selectedLogoAnimation),
       selectedLibraryVariant: getUnlockedRewardIdFromMeta(libraryVariants, mergedCustomization.selectedLibraryVariant),
       selectedHomeLayout: getUnlockedRewardIdFromMeta(homeLayouts, mergedCustomization.selectedHomeLayout),
-      selectedRecommendationPack: getUnlockedRewardIdFromMeta(recommendationPacks, mergedCustomization.selectedRecommendationPack),
-      selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(this.getGamingLinksFeatures(), mergedCustomization.selectedGamingLinksFeatures),
-      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(gamingLinksLayouts, mergedCustomization.selectedGamingLinksLayout),
+      selectedRecommendationPack: getUnlockedRewardIdFromMeta(
+        recommendationPacks,
+        mergedCustomization.selectedRecommendationPack
+      ),
+      selectedGamingLinksFeatures: getUnlockedRewardIdFromMeta(
+        this.getGamingLinksFeatures(),
+        mergedCustomization.selectedGamingLinksFeatures
+      ),
+      selectedGamingLinksLayout: getUnlockedRewardIdFromMeta(
+        gamingLinksLayouts,
+        mergedCustomization.selectedGamingLinksLayout
+      ),
       selectedExportFilter: getUnlockedRewardIdFromMeta(this.getExportFilters(), selectedExportFilter),
       selectedRecapTheme: getUnlockedRewardIdFromMeta(recapThemes, mergedCustomization.selectedRecapTheme),
       recapVisibleStats: sanitizeRecapVisibleStats(mergedCustomization.recapVisibleStats),
       useMostPlayedCover: mergedCustomization.useMostPlayedCover !== false,
-      shareCardWatermark: sanitizeShareCardWatermark(mergedCustomization.shareCardWatermark)
+      shareCardWatermark: sanitizeShareCardWatermark(mergedCustomization.shareCardWatermark),
     };
 
     StorageService.set(PRESENTATION_CUSTOMIZATION_STORAGE_KEY, sanitizedCustomization);
@@ -1457,7 +1609,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${variant.name} equipped for your library.`,
-      customization: this.updateRewardPresentationCustomization({ selectedLibraryVariant: variantId })
+      customization: this.updateRewardPresentationCustomization({ selectedLibraryVariant: variantId }),
     };
   }
 
@@ -1473,7 +1625,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${style.name} equipped for Library cards.`,
-      customization: this.updateRewardPresentationCustomization({ selectedCardStyle: styleId })
+      customization: this.updateRewardPresentationCustomization({ selectedCardStyle: styleId }),
     };
   }
 
@@ -1489,7 +1641,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${animation.name} equipped for Home.`,
-      customization: this.updateRewardPresentationCustomization({ selectedLogoAnimation: animationId })
+      customization: this.updateRewardPresentationCustomization({ selectedLogoAnimation: animationId }),
     };
   }
 
@@ -1505,7 +1657,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${layout.name} equipped for Home.`,
-      customization: this.updateRewardPresentationCustomization({ selectedHomeLayout: layoutId })
+      customization: this.updateRewardPresentationCustomization({ selectedHomeLayout: layoutId }),
     };
   }
 
@@ -1521,7 +1673,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${pack.name} equipped for recommendations.`,
-      customization: this.updateRewardPresentationCustomization({ selectedRecommendationPack: packId })
+      customization: this.updateRewardPresentationCustomization({ selectedRecommendationPack: packId }),
     };
   }
 
@@ -1537,7 +1689,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${feature.name} enabled for Gaming Links.`,
-      customization: this.updateRewardPresentationCustomization({ selectedGamingLinksFeatures: featureId })
+      customization: this.updateRewardPresentationCustomization({ selectedGamingLinksFeatures: featureId }),
     };
   }
 
@@ -1553,7 +1705,7 @@ export class ProgressionUnlockService {
     return {
       success: true,
       message: `${layout.name} equipped for Gaming Links.`,
-      customization: this.updateRewardPresentationCustomization({ selectedGamingLinksLayout: layoutId })
+      customization: this.updateRewardPresentationCustomization({ selectedGamingLinksLayout: layoutId }),
     };
   }
 
@@ -1575,7 +1727,7 @@ export class ProgressionUnlockService {
       gamingLinksLayouts: this.getGamingLinksLayouts(),
       exportFilters: this.getExportFilters(),
       exportFilterCustomization: this.getExportFilterCustomization(),
-      presentationCustomization: this.getRewardPresentationCustomization()
+      presentationCustomization: this.getRewardPresentationCustomization(),
     };
   }
 
@@ -1610,8 +1762,8 @@ export class ProgressionUnlockService {
         requiredXP: slot.requiredXP,
         unlocked: slot.unlocked,
         progressPercent: slot.progressPercent,
-        category: 'Showcase Slot'
-      }))
+        category: 'Showcase Slot',
+      })),
     ];
 
     const sortedUpcomingUnlocks = buildSequencedUnlockTrack(rewardPool, currentXP, 5);
@@ -1631,7 +1783,7 @@ export class ProgressionUnlockService {
         recommendationPacks: recommendationPacks.filter((reward) => reward.unlocked).length,
         gamingLinks: gamingLinks.filter((reward) => reward.unlocked).length,
         gamingLinksLayouts: gamingLinksLayouts.filter((reward) => reward.unlocked).length,
-        exportFilters: exportFilters.filter((reward) => reward.unlocked).length
+        exportFilters: exportFilters.filter((reward) => reward.unlocked).length,
       },
       totalCounts: {
         themes: themes.length,
@@ -1643,21 +1795,37 @@ export class ProgressionUnlockService {
         recommendationPacks: recommendationPacks.length,
         gamingLinks: gamingLinks.length,
         gamingLinksLayouts: gamingLinksLayouts.length,
-        exportFilters: exportFilters.length
+        exportFilters: exportFilters.length,
       },
       progressionGroups: {
         themes: {
           unlocked: getUnlockedRewardCount(themes),
-          total: themes.length
+          total: themes.length,
         },
         cosmetics: {
-          unlocked: getUnlockedRewardCount(frames) + getUnlockedRewardCount(banners) + getUnlockedRewardCount(titles) + getUnlockedRewardCount(recommendationPacks) + getUnlockedRewardCount(gamingLinks) + getUnlockedRewardCount(gamingLinksLayouts),
-          total: frames.length + banners.length + titles.length + recommendationPacks.length + gamingLinks.length + gamingLinksLayouts.length
+          unlocked:
+            getUnlockedRewardCount(frames) +
+            getUnlockedRewardCount(banners) +
+            getUnlockedRewardCount(titles) +
+            getUnlockedRewardCount(recommendationPacks) +
+            getUnlockedRewardCount(gamingLinks) +
+            getUnlockedRewardCount(gamingLinksLayouts),
+          total:
+            frames.length +
+            banners.length +
+            titles.length +
+            recommendationPacks.length +
+            gamingLinks.length +
+            gamingLinksLayouts.length,
         },
         utility: {
-          unlocked: showcaseSlots.filter((slot) => slot.unlocked).length + getUnlockedRewardCount(libraryVariants) + getUnlockedRewardCount(homeLayouts) + getUnlockedRewardCount(exportFilters),
-          total: showcaseSlots.length + libraryVariants.length + homeLayouts.length + exportFilters.length
-        }
+          unlocked:
+            showcaseSlots.filter((slot) => slot.unlocked).length +
+            getUnlockedRewardCount(libraryVariants) +
+            getUnlockedRewardCount(homeLayouts) +
+            getUnlockedRewardCount(exportFilters),
+          total: showcaseSlots.length + libraryVariants.length + homeLayouts.length + exportFilters.length,
+        },
       },
       showcaseSlotsUnlocked: showcaseSlots.filter((slot) => slot.unlocked).length,
       showcaseSlotsTotal: showcaseSlots.length,
@@ -1669,9 +1837,9 @@ export class ProgressionUnlockService {
             remainingXP: Math.max(0, nextUnlock.requiredXP - currentXP),
             displayRemainingXP: Math.max(0, nextUnlock.requiredXP - currentXP),
             displayRequiredXP: nextUnlock.requiredXP,
-            isNearlyUnlocked: Math.max(0, nextUnlock.requiredXP - currentXP) <= 25
+            isNearlyUnlocked: Math.max(0, nextUnlock.requiredXP - currentXP) <= 25,
           }
-        : null
+        : null,
     };
   }
 
@@ -1690,7 +1858,7 @@ export class ProgressionUnlockService {
         titles: this.getProfileTitles(),
         showcaseSlots: this.getShowcaseSlots(),
         customization: this.getProfileCustomization(),
-        summary: this.getRewardCatalogSummary()
+        summary: this.getRewardCatalogSummary(),
       },
       presentation: {
         collections: Object.keys(PRESENTATION_REWARD_COLLECTIONS),
@@ -1701,10 +1869,10 @@ export class ProgressionUnlockService {
         gamingLinksLayouts: this.getGamingLinksLayouts(),
         exportFilters: this.getExportFilters(),
         exportFilterCustomization: this.getExportFilterCustomization(),
-        customization: this.getRewardPresentationCustomization()
+        customization: this.getRewardPresentationCustomization(),
       },
       summary,
-      upcomingUnlocks: summary.upcomingUnlocks
+      upcomingUnlocks: summary.upcomingUnlocks,
     };
   }
 }

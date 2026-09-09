@@ -22,11 +22,7 @@ const PatchNewsBadge = ({ game }) => {
     : `${label} since you last played`;
 
   return (
-    <span
-      className={`patch-news-badge ${status.isPatch ? 'is-patch' : ''}`}
-      title={tip}
-      aria-label={label}
-    >
+    <span className={`patch-news-badge ${status.isPatch ? 'is-patch' : ''}`} title={tip} aria-label={label}>
       <Icon size={10} aria-hidden="true" />
       <span>{status.isPatch ? 'Patch' : 'News'}</span>
     </span>

@@ -50,11 +50,14 @@
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary, rgba(255,255,255,0.6));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
   font-weight: 700;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .rec-tuner-preset-btn:hover {
@@ -76,10 +79,10 @@
 }
 
 .rec-tuner-category {
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.1));
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.1));
   border-radius: 12px;
   padding: 12px 14px;
-  background: var(--bg-card, rgba(255,255,255,0.04));
+  background: var(--bg-card, rgba(255, 255, 255, 0.04));
 }
 
 .rec-tuner-category-title {
@@ -115,7 +118,7 @@
   font-size: 0.8rem;
   min-width: 0;
   flex-shrink: 1;
-  color: var(--text-secondary, rgba(255,255,255,0.65));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.65));
 }
 
 .rec-tuner-modified-dot {
@@ -191,7 +194,9 @@
   font-size: 0.85rem;
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .rec-tuner-btn.primary {
@@ -215,13 +220,18 @@
 }
 
 @keyframes rec-tuner-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(125, 220, 132, 0.25); }
-  50% { box-shadow: 0 0 0 6px rgba(125, 220, 132, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(125, 220, 132, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(125, 220, 132, 0);
+  }
 }
 
 .rec-tuner-btn.secondary {
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary, rgba(255,255,255,0.6));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
 }
 
 .rec-tuner-btn.secondary:hover {

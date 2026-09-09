@@ -23,16 +23,10 @@ export const GENRES = [
   'Story-driven',
   'Strategy',
   'Survival',
-  'Tactical'
+  'Tactical',
 ];
 
-export const MOODS = [
-  'Relaxed',
-  'Social',
-  'Creative',
-  'Focused',
-  'Competitive'
-];
+export const MOODS = ['Relaxed', 'Social', 'Creative', 'Focused', 'Competitive'];
 
 // Genre->Mood mapping
 export const GENRE_MOOD_MAP = {
@@ -40,7 +34,7 @@ export const GENRE_MOOD_MAP = {
   Social: ['Multiplayer', 'Party'],
   Creative: ['Sandbox', 'Survival', 'Indie', 'Adventure', 'Story-driven'],
   Focused: ['RPG', 'Strategy', 'Tactical', 'Roguelike', 'Stealth', 'Horror', 'Action', 'Shooter'],
-  Competitive: ['Fighting', 'Sports', 'Racing', 'Shooter', 'Multiplayer']
+  Competitive: ['Fighting', 'Sports', 'Racing', 'Shooter', 'Multiplayer'],
 };
 
 const CANONICAL_LOOKUP = GENRES.reduce((acc, genre) => {
@@ -52,83 +46,83 @@ const GENRE_ALIAS_MAP = {
   'action adventure': ['Action', 'Adventure'],
   'action-adventure': ['Action', 'Adventure'],
   'action rpg': ['Action', 'RPG'],
-  'arpg': ['Action', 'RPG'],
-  'jrpg': ['RPG'],
-  'wrpg': ['RPG'],
-  'mmorpg': ['RPG', 'Multiplayer'],
+  arpg: ['Action', 'RPG'],
+  jrpg: ['RPG'],
+  wrpg: ['RPG'],
+  mmorpg: ['RPG', 'Multiplayer'],
   'looter shooter': ['Shooter', 'RPG'],
-  'soulslike': ['Action', 'RPG', 'Tactical'],
+  soulslike: ['Action', 'RPG', 'Tactical'],
   'souls-like': ['Action', 'RPG', 'Tactical'],
-  'metroidvania': ['Platformer', 'Adventure'],
-  'platformer': ['Platformer'],
-  'platform': ['Platformer'],
-  'stealth': ['Stealth'],
+  metroidvania: ['Platformer', 'Adventure'],
+  platformer: ['Platformer'],
+  platform: ['Platformer'],
+  stealth: ['Stealth'],
   'stealth action': ['Stealth'],
-  'roguelite': ['Roguelike'],
+  roguelite: ['Roguelike'],
   'rogue-lite': ['Roguelike'],
   'rogue like': ['Roguelike'],
-  'deckbuilder': ['Strategy', 'Tactical'],
+  deckbuilder: ['Strategy', 'Tactical'],
   'deck builder': ['Strategy', 'Tactical'],
   'card battler': ['Strategy', 'Tactical'],
   'puzzle platformer': ['Puzzle', 'Platformer'],
   'co-op': ['Multiplayer', 'Party'],
-  'cooperative': ['Multiplayer', 'Party'],
+  cooperative: ['Multiplayer', 'Party'],
   'battle royale': ['Shooter', 'Multiplayer'],
-  'fps': ['Shooter'],
-  'tps': ['Shooter'],
+  fps: ['Shooter'],
+  tps: ['Shooter'],
   'first person shooter': ['Shooter'],
   'third person shooter': ['Shooter'],
   'open world': ['Adventure'],
   'survival horror': ['Horror', 'Survival'],
-  'builder': ['Simulation', 'Management'],
+  builder: ['Simulation', 'Management'],
   'city builder': ['Simulation', 'Management'],
   'life sim': ['Simulation', 'Casual'],
   'management sim': ['Management', 'Simulation'],
-  'tycoon': ['Management', 'Simulation'],
+  tycoon: ['Management', 'Simulation'],
   'sandbox survival': ['Sandbox', 'Survival'],
-  'crafting': ['Sandbox', 'Survival'],
-  'rhythm': ['Casual', 'Creative'],
-  'music': ['Casual', 'Creative'],
+  crafting: ['Sandbox', 'Survival'],
+  rhythm: ['Casual', 'Creative'],
+  music: ['Casual', 'Creative'],
   'story rich': ['Story-driven'],
-  'narrative': ['Story-driven'],
-  'mmo': ['RPG', 'Multiplayer'],
-  'clicker': ['Casual'],
-  'idle': ['Casual'],
-  'incremental': ['Casual'],
-  'educational': ['Puzzle', 'Casual'],
-  'trivia': ['Party', 'Casual'],
+  narrative: ['Story-driven'],
+  mmo: ['RPG', 'Multiplayer'],
+  clicker: ['Casual'],
+  idle: ['Casual'],
+  incremental: ['Casual'],
+  educational: ['Puzzle', 'Casual'],
+  trivia: ['Party', 'Casual'],
   'board game': ['Strategy', 'Party'],
-  'board': ['Strategy', 'Party'],
+  board: ['Strategy', 'Party'],
   'walking simulator': ['Story-driven', 'Adventure'],
   'walking sim': ['Story-driven', 'Adventure'],
-  'extraction': ['Shooter', 'Survival'],
+  extraction: ['Shooter', 'Survival'],
   'extraction shooter': ['Shooter', 'Survival'],
-  'souls': ['Action', 'RPG', 'Tactical'],
+  souls: ['Action', 'RPG', 'Tactical'],
   'hack and slash': ['Action', 'Fighting'],
   'hack & slash': ['Action', 'Fighting'],
   'character action': ['Action', 'Adventure'],
   'spectacle fighter': ['Action', 'Fighting'],
   'visual novel': ['Story-driven', 'Casual'],
   'dating sim': ['Simulation', 'Story-driven'],
-  'farming': ['Simulation', 'Casual'],
+  farming: ['Simulation', 'Casual'],
   'farming sim': ['Simulation', 'Casual'],
   'colony sim': ['Management', 'Survival'],
   'colony management': ['Management', 'Survival'],
   'base building': ['Strategy', 'Sandbox'],
   'base builder': ['Strategy', 'Sandbox'],
   'tower defense': ['Strategy', 'Tactical'],
-  'td': ['Strategy', 'Tactical'],
-  'moba': ['Strategy', 'Multiplayer'],
+  td: ['Strategy', 'Tactical'],
+  moba: ['Strategy', 'Multiplayer'],
   'auto battler': ['Strategy', 'Tactical'],
   'auto-battler': ['Strategy', 'Tactical'],
-  'gacha': ['RPG', 'Casual'],
+  gacha: ['RPG', 'Casual'],
   'live service': ['Shooter', 'Multiplayer'],
   'games-as-a-service': ['Shooter', 'Multiplayer'],
   'point and click': ['Adventure', 'Puzzle'],
   'point-and-click': ['Adventure', 'Puzzle'],
   'hidden object': ['Puzzle', 'Casual'],
   'interactive fiction': ['Story-driven', 'Casual'],
-  'text adventure': ['Story-driven', 'Adventure']
+  'text adventure': ['Story-driven', 'Adventure'],
 };
 
 const sanitize = (label = '') =>
@@ -174,7 +168,7 @@ const KEYWORD_HINTS = [
   { test: /(board game|trivia|party)/, genres: ['Party', 'Strategy'] },
   { test: /(point.?and.?click|hidden object|text adventure)/, genres: ['Adventure', 'Puzzle'] },
   { test: /(fighting|brawler|beat.?em.?up)/, genres: ['Fighting'] },
-  { test: /(gacha|live service)/, genres: ['RPG', 'Multiplayer'] }
+  { test: /(gacha|live service)/, genres: ['RPG', 'Multiplayer'] },
 ];
 
 const inferGenresFromKeywords = (label) => {
@@ -223,11 +217,11 @@ export const normalizeGenres = (gameGenres) => {
 
 // Genre weight: how strongly a genre signals its mapped mood.
 const GENRE_SIGNAL_WEIGHT = {
-  Indie: 0.3,       // Weak Creative signal — wins only when no stronger genre present
-  Action: 0.5,      // Moderate Focused — common genre, doesn't dominate
-  Adventure: 0.5,   // Moderate Creative — common genre, doesn't dominate
+  Indie: 0.3, // Weak Creative signal — wins only when no stronger genre present
+  Action: 0.5, // Moderate Focused — common genre, doesn't dominate
+  Adventure: 0.5, // Moderate Creative — common genre, doesn't dominate
   Multiplayer: 0.5, // Moderate — appears in Social and Competitive, context decides
-  Shooter: 0.5      // Moderate — appears in Focused and Competitive, context decides
+  Shooter: 0.5, // Moderate — appears in Focused and Competitive, context decides
 };
 
 // Context suppression: when certain genres appear together, one genre's mood
@@ -239,7 +233,7 @@ const GENRE_CONTEXT_SUPPRESSION = [
   // Competitive shooters (Shooter + Multiplayer) → Competitive, not Focused
   { ifPresent: ['Multiplayer'], suppress: 'Shooter', fromMood: 'Focused' },
   // Party/coop games (Multiplayer + Party) → Social, not Competitive
-  { ifPresent: ['Party'], suppress: 'Multiplayer', fromMood: 'Competitive' }
+  { ifPresent: ['Party'], suppress: 'Multiplayer', fromMood: 'Competitive' },
 ];
 
 const scoreMoodsFromGenres = (genres) => {
@@ -255,8 +249,8 @@ const scoreMoodsFromGenres = (genres) => {
 
       // Check if this genre's contribution to this mood is suppressed by context
       const suppressed = GENRE_CONTEXT_SUPPRESSION.some(
-        (rule) => rule.suppress === genre && rule.fromMood === mood
-          && rule.ifPresent.some((trigger) => genreSet.has(trigger))
+        (rule) =>
+          rule.suppress === genre && rule.fromMood === mood && rule.ifPresent.some((trigger) => genreSet.has(trigger))
       );
       if (suppressed) {
         return;
@@ -273,7 +267,7 @@ export const GENRE_TO_MOOD = {};
 
 // Initialize reverse mapping
 Object.entries(GENRE_MOOD_MAP).forEach(([mood, genres]) => {
-  genres.forEach(genre => {
+  genres.forEach((genre) => {
     GENRE_TO_MOOD[genre] = mood;
   });
 });
@@ -344,7 +338,7 @@ export const getMoodScoresForGame = (gameGenres) => {
 export const getAvailableMoods = (library) => {
   const moodsWithGames = new Set();
 
-  library.forEach(game => {
+  library.forEach((game) => {
     const mood = getMoodForGame(game.genres);
     if (mood) {
       moodsWithGames.add(mood);
@@ -358,9 +352,9 @@ export const getAvailableMoods = (library) => {
 export const getAvailableGenres = (library) => {
   const genresWithGames = new Set();
 
-  library.forEach(game => {
+  library.forEach((game) => {
     const validGenres = mapGameGenresToValid(game.genres);
-    validGenres.forEach(genre => genresWithGames.add(genre));
+    validGenres.forEach((genre) => genresWithGames.add(genre));
   });
 
   return Array.from(genresWithGames);
@@ -372,7 +366,7 @@ export const countGamesInGenre = (library, genre) => {
     return 0;
   }
 
-  return library.filter(game => {
+  return library.filter((game) => {
     const validGenres = mapGameGenresToValid(game.genres);
     return validGenres.includes(genre);
   }).length;
@@ -385,10 +379,10 @@ export const countGamesInMood = (library, mood) => {
   }
 
   const genresForMood = getGenresForMood(mood);
-  
-  return library.filter(game => {
+
+  return library.filter((game) => {
     const validGenres = mapGameGenresToValid(game.genres);
-    return validGenres.some(genre => genresForMood.includes(genre));
+    return validGenres.some((genre) => genresForMood.includes(genre));
   }).length;
 };
 
@@ -396,7 +390,7 @@ export const countGamesInMood = (library, mood) => {
 export const getGenreDistribution = (library) => {
   const distribution = {};
 
-  GENRES.forEach(genre => {
+  GENRES.forEach((genre) => {
     distribution[genre] = countGamesInGenre(library, genre);
   });
 
@@ -407,7 +401,7 @@ export const getGenreDistribution = (library) => {
 export const getMoodDistribution = (library) => {
   const distribution = {};
 
-  MOODS.forEach(mood => {
+  MOODS.forEach((mood) => {
     distribution[mood] = countGamesInMood(library, mood);
   });
 

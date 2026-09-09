@@ -9,7 +9,7 @@ const {
   addGameIfUnique,
   getActiveDrives,
   getLinuxLibraryRoots,
-  getSteamPlaytimeMap
+  getSteamPlaytimeMap,
 } = require('./scannerUtils');
 
 let getGameGenres;
@@ -21,7 +21,8 @@ try {
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
-    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires')) return ['Strategy'];
+    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires'))
+      return ['Strategy'];
     if (name.includes('action') || name.includes('far cry') || name.includes('resident evil')) return ['Action'];
     if (name.includes('adventure') || name.includes('tomb raider') || name.includes('zelda')) return ['Adventure'];
     if (name.includes('simulation') || name.includes('sims') || name.includes('cities')) return ['Simulation'];
@@ -44,7 +45,9 @@ const getSteamLibraryFolderPaths = (steamAppsPath) => {
     const content = fs.readFileSync(libraryFoldersPath, 'utf8');
     const pathMatches = content.matchAll(/"path"\s+"([^"]+)"/g);
     for (const match of pathMatches) {
-      const steamLibraryRoot = String(match[1] || '').replace(/\\\\/g, '\\').trim();
+      const steamLibraryRoot = String(match[1] || '')
+        .replace(/\\\\/g, '\\')
+        .trim();
       if (steamLibraryRoot) {
         addUniquePath(discoveredPaths, path.join(steamLibraryRoot, 'steamapps'));
       }
@@ -63,10 +66,12 @@ const getSteamInstallPaths = () => {
     queryRegistryValue('HKLM\\SOFTWARE\\Valve\\Steam', 'InstallPath'),
     queryRegistryValue('HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam', 'InstallPath'),
     queryRegistryValue('HKCU\\SOFTWARE\\Valve\\Steam', 'InstallPath'),
-    queryRegistryValue('HKCU\\SOFTWARE\\Valve\\Steam', 'SteamPath')
-  ].filter(Boolean).forEach((installPath) => {
-    addUniquePath(paths, path.join(installPath, 'steamapps'));
-  });
+    queryRegistryValue('HKCU\\SOFTWARE\\Valve\\Steam', 'SteamPath'),
+  ]
+    .filter(Boolean)
+    .forEach((installPath) => {
+      addUniquePath(paths, path.join(installPath, 'steamapps'));
+    });
 
   getActiveDrives().forEach((drive) => {
     [
@@ -74,7 +79,7 @@ const getSteamInstallPaths = () => {
       `${drive}:\\Program Files\\Steam\\steamapps`,
       `${drive}:\\Steam\\steamapps`,
       `${drive}:\\Games\\Steam\\steamapps`,
-      `${drive}:\\SteamLibrary\\steamapps`
+      `${drive}:\\SteamLibrary\\steamapps`,
     ].forEach((candidatePath) => {
       addUniquePath(paths, candidatePath);
     });
@@ -89,10 +94,12 @@ const getSteamInstallPaths = () => {
       home && path.join(home, '.steam', 'steam', 'steamapps'),
       home && path.join(home, '.steam', 'debian-installation', 'steamapps'),
       home && path.join(home, '.var', 'app', 'com.valvesoftware.Steam', '.local', 'share', 'Steam', 'steamapps'),
-      home && path.join(home, 'Games', 'Steam', 'steamapps')
-    ].filter(Boolean).forEach((candidatePath) => {
-      addUniquePath(paths, candidatePath);
-    });
+      home && path.join(home, 'Games', 'Steam', 'steamapps'),
+    ]
+      .filter(Boolean)
+      .forEach((candidatePath) => {
+        addUniquePath(paths, candidatePath);
+      });
 
     // SD card / external mounts (Steam Deck mounts SD under /run/media/mmcblk0p1)
     ['/run/media', '/media', '/mnt'].forEach((mountRoot) => {
@@ -148,7 +155,7 @@ const scanSteamLibrary = () => {
           'Steamworks SDK Redist',
           'Proton Experimental',
           'Proton-GE',
-          'Steamworks SDK Redistributables'
+          'Steamworks SDK Redistributables',
         ];
 
         if (skipGames.some((skipName) => gameName.includes(skipName)) || isLikelyNonGameFolder(gameName)) {
@@ -183,7 +190,7 @@ const scanSteamLibrary = () => {
           installDir: gamePath,
           installSize,
           launchId: appId,
-          ...tracked
+          ...tracked,
         });
       } catch (error) {
         console.error('[Scanner] Error parsing ACF file:', acfFile, error.message);

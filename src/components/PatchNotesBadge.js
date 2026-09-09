@@ -36,15 +36,18 @@ const PatchNotesBadge = ({ library }) => {
   const totalUnseen = updates.reduce((sum, u) => sum + u.unseenCount, 0);
 
   return (
-    <div className="patch-notes-badge" style={{
-      background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(21, 128, 61, 0.15) 100%)',
-      border: '1px solid rgba(34, 197, 94, 0.3)',
-      borderRadius: '12px',
-      padding: '16px',
-      marginBottom: '20px'
-    }}>
+    <div
+      className="patch-notes-badge"
+      style={{
+        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(21, 128, 61, 0.15) 100%)',
+        border: '1px solid rgba(34, 197, 94, 0.3)',
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '20px',
+      }}
+    >
       <button
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => setExpanded((v) => !v)}
         style={{
           background: 'none',
           border: 'none',
@@ -56,27 +59,31 @@ const PatchNotesBadge = ({ library }) => {
           width: '100%',
           fontSize: '0.95rem',
           fontWeight: 600,
-          textAlign: 'left'
+          textAlign: 'left',
         }}
       >
         <Newspaper size={18} style={{ color: '#22c55e' }} />
-        <span>{totalUnseen} patch note{totalUnseen === 1 ? '' : 's'} across {updates.length} game{updates.length === 1 ? '' : 's'}</span>
-        <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.6 }}>
-          {expanded ? '▲' : '▼'}
+        <span>
+          {totalUnseen} patch note{totalUnseen === 1 ? '' : 's'} across {updates.length} game
+          {updates.length === 1 ? '' : 's'}
         </span>
+        <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.6 }}>{expanded ? '▲' : '▼'}</span>
       </button>
 
       {expanded && (
         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {updates.map(u => (
-            <div key={u.appId} style={{
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: '8px',
-              padding: '12px'
-            }}>
+          {updates.map((u) => (
+            <div
+              key={u.appId}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '8px',
+                padding: '12px',
+              }}
+            >
               <div style={{ fontWeight: 600, marginBottom: '6px' }}>{u.gameName}</div>
               <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                {u.notes.map(n => (
+                {u.notes.map((n) => (
                   <div key={n.url} style={{ marginBottom: '6px' }}>
                     <a
                       href={n.url}

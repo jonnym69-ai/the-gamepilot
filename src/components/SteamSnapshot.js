@@ -30,9 +30,15 @@ const SteamSnapshot = ({ game }) => {
     let cancelled = false;
     setLoading(true);
     SteamPublicService.getSnapshot(game)
-      .then((result) => { if (!cancelled) setEntry(result); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((result) => {
+        if (!cancelled) setEntry(result);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [game]);
 
   // Hide entirely for non-Steam games — nothing to show.
@@ -54,11 +60,16 @@ const SteamSnapshot = ({ game }) => {
           <ThumbsUp size={16} aria-hidden="true" />
           <h3>Steam Snapshot</h3>
         </div>
-        <p>Steam public-data lookups are off. Enable them to see review summaries and global achievement rarity per game.</p>
+        <p>
+          Steam public-data lookups are off. Enable them to see review summaries and global achievement rarity per game.
+        </p>
         <button
           type="button"
           className="steam-snapshot-enable"
-          onClick={() => { SteamPublicService.setEnabled(true); setEnabled(true); }}
+          onClick={() => {
+            SteamPublicService.setEnabled(true);
+            setEnabled(true);
+          }}
         >
           Enable now
         </button>

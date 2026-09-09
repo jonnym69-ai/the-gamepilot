@@ -62,18 +62,18 @@ function GameBarOverlay() {
   return (
     <div className="gamebar-overlay">
       <div className="gamebar-header">
-        <span className="gamebar-logo" aria-hidden="true">🎮</span>
+        <span className="gamebar-logo" aria-hidden="true">
+          🎮
+        </span>
         <span className="gamebar-title">GamePilot</span>
       </div>
       {currentGame ? (
         <div className="gamebar-game">
-          <div className="gamebar-name" title={currentGame.name}>{currentGame.name}</div>
+          <div className="gamebar-name" title={currentGame.name}>
+            {currentGame.name}
+          </div>
           <div className="gamebar-meta">
-            {currentGame.isRunning ? (
-              <span className="gamebar-live">● Playing now</span>
-            ) : (
-              <span>Last played</span>
-            )}
+            {currentGame.isRunning ? <span className="gamebar-live">● Playing now</span> : <span>Last played</span>}
             <span className="gamebar-divider">·</span>
             <span>{formatTime(currentGame.time_played, currentGame.isRunning)}</span>
           </div>

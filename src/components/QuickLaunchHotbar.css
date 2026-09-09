@@ -39,7 +39,9 @@
   opacity: 0.85;
 }
 
-.quick-launch-toggle:hover { opacity: 1; }
+.quick-launch-toggle:hover {
+  opacity: 1;
+}
 
 .quick-launch-list {
   display: flex;
@@ -50,8 +52,13 @@
   padding: 2px;
 }
 
-.quick-launch-list::-webkit-scrollbar { height: 4px; }
-.quick-launch-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+.quick-launch-list::-webkit-scrollbar {
+  height: 4px;
+}
+.quick-launch-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
 
 .quick-launch-item {
   position: relative;
@@ -64,7 +71,9 @@
   padding: 5px 10px 5px 5px;
   color: inherit;
   cursor: pointer;
-  transition: background 0.12s ease, transform 0.12s ease;
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease;
   flex-shrink: 0;
   max-width: 220px;
 }
@@ -106,9 +115,24 @@
   cursor: pointer;
 }
 
-.quick-launch-pin:hover { opacity: 1; background: rgba(255,255,255,0.08); }
-.quick-launch-pin.pinned { opacity: 1; color: #ff8a4c; }
+.quick-launch-pin:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+.quick-launch-pin.pinned {
+  opacity: 1;
+  color: #ff8a4c;
+}
 
-body.compact-mode .quick-launch-hotbar { padding: 5px 8px; bottom: 8px; }
-body.compact-mode .quick-launch-art { width: 28px; height: 28px; }
-body.compact-mode .quick-launch-name { font-size: 12px; max-width: 120px; }
+body.compact-mode .quick-launch-hotbar {
+  padding: 5px 8px;
+  bottom: 8px;
+}
+body.compact-mode .quick-launch-art {
+  width: 28px;
+  height: 28px;
+}
+body.compact-mode .quick-launch-name {
+  font-size: 12px;
+  max-width: 120px;
+}

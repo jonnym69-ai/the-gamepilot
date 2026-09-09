@@ -35,7 +35,7 @@ describe('StartupPersonalizationService', () => {
     test('filters invalid moods and genres', () => {
       const saved = StartupPersonalizationService.saveProfile({
         selectedMoods: ['Focused', 'NotAMood', 'Relaxed'],
-        favoriteGenres: ['Strategy', 'NotAGenre', 'RPG']
+        favoriteGenres: ['Strategy', 'NotAGenre', 'RPG'],
       });
       expect(saved.selectedMoods).toEqual(['Focused', 'Relaxed']);
       expect(saved.favoriteGenres).toEqual(['Strategy', 'RPG']);
@@ -44,7 +44,7 @@ describe('StartupPersonalizationService', () => {
     test('deduplicates moods and genres', () => {
       const saved = StartupPersonalizationService.saveProfile({
         selectedMoods: ['Focused', 'Focused'],
-        favoriteGenres: ['RPG', 'RPG']
+        favoriteGenres: ['RPG', 'RPG'],
       });
       expect(saved.selectedMoods).toEqual(['Focused']);
       expect(saved.favoriteGenres).toEqual(['RPG']);
@@ -54,7 +54,7 @@ describe('StartupPersonalizationService', () => {
       const saved = StartupPersonalizationService.saveProfile({
         sessionPreference: 'eternity',
         playerVibe: 'NotAVibe',
-        personalizationStyle: 'NotAStyle'
+        personalizationStyle: 'NotAStyle',
       });
       expect(saved.sessionPreference).toBe('medium');
       expect(saved.playerVibe).toBe('Variety Seeker');
@@ -69,7 +69,7 @@ describe('StartupPersonalizationService', () => {
         favoriteGenres: ['Strategy', 'RPG'],
         sessionPreference: 'long',
         playerVibe: 'Story Hunter',
-        personalizationStyle: 'Cozy'
+        personalizationStyle: 'Cozy',
       });
 
       expect(StartupPersonalizationService.hasCompletedOnboarding()).toBe(true);
@@ -86,15 +86,11 @@ describe('StartupPersonalizationService', () => {
       StartupPersonalizationService.completeOnboarding({
         selectedMoods: ['Focused', 'Relaxed', 'Social'],
         favoriteGenres: ['Strategy', 'RPG', 'Roguelike'],
-        sessionPreference: 'medium'
+        sessionPreference: 'medium',
       });
       const behavior = UserBehaviorProfile.getProfile();
-      expect(behavior.moodPreferences.Focused.count).toBeGreaterThanOrEqual(
-        behavior.moodPreferences.Relaxed.count
-      );
-      expect(behavior.genrePreferences.Strategy.count).toBeGreaterThanOrEqual(
-        behavior.genrePreferences.RPG.count
-      );
+      expect(behavior.moodPreferences.Focused.count).toBeGreaterThanOrEqual(behavior.moodPreferences.Relaxed.count);
+      expect(behavior.genrePreferences.Strategy.count).toBeGreaterThanOrEqual(behavior.genrePreferences.RPG.count);
     });
 
     test('sets identity defaults in storage', () => {
@@ -103,7 +99,7 @@ describe('StartupPersonalizationService', () => {
         favoriteGenres: ['Strategy'],
         sessionPreference: 'medium',
         playerVibe: 'Challenge Chaser',
-        personalizationStyle: 'Energetic'
+        personalizationStyle: 'Energetic',
       });
 
       expect(StorageService.getString('gamepilot_identity_style')).toBe('Energetic');
@@ -116,7 +112,7 @@ describe('StartupPersonalizationService', () => {
       StartupPersonalizationService.completeOnboarding({
         selectedMoods: ['Focused'],
         favoriteGenres: ['Strategy'],
-        sessionPreference: 'medium'
+        sessionPreference: 'medium',
       });
       expect(StorageService.getString('welcomeMessage')).toBe('Custom hello');
     });
@@ -151,7 +147,7 @@ describe('StartupPersonalizationService', () => {
         favoriteGenres: ['Strategy'],
         sessionPreference: 'long',
         playerVibe: 'Story Hunter',
-        personalizationStyle: 'Cozy'
+        personalizationStyle: 'Cozy',
       });
       const ctx = StartupPersonalizationService.getSeededRecommendationContext();
       expect(ctx).toEqual({
@@ -160,7 +156,7 @@ describe('StartupPersonalizationService', () => {
         sessionPreference: 'long',
         playerVibe: 'Story Hunter',
         personalizationStyle: 'Cozy',
-        founderEnhanced: false
+        founderEnhanced: false,
       });
     });
   });

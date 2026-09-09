@@ -12,66 +12,66 @@ const SESSION_BUCKET_TO_TIME_CONSTRAINT = Object.freeze({
   '0-30': 'quick',
   '30-60': 'medium',
   '60-120': 'long',
-  '120+': 'weekend'
+  '120+': 'weekend',
 });
 
 const METRIC_COPY = Object.freeze({
   playtime: {
     title: 'Playtime Quest',
-    requirement: (targetText) => `${targetText} of playtime this week`
+    requirement: (targetText) => `${targetText} of playtime this week`,
   },
   sessions: {
     title: 'Session Quest',
-    requirement: (targetText) => `${targetText} completed sessions this week`
+    requirement: (targetText) => `${targetText} completed sessions this week`,
   },
   games: {
     title: 'Discovery Quest',
-    requirement: (targetText) => `${targetText} different games this week`
+    requirement: (targetText) => `${targetText} different games this week`,
   },
   genres: {
     title: 'Variety Quest',
-    requirement: (targetText) => `${targetText} genres this week`
+    requirement: (targetText) => `${targetText} genres this week`,
   },
   moods: {
     title: 'Mood Quest',
-    requirement: (targetText) => `${targetText} moods this week`
+    requirement: (targetText) => `${targetText} moods this week`,
   },
   activeDays: {
     title: 'Consistency Quest',
-    requirement: (targetText) => `${targetText} active days this week`
+    requirement: (targetText) => `${targetText} active days this week`,
   },
   streaks: {
     title: 'Streak Quest',
-    requirement: (targetText) => `${targetText} weekly streak`
+    requirement: (targetText) => `${targetText} weekly streak`,
   },
   perfectPlay: {
     title: 'Perfect Play Quest',
-    requirement: (targetText) => `${targetText} Perfect Play uses this week`
+    requirement: (targetText) => `${targetText} Perfect Play uses this week`,
   },
   surprise: {
     title: 'Surprise Quest',
-    requirement: (targetText) => `${targetText} Surprise Me uses this week`
+    requirement: (targetText) => `${targetText} Surprise Me uses this week`,
   },
   rediscover: {
     title: 'Rediscovery Quest',
-    requirement: (targetText) => `${targetText} Rediscover launches this week`
+    requirement: (targetText) => `${targetText} Rediscover launches this week`,
   },
   share: {
     title: 'Share Quest',
-    requirement: (targetText) => `${targetText} shares this week`
+    requirement: (targetText) => `${targetText} shares this week`,
   },
   features: {
     title: 'Feature Quest',
-    requirement: (targetText) => `${targetText} feature actions this week`
+    requirement: (targetText) => `${targetText} feature actions this week`,
   },
   platforms: {
     title: 'Platform Quest',
-    requirement: (targetText) => `${targetText} platforms this week`
+    requirement: (targetText) => `${targetText} platforms this week`,
   },
   unlocks: {
     title: 'Unlock Quest',
-    requirement: (targetText) => `${targetText} reward unlocks this week`
-  }
+    requirement: (targetText) => `${targetText} reward unlocks this week`,
+  },
 });
 
 const readPreferences = () => {
@@ -145,18 +145,20 @@ const buildPicksMessage = (persona, weeklyQuest) => {
     personaSignals.push(`${persona.dominantGenre} genre`);
   }
   if (persona?.preferredSessionBucket) {
-    const sessionLabel = {
-      '0-30': 'quick-hit sessions',
-      '30-60': 'focused sessions',
-      '60-120': 'long-form sessions',
-      '120+': 'marathon sessions'
-    }[persona.preferredSessionBucket] || 'session habits';
+    const sessionLabel =
+      {
+        '0-30': 'quick-hit sessions',
+        '30-60': 'focused sessions',
+        '60-120': 'long-form sessions',
+        '120+': 'marathon sessions',
+      }[persona.preferredSessionBucket] || 'session habits';
     personaSignals.push(sessionLabel);
   }
 
-  const personaCopy = personaSignals.length > 0
-    ? `Curated from your ${personaSignals.join(', ')}.`
-    : 'Curated from your recent GamePilot habits.';
+  const personaCopy =
+    personaSignals.length > 0
+      ? `Curated from your ${personaSignals.join(', ')}.`
+      : 'Curated from your recent GamePilot habits.';
 
   if (weeklyQuest?.primaryQuest?.name) {
     return `${personaCopy} Great candidates while you push ${weeklyQuest.primaryQuest.name}.`;
@@ -172,7 +174,11 @@ export class RetentionQuestService {
     const currentPeriodKey = AchievementTracker.getPeriodCurrentKey('weekly');
     const activeIds = AchievementTracker.getActivePeriodAchievementIds('weekly');
 
-    if (!pinnedQuest?.questId || pinnedQuest.periodKey !== currentPeriodKey || !activeIds.includes(pinnedQuest.questId)) {
+    if (
+      !pinnedQuest?.questId ||
+      pinnedQuest.periodKey !== currentPeriodKey ||
+      !activeIds.includes(pinnedQuest.questId)
+    ) {
       if (preferences.weekly) {
         const nextPreferences = { ...preferences };
         delete nextPreferences.weekly;
@@ -189,21 +195,21 @@ export class RetentionQuestService {
     if (!activeIds.includes(questId)) {
       return {
         success: false,
-        message: 'That quest is no longer active this week.'
+        message: 'That quest is no longer active this week.',
       };
     }
 
     const preferences = readPreferences();
     preferences.weekly = {
       periodKey: AchievementTracker.getPeriodCurrentKey('weekly'),
-      questId
+      questId,
     };
     savePreferences(preferences);
 
     const achievement = AchievementTracker.getAchievementById(questId);
     return {
       success: true,
-      message: `${achievement?.name || 'Quest'} pinned as your weekly mission.`
+      message: `${achievement?.name || 'Quest'} pinned as your weekly mission.`,
     };
   }
 
@@ -212,7 +218,7 @@ export class RetentionQuestService {
     if (!preferences.weekly) {
       return {
         success: false,
-        message: 'No weekly quest is pinned right now.'
+        message: 'No weekly quest is pinned right now.',
       };
     }
 
@@ -221,7 +227,7 @@ export class RetentionQuestService {
 
     return {
       success: true,
-      message: 'Weekly quest unpinned.'
+      message: 'Weekly quest unpinned.',
     };
   }
 
@@ -258,7 +264,7 @@ export class RetentionQuestService {
           remainingLabel: buildRemainingLabel(remaining, progress.unit),
           completed,
           permanentlyUnlocked: AchievementTracker.isAchievementUnlocked(quest.id),
-          isPinned: pinnedQuestId === quest.id
+          isPinned: pinnedQuestId === quest.id,
         };
       })
       .filter(Boolean)
@@ -278,10 +284,8 @@ export class RetentionQuestService {
         return left.name.localeCompare(right.name);
       });
 
-    const primaryQuest = quests.find((quest) => quest.isPinned)
-      || quests.find((quest) => !quest.completed)
-      || quests[0]
-      || null;
+    const primaryQuest =
+      quests.find((quest) => quest.isPinned) || quests.find((quest) => !quest.completed) || quests[0] || null;
 
     return {
       periodKey: AchievementTracker.getPeriodCurrentKey('weekly'),
@@ -291,7 +295,7 @@ export class RetentionQuestService {
       primaryQuest,
       pinnedQuestId,
       completedCount: quests.filter((quest) => quest.completed).length,
-      totalCount: quests.length
+      totalCount: quests.length,
     };
   }
 
@@ -332,7 +336,7 @@ export class RetentionQuestService {
       source: 'retention-quest-service',
       personaTags: Array.isArray(persona?.personaTags) ? persona.personaTags : [],
       weeklyQuestId: weeklyQuest?.primaryQuest?.id || null,
-      message: buildPicksMessage(persona, weeklyQuest)
+      message: buildPicksMessage(persona, weeklyQuest),
     });
   }
 
@@ -374,7 +378,7 @@ export class RetentionQuestService {
 
     return {
       weeklyQuest,
-      gamePilotPicks
+      gamePilotPicks,
     };
   }
 }

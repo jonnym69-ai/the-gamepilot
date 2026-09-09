@@ -6,7 +6,7 @@ import {
   createActiveSessionEntry,
   getActiveSessionStartTime,
   persistActiveGameSessions,
-  readActiveGameSessions
+  readActiveGameSessions,
 } from './ActiveSessionService';
 import { LauncherService } from './LauncherService';
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
@@ -22,40 +22,40 @@ jest.mock('../AchievementSystem', () => ({
     checkDustOff: jest.fn(),
     checkShelfDiver: jest.fn(),
     trackBacklogMilestone: jest.fn(),
-    checkAndUnlockAchievements: jest.fn()
-  }
+    checkAndUnlockAchievements: jest.fn(),
+  },
 }));
 
 jest.mock('../GamingIdentity', () => ({
   GamingIdentity: {
-    updateGamingIdentity: jest.fn()
-  }
+    updateGamingIdentity: jest.fn(),
+  },
 }));
 
 jest.mock('../GameProcessMonitor', () => ({
   GameProcessMonitor: {
     stopMonitoringByGame: jest.fn(),
-    startMonitoring: jest.fn()
-  }
+    startMonitoring: jest.fn(),
+  },
 }));
 
 jest.mock('./ActiveSessionService', () => ({
   createActiveSessionEntry: jest.fn(),
   getActiveSessionStartTime: jest.fn(),
   persistActiveGameSessions: jest.fn(),
-  readActiveGameSessions: jest.fn()
+  readActiveGameSessions: jest.fn(),
 }));
 
 jest.mock('./LauncherService', () => ({
   LauncherService: {
-    launchGame: jest.fn()
-  }
+    launchGame: jest.fn(),
+  },
 }));
 
 jest.mock('./PlaytimeAutoLogger', () => ({
   PlaytimeAutoLogger: {
-    startSession: jest.fn()
-  }
+    startSession: jest.fn(),
+  },
 }));
 
 describe('GameLaunchCoordinatorService', () => {
@@ -64,7 +64,7 @@ describe('GameLaunchCoordinatorService', () => {
     appid: '1240440',
     platform: 'Steam',
     genres: ['Shooter'],
-    launch_count: 2
+    launch_count: 2,
   };
 
   beforeEach(() => {
@@ -75,9 +75,9 @@ describe('GameLaunchCoordinatorService', () => {
       gameId: inputGame?.appid || inputGame?.name,
       metadata: {
         platform: inputGame?.platform || null,
-        genres: inputGame?.genres || []
+        genres: inputGame?.genres || [],
       },
-      paused: false
+      paused: false,
     }));
 
     getActiveSessionStartTime.mockImplementation((entry) => {
@@ -97,9 +97,7 @@ describe('GameLaunchCoordinatorService', () => {
     const onLastPlayedGameUpdated = jest.fn();
     const onEndSession = jest.fn();
 
-    readActiveGameSessions
-      .mockReturnValueOnce({})
-      .mockReturnValueOnce({});
+    readActiveGameSessions.mockReturnValueOnce({}).mockReturnValueOnce({});
     LauncherService.launchGame.mockResolvedValue({ success: true, message: 'Launched' });
 
     const result = await GameLaunchCoordinatorService.launchGame({
@@ -107,7 +105,7 @@ describe('GameLaunchCoordinatorService', () => {
       library: currentLibrary,
       onLibraryUpdated,
       onLastPlayedGameUpdated,
-      onEndSession
+      onEndSession,
     });
 
     expect(result.success).toBe(true);
@@ -132,23 +130,21 @@ describe('GameLaunchCoordinatorService', () => {
   });
 
   test('cleans up session on failed launch when no active session existed', async () => {
-    readActiveGameSessions
-      .mockReturnValueOnce({})
-      .mockReturnValueOnce({
-        'Halo Infinite': { startTime: '2024-01-01T00:00:00.000Z' },
-        'Another Game': { startTime: '2024-01-01T01:00:00.000Z' }
-      });
+    readActiveGameSessions.mockReturnValueOnce({}).mockReturnValueOnce({
+      'Halo Infinite': { startTime: '2024-01-01T00:00:00.000Z' },
+      'Another Game': { startTime: '2024-01-01T01:00:00.000Z' },
+    });
     LauncherService.launchGame.mockResolvedValue({ success: false, message: 'Launch failed' });
 
     const result = await GameLaunchCoordinatorService.launchGame({
       game,
-      library: []
+      library: [],
     });
 
     expect(result.success).toBe(false);
     expect(result.message).toBe('Launch failed');
     expect(persistActiveGameSessions).toHaveBeenCalledWith({
-      'Another Game': { startTime: '2024-01-01T01:00:00.000Z' }
+      'Another Game': { startTime: '2024-01-01T01:00:00.000Z' },
     });
     expect(GameProcessMonitor.startMonitoring).not.toHaveBeenCalled();
     expect(AchievementTracker.rewardGameLaunch).not.toHaveBeenCalled();
@@ -156,13 +152,13 @@ describe('GameLaunchCoordinatorService', () => {
 
   test('does not cleanup sessions on failed launch if an active session already existed', async () => {
     readActiveGameSessions.mockReturnValueOnce({
-      'Halo Infinite': { startTime: '2024-01-01T00:00:00.000Z' }
+      'Halo Infinite': { startTime: '2024-01-01T00:00:00.000Z' },
     });
     LauncherService.launchGame.mockResolvedValue({ success: false, message: 'Launch failed' });
 
     const result = await GameLaunchCoordinatorService.launchGame({
       game,
-      library: []
+      library: [],
     });
 
     expect(result.success).toBe(false);
@@ -171,7 +167,7 @@ describe('GameLaunchCoordinatorService', () => {
 
   test('migrates legacy string sessions during pre-launch preparation', () => {
     readActiveGameSessions.mockReturnValue({
-      'Halo Infinite': '2024-01-01T00:00:00.000Z'
+      'Halo Infinite': '2024-01-01T00:00:00.000Z',
     });
 
     const result = GameLaunchCoordinatorService.prepareExistingSessionForLaunch(game);
@@ -180,8 +176,8 @@ describe('GameLaunchCoordinatorService', () => {
     expect(persistActiveGameSessions).toHaveBeenCalledWith({
       'Halo Infinite': {
         ...createActiveSessionEntry.mock.results[0].value,
-        startTime: '2024-01-01T00:00:00.000Z'
-      }
+        startTime: '2024-01-01T00:00:00.000Z',
+      },
     });
   });
 });

@@ -3,7 +3,7 @@ import '../styles/StatsCharts.css';
 
 export function PieChart({ data, title, colors = {} }) {
   const total = useMemo(() => Object.values(data).reduce((a, b) => a + b, 0), [data]);
-  
+
   if (total === 0) {
     return (
       <div className="chart-container">
@@ -28,14 +28,10 @@ export function PieChart({ data, title, colors = {} }) {
     const y2 = 50 + 40 * Math.sin((endAngle * Math.PI) / 180);
 
     const largeArc = sliceAngle > 180 ? 1 : 0;
-    const pathData = [
-      `M 50 50`,
-      `L ${x1} ${y1}`,
-      `A 40 40 0 ${largeArc} 1 ${x2} ${y2}`,
-      'Z'
-    ].join(' ');
+    const pathData = [`M 50 50`, `L ${x1} ${y1}`, `A 40 40 0 ${largeArc} 1 ${x2} ${y2}`, 'Z'].join(' ');
 
-    const color = colors[label] || `hsl(${(Object.keys(data).indexOf(label) * 360) / Object.keys(data).length}, 70%, 60%)`;
+    const color =
+      colors[label] || `hsl(${(Object.keys(data).indexOf(label) * 360) / Object.keys(data).length}, 70%, 60%)`;
 
     return {
       label,
@@ -43,7 +39,7 @@ export function PieChart({ data, title, colors = {} }) {
       percentage: percentage.toFixed(1),
       pathData,
       color,
-      startAngle
+      startAngle,
     };
   });
 
@@ -53,13 +49,7 @@ export function PieChart({ data, title, colors = {} }) {
       <div className="pie-chart-wrapper">
         <svg viewBox="0 0 100 100" className="pie-chart">
           {slices.map((slice, idx) => (
-            <path
-              key={idx}
-              d={slice.pathData}
-              fill={slice.color}
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="0.5"
-            />
+            <path key={idx} d={slice.pathData} fill={slice.color} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
           ))}
         </svg>
         <div className="pie-legend">
@@ -68,7 +58,9 @@ export function PieChart({ data, title, colors = {} }) {
               <div className="legend-color" style={{ backgroundColor: slice.color }}></div>
               <div className="legend-text">
                 <span className="legend-label">{slice.label}</span>
-                <span className="legend-value">{slice.value} ({slice.percentage}%)</span>
+                <span className="legend-value">
+                  {slice.value} ({slice.percentage}%)
+                </span>
               </div>
             </div>
           ))}
@@ -80,7 +72,7 @@ export function PieChart({ data, title, colors = {} }) {
 
 export function BarChart({ data, title, colors = {} }) {
   const entries = useMemo(() => Object.entries(data).sort((a, b) => b[1] - a[1]), [data]);
-  const maxValue = useMemo(() => Math.max(...entries.map(e => e[1]), 1), [entries]);
+  const maxValue = useMemo(() => Math.max(...entries.map((e) => e[1]), 1), [entries]);
 
   if (entries.length === 0) {
     return (
@@ -107,7 +99,7 @@ export function BarChart({ data, title, colors = {} }) {
                   className="bar-fill"
                   style={{
                     width: `${percentage}%`,
-                    backgroundColor: color
+                    backgroundColor: color,
                   }}
                 >
                   <span className="bar-value">{value}</span>
@@ -128,14 +120,16 @@ export function ProgressBar({ value, max, label, color = '#ff6b35' }) {
     <div className="progress-container">
       <div className="progress-header">
         <span className="progress-label">{label}</span>
-        <span className="progress-value">{value} / {max}</span>
+        <span className="progress-value">
+          {value} / {max}
+        </span>
       </div>
       <div className="progress-bar-bg">
         <div
           className="progress-bar-fill"
           style={{
             width: `${percentage}%`,
-            backgroundColor: color
+            backgroundColor: color,
           }}
         ></div>
       </div>

@@ -23,7 +23,9 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
         <div className="habits-share-card-hero">
           <TrendingUp size={48} className="habits-share-card-icon" />
           <div>
-            <span className="habits-share-card-eyebrow">{username || 'Pilot'} · {periodLabel}</span>
+            <span className="habits-share-card-eyebrow">
+              {username || 'Pilot'} · {periodLabel}
+            </span>
             <h2 className="habits-share-card-title">Deeper Play Habits</h2>
           </div>
         </div>
@@ -47,7 +49,9 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
                 Most Active Day
               </div>
               <strong>{h.busiestDay.dateLabel}</strong>
-              <span>{formatPlaytime(h.busiestDay.playtimeMinutes)} · {h.busiestDay.sessions} sessions</span>
+              <span>
+                {formatPlaytime(h.busiestDay.playtimeMinutes)} · {h.busiestDay.sessions} sessions
+              </span>
             </div>
           )}
 
@@ -58,7 +62,9 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
                 Most Returned To
               </div>
               <strong>{h.mostReturnedTo.name}</strong>
-              <span>{h.mostReturnedTo.sessions} sessions · {formatPlaytime(h.mostReturnedTo.totalPlaytime)}</span>
+              <span>
+                {h.mostReturnedTo.sessions} sessions · {formatPlaytime(h.mostReturnedTo.totalPlaytime)}
+              </span>
             </div>
           )}
 

@@ -107,12 +107,16 @@ const getSessionTimestampMs = (entry) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const getSessionMinutes = (entry) => Math.max(0, Math.round(Number(
-  entry?.playtimeMinutes ?? entry?.playtime ?? entry?.duration ?? entry?.minutes ?? 0
-) || 0));
+const getSessionMinutes = (entry) =>
+  Math.max(
+    0,
+    Math.round(Number(entry?.playtimeMinutes ?? entry?.playtime ?? entry?.duration ?? entry?.minutes ?? 0) || 0)
+  );
 
 const getGameKey = (entry) => {
-  const name = String(entry?.gameName || entry?.gameId || '').trim().toLowerCase();
+  const name = String(entry?.gameName || entry?.gameId || '')
+    .trim()
+    .toLowerCase();
   return name || null;
 };
 
@@ -177,15 +181,17 @@ const findLibraryGame = (library, gameName) => {
   if (!needle) return null;
   // Try exact normalized match first, then substring containment as a
   // fallback (handles "Project Zomboid" vs "Project Zomboid (Steam)").
-  let match = library.find((g) => {
-    const candidate = normalizeNameForMatch(g?.name || g?.title || g?.gameName);
-    return candidate && candidate === needle;
-  }) || null;
-  if (!match) {
-    match = library.find((g) => {
+  let match =
+    library.find((g) => {
       const candidate = normalizeNameForMatch(g?.name || g?.title || g?.gameName);
-      return candidate && (candidate.includes(needle) || needle.includes(candidate));
+      return candidate && candidate === needle;
     }) || null;
+  if (!match) {
+    match =
+      library.find((g) => {
+        const candidate = normalizeNameForMatch(g?.name || g?.title || g?.gameName);
+        return candidate && (candidate.includes(needle) || needle.includes(candidate));
+      }) || null;
   }
   return match;
 };
@@ -203,17 +209,21 @@ const buildPersonaSnapshot = (gameForRoast) => {
     if (gameForRoast) {
       try {
         roastLine = GamingPersonaService.getGameSpecificRoast(gameForRoast);
-      } catch { /* fall through to summary roast */ }
+      } catch {
+        /* fall through to summary roast */
+      }
     }
     if (!roastLine) roastLine = persona.summaryRoast || primary.roast || null;
     return {
       label: primary.label,
       archetypeLabel: primary.archetypeLabel,
-      theme: primary.theme ? {
-        id: primary.theme.id,
-        label: primary.theme.label,
-        shortName: primary.theme.shortName,
-      } : null,
+      theme: primary.theme
+        ? {
+            id: primary.theme.id,
+            label: primary.theme.label,
+            shortName: primary.theme.shortName,
+          }
+        : null,
       roastLine,
     };
   } catch {
@@ -231,10 +241,12 @@ const buildChampion = (period, periodKey, aggregate, library, options = {}) => {
   // If library lookup failed, try resolving artwork from the session's appId.
   // This covers non-Steam shortcuts and manually tracked games that have a
   // Steam appId but aren't in the scanned library.
-  const fallbackGame = libGame ? null : (aggregate.appId ? { appid: aggregate.appId, name: aggregate.gameName } : null);
+  const fallbackGame = libGame ? null : aggregate.appId ? { appid: aggregate.appId, name: aggregate.gameName } : null;
   const artworkBundle = libGame
     ? resolveGameArtworkBundle(libGame, { surface: 'portrait', fallbackSurface: 'library_card' })
-    : (fallbackGame ? resolveGameArtworkBundle(fallbackGame, { surface: 'portrait', fallbackSurface: 'library_card' }) : null);
+    : fallbackGame
+      ? resolveGameArtworkBundle(fallbackGame, { surface: 'portrait', fallbackSurface: 'library_card' })
+      : null;
   const platform = libGame?.platform || libGame?.source || null;
   const appId = libGame?.appid || libGame?.app_id || libGame?.appId || libGame?.steamAppId || aggregate.appId || null;
 
@@ -289,32 +301,32 @@ const writeLocked = (period, champions) => {
 const hydrateChampionArtwork = (champion, library = []) => {
   if (!champion?.game) return champion;
   const libGame = findLibraryGame(library, champion.game.name);
-  const fallbackGame = libGame ? null : (champion.game.appId ? {
-    appid: champion.game.appId,
-    name: champion.game.name,
-  } : null);
+  const fallbackGame = libGame
+    ? null
+    : champion.game.appId
+      ? {
+          appid: champion.game.appId,
+          name: champion.game.name,
+        }
+      : null;
   const bundle = libGame
     ? resolveGameArtworkBundle(libGame, { surface: 'portrait', fallbackSurface: 'library_card' })
-    : (fallbackGame ? resolveGameArtworkBundle(fallbackGame, { surface: 'portrait', fallbackSurface: 'library_card' }) : null);
-  const legacyBundle = champion.game.artwork && typeof champion.game.artwork === 'object'
-    ? champion.game.artwork
-    : null;
+    : fallbackGame
+      ? resolveGameArtworkBundle(fallbackGame, { surface: 'portrait', fallbackSurface: 'library_card' })
+      : null;
+  const legacyBundle =
+    champion.game.artwork && typeof champion.game.artwork === 'object' ? champion.game.artwork : null;
   const legacyUrl = typeof champion.game.artwork === 'string' ? champion.game.artwork : null;
-  const portrait = bundle?.artwork
-    || champion.game.portrait
-    || legacyBundle?.artwork
-    || legacyBundle?.portrait
-    || legacyBundle?.cover
-    || legacyUrl
-    || null;
-  const portraitFallback = bundle?.fallbackSrc
-    || champion.game.portraitFallback
-    || legacyBundle?.fallbackSrc
-    || null;
-  const placeholder = bundle?.placeholder
-    || champion.game.placeholder
-    || legacyBundle?.placeholder
-    || null;
+  const portrait =
+    bundle?.artwork ||
+    champion.game.portrait ||
+    legacyBundle?.artwork ||
+    legacyBundle?.portrait ||
+    legacyBundle?.cover ||
+    legacyUrl ||
+    null;
+  const portraitFallback = bundle?.fallbackSrc || champion.game.portraitFallback || legacyBundle?.fallbackSrc || null;
+  const placeholder = bundle?.placeholder || champion.game.placeholder || legacyBundle?.placeholder || null;
   return {
     ...champion,
     game: {
@@ -354,10 +366,9 @@ const hydrateChampionMetrics = (champion, sessions = []) => {
 const hydrateLocked = (period, library = []) => {
   const locked = readLocked(period);
   const sessions = SessionRepository.getSessionHistory();
-  const hydrated = locked.map((champion) => hydrateChampionMetrics(
-    hydrateChampionArtwork(champion, library),
-    sessions
-  ));
+  const hydrated = locked.map((champion) =>
+    hydrateChampionMetrics(hydrateChampionArtwork(champion, library), sessions)
+  );
   if (JSON.stringify(hydrated) !== JSON.stringify(locked)) writeLocked(period, hydrated);
   return hydrated;
 };
@@ -382,9 +393,7 @@ const PeriodChampionService = {
     const sourceSessions = Array.isArray(sessions) ? sessions : SessionRepository.getSessionHistory();
     const aggregates = aggregateSessionsForPeriod(sourceSessions, bounds.start.getTime(), bounds.end.getTime());
     if (aggregates.length === 0) return null;
-    const runnerUp = aggregates[1]
-      ? { name: aggregates[1].gameName, minutes: aggregates[1].minutes }
-      : null;
+    const runnerUp = aggregates[1] ? { name: aggregates[1].gameName, minutes: aggregates[1].minutes } : null;
     return buildChampion(period, periodKey, aggregates[0], library, {
       runnerUp,
       totalPeriodMinutes: aggregates.reduce((sum, entry) => sum + entry.minutes, 0),
@@ -405,17 +414,11 @@ const PeriodChampionService = {
     const bounds = getPeriodBounds(periodKey, period);
     if (!bounds) return null;
     const sessions = SessionRepository.getSessionHistory();
-    const aggregates = aggregateSessionsForPeriod(
-      sessions,
-      bounds.start.getTime(),
-      bounds.end.getTime()
-    );
+    const aggregates = aggregateSessionsForPeriod(sessions, bounds.start.getTime(), bounds.end.getTime());
     if (aggregates.length === 0) return null;
     const totalPeriodMinutes = aggregates.reduce((sum, a) => sum + a.minutes, 0);
     const totalPeriodSessions = aggregates.reduce((sum, a) => sum + a.sessionCount, 0);
-    const runnerUp = aggregates[1]
-      ? { name: aggregates[1].gameName, minutes: aggregates[1].minutes }
-      : null;
+    const runnerUp = aggregates[1] ? { name: aggregates[1].gameName, minutes: aggregates[1].minutes } : null;
     return buildChampion(period, periodKey, aggregates[0], library, {
       runnerUp,
       totalPeriodMinutes,
@@ -445,8 +448,11 @@ const PeriodChampionService = {
     const hasCurrentLocked = locked.some((c) => c.periodKey === currentKey);
     let live = null;
     if (!hasCurrentLocked) {
-      try { live = this.getLiveChampion(period, { library, now }); }
-      catch { live = null; }
+      try {
+        live = this.getLiveChampion(period, { library, now });
+      } catch {
+        live = null;
+      }
     }
     const all = live ? [...locked, live] : [...locked];
     return all.sort((a, b) => String(b.periodKey).localeCompare(String(a.periodKey)));
@@ -479,18 +485,12 @@ const PeriodChampionService = {
     if (locked.some((c) => c.periodKey === periodKey)) return null; // already locked
 
     const sessions = SessionRepository.getSessionHistory();
-    const aggregates = aggregateSessionsForPeriod(
-      sessions,
-      bounds.start.getTime(),
-      bounds.end.getTime()
-    );
+    const aggregates = aggregateSessionsForPeriod(sessions, bounds.start.getTime(), bounds.end.getTime());
     if (aggregates.length === 0) return null; // empty period — skip silently
 
     const totalPeriodMinutes = aggregates.reduce((sum, a) => sum + a.minutes, 0);
     const totalPeriodSessions = aggregates.reduce((sum, a) => sum + a.sessionCount, 0);
-    const runnerUp = aggregates[1]
-      ? { name: aggregates[1].gameName, minutes: aggregates[1].minutes }
-      : null;
+    const runnerUp = aggregates[1] ? { name: aggregates[1].gameName, minutes: aggregates[1].minutes } : null;
     const champion = buildChampion(period, periodKey, aggregates[0], library, {
       runnerUp,
       totalPeriodMinutes,
@@ -502,7 +502,11 @@ const PeriodChampionService = {
     if (!champion) return null;
 
     // Generate an acceptance speech for the newly crowned champion
-    try { generateAndStoreSpeech(champion, library); } catch { /* non-critical */ }
+    try {
+      generateAndStoreSpeech(champion, library);
+    } catch {
+      /* non-critical */
+    }
 
     locked.push(champion);
     writeLocked(period, locked);
@@ -553,11 +557,7 @@ const PeriodChampionService = {
     const weeks = this.getAllChampions('week', { library, now });
     const months = this.getAllChampions('month', { library, now });
     const years = this.getAllChampions('year', { library, now });
-    return [
-      ...weeks,
-      ...months,
-      ...years,
-    ].sort((a, b) => String(b.periodKey).localeCompare(String(a.periodKey)));
+    return [...weeks, ...months, ...years].sort((a, b) => String(b.periodKey).localeCompare(String(a.periodKey)));
   },
 
   /**

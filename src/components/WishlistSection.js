@@ -28,12 +28,10 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
     if (!buyEnabled) return null;
     const localMax = filterMaxPrice ? parseFloat(filterMaxPrice) : null;
     // Cached prices are in USD; convert the user's local-currency budget to USD.
-    const maxPrice = typeof localMax === 'number' && !Number.isNaN(localMax)
-      ? convertToUSD(localMax)
-      : null;
+    const maxPrice = typeof localMax === 'number' && !Number.isNaN(localMax) ? convertToUSD(localMax) : null;
     return BuyRecommendationService.getSnapshot(library, WishlistService.getWishlist(), {
       genre: filterGenre || null,
-      maxPrice
+      maxPrice,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyEnabled, library, filterGenre, filterMaxPrice, items, familiarityBias]);
@@ -48,7 +46,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
     setAlertSummary(WishlistService.recalculateAlertSummary());
   }, [library]);
 
-  React.useEffect(() => { loadItems(); }, [loadItems]);
+  React.useEffect(() => {
+    loadItems();
+  }, [loadItems]);
 
   React.useEffect(() => {
     if (!enabled) return undefined;
@@ -61,7 +61,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
       .finally(() => {
         if (!cancelled) setBackgroundChecking(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [enabled, loadItems]);
 
   const handleRefresh = async () => {
@@ -96,7 +98,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
               description="Enable it to search games and track prices."
               compact
             />
-            <button className="wishlist-enable-btn" onClick={handleToggle}>Enable Wishlist</button>
+            <button className="wishlist-enable-btn" onClick={handleToggle}>
+              Enable Wishlist
+            </button>
           </div>
         </div>
       </div>
@@ -135,7 +139,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
         platform: result.platform || libGame?.platform || '',
         appid: libGame?.appid || result.steamAppID || '',
         steamAppID: result.steamAppID || '',
-        thumb: result.thumb || ''
+        thumb: result.thumb || '',
       },
       { threshold: null, genres: Array.isArray(libGame?.genres) ? libGame.genres : null }
     );
@@ -186,12 +190,18 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
       <div className="wishlist-header-bar">
         <div className="wishlist-header-left">
           {alertCount > 0 && (
-            <span className="wishlist-badge wishlist-badge--alert">{alertCount} active alert{alertCount > 1 ? 's' : ''}</span>
+            <span className="wishlist-badge wishlist-badge--alert">
+              {alertCount} active alert{alertCount > 1 ? 's' : ''}
+            </span>
           )}
           {drops.length > 0 && (
-            <span className="wishlist-badge wishlist-badge--drop">{drops.length} price drop{drops.length > 1 ? 's' : ''}</span>
+            <span className="wishlist-badge wishlist-badge--drop">
+              {drops.length} price drop{drops.length > 1 ? 's' : ''}
+            </span>
           )}
-          <span className="wishlist-count">{items.length} game{items.length !== 1 ? 's' : ''}</span>
+          <span className="wishlist-count">
+            {items.length} game{items.length !== 1 ? 's' : ''}
+          </span>
           {backgroundChecking && <span className="wishlist-checking">Checking prices...</span>}
         </div>
         <div className="wishlist-header-right">
@@ -237,7 +247,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
               >
                 <option value="">Any genre</option>
                 {(buySnapshot?.availableGenres || []).map((g) => (
-                  <option key={g} value={g}>{g}</option>
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
                 ))}
               </select>
               <div className="wishlist-filter-price">
@@ -257,7 +269,10 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                 <button
                   type="button"
                   className="wishlist-filter-clear"
-                  onClick={() => { setFilterGenre(''); setFilterMaxPrice(''); }}
+                  onClick={() => {
+                    setFilterGenre('');
+                    setFilterMaxPrice('');
+                  }}
                 >
                   Clear
                 </button>
@@ -266,19 +281,28 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                 <div className="familiarity-toggle-buttons">
                   <button
                     className={`familiarity-btn ${familiarityBias === 'familiar' ? 'selected' : ''}`}
-                    onClick={() => { setFamiliarityBias('familiar'); setFamiliarityBiasState('familiar'); }}
+                    onClick={() => {
+                      setFamiliarityBias('familiar');
+                      setFamiliarityBiasState('familiar');
+                    }}
                   >
                     Familiar
                   </button>
                   <button
                     className={`familiarity-btn ${familiarityBias === null ? 'selected' : ''}`}
-                    onClick={() => { setFamiliarityBias(null); setFamiliarityBiasState(null); }}
+                    onClick={() => {
+                      setFamiliarityBias(null);
+                      setFamiliarityBiasState(null);
+                    }}
                   >
                     Balanced
                   </button>
                   <button
                     className={`familiarity-btn ${familiarityBias === 'fresh' ? 'selected' : ''}`}
-                    onClick={() => { setFamiliarityBias('fresh'); setFamiliarityBiasState('fresh'); }}
+                    onClick={() => {
+                      setFamiliarityBias('fresh');
+                      setFamiliarityBiasState('fresh');
+                    }}
                   >
                     Fresh
                   </button>
@@ -316,7 +340,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                     </div>
                     <div className="wishlist-suggestion-side">
                       {price && <span className="wishlist-suggestion-price">{formatPrice(price.price, currency)}</span>}
-                      <a href={steamUrl} target="_blank" rel="noopener noreferrer" className="wishlist-search-add">View</a>
+                      <a href={steamUrl} target="_blank" rel="noopener noreferrer" className="wishlist-search-add">
+                        View
+                      </a>
                     </div>
                   </div>
                 );
@@ -330,7 +356,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
         <div className="wishlist-search-results">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Search results</span>
-            <button className="wishlist-search-add" onClick={clearSearch}>Close</button>
+            <button className="wishlist-search-add" onClick={clearSearch}>
+              Close
+            </button>
           </div>
           {searchResults.length === 0 ? (
             <p className="wishlist-search-empty">No games found. Try a different search.</p>
@@ -344,13 +372,43 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span className="wishlist-search-name">{result.name}</span>
                       {result.source === 'library' && (
-                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(108,92,231,0.2)', color: '#a29bfe' }}>Library</span>
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(108,92,231,0.2)',
+                            color: '#a29bfe',
+                          }}
+                        >
+                          Library
+                        </span>
                       )}
                       {result.source === 'cheapshark' && (
-                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>Store</span>
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(34,197,94,0.2)',
+                            color: '#22c55e',
+                          }}
+                        >
+                          Store
+                        </span>
                       )}
                       {result.source === 'custom' && (
-                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)' }}>Custom</span>
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(255,255,255,0.08)',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          Custom
+                        </span>
                       )}
                     </div>
                     {alreadyAdded ? (
@@ -358,7 +416,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                     ) : wasJustAdded ? (
                       <span style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: 600 }}>Added!</span>
                     ) : (
-                      <button className="wishlist-search-add" onClick={() => handleAddFromSearch(result)}>Add</button>
+                      <button className="wishlist-search-add" onClick={() => handleAddFromSearch(result)}>
+                        Add
+                      </button>
                     )}
                   </div>
                 );
@@ -391,7 +451,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                   {artwork ? (
                     <LazyImage src={artwork} alt={item.name} placeholder={placeholder} className="game-image" />
                   ) : (
-                    <div className="game-placeholder"><div className="platform-icon">🎮</div></div>
+                    <div className="game-placeholder">
+                      <div className="platform-icon">🎮</div>
+                    </div>
                   )}
                 </div>
                 <div className="wishlist-card-body">
@@ -409,9 +471,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                   ) : (
                     <span className="wishlist-price-unavailable">Price unavailable</span>
                   )}
-                  {hasDrop && (
-                    <span className="wishlist-drop-badge">Price drop!</span>
-                  )}
+                  {hasDrop && <span className="wishlist-drop-badge">Price drop!</span>}
                   <div className="wishlist-card-actions">
                     <label className="wishlist-threshold-label">
                       Alert at:
@@ -426,9 +486,13 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                       />
                     </label>
                     {game && onLaunchGame && (
-                      <button className="wishlist-launch-btn" onClick={() => onLaunchGame(game)}>Launch</button>
+                      <button className="wishlist-launch-btn" onClick={() => onLaunchGame(game)}>
+                        Launch
+                      </button>
                     )}
-                    <button className="wishlist-remove-btn" onClick={() => handleRemove(item.name)}>Remove</button>
+                    <button className="wishlist-remove-btn" onClick={() => handleRemove(item.name)}>
+                      Remove
+                    </button>
                   </div>
                 </div>
               </div>

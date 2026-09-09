@@ -11,7 +11,7 @@ import StorageService from './StorageService';
 // fresh lookups.
 const CACHE_KEY = 'hltbCacheV5';
 const TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
-const PENDING_TTL_MS = 60 * 60 * 1000;    // re-try misses after 1h
+const PENDING_TTL_MS = 60 * 60 * 1000; // re-try misses after 1h
 const SETTINGS_KEY = 'hltbEnabled';
 const HLTB_DEBUG = process.env.REACT_APP_GAMEPILOT_HLTB_DEBUG === 'true';
 
@@ -23,21 +23,23 @@ const hltbDebug = (...args) => {
   }
 };
 
-const sanitizeGameName = (value) => String(value || '')
-  .replace(/Ôäó/g, '™')
-  .replace(/┬«/g, '®')
-  .replace(/┬®/g, '©')
-  .replace(/ÔÇÖ/g, '’')
-  .replace(/ÔÇ£|ÔÇØ/g, '"')
-  .replace(/ÔÇô|ÔÇö/g, '-')
-  .replace(/\s+/g, ' ')
-  .trim();
+const sanitizeGameName = (value) =>
+  String(value || '')
+    .replace(/Ôäó/g, '™')
+    .replace(/┬«/g, '®')
+    .replace(/┬®/g, '©')
+    .replace(/ÔÇÖ/g, '’')
+    .replace(/ÔÇ£|ÔÇØ/g, '"')
+    .replace(/ÔÇô|ÔÇö/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-const slug = (s) => String(s || '')
-  .toLowerCase()
-  .replace(/[\u00ae\u2122\u00a9]/g, '')
-  .replace(/[^a-z0-9]+/g, ' ')
-  .trim();
+const slug = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .replace(/[\u00ae\u2122\u00a9]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 const gameKeyFor = (game) => {
   if (!game) return '';
@@ -97,7 +99,10 @@ const pickBest = (results, queryName) => {
     }
     // Prefer results with actual time data.
     if (r.mainSeconds || r.mainExtraSeconds || r.completionistSeconds) score += 5;
-    if (score > bestScore) { bestScore = score; best = r; }
+    if (score > bestScore) {
+      bestScore = score;
+      best = r;
+    }
   });
   return bestScore >= 30 ? best : null;
 };
@@ -121,7 +126,7 @@ const buildEntry = (queryName, apiResult) => {
     mainExtraHours: best.mainExtraSeconds ? +(best.mainExtraSeconds / 3600).toFixed(1) : 0,
     completionistHours: best.completionistSeconds ? +(best.completionistSeconds / 3600).toFixed(1) : 0,
     allStylesHours: best.allStylesSeconds ? +(best.allStylesSeconds / 3600).toFixed(1) : 0,
-    releaseYear: best.releaseYear || null
+    releaseYear: best.releaseYear || null,
   };
 };
 
@@ -159,7 +164,7 @@ class HowLongToBeatService {
     return {
       mainStory: entry.mainHours || null,
       mainExtra: entry.mainExtraHours || null,
-      completionist: entry.completionistHours || null
+      completionist: entry.completionistHours || null,
     };
   }
 
@@ -190,9 +195,10 @@ class HowLongToBeatService {
       return inflight.get(key);
     }
 
-    const api = (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.hltbSearch)
-      ? window.electronAPI.hltbSearch
-      : null;
+    const api =
+      typeof window !== 'undefined' && window.electronAPI && window.electronAPI.hltbSearch
+        ? window.electronAPI.hltbSearch
+        : null;
     if (!api) {
       console.warn('[HLTB] no preload API — cannot fetch for', name);
       return cached || null;
@@ -230,7 +236,7 @@ class HowLongToBeatService {
       mainHours: Number(mainHours) || 0,
       mainExtraHours: Number(mainExtraHours) || 0,
       completionistHours: Number(completionistHours) || 0,
-      allStylesHours: Number(mainExtraHours || mainHours) || 0
+      allStylesHours: Number(mainExtraHours || mainHours) || 0,
     };
     const next = { ...readCache(), [key]: entry };
     writeCache(next);
@@ -256,7 +262,11 @@ class HowLongToBeatService {
       while (queue.length > 0) {
         const next = queue.shift();
         if (!next) return;
-        try { await this.getTimes(next); } catch { /* ignore */ }
+        try {
+          await this.getTimes(next);
+        } catch {
+          /* ignore */
+        }
         await new Promise((r) => setTimeout(r, delayMs));
       }
     });
@@ -282,7 +292,7 @@ class HowLongToBeatService {
       const ratio = sessionHours / main;
       let fit = 0;
       if (ratio >= 0.08 && ratio <= 0.25) fit = 100 - Math.abs(0.15 - ratio) * 200;
-      else if (ratio >= 0.04 && ratio <= 0.40) fit = 60 - Math.abs(0.15 - ratio) * 150;
+      else if (ratio >= 0.04 && ratio <= 0.4) fit = 60 - Math.abs(0.15 - ratio) * 150;
       else fit = Math.max(0, 30 - Math.abs(0.15 - ratio) * 100);
       ranked.push({
         game,
@@ -290,7 +300,7 @@ class HowLongToBeatService {
         playedHours: played,
         remainingHours: remaining,
         sessionShare: ratio,
-        fitScore: Math.round(fit)
+        fitScore: Math.round(fit),
       });
     });
     return ranked.sort((a, b) => b.fitScore - a.fitScore);

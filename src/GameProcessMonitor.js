@@ -9,18 +9,17 @@ export class GameProcessMonitor {
   }
 
   static matchesMonitorPayload(game, monitorId, payload) {
-    const meta = typeof payload === 'string'
-      ? { gameName: payload }
-      : (payload || {});
+    const meta = typeof payload === 'string' ? { gameName: payload } : payload || {};
     const monitorMatch = meta.monitorId && meta.monitorId === monitorId;
     const nameMatch = meta.gameName === game.name;
-    const appMatch = typeof game.appid !== 'undefined'
-      && typeof meta.appid !== 'undefined'
-      && String(meta.appid) === String(game.appid);
+    const appMatch =
+      typeof game.appid !== 'undefined' &&
+      typeof meta.appid !== 'undefined' &&
+      String(meta.appid) === String(game.appid);
 
     return {
       matches: monitorMatch || nameMatch || appMatch,
-      meta
+      meta,
     };
   }
 
@@ -64,18 +63,11 @@ export class GameProcessMonitor {
       return null;
     }
 
-    const callbackConfig = typeof callbacks === 'function'
-      ? { onGameClosed: callbacks }
-      : (callbacks || {});
-    const onGameStarted = typeof callbackConfig.onGameStarted === 'function'
-      ? callbackConfig.onGameStarted
-      : () => {};
-    const onGameClosed = typeof callbackConfig.onGameClosed === 'function'
-      ? callbackConfig.onGameClosed
-      : () => {};
-    const onMonitorTimeout = typeof callbackConfig.onMonitorTimeout === 'function'
-      ? callbackConfig.onMonitorTimeout
-      : () => {};
+    const callbackConfig = typeof callbacks === 'function' ? { onGameClosed: callbacks } : callbacks || {};
+    const onGameStarted = typeof callbackConfig.onGameStarted === 'function' ? callbackConfig.onGameStarted : () => {};
+    const onGameClosed = typeof callbackConfig.onGameClosed === 'function' ? callbackConfig.onGameClosed : () => {};
+    const onMonitorTimeout =
+      typeof callbackConfig.onMonitorTimeout === 'function' ? callbackConfig.onMonitorTimeout : () => {};
 
     try {
       const monitorId = `${game.name}-${game.platform}-${Date.now()}`;
@@ -124,16 +116,19 @@ export class GameProcessMonitor {
         electronAPI,
         unsubscribeGameStarted,
         unsubscribeGameClosed,
-        unsubscribeMonitorTimeout
+        unsubscribeMonitorTimeout,
       });
 
-      electronAPI.startGameMonitor({ monitorId, game }).then((result) => {
-        if (!result?.success) {
+      electronAPI
+        .startGameMonitor({ monitorId, game })
+        .then((result) => {
+          if (!result?.success) {
+            this.cleanupMonitor(monitorId, false);
+          }
+        })
+        .catch(() => {
           this.cleanupMonitor(monitorId, false);
-        }
-      }).catch(() => {
-        this.cleanupMonitor(monitorId, false);
-      });
+        });
 
       return monitorId;
     } catch (error) {

@@ -14,7 +14,7 @@ import '../styles/StatsBackbonePanel.css';
 const PLAYTIME_UNIT_OPTIONS = [
   { key: 'auto', label: 'Auto' },
   { key: 'hours', label: 'Hours' },
-  { key: 'days', label: 'Days' }
+  { key: 'days', label: 'Days' },
 ];
 
 const FEATURE_METADATA = Object.freeze({
@@ -22,12 +22,11 @@ const FEATURE_METADATA = Object.freeze({
   surpriseMe: { icon: '🎲', label: 'Surprise Me' },
   rediscover: { icon: '🔄', label: 'Rediscover' },
   continuePlaying: { icon: '▶️', label: 'Continue Playing' },
-  share: { icon: '📤', label: 'Share' }
+  share: { icon: '📤', label: 'Share' },
 });
 
-const getTopEntry = (distribution = {}) => Object.entries(distribution)
-  .sort((left, right) => right[1] - left[1])[0] || [null, 0];
-
+const getTopEntry = (distribution = {}) =>
+  Object.entries(distribution).sort((left, right) => right[1] - left[1])[0] || [null, 0];
 
 const formatSessionTimestamp = (timestamp) => {
   if (!timestamp) {
@@ -38,15 +37,16 @@ const formatSessionTimestamp = (timestamp) => {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 
-const buildTimelineChart = (timeline = {}) => Object.fromEntries(
-  Object.entries(timeline)
-    .filter(([, value]) => Number(value) > 0)
-    .map(([label, value]) => [label, Number((Number(value) / 60).toFixed(1))])
-);
+const buildTimelineChart = (timeline = {}) =>
+  Object.fromEntries(
+    Object.entries(timeline)
+      .filter(([, value]) => Number(value) > 0)
+      .map(([label, value]) => [label, Number((Number(value) / 60).toFixed(1))])
+  );
 
 const getTimelineTitle = (periodKey) => {
   switch (periodKey) {
@@ -76,7 +76,11 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
 
   const buildSteamHoursText = () => {
     const importedPlaytime = dashboardData?.importedPlaytime || { totalMinutes: 0, gameCount: 0 };
-    const text = LocalShareService.buildSteamHoursShareText(importedPlaytime.totalMinutes, importedPlaytime.gameCount, pilotName);
+    const text = LocalShareService.buildSteamHoursShareText(
+      importedPlaytime.totalMinutes,
+      importedPlaytime.gameCount,
+      pilotName
+    );
     return ProfileService.appendSocialLinksToShareText(text);
   };
 
@@ -94,17 +98,24 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
   };
 
   const handleNativeShareSteamHours = async (text = null) => {
-    await LocalShareService.shareWithNativeShare({ title: "My Steam Lifetime Hours", text: text || buildSteamHoursText() });
+    await LocalShareService.shareWithNativeShare({
+      title: 'My Steam Lifetime Hours',
+      text: text || buildSteamHoursText(),
+    });
   };
 
   const timelineData = useMemo(() => buildTimelineChart(snapshot?.timeline || {}), [snapshot]);
-  const featureCards = useMemo(() => StatsAggregationService.getFeatureKeys()
-    .map((key) => ({
-      key,
-      value: snapshot?.featureUsage?.counts?.[key] || 0,
-      ...FEATURE_METADATA[key]
-    }))
-    .filter((item) => item.value > 0), [snapshot]);
+  const featureCards = useMemo(
+    () =>
+      StatsAggregationService.getFeatureKeys()
+        .map((key) => ({
+          key,
+          value: snapshot?.featureUsage?.counts?.[key] || 0,
+          ...FEATURE_METADATA[key],
+        }))
+        .filter((item) => item.value > 0),
+    [snapshot]
+  );
 
   if (!snapshot) {
     return null;
@@ -131,7 +142,9 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
       <div className="stats-section stats-backbone-section">
         <div className="stats-section-header">
           <div>
-            <h2><Clock size={24} /> Session Analytics</h2>
+            <h2>
+              <Clock size={24} /> Session Analytics
+            </h2>
             <p className="section-subtitle">
               {snapshot.rangeLabel} · {totalSessionsRecorded} completed sessions tracked locally
             </p>
@@ -183,7 +196,9 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
               </div>
               <div className="stat-content">
                 <h3>{formatPlaytime(importedPlaytime.totalMinutes)}</h3>
-                <p>Steam Lifetime · {importedPlaytime.gameCount} game{importedPlaytime.gameCount !== 1 ? 's' : ''}</p>
+                <p>
+                  Steam Lifetime · {importedPlaytime.gameCount} game{importedPlaytime.gameCount !== 1 ? 's' : ''}
+                </p>
               </div>
               <div className="stat-card-share">
                 <ShareMenu
@@ -251,7 +266,8 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
 
         {selectedPeriod === 'all' && importedPlaytime.totalMinutes > 0 && (
           <p className="stats-source-explainer">
-            <strong>Tracked by GamePilot</strong> is the time recorded since you installed GamePilot. <strong>Steam Lifetime</strong> is your all-time total imported from Steam.
+            <strong>Tracked by GamePilot</strong> is the time recorded since you installed GamePilot.{' '}
+            <strong>Steam Lifetime</strong> is your all-time total imported from Steam.
           </p>
         )}
       </div>
@@ -321,7 +337,9 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
         <div className="stats-section">
           <div className="stats-section-header">
             <div>
-              <h2><Zap size={24} /> Feature Usage</h2>
+              <h2>
+                <Zap size={24} /> Feature Usage
+              </h2>
               <p className="section-subtitle">
                 {snapshot.featureUsage?.totalUses || 0} feature interactions in {snapshot.label.toLowerCase()}.
               </p>
@@ -346,7 +364,9 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
         <div className="stats-section">
           <div className="stats-section-header">
             <div>
-              <h2><Gamepad2 size={24} /> Most Played Games</h2>
+              <h2>
+                <Gamepad2 size={24} /> Most Played Games
+              </h2>
               <p className="section-subtitle">
                 {showImportedTop
                   ? 'Lifetime leaders from your imported Steam playtime.'
@@ -380,7 +400,9 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
                   <div className="rank-badge">{index + 1}</div>
                   <div className="game-info">
                     <h4>{game.gameName}</h4>
-                    <p>{game.platform} · <span className="source-tag source-tag-steam">Steam lifetime</span></p>
+                    <p>
+                      {game.platform} · <span className="source-tag source-tag-steam">Steam lifetime</span>
+                    </p>
                   </div>
                   <div className="game-stats">
                     <div className="stat">
@@ -398,7 +420,10 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
                   <div className="rank-badge">{index + 1}</div>
                   <div className="game-info">
                     <h4>{game.name}</h4>
-                    <p>{game.platform} · <span className="source-tag source-tag-tracked">GamePilot</span> · Last played {formatSessionTimestamp(game.lastPlayed)}</p>
+                    <p>
+                      {game.platform} · <span className="source-tag source-tag-tracked">GamePilot</span> · Last played{' '}
+                      {formatSessionTimestamp(game.lastPlayed)}
+                    </p>
                   </div>
                   <div className="game-stats">
                     <div className="stat">
@@ -435,7 +460,9 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
               <div key={session.id} className="recent-session-item">
                 <div className="recent-session-main">
                   <h4>{session.gameName}</h4>
-                  <p>{session.platform} · {formatSessionTimestamp(session.timestamp)}</p>
+                  <p>
+                    {session.platform} · {formatSessionTimestamp(session.timestamp)}
+                  </p>
                 </div>
                 <div className="recent-session-tags">
                   <span className="recent-session-tag">{formatPlaytime(session.playtimeMinutes)}</span>
@@ -445,16 +472,13 @@ function StatsBackbonePanel({ dashboardData, selectedPeriod, onSelectPeriod }) {
                   {session.mood && session.mood !== 'Unknown' && (
                     <span className="recent-session-tag">{session.mood}</span>
                   )}
-                  {session.launchMethod && (
-                    <span className="recent-session-tag">{session.launchMethod}</span>
-                  )}
+                  {session.launchMethod && <span className="recent-session-tag">{session.launchMethod}</span>}
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-
     </>
   );
 }

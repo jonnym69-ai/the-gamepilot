@@ -18,7 +18,12 @@ export function buildIdentityShareData(profile = {}, evolution = null) {
   const primary = gamingPersona?.primaryPersona;
 
   const personaLabel = primary?.label || persona?.personaIdentity?.label || identity.personality || 'Uncharted Pilot';
-  const personaRoast = gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || identity.description || 'Your gaming identity is still forming.';
+  const personaRoast =
+    gamingPersona?.summaryRoast ||
+    primary?.roast ||
+    persona?.personaIdentity?.description ||
+    identity.description ||
+    'Your gaming identity is still forming.';
   const evidence = Array.isArray(primary?.evidence) ? primary.evidence : [];
   const subTraits = Array.isArray(gamingPersona?.subTraits) ? gamingPersona.subTraits : [];
   // Prefer blended lifetime (Steam/import floor + GamePilot tracked) when present.
@@ -48,15 +53,15 @@ export function buildIdentityShareData(profile = {}, evolution = null) {
     basedOnGame: primary?.basedOnGame || null,
     evolution: evolution
       ? {
-        summary: evolution.summary || 'Your play profile stayed steady.',
-        fromMood: evolution.opening?.dominantMood || null,
-        toMood: evolution.closing?.dominantMood || null,
-        fromGenre: evolution.opening?.dominantGenre || null,
-        toGenre: evolution.closing?.dominantGenre || null,
-        fromSessionLabel: evolution.opening?.preferredSessionLabel || null,
-        toSessionLabel: evolution.closing?.preferredSessionLabel || null
-      }
-      : null
+          summary: evolution.summary || 'Your play profile stayed steady.',
+          fromMood: evolution.opening?.dominantMood || null,
+          toMood: evolution.closing?.dominantMood || null,
+          fromGenre: evolution.opening?.dominantGenre || null,
+          toGenre: evolution.closing?.dominantGenre || null,
+          fromSessionLabel: evolution.opening?.preferredSessionLabel || null,
+          toSessionLabel: evolution.closing?.preferredSessionLabel || null,
+        }
+      : null,
   };
 }
 
@@ -93,14 +98,24 @@ const getMostPlayedGame = (library = []) => {
   return [...library].sort((a, b) => resolvePlaytime(b) - resolvePlaytime(a))[0] || null;
 };
 
-export function IdentityShareCard({ profile = {}, evolution = null, library = [], coverGame = null, showCover = true, watermark = 'gamepilot' }) {
+export function IdentityShareCard({
+  profile = {},
+  evolution = null,
+  library = [],
+  coverGame = null,
+  showCover = true,
+  watermark = 'gamepilot',
+}) {
   const data = buildIdentityShareData(profile, evolution);
   const founder = FounderService.getFounderProfile();
   const coverGameSource = coverGame || getMostPlayedGame(library);
   const coverUrl = showCover && coverGameSource ? resolveGameArtwork(coverGameSource, { surface: 'hero' }) : null;
 
   return (
-    <div className="identity-share-card" style={{ width: IDENTITY_SHARE_CARD_SIZE_PX, height: IDENTITY_SHARE_CARD_SIZE_PX }}>
+    <div
+      className="identity-share-card"
+      style={{ width: IDENTITY_SHARE_CARD_SIZE_PX, height: IDENTITY_SHARE_CARD_SIZE_PX }}
+    >
       {coverUrl && (
         <>
           <div
@@ -125,7 +140,9 @@ export function IdentityShareCard({ profile = {}, evolution = null, library = []
             <User size={64} />
           </div>
           <div className="identity-share-card-hero-text">
-            <span className="identity-share-card-eyebrow">{data.username || 'Pilot'} · Level {data.level}</span>
+            <span className="identity-share-card-eyebrow">
+              {data.username || 'Pilot'} · Level {data.level}
+            </span>
             <h2 className="identity-share-card-title">{data.identityLabel}</h2>
             <p className="identity-share-card-description">{data.identityDescription}</p>
           </div>

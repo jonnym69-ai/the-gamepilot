@@ -1,5 +1,18 @@
 import React, { useMemo } from 'react';
-import { BarChart3, Brain, Clock, Flame, Target, TrendingUp, Zap, AlertTriangle, CheckCircle, Info, Lightbulb, Star } from 'lucide-react';
+import {
+  BarChart3,
+  Brain,
+  Clock,
+  Flame,
+  Target,
+  TrendingUp,
+  Zap,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Lightbulb,
+  Star,
+} from 'lucide-react';
 import { LibraryAnalyticsService } from '../services/LibraryAnalyticsService';
 import './LibraryAnalyticsPanel.css';
 
@@ -15,7 +28,7 @@ const InsightCard = ({ insight }) => {
     warning: <AlertTriangle size={18} />,
     success: <CheckCircle size={18} />,
     tip: <Lightbulb size={18} />,
-    info: <Info size={18} />
+    info: <Info size={18} />,
   };
   const typeClass = `insight-${insight.type}`;
   return (
@@ -90,7 +103,9 @@ const LibraryAnalyticsPanel = ({ library = [] }) => {
       {/* Insights Feed */}
       {insights && insights.length > 0 && (
         <div className="analytics-section">
-          <h3><Zap size={16} /> Power Insights</h3>
+          <h3>
+            <Zap size={16} /> Power Insights
+          </h3>
           <div className="insights-grid">
             {insights.map((insight, i) => (
               <InsightCard key={i} insight={insight} />
@@ -102,7 +117,9 @@ const LibraryAnalyticsPanel = ({ library = [] }) => {
       {/* Diversity Score */}
       {diversity && (
         <div className="analytics-section">
-          <h3><TrendingUp size={16} /> Library Diversity</h3>
+          <h3>
+            <TrendingUp size={16} /> Library Diversity
+          </h3>
           <div className="diversity-card">
             <div className="diversity-score-ring">
               <span className="diversity-score-value">{diversity.score}</span>
@@ -137,7 +154,9 @@ const LibraryAnalyticsPanel = ({ library = [] }) => {
       {/* Play Patterns */}
       {playPatterns && (
         <div className="analytics-section">
-          <h3><Clock size={16} /> Play Patterns</h3>
+          <h3>
+            <Clock size={16} /> Play Patterns
+          </h3>
           <div className="pattern-grid">
             <div className="pattern-stat">
               <Flame size={18} />
@@ -167,20 +186,26 @@ const LibraryAnalyticsPanel = ({ library = [] }) => {
       {/* Backlog Optimizer */}
       {backlog && (
         <div className="analytics-section">
-          <h3><Target size={16} /> Backlog Optimizer</h3>
+          <h3>
+            <Target size={16} /> Backlog Optimizer
+          </h3>
           <div className="backlog-summary">
             <span>{backlog.totalBacklog} games</span>
             <span>~{Math.round(backlog.estimatedTotalHours)}h remaining</span>
           </div>
           {backlog.quickWins.length > 0 && (
             <div className="backlog-subsection">
-              <h4><Zap size={14} /> Quick Wins (near completion)</h4>
+              <h4>
+                <Zap size={14} /> Quick Wins (near completion)
+              </h4>
               <div className="backlog-list">
                 {backlog.quickWins.map(({ game, completionPct, remainingHours }) => (
                   <div key={game.name} className="backlog-item quick-win">
                     <span className="backlog-name">{game.name}</span>
                     <span className="backlog-pct">{completionPct}% done</span>
-                    <span className="backlog-remaining">{remainingHours !== null ? `~${Math.round(remainingHours)}h left` : ''}</span>
+                    <span className="backlog-remaining">
+                      {remainingHours !== null ? `~${Math.round(remainingHours)}h left` : ''}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -188,7 +213,9 @@ const LibraryAnalyticsPanel = ({ library = [] }) => {
           )}
           {backlog.topPicks.length > 0 && (
             <div className="backlog-subsection">
-              <h4><Star size={14} /> Top Optimized Picks</h4>
+              <h4>
+                <Star size={14} /> Top Optimized Picks
+              </h4>
               <div className="backlog-list">
                 {backlog.topPicks.map(({ game, score, completionPct }) => (
                   <div key={game.name} className="backlog-item">
@@ -206,7 +233,9 @@ const LibraryAnalyticsPanel = ({ library = [] }) => {
       {/* Genre/Mood Matrix */}
       {matrix && matrix.topGenre && (
         <div className="analytics-section">
-          <h3><Brain size={16} /> Genre Performance</h3>
+          <h3>
+            <Brain size={16} /> Genre Performance
+          </h3>
           <div className="genre-performance-grid">
             {matrix.bestCompletionGenre && (
               <div className="genre-card best">

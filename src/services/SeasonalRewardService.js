@@ -39,7 +39,7 @@ export const SEASONAL_CHALLENGES = {
     requirement: { genre: null, count: 3, isNew: true },
     reward: { type: 'theme', id: 'spring-bloom', name: 'Spring Bloom' },
     icon: '🌸',
-    accentColor: '#10b981'
+    accentColor: '#10b981',
   },
   easter: {
     id: 'easter',
@@ -50,7 +50,7 @@ export const SEASONAL_CHALLENGES = {
     requirement: { genre: ['Indie', 'Puzzle', 'Adventure'], count: 2 },
     reward: { type: 'xp', amount: 350, name: 'Egg Finder Badge' },
     icon: '🥚',
-    accentColor: '#f59e0b'
+    accentColor: '#f59e0b',
   },
   summer_heat: {
     id: 'summer_heat',
@@ -61,7 +61,7 @@ export const SEASONAL_CHALLENGES = {
     requirement: { genre: ['Action', 'Shooter', 'Racing', 'Sports'], count: 5 },
     reward: { type: 'theme', id: 'summer-heat', name: 'Summer Heat' },
     icon: '☀️',
-    accentColor: '#f97316'
+    accentColor: '#f97316',
   },
   halloween: {
     id: 'halloween',
@@ -72,7 +72,7 @@ export const SEASONAL_CHALLENGES = {
     requirement: { genre: ['Horror', 'Survival Horror', 'Thriller', 'Mystery'], count: 5 },
     reward: { type: 'theme', id: 'autumn-harvest', name: 'Autumn Harvest' },
     icon: '🎃',
-    accentColor: '#d97706'
+    accentColor: '#d97706',
   },
   winter_holiday: {
     id: 'winter_holiday',
@@ -83,8 +83,8 @@ export const SEASONAL_CHALLENGES = {
     requirement: { genre: null, count: 5 },
     reward: { type: 'theme', id: 'winter-frost', name: 'Winter Frost' },
     icon: '❄️',
-    accentColor: '#38bdf8'
-  }
+    accentColor: '#38bdf8',
+  },
 };
 
 const getStoredRewards = () => {
@@ -114,7 +114,7 @@ export const SeasonalRewardService = {
       spring: 'spring-bloom',
       summer: 'summer-heat',
       autumn: 'autumn-harvest',
-      winter: 'winter-frost'
+      winter: 'winter-frost',
     };
     return map[season] || 'dark';
   },
@@ -122,28 +122,24 @@ export const SeasonalRewardService = {
   getCurrentSeasonChallenge: () => {
     const month = new Date().getMonth();
     const challenges = Object.values(SEASONAL_CHALLENGES);
-    const active = challenges.filter(c =>
-      c.id === 'easter' ? isEasterActive() : c.months.includes(month)
-    );
+    const active = challenges.filter((c) => (c.id === 'easter' ? isEasterActive() : c.months.includes(month)));
     return active[0] || null;
   },
 
   getActiveChallenges: () => {
     const month = new Date().getMonth();
     const data = getStoredRewards();
-    
-    return Object.values(SEASONAL_CHALLENGES).map(challenge => {
-      const isActive = challenge.id === 'easter'
-        ? isEasterActive()
-        : challenge.months.includes(month);
+
+    return Object.values(SEASONAL_CHALLENGES).map((challenge) => {
+      const isActive = challenge.id === 'easter' ? isEasterActive() : challenge.months.includes(month);
       const progress = data[challenge.id] || { plays: 0, unlocked: false };
-      
+
       return {
         ...challenge,
         isActive,
         plays: progress.plays,
         unlocked: progress.unlocked,
-        progressPercent: Math.min(100, Math.round(((progress.plays || 0) / challenge.requirement.count) * 100))
+        progressPercent: Math.min(100, Math.round(((progress.plays || 0) / challenge.requirement.count) * 100)),
       };
     });
   },
@@ -151,13 +147,13 @@ export const SeasonalRewardService = {
   trackGamePlay: (game) => {
     const month = new Date().getMonth();
     const data = getStoredRewards();
-    const activeChallenges = Object.values(SEASONAL_CHALLENGES).filter(c =>
+    const activeChallenges = Object.values(SEASONAL_CHALLENGES).filter((c) =>
       c.id === 'easter' ? isEasterActive() : c.months.includes(month)
     );
-    
+
     let unlockedRewards = [];
 
-    activeChallenges.forEach(challenge => {
+    activeChallenges.forEach((challenge) => {
       if (data[challenge.id]?.unlocked) return;
 
       const genres = game.genres || [];
@@ -166,7 +162,7 @@ export const SeasonalRewardService = {
 
       if (req.genre) {
         if (Array.isArray(req.genre)) {
-          qualifies = req.genre.some(g => genres.includes(g));
+          qualifies = req.genre.some((g) => genres.includes(g));
         } else {
           qualifies = genres.includes(req.genre);
         }
@@ -213,7 +209,7 @@ export const SeasonalRewardService = {
       data[challengeId] = { plays: 0, unlocked: false };
       saveStoredRewards(data);
     }
-  }
+  },
 };
 
 export default SeasonalRewardService;

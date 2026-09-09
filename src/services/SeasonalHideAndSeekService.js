@@ -13,7 +13,7 @@ const HIDE_SEEK_EVENTS = {
     months: [2, 3], // March–April (dynamic via isEasterActive)
     totalItems: 5,
     xpReward: 500,
-    rewardName: 'Egg Hunter Master'
+    rewardName: 'Egg Hunter Master',
   },
   halloween: {
     id: 'halloween',
@@ -24,7 +24,7 @@ const HIDE_SEEK_EVENTS = {
     months: [9], // October
     totalItems: 5,
     xpReward: 500,
-    rewardName: 'Pumpkin King'
+    rewardName: 'Pumpkin King',
   },
   winter_holiday: {
     id: 'winter_holiday',
@@ -35,8 +35,8 @@ const HIDE_SEEK_EVENTS = {
     months: [11], // December
     totalItems: 5,
     xpReward: 500,
-    rewardName: 'Holiday Guardian'
-  }
+    rewardName: 'Holiday Guardian',
+  },
 };
 
 const getStored = () => {
@@ -54,9 +54,10 @@ const saveStored = (data) => {
 export const SeasonalHideAndSeekService = {
   getActiveEvent: () => {
     const month = new Date().getMonth();
-    return Object.values(HIDE_SEEK_EVENTS).find(e =>
-      e.id === 'easter' ? isEasterActive() : e.months.includes(month)
-    ) || null;
+    return (
+      Object.values(HIDE_SEEK_EVENTS).find((e) => (e.id === 'easter' ? isEasterActive() : e.months.includes(month))) ||
+      null
+    );
   },
 
   getProgress: (eventId) => {
@@ -72,7 +73,7 @@ export const SeasonalHideAndSeekService = {
         ...event,
         found: [],
         completed: false,
-        progressPercent: 0
+        progressPercent: 0,
       };
     }
 
@@ -80,7 +81,7 @@ export const SeasonalHideAndSeekService = {
       ...event,
       found: record.found || [],
       completed: record.completed || false,
-      progressPercent: Math.min(100, Math.round(((record.found || []).length / event.totalItems) * 100))
+      progressPercent: Math.min(100, Math.round(((record.found || []).length / event.totalItems) * 100)),
     };
   },
 
@@ -124,7 +125,7 @@ export const SeasonalHideAndSeekService = {
     }
   },
 
-  getAllEvents: () => Object.values(HIDE_SEEK_EVENTS)
+  getAllEvents: () => Object.values(HIDE_SEEK_EVENTS),
 };
 
 export default SeasonalHideAndSeekService;

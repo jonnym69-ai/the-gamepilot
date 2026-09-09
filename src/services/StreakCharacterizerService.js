@@ -38,7 +38,7 @@ const getRecentSessions = (days) => {
   const cutoffMs = cutoff.getTime();
 
   return history.filter((s) => {
-    const d = s.endTime ? new Date(s.endTime) : (s.startTime ? new Date(s.startTime) : null);
+    const d = s.endTime ? new Date(s.endTime) : s.startTime ? new Date(s.startTime) : null;
     return d && !Number.isNaN(d.getTime()) && d.getTime() >= cutoffMs;
   });
 };
@@ -69,7 +69,7 @@ const aggregateGames = (sessions) => {
 const getPeakHour = (sessions) => {
   const hours = {};
   sessions.forEach((s) => {
-    const d = s.endTime ? new Date(s.endTime) : (s.startTime ? new Date(s.startTime) : null);
+    const d = s.endTime ? new Date(s.endTime) : s.startTime ? new Date(s.startTime) : null;
     if (d && !Number.isNaN(d.getTime())) {
       const h = d.getHours();
       hours[h] = (hours[h] || 0) + 1;
@@ -84,7 +84,7 @@ const getPeakHour = (sessions) => {
 const isLateNightSessions = (sessions) => {
   let lateCount = 0;
   sessions.forEach((s) => {
-    const d = s.endTime ? new Date(s.endTime) : (s.startTime ? new Date(s.startTime) : null);
+    const d = s.endTime ? new Date(s.endTime) : s.startTime ? new Date(s.startTime) : null;
     if (d && !Number.isNaN(d.getTime())) {
       const h = d.getHours();
       if (h >= 0 && h <= 4) lateCount++;
@@ -96,7 +96,7 @@ const isLateNightSessions = (sessions) => {
 const isWeekendHeavy = (sessions) => {
   let weekendCount = 0;
   sessions.forEach((s) => {
-    const d = s.endTime ? new Date(s.endTime) : (s.startTime ? new Date(s.startTime) : null);
+    const d = s.endTime ? new Date(s.endTime) : s.startTime ? new Date(s.startTime) : null;
     if (d && !Number.isNaN(d.getTime())) {
       const day = d.getDay();
       if (day === 0 || day === 6) weekendCount++;
@@ -139,7 +139,7 @@ export const characterizeCurrentStreak = () => {
       days,
       type: 'generic',
       label: `${days}-day streak`,
-      roast: `${days} days straight. The games are starting to expect you.`
+      roast: `${days} days straight. The games are starting to expect you.`,
     };
   }
 
@@ -163,34 +163,38 @@ export const characterizeCurrentStreak = () => {
   if (lateNight && days >= 3) {
     type = 'late-night';
     label = `${days}-day late-night streak`;
-    roast = days >= 14
-      ? `${days} days, every session after midnight. Sleep filed a restraining order.`
-      : `${days} days, every session after midnight. Sleep is temporary. Gaming is forever.`;
+    roast =
+      days >= 14
+        ? `${days} days, every session after midnight. Sleep filed a restraining order.`
+        : `${days} days, every session after midnight. Sleep is temporary. Gaming is forever.`;
   }
   // Genre monopoly
   else if (topGenre && genreCounts[topGenre] >= sessions.length * 0.6) {
     type = 'genre-monopoly';
     const genreDisplay = topGenre.charAt(0).toUpperCase() + topGenre.slice(1);
     label = `${days}-day ${genreDisplay} streak`;
-    roast = days >= 14
-      ? `Nothing but ${genreDisplay} for ${days} days. ${genreDisplay} has consumed you.`
-      : `Nothing but ${genreDisplay} for ${days} days. Variety is overrated, apparently.`;
+    roast =
+      days >= 14
+        ? `Nothing but ${genreDisplay} for ${days} days. ${genreDisplay} has consumed you.`
+        : `Nothing but ${genreDisplay} for ${days} days. Variety is overrated, apparently.`;
   }
   // Single-game obsession
   else if (topGame && topGameSessions >= sessions.length * 0.7 && uniqueGames > 1) {
     type = 'single-game';
     label = `${days}-day ${topGame} streak`;
-    roast = days >= 14
-      ? `${days} days of ${topGame}. This is no longer gaming. This is a relationship.`
-      : `${days} days, mostly ${topGame}. The other games are taking it personally.`;
+    roast =
+      days >= 14
+        ? `${days} days of ${topGame}. This is no longer gaming. This is a relationship.`
+        : `${days} days, mostly ${topGame}. The other games are taking it personally.`;
   }
   // Variety streak
   else if (uniqueGames >= days * 0.7 && uniqueGames >= 5) {
     type = 'variety';
     label = `${days}-day variety streak`;
-    roast = days >= 14
-      ? `${days} days, ${uniqueGames} different games. Commitment issues confirmed.`
-      : `${days} days, ${uniqueGames} different games. You are dating your library.`;
+    roast =
+      days >= 14
+        ? `${days} days, ${uniqueGames} different games. Commitment issues confirmed.`
+        : `${days} days, ${uniqueGames} different games. You are dating your library.`;
   }
   // Weekend warrior
   else if (weekendHeavy && days >= 7) {
@@ -284,7 +288,7 @@ const StreakCharacterizerService = {
   characterizeCurrentStreak,
   checkStreakMilestone,
   getStoredStreakCharacterization,
-  updateStreakCharacterization
+  updateStreakCharacterization,
 };
 
 export default StreakCharacterizerService;

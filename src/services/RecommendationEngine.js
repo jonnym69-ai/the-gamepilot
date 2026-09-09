@@ -21,7 +21,10 @@ const CURRENT_FOCUS_CACHE_TTL_MS = 60 * 1000;
 let _currentFocusCache = null;
 let _currentFocusCacheAt = 0;
 
-const normalizeGameKey = (value) => String(value || '').trim().toLowerCase();
+const normalizeGameKey = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase();
 
 const getSessionDayKey = (session) => {
   const raw = session?.endTime || session?.timestamp || session?.startTime || session?.date;
@@ -34,20 +37,20 @@ const getSessionDayKey = (session) => {
 const PERFECT_PLAY_TIME_FILTERS = Object.freeze({
   quick: {
     availableMinutes: 30,
-    targetGenres: ['Puzzle', 'Indie', 'Platformer', 'Roguelike']
+    targetGenres: ['Puzzle', 'Indie', 'Platformer', 'Roguelike'],
   },
   medium: {
     availableMinutes: 120,
-    targetGenres: ['Adventure', 'Shooter', 'Fighting', 'Sports', 'Racing']
+    targetGenres: ['Adventure', 'Shooter', 'Fighting', 'Sports', 'Racing'],
   },
   long: {
     availableMinutes: 240,
-    targetGenres: ['RPG', 'Strategy', 'Management', 'Survival', 'Simulation', 'Horror']
+    targetGenres: ['RPG', 'Strategy', 'Management', 'Survival', 'Simulation', 'Horror'],
   },
   weekend: {
     availableMinutes: 480,
-    targetGenres: ['RPG', 'Strategy', 'Management', 'Survival', 'Adventure', 'Horror']
-  }
+    targetGenres: ['RPG', 'Strategy', 'Management', 'Survival', 'Adventure', 'Horror'],
+  },
 });
 
 const DEFAULT_RECENTLY_RECOMMENDED_TTL_MS = 60 * 60 * 1000;
@@ -55,9 +58,9 @@ const DEFAULT_RECENTLY_RECOMMENDED_TTL_MS = 60 * 60 * 1000;
 const REDISCOVER_MESSAGES = Object.freeze([
   "Haven't played these in a while!",
   "Don't forget about these games!",
-  "Time to revisit these classics!",
-  "These need some love again!",
-  "Remember these gems?"
+  'Time to revisit these classics!',
+  'These need some love again!',
+  'Remember these gems?',
 ]);
 
 const getLastPlayedTimestamp = (lastPlayedValue) => {
@@ -91,9 +94,9 @@ export class RecommendationEngine {
     const minDistinctDays = Number(options.minDistinctDays) > 0 ? Number(options.minDistinctDays) : 3;
     const now = Date.now();
     if (
-      _currentFocusCache
-      && now - _currentFocusCacheAt < CURRENT_FOCUS_CACHE_TTL_MS
-      && _currentFocusCache.windowDays === windowDays
+      _currentFocusCache &&
+      now - _currentFocusCacheAt < CURRENT_FOCUS_CACHE_TTL_MS &&
+      _currentFocusCache.windowDays === windowDays
     ) {
       return _currentFocusCache.value;
     }
@@ -120,7 +123,7 @@ export class RecommendationEngine {
           sessions: 0,
           days: new Set(),
           lastPlayed: 0,
-          genres: Array.isArray(session.metadata?.genres) ? session.metadata.genres : []
+          genres: Array.isArray(session.metadata?.genres) ? session.metadata.genres : [],
         };
         entry.minutes += minutes;
         entry.sessions += 1;
@@ -139,7 +142,7 @@ export class RecommendationEngine {
       .map((entry) => ({
         ...entry,
         distinctDays: entry.days.size,
-        days: undefined
+        days: undefined,
       }))
       .filter((entry) => entry.distinctDays >= minDistinctDays || (entry.sessions >= 4 && entry.minutes >= 90))
       .sort((a, b) => {
@@ -166,7 +169,7 @@ export class RecommendationEngine {
         .sort((a, b) => b[1] - a[1])
         .map(([genre]) => genre)
         .slice(0, 5),
-      active: focusGames.length > 0
+      active: focusGames.length > 0,
     };
 
     _currentFocusCache = { windowDays, value };
@@ -189,11 +192,11 @@ export class RecommendationEngine {
     const normalizedGenres = mapGameGenresToValid(game?.genres);
 
     // Check if profile has meaningful data
-    const hasProfileData = profile && (
-      (profile.moodPreferences && Object.keys(profile.moodPreferences).length > 0) ||
-      (profile.genrePreferences && Object.keys(profile.genrePreferences).length > 0) ||
-      (profile.playstylePatterns && profile.playstylePatterns.avgSessionLength > 0)
-    );
+    const hasProfileData =
+      profile &&
+      ((profile.moodPreferences && Object.keys(profile.moodPreferences).length > 0) ||
+        (profile.genrePreferences && Object.keys(profile.genrePreferences).length > 0) ||
+        (profile.playstylePatterns && profile.playstylePatterns.avgSessionLength > 0));
 
     // Mood completion rate bonus
     if (mood && hasProfileData) {
@@ -247,7 +250,10 @@ export class RecommendationEngine {
         score += Math.round(seedGenreBonus * seedMultiplier);
       }
 
-      if (Array.isArray(startupSeed.genres) && startupSeed.genres.some((seedGenre) => normalizedGenres.includes(seedGenre))) {
+      if (
+        Array.isArray(startupSeed.genres) &&
+        startupSeed.genres.some((seedGenre) => normalizedGenres.includes(seedGenre))
+      ) {
         const seedOverlapBonus = hasProfileData ? w.seedGenreOverlapWithProfile : w.seedGenreOverlapWithoutProfile;
         score += Math.round(seedOverlapBonus * seedMultiplier);
       }
@@ -292,9 +298,7 @@ export class RecommendationEngine {
     if (focusHit) {
       score += Math.min(22, 10 + focusHit.distinctDays * 3);
     } else if (focus.active && focus.genres.length > 0) {
-      const gameGenresForFocus = Array.isArray(game?.genres)
-        ? game.genres.map((g) => String(g))
-        : [];
+      const gameGenresForFocus = Array.isArray(game?.genres) ? game.genres.map((g) => String(g)) : [];
       const related = gameGenresForFocus.filter((g) =>
         focus.genres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
       );
@@ -329,7 +333,10 @@ export class RecommendationEngine {
             score += w.identityPlaystyleMatchBonus || 10;
           } else if (playStyle === 'Strategic' && estimatedSessionMinutes >= 60 && estimatedSessionMinutes <= 180) {
             score += w.identityPlaystyleMatchBonus || 10;
-          } else if (playStyle === 'Explorer' && gameGenres.some((g) => ['Adventure', 'RPG', 'Survival', 'Simulation'].includes(g))) {
+          } else if (
+            playStyle === 'Explorer' &&
+            gameGenres.some((g) => ['Adventure', 'RPG', 'Survival', 'Simulation'].includes(g))
+          ) {
             score += w.identityPlaystyleMatchBonus || 10;
           } else if (playStyle === 'Balanced') {
             score += Math.round((w.identityPlaystyleMatchBonus || 10) / 2);
@@ -352,7 +359,7 @@ export class RecommendationEngine {
             'Fighting Veteran': ['Fighting'],
             'MMO Devotee': ['MMO', 'RPG'],
             'Narrative Lover': ['Adventure', 'RPG', 'Visual Novel'],
-            'Completionist': ['RPG', 'Adventure', 'Platformer']
+            Completionist: ['RPG', 'Adventure', 'Platformer'],
           };
           const affinityGenres = archetypeGenreMap[id.archetype] || [];
           if (affinityGenres.some((ag) => gameGenres.includes(ag))) {
@@ -361,8 +368,15 @@ export class RecommendationEngine {
         }
 
         // Roast-persona affinity bonus (canonical map shared with Home / explainers)
-        const personaId = id.gamingPersona?.primaryPersona?.id
-          || (() => { try { return GamingPersonaService.getPrimaryPersona()?.id; } catch { return null; } })();
+        const personaId =
+          id.gamingPersona?.primaryPersona?.id ||
+          (() => {
+            try {
+              return GamingPersonaService.getPrimaryPersona()?.id;
+            } catch {
+              return null;
+            }
+          })();
         if (personaId) {
           const affinityGenres = PERSONA_GENRE_MAP[personaId] || GamingPersonaService.getAffinityGenres(personaId);
           const normalizedGameGenres = gameGenres.map((g) => String(g).toLowerCase());
@@ -392,9 +406,8 @@ export class RecommendationEngine {
     // Recently played penalty - avoid repetition
     if (game.last_played) {
       const lastPlayedTimestamp = getLastPlayedTimestamp(game.last_played);
-      const daysSincePlay = lastPlayedTimestamp > 0
-        ? (Date.now() - lastPlayedTimestamp) / (1000 * 60 * 60 * 24)
-        : Infinity;
+      const daysSincePlay =
+        lastPlayedTimestamp > 0 ? (Date.now() - lastPlayedTimestamp) / (1000 * 60 * 60 * 24) : Infinity;
       if (daysSincePlay < 7) {
         score -= w.recentlyPlayedWeekPenalty;
       } else if (daysSincePlay < 14) {
@@ -473,7 +486,9 @@ export class RecommendationEngine {
           score += Math.min(15, sigOverlap * 6);
         }
       }
-    } catch { /* signature games optional */ }
+    } catch {
+      /* signature games optional */
+    }
 
     // Familiarity bias — adjusts score based on whether the user wants
     // familiar (comfort zone) or fresh (new territory) picks.
@@ -501,7 +516,7 @@ export class RecommendationEngine {
       return {
         key: null,
         availableMinutes: timeConstraint,
-        targetGenres: []
+        targetGenres: [],
       };
     }
 
@@ -517,22 +532,22 @@ export class RecommendationEngine {
     return {
       key: timeConstraint,
       availableMinutes: preset.availableMinutes,
-      targetGenres: Array.isArray(preset.targetGenres) ? preset.targetGenres : []
+      targetGenres: Array.isArray(preset.targetGenres) ? preset.targetGenres : [],
     };
   }
 
   static getPrimaryGenre(game, preferredGenres = []) {
-    const gameGenres = Array.isArray(game?.genres)
-      ? game.genres.filter((genre) => genre && genre !== 'Unknown')
-      : [];
+    const gameGenres = Array.isArray(game?.genres) ? game.genres.filter((genre) => genre && genre !== 'Unknown') : [];
 
     return preferredGenres.find((genre) => gameGenres.includes(genre)) || gameGenres[0] || null;
   }
 
   static getAvailableMinutes(timeConstraint) {
     const normalizedTimeConstraint = this.normalizeTimeConstraint(timeConstraint);
-    return normalizedTimeConstraint?.availableMinutes
-      || (typeof timeConstraint === 'number' && timeConstraint > 0 ? timeConstraint : null);
+    return (
+      normalizedTimeConstraint?.availableMinutes ||
+      (typeof timeConstraint === 'number' && timeConstraint > 0 ? timeConstraint : null)
+    );
   }
 
   static normalizeSelectionList(values = [], validator = () => true) {
@@ -555,7 +570,7 @@ export class RecommendationEngine {
   static normalizePerfectPlaySelections(selectedMoods = [], selectedGenres = []) {
     return {
       validMoods: this.normalizeSelectionList(selectedMoods, (mood) => GenreMoodMapper.isValidMood(mood)),
-      validGenres: this.normalizeSelectionList(selectedGenres, (genre) => GenreMoodMapper.isValidGenre(genre))
+      validGenres: this.normalizeSelectionList(selectedGenres, (genre) => GenreMoodMapper.isValidGenre(genre)),
     };
   }
 
@@ -578,14 +593,13 @@ export class RecommendationEngine {
   }
 
   static getPlayedGames(library = []) {
-    return Array.isArray(library)
-      ? library.filter((game) => !isGameUnplayed(game))
-      : [];
+    return Array.isArray(library) ? library.filter((game) => !isGameUnplayed(game)) : [];
   }
 
   static getFallbackRediscoverGames(library, count = 3) {
     const previouslyPlayedGames = this.getPlayedGames(library);
-    const candidatePool = previouslyPlayedGames.length > 0 ? previouslyPlayedGames : (Array.isArray(library) ? library : []);
+    const candidatePool =
+      previouslyPlayedGames.length > 0 ? previouslyPlayedGames : Array.isArray(library) ? library : [];
 
     return [...candidatePool]
       .sort((left, right) => {
@@ -601,7 +615,14 @@ export class RecommendationEngine {
       .slice(0, count);
   }
 
-  static buildRecommendationEntry(game, recommendationType, mood = null, genre = null, availableMinutes = null, metadata = {}) {
+  static buildRecommendationEntry(
+    game,
+    recommendationType,
+    mood = null,
+    genre = null,
+    availableMinutes = null,
+    metadata = {}
+  ) {
     if (!game) {
       return null;
     }
@@ -625,10 +646,11 @@ export class RecommendationEngine {
       genre: resolvedGenre,
       estimatedSessionMinutes: PersonaPerformanceInsights.estimateSessionMinutes(game) || null,
       isExploration,
-      explanation: outcomeSignal.reason && outcomeSignal.adjustment > 0
-        ? [baseExplanation, `${outcomeSignal.reason}.`].filter(Boolean).join(' ')
-        : baseExplanation,
-      meta: { ...metadata, learnedReason: outcomeSignal.reason }
+      explanation:
+        outcomeSignal.reason && outcomeSignal.adjustment > 0
+          ? [baseExplanation, `${outcomeSignal.reason}.`].filter(Boolean).join(' ')
+          : baseExplanation,
+      meta: { ...metadata, learnedReason: outcomeSignal.reason },
     };
   }
 
@@ -644,9 +666,7 @@ export class RecommendationEngine {
     } = options;
     const entries = this.dedupeGames(games)
       .map((game) => {
-        const entryContext = typeof entryContextResolver === 'function'
-          ? entryContextResolver(game) || {}
-          : {};
+        const entryContext = typeof entryContextResolver === 'function' ? entryContextResolver(game) || {} : {};
 
         return this.buildRecommendationEntry(
           game,
@@ -658,9 +678,7 @@ export class RecommendationEngine {
         );
       })
       .filter(Boolean);
-    const recommendedGameIds = entries
-      .map((entry) => entry?.game?.appid || entry?.game?.name)
-      .filter(Boolean);
+    const recommendedGameIds = entries.map((entry) => entry?.game?.appid || entry?.game?.name).filter(Boolean);
 
     return {
       recommendationType,
@@ -675,19 +693,16 @@ export class RecommendationEngine {
         genre: genre || null,
         timeAvailable: availableMinutes || null,
         rawTimeAvailable: timeConstraint ?? availableMinutes ?? null,
-        recommendedGameIds
+        recommendedGameIds,
       },
-      ...metadata
+      ...metadata,
     };
   }
 
   static getRecentRecommendationState() {
     const now = Date.now();
     const tuning = RecommendationTuningService.getTuning();
-    const fatigueWindowMs = Math.max(
-      0,
-      (Number(tuning.fatigueWindowHours) || 1) * 60 * 60 * 1000
-    );
+    const fatigueWindowMs = Math.max(0, (Number(tuning.fatigueWindowHours) || 1) * 60 * 60 * 1000);
     const ttlMs = fatigueWindowMs > 0 ? fatigueWindowMs : DEFAULT_RECENTLY_RECOMMENDED_TTL_MS;
 
     if (typeof localStorage === 'undefined') {
@@ -713,7 +728,7 @@ export class RecommendationEngine {
     try {
       const newRecent = games.map((game) => ({
         name: game.name,
-        timestamp: now
+        timestamp: now,
       }));
       StorageService.set('recentlyRecommended', [...validRecent, ...newRecent]);
     } catch (error) {
@@ -753,7 +768,7 @@ export class RecommendationEngine {
         return {
           ...game,
           estimated_session_minutes: estimatedSessionMinutes || game?.estimated_session_minutes || null,
-          timeScore
+          timeScore,
         };
       })
       .filter((game) => game.timeScore >= minimumScore)
@@ -771,15 +786,13 @@ export class RecommendationEngine {
         if (validRecent.some((entry) => entry.name === game.name)) {
           score -= 40;
         }
-        score += (Math.random() * 10) - 5;
+        score += Math.random() * 10 - 5;
         return { ...game, score };
       })
       .sort((left, right) => right.score - left.score);
 
     const topGames = scoredGames.slice(0, 3);
-    return topGames.length > 0
-      ? topGames[Math.floor(Math.random() * topGames.length)]
-      : null;
+    return topGames.length > 0 ? topGames[Math.floor(Math.random() * topGames.length)] : null;
   }
 
   static finalizeRecommendations(library, recommendations, count, validRecent, mood, selectedGenre, availableMinutes) {
@@ -813,7 +826,12 @@ export class RecommendationEngine {
       const remainingGames = library
         .filter((game) => !seenGames.has(game.name))
         .map((game) => {
-          let score = this.scoreGameByBehavior(game, mood, fallbackGenre || this.getPrimaryGenre(game), availableMinutes);
+          let score = this.scoreGameByBehavior(
+            game,
+            mood,
+            fallbackGenre || this.getPrimaryGenre(game),
+            availableMinutes
+          );
           if (validRecent.some((entry) => entry.name === game.name)) {
             score -= 20;
           }
@@ -930,80 +948,97 @@ export class RecommendationEngine {
 
     const { now, validRecent } = this.getRecentRecommendationState();
     const normalizedTimeConstraint = this.normalizeTimeConstraint(timeConstraint);
-    const availableMinutes = normalizedTimeConstraint?.availableMinutes
-      || (typeof timeConstraint === 'number' && timeConstraint > 0 ? timeConstraint : null);
-    const moodGenres = mood && GenreMoodMapper.isValidMood(mood)
-      ? GenreMoodMapper.getGenresForMood(mood)
-      : [];
+    const availableMinutes =
+      normalizedTimeConstraint?.availableMinutes ||
+      (typeof timeConstraint === 'number' && timeConstraint > 0 ? timeConstraint : null);
+    const moodGenres = mood && GenreMoodMapper.isValidMood(mood) ? GenreMoodMapper.getGenresForMood(mood) : [];
     const targetGenres = selectedGenre ? [selectedGenre] : moodGenres;
     const recommendations = [];
 
     if (mood && GenreMoodMapper.isValidMood(mood)) {
-      const moodGames = GenreMoodMapper.getGamesForMood(library, mood)
-        .filter((game) => {
-          if (!selectedGenre) {
-            return true;
-          }
+      const moodGames = GenreMoodMapper.getGamesForMood(library, mood).filter((game) => {
+        if (!selectedGenre) {
+          return true;
+        }
 
-          const normalizedGenres = mapGameGenresToValid(game?.genres);
-          return normalizedGenres.includes(selectedGenre);
-        });
-      recommendations.push(this.pickBucketRecommendation(
-        moodGames,
-        (game) => {
-          const normalizedGenres = mapGameGenresToValid(game?.genres);
-          let score = this.scoreGameByBehavior(game, mood, this.getPrimaryGenre(game, selectedGenre ? [selectedGenre] : moodGenres), availableMinutes);
-          if (Number(getMoodScoresForGame(game?.genres)?.[mood] || 0) > 0) {
-            score += 18;
-          }
-          if (selectedGenre && normalizedGenres.includes(selectedGenre)) {
-            score += 24;
-          }
-          return score;
-        },
-        validRecent
-      ));
+        const normalizedGenres = mapGameGenresToValid(game?.genres);
+        return normalizedGenres.includes(selectedGenre);
+      });
+      recommendations.push(
+        this.pickBucketRecommendation(
+          moodGames,
+          (game) => {
+            const normalizedGenres = mapGameGenresToValid(game?.genres);
+            let score = this.scoreGameByBehavior(
+              game,
+              mood,
+              this.getPrimaryGenre(game, selectedGenre ? [selectedGenre] : moodGenres),
+              availableMinutes
+            );
+            if (Number(getMoodScoresForGame(game?.genres)?.[mood] || 0) > 0) {
+              score += 18;
+            }
+            if (selectedGenre && normalizedGenres.includes(selectedGenre)) {
+              score += 24;
+            }
+            return score;
+          },
+          validRecent
+        )
+      );
     }
 
     if (targetGenres.length > 0) {
-      const genreGames = library.filter((game) => (
+      const genreGames = library.filter((game) =>
         mapGameGenresToValid(game?.genres).some((genre) => targetGenres.includes(genre))
-      ));
-      recommendations.push(this.pickBucketRecommendation(
-        genreGames,
-        (game) => {
-          const normalizedGenres = mapGameGenresToValid(game?.genres);
-          let score = this.scoreGameByBehavior(game, mood, this.getPrimaryGenre(game, targetGenres) || selectedGenre, availableMinutes);
-          if (mood && Number(getMoodScoresForGame(game?.genres)?.[mood] || 0) > 0) {
-            score += selectedGenre ? 24 : 16;
-          }
-          if (selectedGenre && normalizedGenres.includes(selectedGenre)) {
-            score += 28;
-          }
-          return score;
-        },
-        validRecent
-      ));
+      );
+      recommendations.push(
+        this.pickBucketRecommendation(
+          genreGames,
+          (game) => {
+            const normalizedGenres = mapGameGenresToValid(game?.genres);
+            let score = this.scoreGameByBehavior(
+              game,
+              mood,
+              this.getPrimaryGenre(game, targetGenres) || selectedGenre,
+              availableMinutes
+            );
+            if (mood && Number(getMoodScoresForGame(game?.genres)?.[mood] || 0) > 0) {
+              score += selectedGenre ? 24 : 16;
+            }
+            if (selectedGenre && normalizedGenres.includes(selectedGenre)) {
+              score += 28;
+            }
+            return score;
+          },
+          validRecent
+        )
+      );
     }
 
     if (normalizedTimeConstraint) {
       const timeGames = this.getTimeRecommendationCandidates(library, normalizedTimeConstraint);
-      recommendations.push(this.pickBucketRecommendation(
-        timeGames,
-        (game) => {
-          let score = this.scoreGameByBehavior(
-            game,
-            mood,
-            this.getPrimaryGenre(game, targetGenres.length > 0 ? targetGenres : normalizedTimeConstraint.targetGenres),
-            normalizedTimeConstraint.availableMinutes
-          );
-          if (mood && game.mood === mood) {
-            score += 15;
-          }
-          return score + Number(game.timeScore || 0);
-        },
-        validRecent
-      ));
+      recommendations.push(
+        this.pickBucketRecommendation(
+          timeGames,
+          (game) => {
+            let score = this.scoreGameByBehavior(
+              game,
+              mood,
+              this.getPrimaryGenre(
+                game,
+                targetGenres.length > 0 ? targetGenres : normalizedTimeConstraint.targetGenres
+              ),
+              normalizedTimeConstraint.availableMinutes
+            );
+            if (mood && game.mood === mood) {
+              score += 15;
+            }
+            return score + Number(game.timeScore || 0);
+          },
+          validRecent
+        )
+      );
     }
 
     let finalRecommendations = this.finalizeRecommendations(
@@ -1035,7 +1070,7 @@ export class RecommendationEngine {
       mood,
       genre: selectedGenre,
       timeConstraint,
-      availableMinutes
+      availableMinutes,
     });
   }
 
@@ -1064,9 +1099,11 @@ export class RecommendationEngine {
 
         const moodScores = getMoodScoresForGame(game?.genres);
 
-        const matchedMoods = validMoods.filter((mood) => (
-          Number(moodScores?.[mood] || 0) > 0 || (moodGenreLookup[mood] || []).some((genre) => normalizedGenres.includes(genre))
-        ));
+        const matchedMoods = validMoods.filter(
+          (mood) =>
+            Number(moodScores?.[mood] || 0) > 0 ||
+            (moodGenreLookup[mood] || []).some((genre) => normalizedGenres.includes(genre))
+        );
         const matchedGenres = validGenres.filter((genre) => normalizedGenres.includes(genre));
 
         if (validMoods.length > 0 && matchedMoods.length === 0) {
@@ -1082,19 +1119,20 @@ export class RecommendationEngine {
           return null;
         }
 
-        const preferredGenres = matchedGenres.length > 0
-          ? matchedGenres
-          : matchedMoods.flatMap((mood) => moodGenreLookup[mood] || []);
+        const preferredGenres =
+          matchedGenres.length > 0 ? matchedGenres : matchedMoods.flatMap((mood) => moodGenreLookup[mood] || []);
         const effectiveMood = matchedMoods[0] || game?.mood || null;
-        const effectiveGenre = this.getPrimaryGenre(game, preferredGenres)
-          || matchedGenres[0]
-          || validGenres[0]
-          || this.getPrimaryGenre(game);
+        const effectiveGenre =
+          this.getPrimaryGenre(game, preferredGenres) ||
+          matchedGenres[0] ||
+          validGenres[0] ||
+          this.getPrimaryGenre(game);
         const behaviorScore = this.scoreGameByBehavior(game, effectiveMood, effectiveGenre, availableMinutes);
         const intersectionBonus = matchedMoods.length > 0 && matchedGenres.length > 0 ? 24 : 0;
-        const matchScore = (matchedMoods.length * 14) + (matchedGenres.length * 18) + intersectionBonus;
+        const matchScore = matchedMoods.length * 14 + matchedGenres.length * 18 + intersectionBonus;
         const exactMoodBonus = effectiveMood && game?.mood === effectiveMood ? 8 : 0;
-        const timeFitBonus = availableMinutes && estimatedSessionMinutes && estimatedSessionMinutes <= availableMinutes ? 6 : 0;
+        const timeFitBonus =
+          availableMinutes && estimatedSessionMinutes && estimatedSessionMinutes <= availableMinutes ? 6 : 0;
 
         return {
           game,
@@ -1103,7 +1141,7 @@ export class RecommendationEngine {
           matchedGenres,
           effectiveMood,
           effectiveGenre,
-          estimatedSessionMinutes
+          estimatedSessionMinutes,
         };
       })
       .filter(Boolean)
@@ -1130,7 +1168,13 @@ export class RecommendationEngine {
       });
   }
 
-  static getPerfectPlaySelectionResult(library, selectedMoods = [], selectedGenres = [], timeConstraint = null, count = 10) {
+  static getPerfectPlaySelectionResult(
+    library,
+    selectedMoods = [],
+    selectedGenres = [],
+    timeConstraint = null,
+    count = 10
+  ) {
     const availableMinutes = this.getAvailableMinutes(timeConstraint);
     const { validMoods, validGenres } = this.normalizePerfectPlaySelections(selectedMoods, selectedGenres);
     const rankedMatches = this.getPerfectPlaySelectionMatches(library, validMoods, validGenres, timeConstraint);
@@ -1139,28 +1183,32 @@ export class RecommendationEngine {
       topMatches.map((entry) => [String(entry.game?.appid || entry.game?.name || ''), entry])
     );
 
-    return this.buildRecommendationPayload('perfect-play', topMatches.map((entry) => entry.game), {
-      mood: validMoods[0] || null,
-      genre: validGenres[0] || null,
-      timeConstraint,
-      availableMinutes,
-      selectedMoods: validMoods,
-      selectedGenres: validGenres,
-      totalMatches: rankedMatches.length,
-      entryContextResolver: (game) => {
-        const match = matchLookup.get(String(game?.appid || game?.name || ''));
+    return this.buildRecommendationPayload(
+      'perfect-play',
+      topMatches.map((entry) => entry.game),
+      {
+        mood: validMoods[0] || null,
+        genre: validGenres[0] || null,
+        timeConstraint,
+        availableMinutes,
+        selectedMoods: validMoods,
+        selectedGenres: validGenres,
+        totalMatches: rankedMatches.length,
+        entryContextResolver: (game) => {
+          const match = matchLookup.get(String(game?.appid || game?.name || ''));
 
-        return {
-          mood: match?.effectiveMood || validMoods[0] || game?.mood || null,
-          genre: match?.effectiveGenre || this.getPrimaryGenre(game, validGenres),
-          metadata: {
-            score: match?.score || 0,
-            matchedMoods: match?.matchedMoods || [],
-            matchedGenres: match?.matchedGenres || []
-          }
-        };
+          return {
+            mood: match?.effectiveMood || validMoods[0] || game?.mood || null,
+            genre: match?.effectiveGenre || this.getPrimaryGenre(game, validGenres),
+            metadata: {
+              score: match?.score || 0,
+              matchedMoods: match?.matchedMoods || [],
+              matchedGenres: match?.matchedGenres || [],
+            },
+          };
+        },
       }
-    });
+    );
   }
 
   static getSurpriseMeResult(library, mood = null, timeConstraint = null) {
@@ -1169,9 +1217,7 @@ export class RecommendationEngine {
     }
 
     const availableMinutes = this.getAvailableMinutes(timeConstraint);
-    const effectiveMood = mood && GenreMoodMapper.isValidMood(mood)
-      ? mood
-      : this.getMoodWithMostGames(library);
+    const effectiveMood = mood && GenreMoodMapper.isValidMood(mood) ? mood : this.getMoodWithMostGames(library);
     const recommendedGame = effectiveMood
       ? this.getSurpriseMeRecommendation(library, effectiveMood, availableMinutes)
       : null;
@@ -1186,7 +1232,7 @@ export class RecommendationEngine {
       genre: this.getPrimaryGenre(selectedGame),
       timeConstraint,
       availableMinutes,
-      usedFallback: !recommendedGame
+      usedFallback: !recommendedGame,
     });
   }
 
@@ -1196,21 +1242,14 @@ export class RecommendationEngine {
     }
 
     const availableMinutes = this.getAvailableMinutes(timeConstraint);
-    const effectiveMood = mood && GenreMoodMapper.isValidMood(mood)
-      ? mood
-      : this.getMoodWithMostGames(library);
+    const effectiveMood = mood && GenreMoodMapper.isValidMood(mood) ? mood : this.getMoodWithMostGames(library);
     const engineRediscoverGames = effectiveMood
-      ? this.dedupeGames(this.getRecommendations(
-        library,
-        effectiveMood,
-        'rediscover',
-        availableMinutes,
-        count
-      ))
+      ? this.dedupeGames(this.getRecommendations(library, effectiveMood, 'rediscover', availableMinutes, count))
       : [];
-    const rediscoverGames = engineRediscoverGames.length > 0
-      ? engineRediscoverGames.slice(0, count)
-      : this.getFallbackRediscoverGames(library, count);
+    const rediscoverGames =
+      engineRediscoverGames.length > 0
+        ? engineRediscoverGames.slice(0, count)
+        : this.getFallbackRediscoverGames(library, count);
 
     if (rediscoverGames.length === 0) {
       return null;
@@ -1223,7 +1262,7 @@ export class RecommendationEngine {
       usedFallback: engineRediscoverGames.length === 0,
       message: effectiveMood
         ? `A few ${effectiveMood.toLowerCase()} picks from your library that deserve another run.`
-        : REDISCOVER_MESSAGES[Math.floor(Math.random() * REDISCOVER_MESSAGES.length)]
+        : REDISCOVER_MESSAGES[Math.floor(Math.random() * REDISCOVER_MESSAGES.length)],
     });
   }
 
@@ -1243,19 +1282,22 @@ export class RecommendationEngine {
     }
 
     const profile = identity || GamingIdentity.getProfile();
-    const favoriteGenre = profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
-      ? profile.identity.favoriteGenre
-      : null;
-    const favoriteMood = profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
-      ? profile.identity.favoriteMood
-      : null;
+    const favoriteGenre =
+      profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
+        ? profile.identity.favoriteGenre
+        : null;
+    const favoriteMood =
+      profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
+        ? profile.identity.favoriteMood
+        : null;
     const archetype = profile?.identity?.archetype || profile?.archetype?.name || null;
     const tasteClusters = Array.isArray(profile?.tasteClusters) ? profile.tasteClusters : [];
 
     // Build a set of game names that belong to the user's taste clusters so we
     // can boost games from those emergent taste groups.
     const clusterGameNames = new Set(
-      tasteClusters.flatMap((cluster) => (Array.isArray(cluster?.gameNames) ? cluster.gameNames : []))
+      tasteClusters
+        .flatMap((cluster) => (Array.isArray(cluster?.gameNames) ? cluster.gameNames : []))
         .map((name) => String(name || '').toLowerCase())
     );
 
@@ -1280,10 +1322,11 @@ export class RecommendationEngine {
         const gameNameLower = String(game?.name || '').toLowerCase();
         if (clusterGameNames.has(gameNameLower)) {
           score += 26;
-          const owningCluster = tasteClusters.find((cluster) => (
-            Array.isArray(cluster?.gameNames)
-            && cluster.gameNames.some((name) => String(name || '').toLowerCase() === gameNameLower)
-          ));
+          const owningCluster = tasteClusters.find(
+            (cluster) =>
+              Array.isArray(cluster?.gameNames) &&
+              cluster.gameNames.some((name) => String(name || '').toLowerCase() === gameNameLower)
+          );
           if (owningCluster?.label) {
             reasons.push(`Part of your **${owningCluster.label}** taste`);
           }
@@ -1299,30 +1342,34 @@ export class RecommendationEngine {
       return null;
     }
 
-    const reasonByName = new Map(
-      scored.map((entry) => [String(entry.game?.name || '').toLowerCase(), entry.reasons])
-    );
+    const reasonByName = new Map(scored.map((entry) => [String(entry.game?.name || '').toLowerCase(), entry.reasons]));
 
     const identityDescriptor = archetype
       ? `your **${archetype}** identity`
-      : (favoriteGenre ? `your love of **${favoriteGenre}**` : 'your gaming identity');
+      : favoriteGenre
+        ? `your love of **${favoriteGenre}**`
+        : 'your gaming identity';
 
-    return this.buildRecommendationPayload('identity-picks', scored.map((entry) => entry.game), {
-      mood: favoriteMood || null,
-      genre: favoriteGenre || null,
-      message: `Picked for ${identityDescriptor}.`,
-      entryContextResolver: (game) => {
-        const identityReasons = reasonByName.get(String(game?.name || '').toLowerCase()) || [];
-        return {
-          metadata: {
-            identityReasons,
-            favoriteGenre,
-            favoriteMood,
-            archetype
-          }
-        };
+    return this.buildRecommendationPayload(
+      'identity-picks',
+      scored.map((entry) => entry.game),
+      {
+        mood: favoriteMood || null,
+        genre: favoriteGenre || null,
+        message: `Picked for ${identityDescriptor}.`,
+        entryContextResolver: (game) => {
+          const identityReasons = reasonByName.get(String(game?.name || '').toLowerCase()) || [];
+          return {
+            metadata: {
+              identityReasons,
+              favoriteGenre,
+              favoriteMood,
+              archetype,
+            },
+          };
+        },
       }
-    });
+    );
   }
 
   /**
@@ -1341,15 +1388,18 @@ export class RecommendationEngine {
     }
 
     const profile = identity || GamingIdentity.getProfile();
-    const favoriteGenre = profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
-      ? profile.identity.favoriteGenre
-      : null;
-    const favoriteMood = profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
-      ? profile.identity.favoriteMood
-      : null;
+    const favoriteGenre =
+      profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
+        ? profile.identity.favoriteGenre
+        : null;
+    const favoriteMood =
+      profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
+        ? profile.identity.favoriteMood
+        : null;
     const tasteClusters = Array.isArray(profile?.tasteClusters) ? profile.tasteClusters : [];
     const clusterGameNames = new Set(
-      tasteClusters.flatMap((cluster) => (Array.isArray(cluster?.gameNames) ? cluster.gameNames : []))
+      tasteClusters
+        .flatMap((cluster) => (Array.isArray(cluster?.gameNames) ? cluster.gameNames : []))
         .map((name) => String(name || '').toLowerCase())
     );
 
@@ -1374,10 +1424,11 @@ export class RecommendationEngine {
         const itemNameLower = String(item?.name || '').toLowerCase();
         if (clusterGameNames.has(itemNameLower)) {
           score += 24;
-          const owningCluster = tasteClusters.find((cluster) => (
-            Array.isArray(cluster?.gameNames)
-            && cluster.gameNames.some((name) => String(name || '').toLowerCase() === itemNameLower)
-          ));
+          const owningCluster = tasteClusters.find(
+            (cluster) =>
+              Array.isArray(cluster?.gameNames) &&
+              cluster.gameNames.some((name) => String(name || '').toLowerCase() === itemNameLower)
+          );
           if (owningCluster?.label) {
             reasons.push(`Part of your **${owningCluster.label}** taste`);
           }
@@ -1409,9 +1460,7 @@ export class RecommendationEngine {
       return null;
     }
 
-    const identityDescriptor = favoriteGenre
-      ? `your love of **${favoriteGenre}**`
-      : 'your gaming identity';
+    const identityDescriptor = favoriteGenre ? `your love of **${favoriteGenre}**` : 'your gaming identity';
 
     return {
       recommendationType: 'wishlist-identity',
@@ -1420,8 +1469,8 @@ export class RecommendationEngine {
         ...entry.item,
         identityReasons: entry.reasons,
         identityScore: entry.score,
-        priceStatus: entry.priceStatus
-      }))
+        priceStatus: entry.priceStatus,
+      })),
     };
   }
 
@@ -1450,8 +1499,9 @@ export class RecommendationEngine {
 
     const { now, validRecent } = this.getRecentRecommendationState();
     const normalizedTimeConstraint = this.normalizeTimeConstraint(timeConstraint);
-    const availableMinutes = normalizedTimeConstraint?.availableMinutes
-      || (typeof timeConstraint === 'number' && timeConstraint > 0 ? timeConstraint : null);
+    const availableMinutes =
+      normalizedTimeConstraint?.availableMinutes ||
+      (typeof timeConstraint === 'number' && timeConstraint > 0 ? timeConstraint : null);
 
     const unplayedGames = library.filter((game) => isGameUnplayed(game));
 
@@ -1466,7 +1516,9 @@ export class RecommendationEngine {
     try {
       const sigGames = GamingIdentity.getSignatureGames(3);
       sigGenres = new Set(sigGames.flatMap((s) => s.genres || []));
-    } catch { /* optional */ }
+    } catch {
+      /* optional */
+    }
 
     let profile = null;
     let favoriteGenre = null;
@@ -1474,20 +1526,29 @@ export class RecommendationEngine {
     let personaId = null;
     try {
       profile = GamingIdentity.getProfile();
-      favoriteGenre = profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
-        ? profile.identity.favoriteGenre : null;
-      favoriteMood = profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
-        ? profile.identity.favoriteMood : null;
+      favoriteGenre =
+        profile?.identity?.favoriteGenre && profile.identity.favoriteGenre !== 'None'
+          ? profile.identity.favoriteGenre
+          : null;
+      favoriteMood =
+        profile?.identity?.favoriteMood && profile.identity.favoriteMood !== 'None'
+          ? profile.identity.favoriteMood
+          : null;
       personaId = profile?.identity?.gamingPersona?.primaryPersona?.id || null;
-    } catch { /* optional */ }
+    } catch {
+      /* optional */
+    }
 
     const scored = unplayedGames
       .map((game) => {
         if (!game) return null;
         const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
         const normalizedGenres = mapGameGenresToValid(gameGenres);
-        const effectiveMood = mood || (favoriteMood && Number(getMoodScoresForGame(gameGenres)?.[favoriteMood] || 0) > 0 ? favoriteMood : null);
-        const effectiveGenre = this.getPrimaryGenre(game, favoriteGenre ? [favoriteGenre] : []) || normalizedGenres[0] || null;
+        const effectiveMood =
+          mood ||
+          (favoriteMood && Number(getMoodScoresForGame(gameGenres)?.[favoriteMood] || 0) > 0 ? favoriteMood : null);
+        const effectiveGenre =
+          this.getPrimaryGenre(game, favoriteGenre ? [favoriteGenre] : []) || normalizedGenres[0] || null;
 
         let score = this.scoreGameByBehavior(game, effectiveMood, effectiveGenre, availableMinutes);
 
@@ -1555,7 +1616,7 @@ export class RecommendationEngine {
         }
 
         // Small randomization for variety
-        score += (Math.random() * 8) - 4;
+        score += Math.random() * 8 - 4;
 
         const reasons = [];
         if (favoriteGenre && normalizedGenres.includes(favoriteGenre)) {
@@ -1564,9 +1625,10 @@ export class RecommendationEngine {
         if (sigGenres.size > 0 && normalizedGenres.some((g) => sigGenres.has(g))) {
           reasons.push('Shares genres with your most-played games');
         }
-        if (focusGenres.length > 0 && normalizedGenres.some((g) =>
-          focusGenres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
-        )) {
+        if (
+          focusGenres.length > 0 &&
+          normalizedGenres.some((g) => focusGenres.some((fg) => fg.toLowerCase() === String(g).toLowerCase()))
+        ) {
           reasons.push("Adjacent to what you're playing right now");
         }
         if (shelfDays > 90) {
@@ -1589,9 +1651,7 @@ export class RecommendationEngine {
     }
 
     const topPicks = scored.slice(0, count);
-    const matchLookup = new Map(
-      topPicks.map((entry) => [String(entry.game?.appid || entry.game?.name || ''), entry])
-    );
+    const matchLookup = new Map(topPicks.map((entry) => [String(entry.game?.appid || entry.game?.name || ''), entry]));
 
     const totalUnplayed = unplayedGames.length;
     const totalLibrary = library.length;
@@ -1600,39 +1660,51 @@ export class RecommendationEngine {
     const messages = [];
     if (totalUnplayed > 0) {
       const backlogNote = backlogPercentage > 50 ? ` — that's ${backlogPercentage}% of your backlog!` : '.';
-      messages.push(`You have ${totalUnplayed} unplayed game${totalUnplayed !== 1 ? 's' : ''} in your library${backlogNote}`);
+      messages.push(
+        `You have ${totalUnplayed} unplayed game${totalUnplayed !== 1 ? 's' : ''} in your library${backlogNote}`
+      );
     }
     if (topPicks[0]?.shelfDays > 180) {
-      messages.push(`Your top pick has been sitting unplayed for ${Math.floor(topPicks[0].shelfDays / 30)} months — time to change that.`);
+      messages.push(
+        `Your top pick has been sitting unplayed for ${Math.floor(topPicks[0].shelfDays / 30)} months — time to change that.`
+      );
     }
 
-    this.persistRecentRecommendations(topPicks.map((e) => e.game), validRecent, now);
+    this.persistRecentRecommendations(
+      topPicks.map((e) => e.game),
+      validRecent,
+      now
+    );
 
-    return this.buildRecommendationPayload('backlog-buster', topPicks.map((entry) => entry.game), {
-      mood: mood || favoriteMood || null,
-      genre: favoriteGenre || null,
-      timeConstraint,
-      availableMinutes,
-      message: messages.join(' '),
-      backlogStats: {
-        totalUnplayed,
-        totalLibrary,
-        backlogPercentage
-      },
-      entryContextResolver: (game) => {
-        const match = matchLookup.get(String(game?.appid || game?.name || ''));
-        return {
-          mood: mood || favoriteMood || game?.mood || null,
-          genre: this.getPrimaryGenre(game, favoriteGenre ? [favoriteGenre] : []) || null,
-          metadata: {
-            score: match?.score || 0,
-            backlogReasons: match?.reasons || [],
-            shelfDays: match?.shelfDays || 0,
-            estimatedMinutes: match?.estimatedMinutes || null
-          }
-        };
+    return this.buildRecommendationPayload(
+      'backlog-buster',
+      topPicks.map((entry) => entry.game),
+      {
+        mood: mood || favoriteMood || null,
+        genre: favoriteGenre || null,
+        timeConstraint,
+        availableMinutes,
+        message: messages.join(' '),
+        backlogStats: {
+          totalUnplayed,
+          totalLibrary,
+          backlogPercentage,
+        },
+        entryContextResolver: (game) => {
+          const match = matchLookup.get(String(game?.appid || game?.name || ''));
+          return {
+            mood: mood || favoriteMood || game?.mood || null,
+            genre: this.getPrimaryGenre(game, favoriteGenre ? [favoriteGenre] : []) || null,
+            metadata: {
+              score: match?.score || 0,
+              backlogReasons: match?.reasons || [],
+              shelfDays: match?.shelfDays || 0,
+              estimatedMinutes: match?.estimatedMinutes || null,
+            },
+          };
+        },
       }
-    });
+    );
   }
 
   static getContinuePlayingResult(library, mood = null, timeConstraint = null, lastPlayedGame = null) {
@@ -1645,7 +1717,7 @@ export class RecommendationEngine {
         timeConstraint,
         availableMinutes,
         message: 'Pick up where you left off!',
-        usedFallback: false
+        usedFallback: false,
       });
     }
 
@@ -1654,15 +1726,16 @@ export class RecommendationEngine {
       return null;
     }
 
-    const effectiveMood = mood && GenreMoodMapper.isValidMood(mood)
-      ? mood
-      : this.getMoodWithMostGames(playedGames);
+    const effectiveMood = mood && GenreMoodMapper.isValidMood(mood) ? mood : this.getMoodWithMostGames(playedGames);
     const recommendedGame = effectiveMood
       ? this.getContinuePlayingRecommendation(playedGames, effectiveMood, availableMinutes)
       : null;
-    const selectedGame = recommendedGame
-      || [...playedGames].sort((left, right) => getLastPlayedTimestamp(right?.last_played) - getLastPlayedTimestamp(left?.last_played))[0]
-      || null;
+    const selectedGame =
+      recommendedGame ||
+      [...playedGames].sort(
+        (left, right) => getLastPlayedTimestamp(right?.last_played) - getLastPlayedTimestamp(left?.last_played)
+      )[0] ||
+      null;
 
     if (!selectedGame) {
       return null;
@@ -1674,7 +1747,7 @@ export class RecommendationEngine {
       timeConstraint,
       availableMinutes,
       message: 'Pick up where you left off!',
-      usedFallback: !recommendedGame
+      usedFallback: !recommendedGame,
     });
   }
 
@@ -1698,12 +1771,15 @@ export class RecommendationEngine {
     { id: 'roguelike', tags: ['roguelike', 'roguelite', 'deckbuilding', 'procedural generation'] },
     { id: 'shooter', tags: ['tactical', 'military', 'fps', 'shooter', 'war'] },
     { id: 'cozy', tags: ['farming', 'cozy', 'fishing', 'wholesome', 'life sim', 'relaxing'] },
-    { id: 'strategy', tags: ['grand strategy', '4x', 'turn-based strategy', 'real time strategy', 'strategy', 'tactics'] },
+    {
+      id: 'strategy',
+      tags: ['grand strategy', '4x', 'turn-based strategy', 'real time strategy', 'strategy', 'tactics'],
+    },
     { id: 'racing', tags: ['racing', 'driving', 'automobile', 'motorsport'] },
     { id: 'open_world', tags: ['open world', 'sandbox', 'exploration'] },
     { id: 'rpg', tags: ['rpg', 'role-playing', 'jrpg', 'action rpg'] },
     { id: 'stealth', tags: ['stealth', 'assassin', 'thief'] },
-    { id: 'western', tags: ['western', 'cowboy', 'frontier'] }
+    { id: 'western', tags: ['western', 'cowboy', 'frontier'] },
   ];
 
   static _detectGameThemes(game) {
@@ -1711,8 +1787,10 @@ export class RecommendationEngine {
     const haystack = [
       ...(Array.isArray(game.tags) ? game.tags : []),
       ...(Array.isArray(game.steamTags) ? game.steamTags : []),
-      ...(Array.isArray(game.genres) ? game.genres : [])
-    ].filter(Boolean).map((s) => String(s).toLowerCase());
+      ...(Array.isArray(game.genres) ? game.genres : []),
+    ]
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase());
     if (haystack.length === 0) return [];
     const matched = [];
     this._THEME_TAGS.forEach((theme) => {
@@ -1768,11 +1846,14 @@ export class RecommendationEngine {
 
     // Score the rest of the library
     const scored = library
-      .filter((game) => game
-        && !game.hidden
-        && !game.isHidden
-        && !recentNames.has(game.name)
-        && !UserBehaviorProfile.shouldSuppressRecommendation(game.appid || game.name, game.name))
+      .filter(
+        (game) =>
+          game &&
+          !game.hidden &&
+          !game.isHidden &&
+          !recentNames.has(game.name) &&
+          !UserBehaviorProfile.shouldSuppressRecommendation(game.appid || game.name, game.name)
+      )
       .map((game) => {
         const gameGenres = mapGameGenresToValid(game?.genres);
         const gameThemes = this._detectGameThemes(game);
@@ -1790,7 +1871,9 @@ export class RecommendationEngine {
         const sharedGenres = gameGenres.filter((g) => recentGenres.has(g));
         if (sharedGenres.length > 0) {
           score += sharedGenres.length * 22;
-          reasons.push(`Shares ${sharedGenres.length > 1 ? 'genres' : 'genre'} with ${recentGames[0]?.name || 'your recent games'}`);
+          reasons.push(
+            `Shares ${sharedGenres.length > 1 ? 'genres' : 'genre'} with ${recentGames[0]?.name || 'your recent games'}`
+          );
         }
 
         // Theme overlap — zombies, space, fantasy, etc.
@@ -1861,8 +1944,8 @@ export class RecommendationEngine {
       meta: {
         referenceGame: referenceGame?.name || null,
         referenceGameId: referenceGame?.appid || referenceGame?.name || null,
-        allReasons: scored.slice(0, count).map((e) => e.reasons)
-      }
+        allReasons: scored.slice(0, count).map((e) => e.reasons),
+      },
     });
   }
 
@@ -1889,7 +1972,7 @@ export class RecommendationEngine {
     }
 
     const games = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes);
-    
+
     if (games.length === 0) {
       return null;
     }
@@ -1905,8 +1988,9 @@ export class RecommendationEngine {
       return null;
     }
 
-    const games = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes)
-      .filter((game) => !isGameUnplayed(game));
+    const games = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes).filter(
+      (game) => !isGameUnplayed(game)
+    );
 
     if (games.length === 0) {
       return null;
@@ -1931,7 +2015,7 @@ export class RecommendationEngine {
     }
 
     const games = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes);
-    
+
     if (games.length === 0) {
       return null;
     }
@@ -1964,8 +2048,9 @@ export class RecommendationEngine {
         break;
       case 'rediscover':
         // Get played games that haven't been played recently
-        const rediscoverGames = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes)
-          .filter((game) => !isGameUnplayed(game));
+        const rediscoverGames = GenreMoodMapper.getGamesForMoodAndTime(library, mood, availableMinutes).filter(
+          (game) => !isGameUnplayed(game)
+        );
         const sorted = rediscoverGames.sort((a, b) => {
           const aPlayCount = a.launch_count || 0;
           const bPlayCount = b.launch_count || 0;
@@ -2002,9 +2087,9 @@ export class RecommendationEngine {
   // Get available moods for library
   static getAvailableMoods(library) {
     const moods = GenreMoodMapper.getAllMoods();
-    
+
     // Filter to only moods that have games in the library
-    return moods.filter(mood => {
+    return moods.filter((mood) => {
       const games = GenreMoodMapper.getGamesForMood(library, mood);
       return games.length > 0;
     });
@@ -2013,7 +2098,7 @@ export class RecommendationEngine {
   // Get mood with most games
   static getMoodWithMostGames(library) {
     const moods = this.getAvailableMoods(library);
-    
+
     if (moods.length === 0) {
       return null;
     }
@@ -2039,9 +2124,9 @@ export class RecommendationEngine {
 
   // Validate library genres and clean invalid ones
   static validateAndCleanLibraryGenres(library) {
-    return library.map(game => ({
+    return library.map((game) => ({
       ...game,
-      genres: GenreMoodMapper.cleanGameGenres(game)
+      genres: GenreMoodMapper.cleanGameGenres(game),
     }));
   }
 

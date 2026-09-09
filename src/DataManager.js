@@ -50,7 +50,7 @@ const JSON_STORAGE_DEFAULTS = Object.freeze({
   coverArtOverridesV1: {},
   sessionNotesV1: {},
   duplicateMergesV1: {},
-  scanTimestampsV1: {}
+  scanTimestampsV1: {},
 });
 
 const STRING_STORAGE_KEYS = Object.freeze([
@@ -90,13 +90,13 @@ const STRING_STORAGE_KEYS = Object.freeze([
   'lastReset_daily',
   'lastReset_weekly',
   'lastReset_monthly',
-  'lastReset_yearly'
+  'lastReset_yearly',
 ]);
 
 const STRING_STORAGE_DEFAULTS = Object.freeze({
   gamerLevel: '1',
   gamerTitle: 'Casual Gamer',
-  gamerType: 'Casual'
+  gamerType: 'Casual',
 });
 
 const KNOWN_IMPORT_KEYS = new Set([
@@ -104,7 +104,7 @@ const KNOWN_IMPORT_KEYS = new Set([
   ...STRING_STORAGE_KEYS,
   'achievements',
   'library',
-  'gamepilotTheme'
+  'gamepilotTheme',
 ]);
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -149,7 +149,11 @@ const normalizeImportPayload = (payload) => {
   }
   const normalized = { ...payload };
 
-  if (!Array.isArray(normalized.gameLibrary) && isPlainObject(normalized.library) && Array.isArray(normalized.library.games)) {
+  if (
+    !Array.isArray(normalized.gameLibrary) &&
+    isPlainObject(normalized.library) &&
+    Array.isArray(normalized.library.games)
+  ) {
     normalized.gameLibrary = normalized.library.games;
   }
 
@@ -244,8 +248,8 @@ export class DataManager {
         exportDate: new Date().toISOString(),
         data: {
           ...jsonData,
-          ...stringData
-        }
+          ...stringData,
+        },
       };
 
       return userData;
@@ -259,7 +263,7 @@ export class DataManager {
     try {
       const userData = this.exportUserData();
       const dataStr = JSON.stringify(userData, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
 
       const exportFileDefaultName = `gamepilot-backup-${new Date().toISOString().split('T')[0]}.json`;
 
@@ -326,14 +330,13 @@ export class DataManager {
       return {
         success: true,
         importedCount,
-        message: `Successfully imported ${importedCount} data entries`
+        message: `Successfully imported ${importedCount} data entries`,
       };
-
     } catch (error) {
       console.error('Error importing user data:', error);
       return {
         success: false,
-        message: `Import failed: ${error.message}`
+        message: `Import failed: ${error.message}`,
       };
     }
   }
@@ -353,9 +356,12 @@ export class DataManager {
         return { valid: false, message: 'Backup file does not contain recognized GamePilot data' };
       }
 
-      const hasValidLibrary = !Object.prototype.hasOwnProperty.call(data, 'gameLibrary') || Array.isArray(data.gameLibrary);
-      const hasValidAchievements = !Object.prototype.hasOwnProperty.call(data, 'unlockedAchievements') || Array.isArray(data.unlockedAchievements);
-      const hasValidPatreonBoost = !Object.prototype.hasOwnProperty.call(data, 'patreonXpBoost') || isPlainObject(data.patreonXpBoost);
+      const hasValidLibrary =
+        !Object.prototype.hasOwnProperty.call(data, 'gameLibrary') || Array.isArray(data.gameLibrary);
+      const hasValidAchievements =
+        !Object.prototype.hasOwnProperty.call(data, 'unlockedAchievements') || Array.isArray(data.unlockedAchievements);
+      const hasValidPatreonBoost =
+        !Object.prototype.hasOwnProperty.call(data, 'patreonXpBoost') || isPlainObject(data.patreonXpBoost);
 
       if (!hasValidLibrary || !hasValidAchievements || !hasValidPatreonBoost) {
         return { valid: false, message: 'Backup file contains invalid progression data types' };
@@ -365,7 +371,7 @@ export class DataManager {
       return {
         valid: true,
         message: `Valid backup file${versionLabel} with ${dataKeys.length} data categories`,
-        categories: dataKeys
+        categories: dataKeys,
       };
     } catch (error) {
       return { valid: false, message: `Invalid JSON: ${error.message}` };
@@ -374,17 +380,19 @@ export class DataManager {
 
   static clearAllUserData() {
     try {
-      const keysToRemove = Array.from(new Set([
-        ...Object.keys(JSON_STORAGE_DEFAULTS),
-        ...STRING_STORAGE_KEYS,
-        'achievements',
-        'gamepilotTheme',
-        'gamepilot-founder-tier',
-        'libraryCache',
-        'lastSync'
-      ]));
+      const keysToRemove = Array.from(
+        new Set([
+          ...Object.keys(JSON_STORAGE_DEFAULTS),
+          ...STRING_STORAGE_KEYS,
+          'achievements',
+          'gamepilotTheme',
+          'gamepilot-founder-tier',
+          'libraryCache',
+          'lastSync',
+        ])
+      );
 
-      keysToRemove.forEach(key => {
+      keysToRemove.forEach((key) => {
         StorageService.remove(key);
       });
 

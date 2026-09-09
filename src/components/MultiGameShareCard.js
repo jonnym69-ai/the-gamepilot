@@ -23,15 +23,10 @@ export function buildMultiGameShareData(games = []) {
     const sessions = safeGame.launch_count || safeGame.sessions || launchData?.totalLaunches || 0;
     const rating = safeGame.userRating || safeGame.rating || 0;
     const avgSessionLength = launchData?.averageSessionLength || 0;
-    const completionStatus = safeGame.completed
-      ? 'Completed'
-      : timePlayed > 0
-        ? 'In Progress'
-        : 'Backlog';
-    const platform = safeGame.platform || safeGame.brandPlatform || (safeGame.launchSources?.[0]?.platform) || null;
-    const genre = Array.isArray(safeGame.genres) && safeGame.genres.length > 0
-      ? safeGame.genres[0]
-      : (safeGame.genre || null);
+    const completionStatus = safeGame.completed ? 'Completed' : timePlayed > 0 ? 'In Progress' : 'Backlog';
+    const platform = safeGame.platform || safeGame.brandPlatform || safeGame.launchSources?.[0]?.platform || null;
+    const genre =
+      Array.isArray(safeGame.genres) && safeGame.genres.length > 0 ? safeGame.genres[0] : safeGame.genre || null;
 
     return {
       name: safeGame.name || 'Unknown Game',
@@ -74,7 +69,10 @@ export function MultiGameShareCard({ games = [], username = 'Pilot', watermark =
   if (gameCount === 0) return null;
 
   return (
-    <div className="multi-game-share-card" style={{ width: MULTI_GAME_SHARE_CARD_SIZE_PX, height: MULTI_GAME_SHARE_CARD_SIZE_PX }}>
+    <div
+      className="multi-game-share-card"
+      style={{ width: MULTI_GAME_SHARE_CARD_SIZE_PX, height: MULTI_GAME_SHARE_CARD_SIZE_PX }}
+    >
       <div className="multi-game-share-card-glow" aria-hidden="true" />
       <Gamepad2 className="multi-game-share-watermark" size={320} aria-hidden="true" />
 
@@ -106,7 +104,9 @@ export function MultiGameShareCard({ games = [], username = 'Pilot', watermark =
                     {game.platform}
                   </span>
                 )}
-                <span className={`multi-game-share-card-badge ${game.completionStatus === 'Completed' ? 'completed' : ''}`}>
+                <span
+                  className={`multi-game-share-card-badge ${game.completionStatus === 'Completed' ? 'completed' : ''}`}
+                >
                   {game.completionStatus === 'Completed' ? <CheckCircle2 size={12} /> : <Zap size={12} />}
                   {game.completionStatus}
                 </span>
@@ -121,7 +121,9 @@ export function MultiGameShareCard({ games = [], username = 'Pilot', watermark =
                 {game.sessions > 0 && (
                   <div className="multi-game-share-card-stat">
                     <Trophy size={16} />
-                    <span>{game.sessions} {game.sessions === 1 ? 'session' : 'sessions'}</span>
+                    <span>
+                      {game.sessions} {game.sessions === 1 ? 'session' : 'sessions'}
+                    </span>
                   </div>
                 )}
                 {game.rating > 0 && (

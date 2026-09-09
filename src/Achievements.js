@@ -13,17 +13,13 @@ const getSessionStartTimestamp = (sessionEntry) => {
     return null;
   }
 
-  const rawStartTime = typeof sessionEntry === 'string'
-    ? sessionEntry
-    : sessionEntry.startTime;
+  const rawStartTime = typeof sessionEntry === 'string' ? sessionEntry : sessionEntry.startTime;
 
   if (!rawStartTime) {
     return null;
   }
 
-  const parsedStartTime = typeof rawStartTime === 'number'
-    ? rawStartTime
-    : Date.parse(rawStartTime);
+  const parsedStartTime = typeof rawStartTime === 'number' ? rawStartTime : Date.parse(rawStartTime);
 
   return Number.isNaN(parsedStartTime) ? null : parsedStartTime;
 };
@@ -42,21 +38,23 @@ function Achievements({ theme }) {
     daily: [],
     weekly: [],
     monthly: [],
-    yearly: []
+    yearly: [],
   });
 
-  const achievementCatalog = React.useMemo(() => (
-    Object.entries(ACHIEVEMENTS).flatMap(([category, definitions]) =>
-      (Array.isArray(definitions) ? definitions : []).map(definition => ({ ...definition, category }))
-    )
-  ), []);
+  const achievementCatalog = React.useMemo(
+    () =>
+      Object.entries(ACHIEVEMENTS).flatMap(([category, definitions]) =>
+        (Array.isArray(definitions) ? definitions : []).map((definition) => ({ ...definition, category }))
+      ),
+    []
+  );
 
   const getRarityColor = (rarity) => {
     const colors = {
-      'COMMON': '#808080',
-      'RARE': '#0066cc',
-      'EPIC': '#9933cc',
-      'LEGENDARY': '#ff6600'
+      COMMON: '#808080',
+      RARE: '#0066cc',
+      EPIC: '#9933cc',
+      LEGENDARY: '#ff6600',
     };
     return colors[rarity] || '#808080';
   };
@@ -65,14 +63,14 @@ function Achievements({ theme }) {
     daily: 'Daily',
     weekly: 'Weekly',
     monthly: 'Monthly',
-    yearly: 'Yearly'
+    yearly: 'Yearly',
   };
 
   const periodSubtitles = {
-    daily: 'Today\'s rotating quests and achievement assignments.',
+    daily: "Today's rotating quests and achievement assignments.",
     weekly: 'Current weekly objectives tied to your tracked local play.',
     monthly: 'Month-long goals built from your actual local usage.',
-    yearly: 'Longer-term assignments that feed your recap and momentum.'
+    yearly: 'Longer-term assignments that feed your recap and momentum.',
   };
 
   const formatProgressValue = (snapshot = {}) => {
@@ -94,7 +92,6 @@ function Achievements({ theme }) {
     return progress > 0 ? `${hint} Progress: ${Math.round(progress)}%.` : hint;
   };
 
-
   // Load recent unlocks when achievements change
   useEffect(() => {
     const recent = AchievementTracker.getRecentlyUnlocked() || [];
@@ -108,34 +105,39 @@ function Achievements({ theme }) {
         const activeDefs = AchievementTracker.getActivePeriodAchievementDefinitions(period);
         const fallbackDefs = ACHIEVEMENTS[period] || [];
         const sourceDefs = Array.isArray(activeDefs) && activeDefs.length > 0 ? activeDefs : fallbackDefs;
-        acc[period] = sourceDefs.map(def => ({ ...def, category: period }));
+        acc[period] = sourceDefs.map((def) => ({ ...def, category: period }));
         return acc;
       }, {});
 
       setActiveAssignments(
-        Object.entries(activeRollingDefs).reduce((acc, [period, defs]) => {
-          acc[period] = defs.map((definition) => {
-            const progressSnapshot = RollingAchievementsTracker.getAchievementProgressSnapshot(definition.id);
-            return {
-              ...definition,
-              progressSnapshot,
-              progressPercent: Math.min(Number(progressSnapshot?.progressPercent || 0), 100),
-              completed: Boolean(progressSnapshot?.unlocked || AchievementTracker.isTimeBasedAchievementUnlocked(period, definition.id))
-            };
-          });
-          return acc;
-        }, { daily: [], weekly: [], monthly: [], yearly: [] })
+        Object.entries(activeRollingDefs).reduce(
+          (acc, [period, defs]) => {
+            acc[period] = defs.map((definition) => {
+              const progressSnapshot = RollingAchievementsTracker.getAchievementProgressSnapshot(definition.id);
+              return {
+                ...definition,
+                progressSnapshot,
+                progressPercent: Math.min(Number(progressSnapshot?.progressPercent || 0), 100),
+                completed: Boolean(
+                  progressSnapshot?.unlocked || AchievementTracker.isTimeBasedAchievementUnlocked(period, definition.id)
+                ),
+              };
+            });
+            return acc;
+          },
+          { daily: [], weekly: [], monthly: [], yearly: [] }
+        )
       );
     };
 
     loadRollingStats();
     const interval = setInterval(loadRollingStats, 30000); // Update every 30 seconds (optimized from 10s)
-    
+
     // Listen for rolling achievements updates
     const handleRollingAchievementsUpdate = () => {
       setTimeout(loadRollingStats, 500); // Small delay to ensure data is saved
     };
-    
+
     window.addEventListener('rollingAchievementsUpdated', handleRollingAchievementsUpdate);
 
     return () => {
@@ -160,13 +162,13 @@ function Achievements({ theme }) {
       daily: <Clock size={16} />,
       weekly: <Clock size={16} />,
       monthly: <Clock size={16} />,
-      yearly: <Clock size={16} />
+      yearly: <Clock size={16} />,
     };
     return categoryIcons[category] || <Trophy size={16} />;
   };
 
   const getRewardPoints = (achievementId) => {
-    const definition = achievementCatalog.find(a => a.id === achievementId);
+    const definition = achievementCatalog.find((a) => a.id === achievementId);
     const rarity = definition?.rarity || 'COMMON';
     const rarityPoints = { COMMON: 50, RARE: 150, EPIC: 400, LEGENDARY: 1000 };
     return rarityPoints[rarity] || 50;
@@ -182,18 +184,20 @@ function Achievements({ theme }) {
         const activeDefs = AchievementTracker.getActivePeriodAchievementDefinitions(period);
         const fallbackDefs = ACHIEVEMENTS[period] || [];
         const sourceDefs = Array.isArray(activeDefs) && activeDefs.length > 0 ? activeDefs : fallbackDefs;
-        acc[period] = sourceDefs.map(def => ({ ...def, category: period }));
+        acc[period] = sourceDefs.map((def) => ({ ...def, category: period }));
         return acc;
       }, {});
 
-      const staticAchievements = achievementCatalog.filter(({ category }) => !['daily', 'weekly', 'monthly', 'yearly'].includes(category));
+      const staticAchievements = achievementCatalog.filter(
+        ({ category }) => !['daily', 'weekly', 'monthly', 'yearly'].includes(category)
+      );
 
       setAllAchievements([
         ...staticAchievements,
         ...activeRollingDefs.daily,
         ...activeRollingDefs.weekly,
         ...activeRollingDefs.monthly,
-        ...activeRollingDefs.yearly
+        ...activeRollingDefs.yearly,
       ]);
     } catch (error) {
       console.error('Error setting achievements:', error);
@@ -210,7 +214,7 @@ function Achievements({ theme }) {
       console.error('Error loading notified achievements:', error);
       StorageService.set('notifiedAchievements', []);
     }
-    
+
     let notificationTimeout = null;
 
     const checkRecentUnlocks = () => {
@@ -219,17 +223,17 @@ function Achievements({ theme }) {
         // Get current notified achievements from localStorage to avoid stale state
         const savedNotified = StorageService.get('notifiedAchievements', []);
         const notifiedSet = new Set(savedNotified);
-        
+
         // Find the first achievement that hasn't been notified about yet
-        const newAchievement = recent.find(achievement => !notifiedSet.has(achievement.id));
-        
+        const newAchievement = recent.find((achievement) => !notifiedSet.has(achievement.id));
+
         if (newAchievement) {
           setRecentlyUnlocked(newAchievement);
-          
+
           // Mark this achievement as notified
           const updatedNotified = [...savedNotified, newAchievement.id];
           StorageService.set('notifiedAchievements', updatedNotified);
-          
+
           // Auto-hide notification after 5 seconds
           if (notificationTimeout) {
             window.clearTimeout(notificationTimeout);
@@ -277,16 +281,17 @@ function Achievements({ theme }) {
     const toPercent = (current, target) => {
       const numericCurrent = Number(current) || 0;
       const numericTarget = Number(target) || 0;
-      return numericTarget > 0
-        ? Math.min(Math.max((numericCurrent / numericTarget) * 100, 0), 100)
-        : 0;
+      return numericTarget > 0 ? Math.min(Math.max((numericCurrent / numericTarget) * 100, 0), 100) : 0;
     };
 
     if (unlocked) return 100;
 
     if (/^(daily|weekly|monthly|yearly)_/.test(id)) {
       try {
-        return Math.min(Math.max(Number(RollingAchievementsTracker.getAchievementProgressSnapshot(id)?.progressPercent) || 0, 0), 100);
+        return Math.min(
+          Math.max(Number(RollingAchievementsTracker.getAchievementProgressSnapshot(id)?.progressPercent) || 0, 0),
+          100
+        );
       } catch (error) {
         console.error('Error calculating rolling achievement progress:', error);
         return 0;
@@ -324,9 +329,10 @@ function Achievements({ theme }) {
     match = id.match(/^unique_game_(\d+)$/);
     if (match) return toPercent(stats.uniqueGamesPlayed, match[1]);
 
-    const moodStats = typeof AchievementTracker.getLifetimeMoodStats === 'function'
-      ? AchievementTracker.getLifetimeMoodStats() || {}
-      : {};
+    const moodStats =
+      typeof AchievementTracker.getLifetimeMoodStats === 'function'
+        ? AchievementTracker.getLifetimeMoodStats() || {}
+        : {};
     match = id.match(/^(relaxed|social|creative|focused|competitive)_(\d+)$/);
     if (match) return toPercent(moodStats[match[1]], match[2]);
 
@@ -344,13 +350,13 @@ function Achievements({ theme }) {
     const genreStats = AchievementTracker.getGenreStats() || {};
     match = id.match(/^genre_sessions_(\d+)$/);
     if (match) {
-      const longestGenreRun = Math.max(0, ...Object.values(genreStats).map(value => Number(value) || 0));
+      const longestGenreRun = Math.max(0, ...Object.values(genreStats).map((value) => Number(value) || 0));
       return toPercent(longestGenreRun, match[1]);
     }
 
     match = id.match(/^session_warrior_(30|1h|2h|4h)$/);
     if (match) {
-      const targets = { '30': 30, '1h': 60, '2h': 120, '4h': 240 };
+      const targets = { 30: 30, '1h': 60, '2h': 120, '4h': 240 };
       let longestSessionMinutes = Number(StorageService.get('longestSessionMinutes', 0)) || 0;
       if (typeof AchievementTracker.getLongestSessionMinutes === 'function') {
         try {
@@ -369,14 +375,14 @@ function Achievements({ theme }) {
     const safeLibrary = Array.isArray(library) ? library : [];
     match = id.match(/^rating_(\d+)$/);
     if (match) {
-      return toPercent(safeLibrary.filter(game => (Number(game?.userRating) || 0) > 0).length, match[1]);
+      return toPercent(safeLibrary.filter((game) => (Number(game?.userRating) || 0) > 0).length, match[1]);
     }
 
     match = id.match(/^completion_(\d+)$/);
     if (match) {
       const completedStatuses = new Set(['beaten', 'completed', '100%']);
       return toPercent(
-        safeLibrary.filter(game => completedStatuses.has(String(game?.completionStatus || '').toLowerCase())).length,
+        safeLibrary.filter((game) => completedStatuses.has(String(game?.completionStatus || '').toLowerCase())).length,
         match[1]
       );
     }
@@ -422,7 +428,6 @@ function Achievements({ theme }) {
     return 0;
   };
 
-
   const closeToUnlocking = allAchievements
     .filter((achievement) => !unlockedAchievements.includes(achievement.id))
     .map((achievement) => ({ achievement, progress: getAchievementProgress(achievement) }))
@@ -433,14 +438,13 @@ function Achievements({ theme }) {
   // Apply filter, sort, then paginate
   const rarityWeight = { COMMON: 0, RARE: 1, EPIC: 2, LEGENDARY: 3 };
   const filteredAchievements = (() => {
-    let result = selectedCategory === 'all'
-      ? allAchievements
-      : allAchievements.filter(a => a.category === selectedCategory);
+    let result =
+      selectedCategory === 'all' ? allAchievements : allAchievements.filter((a) => a.category === selectedCategory);
 
     if (unlockFilter === 'unlocked') {
-      result = result.filter(a => unlockedAchievements.includes(a.id));
+      result = result.filter((a) => unlockedAchievements.includes(a.id));
     } else if (unlockFilter === 'locked') {
-      result = result.filter(a => !unlockedAchievements.includes(a.id));
+      result = result.filter((a) => !unlockedAchievements.includes(a.id));
     }
 
     if (sortBy === 'progress') {
@@ -475,11 +479,11 @@ function Achievements({ theme }) {
     { id: 'daily', name: 'Daily', icon: '📅' },
     { id: 'weekly', name: 'Weekly', icon: '📆' },
     { id: 'monthly', name: 'Monthly', icon: '🗓️' },
-    { id: 'yearly', name: 'Yearly', icon: '🎊' }
+    { id: 'yearly', name: 'Yearly', icon: '🎊' },
   ];
 
-  const visibleAchievementIds = new Set(allAchievements.map(achievement => achievement.id));
-  const unlockedCount = unlockedAchievements.filter(id => visibleAchievementIds.has(id)).length;
+  const visibleAchievementIds = new Set(allAchievements.map((achievement) => achievement.id));
+  const unlockedCount = unlockedAchievements.filter((id) => visibleAchievementIds.has(id)).length;
   const totalCount = allAchievements.length;
 
   return (
@@ -529,7 +533,7 @@ function Achievements({ theme }) {
         )}
 
         <div className="category-tabs">
-          {categories.map(category => (
+          {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => {
@@ -549,21 +553,23 @@ function Achievements({ theme }) {
             <button
               onClick={() => setUnlockFilter('all')}
               className={`filter-btn ${unlockFilter === 'all' ? 'active' : ''}`}
-            >All</button>
+            >
+              All
+            </button>
             <button
               onClick={() => setUnlockFilter('unlocked')}
               className={`filter-btn ${unlockFilter === 'unlocked' ? 'active' : ''}`}
-            >Unlocked</button>
+            >
+              Unlocked
+            </button>
             <button
               onClick={() => setUnlockFilter('locked')}
               className={`filter-btn ${unlockFilter === 'locked' ? 'active' : ''}`}
-            >Locked</button>
+            >
+              Locked
+            </button>
           </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="sort-select"
-          >
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="sort-select">
             <option value="default">Sort: Default</option>
             <option value="progress">Sort: Progress</option>
             <option value="rarity">Sort: Rarity</option>
@@ -572,11 +578,11 @@ function Achievements({ theme }) {
         </div>
 
         <div className="achievements-grid">
-          {paginatedAchievements.map(achievement => {
+          {paginatedAchievements.map((achievement) => {
             const isUnlocked = unlockedAchievements.includes(achievement.id);
             const progress = getAchievementProgress(achievement);
             const rarityColor = getRarityColor(achievement.rarity);
-            
+
             return (
               <div
                 key={achievement.id}
@@ -587,7 +593,7 @@ function Achievements({ theme }) {
                   <span className="icon-emoji">{achievement.icon}</span>
                   {isUnlocked && <div className="unlock-badge">✓</div>}
                 </div>
-                
+
                 <div className="achievement-info">
                   <div className="achievement-title-row">
                     <h3 className="achievement-name">{achievement.name}</h3>
@@ -596,7 +602,7 @@ function Achievements({ theme }) {
                     </span>
                   </div>
                   <p className="achievement-desc">{achievement.desc}</p>
-                  
+
                   {/* Progress hint for locked achievements */}
                   {!isUnlocked && (
                     <div className="progress-hint">
@@ -604,7 +610,7 @@ function Achievements({ theme }) {
                       <div className="hint-text">{getProgressHint(achievement.id, progress)}</div>
                     </div>
                   )}
-                  
+
                   {/* Reward display */}
                   <div className="achievement-rewards">
                     <div className="reward-badge">
@@ -612,17 +618,14 @@ function Achievements({ theme }) {
                       <span className="reward-points">+{getRewardPoints(achievement.id)} pts</span>
                     </div>
                   </div>
-                  
+
                   {!isUnlocked && (progress > 0 || achievement.category === 'time') && (
                     <div className="progress-bar">
-                      <div 
-                        className="progress-fill"
-                        style={{ width: `${progress}%` }}
-                      ></div>
+                      <div className="progress-fill" style={{ width: `${progress}%` }}></div>
                       <span className="progress-text">{Math.round(progress)}%</span>
                     </div>
                   )}
-                  
+
                   {isUnlocked && (
                     <div className="unlocked-date">
                       <Trophy size={12} />
@@ -637,7 +640,9 @@ function Achievements({ theme }) {
 
         <div className="rolling-achievements-section">
           <h2 className="rolling-title">🎯 Active Assignments</h2>
-          <p className="rolling-subtitle">Live daily, weekly, monthly, and yearly quest progress built from your local tracked activity.</p>
+          <p className="rolling-subtitle">
+            Live daily, weekly, monthly, and yearly quest progress built from your local tracked activity.
+          </p>
           <div className="rolling-grid">
             {Object.entries(activeAssignments).map(([period, assignments]) => (
               <div key={period} className="rolling-card">
@@ -646,22 +651,37 @@ function Achievements({ theme }) {
                   <span className="rolling-date">{periodSubtitles[period]}</span>
                 </div>
                 <div className="rolling-stats">
-                  {assignments.length > 0 ? assignments.map((assignment) => (
-                    <div key={assignment.id} className="stat-row" style={{ display: 'block', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
-                        <span className="stat-label" style={{ fontWeight: 600 }}>{assignment.icon} {assignment.name}</span>
-                        <span className="stat-value">{assignment.completed ? 'Complete' : formatProgressValue(assignment.progressSnapshot)}</span>
-                      </div>
-                      <div style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '4px' }}>{assignment.desc}</div>
-                      <div className="progress-bar" style={{ marginTop: '8px' }}>
+                  {assignments.length > 0 ? (
+                    assignments.map((assignment) => (
+                      <div key={assignment.id} className="stat-row" style={{ display: 'block', marginBottom: '16px' }}>
                         <div
-                          className="progress-fill"
-                          style={{ width: `${assignment.completed ? 100 : assignment.progressPercent}%` }}
-                        ></div>
-                        <span className="progress-text">{Math.round(assignment.completed ? 100 : assignment.progressPercent)}%</span>
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span className="stat-label" style={{ fontWeight: 600 }}>
+                            {assignment.icon} {assignment.name}
+                          </span>
+                          <span className="stat-value">
+                            {assignment.completed ? 'Complete' : formatProgressValue(assignment.progressSnapshot)}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '4px' }}>{assignment.desc}</div>
+                        <div className="progress-bar" style={{ marginTop: '8px' }}>
+                          <div
+                            className="progress-fill"
+                            style={{ width: `${assignment.completed ? 100 : assignment.progressPercent}%` }}
+                          ></div>
+                          <span className="progress-text">
+                            {Math.round(assignment.completed ? 100 : assignment.progressPercent)}%
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )) : (
+                    ))
+                  ) : (
                     <div className="stat-row">
                       <span className="stat-label">No active assignments yet</span>
                     </div>
@@ -682,11 +702,11 @@ function Achievements({ theme }) {
             >
               Previous
             </button>
-            
+
             <span className="pagination-info">
               Page {currentPage} of {totalPages}
             </span>
-            
+
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}

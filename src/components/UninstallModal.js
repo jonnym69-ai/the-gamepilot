@@ -48,8 +48,12 @@ const UninstallModal = ({ isOpen, game, onClose, onCompleted = () => {} }) => {
         if (result?.ok) setPlan(result.plan);
         else setError(result?.error || 'Could not build uninstall plan.');
       })
-      .finally(() => { if (!cancelled) setPlanLoading(false); });
-    return () => { cancelled = true; };
+      .finally(() => {
+        if (!cancelled) setPlanLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, game]);
 
   if (!isOpen || !game) return null;
@@ -72,7 +76,8 @@ const UninstallModal = ({ isOpen, game, onClose, onCompleted = () => {} }) => {
       // Provide a more helpful message for common failure cases
       let userMsg = errMsg;
       if (errMsg === 'electron-only') {
-        userMsg = 'Uninstall is only available in the desktop app. Run GamePilot as an installed app, not in a browser.';
+        userMsg =
+          'Uninstall is only available in the desktop app. Run GamePilot as an installed app, not in a browser.';
       } else if (errMsg.includes('openExternal') || errMsg.includes('start fallback')) {
         userMsg = `Could not open the launcher uninstaller (${errMsg}). Try opening the launcher manually and uninstalling from there.`;
       }
@@ -134,11 +139,14 @@ const UninstallModal = ({ isOpen, game, onClose, onCompleted = () => {} }) => {
           {!planLoading && plan && (
             <>
               <div className="uninstall-modal-plan-target">
-                {plan.method === 'open-folder' || plan.method === 'manual'
-                  ? <FolderOpen size={14} />
-                  : <ExternalLink size={14} />}
+                {plan.method === 'open-folder' || plan.method === 'manual' ? (
+                  <FolderOpen size={14} />
+                ) : (
+                  <ExternalLink size={14} />
+                )}
                 <span>
-                  <strong>{plan.label}</strong>{plan.method === 'unsupported' ? '' : ` will open${plan.fallback ? ' (fallback)' : ''}`}
+                  <strong>{plan.label}</strong>
+                  {plan.method === 'unsupported' ? '' : ` will open${plan.fallback ? ' (fallback)' : ''}`}
                 </span>
               </div>
               <p className="uninstall-modal-plan-message">{plan.message}</p>
@@ -171,7 +179,11 @@ const UninstallModal = ({ isOpen, game, onClose, onCompleted = () => {} }) => {
             onClick={handleConfirm}
             disabled={dispatching || planLoading || !plan || plan.method === 'unsupported'}
           >
-            {dispatching ? 'Opening uninstaller…' : plan?.method === 'unsupported' ? 'Unavailable' : `Open ${plan?.label || 'uninstaller'}`}
+            {dispatching
+              ? 'Opening uninstaller…'
+              : plan?.method === 'unsupported'
+                ? 'Unavailable'
+                : `Open ${plan?.label || 'uninstaller'}`}
           </button>
         </footer>
       </div>

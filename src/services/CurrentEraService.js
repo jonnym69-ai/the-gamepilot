@@ -36,18 +36,42 @@ const getGameGenres = (game) => {
 
 // Broad genre clusters -> era flavor names
 const ERA_THEMES = [
-  { match: ['survival', 'zombie', 'crafting', 'open world survival craft'], name: 'The Wilderness Era', flavor: 'living off the land' },
-  { match: ['souls-like', 'soulslike', 'difficult', 'roguelike', 'roguelite'], name: 'The Gauntlet Era', flavor: 'chasing the pain' },
-  { match: ['rpg', 'jrpg', 'crpg', 'adventure', 'story-rich', 'visual novel'], name: 'The Saga Era', flavor: 'living in other worlds' },
-  { match: ['shooter', 'fps', 'action', 'tps', 'boomer shooter'], name: 'The Frontline Era', flavor: 'running and gunning' },
+  {
+    match: ['survival', 'zombie', 'crafting', 'open world survival craft'],
+    name: 'The Wilderness Era',
+    flavor: 'living off the land',
+  },
+  {
+    match: ['souls-like', 'soulslike', 'difficult', 'roguelike', 'roguelite'],
+    name: 'The Gauntlet Era',
+    flavor: 'chasing the pain',
+  },
+  {
+    match: ['rpg', 'jrpg', 'crpg', 'adventure', 'story-rich', 'visual novel'],
+    name: 'The Saga Era',
+    flavor: 'living in other worlds',
+  },
+  {
+    match: ['shooter', 'fps', 'action', 'tps', 'boomer shooter'],
+    name: 'The Frontline Era',
+    flavor: 'running and gunning',
+  },
   { match: ['sandbox', 'open world', 'simulation'], name: 'The Wanderer Era', flavor: 'no map, no rules' },
-  { match: ['strategy', 'grand strategy', '4x', 'city builder', 'management', 'tycoon'], name: 'The War Room Era', flavor: 'thinking three turns ahead' },
-  { match: ['horror', 'survival horror', 'psychological horror'], name: 'The Midnight Era', flavor: 'playing with the lights off' },
+  {
+    match: ['strategy', 'grand strategy', '4x', 'city builder', 'management', 'tycoon'],
+    name: 'The War Room Era',
+    flavor: 'thinking three turns ahead',
+  },
+  {
+    match: ['horror', 'survival horror', 'psychological horror'],
+    name: 'The Midnight Era',
+    flavor: 'playing with the lights off',
+  },
   { match: ['platformer', 'metroidvania', 'precision platformer'], name: 'The Momentum Era', flavor: 'always moving' },
   { match: ['racing', 'sports', 'driving'], name: 'The Grand Prix Era', flavor: 'chasing lap times' },
   { match: ['puzzle', 'logic', 'mystery'], name: 'The Puzzlebox Era', flavor: 'everything is a clue' },
   { match: ['indie', 'casual', 'relaxing'], name: 'The Slow Burn Era', flavor: 'small games, big feelings' },
-  { match: ['mmo', 'multiplayer', 'co-op', 'pvp'], name: 'The Guildhall Era', flavor: 'never playing alone' }
+  { match: ['mmo', 'multiplayer', 'co-op', 'pvp'], name: 'The Guildhall Era', flavor: 'never playing alone' },
 ];
 
 const buildSnapshot = (sessions, library, now, windowDays) => {
@@ -61,7 +85,7 @@ const buildSnapshot = (sessions, library, now, windowDays) => {
     const start = getSessionStart(session);
     if (start === null) return 1;
     const daysAgo = (now - start) / DAY_MS;
-    return Math.exp(-0.6931471805599453 * daysAgo / HALF_LIFE_DAYS);
+    return Math.exp((-0.6931471805599453 * daysAgo) / HALF_LIFE_DAYS);
   };
 
   const libraryByName = new Map();
@@ -108,17 +132,13 @@ const buildSnapshot = (sessions, library, now, windowDays) => {
   const sortedGenres = Object.entries(genrePlaytime).sort((a, b) => b[1] - a[1]);
   const dominantGenre = sortedGenres[0]?.[0] || null;
   const totalGenreMinutes = sortedGenres.reduce((acc, [, v]) => acc + v, 0);
-  const dominantGenreShare = totalGenreMinutes > 0 && dominantGenre
-    ? genrePlaytime[dominantGenre] / totalGenreMinutes
-    : 0;
+  const dominantGenreShare =
+    totalGenreMinutes > 0 && dominantGenre ? genrePlaytime[dominantGenre] / totalGenreMinutes : 0;
 
-  const avgSessionLength = durations.length
-    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-    : 0;
+  const avgSessionLength = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
 
-  const sessionBucket = avgSessionLength === 0
-    ? null
-    : avgSessionLength < 30 ? 'short' : avgSessionLength < 90 ? 'medium' : 'long';
+  const sessionBucket =
+    avgSessionLength === 0 ? null : avgSessionLength < 30 ? 'short' : avgSessionLength < 90 ? 'medium' : 'long';
 
   return {
     windowDays,
@@ -130,7 +150,7 @@ const buildSnapshot = (sessions, library, now, windowDays) => {
     topGames,
     dominantGenre,
     dominantGenreShare,
-    genreMix: sortedGenres.slice(0, 4).map(([genre, minutes]) => ({ genre, minutes: Math.round(minutes) }))
+    genreMix: sortedGenres.slice(0, 4).map(([genre, minutes]) => ({ genre, minutes: Math.round(minutes) })),
   };
 };
 
@@ -162,7 +182,10 @@ const detectDrift = (current, previous) => {
   const prevTop = new Set((previous.topGames || []).slice(0, 3).map((g) => normalizeKey(g.name)));
   const newEntries = (current.topGames || []).filter((g) => !prevTop.has(normalizeKey(g.name)));
   if (newEntries.length > 0) {
-    const names = newEntries.slice(0, 3).map((g) => g.name).join(', ');
+    const names = newEntries
+      .slice(0, 3)
+      .map((g) => g.name)
+      .join(', ');
     notes.push(`New in rotation: ${names}`);
   }
 
@@ -173,7 +196,9 @@ const detectDrift = (current, previous) => {
   }
 
   if (current.sessionBucket && previous.sessionBucket && current.sessionBucket !== previous.sessionBucket) {
-    notes.push(`Session shape: ${previous.sessionBucket} → ${current.sessionBucket} (${previous.avgSessionLength}m → ${current.avgSessionLength}m avg)`);
+    notes.push(
+      `Session shape: ${previous.sessionBucket} → ${current.sessionBucket} (${previous.avgSessionLength}m → ${current.avgSessionLength}m avg)`
+    );
   }
 
   if (previous.sessionCount > 0) {
@@ -192,12 +217,7 @@ export class CurrentEraService {
     const now = Date.now();
 
     const current = buildSnapshot(sessions, library, now, ERA_WINDOW_DAYS);
-    const previous = buildSnapshot(
-      sessions,
-      library,
-      now - ERA_WINDOW_DAYS * DAY_MS,
-      PREVIOUS_WINDOW_DAYS
-    );
+    const previous = buildSnapshot(sessions, library, now - ERA_WINDOW_DAYS * DAY_MS, PREVIOUS_WINDOW_DAYS);
 
     const theme = nameEra(current);
     const drift = detectDrift(current, previous);
@@ -210,11 +230,19 @@ export class CurrentEraService {
     if (current.totalMinutes > 0 && (!lastEntry || lastEntry.signature !== signature)) {
       eraHistory = [
         ...eraHistory.slice(-9),
-        { signature, name: theme.name, genre: current.dominantGenre, topGame: current.topGames[0]?.name || null, since: now }
+        {
+          signature,
+          name: theme.name,
+          genre: current.dominantGenre,
+          topGame: current.topGames[0]?.name || null,
+          since: now,
+        },
       ];
       try {
         StorageService.set(ERA_HISTORY_KEY, eraHistory);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     return {
@@ -223,7 +251,7 @@ export class CurrentEraService {
       snapshot: current,
       previousSnapshot: previous,
       drift,
-      history: eraHistory
+      history: eraHistory,
     };
   }
 

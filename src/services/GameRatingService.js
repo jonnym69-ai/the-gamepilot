@@ -11,7 +11,7 @@ const DEFAULT_TAGS = [
   'One-and-done',
   'Overrated',
   'Better with friends',
-  'Technical showcase'
+  'Technical showcase',
 ];
 
 export class GameRatingService {
@@ -42,7 +42,7 @@ export class GameRatingService {
       tags: Array.isArray(tags) ? tags.filter(Boolean) : existing.tags || [],
       notes: typeof notes === 'string' ? notes : existing.notes || '',
       updatedAt: new Date().toISOString(),
-      createdAt: existing.createdAt || new Date().toISOString()
+      createdAt: existing.createdAt || new Date().toISOString(),
     };
 
     if (value === null && wouldReplay === null && tags.length === 0 && !notes) {
@@ -108,7 +108,7 @@ export class GameRatingService {
       value: rating?.value || game?.userRating || 0,
       wouldReplay: rating?.wouldReplay ?? null,
       tags: rating?.tags || [],
-      notes: rating?.notes || ''
+      notes: rating?.notes || '',
     };
   }
 

@@ -21,12 +21,17 @@ const readCache = () => {
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 };
 
 const writeCache = (cache) => {
-  try { StorageService.set(CACHE_KEY, cache); }
-  catch (err) { console.warn('[SteamSnapshot] cache write failed:', err); }
+  try {
+    StorageService.set(CACHE_KEY, cache);
+  } catch (err) {
+    console.warn('[SteamSnapshot] cache write failed:', err);
+  }
 };
 
 const isFresh = (entry) => {
@@ -45,8 +50,16 @@ const getAppId = (game) => {
 // Map Steam's review_score (0-9) to a human label / colour bucket if the API
 // itself didn't return review_score_desc.
 const REVIEW_LABELS = [
-  'No reviews', 'Negative', 'Mostly Negative', 'Mixed', 'Mixed', 'Mixed',
-  'Mostly Positive', 'Positive', 'Very Positive', 'Overwhelmingly Positive'
+  'No reviews',
+  'Negative',
+  'Mostly Negative',
+  'Mixed',
+  'Mixed',
+  'Mixed',
+  'Mostly Positive',
+  'Positive',
+  'Very Positive',
+  'Overwhelmingly Positive',
 ];
 
 const buildReviewBlock = (apiResult) => {
@@ -61,7 +74,7 @@ const buildReviewBlock = (apiResult) => {
     positivePct,
     totalReviews: total,
     totalPositive: s.total_positive || 0,
-    totalNegative: s.total_negative || 0
+    totalNegative: s.total_negative || 0,
   };
 };
 
@@ -77,7 +90,7 @@ const buildAchievementBlock = (apiResult) => {
     total: list.length,
     rarestPercent: rarest ? Number(rarest.percent.toFixed(2)) : null,
     rarestInternalName: rarest ? rarest.name : null,
-    averagePercent: Number(avg.toFixed(1))
+    averagePercent: Number(avg.toFixed(1)),
   };
 };
 
@@ -117,7 +130,7 @@ class SteamPublicService {
         // Fire both in parallel — they're independent and small.
         const [reviewsRes, achRes] = await Promise.all([
           reviewsApi(appid).catch((err) => ({ ok: false, error: err.message })),
-          achApi(appid).catch((err) => ({ ok: false, error: err.message }))
+          achApi(appid).catch((err) => ({ ok: false, error: err.message })),
         ]);
         const reviews = buildReviewBlock(reviewsRes);
         const achievements = buildAchievementBlock(achRes);
@@ -129,7 +142,7 @@ class SteamPublicService {
           reviews,
           achievements,
           communityUrl: `https://steamcommunity.com/app/${appid}`,
-          achievementsUrl: achievements ? `https://steamcommunity.com/stats/${appid}/achievements` : null
+          achievementsUrl: achievements ? `https://steamcommunity.com/stats/${appid}/achievements` : null,
         };
         const next = { ...readCache(), [appid]: entry };
         writeCache(next);

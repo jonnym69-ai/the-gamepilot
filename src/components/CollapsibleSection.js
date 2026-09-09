@@ -10,7 +10,7 @@ function CollapsibleSection({
   className = '',
   summaryClassName = '',
   contentClassName = '',
-  children
+  children,
 }) {
   const detailsRef = useRef(null);
   const detailsClassName = ['collapsible-folder', className].filter(Boolean).join(' ');

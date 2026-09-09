@@ -14,12 +14,12 @@ const JOIN_DATE_KEY = 'joinDate';
 
 // XP reward amounts
 const STREAK_REWARDS = {
-  daily: 75,        // Base daily check-in
-  streak3: 125,     // 3-day streak bonus
-  streak7: 300,     // 7-day streak bonus  
-  streak14: 650,    // 14-day streak bonus
-  streak30: 1200,   // 30-day streak bonus
-  streak365: 5500   // Full year streak (legendary)
+  daily: 75, // Base daily check-in
+  streak3: 125, // 3-day streak bonus
+  streak7: 300, // 7-day streak bonus
+  streak14: 650, // 14-day streak bonus
+  streak30: 1200, // 30-day streak bonus
+  streak365: 5500, // Full year streak (legendary)
 };
 
 const ANNIVERSARY_REWARDS = {
@@ -29,17 +29,17 @@ const ANNIVERSARY_REWARDS = {
   year1: 2500,
   year2: 5000,
   year3: 7500,
-  year5: 10000
+  year5: 10000,
 };
 
 const BIRTHDAY_REWARDS = {
   base: 900,
-  bonusPerYear: 125  // Extra XP per year since joining
+  bonusPerYear: 125, // Extra XP per year since joining
 };
 
 const CHRISTMAS_REWARDS = {
   xp: 650,
-  bonusXP: 350
+  bonusXP: 350,
 };
 
 const SEASONAL_EVENTS = {
@@ -49,7 +49,7 @@ const SEASONAL_EVENTS = {
     description: 'Spooky season rewards for gaming in October!',
     checkDate: (date) => date.getMonth() === 9, // October
     xpBonus: 200,
-    specialReward: 'spooky_theme_preview'
+    specialReward: 'spooky_theme_preview',
   },
   winter: {
     id: 'winter',
@@ -57,7 +57,7 @@ const SEASONAL_EVENTS = {
     description: 'Cozy up with bonus XP during December!',
     checkDate: (date) => date.getMonth() === 11, // December
     xpBonus: 300,
-    specialReward: 'winter_theme_preview'
+    specialReward: 'winter_theme_preview',
   },
   summer: {
     id: 'summer',
@@ -65,7 +65,7 @@ const SEASONAL_EVENTS = {
     description: 'Long days mean more gaming time in July!',
     checkDate: (date) => date.getMonth() === 6, // July
     xpBonus: 250,
-    specialReward: 'summer_theme_preview'
+    specialReward: 'summer_theme_preview',
   },
   spring: {
     id: 'spring',
@@ -73,7 +73,7 @@ const SEASONAL_EVENTS = {
     description: 'New season, new backlog goals in April!',
     checkDate: (date) => date.getMonth() === 3, // April
     xpBonus: 200,
-    specialReward: 'spring_theme_preview'
+    specialReward: 'spring_theme_preview',
   },
   anniversary: {
     id: 'gamepilot_anniversary',
@@ -81,8 +81,8 @@ const SEASONAL_EVENTS = {
     description: 'Celebrating the app launch in March!',
     checkDate: (date) => date.getMonth() === 2 && date.getDate() >= 15 && date.getDate() <= 31, // Late March
     xpBonus: 500,
-    specialReward: 'anniversary_badge'
-  }
+    specialReward: 'anniversary_badge',
+  },
 };
 
 class CalendarXPService {
@@ -93,7 +93,7 @@ class CalendarXPService {
     try {
       const stored = StorageService.get(STREAK_KEY, null);
       const lastCheckin = StorageService.getString(LAST_CHECKIN_KEY);
-      
+
       if (!stored || !lastCheckin) {
         return { currentStreak: 0, longestStreak: 0, lastCheckin: null };
       }
@@ -102,7 +102,7 @@ class CalendarXPService {
         currentStreak: stored.currentStreak || 0,
         longestStreak: stored.longestStreak || 0,
         totalCheckins: stored.totalCheckins || 0,
-        lastCheckin: lastCheckin
+        lastCheckin: lastCheckin,
       };
     } catch (e) {
       return { currentStreak: 0, longestStreak: 0, totalCheckins: 0, lastCheckin: null };
@@ -126,14 +126,14 @@ class CalendarXPService {
   static isConsecutiveDay(date1, date2) {
     const d1 = new Date(date1);
     const d2 = new Date(date2);
-    
+
     // Reset hours to compare just the dates
     d1.setHours(0, 0, 0, 0);
     d2.setHours(0, 0, 0, 0);
-    
+
     const diffTime = d2.getTime() - d1.getTime();
     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays === 1;
   }
 
@@ -152,14 +152,14 @@ class CalendarXPService {
   static processDailyCheckin() {
     const today = new Date().toISOString();
     const streakData = this.getStreakData();
-    
+
     // Check if already checked in today
     if (streakData.lastCheckin && this.isSameDay(streakData.lastCheckin, today)) {
       return {
         success: false,
         alreadyCheckedIn: true,
         message: 'Already checked in today!',
-        streakData: streakData
+        streakData: streakData,
       };
     }
 
@@ -195,9 +195,9 @@ class CalendarXPService {
     const newStreakData = {
       currentStreak: newStreak,
       longestStreak: Math.max(newStreak, streakData.longestStreak || 0),
-      totalCheckins: (streakData.totalCheckins || 0) + 1
+      totalCheckins: (streakData.totalCheckins || 0) + 1,
     };
-    
+
     this.saveStreakData(newStreakData);
     StorageService.setString(LAST_CHECKIN_KEY, today);
 
@@ -205,7 +205,7 @@ class CalendarXPService {
     if (typeof AchievementTracker?.grantXP === 'function') {
       AchievementTracker.grantXP('daily_checkin', xpEarned, {
         streak: newStreak,
-        bonusType: bonusType
+        bonusType: bonusType,
       });
     }
 
@@ -215,9 +215,9 @@ class CalendarXPService {
       newStreak,
       bonusType,
       isMilestone: !!bonusType,
-      message: bonusType 
+      message: bonusType
         ? `🔥 ${newStreak}-day streak! +${xpEarned} XP bonus!`
-        : `Checked in! +${xpEarned} XP (Day ${newStreak})`
+        : `Checked in! +${xpEarned} XP (Day ${newStreak})`,
     };
   }
 
@@ -268,28 +268,28 @@ class CalendarXPService {
     const claimKey = 'lastBirthdayClaim';
     const storedLastBirthday = StorageService.getString(claimKey);
     const currentYear = new Date().getFullYear();
-    
+
     // Check if already claimed this year
     if (storedLastBirthday && new Date(storedLastBirthday).getFullYear() === currentYear) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         alreadyClaimed: true,
-        message: 'Birthday bonus already claimed this year!' 
+        message: 'Birthday bonus already claimed this year!',
       };
     }
 
     // Calculate bonus based on years since joining
     const joinDate = this.getJoinDate();
-    const yearsSinceJoin = joinDate 
+    const yearsSinceJoin = joinDate
       ? Math.floor((Date.now() - new Date(joinDate).getTime()) / (365 * 24 * 60 * 60 * 1000))
       : 0;
 
-    const xpEarned = BIRTHDAY_REWARDS.base + (yearsSinceJoin * BIRTHDAY_REWARDS.bonusPerYear);
+    const xpEarned = BIRTHDAY_REWARDS.base + yearsSinceJoin * BIRTHDAY_REWARDS.bonusPerYear;
 
     // Award XP
     if (typeof AchievementTracker?.grantXP === 'function') {
       AchievementTracker.grantXP('birthday_bonus', xpEarned, {
-        yearsSinceJoin
+        yearsSinceJoin,
       });
     }
 
@@ -299,7 +299,7 @@ class CalendarXPService {
       success: true,
       xpEarned,
       yearsSinceJoin,
-      message: `🎂 Happy Birthday! +${xpEarned} XP bonus!`
+      message: `🎂 Happy Birthday! +${xpEarned} XP bonus!`,
     };
   }
 
@@ -320,7 +320,7 @@ class CalendarXPService {
       return {
         success: false,
         alreadyClaimed: true,
-        message: 'Christmas rewards already claimed this year!'
+        message: 'Christmas rewards already claimed this year!',
       };
     }
 
@@ -328,7 +328,7 @@ class CalendarXPService {
 
     if (typeof AchievementTracker?.grantXP === 'function') {
       AchievementTracker.grantXP('christmas_bonus', totalChristmasXP, {
-        bonusXP: CHRISTMAS_REWARDS.bonusXP
+        bonusXP: CHRISTMAS_REWARDS.bonusXP,
       });
     }
 
@@ -338,7 +338,7 @@ class CalendarXPService {
       success: true,
       xpEarned: totalChristmasXP,
       bonusXP: CHRISTMAS_REWARDS.bonusXP,
-      message: `🎄 Christmas Day bonus! +${totalChristmasXP} XP!`
+      message: `🎄 Christmas Day bonus! +${totalChristmasXP} XP!`,
     };
   }
 
@@ -360,8 +360,7 @@ class CalendarXPService {
   static getMonthsSinceJoin() {
     const joinDate = new Date(this.getJoinDate());
     const now = new Date();
-    return (now.getFullYear() - joinDate.getFullYear()) * 12 + 
-           (now.getMonth() - joinDate.getMonth());
+    return (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
   }
 
   /**
@@ -371,10 +370,10 @@ class CalendarXPService {
     const monthsSinceJoin = this.getMonthsSinceJoin();
     const joinDate = new Date(this.getJoinDate());
     const now = new Date();
-    
+
     // Check if it's the anniversary day (same day of month as join date)
     const isAnniversaryDay = now.getDate() === joinDate.getDate();
-    
+
     if (!isAnniversaryDay) {
       return { success: false, isAnniversary: false };
     }
@@ -388,16 +387,20 @@ class CalendarXPService {
     let xpEarned = 0;
     let milestone = null;
 
-    if (monthsSinceJoin >= 60) { // 5 years
+    if (monthsSinceJoin >= 60) {
+      // 5 years
       xpEarned = ANNIVERSARY_REWARDS.year5;
       milestone = '5_year';
-    } else if (monthsSinceJoin >= 36) { // 3 years
+    } else if (monthsSinceJoin >= 36) {
+      // 3 years
       xpEarned = ANNIVERSARY_REWARDS.year3;
       milestone = '3_year';
-    } else if (monthsSinceJoin >= 24) { // 2 years
+    } else if (monthsSinceJoin >= 24) {
+      // 2 years
       xpEarned = ANNIVERSARY_REWARDS.year2;
       milestone = '2_year';
-    } else if (monthsSinceJoin >= 12) { // 1 year
+    } else if (monthsSinceJoin >= 12) {
+      // 1 year
       xpEarned = ANNIVERSARY_REWARDS.year1;
       milestone = '1_year';
     } else if (monthsSinceJoin === 6) {
@@ -417,7 +420,7 @@ class CalendarXPService {
     if (typeof AchievementTracker?.grantXP === 'function') {
       AchievementTracker.grantXP('anniversary', xpEarned, {
         monthsSinceJoin,
-        milestone
+        milestone,
       });
     }
 
@@ -428,7 +431,7 @@ class CalendarXPService {
       xpEarned,
       monthsSinceJoin,
       milestone,
-      message: `🎉 ${monthsSinceJoin >= 12 ? `${Math.floor(monthsSinceJoin/12)}-Year` : `${monthsSinceJoin}-Month`} Anniversary! +${xpEarned} XP!`
+      message: `🎉 ${monthsSinceJoin >= 12 ? `${Math.floor(monthsSinceJoin / 12)}-Year` : `${monthsSinceJoin}-Month`} Anniversary! +${xpEarned} XP!`,
     };
   }
 
@@ -439,16 +442,16 @@ class CalendarXPService {
     const today = new Date();
     const active = [];
 
-    Object.values(SEASONAL_EVENTS).forEach(event => {
+    Object.values(SEASONAL_EVENTS).forEach((event) => {
       if (event.checkDate(today)) {
         // Check if user already claimed this event this year
         const yearKey = `${event.id}_${today.getFullYear()}`;
         const claimed = StorageService.getString(`seasonal_${yearKey}`);
-        
+
         active.push({
           ...event,
           alreadyClaimed: !!claimed,
-          year: today.getFullYear()
+          year: today.getFullYear(),
         });
       }
     });
@@ -479,7 +482,7 @@ class CalendarXPService {
     if (typeof AchievementTracker?.grantXP === 'function') {
       AchievementTracker.grantXP('seasonal_event', event.xpBonus, {
         eventId,
-        eventName: event.name
+        eventName: event.name,
       });
     }
 
@@ -489,7 +492,7 @@ class CalendarXPService {
       success: true,
       xpEarned: event.xpBonus,
       eventName: event.name,
-      message: `🎊 ${event.name}! +${event.xpBonus} XP!`
+      message: `🎊 ${event.name}! +${event.xpBonus} XP!`,
     };
   }
 
@@ -501,7 +504,7 @@ class CalendarXPService {
     const streakData = this.getStreakData();
     const birthdayClaimed = !!StorageService.getString('lastBirthdayClaim');
     const christmasClaimed = !!StorageService.getString('christmasClaim');
-    
+
     return {
       streak: streakData,
       canCheckIn: !streakData.lastCheckin || !this.isSameDay(streakData.lastCheckin, today),
@@ -514,7 +517,7 @@ class CalendarXPService {
       monthsSinceJoin: this.getMonthsSinceJoin(),
       joinDate: this.getJoinDate(),
       activeSeasonalEvents: this.getActiveSeasonalEvents(),
-      nextMilestone: this.getNextStreakMilestone(streakData.currentStreak)
+      nextMilestone: this.getNextStreakMilestone(streakData.currentStreak),
     };
   }
 
@@ -523,7 +526,7 @@ class CalendarXPService {
    */
   static getNextStreakMilestone(currentStreak) {
     const milestones = [3, 7, 14, 30, 365];
-    const next = milestones.find(m => m > currentStreak);
+    const next = milestones.find((m) => m > currentStreak);
     return next || null;
   }
 
@@ -536,9 +539,9 @@ class CalendarXPService {
       7: STREAK_REWARDS.streak7,
       14: STREAK_REWARDS.streak14,
       30: STREAK_REWARDS.streak30,
-      365: STREAK_REWARDS.streak365
+      365: STREAK_REWARDS.streak365,
     };
-    
+
     const next = this.getNextStreakMilestone(streak);
     return next ? { days: next, bonus: milestones[next] } : null;
   }

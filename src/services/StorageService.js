@@ -96,8 +96,8 @@ const StorageService = {
   keys() {
     try {
       return Object.keys(localStorage)
-        .filter(key => key.startsWith(PREFIX))
-        .map(key => key.slice(PREFIX.length));
+        .filter((key) => key.startsWith(PREFIX))
+        .map((key) => key.slice(PREFIX.length));
     } catch (error) {
       return [];
     }
@@ -109,7 +109,7 @@ const StorageService = {
    */
   clear() {
     try {
-      this.keys().forEach(key => this.remove(key));
+      this.keys().forEach((key) => this.remove(key));
       return true;
     } catch (error) {
       return false;
@@ -129,41 +129,41 @@ const StorageService = {
     } catch (error) {
       return 0;
     }
-  }
+  },
 };
 
 // Legacy key mappings for backward compatibility
 const LEGACY_KEYS = {
-  'library': 'gameLibrary',
-  'favorites': 'favorites',
-  'theme': 'gamepilot-theme',
-  'animationsEnabled': 'animationsEnabled',
-  'achievements': 'achievements',
-  'unlockedAchievements': 'unlockedAchievements',
-  'xp': 'xp',
-  'calendarXP': 'calendarXP',
-  'userSettings': 'userSettings',
-  'playtimeHistory': 'playtimeHistory',
-  'gameLaunchData': 'gameLaunchData',
-  'level': 'level',
-  'featureTracking': 'featureTracking',
-  'unlockedRewards': 'unlockedRewards',
-  'selectedMusicPack': 'selectedMusicPack',
-  'selectedAmbientPack': 'selectedAmbientPack',
-  'selectedButtonPack': 'selectedButtonPack',
-  'persona': 'persona',
-  'startupQuestionnaireCompleted': 'startupQuestionnaireCompleted',
-  'sessionHistory': 'sessionHistory',
-  'rollingAchievements': 'rollingAchievements',
-  'questHistory': 'questHistory',
-  'audioVolume': 'audioVolume',
-  'mutedAudioTypes': 'mutedAudioTypes'
+  library: 'gameLibrary',
+  favorites: 'favorites',
+  theme: 'gamepilot-theme',
+  animationsEnabled: 'animationsEnabled',
+  achievements: 'achievements',
+  unlockedAchievements: 'unlockedAchievements',
+  xp: 'xp',
+  calendarXP: 'calendarXP',
+  userSettings: 'userSettings',
+  playtimeHistory: 'playtimeHistory',
+  gameLaunchData: 'gameLaunchData',
+  level: 'level',
+  featureTracking: 'featureTracking',
+  unlockedRewards: 'unlockedRewards',
+  selectedMusicPack: 'selectedMusicPack',
+  selectedAmbientPack: 'selectedAmbientPack',
+  selectedButtonPack: 'selectedButtonPack',
+  persona: 'persona',
+  startupQuestionnaireCompleted: 'startupQuestionnaireCompleted',
+  sessionHistory: 'sessionHistory',
+  rollingAchievements: 'rollingAchievements',
+  questHistory: 'questHistory',
+  audioVolume: 'audioVolume',
+  mutedAudioTypes: 'mutedAudioTypes',
 };
 
 /**
  * Migration helper to move data from legacy keys to new prefixed keys
  */
-StorageService.migrate = function() {
+StorageService.migrate = function () {
   Object.entries(LEGACY_KEYS).forEach(([newKey, oldKey]) => {
     const prefixedNewKey = `${PREFIX}${newKey}`;
     if (localStorage.getItem(prefixedNewKey) === null) {

@@ -4,7 +4,7 @@ import {
   RECOMMENDATION_WEIGHT_PRESETS,
   getRecommendationWeights,
   getActiveRecommendationWeights,
-  invalidateRecommendationWeightsCache
+  invalidateRecommendationWeightsCache,
 } from './RecommendationWeights';
 
 describe('RecommendationWeights', () => {
@@ -19,29 +19,49 @@ describe('RecommendationWeights', () => {
       // Keep this assertion strict so the contract is visible.
       const requiredKeys = [
         'base',
-        'moodHighRateBonus', 'moodMediumRateBonus', 'moodLowRateBonus',
-        'moodHighRateThreshold', 'moodMediumRateThreshold',
-        'genreHighRateBonus', 'genreMediumRateBonus', 'genreLowRateBonus',
-        'genreHighRateThreshold', 'genreMediumRateThreshold',
-        'sessionPerfectMatchBonus', 'sessionCloseMatchBonus', 'sessionNearMatchBonus',
+        'moodHighRateBonus',
+        'moodMediumRateBonus',
+        'moodLowRateBonus',
+        'moodHighRateThreshold',
+        'moodMediumRateThreshold',
+        'genreHighRateBonus',
+        'genreMediumRateBonus',
+        'genreLowRateBonus',
+        'genreHighRateThreshold',
+        'genreMediumRateThreshold',
+        'sessionPerfectMatchBonus',
+        'sessionCloseMatchBonus',
+        'sessionNearMatchBonus',
         'sessionMatchDiffDivisor',
-        'seedMoodMatchWithProfile', 'seedMoodMatchWithoutProfile',
-        'seedGenreMatchWithProfile', 'seedGenreMatchWithoutProfile',
-        'seedGenreOverlapWithProfile', 'seedGenreOverlapWithoutProfile',
-        'seedSessionCloseBonus', 'seedSessionNearBonus',
-        'seedSessionCloseMaxDiffMin', 'seedSessionNearMaxDiffMin',
+        'seedMoodMatchWithProfile',
+        'seedMoodMatchWithoutProfile',
+        'seedGenreMatchWithProfile',
+        'seedGenreMatchWithoutProfile',
+        'seedGenreOverlapWithProfile',
+        'seedGenreOverlapWithoutProfile',
+        'seedSessionCloseBonus',
+        'seedSessionNearBonus',
+        'seedSessionCloseMaxDiffMin',
+        'seedSessionNearMaxDiffMin',
         'personaAlignmentMultiplier',
         'hardwareCannotRunPenalty',
         'unplayedBonus',
-        'recentlyPlayedWeekPenalty', 'recentlyPlayedFortnightPenalty',
-        'timeAvailabilityFitBonus', 'timeAvailabilityAlmostFitBonus',
+        'recentlyPlayedWeekPenalty',
+        'recentlyPlayedFortnightPenalty',
+        'timeAvailabilityFitBonus',
+        'timeAvailabilityAlmostFitBonus',
         'timeAvailabilityAlmostFitMultiplier',
-        'replayIntentActiveBonus', 'replayIntentSoonBonus',
-        'replayIntentEndlessBonus', 'replayIntentFinishedPenalty',
-        'scoreMin', 'scoreMax',
-        'explorationSlotEnabled', 'explorationMinPicks',
-        'explorationUnplayedBonus', 'explorationGenreNoveltyWeight',
-        'explorationRequireRunnable'
+        'replayIntentActiveBonus',
+        'replayIntentSoonBonus',
+        'replayIntentEndlessBonus',
+        'replayIntentFinishedPenalty',
+        'scoreMin',
+        'scoreMax',
+        'explorationSlotEnabled',
+        'explorationMinPicks',
+        'explorationUnplayedBonus',
+        'explorationGenreNoveltyWeight',
+        'explorationRequireRunnable',
       ];
 
       requiredKeys.forEach((key) => {
@@ -89,7 +109,9 @@ describe('RecommendationWeights', () => {
       const w = getRecommendationWeights('full');
       expect(w.unplayedBonus).toBeGreaterThan(DEFAULT_RECOMMENDATION_WEIGHTS.unplayedBonus);
       expect(w.recentlyPlayedWeekPenalty).toBeLessThan(DEFAULT_RECOMMENDATION_WEIGHTS.recentlyPlayedWeekPenalty);
-      expect(w.recentlyPlayedFortnightPenalty).toBeLessThan(DEFAULT_RECOMMENDATION_WEIGHTS.recentlyPlayedFortnightPenalty);
+      expect(w.recentlyPlayedFortnightPenalty).toBeLessThan(
+        DEFAULT_RECOMMENDATION_WEIGHTS.recentlyPlayedFortnightPenalty
+      );
       expect(w.replayIntentActiveBonus).toBeGreaterThan(DEFAULT_RECOMMENDATION_WEIGHTS.replayIntentActiveBonus);
     });
 

@@ -39,13 +39,13 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
     const [viewType, orientation] = layout.split('-');
     const isGrid = viewType === 'grid';
     const isVertical = orientation === 'vertical';
-    
+
     let layoutClass = '';
     if (isGrid && isVertical) layoutClass = 'grid-vertical';
     else if (isGrid && !isVertical) layoutClass = 'grid-horizontal';
     else if (!isGrid && isVertical) layoutClass = 'list-vertical';
     else layoutClass = 'list-horizontal';
-    
+
     return `
       <div class="game-export ${layoutClass}">
         <div class="export-header">
@@ -60,42 +60,62 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               <span class="stat-label">Total Minutes</span>
             </div>
             <div class="stat">
-              <span class="stat-number">${library.filter(g => g.time_played > 0).length}</span>
+              <span class="stat-number">${library.filter((g) => g.time_played > 0).length}</span>
               <span class="stat-label">Games Played</span>
             </div>
           </div>
         </div>
         <div class="games-container ${layoutClass}-layout">
-          ${library.map((game, index) => `
+          ${library
+            .map(
+              (game, index) => `
             <div class="export-game-card ${isGrid ? 'grid-card' : 'list-card'}">
-              ${includeImages && game.iconUrl ? `
+              ${
+                includeImages && game.iconUrl
+                  ? `
                 <div class="game-image">
                   <img src="${game.iconUrl}" alt="${game.name}" />
                 </div>
-              ` : ''}
+              `
+                  : ''
+              }
               <div class="game-details">
                 <h3>${game.name}</h3>
                 <div class="game-meta">
                   <span class="platform-tag">${game.platform || 'Unknown'}</span>
                   ${game.mood ? `<span class="mood-tag">${game.mood}</span>` : ''}
-                  ${game.genres && game.genres.length > 0 ? `
+                  ${
+                    game.genres && game.genres.length > 0
+                      ? `
                     <span class="genre-tag">${game.genres[0]}</span>
-                  ` : ''}
+                  `
+                      : ''
+                  }
                 </div>
-                ${includeTime ? `
+                ${
+                  includeTime
+                    ? `
                   <div class="game-time">
                     🕐
                     <span>${formatTime(game.time_played)}</span>
                   </div>
-                ` : ''}
-                ${game.launch_count ? `
+                `
+                    : ''
+                }
+                ${
+                  game.launch_count
+                    ? `
                   <div class="game-launches">
                     <span>Launched ${game.launch_count} times</span>
                   </div>
-                ` : ''}
+                `
+                    : ''
+                }
               </div>
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </div>
     `;
@@ -105,15 +125,17 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
     const headers = ['Name', 'Platform', 'Time Played (minutes)', 'Launch Count', 'Genres', 'Mood', 'Last Played'];
     const csvContent = [
       headers.join(','),
-      ...library.map(game => [
-        `"${game.name.replace(/"/g, '""')}"`,
-        game.platform || 'Unknown',
-        game.time_played || 0,
-        game.launch_count || 0,
-        `"${game.genres?.join('; ') || ''}"`,
-        game.mood || '',
-        game.last_played ? new Date(game.last_played).toLocaleDateString() : 'Never'
-      ].join(','))
+      ...library.map((game) =>
+        [
+          `"${game.name.replace(/"/g, '""')}"`,
+          game.platform || 'Unknown',
+          game.time_played || 0,
+          game.launch_count || 0,
+          `"${game.genres?.join('; ') || ''}"`,
+          game.mood || '',
+          game.last_played ? new Date(game.last_played).toLocaleDateString() : 'Never',
+        ].join(',')
+      ),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -144,19 +166,23 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
         backgroundColor: '#ffffff',
         scale: 2, // Higher resolution
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
       });
 
       // Convert canvas to blob
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `gamepilot-${selectedPage}-${layout}-${new Date().toISOString().split('T')[0]}.${format.toLowerCase()}`;
-        link.click();
-        URL.revokeObjectURL(url);
-        onClose();
-      }, `image/${format.toLowerCase()}`, 0.95);
+      canvas.toBlob(
+        (blob) => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `gamepilot-${selectedPage}-${layout}-${new Date().toISOString().split('T')[0]}.${format.toLowerCase()}`;
+          link.click();
+          URL.revokeObjectURL(url);
+          onClose();
+        },
+        `image/${format.toLowerCase()}`,
+        0.95
+      );
     } catch (error) {
       console.error('Image export failed:', error);
       alert('Failed to export image. Please try again.');
@@ -205,28 +231,28 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               Select Page to Export
             </h3>
             <div className="page-options">
-              <button 
+              <button
                 className={`page-option ${selectedPage === 'library' ? 'active' : ''}`}
                 onClick={() => setSelectedPage('library')}
               >
                 <Grid size={16} />
                 Library
               </button>
-              <button 
+              <button
                 className={`page-option ${selectedPage === 'stats' ? 'active' : ''}`}
                 onClick={() => setSelectedPage('stats')}
               >
                 <Trophy size={16} />
                 Stats
               </button>
-              <button 
+              <button
                 className={`page-option ${selectedPage === 'profile' ? 'active' : ''}`}
                 onClick={() => setSelectedPage('profile')}
               >
                 <User size={16} />
                 Profile
               </button>
-              <button 
+              <button
                 className={`page-option ${selectedPage === 'home' ? 'active' : ''}`}
                 onClick={() => setSelectedPage('home')}
               >
@@ -243,28 +269,28 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               Layout Options
             </h3>
             <div className="layout-options">
-              <button 
+              <button
                 className={`layout-option ${layout === 'grid-vertical' ? 'active' : ''}`}
                 onClick={() => setLayout('grid-vertical')}
               >
                 <Grid size={16} />
                 Grid Vertical
               </button>
-              <button 
+              <button
                 className={`layout-option ${layout === 'grid-horizontal' ? 'active' : ''}`}
                 onClick={() => setLayout('grid-horizontal')}
               >
                 <Grid size={16} />
                 Grid Horizontal
               </button>
-              <button 
+              <button
                 className={`layout-option ${layout === 'list-vertical' ? 'active' : ''}`}
                 onClick={() => setLayout('list-vertical')}
               >
                 <List size={16} />
                 List Vertical
               </button>
-              <button 
+              <button
                 className={`layout-option ${layout === 'list-horizontal' ? 'active' : ''}`}
                 onClick={() => setLayout('list-horizontal')}
               >
@@ -282,19 +308,11 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
             </h3>
             <div className="export-options">
               <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={includeImages}
-                  onChange={(e) => setIncludeImages(e.target.checked)}
-                />
+                <input type="checkbox" checked={includeImages} onChange={(e) => setIncludeImages(e.target.checked)} />
                 <span>Include Game Images</span>
               </label>
               <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={includeTime}
-                  onChange={(e) => setIncludeTime(e.target.checked)}
-                />
+                <input type="checkbox" checked={includeTime} onChange={(e) => setIncludeTime(e.target.checked)} />
                 <span>Include Time Played</span>
               </label>
             </div>
@@ -307,21 +325,21 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               Export Format
             </h3>
             <div className="format-options">
-              <button 
+              <button
                 className={`format-option ${exportFormat === 'png' ? 'active' : ''}`}
                 onClick={() => setExportFormat('png')}
               >
                 <Image size={16} />
                 PNG
               </button>
-              <button 
+              <button
                 className={`format-option ${exportFormat === 'jpeg' ? 'active' : ''}`}
                 onClick={() => setExportFormat('jpeg')}
               >
                 <Image size={16} />
                 JPEG
               </button>
-              <button 
+              <button
                 className={`format-option ${exportFormat === 'csv' ? 'active' : ''}`}
                 onClick={() => setExportFormat('csv')}
               >

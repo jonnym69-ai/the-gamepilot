@@ -8,7 +8,7 @@ const WATERMARK_OPTIONS = [
   { id: 'gamepilot', label: 'GamePilot (default)' },
   { id: 'github', label: 'GitHub releases' },
   { id: 'itchio', label: 'itch.io' },
-  { id: 'none', label: 'No watermark' }
+  { id: 'none', label: 'No watermark' },
 ];
 
 const STAT_OPTIONS = [
@@ -16,7 +16,7 @@ const STAT_OPTIONS = [
   { key: 'sessions', label: 'Sessions' },
   { key: 'steamHours', label: 'Steam Hours' },
   { key: 'libraryValue', label: 'Library Value' },
-  { key: 'topGames', label: 'Most Played' }
+  { key: 'topGames', label: 'Most Played' },
 ];
 
 // Preview is scaled down from the full 1080px export size.
@@ -110,13 +110,10 @@ const RecapCustomizeModal = ({ isOpen, onClose, library = [], username = 'Gamer'
               className="recap-customize-preview-frame"
               style={{
                 width: LIBRARY_SHARE_CARD_SIZE_PX * PREVIEW_SCALE,
-                height: LIBRARY_SHARE_CARD_SIZE_PX * PREVIEW_SCALE
+                height: LIBRARY_SHARE_CARD_SIZE_PX * PREVIEW_SCALE,
               }}
             >
-              <div
-                className="recap-customize-preview-scale"
-                style={{ transform: `scale(${PREVIEW_SCALE})` }}
-              >
+              <div className="recap-customize-preview-scale" style={{ transform: `scale(${PREVIEW_SCALE})` }}>
                 <LibraryShareCard
                   library={library}
                   username={username}
@@ -144,11 +141,20 @@ const RecapCustomizeModal = ({ isOpen, onClose, library = [], username = 'Gamer'
                       type="button"
                       className={`recap-theme-swatch ${isSelected ? 'selected' : ''} ${theme.unlocked ? '' : 'locked'}`}
                       onClick={() => handleSelectTheme(theme.id)}
-                      title={theme.unlocked ? theme.description : `${theme.name} unlocks at ${theme.requiredXP.toLocaleString()} XP`}
-                      style={{ background: palette.background, borderColor: isSelected ? palette.accent : 'transparent' }}
+                      title={
+                        theme.unlocked
+                          ? theme.description
+                          : `${theme.name} unlocks at ${theme.requiredXP.toLocaleString()} XP`
+                      }
+                      style={{
+                        background: palette.background,
+                        borderColor: isSelected ? palette.accent : 'transparent',
+                      }}
                     >
                       <span className="recap-theme-accent" style={{ background: palette.accent }} />
-                      <span className="recap-theme-name" style={{ color: palette.text }}>{theme.name}</span>
+                      <span className="recap-theme-name" style={{ color: palette.text }}>
+                        {theme.name}
+                      </span>
                       {isSelected && theme.unlocked && (
                         <span className="recap-theme-badge" style={{ background: palette.accent }}>
                           <Check size={12} />
@@ -176,7 +182,9 @@ const RecapCustomizeModal = ({ isOpen, onClose, library = [], username = 'Gamer'
                 <span className="recap-stat-check">{useMostPlayedCover ? <Check size={14} /> : null}</span>
                 Use most-played game cover
               </button>
-              <p className="recap-customize-note">When enabled, the top game&apos;s artwork is used as the card background.</p>
+              <p className="recap-customize-note">
+                When enabled, the top game&apos;s artwork is used as the card background.
+              </p>
             </div>
 
             <div className="recap-customize-section">

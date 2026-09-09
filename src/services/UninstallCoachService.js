@@ -21,8 +21,8 @@ class UninstallCoachService {
         plan: {
           method: 'unsupported',
           label: 'Desktop only',
-          message: 'Uninstall hand-off is only available in the desktop app.'
-        }
+          message: 'Uninstall hand-off is only available in the desktop app.',
+        },
       };
     }
     try {

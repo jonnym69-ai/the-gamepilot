@@ -10,7 +10,7 @@ export function ChampionShareCard({
   periodType = 'week',
   username = 'Player',
   showCover = true,
-  watermark = 'gamepilot'
+  watermark = 'gamepilot',
 }) {
   if (!champion) return null;
 
@@ -19,20 +19,22 @@ export function ChampionShareCard({
   const minutes = champion.minutes || 0;
   const totalMinutes = champion.totalPeriodMinutes || minutes;
   const sharePercent = totalMinutes > 0 ? Math.round((minutes / totalMinutes) * 100) : 100;
-  
+
   const personaLabel = champion.personaSnapshot?.label || 'Champion Pilot';
-  const roastLine = champion.personaSnapshot?.roastLine || champion.speech?.quote || 'Dominated the session playlist with pure dedication.';
-  
+  const roastLine =
+    champion.personaSnapshot?.roastLine ||
+    champion.speech?.quote ||
+    'Dominated the session playlist with pure dedication.';
+
   const coverUrl = showCover && game ? resolveGameArtwork(game, { surface: 'hero' }) : null;
   const runnerUp = champion.runnerUp;
 
-  const periodLabel = periodType === 'week' ? 'Weekly Champion' : periodType === 'month' ? 'Monthly Champion' : 'Yearly Champion';
+  const periodLabel =
+    periodType === 'week' ? 'Weekly Champion' : periodType === 'month' ? 'Monthly Champion' : 'Yearly Champion';
 
   return (
     <div className="champion-share-card">
-      {coverUrl && (
-        <div className="champion-card-bg" style={{ backgroundImage: `url(${coverUrl})` }} />
-      )}
+      {coverUrl && <div className="champion-card-bg" style={{ backgroundImage: `url(${coverUrl})` }} />}
       <div className="champion-card-overlay" />
 
       <div className="champion-card-inner">
@@ -79,7 +81,9 @@ export function ChampionShareCard({
         {runnerUp && runnerUp.gameName && (
           <div className="champion-runnerup-bar">
             <span className="runnerup-label">Runner-up</span>
-            <span className="runnerup-name">{runnerUp.gameName} ({formatPlaytime(runnerUp.minutes)})</span>
+            <span className="runnerup-name">
+              {runnerUp.gameName} ({formatPlaytime(runnerUp.minutes)})
+            </span>
           </div>
         )}
 

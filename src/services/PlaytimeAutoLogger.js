@@ -14,29 +14,33 @@ import SessionRepository from './SessionRepository';
 const MAX_ACTIVE_SESSION_AGE_MS = 18 * 60 * 60 * 1000;
 const MAX_EMULATOR_SESSION_MINUTES = 240;
 
-const getSessionGamePart = (gameName) => String(gameName || 'game')
-  .toLowerCase()
-  .replace(/[^a-z0-9]+/g, '-')
-  .replace(/^-|-$/g, '')
-  .slice(0, 40) || 'game';
+const getSessionGamePart = (gameName) =>
+  String(gameName || 'game')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40) || 'game';
 
 const createSessionId = (gameName, startedAt = Date.now()) => {
   const randomPart = Math.random().toString(36).slice(2, 10);
   return `${getSessionGamePart(gameName)}-${startedAt}-${randomPart}`;
 };
 
-const createLegacySessionId = (gameName, startTime) => `${getSessionGamePart(gameName)}-${new Date(startTime).getTime() || 0}-legacy`;
+const createLegacySessionId = (gameName, startTime) =>
+  `${getSessionGamePart(gameName)}-${new Date(startTime).getTime() || 0}-legacy`;
 
 const isEmulatorSession = (session = {}, metadata = {}) => {
   const combinedMetadata = {
     ...(session?.metadata && typeof session.metadata === 'object' ? session.metadata : {}),
-    ...(metadata && typeof metadata === 'object' ? metadata : {})
+    ...(metadata && typeof metadata === 'object' ? metadata : {}),
   };
 
-  return combinedMetadata.launchType === 'emulator'
-    || combinedMetadata.source === 'emulator'
-    || Boolean(combinedMetadata.romPath)
-    || combinedMetadata.platform === 'Emulated';
+  return (
+    combinedMetadata.launchType === 'emulator' ||
+    combinedMetadata.source === 'emulator' ||
+    Boolean(combinedMetadata.romPath) ||
+    combinedMetadata.platform === 'Emulated'
+  );
 };
 
 const getEffectivePlaytimeMinutes = (session, metadata, startTime, endTime) => {
@@ -47,7 +51,7 @@ const getEffectivePlaytimeMinutes = (session, metadata, startTime, endTime) => {
       playtimeMinutes: elapsedMinutes,
       adjusted: false,
       adjustmentReason: null,
-      actualElapsedMinutes: elapsedMinutes
+      actualElapsedMinutes: elapsedMinutes,
     };
   }
 
@@ -56,7 +60,7 @@ const getEffectivePlaytimeMinutes = (session, metadata, startTime, endTime) => {
       playtimeMinutes: elapsedMinutes,
       adjusted: false,
       adjustmentReason: null,
-      actualElapsedMinutes: elapsedMinutes
+      actualElapsedMinutes: elapsedMinutes,
     };
   }
 
@@ -64,7 +68,7 @@ const getEffectivePlaytimeMinutes = (session, metadata, startTime, endTime) => {
     playtimeMinutes: MAX_EMULATOR_SESSION_MINUTES,
     adjusted: true,
     adjustmentReason: 'stale_emulator_session_capped',
-    actualElapsedMinutes: elapsedMinutes
+    actualElapsedMinutes: elapsedMinutes,
   };
 };
 
@@ -99,7 +103,7 @@ const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
       metadata: sessionEntry.metadata && typeof sessionEntry.metadata === 'object' ? sessionEntry.metadata : {},
       sessionId: sessionEntry.sessionId || createLegacySessionId(gameName, startTime),
       lastConfirmedAt: sessionEntry.lastConfirmedAt || startTime,
-      paused: Boolean(sessionEntry.paused)
+      paused: Boolean(sessionEntry.paused),
     };
   }
 
@@ -109,15 +113,11 @@ const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
     metadata: {},
     sessionId: createLegacySessionId(gameName, startTime),
     lastConfirmedAt: startTime,
-    paused: false
+    paused: false,
   };
 };
 
-const isPlainObject = (value) => (
-  Boolean(value)
-  && typeof value === 'object'
-  && !Array.isArray(value)
-);
+const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
 export class PlaytimeAutoLogger {
   static ACTIVE_SESSIONS_KEY = 'activeGameSessions';
@@ -129,7 +129,7 @@ export class PlaytimeAutoLogger {
   static startSession(gameName, gameId = null, metadata = {}) {
     const sessions = this.getActiveSessions();
     const normalizedMetadata = metadata && typeof metadata === 'object' ? metadata : {};
-    
+
     const startTime = new Date().toISOString();
     sessions[gameName] = {
       startTime,
@@ -137,14 +137,14 @@ export class PlaytimeAutoLogger {
       metadata: normalizedMetadata,
       sessionId: createSessionId(gameName, Date.now()),
       lastConfirmedAt: startTime,
-      paused: false
+      paused: false,
     };
 
     SessionRepository.saveActiveSessions(sessions);
 
     // Trigger stats refresh event
     window.dispatchEvent(new CustomEvent('gameSessionStarted', { detail: { gameName } }));
-    
+
     return sessions[gameName];
   }
 
@@ -170,12 +170,12 @@ export class PlaytimeAutoLogger {
     const requestedEndTime = normalizedMetadata.endTimeOverride || normalizedMetadata.recoveredEndTime || null;
     const parsedEndTime = requestedEndTime ? new Date(requestedEndTime) : new Date();
     const endTime = Number.isNaN(parsedEndTime.getTime()) || parsedEndTime < startTime ? new Date() : parsedEndTime;
-    const {
-      playtimeMinutes,
-      adjusted,
-      adjustmentReason,
-      actualElapsedMinutes
-    } = getEffectivePlaytimeMinutes(session, normalizedMetadata, startTime, endTime);
+    const { playtimeMinutes, adjusted, adjustmentReason, actualElapsedMinutes } = getEffectivePlaytimeMinutes(
+      session,
+      normalizedMetadata,
+      startTime,
+      endTime
+    );
 
     // Only log if session was at least 1 minute
     if (playtimeMinutes >= 1) {
@@ -187,7 +187,7 @@ export class PlaytimeAutoLogger {
         sessionAdjustmentReason: adjustmentReason,
         ...(session.metadata || {}),
         ...normalizedMetadata,
-        sessionId: session.sessionId || createLegacySessionId(gameName, session.startTime)
+        sessionId: session.sessionId || createLegacySessionId(gameName, session.startTime),
       };
 
       const historyEntry = this.createHistoryEntry(gameName, playtimeMinutes, session.gameId, combinedMetadata);
@@ -197,14 +197,14 @@ export class PlaytimeAutoLogger {
       if (!historyWritten) {
         return null;
       }
-      
+
       // Update RollingAchievementsTracker with session data
       RollingAchievementsTracker.updatePlaytime(playtimeMinutes);
       RollingAchievementsTracker.incrementSession();
-      
+
       // Track game played if we have game info
       const sessionGenres = Array.isArray(combinedMetadata.genres) ? combinedMetadata.genres : [];
-      const primaryGenre = sessionGenres.length > 0 ? sessionGenres[0] : (combinedMetadata.genre || null);
+      const primaryGenre = sessionGenres.length > 0 ? sessionGenres[0] : combinedMetadata.genre || null;
       const trackedGameId = session.gameId || gameName;
       if (trackedGameId) {
         RollingAchievementsTracker.trackGamePlayed(trackedGameId, primaryGenre, combinedMetadata.mood || null);
@@ -212,16 +212,13 @@ export class PlaytimeAutoLogger {
 
       // Feed UserBehaviorProfile so the recommendation engine learns from every session
       try {
-        const rawGenresForProfile = sessionGenres.length > 0
-          ? sessionGenres
-          : (combinedMetadata.gameGenres || []);
+        const rawGenresForProfile = sessionGenres.length > 0 ? sessionGenres : combinedMetadata.gameGenres || [];
         const normalizedGenresForProfile = mapGameGenresToValid(rawGenresForProfile);
-        const sessionMoodForProfile = combinedMetadata.mood
-          || getMoodForGame(normalizedGenresForProfile);
+        const sessionMoodForProfile = combinedMetadata.mood || getMoodForGame(normalizedGenresForProfile);
         UserBehaviorProfile.trackPassiveSession(gameName, playtimeMinutes, {
           mood: sessionMoodForProfile,
           genres: normalizedGenresForProfile,
-          gameId: trackedGameId
+          gameId: trackedGameId,
         });
       } catch (behaviorErr) {
         console.warn('UserBehaviorProfile passive tracking skipped:', behaviorErr);
@@ -233,7 +230,7 @@ export class PlaytimeAutoLogger {
         const totalPlayTime = history.reduce((sum, s) => sum + s.playtimeMinutes, 0);
         const totalSessions = history.length;
         const platformCounts = {};
-        history.forEach(s => {
+        history.forEach((s) => {
           const platform = s.metadata?.platform || s.platform || 'Unknown';
           platformCounts[platform] = (platformCounts[platform] || 0) + 1;
         });
@@ -241,7 +238,7 @@ export class PlaytimeAutoLogger {
           totalPlayTime,
           totalSessions,
           favoriteGenre: primaryGenre,
-          platformDiversity: Object.keys(platformCounts).length
+          platformDiversity: Object.keys(platformCounts).length,
         };
         processSessionEnd(gameName, playtimeMinutes, stats);
       } catch (e) {
@@ -254,7 +251,7 @@ export class PlaytimeAutoLogger {
 
     // Trigger stats refresh event
     window.dispatchEvent(new CustomEvent('gameSessionEnded', { detail: { gameName, playtimeMinutes } }));
-    
+
     return {
       gameName,
       gameId: session.gameId || null,
@@ -267,8 +264,8 @@ export class PlaytimeAutoLogger {
         sessionAdjusted: adjusted,
         sessionAdjustmentReason: adjustmentReason,
         ...(session.metadata || {}),
-        ...normalizedMetadata
-      }
+        ...normalizedMetadata,
+      },
     };
   }
 
@@ -383,7 +380,7 @@ export class PlaytimeAutoLogger {
       const result = this.endSession(gameName, {
         recoveredSession: true,
         recoveredEndTime,
-        endTimeOverride: recoveredEndTime
+        endTimeOverride: recoveredEndTime,
       });
       if (result) results.push(result);
       return results;
@@ -442,7 +439,7 @@ export class PlaytimeAutoLogger {
       timestamp: normalizedMetadata.endTime || new Date().toISOString(),
       date: new Date(normalizedMetadata.endTime || Date.now()).toLocaleDateString(),
       ...normalizedMetadata,
-      sessionId
+      sessionId,
     };
   }
 
@@ -492,7 +489,7 @@ export class PlaytimeAutoLogger {
     }
 
     // Find and update game
-    const game = library.find(g => g.name === gameName);
+    const game = library.find((g) => g.name === gameName);
     if (!game) {
       return false;
     }
@@ -513,15 +510,15 @@ export class PlaytimeAutoLogger {
    */
   static getGameStats(gameName) {
     const history = this.getSessionHistory();
-    const gameSessions = history.filter(s => s.gameName === gameName);
-    
+    const gameSessions = history.filter((s) => s.gameName === gameName);
+
     if (gameSessions.length === 0) {
       return {
         gameName,
         totalSessions: 0,
         totalPlaytime: 0,
         avgSessionLength: 0,
-        lastPlayed: null
+        lastPlayed: null,
       };
     }
 
@@ -535,7 +532,7 @@ export class PlaytimeAutoLogger {
       totalPlaytime,
       avgSessionLength,
       lastPlayed,
-      sessions: gameSessions
+      sessions: gameSessions,
     };
   }
 
@@ -556,7 +553,7 @@ export class PlaytimeAutoLogger {
     }
 
     // Aggregate playtime by date
-    history.forEach(session => {
+    history.forEach((session) => {
       const dateStr = new Date(session.timestamp).toLocaleDateString();
       if (stats.hasOwnProperty(dateStr)) {
         stats[dateStr] += session.playtimeMinutes;
@@ -573,13 +570,13 @@ export class PlaytimeAutoLogger {
     const history = this.getSessionHistory();
     const gameStats = {};
 
-    history.forEach(session => {
+    history.forEach((session) => {
       if (!gameStats[session.gameName]) {
         gameStats[session.gameName] = {
           gameName: session.gameName,
           gameId: session.gameId,
           totalPlaytime: 0,
-          sessions: 0
+          sessions: 0,
         };
       }
       gameStats[session.gameName].totalPlaytime += session.playtimeMinutes;
@@ -601,7 +598,7 @@ export class PlaytimeAutoLogger {
 
     let newLastSync = lastSync;
 
-    history.forEach(session => {
+    history.forEach((session) => {
       const sessionStart = session.startTime || session.timestamp;
       // Skip already-synced sessions
       if (lastSync && sessionStart && new Date(sessionStart).getTime() <= new Date(lastSync).getTime()) {
@@ -611,7 +608,7 @@ export class PlaytimeAutoLogger {
       // Find game in library to get mood/genre
       let game = null;
       if (library) {
-        game = library.find(g => g.name === session.gameName);
+        game = library.find((g) => g.name === session.gameName);
       }
 
       // Track session length in behavior profile
@@ -646,7 +643,7 @@ export class PlaytimeAutoLogger {
       profile.completionStats.completedGameIds = [];
     }
 
-    completedGames.forEach(gameId => {
+    completedGames.forEach((gameId) => {
       if (!profile.completionStats.completedGameIds.includes(gameId)) {
         profile.completionStats.completedGameIds.push(gameId);
       }
@@ -674,7 +671,7 @@ export class PlaytimeAutoLogger {
       return;
     }
 
-    const game = library?.find(g => g.name === gameName);
+    const game = library?.find((g) => g.name === gameName);
 
     // Track session in behavior profile
     UserBehaviorProfile.trackSessionLength(lastSession.playtimeMinutes);

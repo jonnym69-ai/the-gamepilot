@@ -10,7 +10,7 @@ import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 export const RECOMMENDATION_OUTCOME = Object.freeze({
   GREAT_PICK: 'great-pick',
   NOT_NOW: 'not-now',
-  NOT_FOR_ME: 'not-for-me'
+  NOT_FOR_ME: 'not-for-me',
 });
 
 const RECOMMENDATION_OUTCOME_VALUES = new Set(Object.values(RECOMMENDATION_OUTCOME));
@@ -21,23 +21,23 @@ const MEANINGFUL_RECOMMENDATION_SESSION_MINUTES = 10;
 const MOOD_PERSONA_IDENTITIES = {
   Relaxed: {
     label: 'Chill Voyager',
-    description: 'Thrives on cozy loops, slow-build sims, and low-pressure adventures.'
+    description: 'Thrives on cozy loops, slow-build sims, and low-pressure adventures.',
   },
   Social: {
     label: 'Party Co-Pilot',
-    description: 'Lights up in co-op lobbies and thrives on multiplayer chemistry.'
+    description: 'Lights up in co-op lobbies and thrives on multiplayer chemistry.',
   },
   Creative: {
     label: 'Imagination Architect',
-    description: 'Builds worlds from scratch and chases expressive sandboxes.'
+    description: 'Builds worlds from scratch and chases expressive sandboxes.',
   },
   Focused: {
     label: 'Precision Strategist',
-    description: 'Finds flow in tight puzzles, tactical battles, and deliberate pacing.'
+    description: 'Finds flow in tight puzzles, tactical battles, and deliberate pacing.',
   },
   Competitive: {
     label: 'Arena Challenger',
-    description: 'Thrives on ranked ladders, high-stakes matches, and competitive glory.'
+    description: 'Thrives on ranked ladders, high-stakes matches, and competitive glory.',
   },
 };
 
@@ -58,12 +58,21 @@ const GENRE_PERSONA_IDENTITIES = {
   Indie: { label: 'Curator Scout', description: 'Digs deep for the unexpected gems outside the mainstream.' },
   Sandbox: { label: 'World Builder', description: 'Shapes open sandboxes into something entirely personal.' },
   Survival: { label: 'Wilderness Forged', description: 'Outlasts the elements and thrives where others retreat.' },
-  'Visual Novel': { label: 'Narrative Connoisseur', description: 'Follows branching stories and savours every dialogue beat.' },
+  'Visual Novel': {
+    label: 'Narrative Connoisseur',
+    description: 'Follows branching stories and savours every dialogue beat.',
+  },
   Platformer: { label: 'Precision Jumper', description: 'Nails pixel-perfect leaps and finds flow in momentum.' },
-  Management: { label: 'Empire Architect', description: 'Balances resources, staff, and growth with ruthless efficiency.' },
+  Management: {
+    label: 'Empire Architect',
+    description: 'Balances resources, staff, and growth with ruthless efficiency.',
+  },
   Exploration: { label: 'Cartographer', description: 'Maps the uncharted and collects every hidden corner.' },
   MMO: { label: 'Realm Regular', description: 'Commits to shared worlds and the communities inside them.' },
-  'Story-driven': { label: 'Narrative Voyager', description: 'Follows branching stories and savours every dialogue beat.' },
+  'Story-driven': {
+    label: 'Narrative Voyager',
+    description: 'Follows branching stories and savours every dialogue beat.',
+  },
   Multiplayer: { label: 'Online Operative', description: 'Lives in shared lobbies and persistent online worlds.' },
   Casual: { label: 'Easygoing Explorer', description: 'Drops in for light, low-pressure sessions any time.' },
   Party: { label: 'Party Catalyst', description: 'Brings the couch-co-op chaos and group laughs.' },
@@ -111,17 +120,17 @@ const SESSION_PATTERN_IDENTITIES = {
 
 const TIME_OF_DAY_IDENTITIES = {
   'Late Night': { label: 'Midnight Forger', description: 'Burns midnight oil and games into the small hours.' },
-  'Morning': { label: 'Dawn Patroller', description: 'Starts the day with a quick session before the world wakes.' },
-  'Afternoon': { label: 'Day Shift Pilot', description: 'Claims the afternoon as prime gaming time.' },
-  'Evening': { label: 'Twilight Commander', description: 'Winds down the day with focused evening play.' },
-  'Night': { label: 'Night Owl', description: 'Gears up after dark when the house goes quiet.' },
+  Morning: { label: 'Dawn Patroller', description: 'Starts the day with a quick session before the world wakes.' },
+  Afternoon: { label: 'Day Shift Pilot', description: 'Claims the afternoon as prime gaming time.' },
+  Evening: { label: 'Twilight Commander', description: 'Winds down the day with focused evening play.' },
+  Night: { label: 'Night Owl', description: 'Gears up after dark when the house goes quiet.' },
 };
 
 const TIME_FILTER_MINUTES = Object.freeze({
   quick: 30,
   medium: 120,
   long: 240,
-  weekend: 480
+  weekend: 480,
 });
 
 export class UserBehaviorProfile {
@@ -148,63 +157,82 @@ export class UserBehaviorProfile {
     return {
       ...defaults,
       ...(profile || {}),
-      moodPreferences: profile?.moodPreferences && typeof profile.moodPreferences === 'object' ? profile.moodPreferences : {},
-      genrePreferences: profile?.genrePreferences && typeof profile.genrePreferences === 'object' ? profile.genrePreferences : {},
-      timeSlotPreferences: profile?.timeSlotPreferences && typeof profile.timeSlotPreferences === 'object' ? profile.timeSlotPreferences : {},
+      moodPreferences:
+        profile?.moodPreferences && typeof profile.moodPreferences === 'object' ? profile.moodPreferences : {},
+      genrePreferences:
+        profile?.genrePreferences && typeof profile.genrePreferences === 'object' ? profile.genrePreferences : {},
+      timeSlotPreferences:
+        profile?.timeSlotPreferences && typeof profile.timeSlotPreferences === 'object'
+          ? profile.timeSlotPreferences
+          : {},
       playstylePatterns: {
         ...defaults.playstylePatterns,
         ...(profile?.playstylePatterns || {}),
-        preferredSessionLengths: profile?.playstylePatterns?.preferredSessionLengths && typeof profile.playstylePatterns.preferredSessionLengths === 'object'
-          ? profile.playstylePatterns.preferredSessionLengths
-          : {},
-        peakPlayTimes: profile?.playstylePatterns?.peakPlayTimes && typeof profile.playstylePatterns.peakPlayTimes === 'object'
-          ? profile.playstylePatterns.peakPlayTimes
-          : {}
+        preferredSessionLengths:
+          profile?.playstylePatterns?.preferredSessionLengths &&
+          typeof profile.playstylePatterns.preferredSessionLengths === 'object'
+            ? profile.playstylePatterns.preferredSessionLengths
+            : {},
+        peakPlayTimes:
+          profile?.playstylePatterns?.peakPlayTimes && typeof profile.playstylePatterns.peakPlayTimes === 'object'
+            ? profile.playstylePatterns.peakPlayTimes
+            : {},
       },
       completionStats: {
         ...defaults.completionStats,
         ...(profile?.completionStats || {}),
-        completedByMood: profile?.completionStats?.completedByMood && typeof profile.completionStats.completedByMood === 'object'
-          ? profile.completionStats.completedByMood
-          : {},
-        completedByGenre: profile?.completionStats?.completedByGenre && typeof profile.completionStats.completedByGenre === 'object'
-          ? profile.completionStats.completedByGenre
-          : {}
+        completedByMood:
+          profile?.completionStats?.completedByMood && typeof profile.completionStats.completedByMood === 'object'
+            ? profile.completionStats.completedByMood
+            : {},
+        completedByGenre:
+          profile?.completionStats?.completedByGenre && typeof profile.completionStats.completedByGenre === 'object'
+            ? profile.completionStats.completedByGenre
+            : {},
       },
       ratingPreferences: {
         ...defaults.ratingPreferences,
         ...(profile?.ratingPreferences || {}),
-        highRatedMoods: profile?.ratingPreferences?.highRatedMoods && typeof profile.ratingPreferences.highRatedMoods === 'object'
-          ? profile.ratingPreferences.highRatedMoods
-          : {},
-        highRatedGenres: profile?.ratingPreferences?.highRatedGenres && typeof profile.ratingPreferences.highRatedGenres === 'object'
-          ? profile.ratingPreferences.highRatedGenres
-          : {},
-        lowRatedMoods: profile?.ratingPreferences?.lowRatedMoods && typeof profile.ratingPreferences.lowRatedMoods === 'object'
-          ? profile.ratingPreferences.lowRatedMoods
-          : {},
-        lowRatedGenres: profile?.ratingPreferences?.lowRatedGenres && typeof profile.ratingPreferences.lowRatedGenres === 'object'
-          ? profile.ratingPreferences.lowRatedGenres
-          : {},
-        likedTags: profile?.ratingPreferences?.likedTags && typeof profile.ratingPreferences.likedTags === 'object'
-          ? profile.ratingPreferences.likedTags
-          : {},
-        dislikedTags: profile?.ratingPreferences?.dislikedTags && typeof profile.ratingPreferences.dislikedTags === 'object'
-          ? profile.ratingPreferences.dislikedTags
-          : {},
-        wouldReplayMoods: profile?.ratingPreferences?.wouldReplayMoods && typeof profile.ratingPreferences.wouldReplayMoods === 'object'
-          ? profile.ratingPreferences.wouldReplayMoods
-          : {},
-        wouldReplayGenres: profile?.ratingPreferences?.wouldReplayGenres && typeof profile.ratingPreferences.wouldReplayGenres === 'object'
-          ? profile.ratingPreferences.wouldReplayGenres
-          : {}
+        highRatedMoods:
+          profile?.ratingPreferences?.highRatedMoods && typeof profile.ratingPreferences.highRatedMoods === 'object'
+            ? profile.ratingPreferences.highRatedMoods
+            : {},
+        highRatedGenres:
+          profile?.ratingPreferences?.highRatedGenres && typeof profile.ratingPreferences.highRatedGenres === 'object'
+            ? profile.ratingPreferences.highRatedGenres
+            : {},
+        lowRatedMoods:
+          profile?.ratingPreferences?.lowRatedMoods && typeof profile.ratingPreferences.lowRatedMoods === 'object'
+            ? profile.ratingPreferences.lowRatedMoods
+            : {},
+        lowRatedGenres:
+          profile?.ratingPreferences?.lowRatedGenres && typeof profile.ratingPreferences.lowRatedGenres === 'object'
+            ? profile.ratingPreferences.lowRatedGenres
+            : {},
+        likedTags:
+          profile?.ratingPreferences?.likedTags && typeof profile.ratingPreferences.likedTags === 'object'
+            ? profile.ratingPreferences.likedTags
+            : {},
+        dislikedTags:
+          profile?.ratingPreferences?.dislikedTags && typeof profile.ratingPreferences.dislikedTags === 'object'
+            ? profile.ratingPreferences.dislikedTags
+            : {},
+        wouldReplayMoods:
+          profile?.ratingPreferences?.wouldReplayMoods && typeof profile.ratingPreferences.wouldReplayMoods === 'object'
+            ? profile.ratingPreferences.wouldReplayMoods
+            : {},
+        wouldReplayGenres:
+          profile?.ratingPreferences?.wouldReplayGenres &&
+          typeof profile.ratingPreferences.wouldReplayGenres === 'object'
+            ? profile.ratingPreferences.wouldReplayGenres
+            : {},
       },
       feedbackPreferences: {
         ...defaults.feedbackPreferences,
-        ...(profile?.feedbackPreferences || {})
+        ...(profile?.feedbackPreferences || {}),
       },
       selectionHistory: Array.isArray(profile?.selectionHistory) ? profile.selectionHistory : [],
-      lastSyncedSessionTimestamp: profile?.lastSyncedSessionTimestamp || null
+      lastSyncedSessionTimestamp: profile?.lastSyncedSessionTimestamp || null,
     };
   }
 
@@ -222,13 +250,13 @@ export class UserBehaviorProfile {
         avgSessionLength: 0, // minutes
         preferredSessionLengths: {}, // { '0-30': count, '30-60': count, '60-120': count, '120+': count }
         totalSessionsTracked: 0,
-        peakPlayTimes: {} // { hour: count }
+        peakPlayTimes: {}, // { hour: count }
       },
       completionStats: {
         totalCompleted: 0,
         completedByMood: {}, // { mood: count }
         completedByGenre: {}, // { genre: count }
-        averageCompletionTime: 0 // minutes
+        averageCompletionTime: 0, // minutes
       },
       ratingPreferences: {
         highRatedMoods: {},
@@ -239,14 +267,14 @@ export class UserBehaviorProfile {
         dislikedTags: {},
         wouldReplayMoods: {},
         wouldReplayGenres: {},
-        ratedGameCount: 0
+        ratedGameCount: 0,
       },
       feedbackPreferences: {
         recommendationPromptEnabled: true,
-        sessionPromptEnabled: true
+        sessionPromptEnabled: true,
       },
       selectionHistory: [], // { mood, genre, time, selectedGameId, timestamp, completed }
-      lastSyncedSessionTimestamp: null
+      lastSyncedSessionTimestamp: null,
     };
   }
 
@@ -256,7 +284,7 @@ export class UserBehaviorProfile {
   static trackSelection(mood, genre, timeAvailable, selectedGameId = null, metadata = {}) {
     const profile = this.getProfile();
     const normalizedTimeAvailable = this.normalizeTimeAvailable(timeAvailable);
-    
+
     // Track mood preference
     if (mood) {
       if (!profile.moodPreferences[mood]) {
@@ -291,7 +319,7 @@ export class UserBehaviorProfile {
       selectedGameId,
       timestamp: new Date().toISOString(),
       completed: false,
-      ...metadata
+      ...metadata,
     });
 
     // Keep only last 100 selections for performance
@@ -309,7 +337,7 @@ export class UserBehaviorProfile {
     const preferenceKey = promptType === 'session' ? 'sessionPromptEnabled' : 'recommendationPromptEnabled';
     profile.feedbackPreferences = {
       ...(profile.feedbackPreferences || {}),
-      [preferenceKey]: Boolean(enabled)
+      [preferenceKey]: Boolean(enabled),
     };
     profile.lastUpdated = new Date().toISOString();
     this.saveProfile(profile);
@@ -320,7 +348,7 @@ export class UserBehaviorProfile {
     const profile = this.getProfile();
     return {
       recommendationPromptEnabled: profile.feedbackPreferences?.recommendationPromptEnabled !== false,
-      sessionPromptEnabled: profile.feedbackPreferences?.sessionPromptEnabled !== false
+      sessionPromptEnabled: profile.feedbackPreferences?.sessionPromptEnabled !== false,
     };
   }
 
@@ -331,23 +359,23 @@ export class UserBehaviorProfile {
 
     const profile = this.getProfile();
     const normalizedGameId = String(gameId);
-    const historyMatch = [...profile.selectionHistory]
-      .reverse()
-      .find((entry) => {
-        if (entry?.recommendationType !== recommendationType) {
-          return false;
-        }
+    const historyMatch = [...profile.selectionHistory].reverse().find((entry) => {
+      if (entry?.recommendationType !== recommendationType) {
+        return false;
+      }
 
-        const selectedGameId = entry?.selectedGameId ? String(entry.selectedGameId) : null;
-        const launchedGameId = entry?.launchedGameId ? String(entry.launchedGameId) : null;
-        const recommendedGameIds = Array.isArray(entry?.recommendedGameIds)
-          ? entry.recommendedGameIds.map((id) => String(id))
-          : [];
+      const selectedGameId = entry?.selectedGameId ? String(entry.selectedGameId) : null;
+      const launchedGameId = entry?.launchedGameId ? String(entry.launchedGameId) : null;
+      const recommendedGameIds = Array.isArray(entry?.recommendedGameIds)
+        ? entry.recommendedGameIds.map((id) => String(id))
+        : [];
 
-        return selectedGameId === normalizedGameId
-          || launchedGameId === normalizedGameId
-          || recommendedGameIds.includes(normalizedGameId);
-      });
+      return (
+        selectedGameId === normalizedGameId ||
+        launchedGameId === normalizedGameId ||
+        recommendedGameIds.includes(normalizedGameId)
+      );
+    });
 
     if (historyMatch) {
       historyMatch.recommendationHelpful = helpful;
@@ -361,21 +389,13 @@ export class UserBehaviorProfile {
   }
 
   static trackRecommendation(recommendationType, mood, genre, timeAvailable, recommendedGameIds = [], metadata = {}) {
-    const normalizedRecommendedGameIds = Array.isArray(recommendedGameIds)
-      ? recommendedGameIds.filter(Boolean)
-      : [];
+    const normalizedRecommendedGameIds = Array.isArray(recommendedGameIds) ? recommendedGameIds.filter(Boolean) : [];
 
-    return this.trackSelection(
-      mood,
-      genre,
-      timeAvailable,
-      null,
-      {
-        recommendationType,
-        recommendedGameIds: normalizedRecommendedGameIds,
-        ...metadata
-      }
-    );
+    return this.trackSelection(mood, genre, timeAvailable, null, {
+      recommendationType,
+      recommendedGameIds: normalizedRecommendedGameIds,
+      ...metadata,
+    });
   }
 
   static trackRecommendationLaunch(recommendationType, gameId, metadata = {}) {
@@ -422,7 +442,7 @@ export class UserBehaviorProfile {
       launchedGameId: gameId,
       launchedAt: new Date().toISOString(),
       ...metadata,
-      inferredFromLaunch: true
+      inferredFromLaunch: true,
     });
 
     if (profile.selectionHistory.length > 100) {
@@ -447,28 +467,26 @@ export class UserBehaviorProfile {
   static getLatestRecommendationLaunch(gameId, gameName = null) {
     const profile = this.getProfile();
     const now = Date.now();
-    return [...profile.selectionHistory]
-      .reverse()
-      .find((entry) => {
+    return (
+      [...profile.selectionHistory].reverse().find((entry) => {
         if (!entry?.recommendationType || !entry?.launchedAt) return false;
         const launchedAt = new Date(entry.launchedAt).getTime();
         if (!Number.isFinite(launchedAt) || now - launchedAt > RECOMMENDATION_LAUNCH_TTL_MS) return false;
         return this.historyEntryMatchesGame(entry, gameId, gameName);
-      }) || null;
+      }) || null
+    );
   }
 
   static recordRecommendationSession(gameId, gameName, metadata = {}) {
     const profile = this.getProfile();
     const now = Date.now();
     const playtimeMinutes = Math.max(0, Number(metadata.playtimeMinutes) || 0);
-    const historyMatch = [...profile.selectionHistory]
-      .reverse()
-      .find((entry) => {
-        if (!entry?.recommendationType || !entry?.launchedAt || entry?.recommendationOutcome) return false;
-        const launchedAt = new Date(entry.launchedAt).getTime();
-        if (!Number.isFinite(launchedAt) || now - launchedAt > RECOMMENDATION_LAUNCH_TTL_MS) return false;
-        return this.historyEntryMatchesGame(entry, gameId, gameName);
-      });
+    const historyMatch = [...profile.selectionHistory].reverse().find((entry) => {
+      if (!entry?.recommendationType || !entry?.launchedAt || entry?.recommendationOutcome) return false;
+      const launchedAt = new Date(entry.launchedAt).getTime();
+      if (!Number.isFinite(launchedAt) || now - launchedAt > RECOMMENDATION_LAUNCH_TTL_MS) return false;
+      return this.historyEntryMatchesGame(entry, gameId, gameName);
+    });
 
     if (!historyMatch) return null;
 
@@ -477,8 +495,8 @@ export class UserBehaviorProfile {
     historyMatch.lastRecommendationSessionAt = new Date().toISOString();
     Object.assign(historyMatch, metadata);
 
-    const shouldPrompt = playtimeMinutes >= MEANINGFUL_RECOMMENDATION_SESSION_MINUTES
-      && !historyMatch.recommendationOutcomePromptedAt;
+    const shouldPrompt =
+      playtimeMinutes >= MEANINGFUL_RECOMMENDATION_SESSION_MINUTES && !historyMatch.recommendationOutcomePromptedAt;
     if (shouldPrompt) historyMatch.recommendationOutcomePromptedAt = new Date().toISOString();
 
     profile.lastUpdated = new Date().toISOString();
@@ -503,7 +521,9 @@ export class UserBehaviorProfile {
       historyMatch.recommendationHelpful = false;
       historyMatch.recommendationDeferredUntil = null;
     } else {
-      historyMatch.recommendationDeferredUntil = new Date(Date.now() + RECOMMENDATION_NOT_NOW_COOLDOWN_MS).toISOString();
+      historyMatch.recommendationDeferredUntil = new Date(
+        Date.now() + RECOMMENDATION_NOT_NOW_COOLDOWN_MS
+      ).toISOString();
     }
     Object.assign(historyMatch, metadata);
     profile.lastUpdated = new Date().toISOString();
@@ -515,12 +535,15 @@ export class UserBehaviorProfile {
     const profile = this.getProfile();
     const historyMatch = [...profile.selectionHistory]
       .reverse()
-      .find((entry) => this.historyEntryMatchesGame(entry, gameId, gameName)
-        && (entry?.recommendationOutcome
-          || typeof entry?.recommendationHelpful === 'boolean'
-          || typeof entry?.sessionEnjoyed === 'boolean'
-          || Number(entry?.recommendationSessionCount || 0) >= 2
-          || Number(entry?.recommendationPlaytimeMinutes || 0) >= 60));
+      .find(
+        (entry) =>
+          this.historyEntryMatchesGame(entry, gameId, gameName) &&
+          (entry?.recommendationOutcome ||
+            typeof entry?.recommendationHelpful === 'boolean' ||
+            typeof entry?.sessionEnjoyed === 'boolean' ||
+            Number(entry?.recommendationSessionCount || 0) >= 2 ||
+            Number(entry?.recommendationPlaytimeMinutes || 0) >= 60)
+      );
     if (!historyMatch) return { adjustment: 0, suppress: false, reason: null, outcome: null };
 
     const outcome = historyMatch.recommendationOutcome || null;
@@ -534,7 +557,7 @@ export class UserBehaviorProfile {
         adjustment: deferred ? -1000 : -5,
         suppress: deferred,
         reason: deferred ? 'Deferred after your Not now feedback' : null,
-        outcome
+        outcome,
       };
     }
     if (outcome === RECOMMENDATION_OUTCOME.GREAT_PICK) {
@@ -546,9 +569,16 @@ export class UserBehaviorProfile {
     if (historyMatch.recommendationHelpful === true || historyMatch.sessionEnjoyed === true) {
       return { adjustment: 16, suppress: false, reason: 'Raised by your earlier feedback', outcome: null };
     }
-    if (Number(historyMatch.recommendationSessionCount || 0) >= 2
-      || Number(historyMatch.recommendationPlaytimeMinutes || 0) >= 60) {
-      return { adjustment: 10, suppress: false, reason: 'Raised because you returned after a recommendation', outcome: null };
+    if (
+      Number(historyMatch.recommendationSessionCount || 0) >= 2 ||
+      Number(historyMatch.recommendationPlaytimeMinutes || 0) >= 60
+    ) {
+      return {
+        adjustment: 10,
+        suppress: false,
+        reason: 'Raised because you returned after a recommendation',
+        outcome: null,
+      };
     }
     return { adjustment: 0, suppress: false, reason: null, outcome: null };
   }
@@ -566,13 +596,15 @@ export class UserBehaviorProfile {
     // Update mood completion
     if (mood && profile.moodPreferences[mood]) {
       profile.moodPreferences[mood].completedCount = (profile.moodPreferences[mood].completedCount || 0) + 1;
-      profile.moodPreferences[mood].totalPlaytime = (profile.moodPreferences[mood].totalPlaytime || 0) + playtimeMinutes;
+      profile.moodPreferences[mood].totalPlaytime =
+        (profile.moodPreferences[mood].totalPlaytime || 0) + playtimeMinutes;
     }
 
     // Update genre completion
     if (genre && profile.genrePreferences[genre]) {
       profile.genrePreferences[genre].completedCount = (profile.genrePreferences[genre].completedCount || 0) + 1;
-      profile.genrePreferences[genre].totalPlaytime = (profile.genrePreferences[genre].totalPlaytime || 0) + playtimeMinutes;
+      profile.genrePreferences[genre].totalPlaytime =
+        (profile.genrePreferences[genre].totalPlaytime || 0) + playtimeMinutes;
     }
 
     // Update completion stats
@@ -586,7 +618,7 @@ export class UserBehaviorProfile {
 
     // Update average completion time
     const totalCompleted = profile.completionStats.totalCompleted;
-    profile.completionStats.averageCompletionTime = 
+    profile.completionStats.averageCompletionTime =
       (profile.completionStats.averageCompletionTime * (totalCompleted - 1) + playtimeMinutes) / totalCompleted;
 
     const normalizedGameId = gameId ? String(gameId) : null;
@@ -598,20 +630,19 @@ export class UserBehaviorProfile {
         : [];
 
       if (normalizedGameId) {
-        return selectedGameId === normalizedGameId
-          || launchedGameId === normalizedGameId
-          || recommendedGameIds.includes(normalizedGameId);
+        return (
+          selectedGameId === normalizedGameId ||
+          launchedGameId === normalizedGameId ||
+          recommendedGameIds.includes(normalizedGameId)
+        );
       }
 
       return selectedGameId === String(gameName) || launchedGameId === String(gameName);
     };
 
-    const historyMatch = [...profile.selectionHistory]
-      .reverse()
-      .find((entry) => entry?.recommendationType && historyMatchesGame(entry))
-      || [...profile.selectionHistory]
-        .reverse()
-        .find((entry) => historyMatchesGame(entry));
+    const historyMatch =
+      [...profile.selectionHistory].reverse().find((entry) => entry?.recommendationType && historyMatchesGame(entry)) ||
+      [...profile.selectionHistory].reverse().find((entry) => historyMatchesGame(entry));
 
     if (historyMatch) {
       historyMatch.completed = true;
@@ -660,7 +691,8 @@ export class UserBehaviorProfile {
         if (weight > 0) {
           profile.ratingPreferences.likedTags[tag] = (profile.ratingPreferences.likedTags[tag] || 0) + weight;
         } else if (weight < 0) {
-          profile.ratingPreferences.dislikedTags[tag] = (profile.ratingPreferences.dislikedTags[tag] || 0) + Math.abs(weight);
+          profile.ratingPreferences.dislikedTags[tag] =
+            (profile.ratingPreferences.dislikedTags[tag] || 0) + Math.abs(weight);
         }
       });
     }
@@ -691,10 +723,13 @@ export class UserBehaviorProfile {
       if (!profile.moodPreferences[resolvedMood]) {
         profile.moodPreferences[resolvedMood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
       }
-      profile.moodPreferences[resolvedMood].sessionFeedbackCount = (profile.moodPreferences[resolvedMood].sessionFeedbackCount || 0) + 1;
-      profile.moodPreferences[resolvedMood].enjoyedSessionCount = (profile.moodPreferences[resolvedMood].enjoyedSessionCount || 0) + (enjoyed ? 1 : 0);
+      profile.moodPreferences[resolvedMood].sessionFeedbackCount =
+        (profile.moodPreferences[resolvedMood].sessionFeedbackCount || 0) + 1;
+      profile.moodPreferences[resolvedMood].enjoyedSessionCount =
+        (profile.moodPreferences[resolvedMood].enjoyedSessionCount || 0) + (enjoyed ? 1 : 0);
       if (playtimeMinutes > 0) {
-        profile.moodPreferences[resolvedMood].totalPlaytime = (profile.moodPreferences[resolvedMood].totalPlaytime || 0) + playtimeMinutes;
+        profile.moodPreferences[resolvedMood].totalPlaytime =
+          (profile.moodPreferences[resolvedMood].totalPlaytime || 0) + playtimeMinutes;
       }
     }
 
@@ -702,30 +737,33 @@ export class UserBehaviorProfile {
       if (!profile.genrePreferences[resolvedGenre]) {
         profile.genrePreferences[resolvedGenre] = { count: 0, totalPlaytime: 0, completedCount: 0 };
       }
-      profile.genrePreferences[resolvedGenre].sessionFeedbackCount = (profile.genrePreferences[resolvedGenre].sessionFeedbackCount || 0) + 1;
-      profile.genrePreferences[resolvedGenre].enjoyedSessionCount = (profile.genrePreferences[resolvedGenre].enjoyedSessionCount || 0) + (enjoyed ? 1 : 0);
+      profile.genrePreferences[resolvedGenre].sessionFeedbackCount =
+        (profile.genrePreferences[resolvedGenre].sessionFeedbackCount || 0) + 1;
+      profile.genrePreferences[resolvedGenre].enjoyedSessionCount =
+        (profile.genrePreferences[resolvedGenre].enjoyedSessionCount || 0) + (enjoyed ? 1 : 0);
       if (playtimeMinutes > 0) {
-        profile.genrePreferences[resolvedGenre].totalPlaytime = (profile.genrePreferences[resolvedGenre].totalPlaytime || 0) + playtimeMinutes;
+        profile.genrePreferences[resolvedGenre].totalPlaytime =
+          (profile.genrePreferences[resolvedGenre].totalPlaytime || 0) + playtimeMinutes;
       }
     }
 
-    const historyMatch = [...profile.selectionHistory]
-      .reverse()
-      .find((entry) => {
-        const selectedGameId = entry?.selectedGameId ? String(entry.selectedGameId) : null;
-        const launchedGameId = entry?.launchedGameId ? String(entry.launchedGameId) : null;
-        const recommendedGameIds = Array.isArray(entry?.recommendedGameIds)
-          ? entry.recommendedGameIds.map((id) => String(id))
-          : [];
+    const historyMatch = [...profile.selectionHistory].reverse().find((entry) => {
+      const selectedGameId = entry?.selectedGameId ? String(entry.selectedGameId) : null;
+      const launchedGameId = entry?.launchedGameId ? String(entry.launchedGameId) : null;
+      const recommendedGameIds = Array.isArray(entry?.recommendedGameIds)
+        ? entry.recommendedGameIds.map((id) => String(id))
+        : [];
 
-        if (normalizedGameId) {
-          return selectedGameId === normalizedGameId
-            || launchedGameId === normalizedGameId
-            || recommendedGameIds.includes(normalizedGameId);
-        }
+      if (normalizedGameId) {
+        return (
+          selectedGameId === normalizedGameId ||
+          launchedGameId === normalizedGameId ||
+          recommendedGameIds.includes(normalizedGameId)
+        );
+      }
 
-        return selectedGameId === String(gameName) || launchedGameId === String(gameName);
-      });
+      return selectedGameId === String(gameName) || launchedGameId === String(gameName);
+    });
 
     if (historyMatch) {
       historyMatch.sessionEnjoyed = enjoyed;
@@ -749,26 +787,26 @@ export class UserBehaviorProfile {
    */
   static trackSessionLength(playtimeMinutes) {
     const profile = this.getProfile();
-    
+
     // Update average session length
     const totalSessions = profile.playstylePatterns.totalSessionsTracked;
-    profile.playstylePatterns.avgSessionLength = 
+    profile.playstylePatterns.avgSessionLength =
       (profile.playstylePatterns.avgSessionLength * totalSessions + playtimeMinutes) / (totalSessions + 1);
-    
+
     // Categorize session length
     const lengthCategory = this.getSessionLengthCategory(playtimeMinutes);
     if (!profile.playstylePatterns.preferredSessionLengths[lengthCategory]) {
       profile.playstylePatterns.preferredSessionLengths[lengthCategory] = 0;
     }
     profile.playstylePatterns.preferredSessionLengths[lengthCategory] += 1;
-    
+
     // Track peak play times
     const hour = new Date().getHours();
     if (!profile.playstylePatterns.peakPlayTimes[hour]) {
       profile.playstylePatterns.peakPlayTimes[hour] = 0;
     }
     profile.playstylePatterns.peakPlayTimes[hour] += 1;
-    
+
     profile.playstylePatterns.totalSessionsTracked += 1;
     profile.lastUpdated = new Date().toISOString();
     this.saveProfile(profile);
@@ -786,10 +824,18 @@ export class UserBehaviorProfile {
       const gameId = entry?.selectedGameId || entry?.launchedGameId;
       if (!gameId) return;
       const id = String(gameId);
-      if (entry.recommendationOutcome === RECOMMENDATION_OUTCOME.GREAT_PICK || entry.recommendationHelpful === true || entry.sessionEnjoyed === true) {
+      if (
+        entry.recommendationOutcome === RECOMMENDATION_OUTCOME.GREAT_PICK ||
+        entry.recommendationHelpful === true ||
+        entry.sessionEnjoyed === true
+      ) {
         liked.add(id);
         disliked.delete(id);
-      } else if (entry.recommendationOutcome === RECOMMENDATION_OUTCOME.NOT_FOR_ME || entry.recommendationHelpful === false || entry.sessionEnjoyed === false) {
+      } else if (
+        entry.recommendationOutcome === RECOMMENDATION_OUTCOME.NOT_FOR_ME ||
+        entry.recommendationHelpful === false ||
+        entry.sessionEnjoyed === false
+      ) {
         disliked.add(id);
         liked.delete(id);
       }
@@ -871,7 +917,7 @@ export class UserBehaviorProfile {
           gameId: String(launchedGameId),
           mood: entry.mood || null,
           genre: entry.genre || null,
-          at: entryTimeRaw || null
+          at: entryTimeRaw || null,
         });
       } else if (recommendedGameIds.length > 0) {
         ignored.push({
@@ -879,7 +925,7 @@ export class UserBehaviorProfile {
           recommendedGameIds,
           mood: entry.mood || null,
           genre: entry.genre || null,
-          at: entryTimeRaw || null
+          at: entryTimeRaw || null,
         });
       }
     });
@@ -888,7 +934,7 @@ export class UserBehaviorProfile {
       accepted,
       ignored,
       acceptedCount: accepted.length,
-      ignoredCount: ignored.length
+      ignoredCount: ignored.length,
     };
   }
 
@@ -904,7 +950,7 @@ export class UserBehaviorProfile {
         mood,
         count: data.count,
         completionRate: this.getMoodCompletionRate(mood),
-        avgPlaytime: Math.round(data.totalPlaytime / data.count)
+        avgPlaytime: Math.round(data.totalPlaytime / data.count),
       }));
   }
 
@@ -920,7 +966,7 @@ export class UserBehaviorProfile {
         genre,
         count: data.count,
         completionRate: this.getGenreCompletionRate(genre),
-        avgPlaytime: Math.round(data.totalPlaytime / data.count)
+        avgPlaytime: Math.round(data.totalPlaytime / data.count),
       }));
   }
 
@@ -974,7 +1020,7 @@ export class UserBehaviorProfile {
         dominantGenre: null,
         secondaryGenre: null,
         inferredMood: null,
-        hasPlaytime: false
+        hasPlaytime: false,
       };
     }
 
@@ -1008,7 +1054,7 @@ export class UserBehaviorProfile {
         genre,
         weight: Math.round(weight * 10) / 10,
         hours: Math.round(genreHours[genre] || 0),
-        gameCount: genreGameCounts[genre] || 0
+        gameCount: genreGameCounts[genre] || 0,
       }))
       .sort((a, b) => b.weight - a.weight);
 
@@ -1029,9 +1075,9 @@ export class UserBehaviorProfile {
       dominantGenreData: ranked[0] || null,
       secondaryGenre,
       secondaryGenreData: ranked[1] || null,
-      inferredMood: dominantGenre ? (GENRE_MOOD_MAP[dominantGenre] || null) : null,
+      inferredMood: dominantGenre ? GENRE_MOOD_MAP[dominantGenre] || null : null,
       hasPlaytime,
-      topGames
+      topGames,
     };
   }
 
@@ -1054,7 +1100,7 @@ export class UserBehaviorProfile {
       .map(([hour, count]) => ({
         hour: parseInt(hour),
         count,
-        timeOfDay: this.getTimeOfDay(parseInt(hour))
+        timeOfDay: this.getTimeOfDay(parseInt(hour)),
       }));
   }
 
@@ -1085,9 +1131,10 @@ export class UserBehaviorProfile {
     const onboardingSeed = profile.onboardingSeed || null;
     const seedMood = onboardingSeed?.selectedMoods?.[0] || null;
     const seedGenre = onboardingSeed?.favoriteGenres?.[0] || null;
-    const overallCompletionRate = profile.selectionHistory.length > 0
-      ? Math.round((profile.completionStats.totalCompleted / profile.selectionHistory.length) * 100)
-      : 0;
+    const overallCompletionRate =
+      profile.selectionHistory.length > 0
+        ? Math.round((profile.completionStats.totalCompleted / profile.selectionHistory.length) * 100)
+        : 0;
 
     // Provisional signal inferred from the installed library (cold-start support)
     const libraryProfile = this.getLibraryGenreProfile();
@@ -1113,12 +1160,14 @@ export class UserBehaviorProfile {
     }
 
     // Build identity, falling back to inferred mood/genre when there's no live history
-    const moodsForIdentity = topMoods.length > 0
-      ? topMoods
-      : (dominantMood ? [{ mood: dominantMood, completionRate: 0, count: hasSeed ? 1 : 0 }] : []);
-    const genresForIdentity = topGenres.length > 0
-      ? topGenres
-      : (dominantGenre ? [{ genre: dominantGenre, count: 0, completionRate: 0 }] : []);
+    const moodsForIdentity =
+      topMoods.length > 0
+        ? topMoods
+        : dominantMood
+          ? [{ mood: dominantMood, completionRate: 0, count: hasSeed ? 1 : 0 }]
+          : [];
+    const genresForIdentity =
+      topGenres.length > 0 ? topGenres : dominantGenre ? [{ genre: dominantGenre, count: 0, completionRate: 0 }] : [];
 
     const personaIdentity = this.buildPersonaIdentity(
       moodsForIdentity,
@@ -1139,16 +1188,17 @@ export class UserBehaviorProfile {
       personaTags.push(`${dominantGenre} specialist`);
     }
     if (sessionPref.bucket) {
-      const bucketLabel = {
-        quick: 'Sprint Sessions',
-        medium: 'Focused Runs',
-        long: 'Extended Flights',
-        weekend: 'Marathon Missions',
-        '0-30': 'Sprint Sessions',
-        '30-60': 'Focused Runs',
-        '60-120': 'Extended Flights',
-        '120+': 'Marathon Missions'
-      }[sessionPref.bucket] || sessionPref.bucket;
+      const bucketLabel =
+        {
+          quick: 'Sprint Sessions',
+          medium: 'Focused Runs',
+          long: 'Extended Flights',
+          weekend: 'Marathon Missions',
+          '0-30': 'Sprint Sessions',
+          '30-60': 'Focused Runs',
+          '60-120': 'Extended Flights',
+          '120+': 'Marathon Missions',
+        }[sessionPref.bucket] || sessionPref.bucket;
       personaTags.push(bucketLabel);
     }
     if (peakHour?.timeOfDay) {
@@ -1156,10 +1206,10 @@ export class UserBehaviorProfile {
     }
 
     const sessionPatternLabel = sessionPref.bucket
-      ? (SESSION_PATTERN_IDENTITIES[sessionPref.bucket]?.label || sessionPref.bucket)
+      ? SESSION_PATTERN_IDENTITIES[sessionPref.bucket]?.label || sessionPref.bucket
       : null;
     const timeOfDayLabel = peakHour?.timeOfDay
-      ? (TIME_OF_DAY_IDENTITIES[peakHour.timeOfDay]?.label || peakHour.timeOfDay)
+      ? TIME_OF_DAY_IDENTITIES[peakHour.timeOfDay]?.label || peakHour.timeOfDay
       : null;
 
     return {
@@ -1182,7 +1232,7 @@ export class UserBehaviorProfile {
       confidence,
       inferredFromLibrary: source === 'library',
       totalLibraryGames: libraryProfile.totalGames,
-      libraryTopGenres: libraryProfile.topGenres
+      libraryTopGenres: libraryProfile.topGenres,
     };
   }
 
@@ -1198,7 +1248,7 @@ export class UserBehaviorProfile {
         liveSignalCount: 0,
         label: 'Inactive',
         shortLabel: 'Inactive',
-        description: 'Startup tuning is not currently contributing to recommendations.'
+        description: 'Startup tuning is not currently contributing to recommendations.',
       };
     }
 
@@ -1211,10 +1261,10 @@ export class UserBehaviorProfile {
 
     const liveSignalScore = Math.min(
       1,
-      (Math.min(liveSelectionCount, 12) / 12) * 0.5
-      + (Math.min(launchedCount, 8) / 8) * 0.2
-      + (Math.min(feedbackCount, 6) / 6) * 0.1
-      + (Math.min(completedCount, 6) / 6) * 0.2
+      (Math.min(liveSelectionCount, 12) / 12) * 0.5 +
+        (Math.min(launchedCount, 8) / 8) * 0.2 +
+        (Math.min(feedbackCount, 6) / 6) * 0.1 +
+        (Math.min(completedCount, 6) / 6) * 0.2
     );
 
     const seedWeight = Math.max(0.08, Number((1 - liveSignalScore).toFixed(2)));
@@ -1227,7 +1277,8 @@ export class UserBehaviorProfile {
         liveSignalCount,
         label: 'Startup tuning: strong',
         shortLabel: 'Strong',
-        description: 'Your onboarding profile is still doing most of the recommendation steering while GamePilot learns from live play.'
+        description:
+          'Your onboarding profile is still doing most of the recommendation steering while GamePilot learns from live play.',
       };
     }
 
@@ -1239,7 +1290,7 @@ export class UserBehaviorProfile {
         liveSignalCount,
         label: 'Startup tuning: blending with live behavior',
         shortLabel: 'Blending',
-        description: 'Your onboarding profile still contributes, but real play history is now sharing the wheel.'
+        description: 'Your onboarding profile still contributes, but real play history is now sharing the wheel.',
       };
     }
 
@@ -1250,7 +1301,8 @@ export class UserBehaviorProfile {
       liveSignalCount,
       label: 'Startup tuning: mostly replaced by real play history',
       shortLabel: 'Mostly replaced',
-      description: 'Your onboarding seed is now a light fallback because GamePilot has enough live behavior data to lead recommendations.'
+      description:
+        'Your onboarding seed is now a light fallback because GamePilot has enough live behavior data to lead recommendations.',
     };
   }
 
@@ -1259,7 +1311,13 @@ export class UserBehaviorProfile {
    * When there is enough real playtime, the label is grounded in the dominant genre,
    * its game count, and total hours rather than a fixed mood archetype.
    */
-  static buildPersonaIdentity(topMoods = [], topGenres = [], sessionBucket = null, peakTimeOfDay = null, libraryProfile = null) {
+  static buildPersonaIdentity(
+    topMoods = [],
+    topGenres = [],
+    sessionBucket = null,
+    peakTimeOfDay = null,
+    libraryProfile = null
+  ) {
     const hasLibrary = libraryProfile && libraryProfile.totalGames > 0;
     const dominantGenreData = libraryProfile?.dominantGenreData || null;
     const hasPlaytime = libraryProfile?.hasPlaytime && dominantGenreData && dominantGenreData.hours > 0;
@@ -1281,19 +1339,17 @@ export class UserBehaviorProfile {
       if (secondary) anchors.push(secondary.mood);
 
       const topGames = libraryProfile.topGames || [];
-      const topGamesText = topGames.length > 0
-        ? `Top games: ${topGames.map((g) => `${g.name} (${g.hours}h)`).join(', ')}.`
-        : '';
-      const secondaryText = libraryProfile?.secondaryGenre
-        ? ` Also dips into ${libraryProfile.secondaryGenre}.`
-        : '';
+      const topGamesText =
+        topGames.length > 0 ? `Top games: ${topGames.map((g) => `${g.name} (${g.hours}h)`).join(', ')}.` : '';
+      const secondaryText = libraryProfile?.secondaryGenre ? ` Also dips into ${libraryProfile.secondaryGenre}.` : '';
 
-      description = `${genreMeta.label} — ${dominantGenreData.gameCount} ${genre} games, ${dominantGenreData.hours}h played.${secondaryText} ${topGamesText}`.trim();
+      description =
+        `${genreMeta.label} — ${dominantGenreData.gameCount} ${genre} games, ${dominantGenreData.hours}h played.${secondaryText} ${topGamesText}`.trim();
     } else if (Array.isArray(topMoods) && topMoods.length > 0) {
       // Fallback to the original mood-driven identity when no real playtime exists
       const moodMeta = MOOD_PERSONA_IDENTITIES[primary.mood] || {
         label: `${primary.mood} Specialist`,
-        description: `Primarily drawn to ${primary.mood.toLowerCase()} sessions.`
+        description: `Primarily drawn to ${primary.mood.toLowerCase()} sessions.`,
       };
       label = moodMeta.label;
       description = moodMeta.description;
@@ -1302,7 +1358,7 @@ export class UserBehaviorProfile {
       if (primaryGenre) {
         const genreMeta = GENRE_PERSONA_IDENTITIES[primaryGenre.genre] || {
           label: `${primaryGenre.genre} Specialist`,
-          description: `Frequently plays ${primaryGenre.genre.toLowerCase()} titles.`
+          description: `Frequently plays ${primaryGenre.genre.toLowerCase()} titles.`,
         };
         // Use a clean genre-driven label instead of the bland mood · genre combo.
         label = genreMeta.label;
@@ -1342,7 +1398,7 @@ export class UserBehaviorProfile {
       sessionPattern: sessionBucket,
       peakTimeOfDay,
       completionSignal: primary?.completionRate || 0,
-      selectionWeight: primary?.count || 0
+      selectionWeight: primary?.count || 0,
     };
   }
 
@@ -1359,9 +1415,7 @@ export class UserBehaviorProfile {
     }
 
     if (Array.isArray(genres) && genres.length > 0) {
-      const genreRates = genres
-        .map((genre) => this.getGenreCompletionRate(genre))
-        .filter((rate) => rate > 0);
+      const genreRates = genres.map((genre) => this.getGenreCompletionRate(genre)).filter((rate) => rate > 0);
       if (genreRates.length > 0) {
         score += genreRates.reduce((acc, val) => acc + val, 0) / genreRates.length;
         factors += 1;
@@ -1412,17 +1466,27 @@ export class UserBehaviorProfile {
       const avgMoodPlaytime = sampleSize > 0 ? Math.round((moodData.totalPlaytime || 0) / sampleSize) : 0;
 
       if (sampleSize >= 5 && moodRate > 70) {
-        reasons.push(pick([
-          `You finish ${moodRate}% of your ${mood} games — ${gameName} sits in that lane`,
-          `${moodRate}% completion rate on ${mood} picks, and ${gameName} fits the pattern`,
-          `${gameName} joins a strong streak — ${moodRate}% of your ${mood} games get finished`
-        ], `mood-high`));
+        reasons.push(
+          pick(
+            [
+              `You finish ${moodRate}% of your ${mood} games — ${gameName} sits in that lane`,
+              `${moodRate}% completion rate on ${mood} picks, and ${gameName} fits the pattern`,
+              `${gameName} joins a strong streak — ${moodRate}% of your ${mood} games get finished`,
+            ],
+            `mood-high`
+          )
+        );
       } else if (sampleSize >= 3 && moodRate > 50) {
-        reasons.push(pick([
-          `${mood} is a comfortable lane for you, and ${gameName} fits there`,
-          `You've had decent luck finishing ${mood} games — ${gameName} is in that group`,
-          `${gameName} lines up with the ${mood} games you tend to stick with`
-        ], `mood-mid`));
+        reasons.push(
+          pick(
+            [
+              `${mood} is a comfortable lane for you, and ${gameName} fits there`,
+              `You've had decent luck finishing ${mood} games — ${gameName} is in that group`,
+              `${gameName} lines up with the ${mood} games you tend to stick with`,
+            ],
+            `mood-mid`
+          )
+        );
       } else if (sampleSize > 0 && sampleSize < 3) {
         // Small sample — avoid claiming a confident percentage off 1-2 games.
         reasons.push(`Still building a read on ${mood} games, but ${gameName} matches the mood you picked`);
@@ -1440,19 +1504,31 @@ export class UserBehaviorProfile {
       const genreRate = this.getGenreCompletionRate(genre);
 
       if (sampleSize >= 5 && genreRate > 70) {
-        reasons.push(pick([
-          `You finish ${genreRate}% of your ${genre} games — ${gameName} carries that DNA`,
-          `${genre} is a strong genre for you at ${genreRate}% completion, and ${gameName} belongs there`,
-          `Across your ${genre} games you finish ${genreRate}% — ${gameName} keeps that streak alive`
-        ], `genre-high`));
+        reasons.push(
+          pick(
+            [
+              `You finish ${genreRate}% of your ${genre} games — ${gameName} carries that DNA`,
+              `${genre} is a strong genre for you at ${genreRate}% completion, and ${gameName} belongs there`,
+              `Across your ${genre} games you finish ${genreRate}% — ${gameName} keeps that streak alive`,
+            ],
+            `genre-high`
+          )
+        );
       } else if (sampleSize >= 3 && genreRate > 50) {
-        reasons.push(pick([
-          `${genre} tends to land well for you, and ${gameName} is in that space`,
-          `${gameName} sits in ${genre}, a genre you generally follow through on`,
-          `Your ${genre} track record is solid, and ${gameName} fits right in`
-        ], `genre-mid`));
+        reasons.push(
+          pick(
+            [
+              `${genre} tends to land well for you, and ${gameName} is in that space`,
+              `${gameName} sits in ${genre}, a genre you generally follow through on`,
+              `Your ${genre} track record is solid, and ${gameName} fits right in`,
+            ],
+            `genre-mid`
+          )
+        );
       } else if (sampleSize > 0 && sampleSize < 3) {
-        reasons.push(`Only a couple of ${genre} games tracked so far, but ${gameName} is a solid one to build that read`);
+        reasons.push(
+          `Only a couple of ${genre} games tracked so far, but ${gameName} is a solid one to build that read`
+        );
       }
     }
 
@@ -1460,14 +1536,23 @@ export class UserBehaviorProfile {
     if (avgSession > 0 && estimatedSession > 0) {
       const diff = Math.abs(estimatedSession - avgSession);
       if (diff <= 15) {
-        reasons.push(pick([
-          `${gameName}'s estimated ${estimatedSession} min session lines up with your ${avgSession} min average`,
-          `A ${estimatedSession} min sit-down, right around your usual ${avgSession} min sessions`
-        ], `session-match`));
+        reasons.push(
+          pick(
+            [
+              `${gameName}'s estimated ${estimatedSession} min session lines up with your ${avgSession} min average`,
+              `A ${estimatedSession} min sit-down, right around your usual ${avgSession} min sessions`,
+            ],
+            `session-match`
+          )
+        );
       } else if (estimatedSession < avgSession) {
-        reasons.push(`${gameName} is estimated at ${estimatedSession} min — a quick hit against your ${avgSession} min average`);
+        reasons.push(
+          `${gameName} is estimated at ${estimatedSession} min — a quick hit against your ${avgSession} min average`
+        );
       } else {
-        reasons.push(`${gameName} is estimated at ${estimatedSession} min — longer than your ${avgSession} min average, good when you have time`);
+        reasons.push(
+          `${gameName} is estimated at ${estimatedSession} min — longer than your ${avgSession} min average, good when you have time`
+        );
       }
     }
 
@@ -1563,7 +1648,8 @@ export class UserBehaviorProfile {
         profile.moodPreferences[mood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
       }
       profile.moodPreferences[mood].count += 1;
-      profile.moodPreferences[mood].totalPlaytime = (profile.moodPreferences[mood].totalPlaytime || 0) + playtimeMinutes;
+      profile.moodPreferences[mood].totalPlaytime =
+        (profile.moodPreferences[mood].totalPlaytime || 0) + playtimeMinutes;
     }
 
     // 3. Track genre preferences from this session
@@ -1573,7 +1659,8 @@ export class UserBehaviorProfile {
         profile.genrePreferences[genre] = { count: 0, totalPlaytime: 0, completedCount: 0 };
       }
       profile.genrePreferences[genre].count += 1;
-      profile.genrePreferences[genre].totalPlaytime = (profile.genrePreferences[genre].totalPlaytime || 0) + playtimeMinutes;
+      profile.genrePreferences[genre].totalPlaytime =
+        (profile.genrePreferences[genre].totalPlaytime || 0) + playtimeMinutes;
     });
 
     // 4. Track time slot preference
@@ -1583,7 +1670,8 @@ export class UserBehaviorProfile {
         profile.timeSlotPreferences[timeSlot] = { count: 0, totalPlaytime: 0 };
       }
       profile.timeSlotPreferences[timeSlot].count += 1;
-      profile.timeSlotPreferences[timeSlot].totalPlaytime = (profile.timeSlotPreferences[timeSlot].totalPlaytime || 0) + playtimeMinutes;
+      profile.timeSlotPreferences[timeSlot].totalPlaytime =
+        (profile.timeSlotPreferences[timeSlot].totalPlaytime || 0) + playtimeMinutes;
     }
 
     profile.lastUpdated = new Date().toISOString();
@@ -1618,15 +1706,16 @@ export class UserBehaviorProfile {
     return {
       totalSelectionsTracked: profile.selectionHistory.length,
       totalCompleted: profile.completionStats.totalCompleted,
-      overallCompletionRate: profile.completionStats.totalCompleted > 0 
-        ? Math.round((profile.completionStats.totalCompleted / profile.selectionHistory.length) * 100)
-        : 0,
+      overallCompletionRate:
+        profile.completionStats.totalCompleted > 0
+          ? Math.round((profile.completionStats.totalCompleted / profile.selectionHistory.length) * 100)
+          : 0,
       topMoods: this.getTopMoods(3),
       topGenres: this.getTopGenres(3),
       avgSessionLength: Math.round(profile.playstylePatterns.avgSessionLength),
       peakPlayHours: this.getPeakPlayHours(3),
       createdAt: profile.createdAt,
-      lastUpdated: profile.lastUpdated
+      lastUpdated: profile.lastUpdated,
     };
   }
 }

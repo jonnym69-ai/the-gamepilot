@@ -24,7 +24,7 @@ class TrayMenuService {
       .map((game) => ({
         name: game.name,
         platform: game.platform || '',
-        appid: game.appid || game.app_id || null
+        appid: game.appid || game.app_id || null,
       }));
 
     api.updateTrayMenu(recent).catch(() => {});

@@ -8,13 +8,15 @@ const SUPPORT_TIER_WEIGHT = {
   Bronze: 1,
   Silver: 2,
   Gold: 3,
-  Platinum: 4
+  Platinum: 4,
 };
 
 const resolveHighestSupportTier = (tiers = []) => {
-  return tiers
-    .filter((tier) => typeof tier === 'string')
-    .sort((left, right) => (SUPPORT_TIER_WEIGHT[right] || 0) - (SUPPORT_TIER_WEIGHT[left] || 0))[0] || null;
+  return (
+    tiers
+      .filter((tier) => typeof tier === 'string')
+      .sort((left, right) => (SUPPORT_TIER_WEIGHT[right] || 0) - (SUPPORT_TIER_WEIGHT[left] || 0))[0] || null
+  );
 };
 
 const CinematicExport = ({ library, theme, isOpen, onClose }) => {
@@ -26,14 +28,15 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
     const savedUsername = StorageService.getString('profileUsername', '');
     const userFounders = StorageService.get('userFounders', []);
 
-    const localFounder = userFounders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
+    const localFounder =
+      userFounders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
     const boostTier = AchievementTracker.getPatreonBoostProfile().tier || null;
     const tier = resolveHighestSupportTier([localFounder?.tier, boostTier]);
 
     return {
       name: savedUsername || 'Pilot',
       tier,
-      isFounder: Boolean(tier)
+      isFounder: Boolean(tier),
     };
   })();
 
@@ -41,7 +44,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
   const getThemeColors = () => {
     const root = document.documentElement;
     const style = getComputedStyle(root);
-    
+
     return {
       primary: style.getPropertyValue('--accent-color')?.trim() || '#ff6b35',
       secondary: style.getPropertyValue('--button-secondary')?.trim() || '#2a3f5f',
@@ -49,13 +52,14 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
       text: style.getPropertyValue('--text')?.trim() || '#ffffff',
       textMuted: style.getPropertyValue('--text-muted')?.trim() || '#8892b0',
       border: style.getPropertyValue('--border-color')?.trim() || '#2a3f5f',
-      founderAccent: founderProfile.tier === 'Platinum'
-        ? '#e5e7eb'
-        : founderProfile.tier === 'Gold'
-          ? '#facc15'
-          : founderProfile.tier === 'Silver'
-            ? '#cbd5e1'
-            : '#fb923c'
+      founderAccent:
+        founderProfile.tier === 'Platinum'
+          ? '#e5e7eb'
+          : founderProfile.tier === 'Gold'
+            ? '#facc15'
+            : founderProfile.tier === 'Silver'
+              ? '#cbd5e1'
+              : '#fb923c',
     };
   };
 
@@ -63,7 +67,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
   const generateBlurredBackground = (ctx, width, height, colors) => {
     // Sample game covers for background
     const sampleGames = library.slice(0, Math.min(8, library.length));
-    
+
     if (sampleGames.length === 0) {
       // Fallback to gradient
       const gradient = ctx.createLinearGradient(0, 0, width, height);
@@ -76,7 +80,8 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
 
     // Create mosaic of game covers
     const tileSize = Math.max(width, height) / 4;
-    let x = 0, y = 0;
+    let x = 0,
+      y = 0;
 
     sampleGames.forEach((game, index) => {
       if (game && game.iconUrl) {
@@ -85,11 +90,15 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
         img.onload = () => {
           ctx.globalAlpha = 0.3;
           ctx.drawImage(img, x, y, tileSize, tileSize);
-          
+
           // Add vignette overlay
           const vignette = ctx.createRadialGradient(
-            width / 2, height / 2, 0,
-            width / 2, height / 2, Math.max(width, height) / 2
+            width / 2,
+            height / 2,
+            0,
+            width / 2,
+            height / 2,
+            Math.max(width, height) / 2
           );
           vignette.addColorStop(0, 'rgba(0,0,0,0)');
           vignette.addColorStop(1, 'rgba(0,0,0,0.7)');
@@ -123,13 +132,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
       ctx.strokeStyle = colors.primary;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(
-        Math.random() * width,
-        Math.random() * height,
-        Math.random() * 100 + 50,
-        0,
-        Math.PI * 2
-      );
+      ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 100 + 50, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
@@ -169,8 +172,12 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
 
     // Add vignette
     const vignette = ctx.createRadialGradient(
-      width / 2, height / 2, 0,
-      width / 2, height / 2, Math.max(width, height) / 2
+      width / 2,
+      height / 2,
+      0,
+      width / 2,
+      height / 2,
+      Math.max(width, height) / 2
     );
     vignette.addColorStop(0, 'rgba(0,0,0,0)');
     vignette.addColorStop(0.7, 'rgba(0,0,0,0.3)');
@@ -201,10 +208,10 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
     // Stats
     ctx.font = '32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = colors.textMuted;
-    
+
     const totalMinutes = library.reduce((sum, game) => sum + (game.time_played || 0), 0);
     const totalHours = Math.round(totalMinutes / 60);
-    const gamesPlayed = library.filter(g => g.time_played > 0).length;
+    const gamesPlayed = library.filter((g) => g.time_played > 0).length;
 
     ctx.fillText(`${gamesPlayed} Played`, centerX, centerY + 60);
     ctx.fillText(`${totalHours} Hours`, centerX, centerY + 110);
@@ -236,10 +243,10 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
   // Export as image
   const exportAsImage = () => {
     setIsGenerating(true);
-    
+
     setTimeout(() => {
       drawCinematicCard();
-      
+
       const canvas = canvasRef.current;
       canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
@@ -257,7 +264,9 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
 
   return (
     <div className="cinematic-export-overlay">
-      <div className={`cinematic-export-modal ${founderProfile.isFounder ? `cinematic-export-modal-founder cinematic-export-modal-founder-${founderProfile.tier.toLowerCase()}` : ''}`}>
+      <div
+        className={`cinematic-export-modal ${founderProfile.isFounder ? `cinematic-export-modal-founder cinematic-export-modal-founder-${founderProfile.tier.toLowerCase()}` : ''}`}
+      >
         <div className="cinematic-export-header">
           <h2>
             <Image size={24} />
@@ -272,7 +281,9 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
           {founderProfile.isFounder && (
             <div className={`cinematic-founder-banner cinematic-founder-banner-${founderProfile.tier.toLowerCase()}`}>
               <Crown size={18} />
-              <span>{founderProfile.tier} Founder Edition enabled for {founderProfile.name}</span>
+              <span>
+                {founderProfile.tier} Founder Edition enabled for {founderProfile.name}
+              </span>
             </div>
           )}
           {/* Format Selection */}
@@ -282,7 +293,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
               Card Format
             </h3>
             <div className="format-options">
-              <button 
+              <button
                 className={`format-option ${cardFormat === 'vertical' ? 'active' : ''}`}
                 onClick={() => setCardFormat('vertical')}
               >
@@ -290,7 +301,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
                 Vertical Poster
                 <span className="format-dimensions">1080×1920</span>
               </button>
-              <button 
+              <button
                 className={`format-option ${cardFormat === 'square' ? 'active' : ''}`}
                 onClick={() => setCardFormat('square')}
               >
@@ -298,7 +309,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
                 Square Card
                 <span className="format-dimensions">1080×1080</span>
               </button>
-              <button 
+              <button
                 className={`format-option ${cardFormat === 'wide' ? 'active' : ''}`}
                 onClick={() => setCardFormat('wide')}
               >
@@ -316,14 +327,14 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
               Background Style
             </h3>
             <div className="background-options">
-              <button 
+              <button
                 className={`background-option ${backgroundStyle === 'blurred' ? 'active' : ''}`}
                 onClick={() => setBackgroundStyle('blurred')}
               >
                 <div className="background-preview blurred-preview"></div>
                 Blurred Game Covers
               </button>
-              <button 
+              <button
                 className={`background-option ${backgroundStyle === 'gradient' ? 'active' : ''}`}
                 onClick={() => setBackgroundStyle('gradient')}
               >
@@ -337,20 +348,13 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
           <div className="export-section">
             <h3>Preview</h3>
             <div className="canvas-container">
-              <canvas 
-                ref={canvasRef}
-                className={`cinematic-canvas ${cardFormat}`}
-              />
+              <canvas ref={canvasRef} className={`cinematic-canvas ${cardFormat}`} />
             </div>
           </div>
         </div>
 
         <div className="cinematic-export-footer">
-          <button 
-            className="export-button primary"
-            onClick={exportAsImage}
-            disabled={isGenerating}
-          >
+          <button className="export-button primary" onClick={exportAsImage} disabled={isGenerating}>
             <Download size={18} />
             {isGenerating ? 'Generating...' : 'Export Cinematic Card'}
           </button>

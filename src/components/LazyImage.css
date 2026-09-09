@@ -13,14 +13,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: inherit;
 }
 
 .lazy-image-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top: 2px solid var(--button-bg);
   border-radius: 50%;
   position: absolute;
@@ -51,12 +51,12 @@
 }
 
 /* Prevent strobe effect on failed images */
-.lazy-image-container[data-error="true"] .lazy-image {
+.lazy-image-container[data-error='true'] .lazy-image {
   opacity: 0;
   transition: opacity 0.8s ease-in-out;
 }
 
-.lazy-image-container[data-error="true"] .lazy-image-placeholder {
+.lazy-image-container[data-error='true'] .lazy-image-placeholder {
   opacity: 1;
   transition: opacity 0.8s ease-in-out;
 }

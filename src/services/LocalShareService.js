@@ -15,58 +15,60 @@ const DISCORD_WEBHOOK_URL_KEY = 'discordWebhookUrl';
 const SHARE_CHANNELS = Object.freeze({
   x: {
     label: 'X',
-    buildUrl: (text) => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`
+    buildUrl: (text) => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
   },
   bluesky: {
     label: 'Bluesky',
-    buildUrl: (text) => `https://bsky.app/intent/compose?text=${encodeURIComponent(text)}`
+    buildUrl: (text) => `https://bsky.app/intent/compose?text=${encodeURIComponent(text)}`,
   },
   threads: {
     label: 'Threads',
-    buildUrl: (text) => `https://threads.net/intent/post?text=${encodeURIComponent(text)}`
+    buildUrl: (text) => `https://threads.net/intent/post?text=${encodeURIComponent(text)}`,
   },
   mastodon: {
     label: 'Mastodon',
-    buildUrl: (text) => `https://mastodon.social/share?text=${encodeURIComponent(text)}`
+    buildUrl: (text) => `https://mastodon.social/share?text=${encodeURIComponent(text)}`,
   },
   reddit: {
     label: 'Reddit',
     buildUrl: (text, title) => {
       const shareTitle = title || text?.split('\n')?.[0] || 'My GamePilot Share';
       return `https://www.reddit.com/submit?title=${encodeURIComponent(shareTitle)}&text=${encodeURIComponent(text)}`;
-    }
+    },
   },
   discord: {
     label: 'Discord',
-    buildUrl: (text) => `https://discord.com/channels/@me` // Discord has no web share intent; handled by shareToDiscord
+    buildUrl: (text) => `https://discord.com/channels/@me`, // Discord has no web share intent; handled by shareToDiscord
   },
   facebook: {
     label: 'Facebook',
-    buildUrl: (text) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://github.com/jonnym69-ai/the-gamepilot/releases')}&quote=${encodeURIComponent(text)}`
+    buildUrl: (text) =>
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://github.com/jonnym69-ai/the-gamepilot/releases')}&quote=${encodeURIComponent(text)}`,
   },
   linkedin: {
     label: 'LinkedIn',
-    buildUrl: (text) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://github.com/jonnym69-ai/the-gamepilot/releases')}&summary=${encodeURIComponent(text)}`
+    buildUrl: (text) =>
+      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://github.com/jonnym69-ai/the-gamepilot/releases')}&summary=${encodeURIComponent(text)}`,
   },
   whatsapp: {
     label: 'WhatsApp',
-    buildUrl: (text) => `https://wa.me/?text=${encodeURIComponent(text)}`
+    buildUrl: (text) => `https://wa.me/?text=${encodeURIComponent(text)}`,
   },
   telegram: {
     label: 'Telegram',
-    buildUrl: (text) => `https://t.me/share/url?url=&text=${encodeURIComponent(text)}`
+    buildUrl: (text) => `https://t.me/share/url?url=&text=${encodeURIComponent(text)}`,
   },
   messenger: {
     label: 'Messenger',
-    buildUrl: (text) => `https://www.messenger.com/` // Messenger has no direct web compose URL; handled by shareToMessenger
+    buildUrl: (text) => `https://www.messenger.com/`, // Messenger has no direct web compose URL; handled by shareToMessenger
   },
   email: {
     label: 'Email',
     buildUrl: (text) => {
       const subject = text?.split('\n')?.[0] || 'My GamePilot Share';
       return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
-    }
-  }
+    },
+  },
 });
 
 export class LocalShareService {
@@ -111,7 +113,7 @@ export class LocalShareService {
       const payloadJson = JSON.stringify({
         content: normalizedText || '',
         username: 'GamePilot',
-        avatar_url: 'https://raw.githubusercontent.com/jonnym69-ai/the-gamepilot/main/public/gamepilotlogo.png'
+        avatar_url: 'https://raw.githubusercontent.com/jonnym69-ai/the-gamepilot/main/public/gamepilotlogo.png',
       });
 
       const electronAPI = typeof window !== 'undefined' ? window.electronAPI : null;
@@ -124,14 +126,14 @@ export class LocalShareService {
           body.file = {
             data: Array.from(new Uint8Array(arrayBuffer)),
             filename,
-            contentType: imageBlob.type || 'image/png'
+            contentType: imageBlob.type || 'image/png',
           };
         }
 
         const result = await electronAPI.discordWebhookPost({
           url: webhookUrl,
           body,
-          isMultipart: true
+          isMultipart: true,
         });
 
         if (!result.success) {
@@ -166,7 +168,7 @@ export class LocalShareService {
   static getSupportedChannels() {
     return Object.entries(SHARE_CHANNELS).map(([id, config]) => ({
       id,
-      label: config.label
+      label: config.label,
     }));
   }
 
@@ -183,7 +185,7 @@ export class LocalShareService {
       `My GamePilot Year in Review ${selectedYear}`,
       ``,
       `${playtimeLabel} across ${summary.sessions || 0} sessions · ${summary.activeDays || 0} active days`,
-      `I played like a ${persona}.`
+      `I played like a ${persona}.`,
     ];
 
     const storyArc = snapshot?.seasonalStory?.arc;
@@ -194,7 +196,10 @@ export class LocalShareService {
     }
 
     if (topGames.length > 0) {
-      const topGameNames = topGames.map((game) => game.name).filter(Boolean).join(', ');
+      const topGameNames = topGames
+        .map((game) => game.name)
+        .filter(Boolean)
+        .join(', ');
       lines.push('');
       lines.push(`Top games: ${topGameNames}`);
     }
@@ -286,7 +291,7 @@ export class LocalShareService {
         success: false,
         channel,
         label: config.label,
-        message: error?.message || 'Failed to open share link.'
+        message: error?.message || 'Failed to open share link.',
       };
     }
   }
@@ -305,9 +310,8 @@ export class LocalShareService {
       return { ...result, imageStaged: false };
     }
 
-    const canWriteClipboard = typeof navigator !== 'undefined' &&
-      navigator.clipboard &&
-      typeof navigator.clipboard.write === 'function';
+    const canWriteClipboard =
+      typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function';
 
     if (imageBlob && !canWriteClipboard) {
       return { success: false, message: 'Clipboard image sharing is not supported on this device.' };
@@ -334,7 +338,12 @@ export class LocalShareService {
       await openExternalUrl(url);
       return { success: true, channel: 'discord', label: 'Discord', url, imageStaged: Boolean(imageBlob) };
     } catch (error) {
-      return { success: false, channel: 'discord', label: 'Discord', message: error?.message || 'Could not share to Discord.' };
+      return {
+        success: false,
+        channel: 'discord',
+        label: 'Discord',
+        message: error?.message || 'Could not share to Discord.',
+      };
     }
   }
 
@@ -344,9 +353,8 @@ export class LocalShareService {
       return { success: false, message: 'Nothing to share to Messenger.' };
     }
 
-    const canWriteClipboard = typeof navigator !== 'undefined' &&
-      navigator.clipboard &&
-      typeof navigator.clipboard.write === 'function';
+    const canWriteClipboard =
+      typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function';
 
     if (imageBlob && !canWriteClipboard) {
       return { success: false, message: 'Clipboard image sharing is not supported on this device.' };
@@ -373,7 +381,12 @@ export class LocalShareService {
       await openExternalUrl(url);
       return { success: true, channel: 'messenger', label: 'Messenger', url, imageStaged: Boolean(imageBlob) };
     } catch (error) {
-      return { success: false, channel: 'messenger', label: 'Messenger', message: error?.message || 'Could not share to Messenger.' };
+      return {
+        success: false,
+        channel: 'messenger',
+        label: 'Messenger',
+        message: error?.message || 'Could not share to Messenger.',
+      };
     }
   }
 
@@ -403,11 +416,7 @@ export class LocalShareService {
   }
 
   static canCopyImage() {
-    return (
-      typeof navigator !== 'undefined' &&
-      navigator.clipboard &&
-      typeof navigator.clipboard.write === 'function'
-    );
+    return typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function';
   }
 
   static async copyImageToClipboard(blob, filename = 'gamepilot-share.png') {
@@ -420,9 +429,7 @@ export class LocalShareService {
 
     try {
       const file = new File([blob], filename, { type: blob.type || 'image/png' });
-      await navigator.clipboard.write([
-        new ClipboardItem({ [file.type]: file })
-      ]);
+      await navigator.clipboard.write([new ClipboardItem({ [file.type]: file })]);
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message || 'Could not copy image to clipboard.' };
@@ -445,7 +452,7 @@ export class LocalShareService {
       ``,
       `Tracked with GamePilot — my library, my stats, my machine.`,
       `https://github.com/jonnym69-ai/the-gamepilot/releases`,
-      '#GamePilot #SteamHours #GamingStats'
+      '#GamePilot #SteamHours #GamingStats',
     ];
     return lines.join('\n');
   }
@@ -466,7 +473,7 @@ export class LocalShareService {
       ``,
       `Get your own local-first breakdown:`,
       `https://github.com/jonnym69-ai/the-gamepilot/releases`,
-      '#GamePilot #LibraryValue #SteamValue'
+      '#GamePilot #LibraryValue #SteamValue',
     ];
     return lines.join('\n');
   }
@@ -506,7 +513,9 @@ export class LocalShareService {
         return Number.isFinite(value) ? value : 0;
       };
       totalMinutes = safeLibrary.reduce((sum, game) => sum + safeMinutes(game), 0);
-      const steamGames = safeLibrary.filter((game) => String(game?.platform || game?.brandPlatform || '').toLowerCase() === 'steam');
+      const steamGames = safeLibrary.filter(
+        (game) => String(game?.platform || game?.brandPlatform || '').toLowerCase() === 'steam'
+      );
       steamMinutes = steamGames.reduce((sum, game) => sum + safeMinutes(game), 0);
       steamGameCount = steamGames.length;
       mostPlayed = [...safeLibrary]
@@ -527,7 +536,9 @@ export class LocalShareService {
     try {
       persona = GamingPersonaService.getPersona();
       personaRoast = persona?.summaryRoast || persona?.primaryPersona?.roast || null;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     const roasts = [
       `${totalPlaytime} across ${gameCount} games and I still can't decide what to play next.`,
@@ -554,7 +565,10 @@ export class LocalShareService {
     ];
 
     if (mostPlayed.length > 0) {
-      const topNames = mostPlayed.map((game) => game.name).filter(Boolean).join(', ');
+      const topNames = mostPlayed
+        .map((game) => game.name)
+        .filter(Boolean)
+        .join(', ');
       lines.push(`🏆 Most played: ${topNames}`);
     }
 
@@ -578,9 +592,8 @@ export class LocalShareService {
         return bTime - aTime;
       });
 
-    const topRated = Array.isArray(selectedGames) && selectedGames.length > 0
-      ? selectedGames.slice(0, 6)
-      : allTopRated.slice(0, 6);
+    const topRated =
+      Array.isArray(selectedGames) && selectedGames.length > 0 ? selectedGames.slice(0, 6) : allTopRated.slice(0, 6);
 
     const totalMinutes = topRated.reduce((sum, game) => {
       const value = Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0);
@@ -591,7 +604,7 @@ export class LocalShareService {
       `🌟 ${username}'s Perfect 10/10 Picks`,
       ``,
       `🏆 ${topRated.length} game${topRated.length !== 1 ? 's' : ''} rated a perfect 10`,
-      `⏱️ ${formatPlaytime(totalMinutes)} across these favourites`
+      `⏱️ ${formatPlaytime(totalMinutes)} across these favourites`,
     ];
 
     if (topRated.length > 0) {
@@ -693,7 +706,7 @@ export class LocalShareService {
       '',
       'Generated locally by GamePilot.',
       'https://github.com/jonnym69-ai/the-gamepilot/releases',
-      '#GamePilot #PlayerIdentity'
+      '#GamePilot #PlayerIdentity',
     ];
 
     return lines.join('\n');
@@ -714,10 +727,7 @@ export class LocalShareService {
 
     const eraTagline = CurrentEraService.getEraTagline();
 
-    const lines = [
-      `🎮 ${displayName} · ${label}`,
-      ...(eraTagline ? [`Currently in: ${eraTagline}`, ''] : [''])
-    ];
+    const lines = [`🎮 ${displayName} · ${label}`, ...(eraTagline ? [`Currently in: ${eraTagline}`, ''] : [''])];
 
     if (roast) {
       lines.push(`"${roast}"`);
@@ -739,7 +749,10 @@ export class LocalShareService {
     }
 
     if (topGames.length > 0) {
-      const gameNames = topGames.map((g) => g.name || g.gameName).filter(Boolean).join(', ');
+      const gameNames = topGames
+        .map((g) => g.name || g.gameName)
+        .filter(Boolean)
+        .join(', ');
       if (gameNames) {
         lines.push(`Top games: ${gameNames}`);
       }
@@ -750,7 +763,11 @@ export class LocalShareService {
     }
 
     lines.push('');
-    lines.push(confidence === 'high' ? 'Confidence: High — built from real play history.' : 'Confidence: Still sharpening — play more to refine.');
+    lines.push(
+      confidence === 'high'
+        ? 'Confidence: High — built from real play history.'
+        : 'Confidence: Still sharpening — play more to refine.'
+    );
     lines.push('');
     lines.push('Get your own gaming persona at:');
     lines.push('https://github.com/jonnym69-ai/the-gamepilot/releases');
@@ -775,17 +792,18 @@ export class LocalShareService {
 
   static buildPeriodStoryShareText(story = {}, period = 'weekly', username = 'Gamer') {
     if (story?.narrative) {
-      const periodTitle = period === 'weekly'
-        ? "This Week's GamePilot Recap"
-        : period === 'monthly'
-          ? "This Month's GamePilot Recap"
-          : 'GamePilot Recap';
+      const periodTitle =
+        period === 'weekly'
+          ? "This Week's GamePilot Recap"
+          : period === 'monthly'
+            ? "This Month's GamePilot Recap"
+            : 'GamePilot Recap';
       const lines = [
         `${periodTitle} — ${username || 'Pilot'}`,
         '',
         story.narrative.replace(/\*\*/g, ''),
         '',
-        'Generated locally by GamePilot.'
+        'Generated locally by GamePilot.',
       ];
       return lines.join('\n');
     }
@@ -806,7 +824,7 @@ export class LocalShareService {
       profile,
       evolution,
       text: LocalShareService.buildIdentityShareText(profile, username),
-      package: LocalShareService.buildIdentityShareCardPackage(profile, username)
+      package: LocalShareService.buildIdentityShareCardPackage(profile, username),
     };
   }
 }

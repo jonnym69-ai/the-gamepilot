@@ -17,13 +17,7 @@ import './LaunchSourceMenu.css';
  *
  * The library entry itself is never mutated.
  */
-export function LaunchSourceMenu({
-  game,
-  onLaunch,
-  className = '',
-  primaryLabel = 'Launch Game',
-  isFocused = false
-}) {
+export function LaunchSourceMenu({ game, onLaunch, className = '', primaryLabel = 'Launch Game', isFocused = false }) {
   const sources = getLaunchSources(game);
   const hasMultiple = sources.length > 1;
   const primaryPlatform = (game?.platform || sources[0]?.platform || '').trim();
@@ -52,33 +46,39 @@ export function LaunchSourceMenu({
     };
   }, [isOpen]);
 
-  const handlePrimaryLaunch = useCallback((event) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    if (typeof onLaunch === 'function' && game) {
-      onLaunch(game);
-    }
-    setIsOpen(false);
-  }, [game, onLaunch]);
+  const handlePrimaryLaunch = useCallback(
+    (event) => {
+      if (event) {
+        event.stopPropagation();
+      }
+      if (typeof onLaunch === 'function' && game) {
+        onLaunch(game);
+      }
+      setIsOpen(false);
+    },
+    [game, onLaunch]
+  );
 
-  const handleSourceLaunch = useCallback((source, event) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    if (typeof onLaunch !== 'function' || !game || !source?.platform) {
-      return;
-    }
-    // Do NOT mutate the library entry; build a shallow clone with the
-    // chosen source's platform + appid so the launch pipeline routes
-    // through the right launcher.
-    onLaunch({
-      ...game,
-      platform: source.platform,
-      appid: source.appid || game.appid
-    });
-    setIsOpen(false);
-  }, [game, onLaunch]);
+  const handleSourceLaunch = useCallback(
+    (source, event) => {
+      if (event) {
+        event.stopPropagation();
+      }
+      if (typeof onLaunch !== 'function' || !game || !source?.platform) {
+        return;
+      }
+      // Do NOT mutate the library entry; build a shallow clone with the
+      // chosen source's platform + appid so the launch pipeline routes
+      // through the right launcher.
+      onLaunch({
+        ...game,
+        platform: source.platform,
+        appid: source.appid || game.appid,
+      });
+      setIsOpen(false);
+    },
+    [game, onLaunch]
+  );
 
   const handleToggle = useCallback((event) => {
     event.stopPropagation();
@@ -88,10 +88,7 @@ export function LaunchSourceMenu({
   if (!game) return null;
 
   return (
-    <div
-      ref={wrapperRef}
-      className={`launch-source-menu ${hasMultiple ? 'has-multiple' : ''} ${className}`.trim()}
-    >
+    <div ref={wrapperRef} className={`launch-source-menu ${hasMultiple ? 'has-multiple' : ''} ${className}`.trim()}>
       <button
         type="button"
         className="launch-source-menu-primary launch-button"

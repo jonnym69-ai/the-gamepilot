@@ -79,7 +79,7 @@ const startGamePresence = (game) => {
       startTimestamp: Date.now(),
       largeImageKey: 'gamepilot',
       largeImageText: 'GamePilot',
-      instance: false
+      instance: false,
     });
   });
 };
@@ -96,7 +96,7 @@ const setIdlePresence = () => {
       startTimestamp: Date.now(),
       largeImageKey: 'gamepilot',
       largeImageText: 'GamePilot',
-      instance: false
+      instance: false,
     });
   });
 };
@@ -115,5 +115,5 @@ module.exports = {
   startGamePresence,
   stopGamePresence,
   setIdlePresence,
-  disconnect
+  disconnect,
 };

@@ -23,7 +23,7 @@ export class GameLaunchTracker {
       lastPlayed: null,
       firstPlayed: null,
       sessions: [],
-      averageSessionLength: 0
+      averageSessionLength: 0,
     };
   }
 
@@ -49,7 +49,7 @@ export class GameLaunchTracker {
         startTime: Date.now(),
         endTime: null,
         duration: 0,
-        date: new Date().toDateString()
+        date: new Date().toDateString(),
       };
 
       gameData.sessions.push(session);
@@ -84,7 +84,7 @@ export class GameLaunchTracker {
       gameData.totalPlaytime += durationMinutes;
 
       // Calculate average session length
-      const completedSessions = gameData.sessions.filter(s => s.duration > 0);
+      const completedSessions = gameData.sessions.filter((s) => s.duration > 0);
       if (completedSessions.length > 0) {
         gameData.averageSessionLength = Math.round(
           completedSessions.reduce((sum, s) => sum + s.duration, 0) / completedSessions.length
@@ -110,7 +110,7 @@ export class GameLaunchTracker {
       firstPlayed: gameData.firstPlayed ? new Date(gameData.firstPlayed).toLocaleString() : 'Never',
       averageSessionLength: gameData.averageSessionLength,
       sessionCount: gameData.sessions.length,
-      completedSessions: gameData.sessions.filter(s => s.duration > 0).length
+      completedSessions: gameData.sessions.filter((s) => s.duration > 0).length,
     };
   }
 
@@ -127,7 +127,7 @@ export class GameLaunchTracker {
           totalPlaytimeHours: (gameData.totalPlaytime / 60).toFixed(1),
           lastPlayed: gameData.lastPlayed,
           firstPlayed: gameData.firstPlayed,
-          averageSessionLength: gameData.averageSessionLength
+          averageSessionLength: gameData.averageSessionLength,
         };
       });
 

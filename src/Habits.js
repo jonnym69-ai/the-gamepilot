@@ -1,8 +1,23 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Flame, Target, TrendingUp, Calendar, Clock, Gamepad2, Award,
-  ChevronLeft, ChevronRight, Plus, Trash2, Edit3, CheckCircle2,
-  Lightbulb, Star, Trophy, Sparkles, Gift
+  Flame,
+  Target,
+  TrendingUp,
+  Calendar,
+  Clock,
+  Gamepad2,
+  Award,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Edit3,
+  CheckCircle2,
+  Lightbulb,
+  Star,
+  Trophy,
+  Sparkles,
+  Gift,
 } from 'lucide-react';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
@@ -225,11 +240,11 @@ const Habits = ({ library = [] }) => {
         {seasonalChallenges.length > 0 && (
           <div className="habits-seasonal-container">
             {seasonalChallenges.map((challenge) => (
-              <div 
-                key={challenge.id} 
+              <div
+                key={challenge.id}
                 className="habits-seasonal-card"
                 style={{
-                  borderLeft: `4px solid ${challenge.accentColor || 'var(--button-primary-bg)'}`
+                  borderLeft: `4px solid ${challenge.accentColor || 'var(--button-primary-bg)'}`,
                 }}
               >
                 <div className="habits-seasonal-header">
@@ -251,12 +266,12 @@ const Habits = ({ library = [] }) => {
 
                 <div className="habits-seasonal-progress-row">
                   <div className="habits-seasonal-progress-bar-bg">
-                    <div 
-                      className="habits-seasonal-progress-bar-fill" 
-                      style={{ 
+                    <div
+                      className="habits-seasonal-progress-bar-fill"
+                      style={{
                         width: `${challenge.progressPercent}%`,
-                        background: challenge.accentColor || 'var(--button-primary-bg)'
-                      }} 
+                        background: challenge.accentColor || 'var(--button-primary-bg)',
+                      }}
                     />
                   </div>
                   <span className="habits-seasonal-progress-count">
@@ -280,9 +295,7 @@ const Habits = ({ library = [] }) => {
             <div className="habits-streak-number">{streaks.longest}</div>
             <div className="habits-streak-label">Longest Streak</div>
           </div>
-          {streaks.lastPlayed && (
-            <div className="habits-streak-last">Last played: {streaks.lastPlayed}</div>
-          )}
+          {streaks.lastPlayed && <div className="habits-streak-last">Last played: {streaks.lastPlayed}</div>}
         </div>
 
         {/* Goal Rewards Summary */}
@@ -313,11 +326,21 @@ const Habits = ({ library = [] }) => {
         {/* Weekly Stats */}
         <div className="habits-section">
           <div className="habits-section-header">
-            <h2><Calendar size={18} /> Weekly Stats</h2>
+            <h2>
+              <Calendar size={18} /> Weekly Stats
+            </h2>
             <div className="habits-nav">
-              <button onClick={() => setWeekOffset((o) => o + 1)} title="Previous week"><ChevronLeft size={16} /></button>
+              <button onClick={() => setWeekOffset((o) => o + 1)} title="Previous week">
+                <ChevronLeft size={16} />
+              </button>
               <span>{weekLabel}</span>
-              <button onClick={() => setWeekOffset((o) => Math.max(0, o - 1))} title="Next week" disabled={weekOffset === 0}><ChevronRight size={16} /></button>
+              <button
+                onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
+                title="Next week"
+                disabled={weekOffset === 0}
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
           <div className="habits-stats-grid">
@@ -347,11 +370,21 @@ const Habits = ({ library = [] }) => {
         {/* Monthly Stats */}
         <div className="habits-section">
           <div className="habits-section-header">
-            <h2><Calendar size={18} /> Monthly Stats</h2>
+            <h2>
+              <Calendar size={18} /> Monthly Stats
+            </h2>
             <div className="habits-nav">
-              <button onClick={() => setMonthOffset((o) => o + 1)} title="Previous month"><ChevronLeft size={16} /></button>
+              <button onClick={() => setMonthOffset((o) => o + 1)} title="Previous month">
+                <ChevronLeft size={16} />
+              </button>
               <span>{monthLabel}</span>
-              <button onClick={() => setMonthOffset((o) => Math.max(0, o - 1))} title="Next month" disabled={monthOffset === 0}><ChevronRight size={16} /></button>
+              <button
+                onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
+                title="Next month"
+                disabled={monthOffset === 0}
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
           <div className="habits-stats-grid">
@@ -382,7 +415,9 @@ const Habits = ({ library = [] }) => {
         {suggestions.length > 0 && (
           <div className="habits-section">
             <div className="habits-section-header">
-              <h2><Lightbulb size={18} /> Suggested Goals</h2>
+              <h2>
+                <Lightbulb size={18} /> Suggested Goals
+              </h2>
             </div>
             <div className="habits-suggestions">
               {suggestions.map((s, i) => (
@@ -403,9 +438,17 @@ const Habits = ({ library = [] }) => {
         {/* Goals */}
         <div className="habits-section">
           <div className="habits-section-header">
-            <h2><Target size={18} /> Habit Goals</h2>
+            <h2>
+              <Target size={18} /> Habit Goals
+            </h2>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="habits-edit-btn" onClick={() => { setShowCreate(true); setEditingGoalId(null); }}>
+              <button
+                className="habits-edit-btn"
+                onClick={() => {
+                  setShowCreate(true);
+                  setEditingGoalId(null);
+                }}
+              >
                 <Plus size={14} /> New Goal
               </button>
               <button className="habits-edit-btn" onClick={() => setEditingGoals((e) => !e)}>
@@ -438,19 +481,31 @@ const Habits = ({ library = [] }) => {
               <div className="habits-goal-form-row">
                 <select value={formType} onChange={(e) => setFormType(e.target.value)} className="habits-form-select">
                   {GOAL_TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
-                <select value={formPeriod} onChange={(e) => setFormPeriod(e.target.value)} className="habits-form-select">
+                <select
+                  value={formPeriod}
+                  onChange={(e) => setFormPeriod(e.target.value)}
+                  className="habits-form-select"
+                >
                   <option value="week">Weekly</option>
                   <option value="month">Monthly</option>
                 </select>
               </div>
               {needsGameInput && (
-                <select value={formGameName} onChange={(e) => setFormGameName(e.target.value)} className="habits-form-select">
+                <select
+                  value={formGameName}
+                  onChange={(e) => setFormGameName(e.target.value)}
+                  className="habits-form-select"
+                >
                   <option value="">Select a game...</option>
                   {library.map((g) => (
-                    <option key={g.name} value={g.name}>{g.name}</option>
+                    <option key={g.name} value={g.name}>
+                      {g.name}
+                    </option>
                   ))}
                 </select>
               )}
@@ -458,15 +513,22 @@ const Habits = ({ library = [] }) => {
                 <select value={formGenre} onChange={(e) => setFormGenre(e.target.value)} className="habits-form-select">
                   <option value="">Select a genre...</option>
                   {allGenres.map((g) => (
-                    <option key={g} value={g}>{g}</option>
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
                   ))}
                 </select>
               )}
               <div className="habits-goal-form-actions">
-                <button className="habits-form-btn primary" onClick={editingGoalId ? handleUpdateGoal : handleCreateGoal}>
+                <button
+                  className="habits-form-btn primary"
+                  onClick={editingGoalId ? handleUpdateGoal : handleCreateGoal}
+                >
                   {editingGoalId ? 'Update Goal' : 'Create Goal'}
                 </button>
-                <button className="habits-form-btn secondary" onClick={resetForm}>Cancel</button>
+                <button className="habits-form-btn secondary" onClick={resetForm}>
+                  Cancel
+                </button>
               </div>
             </div>
           )}
@@ -482,10 +544,22 @@ const Habits = ({ library = [] }) => {
                   </div>
                   {editingGoals && (
                     <div className="habits-goal-actions">
-                      <button onClick={() => startEdit(goal)} className="habits-goal-action-btn" title="Edit"><Edit3 size={14} /></button>
-                      <button onClick={() => handleDeleteGoal(goal.id)} className="habits-goal-action-btn" title="Delete"><Trash2 size={14} /></button>
+                      <button onClick={() => startEdit(goal)} className="habits-goal-action-btn" title="Edit">
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteGoal(goal.id)}
+                        className="habits-goal-action-btn"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                       <label className="habits-toggle">
-                        <input type="checkbox" checked={goal.active} onChange={() => toggleGoalActive(goal.period, goal.id)} />
+                        <input
+                          type="checkbox"
+                          checked={goal.active}
+                          onChange={() => toggleGoalActive(goal.period, goal.id)}
+                        />
                         <span>Active</span>
                       </label>
                     </div>
@@ -496,7 +570,9 @@ const Habits = ({ library = [] }) => {
                     <div className="habits-goal-bar">
                       <div className="habits-goal-fill" style={{ width: `${goal.percent}%` }} />
                     </div>
-                    <div className="habits-goal-meta">{goal.current} / {goal.target}</div>
+                    <div className="habits-goal-meta">
+                      {goal.current} / {goal.target}
+                    </div>
                   </div>
                   <ProgressRing percent={goal.percent} size={44} stroke={4} />
                 </div>
@@ -521,7 +597,13 @@ const Habits = ({ library = [] }) => {
                       </div>
                       {editingGoals && (
                         <div className="habits-goal-actions">
-                          <button onClick={() => handleDeleteGoal(goal.id)} className="habits-goal-action-btn" title="Delete"><Trash2 size={14} /></button>
+                          <button
+                            onClick={() => handleDeleteGoal(goal.id)}
+                            className="habits-goal-action-btn"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -530,7 +612,9 @@ const Habits = ({ library = [] }) => {
                         <div className="habits-goal-bar">
                           <div className="habits-goal-fill" style={{ width: '100%' }} />
                         </div>
-                        <div className="habits-goal-meta">{goal.current} / {goal.target}</div>
+                        <div className="habits-goal-meta">
+                          {goal.current} / {goal.target}
+                        </div>
                       </div>
                       <ProgressRing percent={100} size={44} stroke={4} color="#34a853" />
                     </div>
@@ -548,7 +632,9 @@ const Habits = ({ library = [] }) => {
         {/* Insights */}
         {insights.length > 0 && (
           <div className="habits-section">
-            <h2><Award size={18} /> Insights</h2>
+            <h2>
+              <Award size={18} /> Insights
+            </h2>
             <div className="habits-insights">
               {insights.map((insight, i) => (
                 <div key={i} className={`habits-insight habits-insight-${insight.type}`}>
@@ -566,7 +652,9 @@ const Habits = ({ library = [] }) => {
         {/* Recent Goal Completions */}
         {recentCompletions.length > 0 && (
           <div className="habits-section">
-            <h2><Trophy size={18} /> Recent Goal Rewards</h2>
+            <h2>
+              <Trophy size={18} /> Recent Goal Rewards
+            </h2>
             <div className="habits-completion-list">
               {recentCompletions.map((entry, i) => (
                 <div key={i} className="habits-completion-entry">
@@ -589,27 +677,25 @@ const Habits = ({ library = [] }) => {
           <div className="habits-section">
             <h2>Mood Log</h2>
             <div className="habits-mood-log">
-              {moodLog.slice().reverse().map((entry, i) => (
-                <div key={i} className="habits-mood-entry">
-                  <div className="habits-mood-date">{entry.date}</div>
-                  <div className="habits-mood-game">{entry.gameName}</div>
-                  <div className="habits-mood-duration">{Math.round(entry.durationMinutes)}m</div>
-                  {entry.mood && <span className="habits-mood-tag">{entry.mood}</span>}
-                  {entry.intention && <span className="habits-mood-tag">{entry.intention}</span>}
-                </div>
-              ))}
+              {moodLog
+                .slice()
+                .reverse()
+                .map((entry, i) => (
+                  <div key={i} className="habits-mood-entry">
+                    <div className="habits-mood-date">{entry.date}</div>
+                    <div className="habits-mood-game">{entry.gameName}</div>
+                    <div className="habits-mood-duration">{Math.round(entry.durationMinutes)}m</div>
+                    {entry.mood && <span className="habits-mood-tag">{entry.mood}</span>}
+                    {entry.intention && <span className="habits-mood-tag">{entry.intention}</span>}
+                  </div>
+                ))}
             </div>
           </div>
         )}
       </div>
 
       {celebration && (
-        <CelebrationOverlay
-          type="mixed"
-          intensity="medium"
-          duration={2500}
-          onComplete={() => setCelebration(null)}
-        />
+        <CelebrationOverlay type="mixed" intensity="medium" duration={2500} onComplete={() => setCelebration(null)} />
       )}
     </div>
   );

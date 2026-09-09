@@ -25,18 +25,9 @@ function getBlendedPlaytimeMinutes(game) {
 }
 
 function BigScreenGameCard({ game, index, isFocused, onSelect }) {
-  const artwork = useMemo(
-    () => (game ? resolveGameArtwork(game, { surface: 'bigscreen' }) : ''),
-    [game]
-  );
-  const fallbackArtwork = useMemo(
-    () => (game ? resolveGameArtwork(game, { surface: 'hero' }) : ''),
-    [game]
-  );
-  const placeholder = useMemo(
-    () => (game ? getGameArtworkPlaceholder({ game, surface: 'bigscreen' }) : ''),
-    [game]
-  );
+  const artwork = useMemo(() => (game ? resolveGameArtwork(game, { surface: 'bigscreen' }) : ''), [game]);
+  const fallbackArtwork = useMemo(() => (game ? resolveGameArtwork(game, { surface: 'hero' }) : ''), [game]);
+  const placeholder = useMemo(() => (game ? getGameArtworkPlaceholder({ game, surface: 'bigscreen' }) : ''), [game]);
 
   if (!game) return null;
 

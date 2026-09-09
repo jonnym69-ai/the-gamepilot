@@ -22,9 +22,8 @@ export function buildTopRatedShareData(library = [], username = 'Pilot', selecte
       return resolvePlaytime(right) - resolvePlaytime(left);
     });
 
-  const topRated = Array.isArray(selectedGames) && selectedGames.length > 0
-    ? selectedGames.slice(0, 6)
-    : allTopRated.slice(0, 6);
+  const topRated =
+    Array.isArray(selectedGames) && selectedGames.length > 0 ? selectedGames.slice(0, 6) : allTopRated.slice(0, 6);
 
   const totalPlaytime = topRated.reduce((sum, game) => sum + resolvePlaytime(game), 0);
 
@@ -34,30 +33,39 @@ export function buildTopRatedShareData(library = [], username = 'Pilot', selecte
     totalPlaytime,
     formattedTotalPlaytime: formatPlaytime(totalPlaytime),
     topRated,
-    allTopRated
+    allTopRated,
   };
 }
 
-export function TopRatedShareCard({ library = [], selectedGames = null, username = 'Pilot', showCover = true, watermark = 'gamepilot' }) {
+export function TopRatedShareCard({
+  library = [],
+  selectedGames = null,
+  username = 'Pilot',
+  showCover = true,
+  watermark = 'gamepilot',
+}) {
   const data = buildTopRatedShareData(library, username, selectedGames);
   const topGame = data.topRated?.[0];
   const coverUrl = showCover && topGame ? resolveGameArtwork(topGame, { surface: 'portrait' }) : null;
-  const coverGrid = showCover && data.topRated.length > 0
-    ? data.topRated.slice(0, 6).map((game) => resolveGameArtwork(game, { surface: 'portrait' })).filter(Boolean)
-    : [];
+  const coverGrid =
+    showCover && data.topRated.length > 0
+      ? data.topRated
+          .slice(0, 6)
+          .map((game) => resolveGameArtwork(game, { surface: 'portrait' }))
+          .filter(Boolean)
+      : [];
   const showCoverGrid = coverGrid.length > 1;
 
   return (
-    <div className="top-rated-share-card" style={{ width: TOP_RATED_SHARE_CARD_SIZE_PX, height: TOP_RATED_SHARE_CARD_SIZE_PX }}>
+    <div
+      className="top-rated-share-card"
+      style={{ width: TOP_RATED_SHARE_CARD_SIZE_PX, height: TOP_RATED_SHARE_CARD_SIZE_PX }}
+    >
       {showCoverGrid ? (
         <>
           <div className="top-rated-share-card-cover-grid" aria-hidden="true">
             {coverGrid.map((url, index) => (
-              <div
-                key={index}
-                className="top-rated-share-card-cover-cell"
-                style={{ backgroundImage: `url(${url})` }}
-              />
+              <div key={index} className="top-rated-share-card-cover-cell" style={{ backgroundImage: `url(${url})` }} />
             ))}
           </div>
           <div className="top-rated-share-card-cover-overlay" aria-hidden="true" />
@@ -81,9 +89,7 @@ export function TopRatedShareCard({ library = [], selectedGames = null, username
       </div>
 
       <div className="top-rated-share-card-body">
-        <span className="top-rated-share-card-eyebrow">
-          {data.username || 'Pilot'} · Hall of Fame
-        </span>
+        <span className="top-rated-share-card-eyebrow">{data.username || 'Pilot'} · Hall of Fame</span>
 
         <div className="top-rated-share-card-headline">
           <div className="top-rated-share-card-stat">
@@ -107,7 +113,9 @@ export function TopRatedShareCard({ library = [], selectedGames = null, username
                 <span className="top-rated-share-card-rank">#{index + 1}</span>
                 <div className="top-rated-share-card-info">
                   <strong>{game.name}</strong>
-                  <span>{formatPlaytime(resolvePlaytime(game))} · {game.genres?.slice(0, 2).join(' · ') || 'No genre'}</span>
+                  <span>
+                    {formatPlaytime(resolvePlaytime(game))} · {game.genres?.slice(0, 2).join(' · ') || 'No genre'}
+                  </span>
                 </div>
                 <div className="top-rated-share-card-stars">
                   {[...Array(10)].map((_, i) => (

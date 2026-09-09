@@ -229,7 +229,7 @@ export function HomeGuidedContent({
   onLaunchGame,
   trackRecommendationLaunch,
   renderEndSessionButton,
-  handleWeeklyQuestPinToggle
+  handleWeeklyQuestPinToggle,
 }) {
   const hasLibrary = Number(libraryCount || 0) > 0;
 

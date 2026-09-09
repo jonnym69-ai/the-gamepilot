@@ -9,70 +9,56 @@ const PERIOD_CONFIG = {
       { id: 'daily_15min', minutes: 15 },
       { id: 'daily_30min', minutes: 30 },
       { id: 'daily_1hour', minutes: 60 },
-      { id: 'daily_2hours', minutes: 120 }
+      { id: 'daily_2hours', minutes: 120 },
     ],
-    sessions: [
-      { id: 'daily_2sessions', count: 2 }
-    ],
-    games: [
-      { id: 'daily_2games', count: 2 }
-    ],
-    genres: [
-      { id: 'daily_2genres', count: 2 }
-    ],
-    moods: [
-      { id: 'daily_2moods', count: 2 }
-    ]
+    sessions: [{ id: 'daily_2sessions', count: 2 }],
+    games: [{ id: 'daily_2games', count: 2 }],
+    genres: [{ id: 'daily_2genres', count: 2 }],
+    moods: [{ id: 'daily_2moods', count: 2 }],
   },
   weekly: {
     playtime: [
       { id: 'weekly_2hours', minutes: 120 },
       { id: 'weekly_5hours', minutes: 300 },
       { id: 'weekly_10hours', minutes: 600 },
-      { id: 'weekly_20hours', minutes: 1200 }
+      { id: 'weekly_20hours', minutes: 1200 },
     ],
     sessions: [
       { id: 'weekly_3sessions', count: 3 },
-      { id: 'weekly_7sessions', count: 7 }
+      { id: 'weekly_7sessions', count: 7 },
     ],
     games: [
       { id: 'weekly_3games', count: 3 },
-      { id: 'weekly_5games', count: 5 }
+      { id: 'weekly_5games', count: 5 },
     ],
-    genres: [
-      { id: 'weekly_3genres', count: 3 }
-    ],
-    moods: [
-      { id: 'weekly_3moods', count: 3 }
-    ],
+    genres: [{ id: 'weekly_3genres', count: 3 }],
+    moods: [{ id: 'weekly_3moods', count: 3 }],
     activeDays: [
       { id: 'weekly_3days', count: 3 },
-      { id: 'weekly_5days', count: 5 }
-    ]
+      { id: 'weekly_5days', count: 5 },
+    ],
   },
   monthly: {
     playtime: [
       { id: 'monthly_10hours', minutes: 600 },
       { id: 'monthly_25hours', minutes: 1500 },
       { id: 'monthly_50hours', minutes: 3000 },
-      { id: 'monthly_100hours', minutes: 6000 }
+      { id: 'monthly_100hours', minutes: 6000 },
     ],
     sessions: [
       { id: 'monthly_10sessions', count: 10 },
-      { id: 'monthly_25sessions', count: 25 }
+      { id: 'monthly_25sessions', count: 25 },
     ],
     activeDays: [
       { id: 'monthly_5days', count: 5 },
       { id: 'monthly_10days', count: 10 },
-      { id: 'monthly_20days', count: 20 }
+      { id: 'monthly_20days', count: 20 },
     ],
     genres: [
       { id: 'monthly_5genres', count: 5 },
-      { id: 'monthly_10genres', count: 10 }
+      { id: 'monthly_10genres', count: 10 },
     ],
-    moods: [
-      { id: 'monthly_all_moods', count: 5 }
-    ]
+    moods: [{ id: 'monthly_all_moods', count: 5 }],
   },
   yearly: {
     playtime: [
@@ -80,27 +66,25 @@ const PERIOD_CONFIG = {
       { id: 'yearly_100hours', minutes: 6000 },
       { id: 'yearly_250hours', minutes: 15000 },
       { id: 'yearly_500hours', minutes: 30000 },
-      { id: 'yearly_1000hours', minutes: 60000 }
+      { id: 'yearly_1000hours', minutes: 60000 },
     ],
     sessions: [
       { id: 'yearly_50sessions', count: 50 },
       { id: 'yearly_100sessions', count: 100 },
-      { id: 'yearly_200sessions', count: 200 }
+      { id: 'yearly_200sessions', count: 200 },
     ],
     activeDays: [
       { id: 'yearly_25days', count: 25 },
       { id: 'yearly_50days', count: 50 },
       { id: 'yearly_100days', count: 100 },
-      { id: 'yearly_200days', count: 200 }
+      { id: 'yearly_200days', count: 200 },
     ],
     genres: [
       { id: 'yearly_10genres', count: 10 },
-      { id: 'yearly_15genres', count: 15 }
+      { id: 'yearly_15genres', count: 15 },
     ],
-    moods: [
-      { id: 'yearly_all_moods', count: 5 }
-    ]
-  }
+    moods: [{ id: 'yearly_all_moods', count: 5 }],
+  },
 };
 
 export class RollingAchievementsTracker {
@@ -153,7 +137,7 @@ export class RollingAchievementsTracker {
           moodsUsed,
           activeDaySet,
           activeDays: typeof period.activeDays === 'number' ? period.activeDays : activeDaySet.size,
-          hasProgress: Boolean(period.hasProgress)
+          hasProgress: Boolean(period.hasProgress),
         };
       };
 
@@ -162,7 +146,7 @@ export class RollingAchievementsTracker {
         weekly: inflatePeriod('weekly'),
         monthly: inflatePeriod('monthly'),
         yearly: inflatePeriod('yearly'),
-        streaks: this.inflateStreakState(parsed.streaks)
+        streaks: this.inflateStreakState(parsed.streaks),
       };
     } catch (error) {
       console.error('Error reading rolling achievements:', error);
@@ -177,7 +161,7 @@ export class RollingAchievementsTracker {
       surpriseMe: 0,
       rediscover: 0,
       continuePlaying: 0,
-      share: 0
+      share: 0,
     });
 
     return {
@@ -192,7 +176,7 @@ export class RollingAchievementsTracker {
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       },
       weekly: {
         weekStart: this.getWeekStart(),
@@ -205,7 +189,7 @@ export class RollingAchievementsTracker {
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       },
       monthly: {
         month: new Date().getMonth(),
@@ -219,7 +203,7 @@ export class RollingAchievementsTracker {
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       },
       yearly: {
         year: new Date().getFullYear(),
@@ -232,9 +216,9 @@ export class RollingAchievementsTracker {
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       },
-      streaks: this.getDefaultStreakState()
+      streaks: this.getDefaultStreakState(),
     };
   }
 
@@ -254,7 +238,7 @@ export class RollingAchievementsTracker {
       daily: base(),
       weekly: base(),
       monthly: base(),
-      yearly: base()
+      yearly: base(),
     };
   }
 
@@ -267,7 +251,7 @@ export class RollingAchievementsTracker {
       daily: { ...defaults.daily, ...(raw.daily || {}) },
       weekly: { ...defaults.weekly, ...(raw.weekly || {}) },
       monthly: { ...defaults.monthly, ...(raw.monthly || {}) },
-      yearly: { ...defaults.yearly, ...(raw.yearly || {}) }
+      yearly: { ...defaults.yearly, ...(raw.yearly || {}) },
     };
   }
 
@@ -298,10 +282,11 @@ export class RollingAchievementsTracker {
       this.saveData(data);
 
       // Trigger window event for UI updates
-      window.dispatchEvent(new CustomEvent('rollingAchievementsUpdated', { 
-        detail: { minutes, period: 'all' } 
-      }));
-      
+      window.dispatchEvent(
+        new CustomEvent('rollingAchievementsUpdated', {
+          detail: { minutes, period: 'all' },
+        })
+      );
     } catch (error) {
       console.error('[RollingAchievements] Error updating playtime:', error);
     }
@@ -385,12 +370,12 @@ export class RollingAchievementsTracker {
           surpriseMe: 0,
           rediscover: 0,
           continuePlaying: 0,
-          share: 0
+          share: 0,
         },
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
     }
 
@@ -408,12 +393,12 @@ export class RollingAchievementsTracker {
           surpriseMe: 0,
           rediscover: 0,
           continuePlaying: 0,
-          share: 0
+          share: 0,
         },
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
     }
 
@@ -431,12 +416,12 @@ export class RollingAchievementsTracker {
           surpriseMe: 0,
           rediscover: 0,
           continuePlaying: 0,
-          share: 0
+          share: 0,
         },
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
     }
 
@@ -453,12 +438,12 @@ export class RollingAchievementsTracker {
           surpriseMe: 0,
           rediscover: 0,
           continuePlaying: 0,
-          share: 0
+          share: 0,
         },
         activeDaySet: new Set(),
         activeDays: 0,
         hasProgress: false,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
     }
 
@@ -475,7 +460,7 @@ export class RollingAchievementsTracker {
       gamesPlayed: Array.from(periodData.gamesPlayed),
       genresPlayed: Array.from(periodData.genresPlayed),
       moodsUsed: Array.from(periodData.moodsUsed),
-      activeDaySet: Array.from(periodData.activeDaySet)
+      activeDaySet: Array.from(periodData.activeDaySet),
     });
 
     const serialized = {
@@ -483,7 +468,7 @@ export class RollingAchievementsTracker {
       weekly: serializePeriod(data.weekly),
       monthly: serializePeriod(data.monthly),
       yearly: serializePeriod(data.yearly),
-      streaks: data.streaks
+      streaks: data.streaks,
     };
     StorageService.setString(this.STORAGE_KEY, JSON.stringify(serialized));
   }
@@ -583,8 +568,10 @@ export class RollingAchievementsTracker {
         if (Number.isNaN(prevYear) || Number.isNaN(prevMonth) || Number.isNaN(currYear) || Number.isNaN(currMonth)) {
           return false;
         }
-        return (currYear === prevYear && currMonth === prevMonth + 1) ||
-          (currYear === prevYear + 1 && prevMonth === 12 && currMonth === 1);
+        return (
+          (currYear === prevYear && currMonth === prevMonth + 1) ||
+          (currYear === prevYear + 1 && prevMonth === 12 && currMonth === 1)
+        );
       }
       case 'yearly': {
         const prevYear = parseInt(previousKey, 10);
@@ -601,10 +588,10 @@ export class RollingAchievementsTracker {
   static getDailyStats() {
     const data = this.getTrackingData();
     const now = new Date();
-    
+
     // Ensure we're showing current day's data
     this.ensureCurrentPeriods(data, now);
-    
+
     return {
       date: data.daily.date,
       playtime: data.daily.playtime || 0,
@@ -616,7 +603,7 @@ export class RollingAchievementsTracker {
       activeDays: data.daily.activeDays || (data.daily.activeDaySet ? data.daily.activeDaySet.size : 0) || 0,
       streak: { ...(data.streaks?.daily || { current: 0, best: 0 }) },
       playtimeHours: ((data.daily.playtime || 0) / 60).toFixed(1),
-      lastUpdated: data.daily.lastUpdated
+      lastUpdated: data.daily.lastUpdated,
     };
   }
 
@@ -624,10 +611,10 @@ export class RollingAchievementsTracker {
   static getWeeklyStats() {
     const data = this.getTrackingData();
     const now = new Date();
-    
+
     // Ensure we're showing current week's data
     this.ensureCurrentPeriods(data, now);
-    
+
     return {
       weekStart: data.weekly.weekStart,
       playtime: data.weekly.playtime || 0,
@@ -639,7 +626,7 @@ export class RollingAchievementsTracker {
       activeDays: data.weekly.activeDays || (data.weekly.activeDaySet ? data.weekly.activeDaySet.size : 0) || 0,
       streak: { ...(data.streaks?.weekly || { current: 0, best: 0 }) },
       playtimeHours: ((data.weekly.playtime || 0) / 60).toFixed(1),
-      lastUpdated: data.weekly.lastUpdated
+      lastUpdated: data.weekly.lastUpdated,
     };
   }
 
@@ -647,11 +634,14 @@ export class RollingAchievementsTracker {
   static getMonthlyStats() {
     const data = this.getTrackingData();
     const now = new Date();
-    
+
     // Ensure we're showing current month's data
     this.ensureCurrentPeriods(data, now);
-    
-    const monthName = new Date(data.monthly.year, data.monthly.month).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    const monthName = new Date(data.monthly.year, data.monthly.month).toLocaleString('default', {
+      month: 'long',
+      year: 'numeric',
+    });
     return {
       month: monthName,
       playtime: data.monthly.playtime || 0,
@@ -663,7 +653,7 @@ export class RollingAchievementsTracker {
       activeDays: data.monthly.activeDays || (data.monthly.activeDaySet ? data.monthly.activeDaySet.size : 0) || 0,
       streak: { ...(data.streaks?.monthly || { current: 0, best: 0 }) },
       playtimeHours: ((data.monthly.playtime || 0) / 60).toFixed(1),
-      lastUpdated: data.monthly.lastUpdated
+      lastUpdated: data.monthly.lastUpdated,
     };
   }
 
@@ -671,10 +661,10 @@ export class RollingAchievementsTracker {
   static getYearlyStats() {
     const data = this.getTrackingData();
     const now = new Date();
-    
+
     // Ensure we're showing current year's data
     this.ensureCurrentPeriods(data, now);
-    
+
     return {
       year: data.yearly.year,
       playtime: data.yearly.playtime || 0,
@@ -686,7 +676,7 @@ export class RollingAchievementsTracker {
       activeDays: data.yearly.activeDays || (data.yearly.activeDaySet ? data.yearly.activeDaySet.size : 0) || 0,
       streak: { ...(data.streaks?.yearly || { current: 0, best: 0 }) },
       playtimeHours: ((data.yearly.playtime || 0) / 60).toFixed(1),
-      lastUpdated: data.yearly.lastUpdated
+      lastUpdated: data.yearly.lastUpdated,
     };
   }
 
@@ -698,7 +688,7 @@ export class RollingAchievementsTracker {
       daily: this.getDailyStats(),
       weekly: this.getWeeklyStats(),
       monthly: this.getMonthlyStats(),
-      yearly: this.getYearlyStats()
+      yearly: this.getYearlyStats(),
     };
   }
 
@@ -738,7 +728,7 @@ export class RollingAchievementsTracker {
         if (!library || !Array.isArray(library)) {
           return null;
         }
-        return library.find(g => g.name === session.gameName || g.appid === session.gameId) || null;
+        return library.find((g) => g.name === session.gameName || g.appid === session.gameId) || null;
       };
 
       const addSessionToPeriod = (period, gameId, genre, mood) => {
@@ -749,7 +739,7 @@ export class RollingAchievementsTracker {
         if (mood) period.moodsUsed.add(mood);
       };
 
-      history.forEach(session => {
+      history.forEach((session) => {
         const sessionDate = new Date(session.timestamp || session.date);
         if (Number.isNaN(sessionDate.getTime())) {
           return;
@@ -758,7 +748,7 @@ export class RollingAchievementsTracker {
         const meta = findGameMeta(session);
         const fallbackId = session.gameId || session.gameName;
         const gameId = meta?.appid || meta?.name || fallbackId;
-        const genre = meta?.genres && meta.genres.length > 0 ? meta.genres[0] : (session.genre || null);
+        const genre = meta?.genres && meta.genres.length > 0 ? meta.genres[0] : session.genre || null;
         const mood = meta?.mood || session.mood || null;
 
         if (sessionDate.toDateString() === now.toDateString()) {
@@ -769,10 +759,7 @@ export class RollingAchievementsTracker {
           addSessionToPeriod(data.weekly, gameId, genre, mood);
         }
 
-        if (
-          sessionDate.getFullYear() === data.monthly.year &&
-          sessionDate.getMonth() === data.monthly.month
-        ) {
+        if (sessionDate.getFullYear() === data.monthly.year && sessionDate.getMonth() === data.monthly.month) {
           addSessionToPeriod(data.monthly, gameId, genre, mood);
         }
 
@@ -821,7 +808,7 @@ export class RollingAchievementsTracker {
       { metric: 'share', current: Number(periodData.featuresUsed?.share || 0), unit: 'count' },
       { metric: 'streaks', current: Number(data.streaks?.[periodKey]?.current || 0), unit: 'count' },
       { metric: 'activeDays', current: Number(periodData.activeDays || 0), unit: 'count' },
-      { metric: 'unlocks', current: Number(periodData.unlocks || 0), unit: 'count' }
+      { metric: 'unlocks', current: Number(periodData.unlocks || 0), unit: 'count' },
     ];
 
     for (const definition of metricDefinitions) {
@@ -835,15 +822,12 @@ export class RollingAchievementsTracker {
         continue;
       }
 
-      const target = typeof match.minutes === 'number'
-        ? match.minutes
-        : Number(match.count || 0);
-      const current = definition.metric === 'features' && match.key
-        ? Number(periodData.featuresUsed?.[match.key] || 0)
-        : definition.current;
-      const progressPercent = target > 0
-        ? Math.min(100, (current / target) * 100)
-        : 0;
+      const target = typeof match.minutes === 'number' ? match.minutes : Number(match.count || 0);
+      const current =
+        definition.metric === 'features' && match.key
+          ? Number(periodData.featuresUsed?.[match.key] || 0)
+          : definition.current;
+      const progressPercent = target > 0 ? Math.min(100, (current / target) * 100) : 0;
 
       return {
         achievementId,
@@ -855,7 +839,7 @@ export class RollingAchievementsTracker {
         unit: typeof match.minutes === 'number' ? 'minutes' : definition.unit,
         progressPercent,
         remaining: Math.max(0, target - current),
-        completed: target > 0 ? current >= target : false
+        completed: target > 0 ? current >= target : false,
       };
     }
 
@@ -870,4 +854,3 @@ export class RollingAchievementsTracker {
     return Boolean(this.getAchievementProgressSnapshot(achievementId)?.completed);
   }
 }
-

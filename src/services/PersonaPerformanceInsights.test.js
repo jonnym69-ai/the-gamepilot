@@ -9,16 +9,16 @@ jest.mock('./HardwareDetector', () => ({
       gpu: { model: 'Default GPU' },
       ram: { total: 8 },
       storage: [{ name: 'C:', type: 'SSD', isSSD: true, isNVMe: false }],
-      lastUpdated: '2024-01-01T00:00:00.000Z'
-    }))
-  }
+      lastUpdated: '2024-01-01T00:00:00.000Z',
+    })),
+  },
 }));
 
 jest.mock('./GameRequirements', () => ({
   GameRequirements: {
     checkGameCompatibility: jest.fn(),
-    getSettingsLabel: jest.fn(() => ({ text: 'High', emoji: '⚡' }))
-  }
+    getSettingsLabel: jest.fn(() => ({ text: 'High', emoji: '⚡' })),
+  },
 }));
 
 describe('PersonaPerformanceInsights', () => {
@@ -31,7 +31,7 @@ describe('PersonaPerformanceInsights', () => {
       canRun: true,
       settingsLevel: 'high',
       estimatedFPS: 60,
-      bottlenecks: []
+      bottlenecks: [],
     });
     GameRequirements.getSettingsLabel.mockReset();
     GameRequirements.getSettingsLabel.mockReturnValue({ text: 'High', emoji: 'X' });
@@ -52,15 +52,11 @@ describe('PersonaPerformanceInsights', () => {
     });
 
     test('derives average from time_played / launch_count when both exist', () => {
-      expect(
-        PersonaPerformanceInsights.estimateSessionMinutes({ time_played: 600, launch_count: 10 })
-      ).toBe(60);
+      expect(PersonaPerformanceInsights.estimateSessionMinutes({ time_played: 600, launch_count: 10 })).toBe(60);
     });
 
     test('falls back to time_played alone when no launch_count', () => {
-      expect(
-        PersonaPerformanceInsights.estimateSessionMinutes({ time_played: 75 })
-      ).toBe(75);
+      expect(PersonaPerformanceInsights.estimateSessionMinutes({ time_played: 75 })).toBe(75);
     });
   });
 
@@ -107,7 +103,7 @@ describe('PersonaPerformanceInsights', () => {
         gpu: { model: 'New GPU' },
         ram: { total: 16 },
         storage: [],
-        lastUpdated: '2024-02-01T00:00:00.000Z'
+        lastUpdated: '2024-02-01T00:00:00.000Z',
       });
 
       PersonaPerformanceCompatibility.getCompatibility(game);
@@ -120,7 +116,7 @@ describe('PersonaPerformanceInsights', () => {
         gpu: { model: 'Default GPU' },
         ram: { total: 8 },
         storage: [{ name: 'C:', type: 'SSD', isSSD: true, isNVMe: false }],
-        lastUpdated: '2024-01-01T00:00:00.000Z'
+        lastUpdated: '2024-01-01T00:00:00.000Z',
       };
       PersonaPerformanceCompatibility.setSystemInfo(sameInfo);
       const game = { appid: '1', name: 'Game' };
@@ -141,7 +137,7 @@ describe('PersonaPerformanceInsights', () => {
       const desc = PersonaPerformanceCompatibility.describeCompatibility({
         settingsLevel: 'mystery',
         estimatedFPS: 42,
-        bottlenecks: []
+        bottlenecks: [],
       });
       expect(typeof desc).toBe('string');
       expect(desc).toMatch(/mystery/);
@@ -152,7 +148,7 @@ describe('PersonaPerformanceInsights', () => {
       const desc = PersonaPerformanceCompatibility.describeCompatibility({
         settingsLevel: 'high',
         estimatedFPS: 75,
-        bottlenecks: [{ component: 'GPU' }]
+        bottlenecks: [{ component: 'GPU' }],
       });
       expect(desc).toMatch(/High/);
       expect(desc).toMatch(/75/);

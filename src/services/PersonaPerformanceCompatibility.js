@@ -12,7 +12,12 @@ class PersonaPerformanceCompatibility {
     }
 
     const storageSignature = Array.isArray(info.storage)
-      ? info.storage.map((drive) => `${drive.name || drive.model || 'drive'}:${drive.type || 'unknown'}:${drive.isSSD ? 'ssd' : 'hdd'}:${drive.isNVMe ? 'nvme' : 'non-nvme'}`).join('|')
+      ? info.storage
+          .map(
+            (drive) =>
+              `${drive.name || drive.model || 'drive'}:${drive.type || 'unknown'}:${drive.isSSD ? 'ssd' : 'hdd'}:${drive.isNVMe ? 'nvme' : 'non-nvme'}`
+          )
+          .join('|')
       : 'no-storage';
 
     return [
@@ -20,7 +25,7 @@ class PersonaPerformanceCompatibility {
       info.gpu?.model || 'unknown-gpu',
       info.ram?.total || 'unknown-ram',
       storageSignature,
-      info.lastUpdated || 'no-timestamp'
+      info.lastUpdated || 'no-timestamp',
     ].join('::');
   }
 
@@ -82,9 +87,7 @@ class PersonaPerformanceCompatibility {
   }
 
   static getCompatibility(game = {}, systemInfoOverride = null) {
-    const systemInfo = systemInfoOverride
-      ? this.setSystemInfo(systemInfoOverride)
-      : this.getSystemInfo();
+    const systemInfo = systemInfoOverride ? this.setSystemInfo(systemInfoOverride) : this.getSystemInfo();
     if (!systemInfo) {
       return null;
     }

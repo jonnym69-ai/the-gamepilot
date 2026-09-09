@@ -80,7 +80,9 @@
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
 }
 
 .brd-button:disabled {
@@ -246,8 +248,12 @@
 }
 
 @keyframes brd-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 760px) {

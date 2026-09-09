@@ -2,11 +2,15 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-jest.mock('react-router-dom', () => ({
-  useNavigate: () => jest.fn(),
-  useLocation: () => ({ pathname: '/library', search: '', hash: '', state: null }),
-  Link: ({ children, ...rest }) => <a {...rest}>{children}</a>
-}), { virtual: true });
+jest.mock(
+  'react-router-dom',
+  () => ({
+    useNavigate: () => jest.fn(),
+    useLocation: () => ({ pathname: '/library', search: '', hash: '', state: null }),
+    Link: ({ children, ...rest }) => <a {...rest}>{children}</a>,
+  }),
+  { virtual: true }
+);
 
 jest.mock('./NavBar', () => () => <nav data-testid="nav-bar" />);
 
@@ -14,7 +18,7 @@ jest.mock('./ThemeContext', () => {
   const ReactLib = require('react');
   return {
     ThemeContext: ReactLib.createContext({ currentTheme: 'dark' }),
-    getThemeSpecificLibraryTitle: jest.fn(() => 'Game Library')
+    getThemeSpecificLibraryTitle: jest.fn(() => 'Game Library'),
   };
 });
 
@@ -23,31 +27,31 @@ jest.mock('./components/Toast', () => ({
     success: jest.fn(),
     error: jest.fn(),
     warning: jest.fn(),
-    info: jest.fn()
+    info: jest.fn(),
   }),
-  ToastProvider: ({ children }) => <>{children}</>
+  ToastProvider: ({ children }) => <>{children}</>,
 }));
 
 jest.mock('./services/HardwareDetector', () => ({
   HardwareDetector: {
-    getSystemInfo: jest.fn(() => new Promise(() => {}))
-  }
+    getSystemInfo: jest.fn(() => new Promise(() => {})),
+  },
 }));
 
 jest.mock('./services/FreeGameRadar', () => ({
   FreeGameRadar: {
-    getFreeGames: jest.fn(() => new Promise(() => {}))
-  }
+    getFreeGames: jest.fn(() => new Promise(() => {})),
+  },
 }));
 
 jest.mock('./services/ProgressionUnlockService', () => ({
   ProgressionUnlockService: {
     getLibraryPresentationPreference: jest.fn(() => 'classic_shelf'),
     getRewardPresentationCustomization: jest.fn(() => ({ selectedLibraryVariant: 'classic_shelf' })),
-    getLibraryPresentationVariants: jest.fn(() => ([
-      { id: 'classic_shelf', name: 'Classic Shelf', preview: 'linear-gradient(135deg, #ff6b35, #ff8c42)' }
-    ]))
-  }
+    getLibraryPresentationVariants: jest.fn(() => [
+      { id: 'classic_shelf', name: 'Classic Shelf', preview: 'linear-gradient(135deg, #ff6b35, #ff8c42)' },
+    ]),
+  },
 }));
 
 const Library = require('./Library').default;
@@ -55,30 +59,36 @@ const { HardwareDetector } = require('./services/HardwareDetector');
 const { FreeGameRadar } = require('./services/FreeGameRadar');
 
 // Mock child components
-jest.mock('./components/GameModal', () => ({ game, isOpen, onClose, onLaunch, theme }) => (
-  isOpen ? (
-    <div data-testid="game-modal">
-      <h2>{game?.name}</h2>
-      <button onClick={onClose}>Close</button>
-      <button onClick={() => onLaunch(game)}>Launch</button>
-    </div>
-  ) : null
-));
+jest.mock(
+  './components/GameModal',
+  () =>
+    ({ game, isOpen, onClose, onLaunch, theme }) =>
+      isOpen ? (
+        <div data-testid="game-modal">
+          <h2>{game?.name}</h2>
+          <button onClick={onClose}>Close</button>
+          <button onClick={() => onLaunch(game)}>Launch</button>
+        </div>
+      ) : null
+);
 
-jest.mock('./components/ExportModal', () => ({ isOpen, onClose }) => (
-  isOpen ? <div data-testid="export-modal">Export Modal</div> : null
-));
+jest.mock(
+  './components/ExportModal',
+  () =>
+    ({ isOpen, onClose }) =>
+      isOpen ? <div data-testid="export-modal">Export Modal</div> : null
+);
 
 jest.mock('./components/LibraryShareCard', () => ({
   __esModule: true,
   default: () => null,
-  LIBRARY_SHARE_CARD_SIZE_PX: 1080
+  LIBRARY_SHARE_CARD_SIZE_PX: 1080,
 }));
 
 jest.mock('./components/TopRatedShareCard', () => ({
   __esModule: true,
   default: () => null,
-  TOP_RATED_SHARE_CARD_SIZE_PX: 1080
+  TOP_RATED_SHARE_CARD_SIZE_PX: 1080,
 }));
 
 jest.mock('./components/LazyImage', () => ({ src, alt, style }) => (
@@ -91,8 +101,8 @@ jest.mock('./components/HLTBChip', () => () => null);
 jest.mock('./AchievementSystem', () => ({
   AchievementTracker: {
     trackFeatureUsage: jest.fn(),
-    trackPlatformUsage: jest.fn()
-  }
+    trackPlatformUsage: jest.fn(),
+  },
 }));
 
 // Mock localStorage
@@ -112,7 +122,7 @@ const mockLibrary = [
     platform: 'Steam',
     genres: ['RPG', 'Adventure'],
     mood: 'Competitive',
-    time_played: 120
+    time_played: 120,
   },
   {
     appid: '2',
@@ -120,7 +130,7 @@ const mockLibrary = [
     platform: 'Steam',
     genres: ['Simulation', 'Indie'],
     mood: 'Relaxed',
-    time_played: 200
+    time_played: 200,
   },
   {
     appid: '3',
@@ -128,8 +138,8 @@ const mockLibrary = [
     platform: 'Steam',
     genres: ['Action', 'Shooter'],
     mood: 'Social',
-    time_played: 300
-  }
+    time_played: 300,
+  },
 ];
 
 describe('Library Component', () => {
@@ -142,7 +152,7 @@ describe('Library Component', () => {
     onUpdatePrice: jest.fn(),
     searchQuery: '',
     setSearchQuery: jest.fn(),
-    endSession: jest.fn()
+    endSession: jest.fn(),
   };
 
   beforeEach(() => {

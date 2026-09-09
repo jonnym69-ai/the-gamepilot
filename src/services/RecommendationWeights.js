@@ -120,7 +120,7 @@ export const DEFAULT_RECOMMENDATION_WEIGHTS = Object.freeze({
   // storage and applies these as additive score adjustments.
   familiarityFamiliarBonus: 12,
   familiarityFreshBonus: 12,
-  familiarityFreshPlaytimeThreshold: 300  // minutes — under this = fresh candidate
+  familiarityFreshPlaytimeThreshold: 300, // minutes — under this = fresh candidate
 });
 
 /**
@@ -134,7 +134,7 @@ const LIBRARIAN_OVERRIDES = Object.freeze({
   recentlyPlayedWeekPenalty: 20,
   recentlyPlayedFortnightPenalty: 12,
   personaAlignmentMultiplier: 0.45,
-  explorationSlotEnabled: 0
+  explorationSlotEnabled: 0,
 });
 
 /**
@@ -151,13 +151,13 @@ const FULL_OVERRIDES = Object.freeze({
   unplayedBonus: 15,
   recentlyPlayedWeekPenalty: 10,
   recentlyPlayedFortnightPenalty: 4,
-  replayIntentActiveBonus: 30
+  replayIntentActiveBonus: 30,
 });
 
 const PRESETS = Object.freeze({
   librarian: LIBRARIAN_OVERRIDES,
   balanced: BALANCED_OVERRIDES,
-  full: FULL_OVERRIDES
+  full: FULL_OVERRIDES,
 });
 
 /**

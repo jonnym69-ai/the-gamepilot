@@ -13,21 +13,21 @@ describe('RecapStoryService', () => {
         totalPlaytime: 600,
         sessions: 5,
         activeDays: 4,
-        userRating: 10
+        userRating: 10,
       },
       {
         name: 'Stardew Valley',
         totalPlaytime: 90,
         sessions: 2,
         activeDays: 1,
-        userRating: 9
-      }
+        userRating: 9,
+      },
     ],
     moodCounts: { Competitive: 5, Focused: 2 },
     genreCounts: { RPG: 5, Simulation: 2 },
     longestSessionMinutes: 180,
     avgSessionMinutes: 90,
-    ...overrides
+    ...overrides,
   });
 
   test('builds weekly stories with grind highlight', () => {
@@ -58,24 +58,24 @@ describe('RecapStoryService', () => {
   test('builds monthly stories with higher threshold', () => {
     const snapshot = buildWeeklySnapshot({
       playtimeMinutes: 1200,
-      topGames: [{ name: 'Baldur\'s Gate 3', totalPlaytime: 960, sessions: 6, activeDays: 5 }]
+      topGames: [{ name: "Baldur's Gate 3", totalPlaytime: 960, sessions: 6, activeDays: 5 }],
     });
     const result = RecapStoryService.buildMonthlyStories(snapshot, 'Pilot');
     expect(result.hasData).toBe(true);
-    expect(result.stories.some((story) => story.includes('Baldur\'s Gate 3'))).toBe(true);
+    expect(result.stories.some((story) => story.includes("Baldur's Gate 3"))).toBe(true);
   });
 
   test('builds share text', () => {
     const text = RecapStoryService.buildShareText(buildWeeklySnapshot(), 'weekly', 'Pilot');
     expect(text).toContain('Pilot');
-    expect(text).toContain('This Week\'s GamePilot Recap');
+    expect(text).toContain("This Week's GamePilot Recap");
     expect(text).toContain('Generated locally by GamePilot');
   });
 
   test('generates marathon story when top game claims 40% or more', () => {
     const snapshot = buildWeeklySnapshot({
       playtimeMinutes: 1000,
-      topGames: [{ name: 'Marathon Game', totalPlaytime: 500, sessions: 3, activeDays: 2 }]
+      topGames: [{ name: 'Marathon Game', totalPlaytime: 500, sessions: 3, activeDays: 2 }],
     });
     const result = RecapStoryService.buildWeeklyStories(snapshot, 'Pilot');
     expect(result.stories.some((story) => story.includes('claimed 50%'))).toBe(true);

@@ -7,14 +7,23 @@ function GamingStoryPanel({ story }) {
   if (!story) {
     return (
       <div className="gaming-story-panel empty">
-        <p className="gaming-story-panel-empty">
-          Your gaming story will appear after your first library scan.
-        </p>
+        <p className="gaming-story-panel-empty">Your gaming story will appear after your first library scan.</p>
       </div>
     );
   }
 
-  const { title, subtitle, period, identityLabel, topGames, genreFingerprint, moodFingerprint, tasteClusters, narrative, totalHours } = story;
+  const {
+    title,
+    subtitle,
+    period,
+    identityLabel,
+    topGames,
+    genreFingerprint,
+    moodFingerprint,
+    tasteClusters,
+    narrative,
+    totalHours,
+  } = story;
   const isIdentity = story.chapter === 'identity';
   const isPeriod = story.chapter === 'period';
   const isDigest = story.chapter === 'digest';
@@ -24,12 +33,13 @@ function GamingStoryPanel({ story }) {
   const safeMoodFingerprint = Array.isArray(moodFingerprint) ? moodFingerprint : [];
   const safeTasteClusters = Array.isArray(tasteClusters) ? tasteClusters : [];
   const coverGames = safeTopGames.filter((game) => game && game.coverUrl).slice(0, 3);
-  const quietPeriodLabel = {
-    daily: 'day',
-    weekly: 'week',
-    monthly: 'month',
-    yearly: 'year'
-  }[period] || 'period';
+  const quietPeriodLabel =
+    {
+      daily: 'day',
+      weekly: 'week',
+      monthly: 'month',
+      yearly: 'year',
+    }[period] || 'period';
 
   return (
     <div className="gaming-story-panel">
@@ -41,7 +51,7 @@ function GamingStoryPanel({ story }) {
               className="gaming-story-panel-cover"
               style={{
                 backgroundImage: `url(${game.coverUrl})`,
-                zIndex: coverGames.length - index
+                zIndex: coverGames.length - index,
               }}
               aria-hidden="true"
             />
@@ -53,11 +63,29 @@ function GamingStoryPanel({ story }) {
       <div className="gaming-story-panel-content">
         <div className="gaming-story-panel-header">
           <div className="gaming-story-panel-badge">
-            {isIdentity ? <TrendingUp size={14} /> : isDigest ? <BookOpen size={14} /> : isPeriod ? <Clock size={14} /> : <Sparkles size={14} />}
-            {isQuiet ? `Quiet ${quietPeriodLabel}` : isIdentity ? 'Evolving identity' : isDigest ? `${period} digest` : isPeriod ? `${period} recap` : 'First chapter'}
+            {isIdentity ? (
+              <TrendingUp size={14} />
+            ) : isDigest ? (
+              <BookOpen size={14} />
+            ) : isPeriod ? (
+              <Clock size={14} />
+            ) : (
+              <Sparkles size={14} />
+            )}
+            {isQuiet
+              ? `Quiet ${quietPeriodLabel}`
+              : isIdentity
+                ? 'Evolving identity'
+                : isDigest
+                  ? `${period} digest`
+                  : isPeriod
+                    ? `${period} recap`
+                    : 'First chapter'}
           </div>
           {identityLabel && (
-            <div className="gaming-story-panel-identity" title="Narrative voice">{identityLabel}</div>
+            <div className="gaming-story-panel-identity" title="Narrative voice">
+              {identityLabel}
+            </div>
           )}
         </div>
 
@@ -67,7 +95,7 @@ function GamingStoryPanel({ story }) {
         <p
           className="gaming-story-panel-narrative"
           dangerouslySetInnerHTML={{
-            __html: narrative.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            __html: narrative.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
           }}
         />
 

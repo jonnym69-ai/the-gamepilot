@@ -4,8 +4,10 @@ import SaveBackupService from '../services/SaveBackupService';
 import './SaveBackupPanel.css';
 
 const statusLabel = (location) => {
-  if (location.exists) return `${SaveBackupService.bytesToLabel(location.bytes)} • ${location.files || 0} file${location.files === 1 ? '' : 's'}`;
-  if (Array.isArray(location.unresolvedTokens) && location.unresolvedTokens.length > 0) return `Needs manual path: ${location.unresolvedTokens.join(', ')}`;
+  if (location.exists)
+    return `${SaveBackupService.bytesToLabel(location.bytes)} • ${location.files || 0} file${location.files === 1 ? '' : 's'}`;
+  if (Array.isArray(location.unresolvedTokens) && location.unresolvedTokens.length > 0)
+    return `Needs manual path: ${location.unresolvedTokens.join(', ')}`;
   return 'Not found on this PC yet';
 };
 
@@ -58,7 +60,9 @@ const SaveBackupPanel = ({ game }) => {
         if (!cancelled) setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [game]);
 
   const handleOpen = async (location) => {
@@ -78,7 +82,9 @@ const SaveBackupPanel = ({ game }) => {
   };
 
   const handleCreateBackup = async () => {
-    const readyLocations = Array.isArray(plan?.locations) ? plan.locations.filter((location) => location.exists && location.canOpen) : [];
+    const readyLocations = Array.isArray(plan?.locations)
+      ? plan.locations.filter((location) => location.exists && location.canOpen)
+      : [];
     setCreatingBackup(true);
     setBackupStatus(null);
     try {
@@ -87,7 +93,7 @@ const SaveBackupPanel = ({ game }) => {
         setBackupStatus({
           ok: true,
           message: `Backup created: ${result.backupPath}`,
-          manifest: result.manifest
+          manifest: result.manifest,
         });
         const nextHistory = SaveBackupService.getBackupHistory(game);
         setBackupHistory(nextHistory);
@@ -123,14 +129,14 @@ const SaveBackupPanel = ({ game }) => {
       const result = await SaveBackupService.restoreBackup(game, selectedBackup, {
         confirmation: restoreConfirmation,
         destinationRoot,
-        readyLocations
+        readyLocations,
       });
       if (result?.ok) {
         setRestoreStatus({
           ok: true,
           message: result.message || 'Restore completed.',
           receiptPath: result.receiptPath,
-          safetyBackupPath: result.safetyBackup?.backupPath
+          safetyBackupPath: result.safetyBackup?.backupPath,
         });
         setBackupHistory(SaveBackupService.getBackupHistory(game));
       } else {
@@ -157,23 +163,28 @@ const SaveBackupPanel = ({ game }) => {
           <ShieldCheck size={16} />
           <h3>Save Backup</h3>
         </div>
-        <p>No save/config folder is known yet for this title. If PCGamingWiki adds one later, GamePilot can use it as a local backup candidate.</p>
+        <p>
+          No save/config folder is known yet for this title. If PCGamingWiki adds one later, GamePilot can use it as a
+          local backup candidate.
+        </p>
       </div>
     );
   }
 
   const locations = plan.locations.length > 0 ? plan.locations : plan.candidates;
   const readyLocations = locations.filter((location) => location.exists && location.canOpen);
-  const canCreateBackup = Boolean(plan.hasBackupBridge && destinationRoot && readyLocations.length > 0 && !creatingBackup);
+  const canCreateBackup = Boolean(
+    plan.hasBackupBridge && destinationRoot && readyLocations.length > 0 && !creatingBackup
+  );
   const selectedBackup = backupHistory.find((entry) => entry.id === selectedBackupId) || backupHistory[0] || null;
   const restorePreview = SaveBackupService.getRestorePreview(selectedBackup);
   const restoreSafety = SaveBackupService.getRestoreSafetyAssessment(game, restorePreflight);
   const canRestoreBackup = Boolean(
-    restoreSafety.restoreEnabled
-    && destinationRoot
-    && restoreConfirmation === (game?.name || game?.title || '')
-    && readyLocations.length > 0
-    && !restoringBackup
+    restoreSafety.restoreEnabled &&
+      destinationRoot &&
+      restoreConfirmation === (game?.name || game?.title || '') &&
+      readyLocations.length > 0 &&
+      !restoringBackup
   );
 
   return (
@@ -186,7 +197,10 @@ const SaveBackupPanel = ({ game }) => {
       <p className="save-backup-copy">{plan.note}</p>
       <div className="save-backup-list">
         {locations.map((location) => (
-          <div key={location.id || location.rawPath} className={`save-backup-location ${location.exists ? 'is-ready' : ''}`}>
+          <div
+            key={location.id || location.rawPath}
+            className={`save-backup-location ${location.exists ? 'is-ready' : ''}`}
+          >
             <HardDrive size={14} />
             <div className="save-backup-location-copy">
               <strong>{location.label || location.type || 'Location'}</strong>
@@ -211,14 +225,17 @@ const SaveBackupPanel = ({ game }) => {
         </button>
       </div>
       {destinationRoot && (
-        <p className="save-backup-destination">Destination: <code>{destinationRoot}</code></p>
+        <p className="save-backup-destination">
+          Destination: <code>{destinationRoot}</code>
+        </p>
       )}
       {backupStatus && (
         <div className={`save-backup-result ${backupStatus.ok ? 'is-success' : 'is-error'}`}>
           <p>{backupStatus.message}</p>
           {backupStatus.manifest && (
             <span>
-              {backupStatus.manifest.totals.files} file{backupStatus.manifest.totals.files === 1 ? '' : 's'} copied • {SaveBackupService.bytesToLabel(backupStatus.manifest.totals.bytes)} • manifest written
+              {backupStatus.manifest.totals.files} file{backupStatus.manifest.totals.files === 1 ? '' : 's'} copied •{' '}
+              {SaveBackupService.bytesToLabel(backupStatus.manifest.totals.bytes)} • manifest written
             </span>
           )}
         </div>
@@ -238,7 +255,9 @@ const SaveBackupPanel = ({ game }) => {
                 onClick={() => setSelectedBackupId(entry.id)}
               >
                 <span>{formatBackupDate(entry.createdAt)}</span>
-                <small>{entry.totals?.files || 0} files • {SaveBackupService.bytesToLabel(entry.totals?.bytes || 0)}</small>
+                <small>
+                  {entry.totals?.files || 0} files • {SaveBackupService.bytesToLabel(entry.totals?.bytes || 0)}
+                </small>
               </button>
             ))}
           </div>
@@ -251,11 +270,17 @@ const SaveBackupPanel = ({ game }) => {
                   <code>{destination.targetPath}</code>
                 </div>
               ))}
-              <button type="button" onClick={handlePreviewRestore} disabled={!plan.hasRestorePreviewBridge || previewingRestore}>
+              <button
+                type="button"
+                onClick={handlePreviewRestore}
+                disabled={!plan.hasRestorePreviewBridge || previewingRestore}
+              >
                 {previewingRestore ? 'Checking live targets…' : 'Check live targets'}
               </button>
               <div className={`save-backup-safety ${restoreSafety.status === 'blocked' ? 'is-blocked' : 'is-guarded'}`}>
-                <strong>{restoreSafety.status === 'blocked' ? 'Restore safety blocked' : 'Restore safety checklist'}</strong>
+                <strong>
+                  {restoreSafety.status === 'blocked' ? 'Restore safety blocked' : 'Restore safety checklist'}
+                </strong>
                 <p>{restoreSafety.message}</p>
                 {restoreSafety.blockers.length > 0 && (
                   <ul>
@@ -272,19 +297,37 @@ const SaveBackupPanel = ({ game }) => {
               </div>
               {restorePreflight && (
                 <div className={`save-backup-preflight-result ${restorePreflight.ok ? 'is-ready' : 'is-error'}`}>
-                  <p>{restorePreflight.ok ? restorePreflight.message : `Restore preflight failed: ${restorePreflight.error || 'unknown error'}`}</p>
-                  {restorePreflight.ok && restorePreflight.comparisons?.map((comparison, index) => (
-                    <div key={`${comparison.targetPath}-${index}`} className="save-backup-preflight-row">
-                      <strong>{comparison.label}</strong>
-                      <span>{comparison.backupFiles || 0} backup files • {SaveBackupService.bytesToLabel(comparison.backupBytes || 0)}</span>
-                      <span>{comparison.targetExists ? `Live target exists (${comparison.targetFiles || 0} files)` : 'Live target not found'}</span>
-                      <em>{comparison.wouldOverwrite ? 'Would require overwrite approval later' : 'Would create a missing target later'}</em>
-                    </div>
-                  ))}
+                  <p>
+                    {restorePreflight.ok
+                      ? restorePreflight.message
+                      : `Restore preflight failed: ${restorePreflight.error || 'unknown error'}`}
+                  </p>
+                  {restorePreflight.ok &&
+                    restorePreflight.comparisons?.map((comparison, index) => (
+                      <div key={`${comparison.targetPath}-${index}`} className="save-backup-preflight-row">
+                        <strong>{comparison.label}</strong>
+                        <span>
+                          {comparison.backupFiles || 0} backup files •{' '}
+                          {SaveBackupService.bytesToLabel(comparison.backupBytes || 0)}
+                        </span>
+                        <span>
+                          {comparison.targetExists
+                            ? `Live target exists (${comparison.targetFiles || 0} files)`
+                            : 'Live target not found'}
+                        </span>
+                        <em>
+                          {comparison.wouldOverwrite
+                            ? 'Would require overwrite approval later'
+                            : 'Would create a missing target later'}
+                        </em>
+                      </div>
+                    ))}
                 </div>
               )}
               <div className="save-backup-restore-confirmation">
-                <label htmlFor="save-restore-confirmation">Type <strong>{game?.name || game?.title}</strong> to enable guarded restore</label>
+                <label htmlFor="save-restore-confirmation">
+                  Type <strong>{game?.name || game?.title}</strong> to enable guarded restore
+                </label>
                 <input
                   id="save-restore-confirmation"
                   type="text"
@@ -292,9 +335,18 @@ const SaveBackupPanel = ({ game }) => {
                   onChange={(event) => setRestoreConfirmation(event.target.value)}
                   placeholder={game?.name || game?.title || 'Game name'}
                 />
-                {!destinationRoot && <span>Choose a backup folder first so GamePilot can create a fresh safety backup before restoring.</span>}
+                {!destinationRoot && (
+                  <span>
+                    Choose a backup folder first so GamePilot can create a fresh safety backup before restoring.
+                  </span>
+                )}
               </div>
-              <button type="button" onClick={handleRestoreBackup} disabled={!canRestoreBackup} title="Creates a fresh safety backup, then restores from the selected backup manifest">
+              <button
+                type="button"
+                onClick={handleRestoreBackup}
+                disabled={!canRestoreBackup}
+                title="Creates a fresh safety backup, then restores from the selected backup manifest"
+              >
                 {restoringBackup ? 'Restoring…' : 'Restore selected backup'}
               </button>
               {restoreStatus && (

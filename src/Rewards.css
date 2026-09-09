@@ -130,7 +130,12 @@
   border-radius: 12px;
   color: var(--text-secondary, #8b8b9a);
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
   text-align: left;
   font-size: 0.9rem;
   min-width: 0;
@@ -210,12 +215,14 @@
   margin-bottom: 24px;
   padding: 22px;
   border-radius: 18px;
-  background:
-    radial-gradient(circle at top left, rgba(255, 107, 53, 0.18), transparent 34%),
-    linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  background: radial-gradient(circle at top left, rgba(255, 107, 53, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .rewards-roadmap-card:hover {
@@ -307,15 +314,19 @@
   align-items: flex-start;
   padding: 12px;
   border-radius: 14px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .rewards-roadmap-item:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 107, 53, 0.2);
-  background: rgba(255,255,255,0.055);
+  background: rgba(255, 255, 255, 0.055);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
 }
 
@@ -329,7 +340,9 @@
   background: rgba(255, 107, 53, 0.16);
   color: var(--accent-primary, #ff6b35);
   font-weight: 800;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .rewards-roadmap-item:hover .rewards-roadmap-step {
@@ -366,9 +379,13 @@
   gap: 12px;
   padding: 14px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%);
-  border: 1px solid rgba(255,255,255,0.06);
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
   cursor: pointer;
   min-width: 0;
 }
@@ -387,13 +404,13 @@
 .rewards-card-item.active {
   border-color: rgba(168, 85, 247, 0.45);
   box-shadow: 0 20px 45px rgba(124, 58, 237, 0.18);
-  background: linear-gradient(180deg, rgba(124,58,237,0.08) 0%, rgba(255,255,255,0.02) 100%);
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
 
 .rewards-card-item.locked {
   cursor: default;
   border-color: rgba(255, 209, 102, 0.16);
-  background: linear-gradient(180deg, rgba(255, 209, 102, 0.04) 0%, rgba(255,255,255,0.012) 100%);
+  background: linear-gradient(180deg, rgba(255, 209, 102, 0.04) 0%, rgba(255, 255, 255, 0.012) 100%);
 }
 
 .rewards-card-item.locked:hover {
@@ -457,7 +474,9 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   cursor: pointer;
 }
 
@@ -478,11 +497,10 @@
 .reward-library-preview,
 .reward-home-preview {
   min-height: 200px;
-  background:
-    radial-gradient(circle at top left, rgba(168,85,247,0.18), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(59,130,246,0.14), transparent 30%),
+  background: radial-gradient(circle at top left, rgba(168, 85, 247, 0.18), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 30%),
     linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(17, 24, 39, 0.95) 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .reward-logo-stage {
@@ -498,12 +516,11 @@
 .reward-logo-grid {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
   background-size: 26px 26px;
-  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.85) 45%, transparent 100%);
-  mask-image: linear-gradient(180deg, rgba(0,0,0,0.85) 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 45%, transparent 100%);
 }
 
 .reward-logo-orb {
@@ -518,7 +535,7 @@
   height: 110px;
   top: 18px;
   left: 24px;
-  background: radial-gradient(circle, rgba(236,72,153,0.65) 0%, rgba(236,72,153,0) 72%);
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.65) 0%, rgba(236, 72, 153, 0) 72%);
 }
 
 .reward-logo-orb-b {
@@ -526,7 +543,7 @@
   height: 130px;
   right: 10px;
   bottom: 8px;
-  background: radial-gradient(circle, rgba(59,130,246,0.55) 0%, rgba(59,130,246,0) 72%);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.55) 0%, rgba(59, 130, 246, 0) 72%);
 }
 
 .reward-logo-wordmark {
@@ -542,52 +559,54 @@
   font-size: 0.65rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .reward-logo-title {
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  text-shadow: 0 0 22px rgba(255,255,255,0.18);
+  text-shadow: 0 0 22px rgba(255, 255, 255, 0.18);
 }
 
 .reward-logo-subtitle {
   font-size: 0.82rem;
-  color: rgba(255,255,255,0.76);
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .reward-logo-stage-synthwave-runway .reward-logo-title {
   color: #f5d0fe;
-  text-shadow: 0 0 25px rgba(236,72,153,0.5), 0 0 40px rgba(59,130,246,0.3);
+  text-shadow:
+    0 0 25px rgba(236, 72, 153, 0.5),
+    0 0 40px rgba(59, 130, 246, 0.3);
 }
 
 .reward-logo-stage-pixel-parade .reward-logo-title {
   color: #bbf7d0;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: 3px 3px 0 rgba(34,197,94,0.2);
+  text-shadow: 3px 3px 0 rgba(34, 197, 94, 0.2);
 }
 
 .reward-logo-stage-sunset-brush .reward-logo-title {
   color: #fde68a;
-  text-shadow: 0 0 30px rgba(251,146,60,0.42);
+  text-shadow: 0 0 30px rgba(251, 146, 60, 0.42);
 }
 
 .reward-logo-stage-circuit-glow .reward-logo-title {
   color: #93c5fd;
-  text-shadow: 0 0 24px rgba(59,130,246,0.45);
+  text-shadow: 0 0 24px rgba(59, 130, 246, 0.45);
 }
 
 .reward-logo-stage-nebula-script .reward-logo-title {
   color: #ddd6fe;
   font-style: italic;
-  text-shadow: 0 0 26px rgba(139,92,246,0.45);
+  text-shadow: 0 0 26px rgba(139, 92, 246, 0.45);
 }
 
 .reward-logo-stage-golden-shine .reward-logo-title {
   color: #fde68a;
-  text-shadow: 0 0 28px rgba(245,158,11,0.45);
+  text-shadow: 0 0 28px rgba(245, 158, 11, 0.45);
 }
 
 .reward-library-toolbar {
@@ -601,12 +620,12 @@
   font-size: 0.65rem;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.09);
-  color: rgba(255,255,255,0.92);
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .reward-library-pill-muted {
-  color: rgba(255,255,255,0.62);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .reward-library-grid {
@@ -618,10 +637,9 @@
 .reward-library-card {
   min-height: 56px;
   border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%),
-    linear-gradient(135deg, rgba(168,85,247,0.16) 0%, rgba(59,130,246,0.16) 100%);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%),
+    linear-gradient(135deg, rgba(168, 85, 247, 0.16) 0%, rgba(59, 130, 246, 0.16) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .reward-library-card-featured {
@@ -642,8 +660,8 @@
 .reward-home-hero {
   min-height: 68px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(168,85,247,0.35) 0%, rgba(59,130,246,0.22) 100%);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(59, 130, 246, 0.22) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .reward-home-row {
@@ -659,8 +677,8 @@
 .reward-home-widget {
   min-height: 42px;
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
-  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .reward-home-widget-large {
@@ -681,7 +699,7 @@
   align-self: flex-start;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(168,85,247,0.16);
+  background: rgba(168, 85, 247, 0.16);
   color: #d8b4fe;
   font-size: 0.7rem;
   font-weight: 600;
@@ -693,14 +711,14 @@
   gap: 12px;
   padding: 12px;
   border-radius: 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .reward-recommendation-cover {
   min-height: 88px;
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(59,130,246,0.35) 0%, rgba(168,85,247,0.32) 100%);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.35) 0%, rgba(168, 85, 247, 0.32) 100%);
 }
 
 .reward-recommendation-copy {
@@ -713,13 +731,13 @@
 .reward-recommendation-line {
   height: 9px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .reward-recommendation-line-title {
   width: 78%;
   height: 11px;
-  background: rgba(255,255,255,0.22);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .reward-recommendation-tags {
@@ -732,8 +750,8 @@
   font-size: 0.65rem;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.74);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .reward-sample-image {

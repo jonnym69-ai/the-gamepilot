@@ -60,8 +60,9 @@ function getWhyThisText(game, identity) {
 
 function buildDeck(library, filters, identity) {
   if (!Array.isArray(library)) return [];
-  let pool = library.filter((game) => game
-    && !UserBehaviorProfile.shouldSuppressRecommendation(game.appid || game.name, game.name));
+  let pool = library.filter(
+    (game) => game && !UserBehaviorProfile.shouldSuppressRecommendation(game.appid || game.name, game.name)
+  );
 
   if (filters.mood) {
     pool = pool.filter((g) => g.mood === filters.mood);
@@ -107,7 +108,7 @@ function buildDeck(library, filters, identity) {
         'Fighting Veteran': ['Fighting'],
         'MMO Devotee': ['MMO', 'RPG'],
         'Narrative Lover': ['Adventure', 'RPG', 'Visual Novel'],
-        'Completionist': ['RPG', 'Adventure', 'Platformer']
+        Completionist: ['RPG', 'Adventure', 'Platformer'],
       };
       const aff = archetypeGenreMap[id.archetype] || [];
       if (aff.some((ag) => genres.includes(ag))) score += 12;
@@ -180,12 +181,18 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
   const currentX = useRef(0);
   const isDragging = useRef(false);
   const identity = useMemo(() => {
-    try { return GamingIdentity.getProfile(); } catch { return null; }
+    try {
+      return GamingIdentity.getProfile();
+    } catch {
+      return null;
+    }
   }, []);
 
   const availableMoods = useMemo(() => {
     const moods = new Set();
-    library.forEach((g) => { if (g.mood) moods.add(g.mood); });
+    library.forEach((g) => {
+      if (g.mood) moods.add(g.mood);
+    });
     return Array.from(moods).sort();
   }, [library]);
 
@@ -207,67 +214,76 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
     setPhase(built.length > 0 ? 'swiping' : 'finished');
   }, [library, filters, identity]);
 
-  const recordSwipe = useCallback((game, direction) => {
-    try {
-      const history = loadSwipeHistory();
-      const today = new Date().toISOString().split('T')[0];
-      if (!history[today]) history[today] = [];
-      const id = game.appid || game.name;
-      if (!history[today].includes(id)) history[today].push(id);
-      saveSwipeHistory(history);
+  const recordSwipe = useCallback(
+    (game, direction) => {
+      try {
+        const history = loadSwipeHistory();
+        const today = new Date().toISOString().split('T')[0];
+        if (!history[today]) history[today] = [];
+        const id = game.appid || game.name;
+        if (!history[today].includes(id)) history[today].push(id);
+        saveSwipeHistory(history);
 
-      const metadata = {
-        mood: game.mood,
-        genre: Array.isArray(game.genres) ? game.genres[0] : null,
-        direction,
-        deckType: filters.deckType,
-        source: 'swipe-deck'
-      };
-      UserBehaviorProfile.trackRecommendation('swipe-deck', metadata.mood, metadata.genre, null, [id], metadata);
-      if (direction === 'left') {
-        UserBehaviorProfile.trackRecommendationOutcome(id, RECOMMENDATION_OUTCOME.NOT_NOW, { gameName: game.name, ...metadata });
-      } else if (direction === 'right') {
-        UserBehaviorProfile.trackRecommendationFeedback('swipe-deck', id, true, metadata);
-      }
-    } catch {
-      // non-critical
-    }
-  }, [filters.deckType]);
-
-  const handleSwipe = useCallback((direction) => {
-    if (!currentGame) return;
-    setSwipeDir(direction);
-    recordSwipe(currentGame, direction);
-
-    if (direction === 'right') {
-      const next = [...loadShortlist(), currentGame];
-      saveShortlist(next);
-      setShortlist(next);
-    } else if (direction === 'up') {
-      const next = [...loadShortlist(), currentGame];
-      saveShortlist(next);
-      setShortlist(next);
-      UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', currentGame.appid || currentGame.name, {
-        mood: currentGame.mood || null,
-        genre: Array.isArray(currentGame.genres) ? currentGame.genres[0] : null,
-        source: 'swipe-deck'
-      });
-      if (onLaunchGame) onLaunchGame(currentGame);
-    } else {
-      setDismissedCount((c) => c + 1);
-    }
-
-    setTimeout(() => {
-      setSwipeDir(null);
-      setCurrentIndex((i) => {
-        const next = i + 1;
-        if (next >= deck.length) {
-          setPhase('finished');
+        const metadata = {
+          mood: game.mood,
+          genre: Array.isArray(game.genres) ? game.genres[0] : null,
+          direction,
+          deckType: filters.deckType,
+          source: 'swipe-deck',
+        };
+        UserBehaviorProfile.trackRecommendation('swipe-deck', metadata.mood, metadata.genre, null, [id], metadata);
+        if (direction === 'left') {
+          UserBehaviorProfile.trackRecommendationOutcome(id, RECOMMENDATION_OUTCOME.NOT_NOW, {
+            gameName: game.name,
+            ...metadata,
+          });
+        } else if (direction === 'right') {
+          UserBehaviorProfile.trackRecommendationFeedback('swipe-deck', id, true, metadata);
         }
-        return next;
-      });
-    }, 300);
-  }, [currentGame, deck.length, onLaunchGame, recordSwipe]);
+      } catch {
+        // non-critical
+      }
+    },
+    [filters.deckType]
+  );
+
+  const handleSwipe = useCallback(
+    (direction) => {
+      if (!currentGame) return;
+      setSwipeDir(direction);
+      recordSwipe(currentGame, direction);
+
+      if (direction === 'right') {
+        const next = [...loadShortlist(), currentGame];
+        saveShortlist(next);
+        setShortlist(next);
+      } else if (direction === 'up') {
+        const next = [...loadShortlist(), currentGame];
+        saveShortlist(next);
+        setShortlist(next);
+        UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', currentGame.appid || currentGame.name, {
+          mood: currentGame.mood || null,
+          genre: Array.isArray(currentGame.genres) ? currentGame.genres[0] : null,
+          source: 'swipe-deck',
+        });
+        if (onLaunchGame) onLaunchGame(currentGame);
+      } else {
+        setDismissedCount((c) => c + 1);
+      }
+
+      setTimeout(() => {
+        setSwipeDir(null);
+        setCurrentIndex((i) => {
+          const next = i + 1;
+          if (next >= deck.length) {
+            setPhase('finished');
+          }
+          return next;
+        });
+      }, 300);
+    },
+    [currentGame, deck.length, onLaunchGame, recordSwipe]
+  );
 
   // Touch / mouse drag handlers
   const onPointerDown = useCallback((e) => {
@@ -314,31 +330,35 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
     }, 300);
   }, [handleSwipe]);
 
-  const removeFromShortlist = useCallback((game) => {
-    const next = shortlist.filter((g) => (g.appid || g.name) !== (game.appid || game.name));
-    saveShortlist(next);
-    setShortlist(next);
-  }, [shortlist]);
+  const removeFromShortlist = useCallback(
+    (game) => {
+      const next = shortlist.filter((g) => (g.appid || g.name) !== (game.appid || game.name));
+      saveShortlist(next);
+      setShortlist(next);
+    },
+    [shortlist]
+  );
 
-  const handleRateGame = useCallback((game, rating) => {
-    if (onUpdateRating) {
-      onUpdateRating(game.name, rating, null);
-    }
-    // Optimistically update shortlist game in-place so UI reflects change immediately
-    setShortlist((prev) => prev.map((g) => (g.name === game.name ? { ...g, userRating: rating } : g)));
-  }, [onUpdateRating]);
+  const handleRateGame = useCallback(
+    (game, rating) => {
+      if (onUpdateRating) {
+        onUpdateRating(game.name, rating, null);
+      }
+      // Optimistically update shortlist game in-place so UI reflects change immediately
+      setShortlist((prev) => prev.map((g) => (g.name === game.name ? { ...g, userRating: rating } : g)));
+    },
+    [onUpdateRating]
+  );
 
   const whyText = currentGame ? getWhyThisText(currentGame, identity) : null;
 
   const renderShortlistPanel = (forceOpen = false) => (
-    <div className={`swipe-shortlist-panel ${(showShortlistDrawer || forceOpen) ? 'open' : ''}`}>
+    <div className={`swipe-shortlist-panel ${showShortlistDrawer || forceOpen ? 'open' : ''}`}>
       <div className="swipe-shortlist-header">
-        <h3><Heart size={18} fill="currentColor" /> Your Shortlist ({shortlist.length})</h3>
-        <button
-          className="swipe-shortlist-close"
-          onClick={() => setShowShortlistDrawer(false)}
-          title="Close"
-        >
+        <h3>
+          <Heart size={18} fill="currentColor" /> Your Shortlist ({shortlist.length})
+        </h3>
+        <button className="swipe-shortlist-close" onClick={() => setShowShortlistDrawer(false)} title="Close">
           <X size={18} />
         </button>
       </div>
@@ -362,14 +382,17 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
                 size={16}
               />
               <div className="swipe-shortlist-actions">
-                <button onClick={() => {
-                  UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', game.appid || game.name, {
-                    mood: game.mood || null,
-                    genre: Array.isArray(game.genres) ? game.genres[0] : null,
-                    source: 'swipe-deck-shortlist'
-                  });
-                  if (onLaunchGame) onLaunchGame(game);
-                }} title="Launch">
+                <button
+                  onClick={() => {
+                    UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', game.appid || game.name, {
+                      mood: game.mood || null,
+                      genre: Array.isArray(game.genres) ? game.genres[0] : null,
+                      source: 'swipe-deck-shortlist',
+                    });
+                    if (onLaunchGame) onLaunchGame(game);
+                  }}
+                  title="Launch"
+                >
                   <Play size={14} />
                 </button>
                 <button onClick={() => removeFromShortlist(game)} title="Remove">
@@ -449,7 +472,7 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
                 { id: 'smart', label: 'Smart Mix', desc: 'Identity + random shuffle' },
                 { id: 'backlog', label: 'Backlog Buster', desc: 'Unplayed & under 5h' },
                 { id: 'comfort', label: 'Comfort Picks', desc: 'Most played & liked' },
-                { id: 'surprise', label: 'Surprise Me', desc: 'Random across library' }
+                { id: 'surprise', label: 'Surprise Me', desc: 'Random across library' },
               ].map((t) => (
                 <button
                   key={t.id}
@@ -472,7 +495,10 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
               {renderShortlistPanel(true)}
               <button
                 className="swipe-clear-shortlist-btn"
-                onClick={() => { saveShortlist([]); setShortlist([]); }}
+                onClick={() => {
+                  saveShortlist([]);
+                  setShortlist([]);
+                }}
               >
                 <Trash2 size={14} /> Clear Shortlist
               </button>
@@ -499,7 +525,9 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
         <div className="swipe-finished-card">
           <Sparkles size={48} className="swipe-finished-icon" />
           <h2>Deck Complete!</h2>
-          <p>You swiped through {deck.length} game{deck.length !== 1 ? 's' : ''}.</p>
+          <p>
+            You swiped through {deck.length} game{deck.length !== 1 ? 's' : ''}.
+          </p>
 
           {shortlist.length > 0 ? (
             <>
@@ -530,11 +558,7 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
           )}
         </div>
 
-        {shortlist.length > 0 && (
-          <div className="swipe-finished-shortlist-wrapper">
-            {renderShortlistPanel(true)}
-          </div>
-        )}
+        {shortlist.length > 0 && <div className="swipe-finished-shortlist-wrapper">{renderShortlistPanel(true)}</div>}
       </div>
     );
   }
@@ -580,9 +604,7 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
                 alt={currentGame.name}
                 placeholder={getGameArtworkPlaceholder({ game: currentGame, surface: 'portrait' })}
               />
-              {whyText && (
-                <div className="swipe-card-reason">{whyText}</div>
-              )}
+              {whyText && <div className="swipe-card-reason">{whyText}</div>}
             </div>
 
             <div className="swipe-card-info">
@@ -592,14 +614,10 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
                 {Array.isArray(currentGame.genres) && currentGame.genres.length > 0 && (
                   <span className="swipe-card-genre">{currentGame.genres.filter((g) => g !== 'Unknown')[0] || ''}</span>
                 )}
-                {currentGame.mood && (
-                  <span className="swipe-card-mood">{currentGame.mood}</span>
-                )}
+                {currentGame.mood && <span className="swipe-card-mood">{currentGame.mood}</span>}
               </div>
               {currentGame.time_played > 0 && (
-                <div className="swipe-card-playtime">
-                  {Math.round(currentGame.time_played / 60)}h played
-                </div>
+                <div className="swipe-card-playtime">{Math.round(currentGame.time_played / 60)}h played</div>
               )}
             </div>
 
@@ -631,9 +649,7 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
         </button>
       </div>
 
-      <div className="swipe-keyboard-hint">
-        ← Pass · → Shortlist · ↑ Launch · Esc Back
-      </div>
+      <div className="swipe-keyboard-hint">← Pass · → Shortlist · ↑ Launch · Esc Back</div>
     </div>
   );
 }

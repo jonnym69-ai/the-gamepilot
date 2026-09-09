@@ -2,7 +2,7 @@ import {
   mergeLibraryUpdates,
   normalizeGameLibraryEntry,
   getCanonicalGameKey,
-  getLaunchSources
+  getLaunchSources,
 } from './LibraryDataService';
 
 describe('getCanonicalGameKey', () => {
@@ -13,29 +13,27 @@ describe('getCanonicalGameKey', () => {
   });
 
   test('is case-insensitive and whitespace-insensitive', () => {
-    expect(getCanonicalGameKey({ name: 'Cyberpunk 2077' }))
-      .toBe(getCanonicalGameKey({ name: 'CYBERPUNK 2077' }));
-    expect(getCanonicalGameKey({ name: '  Hades  ' }))
-      .toBe(getCanonicalGameKey({ name: 'Hades' }));
+    expect(getCanonicalGameKey({ name: 'Cyberpunk 2077' })).toBe(getCanonicalGameKey({ name: 'CYBERPUNK 2077' }));
+    expect(getCanonicalGameKey({ name: '  Hades  ' })).toBe(getCanonicalGameKey({ name: 'Hades' }));
   });
 
   test('treats colons, dashes, and apostrophes as equivalent', () => {
-    expect(getCanonicalGameKey({ name: "Marvel's Spider-Man" }))
-      .toBe(getCanonicalGameKey({ name: 'Marvels Spider Man' }));
-    expect(getCanonicalGameKey({ name: 'Half-Life 2' }))
-      .toBe(getCanonicalGameKey({ name: 'Half Life 2' }));
+    expect(getCanonicalGameKey({ name: "Marvel's Spider-Man" })).toBe(
+      getCanonicalGameKey({ name: 'Marvels Spider Man' })
+    );
+    expect(getCanonicalGameKey({ name: 'Half-Life 2' })).toBe(getCanonicalGameKey({ name: 'Half Life 2' }));
   });
 
   test('CONSERVATIVELY does NOT merge different SKUs (false-positive guards)', () => {
     // These are separate purchases on every storefront. Must stay separate.
-    expect(getCanonicalGameKey({ name: 'The Elder Scrolls V: Skyrim' }))
-      .not.toBe(getCanonicalGameKey({ name: 'The Elder Scrolls V: Skyrim Special Edition' }));
-    expect(getCanonicalGameKey({ name: 'DOOM' }))
-      .not.toBe(getCanonicalGameKey({ name: 'DOOM Eternal' }));
-    expect(getCanonicalGameKey({ name: 'Cyberpunk 2077' }))
-      .not.toBe(getCanonicalGameKey({ name: 'Cyberpunk 2077 Phantom Liberty' }));
-    expect(getCanonicalGameKey({ name: 'Witcher 3' }))
-      .not.toBe(getCanonicalGameKey({ name: 'Witcher 2' }));
+    expect(getCanonicalGameKey({ name: 'The Elder Scrolls V: Skyrim' })).not.toBe(
+      getCanonicalGameKey({ name: 'The Elder Scrolls V: Skyrim Special Edition' })
+    );
+    expect(getCanonicalGameKey({ name: 'DOOM' })).not.toBe(getCanonicalGameKey({ name: 'DOOM Eternal' }));
+    expect(getCanonicalGameKey({ name: 'Cyberpunk 2077' })).not.toBe(
+      getCanonicalGameKey({ name: 'Cyberpunk 2077 Phantom Liberty' })
+    );
+    expect(getCanonicalGameKey({ name: 'Witcher 3' })).not.toBe(getCanonicalGameKey({ name: 'Witcher 2' }));
   });
 
   test('returns null for missing/blank names', () => {
@@ -50,14 +48,14 @@ describe('getLaunchSources (backfill from legacy fields)', () => {
   test('returns existing launchSources when present', () => {
     const sources = [
       { platform: 'Steam', appid: '1091500' },
-      { platform: 'GOG', appid: '1423049311' }
+      { platform: 'GOG', appid: '1423049311' },
     ];
     expect(getLaunchSources({ name: 'Cyberpunk 2077', launchSources: sources })).toEqual(sources);
   });
 
   test('synthesises a single source from legacy platform + appid when launchSources missing', () => {
     expect(getLaunchSources({ name: 'DOOM', platform: 'Steam', appid: '379720' })).toEqual([
-      { platform: 'Steam', appid: '379720' }
+      { platform: 'Steam', appid: '379720' },
     ]);
   });
 
@@ -71,7 +69,7 @@ describe('normalizeGameLibraryEntry — launchSources backfill', () => {
     const entry = normalizeGameLibraryEntry({
       name: 'DOOM',
       platform: 'Steam',
-      appid: '379720'
+      appid: '379720',
     });
     expect(entry.launchSources).toEqual([{ platform: 'Steam', appid: '379720' }]);
   });
@@ -79,13 +77,13 @@ describe('normalizeGameLibraryEntry — launchSources backfill', () => {
   test('preserves existing launchSources without duplicating', () => {
     const sources = [
       { platform: 'Steam', appid: '1091500' },
-      { platform: 'GOG', appid: '1423049311' }
+      { platform: 'GOG', appid: '1423049311' },
     ];
     const entry = normalizeGameLibraryEntry({
       name: 'Cyberpunk 2077',
       platform: 'Steam',
       appid: '1091500',
-      launchSources: sources
+      launchSources: sources,
     });
     expect(entry.launchSources).toEqual(sources);
   });
@@ -93,29 +91,21 @@ describe('normalizeGameLibraryEntry — launchSources backfill', () => {
 
 describe('mergeLibraryUpdates — cross-platform deduplication', () => {
   test('same game on different platforms produces ONE entry with TWO launchSources', () => {
-    const current = [
-      { name: 'DOOM', platform: 'Steam', appid: '379720', time_played: 120 }
-    ];
-    const incoming = [
-      { name: 'DOOM', platform: 'Epic', appid: 'epic-doom-id', time_played: 0 }
-    ];
+    const current = [{ name: 'DOOM', platform: 'Steam', appid: '379720', time_played: 120 }];
+    const incoming = [{ name: 'DOOM', platform: 'Epic', appid: 'epic-doom-id', time_played: 0 }];
     const merged = mergeLibraryUpdates(current, incoming);
     expect(merged).toHaveLength(1);
     expect(merged[0].launchSources).toEqual(
       expect.arrayContaining([
         { platform: 'Steam', appid: '379720' },
-        { platform: 'Epic', appid: 'epic-doom-id' }
+        { platform: 'Epic', appid: 'epic-doom-id' },
       ])
     );
   });
 
   test('preserves the max playtime when merging cross-platform duplicates (no overwrite bug)', () => {
-    const current = [
-      { name: 'DOOM', platform: 'Steam', appid: '379720', time_played: 6000, launch_count: 50 }
-    ];
-    const incoming = [
-      { name: 'DOOM', platform: 'Epic', appid: 'epic-doom-id', time_played: 0, launch_count: 0 }
-    ];
+    const current = [{ name: 'DOOM', platform: 'Steam', appid: '379720', time_played: 6000, launch_count: 50 }];
+    const incoming = [{ name: 'DOOM', platform: 'Epic', appid: 'epic-doom-id', time_played: 0, launch_count: 0 }];
     const merged = mergeLibraryUpdates(current, incoming);
     expect(merged[0].time_played).toBe(6000);
     expect(merged[0].launch_count).toBe(50);
@@ -126,7 +116,7 @@ describe('mergeLibraryUpdates — cross-platform deduplication', () => {
       [{ name: 'Cyberpunk 2077', platform: 'Steam', appid: '1091500' }],
       [
         { name: 'Cyberpunk 2077', platform: 'GOG', appid: 'gog-cp-id' },
-        { name: 'CYBERPUNK 2077', platform: 'Epic', appid: 'epic-cp-id' }
+        { name: 'CYBERPUNK 2077', platform: 'Epic', appid: 'epic-cp-id' },
       ]
     );
     expect(merged).toHaveLength(1);
@@ -169,9 +159,9 @@ describe('mergeLibraryUpdates — cross-platform deduplication', () => {
         appid: '1091500',
         launchSources: [
           { platform: 'Steam', appid: '1091500' },
-          { platform: 'GOG', appid: 'gog-cp-id' }
-        ]
-      }
+          { platform: 'GOG', appid: 'gog-cp-id' },
+        ],
+      },
     ];
     const incoming = [{ name: 'Cyberpunk 2077', platform: 'Steam', appid: '1091500' }];
     const merged = mergeLibraryUpdates(current, incoming);

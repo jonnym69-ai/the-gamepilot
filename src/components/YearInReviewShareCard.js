@@ -14,7 +14,6 @@ import './YearInReviewShareCard.css';
  */
 export const SHARE_CARD_SIZE_PX = 1080;
 
-
 const TopGameRow = ({ index, game }) => {
   if (!game) return null;
   return (
@@ -22,7 +21,9 @@ const TopGameRow = ({ index, game }) => {
       <span className="yir-share-top-game-rank">#{index + 1}</span>
       <div className="yir-share-top-game-info">
         <strong>{game.name}</strong>
-        <span>{formatPlaytime(game.totalPlaytime)} · {game.sessions} session{game.sessions !== 1 ? 's' : ''}</span>
+        <span>
+          {formatPlaytime(game.totalPlaytime)} · {game.sessions} session{game.sessions !== 1 ? 's' : ''}
+        </span>
       </div>
     </div>
   );
@@ -35,7 +36,10 @@ export function buildYearInReviewShareCaption(snapshot, year, username = 'Pilot'
   const sessions = snapshot?.summary?.sessions ?? 0;
   const activeDays = snapshot?.summary?.activeDays ?? 0;
   const topGames = (snapshot?.topGames || []).slice(0, 3);
-  const topGameNames = topGames.map((g) => g.name).filter(Boolean).join(' · ');
+  const topGameNames = topGames
+    .map((g) => g.name)
+    .filter(Boolean)
+    .join(' · ');
   const persona = snapshot?.persona?.identityLabel || 'Player';
   const topMood = snapshot?.persona?.dominantMood || '—';
 
@@ -71,22 +75,13 @@ export function YearInReviewShareCard({ snapshot, year, username, showCover = tr
     ? `${longestSession.gameName} · ${formatPlaytime(longestSession.playtimeMinutes)}`
     : '—';
 
-  const busiestDayLabel = busiestDay
-    ? `${busiestDay.dateLabel} · ${formatPlaytime(busiestDay.playtimeMinutes)}`
-    : '—';
+  const busiestDayLabel = busiestDay ? `${busiestDay.dateLabel} · ${formatPlaytime(busiestDay.playtimeMinutes)}` : '—';
 
   return (
-    <div
-      className="yir-share-card"
-      style={{ width: SHARE_CARD_SIZE_PX, height: SHARE_CARD_SIZE_PX }}
-    >
+    <div className="yir-share-card" style={{ width: SHARE_CARD_SIZE_PX, height: SHARE_CARD_SIZE_PX }}>
       {coverUrl && (
         <>
-          <div
-            className="yir-share-card-cover"
-            style={{ backgroundImage: `url(${coverUrl})` }}
-            aria-hidden="true"
-          />
+          <div className="yir-share-card-cover" style={{ backgroundImage: `url(${coverUrl})` }} aria-hidden="true" />
           <div className="yir-share-card-cover-overlay" aria-hidden="true" />
         </>
       )}

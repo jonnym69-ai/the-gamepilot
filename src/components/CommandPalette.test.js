@@ -3,14 +3,14 @@ import { scoreCommandMatch } from './commandPaletteMatch';
 const navCmd = {
   id: 'nav-library',
   label: 'Go to Library',
-  keywords: 'library games browse'
+  keywords: 'library games browse',
 };
 
 const gameCmd = (overrides = {}) => ({
   id: `game-${overrides.appid || overrides.name || 'x'}`,
   label: `▶ ${overrides.name || 'Doom'}`,
   keywords: `${overrides.name || 'Doom'} ${overrides.platform || 'Steam'}`,
-  game: { name: 'Doom', platform: 'Steam', ...overrides }
+  game: { name: 'Doom', platform: 'Steam', ...overrides },
 });
 
 describe('scoreCommandMatch', () => {

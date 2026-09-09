@@ -86,7 +86,7 @@ export class SmartCollectionsService {
       this.buildMoodMatch,
       this.buildGenreGaps,
       this.buildAbandonedEarly,
-      this.buildRecentlyCompleted
+      this.buildRecentlyCompleted,
     ];
 
     const collections = builders
@@ -122,9 +122,7 @@ export class SmartCollectionsService {
     const favoriteKeys = new Set(StorageService.get('favorites', []));
     if (favoriteKeys.size === 0) return null;
 
-    const games = library
-      .filter((g) => favoriteKeys.has(getGameKey(g)))
-      .slice(0, 12);
+    const games = library.filter((g) => favoriteKeys.has(getGameKey(g))).slice(0, 12);
 
     if (games.length === 0) return null;
 
@@ -137,7 +135,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 92,
       actionLabel: 'Play',
-      insight: `${games.length} favourite game${games.length !== 1 ? 's' : ''} ready to go.`
+      insight: `${games.length} favourite game${games.length !== 1 ? 's' : ''} ready to go.`,
     };
   }
 
@@ -159,7 +157,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 91,
       actionLabel: 'Play',
-      insight: `Your top-rated picks — ${games.length} game${games.length !== 1 ? 's' : ''} rated 7+.`
+      insight: `Your top-rated picks — ${games.length} game${games.length !== 1 ? 's' : ''} rated 7+.`,
     };
   }
 
@@ -188,7 +186,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 95,
       actionLabel: 'Resume',
-      insight: `You have ${games.length} game${games.length !== 1 ? 's' : ''} waiting to be finished.`
+      insight: `You have ${games.length} game${games.length !== 1 ? 's' : ''} waiting to be finished.`,
     };
   }
 
@@ -200,12 +198,7 @@ export class SmartCollectionsService {
     const games = library
       .filter((g) => isGameUnplayed(g))
       .map((g) => {
-        const score = RecommendationEngine.scoreGameByBehavior(
-          g,
-          dominantMood,
-          dominantGenre,
-          null
-        );
+        const score = RecommendationEngine.scoreGameByBehavior(g, dominantMood, dominantGenre, null);
         return { ...g, _smartScore: score };
       })
       .sort((a, b) => b._smartScore - a._smartScore)
@@ -222,7 +215,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 90,
       actionLabel: 'Try it',
-      insight: `${games.length} unplayed game${games.length !== 1 ? 's' : ''} in your library.`
+      insight: `${games.length} unplayed game${games.length !== 1 ? 's' : ''} in your library.`,
     };
   }
 
@@ -250,7 +243,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 88,
       actionLabel: 'Play',
-      insight: 'Your reliable favorites — always a good time.'
+      insight: 'Your reliable favorites — always a good time.',
     };
   }
 
@@ -278,7 +271,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 82,
       actionLabel: 'Replay',
-      insight: `${games.length} tight experience${games.length !== 1 ? 's' : ''} worth revisiting.`
+      insight: `${games.length} tight experience${games.length !== 1 ? 's' : ''} worth revisiting.`,
     };
   }
 
@@ -289,10 +282,7 @@ export class SmartCollectionsService {
         const gameSessions = sessionHistory.filter(
           (s) => String(s.gameName).toLowerCase() === String(g.name).toLowerCase()
         );
-        const longestSession = gameSessions.reduce(
-          (max, s) => Math.max(max, s.playtimeMinutes || 0),
-          0
-        );
+        const longestSession = gameSessions.reduce((max, s) => Math.max(max, s.playtimeMinutes || 0), 0);
         return longestSession >= 180;
       })
       .sort((a, b) => {
@@ -319,7 +309,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 80,
       actionLabel: 'Dive in',
-      insight: 'These games command long, focused sessions.'
+      insight: 'These games command long, focused sessions.',
     };
   }
 
@@ -333,8 +323,7 @@ export class SmartCollectionsService {
         const sessionCount = Math.max(g?.launch_count || 0, gameSessions.length);
         const avgSession =
           gameSessions.length > 0
-            ? gameSessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0) /
-              gameSessions.length
+            ? gameSessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0) / gameSessions.length
             : Number(g?.time_played || 0) / Math.max(g?.launch_count || 1, 1);
         return sessionCount >= 5 && avgSession > 0 && avgSession <= 60;
       })
@@ -352,7 +341,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 85,
       actionLabel: 'Run',
-      insight: 'Addictive loop games — perfect for short breaks.'
+      insight: 'Addictive loop games — perfect for short breaks.',
     };
   }
 
@@ -391,7 +380,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 84,
       actionLabel: 'Jump in',
-      insight: 'Low-commitment picks that match your typical session length.'
+      insight: 'Low-commitment picks that match your typical session length.',
     };
   }
 
@@ -405,8 +394,7 @@ export class SmartCollectionsService {
         const gameMood = g?.mood;
         const genres = getGenreList(g);
         return (
-          gameMood === mood ||
-          (genres.length > 0 && RecommendationEngine.scoreGameByBehavior(g, mood, null, null) > 50)
+          gameMood === mood || (genres.length > 0 && RecommendationEngine.scoreGameByBehavior(g, mood, null, null) > 50)
         );
       })
       .map((g) => {
@@ -427,16 +415,31 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 86,
       actionLabel: 'Match',
-      insight: `Curated for your current ${mood.toLowerCase()} preference.`
+      insight: `Curated for your current ${mood.toLowerCase()} preference.`,
     };
   }
 
   /** Genres you own zero of — discovery prompts */
   static buildGenreGaps(library, sessionHistory, profile, persona) {
     const knownGenres = [
-      'Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 'Sports', 'Racing',
-      'Puzzle', 'Platformer', 'Shooter', 'Fighting', 'Horror', 'Survival',
-      'Roguelike', 'Indie', 'MMO', 'Visual Novel', 'Management'
+      'Action',
+      'Adventure',
+      'RPG',
+      'Strategy',
+      'Simulation',
+      'Sports',
+      'Racing',
+      'Puzzle',
+      'Platformer',
+      'Shooter',
+      'Fighting',
+      'Horror',
+      'Survival',
+      'Roguelike',
+      'Indie',
+      'MMO',
+      'Visual Novel',
+      'Management',
     ];
 
     const ownedGenres = new Set();
@@ -459,7 +462,7 @@ export class SmartCollectionsService {
       relevanceScore: 60,
       actionLabel: 'Explore',
       insight: `You don't own any ${gaps.slice(0, 3).join(', ')} games yet.`,
-      isInsightOnly: true
+      isInsightOnly: true,
     };
   }
 
@@ -493,7 +496,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 72,
       actionLabel: 'Retry',
-      insight: `${games.length} game${games.length !== 1 ? 's' : ''} with untapped potential.`
+      insight: `${games.length} game${games.length !== 1 ? 's' : ''} with untapped potential.`,
     };
   }
 
@@ -529,7 +532,7 @@ export class SmartCollectionsService {
       games,
       relevanceScore: 75,
       actionLabel: 'Celebrate',
-      insight: 'Fresh completions — your backlog is shrinking!'
+      insight: 'Fresh completions — your backlog is shrinking!',
     };
   }
 

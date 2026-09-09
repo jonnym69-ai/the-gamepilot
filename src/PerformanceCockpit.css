@@ -194,7 +194,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Readiness Section */
@@ -493,7 +495,9 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 25px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .spec-card:hover {
@@ -1001,20 +1005,40 @@
   font-style: normal;
 }
 
-.storage-cockpit-card.total { border-color: rgba(56, 189, 248, 0.3); }
-.storage-cockpit-card.total strong { color: #7dd3fc; }
+.storage-cockpit-card.total {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+.storage-cockpit-card.total strong {
+  color: #7dd3fc;
+}
 
-.storage-cockpit-card.nvme { border-color: rgba(0, 230, 118, 0.3); }
-.storage-cockpit-card.nvme strong { color: #00e676; }
+.storage-cockpit-card.nvme {
+  border-color: rgba(0, 230, 118, 0.3);
+}
+.storage-cockpit-card.nvme strong {
+  color: #00e676;
+}
 
-.storage-cockpit-card.ssd { border-color: rgba(76, 175, 80, 0.3); }
-.storage-cockpit-card.ssd strong { color: #4caf50; }
+.storage-cockpit-card.ssd {
+  border-color: rgba(76, 175, 80, 0.3);
+}
+.storage-cockpit-card.ssd strong {
+  color: #4caf50;
+}
 
-.storage-cockpit-card.hdd { border-color: rgba(255, 152, 0, 0.3); }
-.storage-cockpit-card.hdd strong { color: #ff9800; }
+.storage-cockpit-card.hdd {
+  border-color: rgba(255, 152, 0, 0.3);
+}
+.storage-cockpit-card.hdd strong {
+  color: #ff9800;
+}
 
-.storage-cockpit-card.cold { border-color: rgba(248, 113, 113, 0.3); }
-.storage-cockpit-card.cold strong { color: #fca5a5; }
+.storage-cockpit-card.cold {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+.storage-cockpit-card.cold strong {
+  color: #fca5a5;
+}
 
 .storage-cockpit-insight {
   display: flex;

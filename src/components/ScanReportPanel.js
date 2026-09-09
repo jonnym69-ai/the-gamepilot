@@ -5,19 +5,27 @@ import './ScanReportPanel.css';
 
 const statusIcon = (status) => {
   switch (status) {
-    case 'found': return <CheckCircle size={16} className="scan-status-found" />;
-    case 'error': return <XCircle size={16} className="scan-status-error" />;
-    case 'empty': return <AlertCircle size={16} className="scan-status-empty" />;
-    default: return <AlertCircle size={16} className="scan-status-empty" />;
+    case 'found':
+      return <CheckCircle size={16} className="scan-status-found" />;
+    case 'error':
+      return <XCircle size={16} className="scan-status-error" />;
+    case 'empty':
+      return <AlertCircle size={16} className="scan-status-empty" />;
+    default:
+      return <AlertCircle size={16} className="scan-status-empty" />;
   }
 };
 
 const statusLabel = (status) => {
   switch (status) {
-    case 'found': return 'Found';
-    case 'error': return 'Error';
-    case 'empty': return 'Empty';
-    default: return status || 'Unknown';
+    case 'found':
+      return 'Found';
+    case 'error':
+      return 'Error';
+    case 'empty':
+      return 'Empty';
+    default:
+      return status || 'Unknown';
   }
 };
 
@@ -107,9 +115,7 @@ export function ScanReportPanel() {
                 <div className="scan-report-platform-name">{platform}</div>
                 <div className="scan-report-platform-status">{statusLabel(status)}</div>
                 <div className="scan-report-platform-count">{count}</div>
-                {reason && (
-                  <div className="scan-report-platform-reason">{reason}</div>
-                )}
+                {reason && <div className="scan-report-platform-reason">{reason}</div>}
               </div>
             );
           })}

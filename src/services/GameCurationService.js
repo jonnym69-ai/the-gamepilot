@@ -16,7 +16,7 @@ const KEYS = {
   sessionNotes: 'sessionNotesV1',
   duplicates: 'duplicateMergesV1',
   scanTimestamps: 'scanTimestampsV1',
-  playedElsewhere: 'playedElsewhereV1'
+  playedElsewhere: 'playedElsewhereV1',
 };
 
 const DEFAULT_COLLECTIONS = [
@@ -24,7 +24,7 @@ const DEFAULT_COLLECTIONS = [
   { id: 'playing', name: 'Playing', color: '#3dd9ff', locked: true },
   { id: 'completed', name: 'Completed', color: '#7ddc84', locked: true },
   { id: 'on-hold', name: 'On Hold', color: '#f0c040', locked: true },
-  { id: 'abandoned', name: 'Abandoned', color: '#888888', locked: true }
+  { id: 'abandoned', name: 'Abandoned', color: '#888888', locked: true },
 ];
 
 const COMPLETION_STATUSES = ['not-started', 'playing', 'beaten', 'completed', '100%', 'abandoned'];
@@ -85,7 +85,10 @@ function addGameToCollection(gameKey, collectionId) {
 
 function removeGameFromCollection(gameKey, collectionId) {
   const current = getGameCollections(gameKey);
-  setGameCollections(gameKey, current.filter((id) => id !== collectionId));
+  setGameCollections(
+    gameKey,
+    current.filter((id) => id !== collectionId)
+  );
 }
 
 // ---------- Hidden Games ----------
@@ -160,7 +163,7 @@ function setGameCompletion(gameKey, status, note = '') {
     status,
     previousStatus: oldStatus,
     timestamp: Date.now(),
-    note
+    note,
   });
   history[gameKey] = entry;
   StorageService.set(KEYS.completion, history);
@@ -302,8 +305,7 @@ function isDuplicateMerged(gameName) {
   const normalized = normalizeForDedup(gameName);
   return Object.entries(merges).some(
     ([primary, duplicates]) =>
-      normalizeForDedup(primary) === normalized ||
-      duplicates.some((d) => normalizeForDedup(d) === normalized)
+      normalizeForDedup(primary) === normalized || duplicates.some((d) => normalizeForDedup(d) === normalized)
   );
 }
 
@@ -360,7 +362,7 @@ function enrichGame(game) {
     isHidden: hidden,
     isDuplicateMerged: duplicatePrimary !== key,
     duplicatePrimaryKey: duplicatePrimary,
-    playedElsewhere
+    playedElsewhere,
   };
 }
 
@@ -439,5 +441,5 @@ export const GameCurationService = {
   bulkAddToCollection,
   bulkRemoveFromCollection,
   bulkSetCompletion,
-  bulkToggleHidden
+  bulkToggleHidden,
 };

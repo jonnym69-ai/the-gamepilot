@@ -10,13 +10,26 @@ import { GamingPersonaService, DEFAULT_VOICE } from './GamingPersonaService';
 
 const ARCHIVE_KEY = 'gamingStoryArchiveV1';
 const RETENTION_YEARS = 3;
-const MONTH_LABELS = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+const MONTH_LABELS = Object.freeze([
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]);
 
 const SEASONS = Object.freeze([
   { key: 'Winter', label: 'Winter', months: [11, 0, 1] },
   { key: 'Spring', label: 'Spring', months: [2, 3, 4] },
   { key: 'Summer', label: 'Summer', months: [5, 6, 7] },
-  { key: 'Autumn', label: 'Autumn', months: [8, 9, 10] }
+  { key: 'Autumn', label: 'Autumn', months: [8, 9, 10] },
 ]);
 
 /**
@@ -76,7 +89,7 @@ export class StoryArchiveService {
       weekKey,
       generatedAt,
       year: new Date(generatedAt).getFullYear(),
-      month: new Date(generatedAt).getMonth()
+      month: new Date(generatedAt).getMonth(),
     };
     writeArchive(archive);
     return archive[weekKey];
@@ -154,10 +167,7 @@ export class StoryArchiveService {
       (best, c) => (Number(c.totalHours || 0) > Number(best?.totalHours || 0) ? c : best),
       null
     );
-    const maxStreak = safeChapters.reduce(
-      (max, c) => Math.max(max, Number(c?.continuity?.topGameStreak) || 0),
-      0
-    );
+    const maxStreak = safeChapters.reduce((max, c) => Math.max(max, Number(c?.continuity?.topGameStreak) || 0), 0);
 
     let narrative;
     if (activeChapters.length === 0) {
@@ -165,33 +175,34 @@ export class StoryArchiveService {
       narrative += ' Not much play tracked in this window.';
     } else {
       const weekWord = activeChapters.length === 1 ? 'active week' : 'active weeks';
-      const digestTemplate = period === 'year'
-        ? (voice.digestYear || voice.digest || DEFAULT_VOICE.digestYear)
-        : (voice.digest || DEFAULT_VOICE.digest);
+      const digestTemplate =
+        period === 'year'
+          ? voice.digestYear || voice.digest || DEFAULT_VOICE.digestYear
+          : voice.digest || DEFAULT_VOICE.digest;
       narrative = fillVoiceTemplate(digestTemplate, {
         WEEKS: activeChapters.length,
         WEEKWORD: weekWord,
-        HOURS: Math.round(totalHours)
+        HOURS: Math.round(totalHours),
       });
       if (mvp) {
         narrative += fillVoiceTemplate(voice.digestMVP || DEFAULT_VOICE.digestMVP, {
           MVP: mvp.name,
-          MVPHOURS: Math.round(mvp.hours || 0)
+          MVPHOURS: Math.round(mvp.hours || 0),
         });
       }
       if (topGenre && topGenre.genre) {
         narrative += fillVoiceTemplate(voice.digestGenre || DEFAULT_VOICE.digestGenre, {
-          GENRE: topGenre.genre
+          GENRE: topGenre.genre,
         });
       }
       if (peak && Number(peak.totalHours || 0) > 0) {
         narrative += fillVoiceTemplate(voice.digestPeak || DEFAULT_VOICE.digestPeak, {
-          PEAK: Math.round(peak.totalHours || 0)
+          PEAK: Math.round(peak.totalHours || 0),
         });
       }
       if (maxStreak >= 3) {
         narrative += fillVoiceTemplate(voice.digestStreak || DEFAULT_VOICE.digestStreak, {
-          STREAK: maxStreak
+          STREAK: maxStreak,
         });
       }
     }
@@ -215,7 +226,7 @@ export class StoryArchiveService {
       mvpGame: mvp ? { name: mvp.name, hours: Math.round(mvp.hours || 0) } : null,
       dominantGenre: topGenre?.genre || null,
       peakWeekHours: peak ? Math.round(peak.totalHours || 0) : 0,
-      maxTopGameStreak: maxStreak
+      maxTopGameStreak: maxStreak,
     };
   }
 
@@ -251,9 +262,9 @@ export class StoryArchiveService {
             title: `${safeYear} in Review`,
             subtitle: `${chapters.length} week${chapters.length === 1 ? '' : 's'} logged`,
             period: 'year',
-            persona: bookPersona
-          })
-        ]
+            persona: bookPersona,
+          }),
+        ],
       };
     }
 
@@ -267,9 +278,9 @@ export class StoryArchiveService {
             title: `${label} ${safeYear}`,
             subtitle: `${monthChapters.length} week${monthChapters.length === 1 ? '' : 's'} logged`,
             period: 'month',
-            persona: bookPersona
+            persona: bookPersona,
           });
-        })
+        }),
       };
     }
 
@@ -283,9 +294,9 @@ export class StoryArchiveService {
             title: `${season.label} ${safeYear}`,
             subtitle: `${seasonChapters.length} week${seasonChapters.length === 1 ? '' : 's'} logged`,
             period: 'season',
-            persona: bookPersona
+            persona: bookPersona,
           });
-        })
+        }),
       };
     }
 
@@ -293,7 +304,7 @@ export class StoryArchiveService {
     return {
       year: safeYear,
       layout: 'weekly',
-      chapters: [...chapters].reverse()
+      chapters: [...chapters].reverse(),
     };
   }
 
@@ -317,7 +328,7 @@ export class StoryArchiveService {
     const years = this.getYears();
     const currentYear = new Date().getFullYear();
     const oldestYear = years.length > 0 ? Math.min(...years) : null;
-    const yearSpan = oldestYear !== null ? (currentYear - oldestYear + 1) : 0;
+    const yearSpan = oldestYear !== null ? currentYear - oldestYear + 1 : 0;
 
     return {
       years,
@@ -326,7 +337,7 @@ export class StoryArchiveService {
       yearSpan,
       retentionYears: RETENTION_YEARS,
       pruningDue: yearSpan > RETENTION_YEARS,
-      estimatedBytes: this.getEstimatedFootprintBytes()
+      estimatedBytes: this.getEstimatedFootprintBytes(),
     };
   }
 
@@ -340,7 +351,7 @@ export class StoryArchiveService {
       type: 'gamepilot-story-archive-year',
       exportedAt: new Date().toISOString(),
       year: safeYear,
-      chapters: this.getChaptersForYear(safeYear)
+      chapters: this.getChaptersForYear(safeYear),
     };
   }
 

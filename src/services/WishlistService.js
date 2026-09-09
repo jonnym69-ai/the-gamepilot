@@ -16,17 +16,40 @@ const CHEAPSHARK_API = 'https://www.cheapshark.com/api/1.0';
 
 const storeName = (id) => {
   const stores = {
-    '1': 'Steam', '2': 'GamersGate', '3': 'GreenManGaming', '4': 'Amazon',
-    '5': 'GameStop', '6': 'Direct2Drive', '7': 'GOG', '8': 'Origin',
-    '9': 'Get Games', '10': 'Shiny Loot', '11': 'Humble Store',
-    '12': 'Desura', '13': 'Uplay', '14': 'IndieGameStand',
-    '15': 'Fanatical', '16': 'Gamesrocket', '17': 'Games Republic',
-    '18': 'SilaGames', '19': 'Playfield', '20': 'ImperialGames',
-    '21': 'WinGameStore', '22': 'FunStockDigital', '23': 'GameBillet',
-    '24': 'Voidu', '25': 'Epic Games Store', '26': 'Razer Game Store',
-    '27': 'Gamesplanet', '28': 'Gamesload', '29': '2Game',
-    '30': 'IndieGala', '31': 'Blizzard Shop', '32': 'AllYouPlay',
-    '33': 'DLGamer', '34': 'Noctre'
+    1: 'Steam',
+    2: 'GamersGate',
+    3: 'GreenManGaming',
+    4: 'Amazon',
+    5: 'GameStop',
+    6: 'Direct2Drive',
+    7: 'GOG',
+    8: 'Origin',
+    9: 'Get Games',
+    10: 'Shiny Loot',
+    11: 'Humble Store',
+    12: 'Desura',
+    13: 'Uplay',
+    14: 'IndieGameStand',
+    15: 'Fanatical',
+    16: 'Gamesrocket',
+    17: 'Games Republic',
+    18: 'SilaGames',
+    19: 'Playfield',
+    20: 'ImperialGames',
+    21: 'WinGameStore',
+    22: 'FunStockDigital',
+    23: 'GameBillet',
+    24: 'Voidu',
+    25: 'Epic Games Store',
+    26: 'Razer Game Store',
+    27: 'Gamesplanet',
+    28: 'Gamesload',
+    29: '2Game',
+    30: 'IndieGala',
+    31: 'Blizzard Shop',
+    32: 'AllYouPlay',
+    33: 'DLGamer',
+    34: 'Noctre',
   };
   return stores[String(id)] || 'Unknown';
 };
@@ -48,24 +71,34 @@ const readWishlist = () => {
   try {
     const parsed = parseStoredValue(StorageService.get(WISHLIST_KEY, null), []);
     return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 };
 
 const writeWishlist = (items) => {
-  try { StorageService.set(WISHLIST_KEY, Array.isArray(items) ? items : []); }
-  catch (err) { console.warn('[Wishlist] write failed:', err); }
+  try {
+    StorageService.set(WISHLIST_KEY, Array.isArray(items) ? items : []);
+  } catch (err) {
+    console.warn('[Wishlist] write failed:', err);
+  }
 };
 
 const readPriceCache = () => {
   try {
     const parsed = parseStoredValue(StorageService.get(PRICE_CACHE_KEY, null), {});
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 };
 
 const writePriceCache = (cache) => {
-  try { StorageService.set(PRICE_CACHE_KEY, cache && typeof cache === 'object' && !Array.isArray(cache) ? cache : {}); }
-  catch (err) { console.warn('[Wishlist] price cache write failed:', err); }
+  try {
+    StorageService.set(PRICE_CACHE_KEY, cache && typeof cache === 'object' && !Array.isArray(cache) ? cache : {});
+  } catch (err) {
+    console.warn('[Wishlist] price cache write failed:', err);
+  }
 };
 
 const readAlertSummary = () => {
@@ -74,23 +107,32 @@ const readAlertSummary = () => {
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? parsed
       : { drops: [], deals: [], checkedAt: null, count: 0 };
-  } catch { return { drops: [], deals: [], checkedAt: null, count: 0 }; }
+  } catch {
+    return { drops: [], deals: [], checkedAt: null, count: 0 };
+  }
 };
 
 const writeAlertSummary = (summary) => {
-  try { StorageService.set(ALERTS_KEY, summary); }
-  catch (err) { console.warn('[Wishlist] alert summary write failed:', err); }
+  try {
+    StorageService.set(ALERTS_KEY, summary);
+  } catch (err) {
+    console.warn('[Wishlist] alert summary write failed:', err);
+  }
 };
 
 const buildAlertSummary = (items = readWishlist()) => {
   const safeItems = Array.isArray(items) ? items : [];
-  const drops = safeItems.filter((item) => item.currentPrice && item.threshold && item.currentPrice.price <= item.threshold);
-  const deals = safeItems.filter((item) => item.currentPrice && item.historicalLow && item.currentPrice.price <= item.historicalLow.price);
+  const drops = safeItems.filter(
+    (item) => item.currentPrice && item.threshold && item.currentPrice.price <= item.threshold
+  );
+  const deals = safeItems.filter(
+    (item) => item.currentPrice && item.historicalLow && item.currentPrice.price <= item.historicalLow.price
+  );
   const summary = {
     drops,
     deals,
     checkedAt: Date.now(),
-    count: drops.length + deals.filter((deal) => !drops.some((drop) => drop.key === deal.key)).length
+    count: drops.length + deals.filter((deal) => !drops.some((drop) => drop.key === deal.key)).length,
   };
   writeAlertSummary(summary);
   return summary;
@@ -98,14 +140,25 @@ const buildAlertSummary = (items = readWishlist()) => {
 
 const applyPriceEntryToWishlist = (key, entry) => {
   const items = readWishlist().map((item) =>
-    item.key === key ? { ...item, currentPrice: entry.currentPrice, historicalLow: entry.historicalLow, priceCheckedAt: entry.fetchedAt } : item
+    item.key === key
+      ? {
+          ...item,
+          currentPrice: entry.currentPrice,
+          historicalLow: entry.historicalLow,
+          priceCheckedAt: entry.fetchedAt,
+        }
+      : item
   );
   writeWishlist(items);
   buildAlertSummary(items);
   return items;
 };
 
-const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const slug = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 class WishlistService {
   static isEnabled() {
@@ -140,9 +193,12 @@ class WishlistService {
     // player's taste profile. Prefer explicit genres (e.g. from a matched
     // library game), then any genres on the passed object, then derive them
     // from the title via the local genre database.
-    let resolvedGenres = Array.isArray(genres) && genres.length > 0
-      ? genres
-      : (Array.isArray(game.genres) && game.genres.length > 0 ? game.genres : null);
+    let resolvedGenres =
+      Array.isArray(genres) && genres.length > 0
+        ? genres
+        : Array.isArray(game.genres) && game.genres.length > 0
+          ? game.genres
+          : null;
     if (!resolvedGenres) {
       try {
         resolvedGenres = getGameGenres(name);
@@ -150,7 +206,8 @@ class WishlistService {
         resolvedGenres = [];
       }
     }
-    const steamAppID = game.steamAppID || game.steam_appid || (game.appid && /^\d+$/.test(String(game.appid)) ? String(game.appid) : '');
+    const steamAppID =
+      game.steamAppID || game.steam_appid || (game.appid && /^\d+$/.test(String(game.appid)) ? String(game.appid) : '');
     const entry = {
       key,
       name,
@@ -164,7 +221,7 @@ class WishlistService {
       notes,
       currentPrice: null,
       historicalLow: null,
-      priceCheckedAt: null
+      priceCheckedAt: null,
     };
     items.push(entry);
     writeWishlist(items);
@@ -187,9 +244,7 @@ class WishlistService {
     const safeLibrary = Array.isArray(library) ? library : [];
     const librarySlugs = new Set(safeLibrary.map((g) => slug(g?.name || g?.title || '')));
     const libraryAppIds = new Set(
-      safeLibrary
-        .map((g) => String(g?.appid || g?.steamAppID || g?.steam_appid || '').trim())
-        .filter(Boolean)
+      safeLibrary.map((g) => String(g?.appid || g?.steamAppID || g?.steam_appid || '').trim()).filter(Boolean)
     );
 
     const items = readWishlist();
@@ -220,9 +275,7 @@ class WishlistService {
 
   static setNotes(gameName, notes) {
     const key = slug(gameName);
-    const items = readWishlist().map((item) =>
-      item.key === key ? { ...item, notes } : item
-    );
+    const items = readWishlist().map((item) => (item.key === key ? { ...item, notes } : item));
     writeWishlist(items);
   }
 
@@ -259,7 +312,7 @@ class WishlistService {
         id: g.appid || g.name || g.title,
         name: g.name || g.title,
         source: 'library',
-        platform: g.platform
+        platform: g.platform,
       }));
 
     // Search CheapShark for external matches
@@ -268,15 +321,13 @@ class WishlistService {
       const response = await fetch(`${CHEAPSHARK_API}/games?title=${encodeURIComponent(q)}`);
       if (response.ok) {
         const data = await response.json();
-        externalMatches = (Array.isArray(data) ? data : [])
-          .slice(0, 5)
-          .map((g) => ({
-            id: String(g.gameID || g.steamAppID),
-            name: g.external || g.title || q,
-            source: 'cheapshark',
-            thumb: g.thumb || null,
-            steamAppID: g.steamAppID || null
-          }));
+        externalMatches = (Array.isArray(data) ? data : []).slice(0, 5).map((g) => ({
+          id: String(g.gameID || g.steamAppID),
+          name: g.external || g.title || q,
+          source: 'cheapshark',
+          thumb: g.thumb || null,
+          steamAppID: g.steamAppID || null,
+        }));
       }
     } catch (err) {
       console.warn('[Wishlist] CheapShark search failed:', err.message);
@@ -286,7 +337,7 @@ class WishlistService {
     const customEntry = {
       id: 'custom_' + slug(q),
       name: q,
-      source: 'custom'
+      source: 'custom',
     };
 
     // Combine and deduplicate by name (library first, then external, then custom)
@@ -330,22 +381,42 @@ class WishlistService {
         let historicalLow = null;
         if (dealsResponse.ok) {
           const dealsData = await dealsResponse.json();
-          const deals = Array.isArray(dealsData?.deals) ? dealsData.deals : (Array.isArray(dealsData) ? dealsData : []);
-          currentBest = deals.length > 0
-            ? deals.reduce((best, d) => (parseFloat(d.price) < parseFloat(best.price) ? d : best), deals[0])
-            : null;
+          const deals = Array.isArray(dealsData?.deals) ? dealsData.deals : Array.isArray(dealsData) ? dealsData : [];
+          currentBest =
+            deals.length > 0
+              ? deals.reduce((best, d) => (parseFloat(d.price) < parseFloat(best.price) ? d : best), deals[0])
+              : null;
           if (dealsData?.cheapestPriceEver?.price) {
-            historicalLow = { price: parseFloat(dealsData.cheapestPriceEver.price), cut: null, store: null, recorded: dealsData.cheapestPriceEver.date ? dealsData.cheapestPriceEver.date * 1000 : null };
+            historicalLow = {
+              price: parseFloat(dealsData.cheapestPriceEver.price),
+              cut: null,
+              store: null,
+              recorded: dealsData.cheapestPriceEver.date ? dealsData.cheapestPriceEver.date * 1000 : null,
+            };
           } else if (currentBest) {
-            historicalLow = { price: parseFloat(currentBest.price), cut: parseFloat(currentBest.savings || 0), store: storeName(currentBest.storeID), recorded: null };
+            historicalLow = {
+              price: parseFloat(currentBest.price),
+              cut: parseFloat(currentBest.savings || 0),
+              store: storeName(currentBest.storeID),
+              recorded: null,
+            };
           }
         }
 
         const entry = {
           key,
-          currentPrice: currentBest ? { price: parseFloat(currentBest.price), priceFormatted: `$${parseFloat(currentBest.price).toFixed(2)}`, retail: parseFloat(currentBest.retailPrice), cut: parseFloat(currentBest.savings || 0), store: storeName(currentBest.storeID), dealID: currentBest.dealID } : null,
+          currentPrice: currentBest
+            ? {
+                price: parseFloat(currentBest.price),
+                priceFormatted: `$${parseFloat(currentBest.price).toFixed(2)}`,
+                retail: parseFloat(currentBest.retailPrice),
+                cut: parseFloat(currentBest.savings || 0),
+                store: storeName(currentBest.storeID),
+                dealID: currentBest.dealID,
+              }
+            : null,
           historicalLow,
-          fetchedAt: Date.now()
+          fetchedAt: Date.now(),
         };
 
         const cache = readPriceCache();

@@ -16,72 +16,70 @@ export class PlaytimeEnrichmentService {
     }
 
     const sessionHistory = PlaytimeAutoLogger.getSessionHistory();
-    
-    return library.map(game => {
-      if (!game) return null;
-      
-      const gameName = game.name || game.appname;
-      if (!gameName) return game;
 
-      // Find all sessions for this game
-      const gameSessions = sessionHistory.filter(s => 
-        s.gameName === gameName || s.gameId === game.appid
-      );
+    return library
+      .map((game) => {
+        if (!game) return null;
 
-      // Build daily playtime map
-      const daily = {};
-      const weekly = {};
-      const monthly = {};
-      const yearly = {};
-      let total = 0;
+        const gameName = game.name || game.appname;
+        if (!gameName) return game;
 
-      gameSessions.forEach(session => {
-        const sessionDate = session.date || getDateKey(session.startTime);
-        const minutes = session.playtimeMinutes || session.duration || 0;
-        
-        if (minutes > 0) {
-          // Daily
-          daily[sessionDate] = (daily[sessionDate] || 0) + minutes;
-          
-          // Weekly
-          const date = new Date(sessionDate);
-          const weekKey = `${date.getFullYear()}-W${this.getWeekNumber(date)}`;
-          weekly[weekKey] = (weekly[weekKey] || 0) + minutes;
-          
-          // Monthly
-          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          monthly[monthKey] = (monthly[monthKey] || 0) + minutes;
-          
-          // Yearly
-          const yearKey = date.getFullYear().toString();
-          yearly[yearKey] = (yearly[yearKey] || 0) + minutes;
-          
-          total += minutes;
-        }
-      });
+        // Find all sessions for this game
+        const gameSessions = sessionHistory.filter((s) => s.gameName === gameName || s.gameId === game.appid);
 
-      // Preserve externally-sourced playtime (e.g. imported Steam playtime)
-      // which lives on game.time_played and is NOT represented in our local
-      // session history. Session-derived total only wins when it is higher.
-      const resolvedTotal = Math.max(total, Number(game.time_played) || 0);
+        // Build daily playtime map
+        const daily = {};
+        const weekly = {};
+        const monthly = {};
+        const yearly = {};
+        let total = 0;
 
-      return {
-        ...game,
-        playtime: {
-          total: resolvedTotal,
-          daily,
-          weekly,
-          monthly,
-          yearly,
-          sessionCount: gameSessions.length,
-          lastPlayed: gameSessions.length > 0 
-            ? gameSessions[gameSessions.length - 1].date 
-            : null
-        },
-        time_played: resolvedTotal,
-        launch_count: gameSessions.length
-      };
-    }).filter(Boolean);
+        gameSessions.forEach((session) => {
+          const sessionDate = session.date || getDateKey(session.startTime);
+          const minutes = session.playtimeMinutes || session.duration || 0;
+
+          if (minutes > 0) {
+            // Daily
+            daily[sessionDate] = (daily[sessionDate] || 0) + minutes;
+
+            // Weekly
+            const date = new Date(sessionDate);
+            const weekKey = `${date.getFullYear()}-W${this.getWeekNumber(date)}`;
+            weekly[weekKey] = (weekly[weekKey] || 0) + minutes;
+
+            // Monthly
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            monthly[monthKey] = (monthly[monthKey] || 0) + minutes;
+
+            // Yearly
+            const yearKey = date.getFullYear().toString();
+            yearly[yearKey] = (yearly[yearKey] || 0) + minutes;
+
+            total += minutes;
+          }
+        });
+
+        // Preserve externally-sourced playtime (e.g. imported Steam playtime)
+        // which lives on game.time_played and is NOT represented in our local
+        // session history. Session-derived total only wins when it is higher.
+        const resolvedTotal = Math.max(total, Number(game.time_played) || 0);
+
+        return {
+          ...game,
+          playtime: {
+            total: resolvedTotal,
+            daily,
+            weekly,
+            monthly,
+            yearly,
+            sessionCount: gameSessions.length,
+            lastPlayed: gameSessions.length > 0 ? gameSessions[gameSessions.length - 1].date : null,
+          },
+          time_played: resolvedTotal,
+          launch_count: gameSessions.length,
+        };
+      })
+      .filter(Boolean);
   }
 
   /**
@@ -92,7 +90,7 @@ export class PlaytimeEnrichmentService {
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
   }
 
   /**
@@ -105,7 +103,7 @@ export class PlaytimeEnrichmentService {
     const history = PlaytimeAutoLogger.getSessionHistory();
     const datesWithActivity = new Set();
 
-    history.forEach(session => {
+    history.forEach((session) => {
       const sessionDate = session.date || getDateKey(session.startTime);
       if (sessionDate >= startDate && sessionDate <= endDate) {
         datesWithActivity.add(sessionDate);
@@ -122,8 +120,8 @@ export class PlaytimeEnrichmentService {
    */
   static getDailyStatsFromHistory(date) {
     const history = PlaytimeAutoLogger.getSessionHistory();
-    
-    const daySessions = history.filter(s => {
+
+    const daySessions = history.filter((s) => {
       const sessionDate = s.date || new Date(s.startTime).toLocaleDateString('en-CA');
       return sessionDate === date;
     });
@@ -135,7 +133,7 @@ export class PlaytimeEnrichmentService {
         mostPlayed: null,
         gameCount: 0,
         hasActivity: false,
-        date
+        date,
       };
     }
 
@@ -143,19 +141,19 @@ export class PlaytimeEnrichmentService {
     const gameMap = new Map();
     let totalMinutes = 0;
 
-    daySessions.forEach(session => {
+    daySessions.forEach((session) => {
       const gameName = session.gameName;
       const minutes = session.playtimeMinutes || session.duration || 0;
-      
+
       if (!gameMap.has(gameName)) {
         gameMap.set(gameName, {
           name: gameName,
           dailyMinutes: 0,
           sessions: 0,
-          gameId: session.gameId
+          gameId: session.gameId,
         });
       }
-      
+
       const game = gameMap.get(gameName);
       game.dailyMinutes += minutes;
       game.sessions++;
@@ -171,7 +169,7 @@ export class PlaytimeEnrichmentService {
       mostPlayed,
       gameCount: gamesPlayed.length,
       hasActivity: true,
-      date
+      date,
     };
   }
 }

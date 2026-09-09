@@ -23,7 +23,10 @@
 }
 
 .daily-doodle .doodle-shell {
-  transition: transform 1s ease, opacity 1s ease, filter 1s ease;
+  transition:
+    transform 1s ease,
+    opacity 1s ease,
+    filter 1s ease;
 }
 
 .transition-slide-up .doodle-shell {
@@ -88,7 +91,10 @@
   opacity: 0;
   transform: rotateX(15deg) translateY(40px) rotate(-0.5deg);
   filter: blur(8px);
-  transition: opacity 0.9s ease, transform 1s ease, filter 0.9s ease;
+  transition:
+    opacity 0.9s ease,
+    transform 1s ease,
+    filter 0.9s ease;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -153,8 +159,8 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #fff;
-  background: var(--title-accent, var(--accent, rgba(255,255,255,0.25)));
-  box-shadow: 0 4px 14px var(--title-accent, rgba(255,255,255,0.15));
+  background: var(--title-accent, var(--accent, rgba(255, 255, 255, 0.25)));
+  box-shadow: 0 4px 14px var(--title-accent, rgba(255, 255, 255, 0.15));
   animation: doodle-pop 1.2s ease forwards;
   animation-delay: 0.5s;
   opacity: 0;
@@ -266,7 +272,8 @@
 }
 
 @keyframes doodle-logo-bounds-float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) rotate(0deg);
   }
   25% {
@@ -322,7 +329,7 @@
   height: 10px;
   border-radius: 999px;
   opacity: 0;
-  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 72%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 72%);
   filter: blur(0.5px);
 }
 
@@ -358,7 +365,10 @@
 }
 
 .logo-animation-synthwave-runway {
-  box-shadow: 0 0 0 1px rgba(244, 114, 182, 0.35), 0 8px 18px rgba(0, 0, 0, 0.25), 0 0 28px rgba(59, 130, 246, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(244, 114, 182, 0.35),
+    0 8px 18px rgba(0, 0, 0, 0.25),
+    0 0 28px rgba(59, 130, 246, 0.22);
 }
 
 .logo-animation-synthwave-runway .doodle-logo-ring {
@@ -369,7 +379,12 @@
 .logo-animation-synthwave-runway .particle-a,
 .logo-animation-synthwave-runway .particle-b,
 .logo-animation-synthwave-runway .particle-c {
-  background: radial-gradient(circle, rgba(244,114,182,0.95) 0%, rgba(59,130,246,0.15) 45%, rgba(255,255,255,0) 72%);
+  background: radial-gradient(
+    circle,
+    rgba(244, 114, 182, 0.95) 0%,
+    rgba(59, 130, 246, 0.15) 45%,
+    rgba(255, 255, 255, 0) 72%
+  );
   animation: doodle-particle-pop 2.4s ease-in-out infinite;
 }
 
@@ -402,13 +417,20 @@
 }
 
 .logo-animation-sunset-brush .doodle-logo-particle {
-  background: radial-gradient(circle, rgba(251,191,36,0.95) 0%, rgba(249,115,22,0.2) 50%, rgba(255,255,255,0) 75%);
+  background: radial-gradient(
+    circle,
+    rgba(251, 191, 36, 0.95) 0%,
+    rgba(249, 115, 22, 0.2) 50%,
+    rgba(255, 255, 255, 0) 75%
+  );
   animation: doodle-particle-drift 3.6s ease-in-out infinite;
 }
 
 .logo-animation-circuit-glow .doodle-logo-ring {
   border-color: rgba(96, 165, 250, 0.8);
-  box-shadow: inset 0 0 10px rgba(96, 165, 250, 0.22), 0 0 24px rgba(96, 165, 250, 0.24);
+  box-shadow:
+    inset 0 0 10px rgba(96, 165, 250, 0.22),
+    0 0 24px rgba(96, 165, 250, 0.24);
 }
 
 .logo-animation-circuit-glow {
@@ -416,7 +438,12 @@
 }
 
 .logo-animation-circuit-glow .doodle-logo-particle {
-  background: radial-gradient(circle, rgba(147,197,253,0.95) 0%, rgba(59,130,246,0.2) 55%, rgba(255,255,255,0) 76%);
+  background: radial-gradient(
+    circle,
+    rgba(147, 197, 253, 0.95) 0%,
+    rgba(59, 130, 246, 0.2) 55%,
+    rgba(255, 255, 255, 0) 76%
+  );
   animation: doodle-circuit-ping 1.8s linear infinite;
 }
 
@@ -430,7 +457,12 @@
 }
 
 .logo-animation-nebula-script .doodle-logo-particle {
-  background: radial-gradient(circle, rgba(196,181,253,0.95) 0%, rgba(168,85,247,0.2) 50%, rgba(255,255,255,0) 76%);
+  background: radial-gradient(
+    circle,
+    rgba(196, 181, 253, 0.95) 0%,
+    rgba(168, 85, 247, 0.2) 50%,
+    rgba(255, 255, 255, 0) 76%
+  );
   animation: doodle-nebula-float 4.2s ease-in-out infinite;
 }
 
@@ -440,11 +472,18 @@
 }
 
 .logo-animation-golden-shine {
-  animation: doodle-logo-orbit 7s ease-in-out infinite, doodle-golden-glint 3.6s ease-in-out infinite;
+  animation:
+    doodle-logo-orbit 7s ease-in-out infinite,
+    doodle-golden-glint 3.6s ease-in-out infinite;
 }
 
 .logo-animation-golden-shine .doodle-logo-particle {
-  background: radial-gradient(circle, rgba(252,211,77,0.98) 0%, rgba(245,158,11,0.18) 52%, rgba(255,255,255,0) 78%);
+  background: radial-gradient(
+    circle,
+    rgba(252, 211, 77, 0.98) 0%,
+    rgba(245, 158, 11, 0.18) 52%,
+    rgba(255, 255, 255, 0) 78%
+  );
   animation: doodle-golden-spark 2.2s ease-in-out infinite;
 }
 
@@ -464,7 +503,7 @@
 
 .logo-animation-victory-burst .doodle-logo-particle {
   animation: doodle-victory-burst 1.6s ease-out infinite;
-  background: radial-gradient(circle, rgba(250,204,21,1) 0%, rgba(255,255,255,0) 72%);
+  background: radial-gradient(circle, rgba(250, 204, 21, 1) 0%, rgba(255, 255, 255, 0) 72%);
 }
 
 .logo-animation-moon-tide .doodle-logo-ring {
@@ -476,7 +515,12 @@
 }
 
 .logo-animation-moon-tide .doodle-logo-particle {
-  background: radial-gradient(circle, rgba(165,180,252,0.95) 0%, rgba(96,165,250,0.18) 52%, rgba(255,255,255,0) 78%);
+  background: radial-gradient(
+    circle,
+    rgba(165, 180, 252, 0.95) 0%,
+    rgba(96, 165, 250, 0.18) 52%,
+    rgba(255, 255, 255, 0) 78%
+  );
   animation: doodle-particle-drift 4.8s ease-in-out infinite;
 }
 
@@ -505,7 +549,7 @@
 }
 
 .doodle-trail {
-  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
   animation: orbit-spin 24s linear reverse infinite;
 }
 
@@ -527,58 +571,58 @@
 }
 
 .pattern-grid::before {
-  background-image: linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
 .pattern-grid::after {
-  background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15), transparent 40%);
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.15), transparent 40%);
 }
 
 .pattern-pixels::before {
-  background-image: linear-gradient(90deg, rgba(255,255,255,0.12) 25%, transparent 25%),
-    linear-gradient(rgba(255,255,255,0.12) 25%, transparent 25%);
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.12) 25%, transparent 25%),
+    linear-gradient(rgba(255, 255, 255, 0.12) 25%, transparent 25%);
   background-size: 18px 18px;
   mix-blend-mode: soft-light;
 }
 
 .pattern-pixels::after {
-  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 6px);
+  background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 6px);
 }
 
 .pattern-stars::before {
-  background-image: radial-gradient(circle, rgba(255,255,255,0.25) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
   background-size: 120px 120px;
   animation: twinkle 14s ease-in-out infinite;
 }
 
 .pattern-stars::after {
-  background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
   background-size: 60px 60px;
   animation: twinkle 10s ease-in-out infinite reverse;
 }
 
 .pattern-circuit::before {
-  background: radial-gradient(circle, rgba(0,255,135,0.15) 1px, transparent 1px);
+  background: radial-gradient(circle, rgba(0, 255, 135, 0.15) 1px, transparent 1px);
   background-size: 70px 70px;
   mix-blend-mode: screen;
 }
 
 .pattern-circuit::after {
-  background-image: linear-gradient(90deg, rgba(0,255,135,0.2) 1px, transparent 1px),
-    linear-gradient(rgba(0,255,135,0.2) 1px, transparent 1px);
+  background-image: linear-gradient(90deg, rgba(0, 255, 135, 0.2) 1px, transparent 1px),
+    linear-gradient(rgba(0, 255, 135, 0.2) 1px, transparent 1px);
   background-size: 80px 80px;
   opacity: 0.25;
 }
 
 .pattern-brush::before {
-  background: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.4), transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(255,255,255,0.35), transparent 50%);
+  background: radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.4), transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.35), transparent 50%);
 }
 
 .pattern-brush::after {
-  background: repeating-linear-gradient(120deg, rgba(255,255,255,0.15) 0 12px, transparent 12px 24px);
+  background: repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.15) 0 12px, transparent 12px 24px);
 }
 
 @keyframes doodle-pop {
@@ -615,8 +659,13 @@
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.35; }
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 @keyframes doodle-logo-pulse {
@@ -635,88 +684,201 @@
 }
 
 @keyframes doodle-particle-pop {
-  0%, 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.3); }
-  35% { opacity: 0.9; transform: translate3d(6px, -8px, 0) scale(1); }
-  70% { opacity: 0.35; transform: translate3d(10px, -14px, 0) scale(0.7); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3);
+  }
+  35% {
+    opacity: 0.9;
+    transform: translate3d(6px, -8px, 0) scale(1);
+  }
+  70% {
+    opacity: 0.35;
+    transform: translate3d(10px, -14px, 0) scale(0.7);
+  }
 }
 
 @keyframes doodle-pixel-spark {
-  0%, 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(1); }
-  50% { opacity: 0.95; transform: translate3d(8px, -6px, 0) scale(1.1); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate3d(8px, -6px, 0) scale(1.1);
+  }
 }
 
 @keyframes doodle-particle-drift {
-  0%, 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.4); }
-  40% { opacity: 0.8; transform: translate3d(-6px, -12px, 0) scale(1); }
-  70% { opacity: 0.25; transform: translate3d(5px, -18px, 0) scale(0.65); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.4);
+  }
+  40% {
+    opacity: 0.8;
+    transform: translate3d(-6px, -12px, 0) scale(1);
+  }
+  70% {
+    opacity: 0.25;
+    transform: translate3d(5px, -18px, 0) scale(0.65);
+  }
 }
 
 @keyframes doodle-logo-brush {
-  0%, 100% { transform: scale(0.94) rotate(0deg); }
-  50% { transform: scale(1.12) rotate(12deg); }
+  0%,
+  100% {
+    transform: scale(0.94) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(12deg);
+  }
 }
 
 @keyframes doodle-logo-circuit {
-  0% { filter: brightness(1); }
-  50% { filter: brightness(1.12) saturate(1.15); }
-  100% { filter: brightness(1); }
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12) saturate(1.15);
+  }
+  100% {
+    filter: brightness(1);
+  }
 }
 
 @keyframes doodle-circuit-ping {
-  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.25); }
-  50% { opacity: 0.95; transform: translate3d(12px, 0, 0) scale(0.9); }
-  100% { opacity: 0; transform: translate3d(18px, 0, 0) scale(0.25); }
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.25);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate3d(12px, 0, 0) scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(18px, 0, 0) scale(0.25);
+  }
 }
 
 @keyframes doodle-logo-nebula {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  33% { transform: translate3d(4px, -4px, 0) scale(1.05); }
-  66% { transform: translate3d(-3px, 5px, 0) scale(0.98); }
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(4px, -4px, 0) scale(1.05);
+  }
+  66% {
+    transform: translate3d(-3px, 5px, 0) scale(0.98);
+  }
 }
 
 @keyframes doodle-nebula-float {
-  0%, 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.3); }
-  50% { opacity: 0.85; transform: translate3d(-10px, -10px, 0) scale(1); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate3d(-10px, -10px, 0) scale(1);
+  }
 }
 
 @keyframes doodle-golden-glint {
-  0%, 100% { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25); }
-  50% { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25), 0 0 24px rgba(245, 158, 11, 0.35); }
+  0%,
+  100% {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 8px 18px rgba(0, 0, 0, 0.25),
+      0 0 24px rgba(245, 158, 11, 0.35);
+  }
 }
 
 @keyframes doodle-golden-spark {
-  0%, 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.25); }
-  45% { opacity: 1; transform: translate3d(0, -14px, 0) scale(1); }
-  75% { opacity: 0.25; transform: translate3d(10px, -18px, 0) scale(0.6); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.25);
+  }
+  45% {
+    opacity: 1;
+    transform: translate3d(0, -14px, 0) scale(1);
+  }
+  75% {
+    opacity: 0.25;
+    transform: translate3d(10px, -18px, 0) scale(0.6);
+  }
 }
 
 @keyframes doodle-comet-orbit {
-  0% { opacity: 0; transform: rotate(0deg) translateX(26px) scale(0.5); }
-  25% { opacity: 0.9; }
-  100% { opacity: 0; transform: rotate(360deg) translateX(26px) scale(0.8); }
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) translateX(26px) scale(0.5);
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(360deg) translateX(26px) scale(0.8);
+  }
 }
 
 @keyframes doodle-logo-orbit {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes doodle-victory-burst {
-  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.1); }
-  35% { opacity: 1; transform: translate3d(0, -16px, 0) scale(1); }
-  100% { opacity: 0; transform: translate3d(18px, -26px, 0) scale(0.1); }
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.1);
+  }
+  35% {
+    opacity: 1;
+    transform: translate3d(0, -16px, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(18px, -26px, 0) scale(0.1);
+  }
 }
 
 @keyframes doodle-logo-moon-tide {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-6px) scale(1.04); }
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.04);
+  }
 }
 
 @keyframes doodle-logo-pixel-bob {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  25% { transform: translate3d(2px, -2px, 0); }
-  50% { transform: translate3d(0, -4px, 0); }
-  75% { transform: translate3d(-2px, -2px, 0); }
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(2px, -2px, 0);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0);
+  }
+  75% {
+    transform: translate3d(-2px, -2px, 0);
+  }
 }
 
 /* Logo Animation Classes */
@@ -808,7 +970,9 @@
 
 .doodle-shell--light .doodle-meta {
   color: rgba(30, 20, 10, 0.96) !important;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 2px 6px rgba(255, 255, 255, 0.55);
+  text-shadow:
+    0 1px 2px rgba(255, 255, 255, 0.85),
+    0 2px 6px rgba(255, 255, 255, 0.55);
 }
 
 .doodle-shell--light .doodle-meta-greeting,
@@ -826,54 +990,60 @@
 }
 
 .doodle-shell--light .doodle-trail {
-background: radial-gradient(circle, rgba(0, 0, 0, 0.06) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.06) 0%, transparent 60%);
 }
 
 .doodle-meta-badges {
-display: flex;
-align-items: center;
-gap: 8px;
-flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .doodle-event-tag {
-display: inline-flex;
-align-items: center;
-background: rgba(255, 117, 24, 0.2);
-border: 1px solid rgba(255, 117, 24, 0.5);
-color: #ffaa44;
-padding: 2px 8px;
-border-radius: 12px;
-font-size: 0.72rem;
-font-weight: 700;
-text-transform: uppercase;
-letter-spacing: 0.05em;
-animation: pulse 2s infinite ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 117, 24, 0.2);
+  border: 1px solid rgba(255, 117, 24, 0.5);
+  color: #ffaa44;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: pulse 2s infinite ease-in-out;
 }
 
 .doodle-letter.letter-squish {
-animation: doodle-letter-squish 0.4s ease;
+  animation: doodle-letter-squish 0.4s ease;
 }
 
 @keyframes doodle-letter-squish {
-0% { transform: scale(1) rotate(0deg); }
-50% { transform: scale(0.85, 1.25) translateY(-4px); }
-100% { transform: scale(1); }
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(0.85, 1.25) translateY(-4px);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .doodle-quote-active {
-font-style: italic;
-opacity: 0.95;
-transition: opacity 0.25s ease;
+  font-style: italic;
+  opacity: 0.95;
+  transition: opacity 0.25s ease;
 }
 
 @media (max-width: 640px) {
-.doodle-shell {
-padding: 20px 18px;
-border-radius: 22px;
-flex-direction: column;
-align-items: flex-start;
-gap: 12px;
+  .doodle-shell {
+    padding: 20px 18px;
+    border-radius: 22px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 
   .doodle-left {

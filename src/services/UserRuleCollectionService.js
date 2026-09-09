@@ -32,13 +32,7 @@ export class UserRuleCollectionService {
     }
   }
 
-  static createCollection({
-    name,
-    description = '',
-    rules = {},
-    color = '#ff6b35',
-    icon = 'folder'
-  }) {
+  static createCollection({ name, description = '', rules = {}, color = '#ff6b35', icon = 'folder' }) {
     const all = this.getAllCollections();
     const collection = {
       id: generateId(),
@@ -49,7 +43,7 @@ export class UserRuleCollectionService {
       icon,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      isUserCreated: true
+      isUserCreated: true,
     };
     all.push(collection);
     StorageService.set(USER_COLLECTIONS_KEY, all);
@@ -63,7 +57,7 @@ export class UserRuleCollectionService {
     all[index] = {
       ...all[index],
       ...updates,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     StorageService.set(USER_COLLECTIONS_KEY, all);
     return all[index];
@@ -88,27 +82,21 @@ export class UserRuleCollectionService {
       // Genre filter
       if (rules.genres?.length > 0) {
         const gameGenres = getGenreList(game);
-        const hasGenre = rules.genres.some((g) =>
-          gameGenres.some((gg) => gg.toLowerCase() === g.toLowerCase())
-        );
+        const hasGenre = rules.genres.some((g) => gameGenres.some((gg) => gg.toLowerCase() === g.toLowerCase()));
         if (!hasGenre) return false;
       }
 
       // Mood filter
       if (rules.moods?.length > 0) {
         const gameMood = game?.mood || '';
-        const hasMood = rules.moods.some((m) =>
-          gameMood.toLowerCase() === m.toLowerCase()
-        );
+        const hasMood = rules.moods.some((m) => gameMood.toLowerCase() === m.toLowerCase());
         if (!hasMood) return false;
       }
 
       // Platform filter
       if (rules.platforms?.length > 0) {
         const gamePlatform = String(game?.platform || game?.brandPlatform || '').toLowerCase();
-        const hasPlatform = rules.platforms.some((p) =>
-          gamePlatform.includes(p.toLowerCase())
-        );
+        const hasPlatform = rules.platforms.some((p) => gamePlatform.includes(p.toLowerCase()));
         if (!hasPlatform) return false;
       }
 
@@ -164,7 +152,7 @@ export class UserRuleCollectionService {
       title: collection.name,
       subtitle: collection.description || `${games.length} games matched`,
       games,
-      relevanceScore: 50 + Math.min(games.length, 30)
+      relevanceScore: 50 + Math.min(games.length, 30),
     };
   }
 
@@ -185,43 +173,43 @@ export class UserRuleCollectionService {
         description: 'Games you keep coming back to',
         rules: { minSessions: 3 },
         color: '#f472b6',
-        icon: 'heart'
+        icon: 'heart',
       },
       {
         name: 'Weekend Warriors',
         description: 'Long-session games you have not played recently',
         rules: { minPlaytime: 180, lastPlayedDaysAgo: 14 },
         color: '#f87171',
-        icon: 'calendar'
+        icon: 'calendar',
       },
       {
         name: 'Quick Hits',
         description: 'Short games for busy days',
         rules: { maxPlaytime: 120, neverPlayed: false },
         color: '#22d3ee',
-        icon: 'zap'
+        icon: 'zap',
       },
       {
         name: 'The Pile of Shame',
         description: 'Owned but never launched',
         rules: { neverPlayed: true },
         color: '#a78bfa',
-        icon: 'archive'
+        icon: 'archive',
       },
       {
         name: 'RPG Reserves',
         description: 'Your unplayed RPGs',
         rules: { genres: ['RPG'], neverPlayed: true },
         color: '#818cf8',
-        icon: 'shield'
+        icon: 'shield',
       },
       {
         name: 'Action Backlog',
         description: 'Action games waiting for you',
         rules: { genres: ['Action'], completionStatus: 'backlog' },
         color: '#fb923c',
-        icon: 'swords'
-      }
+        icon: 'swords',
+      },
     ];
   }
 }

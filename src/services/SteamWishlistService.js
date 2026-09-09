@@ -126,7 +126,7 @@ class SteamWishlistService {
           platform: 'Steam',
           appid: item.appid || null,
           genres: Array.isArray(item.genres) ? item.genres : [],
-          image: item.image || null
+          image: item.image || null,
         },
         { threshold: null, notes: 'Imported from Steam wishlist' }
       );
@@ -139,7 +139,7 @@ class SteamWishlistService {
       count: addedCount,
       totalFetched: result.items.length,
       error: null,
-      fetchedAt: Date.now()
+      fetchedAt: Date.now(),
     };
     StorageService.set(LAST_SYNC_KEY, Date.now());
     StorageService.set(SYNC_RESULT_KEY, summary);

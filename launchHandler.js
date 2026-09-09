@@ -37,7 +37,7 @@ const LAUNCH_MODES = Object.freeze({
   DIRECT: 'direct',
   PROTOCOL: 'protocol',
   LAUNCHER_OPENED: 'launcher_opened',
-  MANUAL_REQUIRED: 'manual_required'
+  MANUAL_REQUIRED: 'manual_required',
 });
 
 const createLaunchResult = (success, mode, message, metadata = {}) => ({
@@ -45,11 +45,14 @@ const createLaunchResult = (success, mode, message, metadata = {}) => ({
   mode: LAUNCH_MODES[mode] || mode || 'unknown',
   message,
   metadata,
-  timestamp: Date.now()
+  timestamp: Date.now(),
 });
 
 const isLaunchPlatformSupported = (platform, hostPlatform = process.platform) =>
-  hostPlatform !== 'linux' || String(platform || '').trim().toLowerCase() === 'steam';
+  hostPlatform !== 'linux' ||
+  String(platform || '')
+    .trim()
+    .toLowerCase() === 'steam';
 
 class GameLauncher {
   constructor() {
@@ -66,15 +69,24 @@ class GameLauncher {
     const compactPlatform = lowerPlatform.replace(/[^a-z0-9]+/g, '');
 
     if (lowerPlatform === 'origin' || lowerPlatform === 'ea app' || compactPlatform === 'eaapp') return 'EA';
-    if (lowerPlatform === 'uplay' || lowerPlatform === 'ubisoft connect' || compactPlatform === 'ubisoftconnect') return 'Ubisoft';
+    if (lowerPlatform === 'uplay' || lowerPlatform === 'ubisoft connect' || compactPlatform === 'ubisoftconnect')
+      return 'Ubisoft';
     if (lowerPlatform === 'battlenet' || compactPlatform === 'battlenet') return 'Battle.net';
-    if (lowerPlatform === 'riot games' || compactPlatform === 'riotgames' || compactPlatform === 'riotclient') return 'Riot';
+    if (lowerPlatform === 'riot games' || compactPlatform === 'riotgames' || compactPlatform === 'riotclient')
+      return 'Riot';
     if (lowerPlatform === 'battlestate games' || compactPlatform === 'battlestategames') return 'BSG';
-    if (compactPlatform === 'curseforge' || compactPlatform === 'curseforgeapp' || compactPlatform === 'overwolfcurseforge') return 'CurseForge';
+    if (
+      compactPlatform === 'curseforge' ||
+      compactPlatform === 'curseforgeapp' ||
+      compactPlatform === 'overwolfcurseforge'
+    )
+      return 'CurseForge';
     if (lowerPlatform === 'playstation brand') return 'PlayStation';
-    if (compactPlatform === 'amazon' || compactPlatform === 'amazonapp' || compactPlatform === 'amazongames') return 'Amazon';
+    if (compactPlatform === 'amazon' || compactPlatform === 'amazonapp' || compactPlatform === 'amazongames')
+      return 'Amazon';
     if (compactPlatform === 'itch' || compactPlatform === 'itchio' || lowerPlatform === 'itch.io') return 'Itch.io';
-    if (compactPlatform === 'emulated' || compactPlatform === 'emulator' || compactPlatform === 'emulation') return 'Emulated';
+    if (compactPlatform === 'emulated' || compactPlatform === 'emulator' || compactPlatform === 'emulation')
+      return 'Emulated';
 
     return normalizedPlatform;
   }
@@ -102,16 +114,19 @@ class GameLauncher {
       game.installDir ? path.join(game.installDir, 'Riot Client', 'RiotClientServices.exe') : null,
       path.join(process.env.LOCALAPPDATA || '', 'Riot Games', 'Riot Client', 'RiotClientServices.exe'),
       path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Riot Games', 'Riot Client', 'RiotClientServices.exe'),
-      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Riot Games', 'Riot Client', 'RiotClientServices.exe')
+      path.join(
+        process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)',
+        'Riot Games',
+        'Riot Client',
+        'RiotClientServices.exe'
+      ),
     ].filter(Boolean);
   }
 
   // Helper to query Windows Registry
   queryRegistry(key, value = null) {
     try {
-      const command = value 
-        ? `reg query "${key}" /v "${value}"`
-        : `reg query "${key}"`;
+      const command = value ? `reg query "${key}" /v "${value}"` : `reg query "${key}"`;
       const result = execSync(command, { encoding: 'utf8' });
       return result;
     } catch (error) {
@@ -124,23 +139,24 @@ class GameLauncher {
   getXboxPackageInfo(gameName) {
     try {
       console.log(`🔍 Searching for Xbox AUMID for: ${gameName}`);
-      
+
       // Use PowerShell to get all installed apps with their AUMIDs
       const psCommand = `Get-StartApps | Where-Object { $_.AppID -like "*Microsoft*" -or $_.AppID -like "*Xbox*" } | Select-Object Name, AppID`;
-      
+
       const result = execSync(psCommand, { encoding: 'utf8' });
       const lines = result.split('\n');
-      
+
       console.log(`🔍 Found ${lines.length - 2} Xbox/Microsoft apps`);
-      
+
       for (const line of lines) {
-        if (line.includes('Age of Empires IV') || 
-            line.includes('Age of Empires II') ||
-            line.includes('Halo') ||
-            line.includes('Forza') ||
-            line.includes('Gears') ||
-            line.includes('Sea of Thieves')) {
-          
+        if (
+          line.includes('Age of Empires IV') ||
+          line.includes('Age of Empires II') ||
+          line.includes('Halo') ||
+          line.includes('Forza') ||
+          line.includes('Gears') ||
+          line.includes('Sea of Thieves')
+        ) {
           // Extract AUMID from PowerShell output
           const match = line.match(/([A-Za-z0-9._-]+Microsoft\.[A-Za-z0-9._-]+!App)/);
           if (match) {
@@ -150,7 +166,7 @@ class GameLauncher {
           }
         }
       }
-      
+
       // Fallback to common Xbox game AUMIDs
       const xboxGameAUMIDs = {
         'Age of Empires IV': 'Microsoft.Cardinal_8wekyb3d8bbwe!App',
@@ -158,7 +174,7 @@ class GameLauncher {
         'Halo Infinite': 'Microsoft.Halo_8wekyb3d8bbwe!App',
         'Forza Horizon 5': 'Microsoft.SunriseBaseGame_8wekyb3d8bbwe!App',
         'Gears 5': 'Microsoft.Gears5_8wekyb3d8bbwe!App',
-        'Sea of Thieves': 'Microsoft.SeaofThieves_8wekyb3d8bbwe!App'
+        'Sea of Thieves': 'Microsoft.SeaofThieves_8wekyb3d8bbwe!App',
       };
 
       const fallbackAumid = xboxGameAUMIDs[gameName];
@@ -166,7 +182,7 @@ class GameLauncher {
         console.log(`🔄 Using fallback AUMID: ${fallbackAumid}`);
         return fallbackAumid;
       }
-      
+
       console.log('❌ No Xbox AUMID found for:', gameName);
       return null;
     } catch (error) {
@@ -179,27 +195,28 @@ class GameLauncher {
   getEpicManifestData(game) {
     try {
       const epicManifestPath = path.join('C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests');
-      
+
       if (fs.existsSync(epicManifestPath)) {
-        const manifestFiles = fs.readdirSync(epicManifestPath).filter(file => file.endsWith('.item'));
-        
+        const manifestFiles = fs.readdirSync(epicManifestPath).filter((file) => file.endsWith('.item'));
+
         console.log(`🔍 Searching through ${manifestFiles.length} Epic manifest files...`);
-        
+
         for (const manifestFile of manifestFiles) {
           const manifestPath = path.join(epicManifestPath, manifestFile);
           const manifestContent = fs.readFileSync(manifestPath, 'utf8');
-          
+
           // Look for game name match in manifest
-          if (manifestContent.toLowerCase().includes(game.name.toLowerCase()) || 
-              manifestContent.includes(game.launchId)) {
-            
+          if (
+            manifestContent.toLowerCase().includes(game.name.toLowerCase()) ||
+            manifestContent.includes(game.launchId)
+          ) {
             console.log(`📄 Found matching manifest: ${manifestFile}`);
-            
+
             // Parse manifest for launch information
             const lines = manifestContent.split('\n');
             let launchUrl = '';
             let appName = '';
-            
+
             for (const line of lines) {
               if (line.includes('"LaunchExecutable":')) {
                 const executable = line.split('"')[3];
@@ -214,18 +231,18 @@ class GameLauncher {
                 console.log(`🎮 Found LaunchURL: ${launchUrl}`);
               }
             }
-            
+
             // Construct the Epic launch URI
             if (appName) {
               return {
                 launchUri: `com.epicgames.launcher://apps/${appName}?action=launch&silent=true`,
-                appName: appName
+                appName: appName,
               };
             }
           }
         }
       }
-      
+
       console.log('❌ No matching Epic manifest found');
       return null;
     } catch (error) {
@@ -246,41 +263,41 @@ class GameLauncher {
         `${normalizedPlatform || 'This platform'} is not supported in the Linux beta. GamePilot currently launches Steam games on Linux.`
       );
     }
-    
+
     try {
       switch (normalizedPlatform) {
         case 'Steam':
           return this.launchSteam(game);
-          
+
         case 'Epic':
           return this.launchEpic(game);
-          
+
         case 'Xbox':
           return this.launchXbox(game);
-          
+
         case 'Battle.net':
           return this.launchBattleNet(game);
-          
+
         case 'GOG':
           return this.launchGOG(game);
-          
+
         case 'Rockstar':
           return this.launchRockstar(game);
-          
+
         case 'Origin':
         case 'EA':
           return this.launchOrigin(game);
-          
+
         case 'Uplay':
         case 'Ubisoft':
           return this.launchUplay(game);
 
         case 'BSG':
           return this.launchBSG(game);
-        
+
         case 'Riot':
           return this.launchRiot(game);
-        
+
         case 'CurseForge':
           return this.launchCurseForge(game);
 
@@ -318,14 +335,16 @@ class GameLauncher {
   // Epic Games launch - Protocol-First with manifest parsing
   async launchEpic(game) {
     console.log('🎮 Epic game data:', game);
-    
+
     // Protocol-First: Try to get manifest data for precise launch URI
     const manifestData = this.getEpicManifestData(game);
-    
+
     if (manifestData && manifestData.launchUri) {
       console.log('🎮 Using Epic manifest-based launch URI:', manifestData.launchUri);
       await this.shell.openExternal(manifestData.launchUri);
-      return createLaunchResult(true, 'protocol', `Launched ${game.name} via manifest`, { launchUrl: manifestData.launchUri });
+      return createLaunchResult(true, 'protocol', `Launched ${game.name} via manifest`, {
+        launchUrl: manifestData.launchUri,
+      });
     }
 
     // Fallback to launchId if available
@@ -345,15 +364,15 @@ class GameLauncher {
   // Xbox launch - Use AUMID from game object
   async launchXbox(game) {
     console.log('🎯 Xbox game data:', game);
-    
+
     // Use AUMID from game object (already discovered during scanning)
     const aumid = game.aumid;
-    
+
     if (aumid) {
       // Protocol-First: Use shell:AppsFolder protocol with AUMID
       const launchUrl = `shell:appsFolder\\${aumid}`;
       console.log(`🎯 Xbox launch URL: ${launchUrl}`);
-      
+
       try {
         await this.shell.openExternal(launchUrl);
         console.log('✅ Xbox game launched successfully via AUMID');
@@ -370,13 +389,13 @@ class GameLauncher {
   // Battle.net launch - Protocol-First with --exec argument
   async launchBattleNet(game) {
     console.log('⚔️ Battle.net game data:', game);
-    
+
     // Check common Battle.net installation paths
     const battleNetPaths = [
       'C:\\Program Files (x86)\\Battle.net\\Battle.net.exe',
-      'C:\\Program Files\\Battle.net\\Battle.net.exe'
+      'C:\\Program Files\\Battle.net\\Battle.net.exe',
     ];
-    
+
     let battleNetExe = null;
     for (const path of battleNetPaths) {
       if (fs.existsSync(path)) {
@@ -385,16 +404,16 @@ class GameLauncher {
         break;
       }
     }
-    
+
     if (battleNetExe) {
       // Get the game code from the game object
       const gameCode = game.code || game.launchId;
-      
+
       if (gameCode) {
         // Protocol-First: Use --exec="launch [code]" argument
         const command = `"${battleNetExe}" --exec="launch ${gameCode}"`;
         console.log(`⚔️ Battle.net command: ${command}`);
-        
+
         return new Promise((resolve) => {
           exec(command, (error) => {
             if (error) {
@@ -455,7 +474,7 @@ class GameLauncher {
     const galaxyCandidates = [
       path.join(localAppData, 'GOG.com', 'Galaxy', 'GalaxyClient.exe'),
       path.join(programFiles, 'GOG Galaxy', 'GalaxyClient.exe'),
-      path.join(programFilesX86, 'GOG Galaxy', 'GalaxyClient.exe')
+      path.join(programFilesX86, 'GOG Galaxy', 'GalaxyClient.exe'),
     ].filter(Boolean);
 
     const galaxyClientPath = galaxyCandidates.find((candidate) => fs.existsSync(candidate));
@@ -481,17 +500,21 @@ class GameLauncher {
   // Rockstar launch
   async launchRockstar(game) {
     console.log('🪨 Rockstar game data:', game);
-    
+
     const rockstarUrl = 'rockstar://';
     console.log('🪨 Rockstar URL:', rockstarUrl);
     await this.shell.openExternal(rockstarUrl);
-    return createLaunchResult(true, 'launcher_opened', `Rockstar Launcher opened - please launch ${game.name} manually`);
+    return createLaunchResult(
+      true,
+      'launcher_opened',
+      `Rockstar Launcher opened - please launch ${game.name} manually`
+    );
   }
 
   // Origin launch
   async launchOrigin(game) {
     console.log('🎪 Origin game data:', game);
-    
+
     if (game.launchId) {
       const originUrl = `origin://launch/${game.launchId}`;
       console.log('🎪 Origin URL:', originUrl);
@@ -515,7 +538,9 @@ class GameLauncher {
       const { spawn } = require('child_process');
       const child = spawn(game.executablePath, { detached: true, stdio: 'ignore' });
       child.unref();
-      return createLaunchResult(true, 'direct', `Launched ${game.name} (direct)`, { executablePath: game.executablePath });
+      return createLaunchResult(true, 'direct', `Launched ${game.name} (direct)`, {
+        executablePath: game.executablePath,
+      });
     }
 
     // Final fallback: open Ubisoft Connect client
@@ -523,7 +548,7 @@ class GameLauncher {
       path.join(process.env.LOCALAPPDATA || '', 'Ubisoft Connect', 'UbisoftConnect.exe'),
       path.join(process.env.LOCALAPPDATA || '', 'Ubisoft Game Launcher', 'Uplay.exe'),
       path.join(process.env['ProgramFiles(x86)'] || '', 'Ubisoft/Ubisoft Connect/UbisoftConnect.exe'),
-      path.join(process.env['ProgramFiles(x86)'] || '', 'Ubisoft/Ubisoft Game Launcher/Uplay.exe')
+      path.join(process.env['ProgramFiles(x86)'] || '', 'Ubisoft/Ubisoft Game Launcher/Uplay.exe'),
     ];
 
     for (const connectPath of connectPaths) {
@@ -542,9 +567,7 @@ class GameLauncher {
   async launchBSG(game) {
     console.log('🐻 BSG game data:', game);
 
-    const localAppDataPrograms = process.env.LOCALAPPDATA
-      ? path.join(process.env.LOCALAPPDATA, 'Programs')
-      : null;
+    const localAppDataPrograms = process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Programs') : null;
 
     // Prefer the official launcher first so BattlEye-protected games initialize correctly.
     const launcherCandidates = [
@@ -559,7 +582,9 @@ class GameLauncher {
       'C:\\Program Files\\BsgLauncher\\BsgLauncher.exe',
       'C:\\Program Files (x86)\\BsgLauncher\\BsgLauncher.exe',
       localAppDataPrograms ? path.join(localAppDataPrograms, 'BsgLauncher', 'BsgLauncher.exe') : null,
-      localAppDataPrograms ? path.join(localAppDataPrograms, 'Battlestate Games', 'BsgLauncher', 'BsgLauncher.exe') : null
+      localAppDataPrograms
+        ? path.join(localAppDataPrograms, 'Battlestate Games', 'BsgLauncher', 'BsgLauncher.exe')
+        : null,
     ].filter(Boolean);
 
     for (const launcherPath of launcherCandidates) {
@@ -575,7 +600,13 @@ class GameLauncher {
             return;
           }
 
-          resolve(createLaunchResult(true, 'launcher_opened', 'BSG Launcher opened - launch Escape from Tarkov from the launcher to satisfy BattlEye'));
+          resolve(
+            createLaunchResult(
+              true,
+              'launcher_opened',
+              'BSG Launcher opened - launch Escape from Tarkov from the launcher to satisfy BattlEye'
+            )
+          );
         });
       });
     }
@@ -584,7 +615,7 @@ class GameLauncher {
     const executableCandidates = [
       game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_BE.exe') : null,
       game.installDir ? path.join(game.installDir, 'EscapeFromTarkov.exe') : null,
-      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_Arena.exe') : null
+      game.installDir ? path.join(game.installDir, 'EscapeFromTarkov_Arena.exe') : null,
     ].filter(Boolean);
 
     for (const executablePath of executableCandidates) {
@@ -618,7 +649,10 @@ class GameLauncher {
           }
 
           const mode = riotLaunchArgs.length > 0 ? 'direct' : 'launcher_opened';
-          const message = riotLaunchArgs.length > 0 ? `Launched ${game.name}` : 'Riot Client opened - please launch the game manually';
+          const message =
+            riotLaunchArgs.length > 0
+              ? `Launched ${game.name}`
+              : 'Riot Client opened - please launch the game manually';
           resolve(createLaunchResult(true, mode, message, { riotClientPath, riotLaunchArgs }));
         });
       });
@@ -635,7 +669,12 @@ class GameLauncher {
             return;
           }
 
-          resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath, riotLaunchArgs }));
+          resolve(
+            createLaunchResult(true, 'direct', `Launched ${game.name}`, {
+              executablePath: game.executablePath,
+              riotLaunchArgs,
+            })
+          );
         });
       });
     }
@@ -683,7 +722,12 @@ class GameLauncher {
     const curseForgeCandidates = [
       path.join(process.env.LOCALAPPDATA || '', 'Programs', 'CurseForge', 'CurseForge.exe'),
       path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Overwolf', 'CurseForge', 'CurseForge.exe'),
-      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Overwolf', 'CurseForge', 'CurseForge.exe')
+      path.join(
+        process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)',
+        'Overwolf',
+        'CurseForge',
+        'CurseForge.exe'
+      ),
     ];
 
     const curseForgePath = curseForgeCandidates.find((candidate) => candidate && fs.existsSync(candidate));
@@ -707,7 +751,9 @@ class GameLauncher {
             console.error('❌ Direct Amazon executable launch failed:', error);
             resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
           } else {
-            resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath }));
+            resolve(
+              createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath })
+            );
           }
         });
       });
@@ -716,7 +762,7 @@ class GameLauncher {
     const amazonAppCandidates = [
       path.join(process.env.LOCALAPPDATA || '', 'Amazon Games', 'App', 'Amazon Games.exe'),
       path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Amazon Games', 'Amazon Games.exe'),
-      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Amazon Games', 'Amazon Games.exe')
+      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Amazon Games', 'Amazon Games.exe'),
     ];
 
     const amazonAppPath = amazonAppCandidates.find((candidate) => candidate && fs.existsSync(candidate));
@@ -740,7 +786,9 @@ class GameLauncher {
             console.error('❌ Direct itch.io executable launch failed:', error);
             resolve(createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`));
           } else {
-            resolve(createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath }));
+            resolve(
+              createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath: game.executablePath })
+            );
           }
         });
       });
@@ -750,7 +798,7 @@ class GameLauncher {
       path.join(process.env.LOCALAPPDATA || '', 'itch', 'itch.exe'),
       path.join(process.env.LOCALAPPDATA || '', 'itch.io', 'itch.exe'),
       path.join(process.env.ProgramFiles || 'C:\\Program Files', 'itch', 'itch.exe'),
-      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'itch', 'itch.exe')
+      path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'itch', 'itch.exe'),
     ];
 
     const itchAppPath = itchAppCandidates.find((candidate) => candidate && fs.existsSync(candidate));
@@ -778,9 +826,7 @@ class GameLauncher {
       return createLaunchResult(false, 'unknown', `ROM file not found for ${game.name}`);
     }
 
-    const command = launchTemplate
-      .replace(/\{emulator\}/g, emulatorPath)
-      .replace(/\{rom\}/g, romPath);
+    const command = launchTemplate.replace(/\{emulator\}/g, emulatorPath).replace(/\{rom\}/g, romPath);
 
     const args = parseShellCommand(command);
     const exe = args.shift();
@@ -792,7 +838,10 @@ class GameLauncher {
     try {
       const child = spawn(exe, args, { detached: true, stdio: 'ignore' });
       child.unref();
-      return createLaunchResult(true, 'direct', `Launched ${game.name} via ${game.emulator || 'emulator'}`, { emulatorPath, romPath });
+      return createLaunchResult(true, 'direct', `Launched ${game.name} via ${game.emulator || 'emulator'}`, {
+        emulatorPath,
+        romPath,
+      });
     } catch (error) {
       console.error('❌ Emulator launch failed:', error);
       return createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`);

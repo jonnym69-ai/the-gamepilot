@@ -19,11 +19,12 @@ const SETTINGS_KEY = 'pcgwEnabled';
 
 const inflight = new Map();
 
-const slug = (s) => String(s || '')
-  .toLowerCase()
-  .replace(/[\u00ae\u2122\u00a9]/g, '')
-  .replace(/[^a-z0-9]+/g, ' ')
-  .trim();
+const slug = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .replace(/[\u00ae\u2122\u00a9]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 const gameKeyFor = (game) => {
   if (!game) return '';
@@ -42,8 +43,11 @@ const readCache = () => {
 };
 
 const writeCache = (cache) => {
-  try { StorageService.set(CACHE_KEY, cache); }
-  catch (err) { console.warn('[PCGW] cache write failed:', err); }
+  try {
+    StorageService.set(CACHE_KEY, cache);
+  } catch (err) {
+    console.warn('[PCGW] cache write failed:', err);
+  }
 };
 
 const isFresh = (entry) => {
@@ -55,23 +59,24 @@ const isFresh = (entry) => {
 // --- Wikitext extractors -----------------------------------------------------
 // PCGamingWiki articles use known templates. We pull a few high-value bits.
 
-const stripWiki = (s) => String(s || '')
-  // {{P|steam|123}} -> steam:123 (we don't really need this, just clean it)
-  .replace(/\{\{P\|[^}]+\}\}/gi, '')
-  // [[Foo|Bar]] -> Bar; [[Foo]] -> Foo
-  .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
-  .replace(/\[\[([^\]]+)\]\]/g, '$1')
-  // bold/italic
-  .replace(/'''/g, '')
-  .replace(/''/g, '')
-  // <code>...</code>, <kbd>...</kbd>
-  .replace(/<\/?(code|kbd|tt|small)>/gi, '')
-  // tags we don't care about
-  .replace(/<ref[^>]*\/>/gi, '')
-  .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, '')
-  .replace(/\{\{key\|([^}]+)\}\}/gi, '$1')
-  .replace(/\s+/g, ' ')
-  .trim();
+const stripWiki = (s) =>
+  String(s || '')
+    // {{P|steam|123}} -> steam:123 (we don't really need this, just clean it)
+    .replace(/\{\{P\|[^}]+\}\}/gi, '')
+    // [[Foo|Bar]] -> Bar; [[Foo]] -> Foo
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
+    .replace(/\[\[([^\]]+)\]\]/g, '$1')
+    // bold/italic
+    .replace(/'''/g, '')
+    .replace(/''/g, '')
+    // <code>...</code>, <kbd>...</kbd>
+    .replace(/<\/?(code|kbd|tt|small)>/gi, '')
+    // tags we don't care about
+    .replace(/<ref[^>]*\/>/gi, '')
+    .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, '')
+    .replace(/\{\{key\|([^}]+)\}\}/gi, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const extractGameDataPath = (wikitext, sectionName) => {
   if (!wikitext) return null;
@@ -125,7 +130,7 @@ const buildEntry = (apiResult) => {
         stub: true,
         fetchedAt: now,
         pageTitle: apiResult.pageTitle || null,
-        pageUrl: apiResult.pageUrl
+        pageUrl: apiResult.pageUrl,
       };
     }
     return { found: false, fetchedAt: now, error: apiResult?.error || 'unknown' };
@@ -136,8 +141,8 @@ const buildEntry = (apiResult) => {
   }
   const saveLocation = extractGameDataPath(wikitext, 'Save game data location');
   const configLocation =
-    extractGameDataPath(wikitext, 'Configuration file\\(s\\) location')
-    || extractGameDataPath(wikitext, 'Configuration files? location');
+    extractGameDataPath(wikitext, 'Configuration file\\(s\\) location') ||
+    extractGameDataPath(wikitext, 'Configuration files? location');
   const controller = extractControllerSupport(wikitext);
   const isStub = !saveLocation && !configLocation && !controller;
   return {
@@ -149,7 +154,7 @@ const buildEntry = (apiResult) => {
     matchedVia: matchedVia || null,
     saveLocation,
     configLocation,
-    controller
+    controller,
   };
 };
 
@@ -181,9 +186,10 @@ class PCGamingWikiService {
     if (!force && cached && isFresh(cached)) return cached;
     if (inflight.has(key)) return inflight.get(key);
 
-    const api = (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.pcgwLookup)
-      ? window.electronAPI.pcgwLookup
-      : null;
+    const api =
+      typeof window !== 'undefined' && window.electronAPI && window.electronAPI.pcgwLookup
+        ? window.electronAPI.pcgwLookup
+        : null;
     if (!api) return cached || null;
 
     const appid = game?.appid || game?.steam_appid || game?.appId || null;

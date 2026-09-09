@@ -11,7 +11,7 @@ const TABS = [
   { id: 'identity', label: 'Identity', icon: User },
   { id: 'insights', label: 'Insights', icon: Brain },
   { id: 'recent', label: 'Recently Played', icon: Clock },
-  { id: 'shelves', label: 'Smart Shelves', icon: LayoutGrid }
+  { id: 'shelves', label: 'Smart Shelves', icon: LayoutGrid },
 ];
 
 const formatLastPlayed = (lastPlayed) => {
@@ -122,18 +122,10 @@ const LibrarianHubCarousel = ({ library = [], onLaunchGame }) => {
       </div>
 
       <div className="librarian-hub-panel">
-        {activeTab === 'identity' && (
-          <GamerIdentityCard library={library} />
-        )}
-        {activeTab === 'insights' && (
-          <HabitInsightsPanel library={library} />
-        )}
-        {activeTab === 'recent' && (
-          <RecentlyPlayedTab library={library} onLaunchGame={onLaunchGame} />
-        )}
-        {activeTab === 'shelves' && (
-          <SmartCollectionsShelf library={library} onLaunchGame={onLaunchGame} />
-        )}
+        {activeTab === 'identity' && <GamerIdentityCard library={library} />}
+        {activeTab === 'insights' && <HabitInsightsPanel library={library} />}
+        {activeTab === 'recent' && <RecentlyPlayedTab library={library} onLaunchGame={onLaunchGame} />}
+        {activeTab === 'shelves' && <SmartCollectionsShelf library={library} onLaunchGame={onLaunchGame} />}
       </div>
     </div>
   );

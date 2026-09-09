@@ -13,7 +13,7 @@ import {
   normalizeLibraryData,
   normalizeTrackedNumber,
   normalizeLastPlayedValue,
-  getMostRecentlyPlayedGame
+  getMostRecentlyPlayedGame,
 } from './services/LibraryDataService';
 import { PlaytimeAutoLogger } from './services/PlaytimeAutoLogger';
 import SessionRepository from './services/SessionRepository';
@@ -80,17 +80,12 @@ StorageService.migrate();
 const FAVORITES_STORAGE_KEY = 'favorites';
 const STILL_PLAYING_PROMPT_DELAY_MS = 15 * 60 * 1000;
 
-const VALID_THEME_IDS = new Set([
-  'light',
-  'dark',
-  ...moodThemes.map((themeConfig) => themeConfig?.id).filter(Boolean)
-]);
+const VALID_THEME_IDS = new Set(['light', 'dark', ...moodThemes.map((themeConfig) => themeConfig?.id).filter(Boolean)]);
 
 const resolveThemeClassName = (themeId) => {
   const normalizedThemeId = typeof themeId === 'string' ? themeId.trim() : '';
   return VALID_THEME_IDS.has(normalizedThemeId) ? normalizedThemeId : 'dark';
 };
-
 
 const getDateBucketKeys = (timestampValue) => {
   const date = new Date(normalizeLastPlayedValue(timestampValue) || Date.now());
@@ -106,9 +101,8 @@ const getDateBucketKeys = (timestampValue) => {
 
 const incrementPlaytimeBucket = (bucket, key, minutes) => ({
   ...(bucket || {}),
-  [key]: normalizeTrackedNumber(bucket?.[key]) + normalizeTrackedNumber(minutes)
+  [key]: normalizeTrackedNumber(bucket?.[key]) + normalizeTrackedNumber(minutes),
 });
-
 
 const CONTROLLER_NAV_ROUTES = [
   '/',
@@ -119,9 +113,8 @@ const CONTROLLER_NAV_ROUTES = [
   '/year-in-review',
   '/timeline',
   '/settings',
-  '/feedback'
+  '/feedback',
 ];
-
 
 export default function App() {
   return (
@@ -138,12 +131,7 @@ export default function App() {
 function StartupQuestionnaireRoute() {
   const navigate = useNavigate();
   return (
-    <StartupQuestionnaire
-      isOpen
-      founderTier={false}
-      onComplete={() => navigate('/')}
-      onSkip={() => navigate('/')}
-    />
+    <StartupQuestionnaire isOpen founderTier={false} onComplete={() => navigate('/')} onSkip={() => navigate('/')} />
   );
 }
 
@@ -162,16 +150,16 @@ function AppContent() {
   const [loading, setLoading] = useState(false);
   const [lastPlayedGame, setLastPlayedGame] = useState(null);
   const [activeSessions, setActiveSessions] = useState([]);
-  const [bigScreenMode, setBigScreenMode] = useState(
-    () => localStorage.getItem('gamepilot-bigScreenMode') === 'true'
-  );
+  const [bigScreenMode, setBigScreenMode] = useState(() => localStorage.getItem('gamepilot-bigScreenMode') === 'true');
   const [hasLoadedLibrary, setHasLoadedLibrary] = useState(false);
   const [stillPlayingPrompt, setStillPlayingPrompt] = useState(null);
   const [recommendationOutcomePrompt, setRecommendationOutcomePrompt] = useState(null);
   const [stillPlayingDeadlines, setStillPlayingDeadlines] = useState({});
   const [gamingStory, setGamingStory] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
-  const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(() => StorageService.getString('minimizeOnLaunch') === 'true');
+  const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(
+    () => StorageService.getString('minimizeOnLaunch') === 'true'
+  );
   const { success: toastSuccess, error: toastError, info: toastInfo, roast: toastRoast } = useToast();
 
   // Memoization caches for performance
@@ -196,17 +184,19 @@ function AppContent() {
           newlyLocked.forEach((champion) => {
             const speech = getSpeech(champion.period, champion.periodKey);
             if (speech?.speech) {
-              const periodLabel = champion.period === 'week' ? 'Weekly'
-                : champion.period === 'month' ? 'Monthly' : 'Yearly';
-              setTimeout(() => toastRoast(
-                `${periodLabel} Champion: ${champion.game.name}. "${speech.speech}"`,
-                7000
-              ), 1000);
+              const periodLabel =
+                champion.period === 'week' ? 'Weekly' : champion.period === 'month' ? 'Monthly' : 'Yearly';
+              setTimeout(
+                () => toastRoast(`${periodLabel} Champion: ${champion.game.name}. "${speech.speech}"`, 7000),
+                1000
+              );
             }
           });
         }
       }
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   }, [library, sessionStorageReady, toastRoast]);
 
   useEffect(() => {
@@ -268,7 +258,10 @@ function AppContent() {
         }
 
         if (action === 'page_previous') {
-          const previousRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length];
+          const previousRoute =
+            CONTROLLER_NAV_ROUTES[
+              (currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length
+            ];
           navigate(previousRoute);
         }
       }, 0);
@@ -301,29 +294,59 @@ function AppContent() {
 
     KeyboardShortcuts.registerAction('focus_search', 'Ctrl+K', focusSearchInput, 'Focus search');
 
-    KeyboardShortcuts.registerAction('go_library', 'Ctrl+L', () => {
-      window.location.hash = '#/library';
-    }, 'Go to Library');
+    KeyboardShortcuts.registerAction(
+      'go_library',
+      'Ctrl+L',
+      () => {
+        window.location.hash = '#/library';
+      },
+      'Go to Library'
+    );
 
-    KeyboardShortcuts.registerAction('go_home', 'Ctrl+H', () => {
-      window.location.hash = '#/';
-    }, 'Go to Home');
+    KeyboardShortcuts.registerAction(
+      'go_home',
+      'Ctrl+H',
+      () => {
+        window.location.hash = '#/';
+      },
+      'Go to Home'
+    );
 
-    KeyboardShortcuts.registerAction('go_profile', 'Ctrl+P', () => {
-      window.location.hash = '#/profile';
-    }, 'Go to Profile');
+    KeyboardShortcuts.registerAction(
+      'go_profile',
+      'Ctrl+P',
+      () => {
+        window.location.hash = '#/profile';
+      },
+      'Go to Profile'
+    );
 
-    KeyboardShortcuts.registerAction('go_stats', 'Ctrl+S', () => {
-      window.location.hash = '#/stats';
-    }, 'Go to Stats');
+    KeyboardShortcuts.registerAction(
+      'go_stats',
+      'Ctrl+S',
+      () => {
+        window.location.hash = '#/stats';
+      },
+      'Go to Stats'
+    );
 
-    KeyboardShortcuts.registerAction('go_settings', 'Ctrl+T', () => {
-      window.location.hash = '#/settings';
-    }, 'Go to Settings');
+    KeyboardShortcuts.registerAction(
+      'go_settings',
+      'Ctrl+T',
+      () => {
+        window.location.hash = '#/settings';
+      },
+      'Go to Settings'
+    );
 
-    KeyboardShortcuts.registerAction('show_shortcuts', '?', () => {
-      KeyboardShortcuts.showHelp();
-    }, 'Show keyboard shortcuts');
+    KeyboardShortcuts.registerAction(
+      'show_shortcuts',
+      '?',
+      () => {
+        KeyboardShortcuts.showHelp();
+      },
+      'Show keyboard shortcuts'
+    );
 
     return () => {
       KeyboardShortcuts.unregisterAction('focus_search');
@@ -483,10 +506,14 @@ function AppContent() {
         }
       }
 
-      const { allGames = [], mergedLibrary = [], scanReport = null } = await LibraryScanCoordinatorService.scanAndMergeLibrary({
+      const {
+        allGames = [],
+        mergedLibrary = [],
+        scanReport = null,
+      } = await LibraryScanCoordinatorService.scanAndMergeLibrary({
         currentLibrary: library,
         assignMoodToGame,
-        manual: true
+        manual: true,
       });
 
       if (allGames.length === 0) {
@@ -513,19 +540,22 @@ function AppContent() {
         GamingStoryService.markFirstStoryShown();
       }
 
-      window.dispatchEvent(new CustomEvent('gamepilot:scan-complete', {
-        detail: { scanReport, gameCount: curatedMerged.length }
-      }));
+      window.dispatchEvent(
+        new CustomEvent('gamepilot:scan-complete', {
+          detail: { scanReport, gameCount: curatedMerged.length },
+        })
+      );
 
       const scanErrors = Number(scanReport?.summary?.errorPlatformCount || 0);
       if (curatedMerged.length === 0) {
         toastError('Scan completed, but no games were found. Open the scan report for launcher details.');
       } else if (scanErrors > 0) {
-        toastError(`Found ${curatedMerged.length} games, but ${scanErrors} launcher scan${scanErrors === 1 ? '' : 's'} reported an error.`);
+        toastError(
+          `Found ${curatedMerged.length} games, but ${scanErrors} launcher scan${scanErrors === 1 ? '' : 's'} reported an error.`
+        );
       } else {
         toastSuccess(`Library scan complete: ${curatedMerged.length} games found.`);
       }
-
     } catch (err) {
       console.error(' Error during scan:', err);
       console.error(' Detailed error stack:', err.stack);
@@ -535,102 +565,115 @@ function AppContent() {
     }
   }, [library, saveLibrary, assignMoodToGame, getFallbackLibrary, toastError, toastSuccess]);
 
-  const handleLibraryUpdated = useCallback((updatedLibrary) => {
-    const normalizedLibrary = normalizeLibraryData(updatedLibrary);
-    setLibrary(normalizedLibrary);
-    saveLibrary(normalizedLibrary);
-  }, [saveLibrary]);
+  const handleLibraryUpdated = useCallback(
+    (updatedLibrary) => {
+      const normalizedLibrary = normalizeLibraryData(updatedLibrary);
+      setLibrary(normalizedLibrary);
+      saveLibrary(normalizedLibrary);
+    },
+    [saveLibrary]
+  );
 
-  const handleEndSession = useCallback((gameName, sessionMetadata = {}) => {
-    if (!gameName) {
-      return null;
-    }
+  const handleEndSession = useCallback(
+    (gameName, sessionMetadata = {}) => {
+      if (!gameName) {
+        return null;
+      }
 
-    const sessionResult = PlaytimeAutoLogger.endSession(gameName, sessionMetadata);
-    if (!sessionResult) {
-      return null;
-    }
+      const sessionResult = PlaytimeAutoLogger.endSession(gameName, sessionMetadata);
+      if (!sessionResult) {
+        return null;
+      }
 
-    const endedGame = library.find((g) => g?.name === gameName);
-    const genres = endedGame?.genres || [];
-    try {
-      HabitTrackerService.recordSession(gameName, sessionResult.playtimeMinutes || 0, genres);
-    } catch (habitError) {
-      console.error('Habit tracking failed during session end:', habitError);
-    }
+      const endedGame = library.find((g) => g?.name === gameName);
+      const genres = endedGame?.genres || [];
+      try {
+        HabitTrackerService.recordSession(gameName, sessionResult.playtimeMinutes || 0, genres);
+      } catch (habitError) {
+        console.error('Habit tracking failed during session end:', habitError);
+      }
 
-    AchievementTracker.recordSessionDurationAchievements(sessionResult.playtimeMinutes || 0);
-    AchievementTracker.checkAndUnlockAchievements();
+      AchievementTracker.recordSessionDurationAchievements(sessionResult.playtimeMinutes || 0);
+      AchievementTracker.checkAndUnlockAchievements();
 
-    let endedGameSnapshot = null;
+      let endedGameSnapshot = null;
 
-    setLibrary((previousLibrary) => {
-      const normalizedLibrary = normalizeLibraryData(previousLibrary);
-      const updatedLibrary = normalizedLibrary.map((game) => {
-        if (!game || game.name !== gameName) {
-          return game;
+      setLibrary((previousLibrary) => {
+        const normalizedLibrary = normalizeLibraryData(previousLibrary);
+        const updatedLibrary = normalizedLibrary.map((game) => {
+          if (!game || game.name !== gameName) {
+            return game;
+          }
+
+          endedGameSnapshot = game;
+
+          const nextTimePlayed =
+            normalizeTrackedNumber(game.time_played) + normalizeTrackedNumber(sessionResult.playtimeMinutes);
+          const sessionEndTimestamp = normalizeLastPlayedValue(sessionResult.endTime) || Date.now();
+          const bucketKeys = getDateBucketKeys(sessionEndTimestamp);
+          const currentPlaytime = game.playtime || {};
+
+          return normalizeGameLibraryEntry({
+            ...game,
+            time_played: nextTimePlayed,
+            launch_count: normalizeTrackedNumber(game.launch_count),
+            last_played: sessionEndTimestamp,
+            playtime: {
+              ...currentPlaytime,
+              total: nextTimePlayed,
+              daily: incrementPlaytimeBucket(currentPlaytime.daily, bucketKeys.daily, sessionResult.playtimeMinutes),
+              weekly: incrementPlaytimeBucket(currentPlaytime.weekly, bucketKeys.weekly, sessionResult.playtimeMinutes),
+              monthly: incrementPlaytimeBucket(
+                currentPlaytime.monthly,
+                bucketKeys.monthly,
+                sessionResult.playtimeMinutes
+              ),
+              yearly: incrementPlaytimeBucket(currentPlaytime.yearly, bucketKeys.yearly, sessionResult.playtimeMinutes),
+            },
+          });
+        });
+
+        saveLibrary(updatedLibrary);
+        const mostRecentlyPlayedGame = getMostRecentlyPlayedGame(updatedLibrary);
+        if (mostRecentlyPlayedGame) {
+          setLastPlayedGame(mostRecentlyPlayedGame);
         }
 
-        endedGameSnapshot = game;
-
-        const nextTimePlayed = normalizeTrackedNumber(game.time_played) + normalizeTrackedNumber(sessionResult.playtimeMinutes);
-        const sessionEndTimestamp = normalizeLastPlayedValue(sessionResult.endTime) || Date.now();
-        const bucketKeys = getDateBucketKeys(sessionEndTimestamp);
-        const currentPlaytime = game.playtime || {};
-
-        return normalizeGameLibraryEntry({
-          ...game,
-          time_played: nextTimePlayed,
-          launch_count: normalizeTrackedNumber(game.launch_count),
-          last_played: sessionEndTimestamp,
-          playtime: {
-            ...currentPlaytime,
-            total: nextTimePlayed,
-            daily: incrementPlaytimeBucket(currentPlaytime.daily, bucketKeys.daily, sessionResult.playtimeMinutes),
-            weekly: incrementPlaytimeBucket(currentPlaytime.weekly, bucketKeys.weekly, sessionResult.playtimeMinutes),
-            monthly: incrementPlaytimeBucket(currentPlaytime.monthly, bucketKeys.monthly, sessionResult.playtimeMinutes),
-            yearly: incrementPlaytimeBucket(currentPlaytime.yearly, bucketKeys.yearly, sessionResult.playtimeMinutes)
-          }
-        });
+        return updatedLibrary;
       });
 
-      saveLibrary(updatedLibrary);
-      const mostRecentlyPlayedGame = getMostRecentlyPlayedGame(updatedLibrary);
-      if (mostRecentlyPlayedGame) {
-        setLastPlayedGame(mostRecentlyPlayedGame);
+      setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+
+      if (minimizeOnLaunch && window.electronAPI?.restoreWindow) {
+        window.electronAPI.restoreWindow().catch(() => {});
       }
 
-      return updatedLibrary;
-    });
+      const endedGameId = endedGameSnapshot?.appid || endedGameSnapshot?.name || gameName;
+      const recommendationLaunch = UserBehaviorProfile.getLatestRecommendationLaunch(endedGameId, gameName);
 
-    setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+      window.dispatchEvent(
+        new CustomEvent('gamepilot:session-ended', {
+          detail: {
+            gameName,
+            gameId: endedGameId,
+            mood: endedGameSnapshot?.mood || null,
+            genre: Array.isArray(endedGameSnapshot?.genres)
+              ? endedGameSnapshot.genres.find((genre) => genre && genre !== 'Unknown') || null
+              : null,
+            playtimeMinutes: normalizeTrackedNumber(sessionResult.playtimeMinutes),
+            endTime: sessionResult.endTime || Date.now(),
+            recommendationType: recommendationLaunch?.recommendationType || null,
+            recommendationSource: recommendationLaunch?.source || null,
+            recoveredSession: Boolean(sessionMetadata.recoveredSession),
+            shutdownSession: Boolean(sessionMetadata.shutdownSession),
+          },
+        })
+      );
 
-    if (minimizeOnLaunch && window.electronAPI?.restoreWindow) {
-      window.electronAPI.restoreWindow().catch(() => {});
-    }
-
-    const endedGameId = endedGameSnapshot?.appid || endedGameSnapshot?.name || gameName;
-    const recommendationLaunch = UserBehaviorProfile.getLatestRecommendationLaunch(endedGameId, gameName);
-
-    window.dispatchEvent(new CustomEvent('gamepilot:session-ended', {
-      detail: {
-        gameName,
-        gameId: endedGameId,
-        mood: endedGameSnapshot?.mood || null,
-        genre: Array.isArray(endedGameSnapshot?.genres)
-          ? endedGameSnapshot.genres.find((genre) => genre && genre !== 'Unknown') || null
-          : null,
-        playtimeMinutes: normalizeTrackedNumber(sessionResult.playtimeMinutes),
-        endTime: sessionResult.endTime || Date.now(),
-        recommendationType: recommendationLaunch?.recommendationType || null,
-        recommendationSource: recommendationLaunch?.source || null,
-        recoveredSession: Boolean(sessionMetadata.recoveredSession),
-        shutdownSession: Boolean(sessionMetadata.shutdownSession)
-      }
-    }));
-
-    return sessionResult;
-  }, [library, saveLibrary, minimizeOnLaunch]);
+      return sessionResult;
+    },
+    [library, saveLibrary, minimizeOnLaunch]
+  );
 
   useEffect(() => {
     window.endSession = handleEndSession;
@@ -655,7 +698,7 @@ function AppContent() {
       handleEndSession(gameName, {
         recoveredSession: true,
         recoveredEndTime,
-        endTimeOverride: recoveredEndTime
+        endTimeOverride: recoveredEndTime,
       });
     });
     setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
@@ -781,7 +824,9 @@ function AppContent() {
           if (rivalryToast?.message) {
             setTimeout(() => toastRoast(rivalryToast.message, 6000), 1500);
           }
-        } catch { /* non-critical */ }
+        } catch {
+          /* non-critical */
+        }
 
         // Check for streak milestone (throttled inside the service)
         try {
@@ -790,7 +835,9 @@ function AppContent() {
           if (milestone?.message) {
             setTimeout(() => toastRoast(milestone.message, 6000), 3000);
           }
-        } catch { /* non-critical */ }
+        } catch {
+          /* non-critical */
+        }
 
         // Store persona snapshot and check for identity shift (throttled per quarter)
         try {
@@ -799,13 +846,17 @@ function AppContent() {
           if (shift?.message) {
             setTimeout(() => toastRoast(shift.message, 7000), 4500);
           }
-        } catch { /* non-critical */ }
+        } catch {
+          /* non-critical */
+        }
       }
       const feedbackPreferences = UserBehaviorProfile.getFeedbackPreferences();
-      if (detail.recommendationType
-        && feedbackPreferences.sessionPromptEnabled
-        && !detail.recoveredSession
-        && !detail.shutdownSession) {
+      if (
+        detail.recommendationType &&
+        feedbackPreferences.sessionPromptEnabled &&
+        !detail.recoveredSession &&
+        !detail.shutdownSession
+      ) {
         const recommendationSession = UserBehaviorProfile.recordRecommendationSession(
           detail.gameId,
           detail.gameName,
@@ -837,8 +888,9 @@ function AppContent() {
 
       const previousKeys = Object.keys(previousDeadlines || {});
       const nextKeys = Object.keys(nextDeadlines);
-      const didChange = previousKeys.length !== nextKeys.length
-        || previousKeys.some((key) => previousDeadlines[key] !== nextDeadlines[key]);
+      const didChange =
+        previousKeys.length !== nextKeys.length ||
+        previousKeys.some((key) => previousDeadlines[key] !== nextDeadlines[key]);
 
       return didChange ? nextDeadlines : previousDeadlines;
     });
@@ -884,7 +936,7 @@ function AppContent() {
 
     setStillPlayingDeadlines((previousDeadlines) => ({
       ...previousDeadlines,
-      [stillPlayingPrompt.gameName]: Date.now() + STILL_PLAYING_PROMPT_DELAY_MS
+      [stillPlayingPrompt.gameName]: Date.now() + STILL_PLAYING_PROMPT_DELAY_MS,
     }));
     setStillPlayingPrompt(null);
   }, [stillPlayingPrompt]);
@@ -904,37 +956,41 @@ function AppContent() {
     setStillPlayingPrompt(null);
   }, [handleEndSession, stillPlayingPrompt]);
 
-  const submitRecommendationOutcome = useCallback((outcome) => {
-    if (!recommendationOutcomePrompt || !Object.values(RECOMMENDATION_OUTCOME).includes(outcome)) {
+  const submitRecommendationOutcome = useCallback(
+    (outcome) => {
+      if (!recommendationOutcomePrompt || !Object.values(RECOMMENDATION_OUTCOME).includes(outcome)) {
+        setRecommendationOutcomePrompt(null);
+        return;
+      }
+
+      const metadata = {
+        gameName: recommendationOutcomePrompt.gameName,
+        mood: recommendationOutcomePrompt.mood,
+        genre: recommendationOutcomePrompt.genre,
+        playtimeMinutes: recommendationOutcomePrompt.playtimeMinutes,
+        recommendationType: recommendationOutcomePrompt.recommendationType,
+        source: recommendationOutcomePrompt.recommendationSource || 'recommendation',
+      };
+      UserBehaviorProfile.trackRecommendationOutcome(recommendationOutcomePrompt.gameId, outcome, metadata);
+      if (outcome !== RECOMMENDATION_OUTCOME.NOT_NOW) {
+        UserBehaviorProfile.trackSessionFeedback(
+          recommendationOutcomePrompt.gameName,
+          outcome === RECOMMENDATION_OUTCOME.GREAT_PICK,
+          { ...metadata, gameId: recommendationOutcomePrompt.gameId }
+        );
+      }
+
+      const message =
+        outcome === RECOMMENDATION_OUTCOME.GREAT_PICK
+          ? 'Great — GamePilot will favor picks like this.'
+          : outcome === RECOMMENDATION_OUTCOME.NOT_NOW
+            ? 'Got it — this game will stay out of recommendations for a while.'
+            : 'Understood — GamePilot will stop recommending this game.';
+      toastInfo(message, 5000);
       setRecommendationOutcomePrompt(null);
-      return;
-    }
-
-    const metadata = {
-      gameName: recommendationOutcomePrompt.gameName,
-      mood: recommendationOutcomePrompt.mood,
-      genre: recommendationOutcomePrompt.genre,
-      playtimeMinutes: recommendationOutcomePrompt.playtimeMinutes,
-      recommendationType: recommendationOutcomePrompt.recommendationType,
-      source: recommendationOutcomePrompt.recommendationSource || 'recommendation'
-    };
-    UserBehaviorProfile.trackRecommendationOutcome(recommendationOutcomePrompt.gameId, outcome, metadata);
-    if (outcome !== RECOMMENDATION_OUTCOME.NOT_NOW) {
-      UserBehaviorProfile.trackSessionFeedback(
-        recommendationOutcomePrompt.gameName,
-        outcome === RECOMMENDATION_OUTCOME.GREAT_PICK,
-        { ...metadata, gameId: recommendationOutcomePrompt.gameId }
-      );
-    }
-
-    const message = outcome === RECOMMENDATION_OUTCOME.GREAT_PICK
-      ? 'Great — GamePilot will favor picks like this.'
-      : outcome === RECOMMENDATION_OUTCOME.NOT_NOW
-        ? 'Got it — this game will stay out of recommendations for a while.'
-        : 'Understood — GamePilot will stop recommending this game.';
-    toastInfo(message, 5000);
-    setRecommendationOutcomePrompt(null);
-  }, [recommendationOutcomePrompt, toastInfo]);
+    },
+    [recommendationOutcomePrompt, toastInfo]
+  );
 
   const disableRecommendationOutcomePrompts = useCallback(() => {
     UserBehaviorProfile.setFeedbackPromptEnabled('session', false);
@@ -964,7 +1020,7 @@ function AppContent() {
         source: 'passive-watch',
         platform: payload?.platform || game?.platform || 'Unknown',
         genres: game?.genres || [],
-        gameGenres: game?.genres || []
+        gameGenres: game?.genres || [],
       });
       setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
       toastInfo(`${gameName} detected running — session tracking started.`);
@@ -975,7 +1031,7 @@ function AppContent() {
       if (!gameName) return;
       handleEndSession(gameName, {
         source: 'passive-watch',
-        platform: payload?.platform || 'Unknown'
+        platform: payload?.platform || 'Unknown',
       });
     });
 
@@ -985,61 +1041,63 @@ function AppContent() {
     };
   }, [library, handleEndSession, toastInfo]);
 
-  const handleLaunchGame = useCallback(async (game) => {
-    const gameKey = String(game?.appid || game?.name || '').trim();
-    if (!gameKey) {
-      toastError('This game is missing the information needed to launch it.');
-      return;
-    }
-    if (launchesInProgress.current.has(gameKey)) {
-      toastInfo(`${game.name || 'This game'} is already being launched.`);
-      return;
-    }
-
-    launchesInProgress.current.add(gameKey);
-    try {
-      const electronAvailable = typeof window.electronAPI !== 'undefined';
-      if (!electronAvailable) {
-        throw new Error('Electron APIs not available - please restart the app');
+  const handleLaunchGame = useCallback(
+    async (game) => {
+      const gameKey = String(game?.appid || game?.name || '').trim();
+      if (!gameKey) {
+        toastError('This game is missing the information needed to launch it.');
+        return;
+      }
+      if (launchesInProgress.current.has(gameKey)) {
+        toastInfo(`${game.name || 'This game'} is already being launched.`);
+        return;
       }
 
-      const result = await GameLaunchCoordinatorService.launchGame({
-        game,
-        library,
-        onLibraryUpdated: (updatedLibrary) => {
-          setLibrary(updatedLibrary);
-          saveLibrary(updatedLibrary);
-        },
-        onLastPlayedGameUpdated: (launchedGame) => {
-          setLastPlayedGame(launchedGame);
-        },
-        onEndSession: (gameName) => {
-          handleEndSession(gameName);
+      launchesInProgress.current.add(gameKey);
+      try {
+        const electronAvailable = typeof window.electronAPI !== 'undefined';
+        if (!electronAvailable) {
+          throw new Error('Electron APIs not available - please restart the app');
         }
-      });
 
-      if (!result.success) {
-        console.error(' Game launch failed:', result.message);
-        toastError(result.message);
-      } else {
-        setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
-        toastSuccess(`${game.name} launched. Session tracking is active.`);
+        const result = await GameLaunchCoordinatorService.launchGame({
+          game,
+          library,
+          onLibraryUpdated: (updatedLibrary) => {
+            setLibrary(updatedLibrary);
+            saveLibrary(updatedLibrary);
+          },
+          onLastPlayedGameUpdated: (launchedGame) => {
+            setLastPlayedGame(launchedGame);
+          },
+          onEndSession: (gameName) => {
+            handleEndSession(gameName);
+          },
+        });
 
-        // Record the play for seasonal reward tracking (reward toast is shown elsewhere).
-        SeasonalRewardService.trackGamePlay(game);
+        if (!result.success) {
+          console.error(' Game launch failed:', result.message);
+          toastError(result.message);
+        } else {
+          setActiveSessions(PlaytimeAutoLogger.getActiveSessions());
+          toastSuccess(`${game.name} launched. Session tracking is active.`);
 
-        if (minimizeOnLaunch && window.electronAPI?.minimizeWindow) {
-          window.electronAPI.minimizeWindow().catch(() => {});
+          // Record the play for seasonal reward tracking (reward toast is shown elsewhere).
+          SeasonalRewardService.trackGamePlay(game);
+
+          if (minimizeOnLaunch && window.electronAPI?.minimizeWindow) {
+            window.electronAPI.minimizeWindow().catch(() => {});
+          }
         }
+      } catch (error) {
+        console.error('Launch error:', error);
+        toastError(`Failed to launch ${game.name}: ${error.message}`);
+      } finally {
+        launchesInProgress.current.delete(gameKey);
       }
-      
-    } catch (error) {
-      console.error('Launch error:', error);
-      toastError(`Failed to launch ${game.name}: ${error.message}`);
-    } finally {
-      launchesInProgress.current.delete(gameKey);
-    }
-  }, [handleEndSession, library, minimizeOnLaunch, saveLibrary, toastError, toastInfo, toastSuccess]);
+    },
+    [handleEndSession, library, minimizeOnLaunch, saveLibrary, toastError, toastInfo, toastSuccess]
+  );
 
   // Listen for launch requests from CommandPalette / QuickLaunchHotbar
   useEffect(() => {
@@ -1053,48 +1111,53 @@ function AppContent() {
     return () => window.removeEventListener('gamepilot:launch-game', onLaunchRequest);
   }, [handleLaunchGame]);
 
-  const handleUpdateRating = useCallback((gameName, userRating, replayIntent, extra = {}) => {
-    const updatedLibrary = normalizeLibraryData((library || []).map((game) => {
-      if (!game || game.name !== gameName) {
-        return game;
+  const handleUpdateRating = useCallback(
+    (gameName, userRating, replayIntent, extra = {}) => {
+      const updatedLibrary = normalizeLibraryData(
+        (library || []).map((game) => {
+          if (!game || game.name !== gameName) {
+            return game;
+          }
+
+          const gameId = String(game.appid || game.name || '');
+          if (gameId) {
+            GameRatingService.setRating(gameId, {
+              value: typeof userRating === 'number' ? userRating : game.userRating,
+              wouldReplay: extra?.wouldReplay,
+              tags: extra?.tags,
+            });
+          }
+
+          return {
+            ...game,
+            userRating: typeof userRating === 'number' ? userRating : game.userRating,
+            replayIntent: replayIntent ?? game.replayIntent,
+            wouldReplay: extra?.wouldReplay ?? game.wouldReplay,
+            userRatingTags: extra?.tags ?? game.userRatingTags,
+          };
+        })
+      );
+
+      setLibrary(updatedLibrary);
+      saveLibrary(updatedLibrary);
+      AchievementTracker.checkAndUnlockAchievements();
+
+      if (typeof userRating === 'number' && userRating > 0) {
+        const targetGame = (library || []).find((g) => g?.name === gameName);
+        if (targetGame) {
+          UserBehaviorProfile.trackRating({
+            gameId: String(targetGame.appid || targetGame.name || ''),
+            rating: userRating,
+            wouldReplay: extra?.wouldReplay,
+            tags: extra?.tags,
+            mood: targetGame.mood || null,
+            genres: Array.isArray(targetGame.genres) ? targetGame.genres : [],
+          });
+        }
       }
-
-      const gameId = String(game.appid || game.name || '');
-      if (gameId) {
-        GameRatingService.setRating(gameId, {
-          value: typeof userRating === 'number' ? userRating : game.userRating,
-          wouldReplay: extra?.wouldReplay,
-          tags: extra?.tags
-        });
-      }
-
-      return {
-        ...game,
-        userRating: typeof userRating === 'number' ? userRating : game.userRating,
-        replayIntent: replayIntent ?? game.replayIntent,
-        wouldReplay: extra?.wouldReplay ?? game.wouldReplay,
-        userRatingTags: extra?.tags ?? game.userRatingTags
-      };
-    }));
-
-    setLibrary(updatedLibrary);
-    saveLibrary(updatedLibrary);
-    AchievementTracker.checkAndUnlockAchievements();
-
-    if (typeof userRating === 'number' && userRating > 0) {
-      const targetGame = (library || []).find((g) => g?.name === gameName);
-      if (targetGame) {
-        UserBehaviorProfile.trackRating({
-          gameId: String(targetGame.appid || targetGame.name || ''),
-          rating: userRating,
-          wouldReplay: extra?.wouldReplay,
-          tags: extra?.tags,
-          mood: targetGame.mood || null,
-          genres: Array.isArray(targetGame.genres) ? targetGame.genres : []
-        });
-      }
-    }
-  }, [library, saveLibrary]);
+    },
+    [library, saveLibrary]
+  );
 
   const handleToggleFavorite = useCallback((favoriteKey) => {
     if (!favoriteKey) {
@@ -1113,94 +1176,142 @@ function AppContent() {
     }
   }, []);
 
-  const handleRemoveGames = useCallback((gameIds = []) => {
-    const normalizedIds = Array.isArray(gameIds) ? gameIds.map((id) => String(id)).filter(Boolean) : [];
-    if (normalizedIds.length === 0) {
-      return;
-    }
+  const handleRemoveGames = useCallback(
+    (gameIds = []) => {
+      const normalizedIds = Array.isArray(gameIds) ? gameIds.map((id) => String(id)).filter(Boolean) : [];
+      if (normalizedIds.length === 0) {
+        return;
+      }
 
-    const removalSet = new Set(normalizedIds);
-    const updatedLibrary = normalizeLibraryData((library || []).filter((game) => !removalSet.has(String(game?.appid || game?.name))));
-    setLibrary(updatedLibrary);
-    saveLibrary(updatedLibrary);
-  }, [library, saveLibrary]);
+      const removalSet = new Set(normalizedIds);
+      const updatedLibrary = normalizeLibraryData(
+        (library || []).filter((game) => !removalSet.has(String(game?.appid || game?.name)))
+      );
+      setLibrary(updatedLibrary);
+      saveLibrary(updatedLibrary);
+    },
+    [library, saveLibrary]
+  );
 
   // --- Curation handlers ---
-  const handleUpdateCollections = useCallback((gameName, collectionIds) => {
-    GameCurationService.setGameCollections(gameName, collectionIds);
-    setLibrary((prev) => {
-      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
-      saveLibrary(updatedLibrary);
-      return updatedLibrary;
-    });
-  }, [saveLibrary]);
+  const handleUpdateCollections = useCallback(
+    (gameName, collectionIds) => {
+      GameCurationService.setGameCollections(gameName, collectionIds);
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary]
+  );
 
-  const handleToggleHidden = useCallback((gameName) => {
-    const isHidden = GameCurationService.toggleHiddenGame(gameName);
-    setLibrary((prev) => {
-      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? { ...g, isHidden } : g)));
-      saveLibrary(updatedLibrary);
-      return updatedLibrary;
-    });
-  }, [saveLibrary]);
+  const handleToggleHidden = useCallback(
+    (gameName) => {
+      const isHidden = GameCurationService.toggleHiddenGame(gameName);
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? { ...g, isHidden } : g)));
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary]
+  );
 
-  const handleUpdateCompletion = useCallback((gameName, status, note) => {
-    const completedStatuses = new Set(['beaten', 'completed', '100%']);
-    const isCompletionStatus = completedStatuses.has(String(status || '').trim().toLowerCase());
-    GameCurationService.setGameCompletion(gameName, status, note);
-    setLibrary((prev) => {
-      const priorGame = prev.find(g => g.name === gameName);
-      const wasCompleted = completedStatuses.has(String(priorGame?.completionStatus || '').trim().toLowerCase());
-      const hadPlaytime = Number(priorGame?.time_played || 0) > 0;
-      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
-      saveLibrary(updatedLibrary);
-      AchievementTracker.checkAndUnlockAchievements();
-      if (isCompletionStatus && hadPlaytime && !wasCompleted) {
-        AchievementTracker.trackBacklogMilestone('finish_started');
+  const handleUpdateCompletion = useCallback(
+    (gameName, status, note) => {
+      const completedStatuses = new Set(['beaten', 'completed', '100%']);
+      const isCompletionStatus = completedStatuses.has(
+        String(status || '')
+          .trim()
+          .toLowerCase()
+      );
+      GameCurationService.setGameCompletion(gameName, status, note);
+      setLibrary((prev) => {
+        const priorGame = prev.find((g) => g.name === gameName);
+        const wasCompleted = completedStatuses.has(
+          String(priorGame?.completionStatus || '')
+            .trim()
+            .toLowerCase()
+        );
+        const hadPlaytime = Number(priorGame?.time_played || 0) > 0;
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
         AchievementTracker.checkAndUnlockAchievements();
-      }
-      return updatedLibrary;
-    });
-  }, [saveLibrary]);
+        if (isCompletionStatus && hadPlaytime && !wasCompleted) {
+          AchievementTracker.trackBacklogMilestone('finish_started');
+          AchievementTracker.checkAndUnlockAchievements();
+        }
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary]
+  );
 
-  const handleUpdateNotes = useCallback((gameName, text) => {
-    GameCurationService.setGameNotes(gameName, text);
-    setLibrary((prev) => {
-      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
-      saveLibrary(updatedLibrary);
-      return updatedLibrary;
-    });
-  }, [saveLibrary]);
+  const handleUpdateNotes = useCallback(
+    (gameName, text) => {
+      GameCurationService.setGameNotes(gameName, text);
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary]
+  );
 
-  const handleUpdateCoverArt = useCallback((gameName, url) => {
-    GameCurationService.setCoverArtOverride(gameName, url);
-    setLibrary((prev) => {
-      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
-      saveLibrary(updatedLibrary);
-      return updatedLibrary;
-    });
-  }, [saveLibrary]);
+  const handleUpdateCoverArt = useCallback(
+    (gameName, url) => {
+      GameCurationService.setCoverArtOverride(gameName, url);
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary]
+  );
 
-  const handleAddSessionNote = useCallback((gameName, text) => {
-    GameCurationService.addSessionNote(gameName, text);
-    setLibrary((prev) => {
-      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
-      saveLibrary(updatedLibrary);
-      return updatedLibrary;
-    });
-  }, [saveLibrary]);
+  const handleAddSessionNote = useCallback(
+    (gameName, text) => {
+      GameCurationService.addSessionNote(gameName, text);
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary]
+  );
 
-  const handleTogglePlayedElsewhere = useCallback((gameName) => {
-    const next = GameCurationService.togglePlayedElsewhere(gameName);
-    setLibrary((prev) => {
-      const updatedLibrary = normalizeLibraryData(prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g)));
-      saveLibrary(updatedLibrary);
-      return updatedLibrary;
-    });
-    toastSuccess(next
-      ? `${gameName} marked as played elsewhere — no longer counts as unplayed.`
-      : `${gameName} unmarked — counts as unplayed again.`);
-  }, [saveLibrary, toastSuccess]);
+  const handleTogglePlayedElsewhere = useCallback(
+    (gameName) => {
+      const next = GameCurationService.togglePlayedElsewhere(gameName);
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+      toastSuccess(
+        next
+          ? `${gameName} marked as played elsewhere — no longer counts as unplayed.`
+          : `${gameName} unmarked — counts as unplayed again.`
+      );
+    },
+    [saveLibrary, toastSuccess]
+  );
 
   return (
     <div className="App-container">
@@ -1208,12 +1319,7 @@ function AppContent() {
       <ControllerSupport />
       <CommandPalette />
       <QuickLaunchHotbar library={library} />
-      {gamingStory && (
-        <GamingStoryCard
-          story={gamingStory}
-          onContinue={() => setGamingStory(null)}
-        />
-      )}
+      {gamingStory && <GamingStoryCard story={gamingStory} onContinue={() => setGamingStory(null)} />}
       {loading && (
         <div className="scan-overlay" role="status" aria-live="polite" aria-label="Scanning local game libraries">
           <div className="scan-overlay-card">
@@ -1226,7 +1332,8 @@ function AppContent() {
             <p className="scan-overlay-eyebrow">Library scan in progress</p>
             <h2>Finding your games...</h2>
             <p>
-              GamePilot is checking your local launchers and install folders. This can take around 30 seconds on larger libraries.
+              GamePilot is checking your local launchers and install folders. This can take around 30 seconds on larger
+              libraries.
             </p>
             <div className="scan-overlay-progress">
               <span />
@@ -1246,16 +1353,23 @@ function AppContent() {
             aria-labelledby="still-playing-title"
             aria-describedby="still-playing-description"
           >
-            <h2 id="still-playing-title" className={`modal-title ${theme}`}>Are you still playing?</h2>
+            <h2 id="still-playing-title" className={`modal-title ${theme}`}>
+              Are you still playing?
+            </h2>
             <p id="still-playing-description" style={{ marginBottom: '18px', lineHeight: 1.6 }}>
               <strong>{stillPlayingPrompt.gameName}</strong> has been active for 15 minutes.
             </p>
             <p style={{ marginBottom: '24px', opacity: 0.8, lineHeight: 1.6 }}>
-              Keep the session running if you are still playing, or end it now so your stats do not keep climbing by accident.
+              Keep the session running if you are still playing, or end it now so your stats do not keep climbing by
+              accident.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <button onClick={handleStillPlayingContinue} className="getting-started-primary">Yes, still playing</button>
-              <button onClick={handleStillPlayingEndSession} className="getting-started-secondary">End Session</button>
+              <button onClick={handleStillPlayingContinue} className="getting-started-primary">
+                Yes, still playing
+              </button>
+              <button onClick={handleStillPlayingEndSession} className="getting-started-secondary">
+                End Session
+              </button>
             </div>
           </div>
         </div>
@@ -1270,60 +1384,180 @@ function AppContent() {
             aria-labelledby="recommendation-outcome-title"
             aria-describedby="recommendation-outcome-description"
           >
-            <h2 id="recommendation-outcome-title" className={`modal-title ${theme}`}>Did this recommendation land?</h2>
+            <h2 id="recommendation-outcome-title" className={`modal-title ${theme}`}>
+              Did this recommendation land?
+            </h2>
             <p id="recommendation-outcome-description" style={{ marginBottom: '12px', lineHeight: 1.6 }}>
-              You played <strong>{recommendationOutcomePrompt.gameName}</strong> for {Math.round(recommendationOutcomePrompt.playtimeMinutes || 0)} minutes after finding it through GamePilot.
+              You played <strong>{recommendationOutcomePrompt.gameName}</strong> for{' '}
+              {Math.round(recommendationOutcomePrompt.playtimeMinutes || 0)} minutes after finding it through GamePilot.
             </p>
             <p style={{ marginBottom: '22px', opacity: 0.78, lineHeight: 1.6 }}>
               Your answer will tune every recommendation surface, not just this one.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-              <button onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.GREAT_PICK)} className="getting-started-primary">Great pick</button>
-              <button onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.NOT_NOW)} className="getting-started-secondary">Not now</button>
-              <button onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.NOT_FOR_ME)} className="getting-started-secondary">Not for me</button>
+            <div
+              style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}
+            >
+              <button
+                onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.GREAT_PICK)}
+                className="getting-started-primary"
+              >
+                Great pick
+              </button>
+              <button
+                onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.NOT_NOW)}
+                className="getting-started-secondary"
+              >
+                Not now
+              </button>
+              <button
+                onClick={() => submitRecommendationOutcome(RECOMMENDATION_OUTCOME.NOT_FOR_ME)}
+                className="getting-started-secondary"
+              >
+                Not for me
+              </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <button onClick={() => setRecommendationOutcomePrompt(null)} className="clear-button">Skip</button>
-              <button onClick={disableRecommendationOutcomePrompts} className="clear-button">Do not ask again</button>
+              <button onClick={() => setRecommendationOutcomePrompt(null)} className="clear-button">
+                Skip
+              </button>
+              <button onClick={disableRecommendationOutcomePrompts} className="clear-button">
+                Do not ask again
+              </button>
             </div>
           </div>
         </div>
       )}
       <ErrorBoundary>
-      <Suspense fallback={(
-        <div className="page-loading-fallback" role="status" aria-live="polite">
-          <span className="page-loading-mark" aria-hidden="true">GP</span>
-          <span className="page-loading-spinner" aria-hidden="true" />
-          <span className="page-loading-label">Preparing your next view</span>
-        </div>
-      )}>
-      <Routes>
-        <Route path="/" element={<Home library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
-        <Route path="/dashboard" element={<Home mode="dashboard" library={library} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} lastPlayedGame={lastPlayedGame} activeSessions={activeSessions} endSession={handleEndSession} mood={filterMood} time={filterTime} selectedGenre={filterGenre} setMood={setFilterMood} setTime={setFilterTime} setSelectedGenre={setFilterGenre} theme={theme} loading={loading} />} />
-        <Route path="/library" element={<Library library={library} setLibrary={setLibrary} onLibraryUpdated={handleLibraryUpdated} onLaunchGame={handleLaunchGame} onScan={scanLocalLibrary} onScanLibrary={scanLocalLibrary} scanLocalLibrary={scanLocalLibrary} onUpdateRating={handleUpdateRating} onToggleFavorite={handleToggleFavorite} onRemoveGames={handleRemoveGames} onUpdateCollections={handleUpdateCollections} onToggleHidden={handleToggleHidden} onUpdateCompletion={handleUpdateCompletion} onUpdateNotes={handleUpdateNotes} onUpdateCoverArt={handleUpdateCoverArt} onAddSessionNote={handleAddSessionNote} onTogglePlayedElsewhere={handleTogglePlayedElsewhere} loading={loading} />} />
-        <Route path="/stats" element={<Stats library={library} />} />
-        <Route path="/gaming-dna" element={<Navigate to="/profile" replace />} />
-        <Route path="/themes" element={<Themes />} />
-        <Route path="/habits" element={<Habits library={library} />} />
-        <Route path="/settings" element={<Settings theme={theme} setTheme={setTheme} library={library} dynamicCoverBg={dynamicCoverBg} setDynamicCoverBg={setDynamicCoverBg} minimizeOnLaunch={minimizeOnLaunch} setMinimizeOnLaunch={setMinimizeOnLaunch} />} />
-        <Route path="/profile" element={<Profile library={library} />} />
-        <Route path="/year-in-review" element={<YearInReview library={library} />} />
-        <Route path="/timeline" element={<Timeline library={library} />} />
-        <Route path="/gaming-links" element={<GamingLinks theme={theme} library={library} onUpdateCoverArt={handleUpdateCoverArt} />} />
-        <Route path="/donate" element={<Donate theme={theme} />} />
-        <Route path="/library-intelligence" element={<Navigate to="/recommendations" replace />} />
-        <Route path="/achievements" element={<Achievements theme={theme} />} />
-        <Route path="/export-hub" element={<ExportHub library={library} />} />
-        <Route path="/storage-manager" element={<StorageManager library={library} onLaunchGame={handleLaunchGame} />} />
-        <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />
-        <Route path="/swipe-deck" element={<SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />} />
-        <Route path="/recommendations" element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />} />
-        <Route path="/gamebar" element={<GameBarOverlay />} />
-        <Route path="/rewards" element={<Rewards />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/startup-questionnaire" element={<StartupQuestionnaireRoute />} />
-      </Routes>
-      </Suspense>
+        <Suspense
+          fallback={
+            <div className="page-loading-fallback" role="status" aria-live="polite">
+              <span className="page-loading-mark" aria-hidden="true">
+                GP
+              </span>
+              <span className="page-loading-spinner" aria-hidden="true" />
+              <span className="page-loading-label">Preparing your next view</span>
+            </div>
+          }
+        >
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Home
+                  library={library}
+                  onLaunchGame={handleLaunchGame}
+                  onScan={scanLocalLibrary}
+                  lastPlayedGame={lastPlayedGame}
+                  activeSessions={activeSessions}
+                  endSession={handleEndSession}
+                  mood={filterMood}
+                  time={filterTime}
+                  selectedGenre={filterGenre}
+                  setMood={setFilterMood}
+                  setTime={setFilterTime}
+                  setSelectedGenre={setFilterGenre}
+                  theme={theme}
+                  loading={loading}
+                />
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <Home
+                  mode="dashboard"
+                  library={library}
+                  onLaunchGame={handleLaunchGame}
+                  onScan={scanLocalLibrary}
+                  lastPlayedGame={lastPlayedGame}
+                  activeSessions={activeSessions}
+                  endSession={handleEndSession}
+                  mood={filterMood}
+                  time={filterTime}
+                  selectedGenre={filterGenre}
+                  setMood={setFilterMood}
+                  setTime={setFilterTime}
+                  setSelectedGenre={setFilterGenre}
+                  theme={theme}
+                  loading={loading}
+                />
+              }
+            />
+            <Route
+              path="/library"
+              element={
+                <Library
+                  library={library}
+                  setLibrary={setLibrary}
+                  onLibraryUpdated={handleLibraryUpdated}
+                  onLaunchGame={handleLaunchGame}
+                  onScan={scanLocalLibrary}
+                  onScanLibrary={scanLocalLibrary}
+                  scanLocalLibrary={scanLocalLibrary}
+                  onUpdateRating={handleUpdateRating}
+                  onToggleFavorite={handleToggleFavorite}
+                  onRemoveGames={handleRemoveGames}
+                  onUpdateCollections={handleUpdateCollections}
+                  onToggleHidden={handleToggleHidden}
+                  onUpdateCompletion={handleUpdateCompletion}
+                  onUpdateNotes={handleUpdateNotes}
+                  onUpdateCoverArt={handleUpdateCoverArt}
+                  onAddSessionNote={handleAddSessionNote}
+                  onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
+                  loading={loading}
+                />
+              }
+            />
+            <Route path="/stats" element={<Stats library={library} />} />
+            <Route path="/gaming-dna" element={<Navigate to="/profile" replace />} />
+            <Route path="/themes" element={<Themes />} />
+            <Route path="/habits" element={<Habits library={library} />} />
+            <Route
+              path="/settings"
+              element={
+                <Settings
+                  theme={theme}
+                  setTheme={setTheme}
+                  library={library}
+                  dynamicCoverBg={dynamicCoverBg}
+                  setDynamicCoverBg={setDynamicCoverBg}
+                  minimizeOnLaunch={minimizeOnLaunch}
+                  setMinimizeOnLaunch={setMinimizeOnLaunch}
+                />
+              }
+            />
+            <Route path="/profile" element={<Profile library={library} />} />
+            <Route path="/year-in-review" element={<YearInReview library={library} />} />
+            <Route path="/timeline" element={<Timeline library={library} />} />
+            <Route
+              path="/gaming-links"
+              element={<GamingLinks theme={theme} library={library} onUpdateCoverArt={handleUpdateCoverArt} />}
+            />
+            <Route path="/donate" element={<Donate theme={theme} />} />
+            <Route path="/library-intelligence" element={<Navigate to="/recommendations" replace />} />
+            <Route path="/achievements" element={<Achievements theme={theme} />} />
+            <Route path="/export-hub" element={<ExportHub library={library} />} />
+            <Route
+              path="/storage-manager"
+              element={<StorageManager library={library} onLaunchGame={handleLaunchGame} />}
+            />
+            <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />
+            <Route
+              path="/swipe-deck"
+              element={
+                <SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />
+              }
+            />
+            <Route
+              path="/recommendations"
+              element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />}
+            />
+            <Route path="/gamebar" element={<GameBarOverlay />} />
+            <Route path="/rewards" element={<Rewards />} />
+            <Route path="/feedback" element={<Feedback />} />
+            <Route path="/startup-questionnaire" element={<StartupQuestionnaireRoute />} />
+          </Routes>
+        </Suspense>
       </ErrorBoundary>
       {bigScreenMode && (
         <BigScreenMode

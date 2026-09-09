@@ -107,7 +107,9 @@
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
   opacity: 0.74;
-  transition: transform var(--transition-base, 0.25s ease), opacity var(--transition-base, 0.25s ease);
+  transition:
+    transform var(--transition-base, 0.25s ease),
+    opacity var(--transition-base, 0.25s ease);
 }
 
 .collapsible-folder[open] .collapsible-folder-state {

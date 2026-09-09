@@ -6,23 +6,39 @@ import useInterfacePreferences from '../hooks/useInterfacePreferences';
 const NAV_TOGGLES = [];
 
 const HOME_TOGGLES = [
-  { key: 'showHomeHeroSummary', label: 'Library summary line', hint: 'Shows "X games tracked across Y platforms" in the hero.' },
+  {
+    key: 'showHomeHeroSummary',
+    label: 'Library summary line',
+    hint: 'Shows "X games tracked across Y platforms" in the hero.',
+  },
   { key: 'showHomeBacklogRescue', label: 'Backlog rescue card', hint: 'Recommendation of a backlog game to finish.' },
-  { key: 'showHomeShelves', label: 'Curated shelves', hint: 'Tonight\u2019s pick / Continue / Rediscover / Favourite cards.' },
-  { key: 'showHomeLauncherSummary', label: 'Launcher summary grid', hint: 'Platform badges and scan status row.' }
+  {
+    key: 'showHomeShelves',
+    label: 'Curated shelves',
+    hint: 'Tonight\u2019s pick / Continue / Rediscover / Favourite cards.',
+  },
+  { key: 'showHomeLauncherSummary', label: 'Launcher summary grid', hint: 'Platform badges and scan status row.' },
 ];
 
 const DENSITY_TOGGLES = [
   { key: 'compactMode', label: 'Compact mode', hint: 'Tighter spacing, smaller headers across the whole app.' },
   { key: 'reducedMotion', label: 'Reduced motion', hint: 'Disables theme animations, shimmers, and easing.' },
-  { key: 'showThemedPageTitles', label: 'Themed page titles', hint: 'Playful per-theme page headings (e.g. \u201cChill Library\u201d).' },
-  { key: 'showQuickLaunchHotbar', label: 'Quick-launch hotbar', hint: 'Floating bar at the bottom for your most-played and pinned games.' }
+  {
+    key: 'showThemedPageTitles',
+    label: 'Themed page titles',
+    hint: 'Playful per-theme page headings (e.g. \u201cChill Library\u201d).',
+  },
+  {
+    key: 'showQuickLaunchHotbar',
+    label: 'Quick-launch hotbar',
+    hint: 'Floating bar at the bottom for your most-played and pinned games.',
+  },
 ];
 
 const ORNAMENT_LEVELS = [
   { value: 'plain', label: 'Plain', hint: 'Clean, system-font, no decorative effects. Most professional.' },
   { value: 'balanced', label: 'Balanced', hint: 'Theme colors and gradients, no animations or decorative fonts.' },
-  { value: 'full', label: 'Full', hint: 'Everything on \u2014 shimmer, sweeps, themed fonts, gradients.' }
+  { value: 'full', label: 'Full', hint: 'Everything on \u2014 shimmer, sweeps, themed fonts, gradients.' },
 ];
 
 const ACCENT_PRESETS = [
@@ -32,14 +48,16 @@ const ACCENT_PRESETS = [
   { label: 'Violet', value: '#8b5cf6' },
   { label: 'Sky', value: '#38bdf8' },
   { label: 'Rose', value: '#f43f5e' },
-  { label: 'Amber', value: '#f59e0b' }
+  { label: 'Amber', value: '#f59e0b' },
 ];
 
 const ToggleRow = ({ pref, prefKey, label, hint, onChange }) => (
   <div className="setting-item" style={{ alignItems: 'flex-start' }}>
     <div style={{ flex: 1, minWidth: 0 }}>
       <label>{label}</label>
-      <p className="setting-description" style={{ margin: '4px 0 0', opacity: 0.72, fontSize: '12px' }}>{hint}</p>
+      <p className="setting-description" style={{ margin: '4px 0 0', opacity: 0.72, fontSize: '12px' }}>
+        {hint}
+      </p>
     </div>
     <div className="toggle-switch">
       <input
@@ -63,9 +81,27 @@ export default function InterfaceSettings() {
   const experienceMode = InterfacePreferencesService.getExperienceMode();
 
   const EXPERIENCE_PRESETS = [
-    { id: 'librarian', label: 'Librarian', Icon: BookOpen, hint: 'Pure tool mode. Clean layout, plain fonts, no decorative extras.', apply: () => InterfacePreferencesService.applyLibrarianPreset() },
-    { id: 'balanced', label: 'Balanced', Icon: Scale, hint: 'Tool-first with light theming. Recommendations and shelves visible.', apply: () => InterfacePreferencesService.applyBalancedPreset() },
-    { id: 'full', label: 'Full experience', Icon: Sparkles, hint: 'Everything on: themed titles, decorative flourishes, all shelves.', apply: () => InterfacePreferencesService.applyFullPreset() }
+    {
+      id: 'librarian',
+      label: 'Librarian',
+      Icon: BookOpen,
+      hint: 'Pure tool mode. Clean layout, plain fonts, no decorative extras.',
+      apply: () => InterfacePreferencesService.applyLibrarianPreset(),
+    },
+    {
+      id: 'balanced',
+      label: 'Balanced',
+      Icon: Scale,
+      hint: 'Tool-first with light theming. Recommendations and shelves visible.',
+      apply: () => InterfacePreferencesService.applyBalancedPreset(),
+    },
+    {
+      id: 'full',
+      label: 'Full experience',
+      Icon: Sparkles,
+      hint: 'Everything on: themed titles, decorative flourishes, all shelves.',
+      apply: () => InterfacePreferencesService.applyFullPreset(),
+    },
   ];
 
   return (
@@ -96,7 +132,7 @@ export default function InterfaceSettings() {
                   color: 'var(--text-primary)',
                   fontSize: 13,
                   cursor: 'pointer',
-                  fontWeight: active ? 600 : 400
+                  fontWeight: active ? 600 : 400,
                 }}
               >
                 <Icon size={15} />
@@ -107,26 +143,45 @@ export default function InterfaceSettings() {
         </div>
       </div>
 
-      <div className="interface-presets" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
-        <button type="button" className="save-btn" onClick={handleFocusHome} title="Minimal Home with just recommendations and continue-playing">
+      <div
+        className="interface-presets"
+        style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}
+      >
+        <button
+          type="button"
+          className="save-btn"
+          onClick={handleFocusHome}
+          title="Minimal Home with just recommendations and continue-playing"
+        >
           <Focus size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
           Focus Home preset
         </button>
-        <button type="button" className="data-button reset" onClick={handleReset} title="Reset all interface preferences to defaults">
+        <button
+          type="button"
+          className="data-button reset"
+          onClick={handleReset}
+          title="Reset all interface preferences to defaults"
+        >
           <RotateCcw size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
           Reset interface
         </button>
       </div>
 
       <div className="interface-group">
-        <h4 style={{ margin: '8px 0 6px' }}><Eye size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />Navbar</h4>
+        <h4 style={{ margin: '8px 0 6px' }}>
+          <Eye size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+          Navbar
+        </h4>
         {NAV_TOGGLES.map((t) => (
           <ToggleRow key={t.key} pref={prefs} prefKey={t.key} label={t.label} hint={t.hint} onChange={handleChange} />
         ))}
       </div>
 
       <div className="interface-group" style={{ marginTop: '14px' }}>
-        <h4 style={{ margin: '8px 0 6px' }}><EyeOff size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />Home sections</h4>
+        <h4 style={{ margin: '8px 0 6px' }}>
+          <EyeOff size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+          Home sections
+        </h4>
         {HOME_TOGGLES.map((t) => (
           <ToggleRow key={t.key} pref={prefs} prefKey={t.key} label={t.label} hint={t.hint} onChange={handleChange} />
         ))}
@@ -160,7 +215,7 @@ export default function InterfaceSettings() {
                   background: active ? 'rgba(255, 107, 53, 0.12)' : 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   fontSize: 12,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 {level.label}
@@ -197,7 +252,7 @@ export default function InterfaceSettings() {
                   background: 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   cursor: 'pointer',
-                  fontSize: 12
+                  fontSize: 12,
                 }}
                 title={preset.label}
               >
@@ -209,7 +264,7 @@ export default function InterfaceSettings() {
                     height: 14,
                     borderRadius: '50%',
                     background: preset.value || 'conic-gradient(#ff6b35,#10b981,#8b5cf6,#38bdf8,#ff6b35)',
-                    border: '1px solid rgba(255,255,255,0.25)'
+                    border: '1px solid rgba(255,255,255,0.25)',
                   }}
                 />
                 {preset.label}

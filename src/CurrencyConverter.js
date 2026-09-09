@@ -5,14 +5,14 @@ const EXCHANGE_RATES = {
   USD: 1,
   EUR: 0.92,
   GBP: 0.79,
-  JPY: 149.50,
+  JPY: 149.5,
   CAD: 1.36,
   AUD: 1.52,
   CHF: 0.91,
   CNY: 7.24,
   INR: 83.12,
   BRL: 5.08,
-  RUB: 90.15
+  RUB: 90.15,
 };
 
 // Currency symbols
@@ -27,17 +27,17 @@ const CURRENCY_SYMBOLS = {
   CNY: '¥',
   INR: '₹',
   BRL: 'R$',
-  RUB: '₽'
+  RUB: '₽',
 };
 
 // Format price in selected currency
 export const formatPrice = (priceInUSD, currency = 'USD') => {
   if (!priceInUSD) return 'Free';
-  
+
   const rate = EXCHANGE_RATES[currency] || 1;
   const symbol = CURRENCY_SYMBOLS[currency] || '$';
   const convertedPrice = priceInUSD * rate;
-  
+
   // Handle different formatting for different currencies
   if (currency === 'JPY') {
     return `${symbol}${Math.round(convertedPrice).toLocaleString()}`;
@@ -51,11 +51,11 @@ export const formatPrice = (priceInUSD, currency = 'USD') => {
 // Convert Steam price string to USD amount
 export const parseSteamPrice = (priceString) => {
   if (!priceString) return null;
-  
+
   // Remove currency symbols and convert to number
   const cleanPrice = priceString.replace(/[^0-9.,]/g, '');
   const price = parseFloat(cleanPrice);
-  
+
   return isNaN(price) ? null : price;
 };
 
@@ -84,7 +84,7 @@ export const storePurchasePrice = (appid, priceInUSD, currency) => {
     price: priceInUSD,
     currency: currency,
     timestamp: Date.now(),
-    originalCurrency: currency
+    originalCurrency: currency,
   };
   StorageService.set('gamePrices', prices);
 };
@@ -100,7 +100,7 @@ export const calculateLibraryValue = (games, currency = 'USD') => {
   let totalValue = 0;
   let pricedGames = 0;
 
-  games.forEach(game => {
+  games.forEach((game) => {
     const priceId = game.appid || game.steamAppId;
     const storedPrice = getStoredPrice(priceId);
     if (storedPrice && storedPrice.price) {
@@ -112,6 +112,6 @@ export const calculateLibraryValue = (games, currency = 'USD') => {
   return {
     totalValue,
     pricedGames,
-    formattedValue: formatPrice(totalValue, currency)
+    formattedValue: formatPrice(totalValue, currency),
   };
 };

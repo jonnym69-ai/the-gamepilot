@@ -36,7 +36,11 @@ const aggregateGamePlaytime = (history, periodStartMs) => {
   const totals = {};
 
   history.forEach((session) => {
-    const sessionDate = session.endTime ? new Date(session.endTime) : (session.startTime ? new Date(session.startTime) : null);
+    const sessionDate = session.endTime
+      ? new Date(session.endTime)
+      : session.startTime
+        ? new Date(session.startTime)
+        : null;
     if (!sessionDate || Number.isNaN(sessionDate.getTime())) return;
     if (sessionDate.getTime() < periodStartMs) return;
 
@@ -87,17 +91,19 @@ export const detectRivalries = (history = null) => {
   // Margin should be less than 50% of the leader's playtime
   if (top.minutes > 0 && marginMinutes / top.minutes > 0.5) return [];
 
-  return [{
-    gameA: top.name,
-    gameB: second.name,
-    gameAMinutes: top.minutes,
-    gameBMinutes: second.minutes,
-    marginMinutes,
-    totalMinutes,
-    weekKey: getWeekKey(),
-    winner: top.minutes > second.minutes ? top.name : second.name,
-    rounds: countRivalryRounds(top.name, second.name)
-  }];
+  return [
+    {
+      gameA: top.name,
+      gameB: second.name,
+      gameAMinutes: top.minutes,
+      gameBMinutes: second.minutes,
+      marginMinutes,
+      totalMinutes,
+      weekKey: getWeekKey(),
+      winner: top.minutes > second.minutes ? top.name : second.name,
+      rounds: countRivalryRounds(top.name, second.name),
+    },
+  ];
 };
 
 /**
@@ -109,10 +115,7 @@ const countRivalryRounds = (gameA, gameB) => {
 
   // Check stored history for consecutive weeks
   const sorted = stored
-    .filter((r) =>
-      (r.gameA === gameA && r.gameB === gameB) ||
-      (r.gameA === gameB && r.gameB === gameA)
-    )
+    .filter((r) => (r.gameA === gameA && r.gameB === gameB) || (r.gameA === gameB && r.gameB === gameA))
     .sort((a, b) => b.weekKey.localeCompare(a.weekKey));
 
   const currentWeek = getWeekKey();
@@ -166,9 +169,10 @@ export const recordRivalry = (rivalry) => {
   if (!rivalry) return;
   const stored = getStoredRivalries();
   const existingIdx = stored.findIndex(
-    (r) => r.weekKey === rivalry.weekKey &&
+    (r) =>
+      r.weekKey === rivalry.weekKey &&
       ((r.gameA === rivalry.gameA && r.gameB === rivalry.gameB) ||
-       (r.gameA === rivalry.gameB && r.gameB === rivalry.gameA))
+        (r.gameA === rivalry.gameB && r.gameB === rivalry.gameA))
   );
   if (existingIdx >= 0) {
     stored[existingIdx] = { ...stored[existingIdx], ...rivalry };
@@ -222,12 +226,12 @@ export const generateRivalryToast = () => {
     `Two games enter, one leaves. ${leader} vs ${trailer} — ${leader} up by ${margin} this week.`,
     rounds > 2
       ? `${rivalry.gameA} vs ${rivalry.gameB}: Round ${rounds}. This is getting personal. ${leader} leads by ${margin}.`
-      : `${rivalry.gameA} vs ${rivalry.gameB}: ${leader} leads by ${margin}. The throne is contested.`
+      : `${rivalry.gameA} vs ${rivalry.gameB}: ${leader} leads by ${margin}. The throne is contested.`,
   ];
 
   return {
     message: messages[Math.floor(Date.now() / 1000) % messages.length],
-    rivalry
+    rivalry,
   };
 };
 
@@ -253,7 +257,7 @@ const RivalryService = {
   generateRivalryToast,
   getActiveRivalry,
   getRivalryHistory,
-  recordRivalry
+  recordRivalry,
 };
 
 export default RivalryService;

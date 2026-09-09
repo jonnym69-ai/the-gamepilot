@@ -1,5 +1,21 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Heart, ExternalLink, Play, Star, Crown, Gem, Trophy, Check, AlertCircle, Key, Sparkles, Shield, Palette, FileText, Database } from 'lucide-react';
+import {
+  Heart,
+  ExternalLink,
+  Play,
+  Star,
+  Crown,
+  Gem,
+  Trophy,
+  Check,
+  AlertCircle,
+  Key,
+  Sparkles,
+  Shield,
+  Palette,
+  FileText,
+  Database,
+} from 'lucide-react';
 import NavBar from './NavBar';
 import { AchievementTracker } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
@@ -12,31 +28,31 @@ const TIER_LABEL_MAP = {
   Bronze: 'Bronze Patreon Supporter',
   Silver: 'Silver Patreon Supporter',
   Gold: 'Gold Patreon Supporter',
-  Platinum: 'Platinum Patreon Supporter'
+  Platinum: 'Platinum Patreon Supporter',
 };
 
 const LEGACY_PATREON_CODES = {
-  'GP100': { tier: 'Platinum', contribution: 'First 100 Founder' },
-  'GP4001': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
-  'GP4002': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
-  'GP4003': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
-  'GP4004': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
-  'GP4005': { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
-  'GP1001': { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
-  'GP1002': { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
-  'GP1003': { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
-  'GP1004': { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
-  'GP1005': { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
-  'GP2001': { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
-  'GP2002': { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
-  'GP2003': { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
-  'GP2004': { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
-  'GP2005': { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
-  'GP3001': { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
-  'GP3002': { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
-  'GP3003': { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
-  'GP3004': { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
-  'GP3005': { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' }
+  GP100: { tier: 'Platinum', contribution: 'First 100 Founder' },
+  GP4001: { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
+  GP4002: { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
+  GP4003: { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
+  GP4004: { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
+  GP4005: { tier: 'Platinum', contribution: 'Platinum Patreon Supporter' },
+  GP1001: { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
+  GP1002: { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
+  GP1003: { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
+  GP1004: { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
+  GP1005: { tier: 'Gold', contribution: 'Gold Patreon Supporter' },
+  GP2001: { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
+  GP2002: { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
+  GP2003: { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
+  GP2004: { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
+  GP2005: { tier: 'Silver', contribution: 'Silver Patreon Supporter' },
+  GP3001: { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
+  GP3002: { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
+  GP3003: { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
+  GP3004: { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
+  GP3005: { tier: 'Bronze', contribution: 'Bronze Patreon Supporter' },
 };
 
 function Donate({ theme }) {
@@ -54,16 +70,19 @@ function Donate({ theme }) {
       const tier = meta?.tier && TIER_LABEL_MAP[meta.tier] ? meta.tier : 'Bronze';
       codes[code.toUpperCase()] = {
         tier,
-        contribution: TIER_LABEL_MAP[tier] || 'Patreon Supporter'
+        contribution: TIER_LABEL_MAP[tier] || 'Patreon Supporter',
       };
     });
     return codes;
   }, []);
 
-  const validPatreonCodes = useMemo(() => ({
-    ...LEGACY_PATREON_CODES,
-    ...canonicalPatreonCodes
-  }), [canonicalPatreonCodes]);
+  const validPatreonCodes = useMemo(
+    () => ({
+      ...LEGACY_PATREON_CODES,
+      ...canonicalPatreonCodes,
+    }),
+    [canonicalPatreonCodes]
+  );
 
   const officialUpdatesUrl = 'https://moz91.itch.io/';
 
@@ -72,93 +91,92 @@ function Donate({ theme }) {
       name: 'Patreon',
       url: 'https://www.patreon.com/15465959/join',
       description: 'Become a patron',
-      icon: <Heart size={24} />
+      icon: <Heart size={24} />,
     },
     {
       name: 'YouTube',
       url: 'https://youtube.com/@mozog91?si=rJyzBqLF3-4arDhU',
       description: 'Subscribe for updates',
-      icon: <Play size={24} />
+      icon: <Play size={24} />,
     },
     {
       name: 'itch.io',
       url: officialUpdatesUrl,
       description: 'Donate, download builds, and view updates',
-      icon: <FileText size={24} />
-    }
+      icon: <FileText size={24} />,
+    },
   ];
 
   const staticFounders = [
     {
-      name: "Moz",
-      tier: "Platinum",
-      date: "2026-01-15",
-      contribution: "Lead Developer & Project Founder"
+      name: 'Moz',
+      tier: 'Platinum',
+      date: '2026-01-15',
+      contribution: 'Lead Developer & Project Founder',
     },
     {
-      name: "Dom",
-      tier: "Platinum",
-      date: "2026-01-20",
-      contribution: "Community Supporter & Beta Tester"
+      name: 'Dom',
+      tier: 'Platinum',
+      date: '2026-01-20',
+      contribution: 'Community Supporter & Beta Tester',
     },
     {
-      name: "Yasmin",
-      tier: "Platinum",
-      date: "2026-01-25",
-      contribution: "Family Founder"
+      name: 'Yasmin',
+      tier: 'Platinum',
+      date: '2026-01-25',
+      contribution: 'Family Founder',
     },
     {
-      name: "Jenson",
-      tier: "Platinum",
-      date: "2026-01-25",
-      contribution: "Family Founder"
+      name: 'Jenson',
+      tier: 'Platinum',
+      date: '2026-01-25',
+      contribution: 'Family Founder',
     },
     {
-      name: "Jackson",
-      tier: "Platinum",
-      date: "2026-01-25",
-      contribution: "Family Founder"
+      name: 'Jackson',
+      tier: 'Platinum',
+      date: '2026-01-25',
+      contribution: 'Family Founder',
     },
     {
-      name: "Esmae",
-      tier: "Platinum",
-      date: "2026-01-25",
-      contribution: "Family Founder"
+      name: 'Esmae',
+      tier: 'Platinum',
+      date: '2026-01-25',
+      contribution: 'Family Founder',
     },
     {
-      name: "Penelope",
-      tier: "Platinum",
-      date: "2026-01-25",
-      contribution: "Family Founder"
+      name: 'Penelope',
+      tier: 'Platinum',
+      date: '2026-01-25',
+      contribution: 'Family Founder',
     },
     {
-      name: "Dudley",
-      tier: "Platinum",
-      date: "2026-01-25",
-      contribution: "Family Founder"
+      name: 'Dudley',
+      tier: 'Platinum',
+      date: '2026-01-25',
+      contribution: 'Family Founder',
     },
     {
-      name: "Winnie",
-      tier: "Platinum",
-      date: "2026-01-25",
-      contribution: "Family Founder"
-    }
+      name: 'Winnie',
+      tier: 'Platinum',
+      date: '2026-01-25',
+      contribution: 'Family Founder',
+    },
   ];
 
   const userFounders = StorageService.get('userFounders', []);
 
   // Founders data - merge static founders with user-added Patreon supporters
-  const founders = [
-    ...staticFounders,
-    ...userFounders
-  ];
+  const founders = [...staticFounders, ...userFounders];
 
   const savedUsername = StorageService.getString('profileUsername', '');
   const activeBoostProfile = AchievementTracker.getPatreonBoostProfile() || null;
-  const currentFounder = founders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
+  const currentFounder =
+    founders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
   const effectiveTier = currentFounder?.tier || activeBoostProfile?.tier || null;
   const loungeUnlocked = EntitlementService.isSupporter() || Boolean(effectiveTier);
-  const xpMultiplierLabel = activeBoostProfile?.multiplier > 1 ? `${activeBoostProfile.multiplier}x XP boost active` : 'No XP boost active';
+  const xpMultiplierLabel =
+    activeBoostProfile?.multiplier > 1 ? `${activeBoostProfile.multiplier}x XP boost active` : 'No XP boost active';
 
   const supportOptions = [
     {
@@ -166,64 +184,78 @@ function Donate({ theme }) {
       name: 'Choose Your Amount',
       price: 'Pay what you want',
       priceNote: 'choose on itch.io',
-      description: 'Every GamePilot feature stays free. If the app helps you, choose any one-time amount you feel comfortable contributing.',
+      description:
+        'Every GamePilot feature stays free. If the app helps you, choose any one-time amount you feel comfortable contributing.',
       icon: <Heart size={28} />,
       highlight: false,
       cta: 'Donate What You Want',
-      url: officialUpdatesUrl
-    }
+      url: officialUpdatesUrl,
+    },
   ];
 
   const allPerks = [
     {
       title: 'Better Recommendations',
-      description: 'Support continued work on smarter play-next decisions, recommendation learning, and more reliable explanations.',
+      description:
+        'Support continued work on smarter play-next decisions, recommendation learning, and more reliable explanations.',
       icon: <Sparkles size={22} />,
-      tags: ['Recommendations', 'Learning', 'Backlog help']
+      tags: ['Recommendations', 'Learning', 'Backlog help'],
     },
     {
       title: 'Library Reliability',
-      description: 'Help improve launcher scanning, session tracking, metadata quality, backups, and compatibility across more libraries.',
+      description:
+        'Help improve launcher scanning, session tracking, metadata quality, backups, and compatibility across more libraries.',
       icon: <Database size={22} />,
-      tags: ['Scanning', 'Tracking', 'Metadata']
+      tags: ['Scanning', 'Tracking', 'Metadata'],
     },
     {
       title: 'Polish & Accessibility',
-      description: 'Fund continued interface polish, controller support, responsive layouts, accessibility, and desktop reliability.',
+      description:
+        'Fund continued interface polish, controller support, responsive layouts, accessibility, and desktop reliability.',
       icon: <Palette size={22} />,
-      tags: ['Polish', 'Accessibility', 'Desktop']
+      tags: ['Polish', 'Accessibility', 'Desktop'],
     },
     {
       title: 'Independent Development',
       description: 'Give GamePilot more time to grow without ads, subscriptions, or artificial feature restrictions.',
       icon: <Heart size={22} />,
-      tags: ['No ads', 'No subscription', 'Independent']
-    }
+      tags: ['No ads', 'No subscription', 'Independent'],
+    },
   ];
 
   const founderStats = [
     { label: 'Supporters', value: founders.length.toString() },
     { label: 'Your Status', value: loungeUnlocked ? 'Recognized supporter' : 'Optional support' },
-    { label: 'Model', value: 'Pay what you want · Everything free' }
+    { label: 'Model', value: 'Pay what you want · Everything free' },
   ];
 
   const getTierIcon = (tier) => {
-    switch(tier) {
-      case 'Platinum': return <Crown size={20} />;
-      case 'Gold': return <Trophy size={20} />;
-      case 'Silver': return <Star size={20} />;
-      case 'Bronze': return <Gem size={20} />;
-      default: return <Heart size={20} />;
+    switch (tier) {
+      case 'Platinum':
+        return <Crown size={20} />;
+      case 'Gold':
+        return <Trophy size={20} />;
+      case 'Silver':
+        return <Star size={20} />;
+      case 'Bronze':
+        return <Gem size={20} />;
+      default:
+        return <Heart size={20} />;
     }
   };
 
   const getTierColor = (tier) => {
-    switch(tier) {
-      case 'Platinum': return 'linear-gradient(45deg, #e5e5e5, #ffffff)';
-      case 'Gold': return 'linear-gradient(45deg, #ffd700, #ffed4e)';
-      case 'Silver': return 'linear-gradient(45deg, #c0c0c0, #e8e8e8)';
-      case 'Bronze': return 'linear-gradient(45deg, #cd7f32, #e8a55d)';
-      default: return 'linear-gradient(45deg, #ff6b35, #ff8c42)';
+    switch (tier) {
+      case 'Platinum':
+        return 'linear-gradient(45deg, #e5e5e5, #ffffff)';
+      case 'Gold':
+        return 'linear-gradient(45deg, #ffd700, #ffed4e)';
+      case 'Silver':
+        return 'linear-gradient(45deg, #c0c0c0, #e8e8e8)';
+      case 'Bronze':
+        return 'linear-gradient(45deg, #cd7f32, #e8a55d)';
+      default:
+        return 'linear-gradient(45deg, #ff6b35, #ff8c42)';
     }
   };
 
@@ -250,7 +282,7 @@ function Donate({ theme }) {
       const codeData = validPatreonCodes[code];
       if (codeData) {
         const existingFounders = StorageService.get('userFounders', []);
-        const codeAlreadyUsed = existingFounders.some(founder => founder.code === code);
+        const codeAlreadyUsed = existingFounders.some((founder) => founder.code === code);
 
         if (codeAlreadyUsed) {
           setUnifiedMessage('This code has already been used!');
@@ -275,12 +307,14 @@ function Donate({ theme }) {
             tier: codeData.tier,
             date: new Date().toISOString().split('T')[0],
             contribution: codeData.contribution,
-            code
+            code,
           };
           existingFounders.push(newFounder);
           StorageService.set('userFounders', existingFounders);
 
-          setUnifiedMessage(`Welcome to the founders club! You've been added as a ${codeData.tier} founder.${boostMessage}`);
+          setUnifiedMessage(
+            `Welcome to the founders club! You've been added as a ${codeData.tier} founder.${boostMessage}`
+          );
           setUnifiedSuccess(true);
           setUnifiedCode('');
           setFounderName('');
@@ -312,9 +346,9 @@ function Donate({ theme }) {
             </div>
             <h1>Everything is free. Support is optional.</h1>
             <p>
-              GamePilot does not lock features behind donations. If it helps you decide what to play
-              or makes your library more useful, you can contribute any one-time amount you choose.
-              No subscription is required, there are no feature tiers, and there is no pressure to pay.
+              GamePilot does not lock features behind donations. If it helps you decide what to play or makes your
+              library more useful, you can contribute any one-time amount you choose. No subscription is required, there
+              are no feature tiers, and there is no pressure to pay.
             </p>
           </div>
 
@@ -345,7 +379,10 @@ function Donate({ theme }) {
           {loungeUnlocked && (
             <div className="donate-status-strip">
               <Check size={18} />
-              <span>You're recognized as a supporter{effectiveTier ? ` (${effectiveTier})` : ''}. Every app feature remains available to everyone. {xpMultiplierLabel}.</span>
+              <span>
+                You're recognized as a supporter{effectiveTier ? ` (${effectiveTier})` : ''}. Every app feature remains
+                available to everyone. {xpMultiplierLabel}.
+              </span>
             </div>
           )}
 
@@ -366,9 +403,7 @@ function Donate({ theme }) {
         <section className="donate-perks-section">
           <div className="feature-heading">
             <h2>What your support helps fund</h2>
-            <p>
-              Donations support continued development. They do not change which GamePilot features you can use.
-            </p>
+            <p>Donations support continued development. They do not change which GamePilot features you can use.</p>
           </div>
           <div className="feature-grid">
             {allPerks.map((perk) => (
@@ -466,9 +501,7 @@ function Donate({ theme }) {
                 {founders.map((founder, index) => (
                   <div key={index} className="founder-card" style={{ background: getTierColor(founder.tier) }}>
                     <div className="founder-header">
-                      <div className="founder-icon">
-                        {getTierIcon(founder.tier)}
-                      </div>
+                      <div className="founder-icon">{getTierIcon(founder.tier)}</div>
                       <div className="founder-tier">{founder.tier}</div>
                     </div>
                     <div className="founder-info">
@@ -491,9 +524,7 @@ function Donate({ theme }) {
         <div className="support-links">
           {supportLinks.map((link, index) => (
             <div key={index} className="support-card" onClick={() => handleLinkClick(link.url)}>
-              <div className="support-icon">
-                {link.icon}
-              </div>
+              <div className="support-icon">{link.icon}</div>
               <div className="support-info">
                 <h3>{link.name}</h3>
                 <p>{link.description}</p>
@@ -505,8 +536,8 @@ function Donate({ theme }) {
 
         <div className="donate-footer">
           <p>
-            Your support funds development, new features, and keeps GamePilot local-first with no ads,
-            no tracking, and no online account required.
+            Your support funds development, new features, and keeps GamePilot local-first with no ads, no tracking, and
+            no online account required.
           </p>
         </div>
       </div>

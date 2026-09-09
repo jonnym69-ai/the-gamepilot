@@ -14,17 +14,17 @@ const SHARE_CARD_WATERMARK_CONTEXTS = {
 const WATERMARK_CONFIGS = {
   gamepilot: {
     cta: (context) => `Get your own local-first ${context} at github.com/jonnym69-ai/the-gamepilot`,
-    tagline: 'GamePilot · your library, your stats, your machine'
+    tagline: 'GamePilot · your library, your stats, your machine',
   },
   github: {
     cta: (context) => `Get your own local-first ${context} at github.com/jonnym69-ai/the-gamepilot/releases`,
-    tagline: 'GamePilot · your library, your stats, your machine'
+    tagline: 'GamePilot · your library, your stats, your machine',
   },
   itchio: {
     cta: () => 'Get the latest build at moz91.itch.io',
-    tagline: 'GamePilot · your library, your stats, your machine'
+    tagline: 'GamePilot · your library, your stats, your machine',
   },
-  none: null
+  none: null,
 };
 
 export const VALID_SHARE_CARD_WATERMARKS = ['gamepilot', 'github', 'itchio', 'none'];
@@ -35,11 +35,16 @@ export function getShareCardWatermark(watermark = 'gamepilot', context = 'librar
   const contextLabel = SHARE_CARD_WATERMARK_CONTEXTS[context] || context;
   return {
     cta: config.cta(contextLabel),
-    tagline: config.tagline
+    tagline: config.tagline,
   };
 }
 
-export function ShareCardWatermark({ watermark = 'gamepilot', context = 'library', ctaClassName = '', taglineClassName = '' }) {
+export function ShareCardWatermark({
+  watermark = 'gamepilot',
+  context = 'library',
+  ctaClassName = '',
+  taglineClassName = '',
+}) {
   const data = getShareCardWatermark(watermark, context);
   if (!data) return null;
   return (

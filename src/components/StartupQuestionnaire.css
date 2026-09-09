@@ -23,7 +23,9 @@
 
 .startup-questionnaire-modal.founder-enhanced {
   border-color: rgba(250, 204, 21, 0.34);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.42), 0 0 36px rgba(250, 204, 21, 0.14);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.42),
+    0 0 36px rgba(250, 204, 21, 0.14);
 }
 
 .startup-questionnaire-header {
@@ -116,7 +118,11 @@
   background: rgba(255, 255, 255, 0.04);
   color: var(--text, #fff);
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .startup-chip:hover {
@@ -127,7 +133,9 @@
 .startup-chip.selected {
   border-color: #ffb36b;
   background: linear-gradient(160deg, rgba(255, 107, 53, 0.28), rgba(255, 179, 107, 0.12));
-  box-shadow: 0 0 0 2px rgba(255, 154, 90, 0.28), 0 14px 28px rgba(255, 107, 53, 0.2);
+  box-shadow:
+    0 0 0 2px rgba(255, 154, 90, 0.28),
+    0 14px 28px rgba(255, 107, 53, 0.2);
   transform: translateY(-2px) scale(1.01);
 }
 
@@ -157,7 +165,11 @@
   background: rgba(255, 255, 255, 0.04);
   color: var(--text, #fff);
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .startup-choice-card:hover {
@@ -168,7 +180,9 @@
 .startup-choice-card.selected {
   border-color: #ffb36b;
   background: linear-gradient(160deg, rgba(255, 107, 53, 0.3), rgba(255, 179, 107, 0.12));
-  box-shadow: 0 0 0 2px rgba(255, 154, 90, 0.28), 0 14px 28px rgba(255, 107, 53, 0.2);
+  box-shadow:
+    0 0 0 2px rgba(255, 154, 90, 0.28),
+    0 14px 28px rgba(255, 107, 53, 0.2);
   transform: translateY(-2px) scale(1.01);
 }
 

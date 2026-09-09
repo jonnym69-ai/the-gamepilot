@@ -49,7 +49,7 @@ const isImageFailed = (url) => {
       return false;
     }
 
-    const isStale = (Date.now() - failedAt) > FAILED_IMAGES_TTL_MS;
+    const isStale = Date.now() - failedAt > FAILED_IMAGES_TTL_MS;
     if (isStale) {
       delete cache[url];
       writeFailedImageCache(cache);
@@ -110,7 +110,7 @@ const LazyImage = ({ src, alt, className, placeholder, fallbackSrc, gameName, pl
       },
       {
         threshold: 0.1,
-        rootMargin: '50px'
+        rootMargin: '50px',
       }
     );
 
@@ -183,23 +183,13 @@ const LazyImage = ({ src, alt, className, placeholder, fallbackSrc, gameName, pl
         <div className="lazy-image-placeholder">
           <div className="lazy-image-spinner"></div>
           {placeholder && (
-            <img
-              src={placeholder}
-              alt={alt}
-              className="lazy-image-placeholder-img"
-              style={{ filter: 'blur(10px)' }}
-            />
+            <img src={placeholder} alt={alt} className="lazy-image-placeholder-img" style={{ filter: 'blur(10px)' }} />
           )}
         </div>
       )}
 
       {(hasError || isKnownFailure) && placeholder && (
-        <img
-          src={placeholder}
-          alt={alt}
-          className="lazy-image lazy-image-loaded"
-          {...props}
-        />
+        <img src={placeholder} alt={alt} className="lazy-image lazy-image-loaded" {...props} />
       )}
 
       {(hasError || isKnownFailure) && !placeholder && (gameName || platform || genre || mood) && (

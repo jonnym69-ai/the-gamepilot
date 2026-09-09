@@ -16,11 +16,7 @@ export class CaptainLogService {
   static getEntriesForGame(gameName) {
     const all = this.getAllEntries();
     if (!gameName) return all;
-    return all.filter(
-      (entry) =>
-        String(entry?.gameName || '').toLowerCase() ===
-        String(gameName).toLowerCase()
-    );
+    return all.filter((entry) => String(entry?.gameName || '').toLowerCase() === String(gameName).toLowerCase());
   }
 
   static getEntriesForSession(sessionTimestamp) {
@@ -40,7 +36,7 @@ export class CaptainLogService {
     notes = '',
     mood = null,
     tags = [],
-    rating = null
+    rating = null,
   }) {
     const all = this.getAllEntries();
     const entry = {
@@ -52,7 +48,7 @@ export class CaptainLogService {
       mood: mood || null,
       tags: Array.isArray(tags) ? tags.filter(Boolean) : [],
       rating: typeof rating === 'number' && rating >= 1 && rating <= 5 ? rating : null,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
     all.push(entry);
     StorageService.set(CAPTAIN_LOG_KEY, all);
@@ -66,7 +62,7 @@ export class CaptainLogService {
     all[index] = {
       ...all[index],
       ...updates,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     StorageService.set(CAPTAIN_LOG_KEY, all);
     return all[index];
@@ -81,9 +77,7 @@ export class CaptainLogService {
 
   static getRecentEntries(limit = 10) {
     const all = this.getAllEntries();
-    return all
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, limit);
+    return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit);
   }
 
   static getStats() {
@@ -116,7 +110,7 @@ export class CaptainLogService {
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([tag, count]) => ({ tag, count })),
-      averageRating: ratedCount > 0 ? Number((totalRating / ratedCount).toFixed(1)) : null
+      averageRating: ratedCount > 0 ? Number((totalRating / ratedCount).toFixed(1)) : null,
     };
   }
 

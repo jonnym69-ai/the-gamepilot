@@ -37,7 +37,7 @@ function formatDate(date) {
   const values = getPartsInTimeZone(date, {
     year: 'numeric',
     month: 'numeric',
-    day: 'numeric'
+    day: 'numeric',
   });
   if (!values) return 'Invalid date';
 
@@ -62,7 +62,7 @@ function formatTime(date) {
     hour: is24Hour ? '2-digit' : 'numeric',
     minute: '2-digit',
     hour12: !is24Hour,
-    dayPeriod: is24Hour ? undefined : 'short'
+    dayPeriod: is24Hour ? undefined : 'short',
   });
   if (!values) return 'Invalid time';
 
@@ -86,7 +86,7 @@ const DateTimeFormatService = {
   getTimeFormat,
   formatDate,
   formatTime,
-  formatDateTime
+  formatDateTime,
 };
 
 export default DateTimeFormatService;

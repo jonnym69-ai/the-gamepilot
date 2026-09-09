@@ -22,13 +22,19 @@ const HLTBChip = ({ game, variant = 'compact', autoFetch = false }) => {
     const cached = HowLongToBeatService.getCached(game);
     if (cached && cached.found) return undefined;
     setLoading(true);
-    HowLongToBeatService.getTimes(game).then((next) => {
-      if (!cancelled) {
-        setEntry(next || null);
-        setLoading(false);
-      }
-    }).catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    HowLongToBeatService.getTimes(game)
+      .then((next) => {
+        if (!cancelled) {
+          setEntry(next || null);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [game, autoFetch]);
 
   if (!HowLongToBeatService.isEnabled()) {
@@ -59,12 +65,15 @@ const HLTBChip = ({ game, variant = 'compact', autoFetch = false }) => {
   if (variant === 'compact') {
     const label = main || ext || comp;
     if (!label) return null;
-    const tip = [
-      main && `Main story: ${main}`,
-      ext && `Main + Extras: ${ext}`,
-      comp && `Completionist: ${comp}`,
-      entry.manualOverride && '(manual)'
-    ].filter(Boolean).join('\n') + '\nSource: HowLongToBeat';
+    const tip =
+      [
+        main && `Main story: ${main}`,
+        ext && `Main + Extras: ${ext}`,
+        comp && `Completionist: ${comp}`,
+        entry.manualOverride && '(manual)',
+      ]
+        .filter(Boolean)
+        .join('\n') + '\nSource: HowLongToBeat';
     return (
       <span className="hltb-chip" title={tip} aria-label={`HowLongToBeat main story ${label}`}>
         <Clock3 size={11} aria-hidden="true" />
@@ -75,9 +84,21 @@ const HLTBChip = ({ game, variant = 'compact', autoFetch = false }) => {
 
   return (
     <div className="hltb-chip-row" aria-label="HowLongToBeat times">
-      {main && <span className="hltb-chip hltb-chip--main" title="Main story">M {main}</span>}
-      {ext && <span className="hltb-chip hltb-chip--ext" title="Main + extras">+ {ext}</span>}
-      {comp && <span className="hltb-chip hltb-chip--comp" title="Completionist">100% {comp}</span>}
+      {main && (
+        <span className="hltb-chip hltb-chip--main" title="Main story">
+          M {main}
+        </span>
+      )}
+      {ext && (
+        <span className="hltb-chip hltb-chip--ext" title="Main + extras">
+          + {ext}
+        </span>
+      )}
+      {comp && (
+        <span className="hltb-chip hltb-chip--comp" title="Completionist">
+          100% {comp}
+        </span>
+      )}
     </div>
   );
 };

@@ -25,16 +25,18 @@ const StreakBadge = () => {
     'late-night': '🌙',
     'genre-monopoly': '🎯',
     'single-game': '💍',
-    'variety': '🎰',
-    'weekend': '📅',
-    'generic': '🔥'
+    variety: '🎰',
+    weekend: '📅',
+    generic: '🔥',
   };
 
   const icon = typeIcons[streak.type] || '🔥';
 
   return (
     <div className="streak-badge" role="status" aria-live="polite">
-      <span className="streak-badge-icon" aria-hidden="true">{icon}</span>
+      <span className="streak-badge-icon" aria-hidden="true">
+        {icon}
+      </span>
       <div className="streak-badge-content">
         <span className="streak-badge-label">{streak.label}</span>
         <span className="streak-badge-roast">{streak.roast}</span>

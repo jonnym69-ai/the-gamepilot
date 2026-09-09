@@ -15,13 +15,21 @@
   gap: 18px;
   align-items: center;
 }
-.storage-manager-hero-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.storage-manager-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .storage-manager-hero-title {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.storage-manager-hero-title h1 { margin: 0; font-size: 22px; }
+.storage-manager-hero-title h1 {
+  margin: 0;
+  font-size: 22px;
+}
 .storage-manager-hero-text p {
   margin: 0;
   color: var(--text-secondary, #94a3b8);
@@ -51,12 +59,27 @@
   letter-spacing: 0.06em;
   color: var(--text-secondary, #94a3b8);
 }
-.storage-manager-hero-stat strong { font-size: 18px; font-weight: 700; }
-.storage-manager-hero-stat em { font-size: 11px; color: var(--text-secondary, #94a3b8); font-style: normal; }
-.storage-manager-hero-stat.reclaim { border-color: rgba(248, 113, 113, 0.35); }
-.storage-manager-hero-stat.reclaim strong { color: #fca5a5; }
-.storage-manager-hero-stat.fast-cold { border-color: rgba(56, 189, 248, 0.35); }
-.storage-manager-hero-stat.fast-cold strong { color: #7dd3fc; }
+.storage-manager-hero-stat strong {
+  font-size: 18px;
+  font-weight: 700;
+}
+.storage-manager-hero-stat em {
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
+  font-style: normal;
+}
+.storage-manager-hero-stat.reclaim {
+  border-color: rgba(248, 113, 113, 0.35);
+}
+.storage-manager-hero-stat.reclaim strong {
+  color: #fca5a5;
+}
+.storage-manager-hero-stat.fast-cold {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+.storage-manager-hero-stat.fast-cold strong {
+  color: #7dd3fc;
+}
 
 .storage-manager-rescan {
   display: inline-flex;
@@ -71,10 +94,21 @@
   cursor: pointer;
   font-size: 12.5px;
 }
-.storage-manager-rescan:hover { filter: brightness(1.12); }
-.storage-manager-rescan:disabled { opacity: 0.7; cursor: progress; }
-.storage-manager-rescan .spin { animation: sm-spin 1s linear infinite; }
-@keyframes sm-spin { to { transform: rotate(360deg); } }
+.storage-manager-rescan:hover {
+  filter: brightness(1.12);
+}
+.storage-manager-rescan:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.storage-manager-rescan .spin {
+  animation: sm-spin 1s linear infinite;
+}
+@keyframes sm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .storage-manager-progress {
   grid-column: 1 / -1;
@@ -150,12 +184,19 @@
   gap: 12px;
   align-items: center;
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.10);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   font-size: 13px;
 }
-.storage-manager-row:last-child { border-bottom: none; }
-.storage-manager-row > div { min-width: 0; }
-.storage-manager-row .num { text-align: right; font-variant-numeric: tabular-nums; }
+.storage-manager-row:last-child {
+  border-bottom: none;
+}
+.storage-manager-row > div {
+  min-width: 0;
+}
+.storage-manager-row .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
 .storage-manager-row-head {
   background: rgba(15, 23, 42, 0.6);
@@ -220,9 +261,13 @@
   color: var(--text-primary, #e2e8f0);
   font-size: 11.5px;
   cursor: pointer;
-  transition: filter 120ms ease, border-color 120ms ease;
+  transition:
+    filter 120ms ease,
+    border-color 120ms ease;
 }
-.storage-manager-action:hover { filter: brightness(1.12); }
+.storage-manager-action:hover {
+  filter: brightness(1.12);
+}
 .storage-manager-action.launch {
   border-color: rgba(56, 189, 248, 0.4);
   color: #7dd3fc;
@@ -245,8 +290,15 @@
   gap: 10px;
   color: var(--text-secondary, #94a3b8);
 }
-.storage-manager-empty h1 { margin: 0; font-size: 20px; color: var(--text-primary, #e2e8f0); }
-.storage-manager-empty p { margin: 0; line-height: 1.5; }
+.storage-manager-empty h1 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-primary, #e2e8f0);
+}
+.storage-manager-empty p {
+  margin: 0;
+  line-height: 1.5;
+}
 .storage-manager-empty button {
   margin-top: 8px;
   padding: 9px 16px;
@@ -272,7 +324,10 @@
   font-weight: 500;
   margin-top: 2px;
 }
-.muted { color: var(--text-secondary, #94a3b8); opacity: 0.7; }
+.muted {
+  color: var(--text-secondary, #94a3b8);
+  opacity: 0.7;
+}
 
 /* Drive type badges */
 .drive-badge {
@@ -310,31 +365,58 @@
 }
 
 @media (max-width: 980px) {
-  .storage-manager-hero { grid-template-columns: 1fr; }
-  .storage-manager-hero-stats { justify-content: flex-start; }
+  .storage-manager-hero {
+    grid-template-columns: 1fr;
+  }
+  .storage-manager-hero-stats {
+    justify-content: flex-start;
+  }
   .storage-manager-row {
     grid-template-columns: minmax(0, 2fr) 1fr auto;
   }
   .storage-manager-row > div:nth-child(4),
-  .storage-manager-row > div:nth-child(5) { display: none; }
+  .storage-manager-row > div:nth-child(5) {
+    display: none;
+  }
   .storage-manager-row-head > div:nth-child(4),
-  .storage-manager-row-head > div:nth-child(5) { display: none; }
+  .storage-manager-row-head > div:nth-child(5) {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
-  .storage-manager-hero { margin: 12px 12px 0; padding: 14px 16px; }
-  .storage-manager-controls { padding: 10px 12px; }
-  .storage-manager-table { margin: 0 12px; }
+  .storage-manager-hero {
+    margin: 12px 12px 0;
+    padding: 14px 16px;
+  }
+  .storage-manager-controls {
+    padding: 10px 12px;
+  }
+  .storage-manager-table {
+    margin: 0 12px;
+  }
   .storage-manager-row {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     padding: 10px 12px;
   }
   .storage-manager-row > div:nth-child(2),
-  .storage-manager-row > div:nth-child(3) { display: none; }
+  .storage-manager-row > div:nth-child(3) {
+    display: none;
+  }
   .storage-manager-row-head > div:nth-child(2),
-  .storage-manager-row-head > div:nth-child(3) { display: none; }
-  .storage-manager-cell-art { width: 40px; height: 20px; }
-  .storage-manager-action span { display: none; }
-  .storage-manager-hero-stat { min-width: 120px; padding: 8px 10px; }
+  .storage-manager-row-head > div:nth-child(3) {
+    display: none;
+  }
+  .storage-manager-cell-art {
+    width: 40px;
+    height: 20px;
+  }
+  .storage-manager-action span {
+    display: none;
+  }
+  .storage-manager-hero-stat {
+    min-width: 120px;
+    padding: 8px 10px;
+  }
 }

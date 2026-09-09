@@ -9,7 +9,7 @@ import {
   Target,
   Sparkles,
   Activity,
-  Palette
+  Palette,
 } from 'lucide-react';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
@@ -52,9 +52,9 @@ const HabitInsightsPanel = ({ library = [] }) => {
     const allTime = dashboard?.periods?.all;
     // Recent habit window: prefer this week, fall back to this month, then
     // all-time — so the patterns reflect current play, not ancient history.
-    const recentPeriod = ['weekly', 'monthly']
-      .map((key) => dashboard?.periods?.[key])
-      .find((period) => (period?.sessions || 0) > 0) || allTime;
+    const recentPeriod =
+      ['weekly', 'monthly'].map((key) => dashboard?.periods?.[key]).find((period) => (period?.sessions || 0) > 0) ||
+      allTime;
     const habit = recentPeriod?.habitInsights;
     const enrichedLibrary = GameCurationService.enrichLibrary(library);
     const tasteClusters = GamingIdentity.detectTasteClusters(GamingIdentity.getSignatureGames(5));
@@ -70,9 +70,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
       return completion.status && completion.status !== 'not-started';
     }).length;
 
-    const abandonmentRate = totalWithStatus > 0
-      ? Math.round((abandonedCount / totalWithStatus) * 100)
-      : 0;
+    const abandonmentRate = totalWithStatus > 0 ? Math.round((abandonedCount / totalWithStatus) * 100) : 0;
 
     // Genre diversity
     const genreCounts = {};
@@ -85,27 +83,24 @@ const HabitInsightsPanel = ({ library = [] }) => {
 
     // Session length trend (compare recent 10 sessions vs overall average)
     const recentSessions = (allTime?.recentSessions || []).slice(0, 10);
-    const recentAvg = recentSessions.length > 0
-      ? Math.round(recentSessions.reduce((s, r) => s + (r.playtimeMinutes || 0), 0) / recentSessions.length)
-      : 0;
+    const recentAvg =
+      recentSessions.length > 0
+        ? Math.round(recentSessions.reduce((s, r) => s + (r.playtimeMinutes || 0), 0) / recentSessions.length)
+        : 0;
     const overallAvg = allTime?.avgSessionMinutes || 0;
-    const sessionTrend = recentAvg > overallAvg * 1.15
-      ? 'increasing'
-      : recentAvg < overallAvg * 0.85
-        ? 'decreasing'
-        : 'stable';
+    const sessionTrend =
+      recentAvg > overallAvg * 1.15 ? 'increasing' : recentAvg < overallAvg * 0.85 ? 'decreasing' : 'stable';
 
     // Peak time window — from the current-rotation persona's recent session
     // pool, falling back to all-time behavior stats when no sessions exist.
-    const recentPeakHour = Number.isFinite(gamingPersona?.signals?.peakHour)
-      ? gamingPersona.signals.peakHour
-      : null;
+    const recentPeakHour = Number.isFinite(gamingPersona?.signals?.peakHour) ? gamingPersona.signals.peakHour : null;
     const peakHours = UserBehaviorProfile.getPeakPlayHours(3);
-    const peakWindow = recentPeakHour !== null
-      ? `${UserBehaviorProfile.getTimeOfDay(recentPeakHour)} (${recentPeakHour}:00)`
-      : peakHours.length > 0
-        ? `${peakHours[0].timeOfDay} (${peakHours[0].hour}:00)`
-        : 'Not enough data';
+    const peakWindow =
+      recentPeakHour !== null
+        ? `${UserBehaviorProfile.getTimeOfDay(recentPeakHour)} (${recentPeakHour}:00)`
+        : peakHours.length > 0
+          ? `${peakHours[0].timeOfDay} (${peakHours[0].hour}:00)`
+          : 'Not enough data';
 
     // Mood consistency — from sessions in the recent period when available,
     // else the all-time behavior profile.
@@ -114,11 +109,12 @@ const HabitInsightsPanel = ({ library = [] }) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
     const topMoods = UserBehaviorProfile.getTopMoods(3);
-    const moodConsistency = recentMoodEntries.length > 0
-      ? recentMoodEntries.map(([mood, count]) => `${mood} (${count} session${count === 1 ? '' : 's'})`).join(' · ')
-      : topMoods.length > 0
-        ? topMoods.map((m) => `${m.mood} (${m.count} sessions)`).join(' · ')
-        : 'Still learning';
+    const moodConsistency =
+      recentMoodEntries.length > 0
+        ? recentMoodEntries.map(([mood, count]) => `${mood} (${count} session${count === 1 ? '' : 's'})`).join(' · ')
+        : topMoods.length > 0
+          ? topMoods.map((m) => `${m.mood} (${m.count} sessions)`).join(' · ')
+          : 'Still learning';
 
     // Backlog health
     const unplayed = enrichedLibrary.filter((g) => isGameUnplayed(g)).length;
@@ -133,7 +129,9 @@ const HabitInsightsPanel = ({ library = [] }) => {
     // Time-of-day heatmap data
     const allHours = Array.from({ length: 24 }, (_, i) => i);
     const hourCounts = {};
-    allHours.forEach((h) => { hourCounts[h] = 0; });
+    allHours.forEach((h) => {
+      hourCounts[h] = 0;
+    });
     (allTime?.recentSessions || []).forEach((s) => {
       const d = s.date ? new Date(s.date) : s.startTime ? new Date(s.startTime) : null;
       const h = d ? d.getHours() : null;
@@ -144,30 +142,24 @@ const HabitInsightsPanel = ({ library = [] }) => {
       hour: h,
       label: h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h - 12}p`,
       value: hourCounts[h] || 0,
-      intensity: (hourCounts[h] || 0) / maxHourValue
+      intensity: (hourCounts[h] || 0) / maxHourValue,
     }));
 
     // Session trend (last 14 sessions)
-    const sessionTrendRaw = (allTime?.recentSessions || [])
-      .slice(-14)
-      .map((s, idx) => ({
-        index: idx + 1,
-        minutes: s.playtimeMinutes || 0,
-        game: s.gameName || ''
-      }));
+    const sessionTrendRaw = (allTime?.recentSessions || []).slice(-14).map((s, idx) => ({
+      index: idx + 1,
+      minutes: s.playtimeMinutes || 0,
+      game: s.gameName || '',
+    }));
 
     // Genre phase (recent sessions grouped by genre over time)
-    const genrePhase = (allTime?.recentSessions || [])
-      .slice(-20)
-      .map((s) => {
-        const game = library.find(
-          (g) => String(g.name).toLowerCase() === String(s.gameName).toLowerCase()
-        );
-        return {
-          genre: (game?.genres?.[0]) || 'Unknown',
-          minutes: s.playtimeMinutes || 0
-        };
-      });
+    const genrePhase = (allTime?.recentSessions || []).slice(-20).map((s) => {
+      const game = library.find((g) => String(g.name).toLowerCase() === String(s.gameName).toLowerCase());
+      return {
+        genre: game?.genres?.[0] || 'Unknown',
+        minutes: s.playtimeMinutes || 0,
+      };
+    });
     const genrePhaseTotals = {};
     genrePhase.forEach((p) => {
       genrePhaseTotals[p.genre] = (genrePhaseTotals[p.genre] || 0) + p.minutes;
@@ -198,7 +190,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
       heatmap,
       sessionTrendRaw,
       genrePhaseSorted,
-      tasteClusters
+      tasteClusters,
     };
   }, [library]);
 
@@ -232,14 +224,10 @@ const HabitInsightsPanel = ({ library = [] }) => {
     heatmap,
     sessionTrendRaw,
     genrePhaseSorted,
-    tasteClusters
+    tasteClusters,
   } = insights;
 
-  const trendIcon = sessionTrend === 'increasing'
-    ? TrendingUp
-    : sessionTrend === 'decreasing'
-      ? TrendingDown
-      : Target;
+  const trendIcon = sessionTrend === 'increasing' ? TrendingUp : sessionTrend === 'decreasing' ? TrendingDown : Target;
   const trendTone = sessionTrend === 'increasing' ? 'good' : sessionTrend === 'decreasing' ? 'warn' : 'neutral';
 
   return (
@@ -255,7 +243,12 @@ const HabitInsightsPanel = ({ library = [] }) => {
           icon={Gamepad2}
           title="Gaming Identity"
           value={primary?.label || persona?.personaIdentity?.label || 'Explorer'}
-          subtitle={gamingPersona?.summaryRoast || primary?.roast || persona?.personaIdentity?.description || 'Still forming your profile'}
+          subtitle={
+            gamingPersona?.summaryRoast ||
+            primary?.roast ||
+            persona?.personaIdentity?.description ||
+            'Still forming your profile'
+          }
           tone="highlight"
         />
         <InsightCard
@@ -287,11 +280,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
           Detected Patterns{habitPeriodLabel ? ` · ${habitPeriodLabel}` : ''}
         </h4>
         <div className="habit-patterns-list">
-          <PatternRow
-            label="Dominant Mood"
-            detail={moodConsistency}
-            tone="highlight"
-          />
+          <PatternRow label="Dominant Mood" detail={moodConsistency} tone="highlight" />
           <PatternRow
             label="Genre Diversity"
             detail={`${genreCount} unique genres across your library`}
@@ -310,11 +299,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
             />
           )}
           {habit?.lateNightSessions > 0 && (
-            <PatternRow
-              label="Night Owl"
-              detail={`${habit.lateNightSessions} late-night sessions`}
-              tone="neutral"
-            />
+            <PatternRow label="Night Owl" detail={`${habit.lateNightSessions} late-night sessions`} tone="neutral" />
           )}
           {habit?.mostReturnedTo && (
             <PatternRow
@@ -326,7 +311,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
           {habit?.longestSession && (
             <PatternRow
               label="Longest Session"
-              detail={`${habit.longestSession.gameName} — ${Math.round(habit.longestSession.playtimeMinutes / 60 * 10) / 10} hours`}
+              detail={`${habit.longestSession.gameName} — ${Math.round((habit.longestSession.playtimeMinutes / 60) * 10) / 10} hours`}
               tone="highlight"
             />
           )}
@@ -346,7 +331,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
                   className="viz-heatmap-bar"
                   style={{
                     height: `${Math.max(4, h.intensity * 100)}%`,
-                    opacity: 0.3 + h.intensity * 0.7
+                    opacity: 0.3 + h.intensity * 0.7,
                   }}
                 />
                 <span className="viz-heatmap-label">{h.label}</span>
@@ -371,10 +356,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
                   const maxMin = Math.max(...sessionTrendRaw.map((x) => x.minutes), 1);
                   return (
                     <div key={s.index} className="viz-trend-cell" title={`${s.game}: ${s.minutes}m`}>
-                      <div
-                        className="viz-trend-bar"
-                        style={{ height: `${(s.minutes / maxMin) * 100}%` }}
-                      />
+                      <div className="viz-trend-bar" style={{ height: `${(s.minutes / maxMin) * 100}%` }} />
                     </div>
                   );
                 })}

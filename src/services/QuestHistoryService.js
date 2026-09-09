@@ -44,11 +44,9 @@ export class QuestHistoryService {
       return null;
     }
 
-    const history = this.getQuestCompletionHistory().filter((item) => !(
-      item?.achievementId === achievementId
-      && item?.period === period
-      && item?.periodKey === periodKey
-    ));
+    const history = this.getQuestCompletionHistory().filter(
+      (item) => !(item?.achievementId === achievementId && item?.period === period && item?.periodKey === periodKey)
+    );
 
     const normalizedEntry = {
       achievementId,
@@ -61,7 +59,7 @@ export class QuestHistoryService {
       metric: normalizeText(entry.metric),
       target: Number(entry.target) || 0,
       current: Number(entry.current) || 0,
-      completedAt: normalizeTimestamp(entry.completedAt)
+      completedAt: normalizeTimestamp(entry.completedAt),
     };
 
     history.unshift(normalizedEntry);
@@ -72,10 +70,12 @@ export class QuestHistoryService {
 
   static getQuestCompletionHistoryForYear(year) {
     const safeYear = Number(year);
-    return this.getQuestCompletionHistory().filter((entry) => {
-      const completedAt = new Date(Number(entry?.completedAt || 0));
-      return !Number.isNaN(completedAt.getTime()) && completedAt.getFullYear() === safeYear;
-    }).sort(sortNewestFirst);
+    return this.getQuestCompletionHistory()
+      .filter((entry) => {
+        const completedAt = new Date(Number(entry?.completedAt || 0));
+        return !Number.isNaN(completedAt.getTime()) && completedAt.getFullYear() === safeYear;
+      })
+      .sort(sortNewestFirst);
   }
 
   static getQuestCompletionSummaryForYear(year) {
@@ -84,7 +84,7 @@ export class QuestHistoryService {
       daily: 0,
       weekly: 0,
       monthly: 0,
-      yearly: 0
+      yearly: 0,
     };
 
     entries.forEach((entry) => {
@@ -93,14 +93,14 @@ export class QuestHistoryService {
       }
     });
 
-    const topPeriod = Object.entries(periods)
-      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0] || null;
+    const topPeriod =
+      Object.entries(periods).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0] || null;
 
     return {
       totalCompleted: entries.length,
       periodCounts: periods,
       topPeriod: topPeriod && topPeriod[1] > 0 ? { period: topPeriod[0], count: topPeriod[1] } : null,
-      highlights: entries.slice(0, 8)
+      highlights: entries.slice(0, 8),
     };
   }
 }

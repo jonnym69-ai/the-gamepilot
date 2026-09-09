@@ -18,7 +18,7 @@ const WEIGHT_CATEGORIES = [
       { key: 'genreLowRateBonus', label: 'Genre Low Rate Bonus', min: 0, max: 20, step: 1 },
       { key: 'genreHighRateThreshold', label: 'Genre High Threshold %', min: 50, max: 95, step: 1 },
       { key: 'genreMediumRateThreshold', label: 'Genre Medium Threshold %', min: 30, max: 70, step: 1 },
-    ]
+    ],
   },
   {
     label: 'Session & Time Fit',
@@ -28,7 +28,7 @@ const WEIGHT_CATEGORIES = [
       { key: 'sessionNearMatchBonus', label: 'Session Near Match', min: 0, max: 15, step: 1 },
       { key: 'timeAvailabilityFitBonus', label: 'Time Window Fit Bonus', min: 0, max: 25, step: 1 },
       { key: 'timeAvailabilityAlmostFitBonus', label: 'Time Almost Fit Bonus', min: 0, max: 15, step: 1 },
-    ]
+    ],
   },
   {
     label: 'Discovery & Replay',
@@ -43,7 +43,7 @@ const WEIGHT_CATEGORIES = [
       { key: 'explorationSlotEnabled', label: 'Exploration Slot', min: 0, max: 1, step: 1 },
       { key: 'explorationUnplayedBonus', label: 'Exploration Unplayed Bonus', min: 0, max: 50, step: 1 },
       { key: 'explorationGenreNoveltyWeight', label: 'Exploration Novelty Weight', min: 0, max: 60, step: 1 },
-    ]
+    ],
   },
   {
     label: 'Persona & Feedback',
@@ -52,7 +52,7 @@ const WEIGHT_CATEGORIES = [
       { key: 'likedGameBonus', label: 'Liked Game Bonus', min: 0, max: 40, step: 1 },
       { key: 'dislikedGamePenalty', label: 'Disliked Game Penalty', min: 0, max: 60, step: 1 },
       { key: 'hardwareCannotRunPenalty', label: 'Hardware Cannot Run Penalty', min: 0, max: 70, step: 1 },
-    ]
+    ],
   },
   {
     label: 'Onboarding Seed',
@@ -63,8 +63,8 @@ const WEIGHT_CATEGORIES = [
       { key: 'seedGenreMatchWithoutProfile', label: 'Seed Genre Match (no Profile)', min: 0, max: 20, step: 1 },
       { key: 'seedSessionCloseBonus', label: 'Seed Session Close Bonus', min: 0, max: 15, step: 1 },
       { key: 'seedSessionNearBonus', label: 'Seed Session Near Bonus', min: 0, max: 10, step: 1 },
-    ]
-  }
+    ],
+  },
 ];
 
 export default function RecommendationTunerPanel() {
@@ -194,11 +194,7 @@ export default function RecommendationTunerPanel() {
       </div>
 
       <div className="rec-tuner-footer">
-        <button
-          type="button"
-          className="rec-tuner-btn secondary"
-          onClick={handleReset}
-        >
+        <button type="button" className="rec-tuner-btn secondary" onClick={handleReset}>
           <RotateCcw size={16} /> Reset to Preset
         </button>
         <button

@@ -24,12 +24,7 @@ function EmptyLibraryState({ onScan, theme = 'dark', scanStatus = 'idle' }) {
 
       {/* Scan CTA */}
       <div className="empty-library-cta">
-        <button
-          onClick={onScan}
-          disabled={isScanning}
-          className="empty-library-scan-button"
-          aria-busy={isScanning}
-        >
+        <button onClick={onScan} disabled={isScanning} className="empty-library-scan-button" aria-busy={isScanning}>
           {isScanning ? (
             <>
               <span className="empty-library-scan-spinner" aria-hidden="true" />
@@ -49,7 +44,16 @@ function EmptyLibraryState({ onScan, theme = 'dark', scanStatus = 'idle' }) {
       <div className="empty-library-platforms">
         <h3>Supported Platforms</h3>
         <div className="empty-library-platform-list">
-          {['Steam', 'Epic Games', 'Xbox Game Pass', 'GOG', 'EA App', 'Ubisoft Connect', 'Battle.net', 'Rockstar Launcher'].map(platform => (
+          {[
+            'Steam',
+            'Epic Games',
+            'Xbox Game Pass',
+            'GOG',
+            'EA App',
+            'Ubisoft Connect',
+            'Battle.net',
+            'Rockstar Launcher',
+          ].map((platform) => (
             <span key={platform} className="empty-library-platform-chip">
               {platform}
             </span>

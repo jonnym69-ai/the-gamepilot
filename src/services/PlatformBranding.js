@@ -5,7 +5,7 @@ const PLAYSTATION_PUBLISHERS = [
   'sony europe',
   'sony japan',
   'xdev',
-  'housemarque oy'
+  'housemarque oy',
 ];
 
 const PLAYSTATION_TITLE_KEYWORDS = [
@@ -23,7 +23,7 @@ const PLAYSTATION_TITLE_KEYWORDS = [
   'sackboy',
   'days gone',
   'killszone',
-  'gran turismo'
+  'gran turismo',
 ];
 
 export const getBrandPlatform = ({ developer = '', publisher = '', gameName = '', tags = [] } = {}) => {

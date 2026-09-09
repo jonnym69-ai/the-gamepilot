@@ -33,7 +33,7 @@ export const DailyEngagementService = {
       currentStreak: 0,
       longestStreak: 0,
       totalLogins: 0,
-      weeklySummaryShown: null
+      weeklySummaryShown: null,
     };
 
     const today = getTodayDateString();
@@ -61,7 +61,7 @@ export const DailyEngagementService = {
 
     return {
       ...data,
-      streakAtRisk: data.currentStreak > 0 && data.lastLoginDate !== today && data.lastLoginDate !== yesterday
+      streakAtRisk: data.currentStreak > 0 && data.lastLoginDate !== today && data.lastLoginDate !== yesterday,
     };
   },
 
@@ -70,13 +70,13 @@ export const DailyEngagementService = {
     if (!data) return null;
 
     const currentStreak = data.currentStreak || 0;
-    const milestone = STREAK_MILESTONES.find(m => m === currentStreak);
+    const milestone = STREAK_MILESTONES.find((m) => m === currentStreak);
 
     if (milestone) {
       return {
         reached: true,
         milestone,
-        message: `${milestone} day streak achieved!`
+        message: `${milestone} day streak achieved!`,
       };
     }
 
@@ -95,7 +95,7 @@ export const DailyEngagementService = {
       loginsThisWeek: 0,
       currentStreak: data.currentStreak || 0,
       longestStreak: data.longestStreak || 0,
-      totalLogins: data.totalLogins || 0
+      totalLogins: data.totalLogins || 0,
     };
   },
 
@@ -119,7 +119,7 @@ export const DailyEngagementService = {
     saveEngagement(data);
   },
 
-  getStreakMilestones: () => STREAK_MILESTONES
+  getStreakMilestones: () => STREAK_MILESTONES,
 };
 
 export default DailyEngagementService;

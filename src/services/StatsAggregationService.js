@@ -7,13 +7,7 @@ import { AchievementTracker } from '../AchievementSystem';
 import { getDateKey } from './DateKeyService';
 import StorageService from './StorageService';
 
-const FEATURE_KEYS = Object.freeze([
-  'perfectPlay',
-  'surpriseMe',
-  'rediscover',
-  'continuePlaying',
-  'share'
-]);
+const FEATURE_KEYS = Object.freeze(['perfectPlay', 'surpriseMe', 'rediscover', 'continuePlaying', 'share']);
 
 const PERIOD_KEYS = Object.freeze(['daily', 'weekly', 'monthly', 'yearly', 'all']);
 
@@ -22,7 +16,7 @@ const PERIOD_LABELS = Object.freeze({
   weekly: 'This Week',
   monthly: 'This Month',
   yearly: 'This Year',
-  all: 'All Time'
+  all: 'All Time',
 });
 
 const ALL_TIME_FEATURE_STORAGE_KEYS = Object.freeze({
@@ -30,7 +24,7 @@ const ALL_TIME_FEATURE_STORAGE_KEYS = Object.freeze({
   surpriseMe: 'surprise',
   rediscover: 'rediscover',
   continuePlaying: 'continue_playing',
-  share: 'share'
+  share: 'share',
 });
 
 const getStoredAchievementFeatureStats = () => {
@@ -42,10 +36,11 @@ const getStoredAchievementFeatureStats = () => {
   }
 };
 
-const buildEmptyFeatureUsage = () => FEATURE_KEYS.reduce((acc, key) => {
-  acc[key] = 0;
-  return acc;
-}, {});
+const buildEmptyFeatureUsage = () =>
+  FEATURE_KEYS.reduce((acc, key) => {
+    acc[key] = 0;
+    return acc;
+  }, {});
 
 const incrementCounter = (counter, key, amount = 1) => {
   const normalizedKey = typeof key === 'string' ? key.trim() : '';
@@ -118,7 +113,14 @@ const normalizeSession = (session, libraryIndex) => {
     return null;
   }
 
-  const rawMinutes = session?.playtimeMinutes ?? session?.playtime ?? session?.duration ?? session?.minutes ?? session?.elapsedMinutes ?? session?.actualElapsedMinutes ?? 0;
+  const rawMinutes =
+    session?.playtimeMinutes ??
+    session?.playtime ??
+    session?.duration ??
+    session?.minutes ??
+    session?.elapsedMinutes ??
+    session?.actualElapsedMinutes ??
+    0;
   const playtimeMinutes = Math.max(0, Math.round(Number(rawMinutes) || 0));
   const game = findMatchingGame(session, libraryIndex);
   const sessionGenres = Array.isArray(session?.genres) ? session.genres.filter(Boolean) : [];
@@ -140,7 +142,7 @@ const normalizeSession = (session, libraryIndex) => {
     coverUrl: game?.headerImage || game?.coverUrl || game?.capsule || '',
     playtimeMinutes,
     timestamp,
-    launchMethod: session?.launchMethod || null
+    launchMethod: session?.launchMethod || null,
   };
 };
 
@@ -167,14 +169,14 @@ const getImportedPlaytimeSummary = (library = []) => {
       gameName: game.name || 'Unknown Game',
       platform: game.platform || 'Unknown',
       minutes: totalImported,
-      source: game.playtimeSource || 'imported'
+      source: game.playtimeSource || 'imported',
     });
   });
 
   return {
     totalMinutes,
     gameCount: games.length,
-    games
+    games,
   };
 };
 
@@ -187,11 +189,14 @@ const isSessionInPeriod = (session, period, referenceDate = new Date()) => {
     case 'daily':
       return session.timestamp.toDateString() === referenceDate.toDateString();
     case 'weekly':
-      return RollingAchievementsTracker.getWeekStart(session.timestamp) === RollingAchievementsTracker.getWeekStart(referenceDate);
+      return (
+        RollingAchievementsTracker.getWeekStart(session.timestamp) ===
+        RollingAchievementsTracker.getWeekStart(referenceDate)
+      );
     case 'monthly':
       return (
-        session.timestamp.getFullYear() === referenceDate.getFullYear()
-        && session.timestamp.getMonth() === referenceDate.getMonth()
+        session.timestamp.getFullYear() === referenceDate.getFullYear() &&
+        session.timestamp.getMonth() === referenceDate.getMonth()
       );
     case 'yearly':
       return session.timestamp.getFullYear() === referenceDate.getFullYear();
@@ -208,19 +213,19 @@ const getRangeLabel = (period, referenceDate = new Date(), sessions = []) => {
       return referenceDate.toLocaleDateString(undefined, {
         weekday: 'long',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
     case 'weekly': {
       const weekStartText = RollingAchievementsTracker.getWeekStart(referenceDate);
       return `Week of ${new Date(weekStartText).toLocaleDateString(undefined, {
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
       })}`;
     }
     case 'monthly':
       return referenceDate.toLocaleDateString(undefined, {
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
       });
     case 'yearly':
       return referenceDate.getFullYear().toString();
@@ -248,7 +253,7 @@ const buildTimeline = (sessions, period) => {
       'Morning (8am-12pm)',
       'Afternoon (12-4pm)',
       'Evening (4-8pm)',
-      'Night (8pm-12am)'
+      'Night (8pm-12am)',
     ];
     const timeline = Object.fromEntries(labels.map((label) => [label, 0]));
     sessions.forEach((session) => {
@@ -287,7 +292,9 @@ const buildTimeline = (sessions, period) => {
     return timeline;
   }
 
-  const uniqueYears = Array.from(new Set(sessions.map((session) => session.timestamp.getFullYear()))).sort((a, b) => a - b);
+  const uniqueYears = Array.from(new Set(sessions.map((session) => session.timestamp.getFullYear()))).sort(
+    (a, b) => a - b
+  );
   if (uniqueYears.length <= 1) {
     const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const timeline = Object.fromEntries(labels.map((label) => [label, 0]));
@@ -321,7 +328,7 @@ const buildTopGames = (sessions) => {
         sessions: 0,
         playCount: 0,
         lastPlayed: session.timestamp,
-        avgSessionMinutes: 0
+        avgSessionMinutes: 0,
       });
     }
 
@@ -339,7 +346,7 @@ const buildTopGames = (sessions) => {
   return Array.from(gameMap.values())
     .map((entry) => ({
       ...entry,
-      avgSessionMinutes: entry.sessions > 0 ? Math.round(entry.totalPlaytime / entry.sessions) : 0
+      avgSessionMinutes: entry.sessions > 0 ? Math.round(entry.totalPlaytime / entry.sessions) : 0,
     }))
     .sort((left, right) => {
       if (right.totalPlaytime !== left.totalPlaytime) {
@@ -350,20 +357,21 @@ const buildTopGames = (sessions) => {
     .slice(0, 10);
 };
 
-const buildRecentSessions = (sessions) => sessions
-  .slice()
-  .sort((left, right) => right.timestamp - left.timestamp)
-  .slice(0, 8)
-  .map((session, index) => ({
-    id: `${String(session.gameId || session.gameName)}-${session.timestamp.getTime()}-${index}`,
-    gameName: session.gameName,
-    platform: session.platform,
-    playtimeMinutes: session.playtimeMinutes,
-    timestamp: session.timestamp,
-    mood: session.mood,
-    genre: session.primaryGenre,
-    launchMethod: session.launchMethod
-  }));
+const buildRecentSessions = (sessions) =>
+  sessions
+    .slice()
+    .sort((left, right) => right.timestamp - left.timestamp)
+    .slice(0, 8)
+    .map((session, index) => ({
+      id: `${String(session.gameId || session.gameName)}-${session.timestamp.getTime()}-${index}`,
+      gameName: session.gameName,
+      platform: session.platform,
+      playtimeMinutes: session.playtimeMinutes,
+      timestamp: session.timestamp,
+      mood: session.mood,
+      genre: session.primaryGenre,
+      launchMethod: session.launchMethod,
+    }));
 
 const formatInsightDate = (value) => {
   if (!value) {
@@ -398,32 +406,38 @@ const buildHabitInsights = (sessions, topGames) => {
       dateKey,
       dateLabel: formatInsightDate(session.timestamp),
       playtimeMinutes: 0,
-      sessions: 0
+      sessions: 0,
     };
     entry.playtimeMinutes += session.playtimeMinutes;
     entry.sessions += 1;
     dayMap.set(dateKey, entry);
   });
 
-  const busiestDay = Array.from(dayMap.values())
-    .sort((left, right) => right.playtimeMinutes - left.playtimeMinutes || right.sessions - left.sessions)[0] || null;
-  const mostReturnedTo = [...topGames]
-    .sort((left, right) => right.sessions - left.sessions || right.totalPlaytime - left.totalPlaytime)[0] || null;
+  const busiestDay =
+    Array.from(dayMap.values()).sort(
+      (left, right) => right.playtimeMinutes - left.playtimeMinutes || right.sessions - left.sessions
+    )[0] || null;
+  const mostReturnedTo =
+    [...topGames].sort(
+      (left, right) => right.sessions - left.sessions || right.totalPlaytime - left.totalPlaytime
+    )[0] || null;
 
   return {
-    longestSession: longestSession ? {
-      gameName: longestSession.gameName,
-      platform: longestSession.platform,
-      playtimeMinutes: longestSession.playtimeMinutes,
-      dateLabel: formatInsightDate(longestSession.timestamp)
-    } : null,
+    longestSession: longestSession
+      ? {
+          gameName: longestSession.gameName,
+          platform: longestSession.platform,
+          playtimeMinutes: longestSession.playtimeMinutes,
+          dateLabel: formatInsightDate(longestSession.timestamp),
+        }
+      : null,
     busiestDay,
     mostReturnedTo,
     weekendSessions: weekendSessions.length,
     weekendPlaytimeMinutes: weekendSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
     lateNightSessions: lateNightSessions.length,
     lateNightPlaytimeMinutes: lateNightSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
-    repeatGames: topGames.filter((game) => game.sessions > 1).length
+    repeatGames: topGames.filter((game) => game.sessions > 1).length,
   };
 };
 
@@ -434,21 +448,16 @@ const buildFeatureUsage = (period, rollingStats) => {
     const counts = buildEmptyFeatureUsage();
     FEATURE_KEYS.forEach((key) => {
       const achievementKey = ALL_TIME_FEATURE_STORAGE_KEYS[key];
-      counts[key] = Math.max(
-        Number(storedCounts[key] || 0),
-        Number(achievementCounts?.[achievementKey] || 0)
-      );
+      counts[key] = Math.max(Number(storedCounts[key] || 0), Number(achievementCounts?.[achievementKey] || 0));
     });
     const totalUses = Object.values(counts).reduce((sum, value) => sum + value, 0);
-    const favoriteFeature = totalUses > 0
-      ? Object.entries(counts)
-        .sort((left, right) => right[1] - left[1])[0]?.[0] || null
-      : null;
+    const favoriteFeature =
+      totalUses > 0 ? Object.entries(counts).sort((left, right) => right[1] - left[1])[0]?.[0] || null : null;
 
     return {
       counts,
       totalUses,
-      favoriteFeature
+      favoriteFeature,
     };
   }
 
@@ -458,15 +467,13 @@ const buildFeatureUsage = (period, rollingStats) => {
     counts[key] = Number(periodCounts[key] || 0);
   });
   const totalUses = Object.values(counts).reduce((sum, value) => sum + value, 0);
-  const favoriteFeature = totalUses > 0
-    ? Object.entries(counts)
-      .sort((left, right) => right[1] - left[1])[0]?.[0] || null
-    : null;
+  const favoriteFeature =
+    totalUses > 0 ? Object.entries(counts).sort((left, right) => right[1] - left[1])[0]?.[0] || null : null;
 
   return {
     counts,
     totalUses,
-    favoriteFeature
+    favoriteFeature,
   };
 };
 
@@ -480,9 +487,13 @@ const isQuestEntryInPeriod = (entry, period, referenceDate = new Date()) => {
     case 'daily':
       return completedAt.toDateString() === referenceDate.toDateString();
     case 'weekly':
-      return RollingAchievementsTracker.getWeekStart(completedAt) === RollingAchievementsTracker.getWeekStart(referenceDate);
+      return (
+        RollingAchievementsTracker.getWeekStart(completedAt) === RollingAchievementsTracker.getWeekStart(referenceDate)
+      );
     case 'monthly':
-      return completedAt.getFullYear() === referenceDate.getFullYear() && completedAt.getMonth() === referenceDate.getMonth();
+      return (
+        completedAt.getFullYear() === referenceDate.getFullYear() && completedAt.getMonth() === referenceDate.getMonth()
+      );
     case 'yearly':
       return completedAt.getFullYear() === referenceDate.getFullYear();
     case 'all':
@@ -493,8 +504,9 @@ const isQuestEntryInPeriod = (entry, period, referenceDate = new Date()) => {
 };
 
 const buildQuestUsage = (period, referenceDate = new Date()) => {
-  const entries = QuestHistoryService.getQuestCompletionHistory()
-    .filter((entry) => isQuestEntryInPeriod(entry, period, referenceDate));
+  const entries = QuestHistoryService.getQuestCompletionHistory().filter((entry) =>
+    isQuestEntryInPeriod(entry, period, referenceDate)
+  );
   const periodCounts = { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
   entries.forEach((entry) => {
     if (periodCounts[entry.period] !== undefined) {
@@ -509,12 +521,12 @@ const buildQuestUsage = (period, referenceDate = new Date()) => {
     recent: entries.slice(0, 5),
     topQuest: topQuest
       ? {
-        achievementId: topQuest.achievementId,
-        name: topQuest.name,
-        period: topQuest.period,
-        completedAt: topQuest.completedAt
-      }
-      : null
+          achievementId: topQuest.achievementId,
+          name: topQuest.name,
+          period: topQuest.period,
+          completedAt: topQuest.completedAt,
+        }
+      : null,
   };
 };
 
@@ -528,9 +540,13 @@ const isAchievementEntryInPeriod = (entry, period, referenceDate = new Date()) =
     case 'daily':
       return unlockedAt.toDateString() === referenceDate.toDateString();
     case 'weekly':
-      return RollingAchievementsTracker.getWeekStart(unlockedAt) === RollingAchievementsTracker.getWeekStart(referenceDate);
+      return (
+        RollingAchievementsTracker.getWeekStart(unlockedAt) === RollingAchievementsTracker.getWeekStart(referenceDate)
+      );
     case 'monthly':
-      return unlockedAt.getFullYear() === referenceDate.getFullYear() && unlockedAt.getMonth() === referenceDate.getMonth();
+      return (
+        unlockedAt.getFullYear() === referenceDate.getFullYear() && unlockedAt.getMonth() === referenceDate.getMonth()
+      );
     case 'yearly':
       return unlockedAt.getFullYear() === referenceDate.getFullYear();
     case 'all':
@@ -548,7 +564,7 @@ const buildAchievementUsage = (period, referenceDate = new Date()) => {
   return {
     totalUnlocked: entries.length,
     recent: entries.slice(0, 5),
-    topUnlock: entries[0] || null
+    topUnlock: entries[0] || null,
   };
 };
 
@@ -575,9 +591,10 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
   const topGames = buildTopGames(sessions);
   const recentSessions = buildRecentSessions(sessions);
   const habitInsights = buildHabitInsights(sessions, topGames);
-  const streak = period === 'all'
-    ? { ...(rollingStats?.daily?.streak || { current: 0, best: 0 }) }
-    : { ...(rollingStats?.[period]?.streak || { current: 0, best: 0 }) };
+  const streak =
+    period === 'all'
+      ? { ...(rollingStats?.daily?.streak || { current: 0, best: 0 }) }
+      : { ...(rollingStats?.[period]?.streak || { current: 0, best: 0 }) };
 
   return {
     key: period,
@@ -600,7 +617,7 @@ const buildSnapshot = (sessions, period, referenceDate, rollingStats) => {
     timeline: buildTimeline(sessions, period),
     topGames,
     recentSessions,
-    habitInsights
+    habitInsights,
   };
 };
 
@@ -615,7 +632,7 @@ export class StatsAggregationService {
   static getPeriodOptions() {
     return PERIOD_KEYS.map((key) => ({
       key,
-      label: PERIOD_LABELS[key] || key
+      label: PERIOD_LABELS[key] || key,
     }));
   }
 
@@ -639,9 +656,9 @@ export class StatsAggregationService {
   }
 
   static getAvailableYears(library = []) {
-    const years = Array.from(new Set(
-      this.getNormalizedSessionHistory(library).map((session) => session.timestamp.getFullYear())
-    )).sort((left, right) => right - left);
+    const years = Array.from(
+      new Set(this.getNormalizedSessionHistory(library).map((session) => session.timestamp.getFullYear()))
+    ).sort((left, right) => right - left);
 
     return years.length > 0 ? years : [new Date().getFullYear()];
   }
@@ -653,7 +670,7 @@ export class StatsAggregationService {
       Array.isArray(library) ? library.length : 0,
       rawHistory.length,
       lastSession ? String(lastSession.sessionId || lastSession.timestamp || '') : 'none',
-      referenceDate.toDateString()
+      referenceDate.toDateString(),
     ].join('|');
 
     if (this.dashboardCache.key === cacheKey && this.dashboardCache.data) {
@@ -670,17 +687,17 @@ export class StatsAggregationService {
     // This prevents wiping out current tracking progress
     const currentLibraryHash = JSON.stringify(library).slice(0, 100);
     const lastLibraryHash = StorageService.getString('lastLibraryHash');
-    
+
     if (currentLibraryHash !== lastLibraryHash) {
       RollingAchievementsTracker.recomputeActivityFromHistory(library);
       StorageService.setString('lastLibraryHash', currentLibraryHash);
     }
-    
+
     const rollingStats = {
       daily: RollingAchievementsTracker.getDailyStats(),
       weekly: RollingAchievementsTracker.getWeeklyStats(),
       monthly: RollingAchievementsTracker.getMonthlyStats(),
-      yearly: RollingAchievementsTracker.getYearlyStats()
+      yearly: RollingAchievementsTracker.getYearlyStats(),
     };
 
     const periods = PERIOD_KEYS.reduce((acc, period) => {
@@ -695,7 +712,7 @@ export class StatsAggregationService {
       lastUpdated: Date.now(),
       totalSessionsRecorded: sessionHistory.length,
       importedPlaytime,
-      periods
+      periods,
     };
     this.dashboardCache = { key: cacheKey, data: dashboardData };
     return dashboardData;

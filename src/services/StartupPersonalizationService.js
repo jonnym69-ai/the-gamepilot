@@ -7,7 +7,7 @@ const SESSION_BUCKET_TO_MINUTES = Object.freeze({
   quick: 30,
   medium: 120,
   long: 240,
-  weekend: 480
+  weekend: 480,
 });
 
 const PLAYER_VIBES = Object.freeze([
@@ -16,16 +16,10 @@ const PLAYER_VIBES = Object.freeze([
   'Story Hunter',
   'Experimenter',
   'Completionist',
-  'Variety Seeker'
+  'Variety Seeker',
 ]);
 
-const PERSONALIZATION_STYLES = Object.freeze([
-  'Cozy',
-  'Focused',
-  'Energetic',
-  'Prestige',
-  'Minimal'
-]);
+const PERSONALIZATION_STYLES = Object.freeze(['Cozy', 'Focused', 'Energetic', 'Prestige', 'Minimal']);
 
 export class StartupPersonalizationService {
   static getPlayerVibes() {
@@ -41,23 +35,23 @@ export class StartupPersonalizationService {
       {
         id: 'quick',
         label: 'Quick sessions',
-        description: 'Usually 15-30 minute bursts.'
+        description: 'Usually 15-30 minute bursts.',
       },
       {
         id: 'medium',
         label: 'Medium sessions',
-        description: 'Usually 1-2 hour sessions.'
+        description: 'Usually 1-2 hour sessions.',
       },
       {
         id: 'long',
         label: 'Long sessions',
-        description: 'Usually 3-4 hour play windows.'
+        description: 'Usually 3-4 hour play windows.',
       },
       {
         id: 'weekend',
         label: 'Deep-dive sessions',
-        description: 'Big weekend or marathon sessions.'
-      }
+        description: 'Big weekend or marathon sessions.',
+      },
     ];
   }
 
@@ -70,7 +64,7 @@ export class StartupPersonalizationService {
       sessionPreference: 'medium',
       playerVibe: 'Variety Seeker',
       personalizationStyle: 'Focused',
-      founderEnhanced: false
+      founderEnhanced: false,
     };
   }
 
@@ -81,8 +75,12 @@ export class StartupPersonalizationService {
       return {
         ...defaults,
         ...(parsed || {}),
-        selectedMoods: Array.isArray(parsed?.selectedMoods) ? parsed.selectedMoods.filter((mood) => MOODS.includes(mood)) : [],
-        favoriteGenres: Array.isArray(parsed?.favoriteGenres) ? parsed.favoriteGenres.filter((genre) => GENRES.includes(genre)) : []
+        selectedMoods: Array.isArray(parsed?.selectedMoods)
+          ? parsed.selectedMoods.filter((mood) => MOODS.includes(mood))
+          : [],
+        favoriteGenres: Array.isArray(parsed?.favoriteGenres)
+          ? parsed.favoriteGenres.filter((genre) => GENRES.includes(genre))
+          : [],
       };
     } catch (_error) {
       return this.getDefaults();
@@ -104,12 +102,16 @@ export class StartupPersonalizationService {
       favoriteGenres: Array.isArray(profile?.favoriteGenres)
         ? profile.favoriteGenres.filter((genre, index, arr) => GENRES.includes(genre) && arr.indexOf(genre) === index)
         : [],
-      sessionPreference: SESSION_BUCKET_TO_MINUTES[profile?.sessionPreference] ? profile.sessionPreference : defaults.sessionPreference,
+      sessionPreference: SESSION_BUCKET_TO_MINUTES[profile?.sessionPreference]
+        ? profile.sessionPreference
+        : defaults.sessionPreference,
       playerVibe: PLAYER_VIBES.includes(profile?.playerVibe) ? profile.playerVibe : defaults.playerVibe,
-      personalizationStyle: PERSONALIZATION_STYLES.includes(profile?.personalizationStyle) ? profile.personalizationStyle : defaults.personalizationStyle,
+      personalizationStyle: PERSONALIZATION_STYLES.includes(profile?.personalizationStyle)
+        ? profile.personalizationStyle
+        : defaults.personalizationStyle,
       completed: Boolean(profile?.completed),
       completedAt: profile?.completedAt || null,
-      founderEnhanced: Boolean(profile?.founderEnhanced)
+      founderEnhanced: Boolean(profile?.founderEnhanced),
     };
 
     StorageService.set(STORAGE_KEY, normalized);
@@ -121,7 +123,7 @@ export class StartupPersonalizationService {
       ...profile,
       founderEnhanced,
       completed: true,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
     });
     this.seedBehaviorProfile(saved);
     this.applyIdentityDefaults(saved);
@@ -133,7 +135,7 @@ export class StartupPersonalizationService {
     return this.saveProfile({
       ...existing,
       completed: true,
-      completedAt: existing.completedAt || new Date().toISOString()
+      completedAt: existing.completedAt || new Date().toISOString(),
     });
   }
 
@@ -144,7 +146,7 @@ export class StartupPersonalizationService {
       ...profile,
       completed: true,
       completedAt: existing.completedAt || new Date().toISOString(),
-      founderEnhanced: Boolean(profile?.founderEnhanced ?? existing.founderEnhanced)
+      founderEnhanced: Boolean(profile?.founderEnhanced ?? existing.founderEnhanced),
     });
 
     this.seedBehaviorProfile(saved);
@@ -154,8 +156,12 @@ export class StartupPersonalizationService {
 
   static seedBehaviorProfile(personalizationProfile = {}) {
     const profile = UserBehaviorProfile.getProfile();
-    const selectedMoods = Array.isArray(personalizationProfile.selectedMoods) ? personalizationProfile.selectedMoods : [];
-    const favoriteGenres = Array.isArray(personalizationProfile.favoriteGenres) ? personalizationProfile.favoriteGenres : [];
+    const selectedMoods = Array.isArray(personalizationProfile.selectedMoods)
+      ? personalizationProfile.selectedMoods
+      : [];
+    const favoriteGenres = Array.isArray(personalizationProfile.favoriteGenres)
+      ? personalizationProfile.favoriteGenres
+      : [];
     const sessionPreference = personalizationProfile.sessionPreference || 'medium';
     const sessionMinutes = SESSION_BUCKET_TO_MINUTES[sessionPreference] || 120;
     const sessionBucket = UserBehaviorProfile.getSessionLengthCategory(sessionMinutes);
@@ -166,7 +172,7 @@ export class StartupPersonalizationService {
         ...existing,
         count: Math.max(existing.count || 0, 3 - Math.min(index, 2)),
         totalPlaytime: Math.max(existing.totalPlaytime || 0, sessionMinutes),
-        seeded: true
+        seeded: true,
       };
     });
 
@@ -176,7 +182,7 @@ export class StartupPersonalizationService {
         ...existing,
         count: Math.max(existing.count || 0, 4 - Math.min(index, 3)),
         totalPlaytime: Math.max(existing.totalPlaytime || 0, sessionMinutes),
-        seeded: true
+        seeded: true,
       };
     });
 
@@ -185,8 +191,8 @@ export class StartupPersonalizationService {
       avgSessionLength: Math.max(Number(profile.playstylePatterns?.avgSessionLength || 0), sessionMinutes),
       preferredSessionLengths: {
         ...(profile.playstylePatterns?.preferredSessionLengths || {}),
-        [sessionBucket]: Math.max(Number(profile.playstylePatterns?.preferredSessionLengths?.[sessionBucket] || 0), 3)
-      }
+        [sessionBucket]: Math.max(Number(profile.playstylePatterns?.preferredSessionLengths?.[sessionBucket] || 0), 3),
+      },
     };
 
     profile.onboardingSeed = {
@@ -196,7 +202,7 @@ export class StartupPersonalizationService {
       playerVibe: personalizationProfile.playerVibe || null,
       personalizationStyle: personalizationProfile.personalizationStyle || null,
       founderEnhanced: Boolean(personalizationProfile.founderEnhanced),
-      seededAt: new Date().toISOString()
+      seededAt: new Date().toISOString(),
     };
     profile.lastUpdated = new Date().toISOString();
     UserBehaviorProfile.saveProfile(profile);
@@ -206,8 +212,12 @@ export class StartupPersonalizationService {
   static applyIdentityDefaults(personalizationProfile = {}) {
     const style = personalizationProfile.personalizationStyle || 'Focused';
     const vibe = personalizationProfile.playerVibe || 'Variety Seeker';
-    const selectedMoods = Array.isArray(personalizationProfile.selectedMoods) ? personalizationProfile.selectedMoods : [];
-    const favoriteGenres = Array.isArray(personalizationProfile.favoriteGenres) ? personalizationProfile.favoriteGenres : [];
+    const selectedMoods = Array.isArray(personalizationProfile.selectedMoods)
+      ? personalizationProfile.selectedMoods
+      : [];
+    const favoriteGenres = Array.isArray(personalizationProfile.favoriteGenres)
+      ? personalizationProfile.favoriteGenres
+      : [];
 
     if (!StorageService.getString('welcomeMessage')) {
       const leadMood = selectedMoods[0] || 'Focused';
@@ -236,7 +246,7 @@ export class StartupPersonalizationService {
       sessionPreference: profile.sessionPreference,
       playerVibe: profile.playerVibe,
       personalizationStyle: profile.personalizationStyle,
-      founderEnhanced: profile.founderEnhanced
+      founderEnhanced: profile.founderEnhanced,
     };
   }
 }

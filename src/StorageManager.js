@@ -1,6 +1,17 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import NavBar from './NavBar';
-import { HardDrive, RefreshCw, Trash2, Search, Filter, Play, ExternalLink, ThermometerSnowflake, Zap, Disc3 } from 'lucide-react';
+import {
+  HardDrive,
+  RefreshCw,
+  Trash2,
+  Search,
+  Filter,
+  Play,
+  ExternalLink,
+  ThermometerSnowflake,
+  Zap,
+  Disc3,
+} from 'lucide-react';
 import DiskUsageService, { formatBytes, getDiskKey } from './services/DiskUsageService';
 import { StorageDriveMapper } from './services/StorageDriveMapper';
 import { HardwareDetector } from './services/HardwareDetector';
@@ -14,7 +25,7 @@ const SORT_OPTIONS = [
   { value: 'size', label: 'Size (largest first)' },
   { value: 'reclaim', label: 'Most reclaimable (cold + big)' },
   { value: 'cold', label: 'Coldest (longest unplayed)' },
-  { value: 'name', label: 'Name (A → Z)' }
+  { value: 'name', label: 'Name (A → Z)' },
 ];
 
 const COLD_THRESHOLD_OPTIONS = [
@@ -24,7 +35,7 @@ const COLD_THRESHOLD_OPTIONS = [
   { value: 120, label: '120 days' },
   { value: 180, label: '6 months' },
   { value: 365, label: '1 year' },
-  { value: 0, label: 'Never played' }
+  { value: 0, label: 'Never played' },
 ];
 
 const formatLastPlayed = (lastPlayed) => {
@@ -71,35 +82,43 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   // Throttled sequential warmup. We want the user to see the cache fill in
   // progressively rather than the page freezing while every folder is
   // walked, so we measure one at a time and bump `tick` to re-render.
-  const runScan = useCallback(async ({ force = false } = {}) => {
-    if (!DiskUsageService.isEnabled()) return;
-    if (measurableGames.length === 0) return;
-    if (force) DiskUsageService.clearStaleErrors();
-    setScanProgress({ scanned: 0, total: measurableGames.length, running: true });
-    let scanned = 0;
-    for (const game of measurableGames) {
-      const cached = DiskUsageService.getCached(game);
-      if (!force && cached && cached.ok) {
+  const runScan = useCallback(
+    async ({ force = false } = {}) => {
+      if (!DiskUsageService.isEnabled()) return;
+      if (measurableGames.length === 0) return;
+      if (force) DiskUsageService.clearStaleErrors();
+      setScanProgress({ scanned: 0, total: measurableGames.length, running: true });
+      let scanned = 0;
+      for (const game of measurableGames) {
+        const cached = DiskUsageService.getCached(game);
+        if (!force && cached && cached.ok) {
+          scanned += 1;
+          setScanProgress({ scanned, total: measurableGames.length, running: true });
+          continue;
+        }
+        try {
+          await DiskUsageService.measure(game, { force });
+        } catch {
+          /* ignore — measure caches its own errors */
+        }
         scanned += 1;
         setScanProgress({ scanned, total: measurableGames.length, running: true });
-        continue;
+        setTick((t) => t + 1);
+        await new Promise((r) => setTimeout(r, 60));
       }
-      try { await DiskUsageService.measure(game, { force }); }
-      catch { /* ignore — measure caches its own errors */ }
-      scanned += 1;
-      setScanProgress({ scanned, total: measurableGames.length, running: true });
+      setScanProgress((p) => ({ ...p, running: false }));
       setTick((t) => t + 1);
-      await new Promise((r) => setTimeout(r, 60));
-    }
-    setScanProgress((p) => ({ ...p, running: false }));
-    setTick((t) => t + 1);
-  }, [measurableGames]);
+    },
+    [measurableGames]
+  );
 
   useEffect(() => {
     // Refresh hardware info so StorageDriveMapper has an up-to-date
     // driveTypeMap. This is fire-and-forget — the page re-renders via tick
     // once the IPC round-trip completes and caches systemInfo.
-    HardwareDetector.getSystemInfo().then(() => setTick((t) => t + 1)).catch(() => {});
+    HardwareDetector.getSystemInfo()
+      .then(() => setTick((t) => t + 1))
+      .catch(() => {});
     // Auto-kick a scan on first mount; if everything is already cached it
     // returns instantly.
     runScan();
@@ -135,20 +154,23 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
           bytes,
           known: Boolean(entry?.ok),
           lastPlayedMs: g.last_played ? new Date(g.last_played).getTime() : 0,
-          score: DiskUsageService.reclaimScore(g)
+          score: DiskUsageService.reclaimScore(g),
         };
       })
       .sort((a, b) => {
         switch (sortBy) {
-          case 'reclaim': return b.score - a.score;
+          case 'reclaim':
+            return b.score - a.score;
           case 'cold': {
             const aCold = a.lastPlayedMs || -Infinity;
             const bCold = b.lastPlayedMs || -Infinity;
             return aCold - bCold; // oldest first; never-played sinks lowest
           }
-          case 'name': return (a.game.name || '').localeCompare(b.game.name || '');
+          case 'name':
+            return (a.game.name || '').localeCompare(b.game.name || '');
           case 'size':
-          default: return b.bytes - a.bytes;
+          default:
+            return b.bytes - a.bytes;
         }
       });
   }, [measurableGames, filterPlatform, search, sortBy, tick, coldDays]);
@@ -159,9 +181,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   );
   const knownCount = decorated.filter((r) => r.known).length;
   const reclaimablePool = useMemo(
-    () => decorated
-      .filter((r) => r.known && r.score > 1.5)
-      .reduce((sum, r) => sum + r.bytes, 0),
+    () => decorated.filter((r) => r.known && r.score > 1.5).reduce((sum, r) => sum + r.bytes, 0),
     [decorated]
   );
 
@@ -175,9 +195,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
     }, 0);
   }, [decorated]);
 
-  const progressPercent = scanProgress.total > 0
-    ? Math.round((scanProgress.scanned / scanProgress.total) * 100)
-    : 0;
+  const progressPercent = scanProgress.total > 0 ? Math.round((scanProgress.scanned / scanProgress.total) * 100) : 0;
 
   if (!enabled) {
     return (
@@ -187,12 +205,15 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
           <HardDrive size={28} />
           <h1>Library Reclaimer is off</h1>
           <p>
-            GamePilot can scan your installed games to find cold, heavy titles that might not be
-            worth keeping around. Everything stays local — but it does I/O work, so it's opt-in.
+            GamePilot can scan your installed games to find cold, heavy titles that might not be worth keeping around.
+            Everything stays local — but it does I/O work, so it's opt-in.
           </p>
           <button
             type="button"
-            onClick={() => { DiskUsageService.setEnabled(true); setEnabled(true); }}
+            onClick={() => {
+              DiskUsageService.setEnabled(true);
+              setEnabled(true);
+            }}
           >
             Enable Library Reclaimer
           </button>
@@ -212,15 +233,17 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
             <h1>Library Reclaimer</h1>
           </div>
           <p>
-            Find the cold, heavy games in your library and reclaim space for your next obsession.
-            GamePilot never deletes files — uninstalls are handed to each launcher's official tool.
+            Find the cold, heavy games in your library and reclaim space for your next obsession. GamePilot never
+            deletes files — uninstalls are handed to each launcher's official tool.
           </p>
         </div>
         <div className="storage-manager-hero-stats">
           <div className="storage-manager-hero-stat">
             <span>Measured</span>
             <strong>{formatBytes(totalKnownBytes)}</strong>
-            <em>{knownCount} / {measurableGames.length} games</em>
+            <em>
+              {knownCount} / {measurableGames.length} games
+            </em>
           </div>
           <div className="storage-manager-hero-stat reclaim">
             <span>Reclaim candidates</span>
@@ -253,18 +276,17 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
       <div className="storage-manager-controls">
         <div className="storage-manager-search">
           <Search size={14} />
-          <input
-            type="text"
-            placeholder="Filter by name…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <input type="text" placeholder="Filter by name…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <label className="storage-manager-control">
           <Filter size={12} />
           <select value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
             <option value="">All platforms</option>
-            {platformOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+            {platformOptions.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
           </select>
         </label>
         <label className="storage-manager-control">
@@ -272,14 +294,20 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
           <span>Cold threshold</span>
           <select value={coldDays} onChange={(e) => setColdDays(Number(e.target.value))}>
             {COLD_THRESHOLD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
         </label>
         <label className="storage-manager-control">
           <span>Sort</span>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            {SORT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </label>
       </div>
@@ -293,84 +321,98 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
           <div className="storage-manager-row storage-manager-row-head" role="row">
             <div role="columnheader">Game</div>
             <div role="columnheader">Platform</div>
-            <div role="columnheader" className="num">Size</div>
-            <div role="columnheader" className="num">Hours</div>
-            <div role="columnheader" className="num">Last played</div>
-            <div role="columnheader" className="actions">Actions</div>
+            <div role="columnheader" className="num">
+              Size
+            </div>
+            <div role="columnheader" className="num">
+              Hours
+            </div>
+            <div role="columnheader" className="num">
+              Last played
+            </div>
+            <div role="columnheader" className="actions">
+              Actions
+            </div>
           </div>
           {decorated.map(({ game, bytes, known }) => {
             const lastPlayedMs = game.last_played ? new Date(game.last_played).getTime() : 0;
             const daysSincePlayed = lastPlayedMs ? Math.round((Date.now() - lastPlayedMs) / 86400000) : Infinity;
             const isCold = coldDays > 0 && daysSincePlayed >= coldDays;
             const isVeryCold = coldDays > 0 && daysSincePlayed >= coldDays * 2;
-            const reclaimPrompt = !game.time_played || isVeryCold
-              ? 'Never played — is this worth keeping installed?'
-              : isCold
-                ? `Not played in ${daysSincePlayed} days — is this worth keeping installed?`
-                : null;
+            const reclaimPrompt =
+              !game.time_played || isVeryCold
+                ? 'Never played — is this worth keeping installed?'
+                : isCold
+                  ? `Not played in ${daysSincePlayed} days — is this worth keeping installed?`
+                  : null;
             const driveInfo = StorageDriveMapper.resolve(game);
             return (
-            <div className={`storage-manager-row${isCold ? ' cold-game' : ''}`} role="row" key={getDiskKey(game) || game.name}>
-              <div className="storage-manager-cell-game">
-                <div className="storage-manager-cell-art">
-                  <LazyImage
-                    src={resolveGameArtwork(game, { surface: 'portrait' })}
-                    alt={game.name}
-                    placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
+              <div
+                className={`storage-manager-row${isCold ? ' cold-game' : ''}`}
+                role="row"
+                key={getDiskKey(game) || game.name}
+              >
+                <div className="storage-manager-cell-game">
+                  <div className="storage-manager-cell-art">
+                    <LazyImage
+                      src={resolveGameArtwork(game, { surface: 'portrait' })}
+                      alt={game.name}
+                      placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                  <div className="storage-manager-cell-meta">
+                    <strong>{game.name}</strong>
+                    {reclaimPrompt && <span className="reclaim-prompt">{reclaimPrompt}</span>}
+                    {game.installDir && <code title={game.installDir}>{game.installDir}</code>}
+                  </div>
                 </div>
-                <div className="storage-manager-cell-meta">
-                  <strong>{game.name}</strong>
-                  {reclaimPrompt && <span className="reclaim-prompt">{reclaimPrompt}</span>}
-                  {game.installDir && <code title={game.installDir}>{game.installDir}</code>}
+                <div role="cell">{game.platform || '—'}</div>
+                <div role="cell" className="num">
+                  {known ? formatBytes(bytes) : <span className="muted">…</span>}
                 </div>
-              </div>
-              <div role="cell">{game.platform || '—'}</div>
-              <div role="cell" className="num">
-                {known ? formatBytes(bytes) : <span className="muted">…</span>}
-              </div>
-              <div role="cell" className="num">{formatHours(game.time_played)}</div>
-              <div role="cell" className="num">{formatLastPlayed(game.last_played)}</div>
-              <div role="cell" className="actions">
-                <span
-                  className={`drive-badge ${driveInfo.cssClass}`}
-                  title={driveInfo.name}
-                >
-                  {driveInfo.type === 'NVMe' && <Zap size={10} />}
-                  {driveInfo.type === 'SSD' && <Disc3 size={10} />}
-                  {driveInfo.type === 'HDD' && <HardDrive size={10} />}
-                  {driveInfo.type}
-                </span>
-                <button
-                  type="button"
-                  className="storage-manager-action launch"
-                  onClick={() => onLaunchGame(game)}
-                  title="Launch"
-                >
-                  <Play size={12} />
-                </button>
-                <button
-                  type="button"
-                  className="storage-manager-action uninstall"
-                  onClick={() => setUninstallTarget(game)}
-                  title="Uninstall…"
-                >
-                  <Trash2 size={12} />
-                  <span>Uninstall…</span>
-                </button>
-                {game.installDir && window.electronAPI?.openExternal && (
+                <div role="cell" className="num">
+                  {formatHours(game.time_played)}
+                </div>
+                <div role="cell" className="num">
+                  {formatLastPlayed(game.last_played)}
+                </div>
+                <div role="cell" className="actions">
+                  <span className={`drive-badge ${driveInfo.cssClass}`} title={driveInfo.name}>
+                    {driveInfo.type === 'NVMe' && <Zap size={10} />}
+                    {driveInfo.type === 'SSD' && <Disc3 size={10} />}
+                    {driveInfo.type === 'HDD' && <HardDrive size={10} />}
+                    {driveInfo.type}
+                  </span>
                   <button
                     type="button"
-                    className="storage-manager-action"
-                    onClick={() => window.electronAPI.openExternal(`file:///${game.installDir.replace(/\\/g, '/')}`)}
-                    title="Open install folder"
+                    className="storage-manager-action launch"
+                    onClick={() => onLaunchGame(game)}
+                    title="Launch"
                   >
-                    <ExternalLink size={12} />
+                    <Play size={12} />
                   </button>
-                )}
+                  <button
+                    type="button"
+                    className="storage-manager-action uninstall"
+                    onClick={() => setUninstallTarget(game)}
+                    title="Uninstall…"
+                  >
+                    <Trash2 size={12} />
+                    <span>Uninstall…</span>
+                  </button>
+                  {game.installDir && window.electronAPI?.openExternal && (
+                    <button
+                      type="button"
+                      className="storage-manager-action"
+                      onClick={() => window.electronAPI.openExternal(`file:///${game.installDir.replace(/\\/g, '/')}`)}
+                      title="Open install folder"
+                    >
+                      <ExternalLink size={12} />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
             );
           })}
         </div>
@@ -397,7 +439,9 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
                   setTick((t) => t + 1);
                 }
               }
-            } catch { /* swallow */ }
+            } catch {
+              /* swallow */
+            }
           }
         }}
       />

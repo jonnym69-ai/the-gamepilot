@@ -37,13 +37,17 @@ const formatPeriodLabel = (period, periodKey) => {
       const end = new Date(y, m - 1, d + 6);
       const fmt = (date) => `${date.toLocaleDateString('en-US', { month: 'short' })} ${date.getDate()}`;
       return `${fmt(start)} – ${fmt(end)}`;
-    } catch { return periodKey; }
+    } catch {
+      return periodKey;
+    }
   }
   if (period === 'month') {
     try {
       const [y, m] = periodKey.split('-').map(Number);
       return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    } catch { return periodKey; }
+    } catch {
+      return periodKey;
+    }
   }
   if (period === 'year') return periodKey;
   return periodKey;
@@ -72,9 +76,8 @@ const getChampionYear = (champion) => Number(String(champion?.periodKey || '').s
 
 const buildChampionCaption = (champion) => {
   if (!champion) return '';
-  const share = champion.totalPeriodMinutes > 0
-    ? Math.round((champion.minutes / champion.totalPeriodMinutes) * 100)
-    : 0;
+  const share =
+    champion.totalPeriodMinutes > 0 ? Math.round((champion.minutes / champion.totalPeriodMinutes) * 100) : 0;
   return [
     `${champion.game?.name} was my GamePilot ${champion.period} champion (${formatPeriodLabel(champion.period, champion.periodKey)}).`,
     `${formatDetailedDuration(champion.minutes)} across ${champion.sessionCount} session${champion.sessionCount === 1 ? '' : 's'} · longest sitting ${formatDetailedDuration(champion.longestSessionMinutes)} · ${share}% of my play that period.`,
@@ -89,7 +92,9 @@ const buildCollectionCaption = (entries, label) => {
     champions.length > 0 ? `Games that led the way: ${champions.join(', ')}` : '',
     `${entries.length} period${entries.length === 1 ? '' : 's'} tracked locally.`,
     '#GamePilot #GamingStats',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 };
 
 function ShareCover({ champion, className = '' }) {
@@ -115,23 +120,43 @@ function ShareCover({ champion, className = '' }) {
 }
 
 function ChampionShareSurface({ champion }) {
-  const share = champion?.totalPeriodMinutes > 0
-    ? Math.round((champion.minutes / champion.totalPeriodMinutes) * 100)
-    : 0;
+  const share =
+    champion?.totalPeriodMinutes > 0 ? Math.round((champion.minutes / champion.totalPeriodMinutes) * 100) : 0;
   return (
     <div className="timeline-share-surface timeline-share-champion">
-      <div className="timeline-share-brand"><Trophy size={28} /> GamePilot · Hall of Champions</div>
-      <div className="timeline-share-champion-cover"><ShareCover champion={champion} /></div>
-      <div className="timeline-share-period">{formatPeriodLabel(champion.period, champion.periodKey)} · {champion.period} champion</div>
+      <div className="timeline-share-brand">
+        <Trophy size={28} /> GamePilot · Hall of Champions
+      </div>
+      <div className="timeline-share-champion-cover">
+        <ShareCover champion={champion} />
+      </div>
+      <div className="timeline-share-period">
+        {formatPeriodLabel(champion.period, champion.periodKey)} · {champion.period} champion
+      </div>
       <h2>{champion.game?.name}</h2>
       <div className="timeline-share-stat-grid">
-        <div><strong>{formatDetailedDuration(champion.minutes)}</strong><span>played</span></div>
-        <div><strong>{champion.sessionCount}</strong><span>sessions</span></div>
-        <div><strong>{formatDetailedDuration(champion.longestSessionMinutes)}</strong><span>longest sitting</span></div>
-        <div><strong>{share}%</strong><span>of period play</span></div>
+        <div>
+          <strong>{formatDetailedDuration(champion.minutes)}</strong>
+          <span>played</span>
+        </div>
+        <div>
+          <strong>{champion.sessionCount}</strong>
+          <span>sessions</span>
+        </div>
+        <div>
+          <strong>{formatDetailedDuration(champion.longestSessionMinutes)}</strong>
+          <span>longest sitting</span>
+        </div>
+        <div>
+          <strong>{share}%</strong>
+          <span>of period play</span>
+        </div>
       </div>
       {champion.personaSnapshot?.label && <p>{champion.personaSnapshot.label}</p>}
-      <small>{formatDetailedDuration(champion.totalPeriodMinutes)} across {champion.totalPeriodSessions || champion.sessionCount} total sessions · Built locally with GamePilot</small>
+      <small>
+        {formatDetailedDuration(champion.totalPeriodMinutes)} across{' '}
+        {champion.totalPeriodSessions || champion.sessionCount} total sessions · Built locally with GamePilot
+      </small>
     </div>
   );
 }
@@ -139,16 +164,24 @@ function ChampionShareSurface({ champion }) {
 function CollectionShareSurface({ entries, label }) {
   return (
     <div className="timeline-share-surface timeline-share-collection">
-      <div className="timeline-share-brand"><Trophy size={28} /> GamePilot · Hall of Champions</div>
+      <div className="timeline-share-brand">
+        <Trophy size={28} /> GamePilot · Hall of Champions
+      </div>
       <h2>{label}</h2>
-      <p>{entries.length} period{entries.length === 1 ? '' : 's'} in my gaming history</p>
+      <p>
+        {entries.length} period{entries.length === 1 ? '' : 's'} in my gaming history
+      </p>
       <div className="timeline-share-collection-grid">
         {entries.map((champion) => (
           <div key={`${champion.period}-${champion.periodKey}`} className="timeline-share-collection-card">
-            <div><ShareCover champion={champion} /></div>
+            <div>
+              <ShareCover champion={champion} />
+            </div>
             <span>{formatPeriodLabel(champion.period, champion.periodKey)}</span>
             <strong>{champion.game?.name}</strong>
-            <small>{formatDetailedDuration(champion.minutes)} · {champion.sessionCount} sessions</small>
+            <small>
+              {formatDetailedDuration(champion.minutes)} · {champion.sessionCount} sessions
+            </small>
           </div>
         ))}
       </div>
@@ -160,25 +193,36 @@ function CollectionShareSurface({ entries, label }) {
 function YearBoardShareSurface({ year, yearChampion, monthlyChampions }) {
   return (
     <div className="timeline-share-surface timeline-share-year-board">
-      <div className="timeline-share-brand"><Trophy size={28} /> GamePilot · My Gaming Year</div>
+      <div className="timeline-share-brand">
+        <Trophy size={28} /> GamePilot · My Gaming Year
+      </div>
       <h2>{year}</h2>
       {yearChampion && (
         <div className="timeline-share-year-winner">
-          <div><ShareCover champion={yearChampion} /></div>
+          <div>
+            <ShareCover champion={yearChampion} />
+          </div>
           <section>
             <span>Game of the year</span>
             <strong>{yearChampion.game?.name}</strong>
-            <p>{formatDetailedDuration(yearChampion.minutes)} · {yearChampion.sessionCount} sessions · longest {formatDetailedDuration(yearChampion.longestSessionMinutes)}</p>
+            <p>
+              {formatDetailedDuration(yearChampion.minutes)} · {yearChampion.sessionCount} sessions · longest{' '}
+              {formatDetailedDuration(yearChampion.longestSessionMinutes)}
+            </p>
           </section>
         </div>
       )}
       <div className="timeline-share-month-grid">
         {monthlyChampions.map((champion) => (
           <div key={champion.periodKey} className="timeline-share-month-card">
-            <div><ShareCover champion={champion} /></div>
+            <div>
+              <ShareCover champion={champion} />
+            </div>
             <span>{formatPeriodLabel('month', champion.periodKey)}</span>
             <strong>{champion.game?.name}</strong>
-            <small>{formatDetailedDuration(champion.minutes)} · {champion.sessionCount} sessions</small>
+            <small>
+              {formatDetailedDuration(champion.minutes)} · {champion.sessionCount} sessions
+            </small>
           </div>
         ))}
       </div>
@@ -200,12 +244,15 @@ function Timeline({ library = [] }) {
     try {
       PeriodChampionService.lockChampionsIfNeeded({ library });
       setRefreshKey((k) => k + 1);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [library]);
 
-  const timeline = filter === 'all'
-    ? PeriodChampionService.getFullTimeline({ library })
-    : PeriodChampionService.getAllChampions(filter, { library });
+  const timeline =
+    filter === 'all'
+      ? PeriodChampionService.getFullTimeline({ library })
+      : PeriodChampionService.getAllChampions(filter, { library });
 
   const allChampions = PeriodChampionService.getFullTimeline({ library });
   const stats = {
@@ -219,11 +266,13 @@ function Timeline({ library = [] }) {
   const hasAny = timeline.length > 0;
   const groups = useMemo(() => {
     if (filter !== 'all') {
-      return [{
-        period: filter,
-        title: filter === 'week' ? 'Weekly champions' : filter === 'month' ? 'Monthly champions' : 'Yearly champions',
-        entries: timeline,
-      }];
+      return [
+        {
+          period: filter,
+          title: filter === 'week' ? 'Weekly champions' : filter === 'month' ? 'Monthly champions' : 'Yearly champions',
+          entries: timeline,
+        },
+      ];
     }
     return [
       { period: 'year', title: 'Yearly champions', entries: timeline.filter((entry) => entry.period === 'year') },
@@ -234,59 +283,68 @@ function Timeline({ library = [] }) {
 
   const championYears = allChampions.map(getChampionYear).filter(Boolean);
   const latestYear = championYears.length > 0 ? Math.max(...championYears) : new Date().getFullYear();
-  const yearChampion = allChampions.find((entry) => entry.period === 'year' && getChampionYear(entry) === latestYear)
-    || allChampions.filter((entry) => getChampionYear(entry) === latestYear).sort((a, b) => b.minutes - a.minutes)[0]
-    || null;
+  const yearChampion =
+    allChampions.find((entry) => entry.period === 'year' && getChampionYear(entry) === latestYear) ||
+    allChampions.filter((entry) => getChampionYear(entry) === latestYear).sort((a, b) => b.minutes - a.minutes)[0] ||
+    null;
   const monthlyChampions = allChampions
     .filter((entry) => entry.period === 'month' && getChampionYear(entry) === latestYear)
     .sort((a, b) => String(a.periodKey).localeCompare(String(b.periodKey)));
-  const collectionLabel = filter === 'all'
-    ? 'complete Hall of Champions'
-    : filter === 'week'
-      ? 'weekly'
-      : filter === 'month'
-        ? 'monthly'
-        : 'yearly';
+  const collectionLabel =
+    filter === 'all'
+      ? 'complete Hall of Champions'
+      : filter === 'week'
+        ? 'weekly'
+        : filter === 'month'
+          ? 'monthly'
+          : 'yearly';
 
   const showStatus = useCallback((message) => {
     setStatusMessage(message);
     window.setTimeout(() => setStatusMessage(''), 3500);
   }, []);
 
-  const captureShareSurface = useCallback(async (type, payload) => {
-    setIsCapturing(true);
-    setShareState({ type, payload });
-    try {
-      await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
-      if (!shareSurfaceRef.current) return null;
-      const images = [...shareSurfaceRef.current.querySelectorAll('img')];
-      await Promise.race([
-        Promise.all(images.map((image) => image.complete
-          ? Promise.resolve()
-          : new Promise((resolve) => {
-              image.addEventListener('load', resolve, { once: true });
-              image.addEventListener('error', resolve, { once: true });
-            }))),
-        new Promise((resolve) => window.setTimeout(resolve, 2500)),
-      ]);
-      const canvas = await html2canvas(shareSurfaceRef.current, {
-        scale: 1,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#0b1020',
-        logging: false,
-        width: shareSurfaceRef.current.scrollWidth,
-        height: shareSurfaceRef.current.scrollHeight,
-      });
-      return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-    } catch (error) {
-      console.error('Failed to create Hall of Champions share image:', error);
-      showStatus('Could not create the share image.');
-      return null;
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [showStatus]);
+  const captureShareSurface = useCallback(
+    async (type, payload) => {
+      setIsCapturing(true);
+      setShareState({ type, payload });
+      try {
+        await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+        if (!shareSurfaceRef.current) return null;
+        const images = [...shareSurfaceRef.current.querySelectorAll('img')];
+        await Promise.race([
+          Promise.all(
+            images.map((image) =>
+              image.complete
+                ? Promise.resolve()
+                : new Promise((resolve) => {
+                    image.addEventListener('load', resolve, { once: true });
+                    image.addEventListener('error', resolve, { once: true });
+                  })
+            )
+          ),
+          new Promise((resolve) => window.setTimeout(resolve, 2500)),
+        ]);
+        const canvas = await html2canvas(shareSurfaceRef.current, {
+          scale: 1,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#0b1020',
+          logging: false,
+          width: shareSurfaceRef.current.scrollWidth,
+          height: shareSurfaceRef.current.scrollHeight,
+        });
+        return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      } catch (error) {
+        console.error('Failed to create Hall of Champions share image:', error);
+        showStatus('Could not create the share image.');
+        return null;
+      } finally {
+        setIsCapturing(false);
+      }
+    },
+    [showStatus]
+  );
 
   const getShareDetails = (type, payload) => {
     if (type === 'champion') {
@@ -300,10 +358,14 @@ function Timeline({ library = [] }) {
       return {
         caption: [
           `My GamePilot gaming year ${payload.year}`,
-          payload.yearChampion ? `Game of the year: ${payload.yearChampion.game?.name} — ${formatDetailedDuration(payload.yearChampion.minutes)} across ${payload.yearChampion.sessionCount} sessions.` : '',
+          payload.yearChampion
+            ? `Game of the year: ${payload.yearChampion.game?.name} — ${formatDetailedDuration(payload.yearChampion.minutes)} across ${payload.yearChampion.sessionCount} sessions.`
+            : '',
           names.length > 0 ? `Monthly champions: ${names.join(', ')}` : '',
           '#GamePilot #GamingStats',
-        ].filter(Boolean).join('\n'),
+        ]
+          .filter(Boolean)
+          .join('\n'),
         filename: `gamepilot-champions-${payload.year}.png`,
       };
     }
@@ -355,19 +417,38 @@ function Timeline({ library = [] }) {
       },
       onShareToDiscord: async (text = null) => {
         const blob = await capture();
-        const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: text || details.caption, filename: details.filename });
-        showStatus(result.success ? 'Discord opened with your champion share.' : result.message || 'Could not share to Discord.');
+        const result = await LocalShareService.shareToDiscord({
+          imageBlob: blob,
+          text: text || details.caption,
+          filename: details.filename,
+        });
+        showStatus(
+          result.success ? 'Discord opened with your champion share.' : result.message || 'Could not share to Discord.'
+        );
       },
       onShareToMessenger: async (text = null) => {
         const blob = await capture();
-        const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: text || details.caption, filename: details.filename });
-        showStatus(result.success ? 'Messenger opened with your champion share.' : result.message || 'Could not share to Messenger.');
+        const result = await LocalShareService.shareToMessenger({
+          imageBlob: blob,
+          text: text || details.caption,
+          filename: details.filename,
+        });
+        showStatus(
+          result.success
+            ? 'Messenger opened with your champion share.'
+            : result.message || 'Could not share to Messenger.'
+        );
       },
-      onDownloadText: (text = null) => LocalShareService.downloadShareText(text || details.caption, details.filename.replace('.png', '.txt')),
+      onDownloadText: (text = null) =>
+        LocalShareService.downloadShareText(text || details.caption, details.filename.replace('.png', '.txt')),
       onNativeShare: async (text = null) => {
         const blob = await capture();
         const files = blob ? [new File([blob], details.filename, { type: 'image/png' })] : [];
-        const result = await LocalShareService.shareWithNativeShare({ title: 'GamePilot Hall of Champions', text: text || details.caption, files });
+        const result = await LocalShareService.shareWithNativeShare({
+          title: 'GamePilot Hall of Champions',
+          text: text || details.caption,
+          files,
+        });
         showStatus(result.success ? 'Shared successfully.' : result.message || 'Could not share.');
       },
     };
@@ -399,7 +480,11 @@ function Timeline({ library = [] }) {
               )}
             </div>
           )}
-          {statusMessage && <div className="timeline-share-status" role="status">{statusMessage}</div>}
+          {statusMessage && (
+            <div className="timeline-share-status" role="status">
+              {statusMessage}
+            </div>
+          )}
         </div>
 
         {hasAny && (
@@ -445,8 +530,8 @@ function Timeline({ library = [] }) {
             <Trophy size={48} className="timeline-empty-icon" />
             <h2 className="timeline-empty-title">No champions yet</h2>
             <p className="timeline-empty-text">
-              Play a few sessions and GamePilot will start logging your most-played game each week.
-              Come back here to see your full history — a permanent timeline of where your hours went.
+              Play a few sessions and GamePilot will start logging your most-played game each week. Come back here to
+              see your full history — a permanent timeline of where your hours went.
             </p>
           </div>
         ) : (
@@ -455,7 +540,9 @@ function Timeline({ library = [] }) {
               <section key={group.period} className={`timeline-period-section timeline-period-${group.period}`}>
                 <div className="timeline-section-heading">
                   <h2>{group.title}</h2>
-                  <span>{group.entries.length} period{group.entries.length === 1 ? '' : 's'}</span>
+                  <span>
+                    {group.entries.length} period{group.entries.length === 1 ? '' : 's'}
+                  </span>
                 </div>
                 <div className="timeline-cover-grid">
                   {group.entries.map((champion) => {
@@ -500,29 +587,40 @@ function Timeline({ library = [] }) {
                           <div className="timeline-cover-stats">
                             <div>
                               <strong>{formatDetailedDuration(champion.minutes)}</strong>
-                              <span>{champion.sessionCount} session{champion.sessionCount === 1 ? '' : 's'}</span>
+                              <span>
+                                {champion.sessionCount} session{champion.sessionCount === 1 ? '' : 's'}
+                              </span>
                             </div>
                             <div>
                               <strong>{formatDetailedDuration(champion.longestSessionMinutes)}</strong>
                               <span>longest session</span>
                             </div>
                             <div>
-                              <strong>{champion.totalPeriodMinutes > 0 ? `${Math.round((champion.minutes / champion.totalPeriodMinutes) * 100)}%` : '—'}</strong>
+                              <strong>
+                                {champion.totalPeriodMinutes > 0
+                                  ? `${Math.round((champion.minutes / champion.totalPeriodMinutes) * 100)}%`
+                                  : '—'}
+                              </strong>
                               <span>of period play</span>
                             </div>
                           </div>
                           {champion.longestSessionAt && (
-                            <div className="timeline-cover-longest-date">Longest sitting · {formatSessionDay(champion.longestSessionAt)}</div>
+                            <div className="timeline-cover-longest-date">
+                              Longest sitting · {formatSessionDay(champion.longestSessionAt)}
+                            </div>
                           )}
                           <div className="timeline-cover-period-total">
-                            {formatDetailedDuration(champion.totalPeriodMinutes)} across {champion.totalPeriodSessions || champion.sessionCount} total sessions · {champion.periodGameCount || 1} game{champion.periodGameCount === 1 ? '' : 's'}
+                            {formatDetailedDuration(champion.totalPeriodMinutes)} across{' '}
+                            {champion.totalPeriodSessions || champion.sessionCount} total sessions ·{' '}
+                            {champion.periodGameCount || 1} game{champion.periodGameCount === 1 ? '' : 's'}
                           </div>
                           {champion.personaSnapshot?.label && (
                             <div className="timeline-cover-persona">{champion.personaSnapshot.label}</div>
                           )}
                           {champion.runnerUp && (
                             <div className="timeline-cover-runner">
-                              Beat {champion.runnerUp.name} by {formatChampionHours(Math.max(0, champion.minutes - champion.runnerUp.minutes))}
+                              Beat {champion.runnerUp.name} by{' '}
+                              {formatChampionHours(Math.max(0, champion.minutes - champion.runnerUp.minutes))}
                             </div>
                           )}
                           <div className="timeline-card-share">

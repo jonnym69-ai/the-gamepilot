@@ -53,9 +53,15 @@ const sanitizeExportClone = (sourceRoot, clonedDocument) => {
   const accentColor = normalizeCssColor(rootStyles.getPropertyValue('--accent-color').trim(), '#7c3aed');
   const cardBackground = normalizeCssColor(rootStyles.getPropertyValue('--card-bg').trim(), '#111827');
   const inputBackground = normalizeCssColor(rootStyles.getPropertyValue('--input-bg').trim(), '#1f2937');
-  const borderColor = normalizeCssColor(rootStyles.getPropertyValue('--card-border').trim(), 'rgba(255, 255, 255, 0.16)');
+  const borderColor = normalizeCssColor(
+    rootStyles.getPropertyValue('--card-border').trim(),
+    'rgba(255, 255, 255, 0.16)'
+  );
   const textColor = normalizeCssColor(rootStyles.getPropertyValue('--text-color').trim(), '#f8fafc');
-  const founderGlow = normalizeCssColor(rootStyles.getPropertyValue('--year-review-founder-glow').trim(), 'rgba(251, 146, 60, 0.12)');
+  const founderGlow = normalizeCssColor(
+    rootStyles.getPropertyValue('--year-review-founder-glow').trim(),
+    'rgba(251, 146, 60, 0.12)'
+  );
 
   const sourceElements = sourceRoot.querySelectorAll('*');
   const clonedElements = clonedRoot.querySelectorAll('*');
@@ -118,7 +124,15 @@ const sanitizeExportClone = (sourceRoot, clonedDocument) => {
   });
 };
 
-function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, endSession, getPlaytimeStats, getMostPlayedGames }) {
+function YearInReview({
+  library = [],
+  theme,
+  onLaunchGame,
+  activeSessions = {},
+  endSession,
+  getPlaytimeStats,
+  getMostPlayedGames,
+}) {
   const exportRef = useRef(null);
   const shareCardRef = useRef(null);
   const storySectionRef = useRef(null);
@@ -138,11 +152,14 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     }
   }, [availableYears, selectedYear]);
 
-  useEffect(() => () => {
-    if (noticeTimeoutRef.current) {
-      window.clearTimeout(noticeTimeoutRef.current);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (noticeTimeoutRef.current) {
+        window.clearTimeout(noticeTimeoutRef.current);
+      }
+    },
+    []
+  );
 
   const showStatus = useCallback((message) => {
     setStatusMessage(message);
@@ -164,8 +181,13 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     return Math.max(1, ...values);
   }, [snapshot.monthly]);
 
-  const standoutMonth = useMemo(() => Object.entries(snapshot.monthly?.playtimeHours || {})
-    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0] || null, [snapshot.monthly]);
+  const standoutMonth = useMemo(
+    () =>
+      Object.entries(snapshot.monthly?.playtimeHours || {}).sort(
+        (left, right) => right[1] - left[1] || left[0].localeCompare(right[0])
+      )[0] || null,
+    [snapshot.monthly]
+  );
 
   const handleExportImage = useCallback(async () => {
     if (!exportRef.current) {
@@ -180,7 +202,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
         useCORS: true,
         backgroundColor: getComputedStyle(document.body).backgroundColor || '#0f172a',
         logging: false,
-        onclone: (clonedDocument) => sanitizeExportClone(exportRef.current, clonedDocument)
+        onclone: (clonedDocument) => sanitizeExportClone(exportRef.current, clonedDocument),
       });
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!blob) {
@@ -203,12 +225,19 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     }
   }, [selectedYear, showStatus]);
 
-  const handleCopyShareText = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildYearInReviewShareText(snapshot, selectedYear));
-    const success = await LocalShareService.copyTextToClipboard(shareText);
-    showStatus(success ? 'Share text copied to clipboard.' : 'Could not copy share text.');
-    return success;
-  }, [snapshot, selectedYear, showStatus]);
+  const handleCopyShareText = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildYearInReviewShareText(snapshot, selectedYear)
+        );
+      const success = await LocalShareService.copyTextToClipboard(shareText);
+      showStatus(success ? 'Share text copied to clipboard.' : 'Could not copy share text.');
+      return success;
+    },
+    [snapshot, selectedYear, showStatus]
+  );
 
   const generateShareCardBlob = useCallback(async () => {
     if (!shareCardRef.current) {
@@ -225,7 +254,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
         scale: 1,
         useCORS: true,
         backgroundColor: '#0d1224',
-        logging: false
+        logging: false,
       });
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!blob) {
@@ -263,64 +292,99 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
     return result.success;
   }, [generateShareCardBlob, selectedYear, showStatus]);
 
-  const handleShareToChannel = useCallback(async (channel, text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildYearInReviewShareText(snapshot, selectedYear));
-    const result = await LocalShareService.openShareIntent(channel, shareText);
-    showStatus(result.success ? `Opened ${result.label}.` : result.message || 'Could not open share.');
-  }, [snapshot, selectedYear, showStatus]);
+  const handleShareToChannel = useCallback(
+    async (channel, text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildYearInReviewShareText(snapshot, selectedYear)
+        );
+      const result = await LocalShareService.openShareIntent(channel, shareText);
+      showStatus(result.success ? `Opened ${result.label}.` : result.message || 'Could not open share.');
+    },
+    [snapshot, selectedYear, showStatus]
+  );
 
-  const handleShareToDiscord = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildYearInReviewShareText(snapshot, selectedYear));
-    const { filename } = LocalShareService.buildSharePackage(snapshot, selectedYear);
-    let imageBlob = null;
+  const handleShareToDiscord = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildYearInReviewShareText(snapshot, selectedYear)
+        );
+      const { filename } = LocalShareService.buildSharePackage(snapshot, selectedYear);
+      let imageBlob = null;
 
-    if (snapshot?.hasData && LocalShareService.canCopyImage()) {
-      imageBlob = await generateShareCardBlob();
-    }
+      if (snapshot?.hasData && LocalShareService.canCopyImage()) {
+        imageBlob = await generateShareCardBlob();
+      }
 
-    const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      showStatus(result.imageStaged
-        ? 'Discord opened — your recap image and caption are copied, just paste them in.'
-        : 'Discord opened — caption copied, save the image to attach it.');
-    } else {
-      showStatus(result.message || 'Could not share to Discord.');
-    }
-  }, [snapshot, selectedYear, generateShareCardBlob, showStatus]);
+      const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        showStatus(
+          result.imageStaged
+            ? 'Discord opened — your recap image and caption are copied, just paste them in.'
+            : 'Discord opened — caption copied, save the image to attach it.'
+        );
+      } else {
+        showStatus(result.message || 'Could not share to Discord.');
+      }
+    },
+    [snapshot, selectedYear, generateShareCardBlob, showStatus]
+  );
 
-  const handleShareToMessenger = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildYearInReviewShareText(snapshot, selectedYear));
-    const { filename } = LocalShareService.buildSharePackage(snapshot, selectedYear);
-    let imageBlob = null;
+  const handleShareToMessenger = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildYearInReviewShareText(snapshot, selectedYear)
+        );
+      const { filename } = LocalShareService.buildSharePackage(snapshot, selectedYear);
+      let imageBlob = null;
 
-    if (snapshot?.hasData && LocalShareService.canCopyImage()) {
-      imageBlob = await generateShareCardBlob();
-    }
+      if (snapshot?.hasData && LocalShareService.canCopyImage()) {
+        imageBlob = await generateShareCardBlob();
+      }
 
-    const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      showStatus(result.imageStaged
-        ? 'Messenger opened — your recap image and caption are copied, just paste them in.'
-        : 'Messenger opened — caption copied, save the image to attach it.');
-    } else {
-      showStatus(result.message || 'Could not share to Messenger.');
-    }
-  }, [snapshot, selectedYear, generateShareCardBlob, showStatus]);
+      const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        showStatus(
+          result.imageStaged
+            ? 'Messenger opened — your recap image and caption are copied, just paste them in.'
+            : 'Messenger opened — caption copied, save the image to attach it.'
+        );
+      } else {
+        showStatus(result.message || 'Could not share to Messenger.');
+      }
+    },
+    [snapshot, selectedYear, generateShareCardBlob, showStatus]
+  );
 
-  const handleNativeShare = useCallback(async (text = null) => {
-    const blob = await generateShareCardBlob();
-    const { text: baseText, filename, title } = LocalShareService.buildSharePackage(snapshot, selectedYear);
-    const shareText = text || ProfileService.appendSocialLinksToShareText(baseText);
-    const files = blob ? [new File([blob], filename, { type: 'image/png' })] : [];
-    const result = await LocalShareService.shareWithNativeShare({ title, text: shareText, files });
-    showStatus(result.success ? 'Shared successfully.' : result.message || 'Native share failed.');
-  }, [generateShareCardBlob, snapshot, selectedYear, showStatus]);
+  const handleNativeShare = useCallback(
+    async (text = null) => {
+      const blob = await generateShareCardBlob();
+      const { text: baseText, filename, title } = LocalShareService.buildSharePackage(snapshot, selectedYear);
+      const shareText = text || ProfileService.appendSocialLinksToShareText(baseText);
+      const files = blob ? [new File([blob], filename, { type: 'image/png' })] : [];
+      const result = await LocalShareService.shareWithNativeShare({ title, text: shareText, files });
+      showStatus(result.success ? 'Shared successfully.' : result.message || 'Native share failed.');
+    },
+    [generateShareCardBlob, snapshot, selectedYear, showStatus]
+  );
 
-  const handleDownloadShareText = useCallback((text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildYearInReviewShareText(snapshot, selectedYear));
-    const success = LocalShareService.downloadShareText(shareText, `gamepilot-share-${selectedYear}.txt`);
-    showStatus(success ? 'Caption downloaded.' : 'Could not download caption.');
-  }, [snapshot, selectedYear, showStatus]);
+  const handleDownloadShareText = useCallback(
+    (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildYearInReviewShareText(snapshot, selectedYear)
+        );
+      const success = LocalShareService.downloadShareText(shareText, `gamepilot-share-${selectedYear}.txt`);
+      showStatus(success ? 'Caption downloaded.' : 'Could not download caption.');
+    },
+    [snapshot, selectedYear, showStatus]
+  );
 
   const buildStoryCaption = useCallback(() => {
     if (!snapshot?.seasonalStory) return '';
@@ -331,7 +395,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
       if (chapter.hasData) {
         lines.push(`${chapter.season}: ${chapter.headline}`);
         if (chapter.stats) {
-          lines.push(`  ${chapter.stats.playtimeHours}h · ${chapter.stats.sessions} sessions${chapter.stats.topGame ? ` · Top: ${chapter.stats.topGame.name}` : ''}`);
+          lines.push(
+            `  ${chapter.stats.playtimeHours}h · ${chapter.stats.sessions} sessions${chapter.stats.topGame ? ` · Top: ${chapter.stats.topGame.name}` : ''}`
+          );
         }
       }
     });
@@ -348,8 +414,8 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
             <span className="year-review-kicker">Local recap</span>
             <h1>Year in Review</h1>
             <p>
-              Revisit your top games, session rhythms, and play habits for the year.
-              Everything on this page is generated from your local GamePilot data.
+              Revisit your top games, session rhythms, and play habits for the year. Everything on this page is
+              generated from your local GamePilot data.
             </p>
           </div>
           <div className="year-review-controls">
@@ -357,7 +423,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
               <span>Review year</span>
               <select value={selectedYear} onChange={(event) => setSelectedYear(Number(event.target.value))}>
                 {availableYears.map((year) => (
-                  <option key={year} value={year}>{year}</option>
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
                 ))}
               </select>
             </label>
@@ -373,7 +441,11 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                 onNativeShare={handleNativeShare}
                 imageAvailable={snapshot?.hasData}
                 disabled={isExportingShare}
-                buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildYearInReviewShareText(snapshot, selectedYear))}
+                buildCaption={() =>
+                  ProfileService.appendSocialLinksToShareText(
+                    LocalShareService.buildYearInReviewShareText(snapshot, selectedYear)
+                  )
+                }
               />
               <button type="button" onClick={handleExportImage} disabled={isExportingImage}>
                 <Download size={16} />
@@ -406,7 +478,8 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
               <Trophy size={28} />
               <h2>No completed sessions logged for {selectedYear}</h2>
               <p>
-                Start and finish a few gaming sessions to generate a recap for this year. The page will fill in automatically as your local history grows.
+                Start and finish a few gaming sessions to generate a recap for this year. The page will fill in
+                automatically as your local history grows.
               </p>
             </section>
           ) : (
@@ -418,62 +491,105 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                     <h2>The Story of Your Year</h2>
                     <div style={{ marginLeft: 'auto' }}>
                       <ShareMenu
-                      triggerLabel="Share Story"
-                      imageAvailable
-                      disabled={isCapturingStory}
-                      onCopyText={async () => LocalShareService.copyTextToClipboard(buildStoryCaption())}
-                      onCopyImage={async () => {
-                        if (!storyShareCardRef.current) return false;
-                        setIsCapturingStory(true);
-                        try {
-                          const canvas = await html2canvas(storyShareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
-                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                          if (!blob) { showStatus('Could not generate story card.'); return false; }
-                          const copied = await LocalShareService.copyImageToClipboard(blob);
-                          showStatus(copied ? 'Story card copied to clipboard.' : 'Could not copy story card.');
-                          return copied;
-                        } catch (err) { console.error(err); showStatus('Could not generate story card.'); return false; }
-                        finally { setIsCapturingStory(false); }
-                      }}
-                      onSaveImage={async () => {
-                        if (!storyShareCardRef.current) return;
-                        setIsCapturingStory(true);
-                        try {
-                          const canvas = await html2canvas(storyShareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
-                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                          if (!blob) { showStatus('Could not generate story card.'); return; }
-                          const url = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = url;
-                          link.download = `gamepilot-story-${selectedYear}.png`;
-                          document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                          URL.revokeObjectURL(url);
-                          showStatus('Story card saved.');
-                        } catch (err) { console.error(err); showStatus('Could not generate story card.'); }
-                        finally { setIsCapturingStory(false); }
-                      }}
-                      onShareText={async (channel) => LocalShareService.openShareIntent(channel, buildStoryCaption())}
-                      onDownloadText={() => {
-                        LocalShareService.downloadShareText(buildStoryCaption(), `story-of-${selectedYear}.txt`);
-                        showStatus('Story caption downloaded.');
-                      }}
-                      buildCaption={buildStoryCaption}
-                      onNativeShare={async () => {
-                        if (!storyShareCardRef.current) return;
-                        setIsCapturingStory(true);
-                        try {
-                          const canvas = await html2canvas(storyShareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
-                          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-                          if (!blob) { showStatus('Could not generate story card.'); return; }
-                          const file = new File([blob], `gamepilot-story-${selectedYear}.png`, { type: 'image/png' });
-                          const shareText = ProfileService.appendSocialLinksToShareText(snapshot.seasonalStory.arc);
-                          const result = await LocalShareService.shareWithNativeShare({ title: `The Story of My ${selectedYear} Gaming Year`, text: shareText, files: [file] });
-                          showStatus(result.success ? 'Native share opened.' : result.message || 'Could not share.');
-                        } catch (err) { console.error(err); showStatus('Could not generate story card.'); }
-                        finally { setIsCapturingStory(false); }
-                      }}
-                    />
-                  </div>
+                        triggerLabel="Share Story"
+                        imageAvailable
+                        disabled={isCapturingStory}
+                        onCopyText={async () => LocalShareService.copyTextToClipboard(buildStoryCaption())}
+                        onCopyImage={async () => {
+                          if (!storyShareCardRef.current) return false;
+                          setIsCapturingStory(true);
+                          try {
+                            const canvas = await html2canvas(storyShareCardRef.current, {
+                              scale: 2,
+                              backgroundColor: null,
+                              useCORS: true,
+                              logging: false,
+                            });
+                            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                            if (!blob) {
+                              showStatus('Could not generate story card.');
+                              return false;
+                            }
+                            const copied = await LocalShareService.copyImageToClipboard(blob);
+                            showStatus(copied ? 'Story card copied to clipboard.' : 'Could not copy story card.');
+                            return copied;
+                          } catch (err) {
+                            console.error(err);
+                            showStatus('Could not generate story card.');
+                            return false;
+                          } finally {
+                            setIsCapturingStory(false);
+                          }
+                        }}
+                        onSaveImage={async () => {
+                          if (!storyShareCardRef.current) return;
+                          setIsCapturingStory(true);
+                          try {
+                            const canvas = await html2canvas(storyShareCardRef.current, {
+                              scale: 2,
+                              backgroundColor: null,
+                              useCORS: true,
+                              logging: false,
+                            });
+                            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                            if (!blob) {
+                              showStatus('Could not generate story card.');
+                              return;
+                            }
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `gamepilot-story-${selectedYear}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                            showStatus('Story card saved.');
+                          } catch (err) {
+                            console.error(err);
+                            showStatus('Could not generate story card.');
+                          } finally {
+                            setIsCapturingStory(false);
+                          }
+                        }}
+                        onShareText={async (channel) => LocalShareService.openShareIntent(channel, buildStoryCaption())}
+                        onDownloadText={() => {
+                          LocalShareService.downloadShareText(buildStoryCaption(), `story-of-${selectedYear}.txt`);
+                          showStatus('Story caption downloaded.');
+                        }}
+                        buildCaption={buildStoryCaption}
+                        onNativeShare={async () => {
+                          if (!storyShareCardRef.current) return;
+                          setIsCapturingStory(true);
+                          try {
+                            const canvas = await html2canvas(storyShareCardRef.current, {
+                              scale: 2,
+                              backgroundColor: null,
+                              useCORS: true,
+                              logging: false,
+                            });
+                            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                            if (!blob) {
+                              showStatus('Could not generate story card.');
+                              return;
+                            }
+                            const file = new File([blob], `gamepilot-story-${selectedYear}.png`, { type: 'image/png' });
+                            const shareText = ProfileService.appendSocialLinksToShareText(snapshot.seasonalStory.arc);
+                            const result = await LocalShareService.shareWithNativeShare({
+                              title: `The Story of My ${selectedYear} Gaming Year`,
+                              text: shareText,
+                              files: [file],
+                            });
+                            showStatus(result.success ? 'Native share opened.' : result.message || 'Could not share.');
+                          } catch (err) {
+                            console.error(err);
+                            showStatus('Could not generate story card.');
+                          } finally {
+                            setIsCapturingStory(false);
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                   <p className="year-review-story-arc">{snapshot.seasonalStory.arc}</p>
                   <div className="year-review-story-chapters">
@@ -502,9 +618,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                             <span>{chapter.pivot.text}</span>
                           </div>
                         )}
-                        {index < snapshot.seasonalStory.chapters.length - 1 && chapter.hasData && snapshot.seasonalStory.chapters[index + 1]?.hasData && (
-                          <div className="chapter-connector" />
-                        )}
+                        {index < snapshot.seasonalStory.chapters.length - 1 &&
+                          chapter.hasData &&
+                          snapshot.seasonalStory.chapters[index + 1]?.hasData && <div className="chapter-connector" />}
                       </article>
                     ))}
                   </div>
@@ -516,7 +632,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                   <div className="year-review-champion-heading">
                     <div>
                       <span className="year-review-kicker">Your year in games</span>
-                      <h2><Trophy size={21} /> Champion journey</h2>
+                      <h2>
+                        <Trophy size={21} /> Champion journey
+                      </h2>
                       <p>The games that defined each month, led by your most-played game of {selectedYear}.</p>
                     </div>
                   </div>
@@ -535,13 +653,34 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                       <span>Game of {selectedYear}</span>
                       <h3>{snapshot.championJourney.yearChampion.game?.name}</h3>
                       <div className="year-review-year-champion-stats">
-                        <div><strong>{formatPlaytime(snapshot.championJourney.yearChampion.minutes)}</strong><span>played</span></div>
-                        <div><strong>{snapshot.championJourney.yearChampion.sessionCount}</strong><span>sessions</span></div>
-                        <div><strong>{formatPlaytime(snapshot.championJourney.yearChampion.longestSessionMinutes)}</strong><span>longest sitting</span></div>
-                        <div><strong>{Math.round((snapshot.championJourney.yearChampion.minutes / Math.max(1, snapshot.championJourney.yearChampion.totalPeriodMinutes)) * 100)}%</strong><span>of yearly play</span></div>
+                        <div>
+                          <strong>{formatPlaytime(snapshot.championJourney.yearChampion.minutes)}</strong>
+                          <span>played</span>
+                        </div>
+                        <div>
+                          <strong>{snapshot.championJourney.yearChampion.sessionCount}</strong>
+                          <span>sessions</span>
+                        </div>
+                        <div>
+                          <strong>{formatPlaytime(snapshot.championJourney.yearChampion.longestSessionMinutes)}</strong>
+                          <span>longest sitting</span>
+                        </div>
+                        <div>
+                          <strong>
+                            {Math.round(
+                              (snapshot.championJourney.yearChampion.minutes /
+                                Math.max(1, snapshot.championJourney.yearChampion.totalPeriodMinutes)) *
+                                100
+                            )}
+                            %
+                          </strong>
+                          <span>of yearly play</span>
+                        </div>
                       </div>
                       <p>
-                        {formatPlaytime(snapshot.championJourney.yearChampion.totalPeriodMinutes)} across {snapshot.championJourney.yearChampion.totalPeriodSessions} sessions and {snapshot.championJourney.yearChampion.periodGameCount} games this year.
+                        {formatPlaytime(snapshot.championJourney.yearChampion.totalPeriodMinutes)} across{' '}
+                        {snapshot.championJourney.yearChampion.totalPeriodSessions} sessions and{' '}
+                        {snapshot.championJourney.yearChampion.periodGameCount} games this year.
                       </p>
                     </div>
                   </div>
@@ -562,7 +701,10 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                           </div>
                           <div className="year-review-month-copy">
                             <strong title={champion.game?.name}>{champion.game?.name}</strong>
-                            <span>{formatPlaytime(champion.minutes)} · {champion.sessionCount} session{champion.sessionCount === 1 ? '' : 's'}</span>
+                            <span>
+                              {formatPlaytime(champion.minutes)} · {champion.sessionCount} session
+                              {champion.sessionCount === 1 ? '' : 's'}
+                            </span>
                             <small>Longest: {formatPlaytime(champion.longestSessionMinutes)}</small>
                           </div>
                         </article>
@@ -621,7 +763,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                 <article className="year-review-panel year-review-persona-panel">
                   <div className="panel-heading">
                     <div>
-                      <h2><Award size={20} /> Player Identity</h2>
+                      <h2>
+                        <Award size={20} /> Player Identity
+                      </h2>
                       <p>Your local play profile for {selectedYear}.</p>
                     </div>
                   </div>
@@ -665,8 +809,14 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                 <article className="year-review-panel year-review-timeline-panel">
                   <div className="panel-heading">
                     <div>
-                      <h2><TrendingUp size={20} /> Monthly Rhythm</h2>
-                      <p>{standoutMonth ? `${standoutMonth[0]} led the year with ${standoutMonth[1]} hours logged.` : 'Monthly playtime totals.'}</p>
+                      <h2>
+                        <TrendingUp size={20} /> Monthly Rhythm
+                      </h2>
+                      <p>
+                        {standoutMonth
+                          ? `${standoutMonth[0]} led the year with ${standoutMonth[1]} hours logged.`
+                          : 'Monthly playtime totals.'}
+                      </p>
                     </div>
                   </div>
                   <div className="month-bars">
@@ -677,7 +827,10 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                           <strong>{hours}h</strong>
                         </div>
                         <div className="month-bar-track">
-                          <div className="month-bar-fill" style={{ width: `${Math.max((hours / maxMonthlyHours) * 100, hours > 0 ? 8 : 0)}%` }} />
+                          <div
+                            className="month-bar-fill"
+                            style={{ width: `${Math.max((hours / maxMonthlyHours) * 100, hours > 0 ? 8 : 0)}%` }}
+                          />
                         </div>
                         <small>{snapshot.monthly.sessionCounts[month]} sessions</small>
                       </div>
@@ -688,7 +841,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                 <article className="year-review-panel year-review-breakdown-panel">
                   <div className="panel-heading">
                     <div>
-                      <h2><Calendar size={20} /> Your Mix</h2>
+                      <h2>
+                        <Calendar size={20} /> Your Mix
+                      </h2>
                       <p>Platform, mood, and genre signals that shaped the year.</p>
                     </div>
                   </div>
@@ -732,7 +887,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                 <article className="year-review-panel year-review-progression-panel">
                   <div className="panel-heading">
                     <div>
-                      <h2><Target size={20} /> Progression Snapshot</h2>
+                      <h2>
+                        <Target size={20} /> Progression Snapshot
+                      </h2>
                       <p>Your current level and category completion based on your local progression data.</p>
                     </div>
                   </div>
@@ -757,7 +914,9 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
                         <div key={group.key} className="progression-group-row">
                           <div className="progression-group-labels">
                             <span>{group.label}</span>
-                            <strong>{group.unlocked}/{group.total}</strong>
+                            <strong>
+                              {group.unlocked}/{group.total}
+                            </strong>
                           </div>
                           <div className="progression-group-track">
                             <div className="progression-group-fill" style={{ width: `${percent}%` }} />
@@ -782,7 +941,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
             left: 0,
             opacity: 0,
             pointerEvents: 'none',
-            zIndex: -1
+            zIndex: -1,
           }}
         >
           <div ref={shareCardRef}>
@@ -804,7 +963,7 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
             left: 0,
             opacity: 0,
             pointerEvents: 'none',
-            zIndex: -1
+            zIndex: -1,
           }}
         >
           <div ref={storyShareCardRef}>
@@ -817,7 +976,6 @@ function YearInReview({ library = [], theme, onLaunchGame, activeSessions = {}, 
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

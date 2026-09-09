@@ -40,7 +40,7 @@ const DEFAULTS = Object.freeze({
   // Big-screen / TV / 10-foot UI mode
   bigScreenMode: false,
   // Playtime display unit: 'auto' | 'hours' | 'days'
-  playtimeUnit: 'auto'
+  playtimeUnit: 'auto',
 });
 
 // Values applied to fresh installs as a calmer default ("Balanced" experience).
@@ -48,7 +48,7 @@ const DEFAULTS = Object.freeze({
 const FRESH_INSTALL_DEFAULTS = Object.freeze({
   showHomeRetentionQuests: false,
   ornamentLevel: 'balanced',
-  showThemedPageTitles: true
+  showThemedPageTitles: true,
 });
 
 // Full Balanced preset values (used by applyBalancedPreset).
@@ -69,7 +69,7 @@ const BALANCED_PRESET_VALUES = Object.freeze({
   reducedMotion: false,
   showThemedPageTitles: true,
   ornamentLevel: 'balanced',
-  showQuickLaunchHotbar: true
+  showQuickLaunchHotbar: true,
 });
 
 const listeners = new Set();
@@ -88,7 +88,11 @@ let cache = readRaw();
 
 const notify = () => {
   listeners.forEach((fn) => {
-    try { fn(cache); } catch (_err) { /* ignore listener errors */ }
+    try {
+      fn(cache);
+    } catch (_err) {
+      /* ignore listener errors */
+    }
   });
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('gamepilot:interface-preferences-changed', { detail: cache }));
@@ -106,7 +110,7 @@ const SECTION_CLASS_MAP = {
   showHomeShelves: 'hide-home-shelves',
   showHomeLauncherSummary: 'hide-home-launcher-summary',
   showHomeHeroSummary: 'hide-home-hero-summary',
-  showThemedPageTitles: 'hide-themed-page-titles'
+  showThemedPageTitles: 'hide-themed-page-titles',
 };
 
 const applyBodyClasses = (prefs) => {
@@ -179,7 +183,7 @@ const InterfacePreferencesService = {
       showHomeHeroSummary: false,
       compactMode: true,
       reducedMotion: true,
-      showThemedPageTitles: false
+      showThemedPageTitles: false,
     });
     StorageService.set('experienceMode', 'focus');
   },
@@ -203,7 +207,7 @@ const InterfacePreferencesService = {
       reducedMotion: false,
       showThemedPageTitles: false,
       ornamentLevel: 'plain',
-      showQuickLaunchHotbar: true
+      showQuickLaunchHotbar: true,
     });
     StorageService.set('experienceMode', 'librarian');
   },
@@ -246,7 +250,10 @@ const InterfacePreferencesService = {
   unpinGame(gameKey) {
     const key = String(gameKey);
     const ids = (cache.pinnedGameIds || []).map(String);
-    this.set('pinnedGameIds', ids.filter((id) => id !== key));
+    this.set(
+      'pinnedGameIds',
+      ids.filter((id) => id !== key)
+    );
   },
 
   togglePin(gameKey) {
@@ -255,7 +262,7 @@ const InterfacePreferencesService = {
     } else {
       this.pinGame(gameKey);
     }
-  }
+  },
 };
 
 export default InterfacePreferencesService;

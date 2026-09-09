@@ -3,19 +3,20 @@ export const GETTING_STARTED_PREFERENCE_KEY = 'gettingStartedPreferences';
 export const readGettingStartedPreferences = () => {
   try {
     const parsed = JSON.parse(localStorage.getItem(GETTING_STARTED_PREFERENCE_KEY) || '{}');
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? parsed
-      : { hasSeen: false, hidden: false };
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : { hasSeen: false, hidden: false };
   } catch (error) {
     return { hasSeen: false, hidden: false };
   }
 };
 
 export const saveGettingStartedPreferences = (preferences = {}) => {
-  localStorage.setItem(GETTING_STARTED_PREFERENCE_KEY, JSON.stringify({
-    hasSeen: Boolean(preferences.hasSeen),
-    hidden: Boolean(preferences.hidden)
-  }));
+  localStorage.setItem(
+    GETTING_STARTED_PREFERENCE_KEY,
+    JSON.stringify({
+      hasSeen: Boolean(preferences.hasSeen),
+      hidden: Boolean(preferences.hidden),
+    })
+  );
 };
 
 export const formatPlaytime = (minutes) => {

@@ -25,21 +25,29 @@ const SeasonalHideAndSeek = () => {
     return SeasonalHideAndSeekService.getProgress(activeEvent.id);
   }, [activeEvent]);
 
-  const handleFindItem = useCallback((itemId) => {
-    if (!activeEvent) return;
-    const result = SeasonalHideAndSeekService.findItem(activeEvent.id, itemId);
-    if (!result) return;
+  const handleFindItem = useCallback(
+    (itemId) => {
+      if (!activeEvent) return;
+      const result = SeasonalHideAndSeekService.findItem(activeEvent.id, itemId);
+      if (!result) return;
 
-    if (result.alreadyFound) return;
+      if (result.alreadyFound) return;
 
-    if (result.justCompleted) {
-      setShowCelebration({ type: 'complete', eventName: activeEvent.name, reward: activeEvent.rewardName });
-    } else {
-      setShowCelebration({ type: 'found', itemEmoji: activeEvent.itemEmoji, count: result.found.length, total: activeEvent.totalItems });
-    }
+      if (result.justCompleted) {
+        setShowCelebration({ type: 'complete', eventName: activeEvent.name, reward: activeEvent.rewardName });
+      } else {
+        setShowCelebration({
+          type: 'found',
+          itemEmoji: activeEvent.itemEmoji,
+          count: result.found.length,
+          total: activeEvent.totalItems,
+        });
+      }
 
-    setTimeout(() => setShowCelebration(null), 3000);
-  }, [activeEvent]);
+      setTimeout(() => setShowCelebration(null), 3000);
+    },
+    [activeEvent]
+  );
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
@@ -62,29 +70,30 @@ const SeasonalHideAndSeek = () => {
   return (
     <>
       {/* Hidden items scattered in the UI */}
-      {!allFound && Array.from({ length: activeEvent.totalItems }, (_, i) => i).map((i) => {
-        const itemId = `${activeEvent.id}-item-${i}`;
-        const isFound = progress.found.includes(itemId);
-        if (isFound) return null;
+      {!allFound &&
+        Array.from({ length: activeEvent.totalItems }, (_, i) => i).map((i) => {
+          const itemId = `${activeEvent.id}-item-${i}`;
+          const isFound = progress.found.includes(itemId);
+          if (isFound) return null;
 
-        return (
-          <button
-            key={itemId}
-            className="seasonal-hide-seek-item"
-            onClick={() => handleFindItem(itemId)}
-            aria-label={`Hidden ${activeEvent.itemName} ${i + 1}`}
-            title={`You found a hidden ${activeEvent.itemName}!`}
-            style={{
-              position: 'fixed',
-              left: `${5 + ((i * 17) + ((Date.now() / 1000) % 7)) % 90}%`,
-              top: `${8 + ((i * 23) + ((Date.now() / 1000) % 11)) % 80}%`,
-              zIndex: 9999
-            }}
-          >
-            <span className="seasonal-hide-seek-emoji">{activeEvent.itemEmoji}</span>
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={itemId}
+              className="seasonal-hide-seek-item"
+              onClick={() => handleFindItem(itemId)}
+              aria-label={`Hidden ${activeEvent.itemName} ${i + 1}`}
+              title={`You found a hidden ${activeEvent.itemName}!`}
+              style={{
+                position: 'fixed',
+                left: `${5 + ((i * 17 + ((Date.now() / 1000) % 7)) % 90)}%`,
+                top: `${8 + ((i * 23 + ((Date.now() / 1000) % 11)) % 80)}%`,
+                zIndex: 9999,
+              }}
+            >
+              <span className="seasonal-hide-seek-emoji">{activeEvent.itemEmoji}</span>
+            </button>
+          );
+        })}
 
       {/* Tracker badge */}
       <div className="seasonal-hide-seek-tracker">
@@ -106,10 +115,7 @@ const SeasonalHideAndSeek = () => {
           </button>
         </div>
         <div className="seasonal-hide-seek-tracker-bar">
-          <div
-            className="seasonal-hide-seek-tracker-fill"
-            style={{ width: `${progress.progressPercent}%` }}
-          />
+          <div className="seasonal-hide-seek-tracker-fill" style={{ width: `${progress.progressPercent}%` }} />
         </div>
         <div className="seasonal-hide-seek-tracker-items">
           {Array.from({ length: activeEvent.totalItems }, (_, i) => (
@@ -131,7 +137,9 @@ const SeasonalHideAndSeek = () => {
               <span className="seasonal-hide-seek-toast-emoji">🏆</span>
               <div>
                 <strong>{showCelebration.eventName} Complete!</strong>
-                <span>You earned: {showCelebration.reward} (+{activeEvent.xpReward} XP)</span>
+                <span>
+                  You earned: {showCelebration.reward} (+{activeEvent.xpReward} XP)
+                </span>
               </div>
             </>
           ) : (
@@ -139,7 +147,9 @@ const SeasonalHideAndSeek = () => {
               <span className="seasonal-hide-seek-toast-emoji">{showCelebration.itemEmoji}</span>
               <div>
                 <strong>Found one!</strong>
-                <span>{showCelebration.count} of {showCelebration.total} {activeEvent.itemName}s</span>
+                <span>
+                  {showCelebration.count} of {showCelebration.total} {activeEvent.itemName}s
+                </span>
               </div>
             </>
           )}

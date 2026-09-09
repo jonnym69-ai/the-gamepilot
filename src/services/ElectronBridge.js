@@ -46,9 +46,4 @@ const openExternalUrl = async (url) => {
   return true;
 };
 
-export {
-  getElectronAPI,
-  waitForElectronAPI,
-  isElectronRuntime,
-  openExternalUrl
-};
+export { getElectronAPI, waitForElectronAPI, isElectronRuntime, openExternalUrl };

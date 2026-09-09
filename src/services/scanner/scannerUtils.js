@@ -17,7 +17,7 @@ const runCommand = (command) => {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
       timeout: SHELL_COMMAND_TIMEOUT_MS,
-      windowsHide: true
+      windowsHide: true,
     });
   } catch (error) {
     scannerDebug('[Scanner] Command failed:', command, error.message);
@@ -43,22 +43,24 @@ const safeReadJson = (targetPath) => {
   }
 };
 
-const sanitizeScannedGameName = (value) => String(value || '')
-  .replace(/Ôäó/g, '™')
-  .replace(/┬«/g, '®')
-  .replace(/┬®/g, '©')
-  .replace(/ÔÇÖ/g, '’')
-  .replace(/ÔÇ£|ÔÇØ/g, '"')
-  .replace(/ÔÇô|ÔÇö/g, '-')
-  .replace(/\s+/g, ' ')
-  .trim();
+const sanitizeScannedGameName = (value) =>
+  String(value || '')
+    .replace(/Ôäó/g, '™')
+    .replace(/┬«/g, '®')
+    .replace(/┬®/g, '©')
+    .replace(/ÔÇÖ/g, '’')
+    .replace(/ÔÇ£|ÔÇØ/g, '"')
+    .replace(/ÔÇô|ÔÇö/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-const normalizeScannerToken = (value) => String(value || '')
-  .toLowerCase()
-  .replace(/iii/g, '3')
-  .replace(/ii/g, '2')
-  .replace(/iv/g, '4')
-  .replace(/[^a-z0-9]/g, '');
+const normalizeScannerToken = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/iii/g, '3')
+    .replace(/ii/g, '2')
+    .replace(/iv/g, '4')
+    .replace(/[^a-z0-9]/g, '');
 
 const addUniquePath = (paths, candidatePath) => {
   if (!candidatePath || typeof candidatePath !== 'string') return;
@@ -76,18 +78,70 @@ const queryRegistryValue = (registryKey, valueName) => {
 };
 
 const NON_GAME_FOLDER_TOKENS = [
-  'launcher', 'launchers', 'social club', 'rockstar games launcher',
-  'gog galaxy', 'galaxyclient', 'ubisoft connect', 'ubisoftconnect', 'riot client',
-  'commonredist', 'redistributables', 'redistributable', 'installer',
-  'installers', 'prerequisite', 'prerequisites', 'prereq', 'support',
-  'tools', 'tool', 'cache', 'logs', 'log', 'updater', 'updates',
-  'runtime', 'service', 'services', 'setup', 'uninstall', 'uninstaller',
-  'bonus content', 'soundtrack', 'artbook', 'directx', 'vcredist', 'dotnet',
-  'engine', 'sdk', 'launcherdata', 'anticheat', 'easyanticheat', 'eac', 'beclient',
-  'games', 'game', 'battleye', 'battlEye', 'escapefromtarkov_data', 'eft_data', 'data',
-  'program files', 'program files (x86)', 'windows', 'users', 'documents and settings',
-  'appdata', 'application data', 'local settings', 'programdata', 'perflogs',
-  'system volume information', 'recycle.bin', '$recycle.bin'
+  'launcher',
+  'launchers',
+  'social club',
+  'rockstar games launcher',
+  'gog galaxy',
+  'galaxyclient',
+  'ubisoft connect',
+  'ubisoftconnect',
+  'riot client',
+  'commonredist',
+  'redistributables',
+  'redistributable',
+  'installer',
+  'installers',
+  'prerequisite',
+  'prerequisites',
+  'prereq',
+  'support',
+  'tools',
+  'tool',
+  'cache',
+  'logs',
+  'log',
+  'updater',
+  'updates',
+  'runtime',
+  'service',
+  'services',
+  'setup',
+  'uninstall',
+  'uninstaller',
+  'bonus content',
+  'soundtrack',
+  'artbook',
+  'directx',
+  'vcredist',
+  'dotnet',
+  'engine',
+  'sdk',
+  'launcherdata',
+  'anticheat',
+  'easyanticheat',
+  'eac',
+  'beclient',
+  'games',
+  'game',
+  'battleye',
+  'battlEye',
+  'escapefromtarkov_data',
+  'eft_data',
+  'data',
+  'program files',
+  'program files (x86)',
+  'windows',
+  'users',
+  'documents and settings',
+  'appdata',
+  'application data',
+  'local settings',
+  'programdata',
+  'perflogs',
+  'system volume information',
+  'recycle.bin',
+  '$recycle.bin',
 ];
 
 const SYSTEM_PATH_PATTERNS = [
@@ -100,25 +154,29 @@ const SYSTEM_PATH_PATTERNS = [
   '\\appdata',
   '\\documents and settings',
   '\\$recycle.bin',
-  '\\system volume information'
+  '\\system volume information',
 ];
 
 const isLikelyNonGameFolder = (folderName) => {
-  const normalized = String(folderName || '').trim().toLowerCase();
+  const normalized = String(folderName || '')
+    .trim()
+    .toLowerCase();
   if (!normalized || normalized.length < 2) return true;
-  return NON_GAME_FOLDER_TOKENS.some((token) => (
-    normalized === token ||
-    normalized.startsWith(`${token} `) ||
-    normalized.includes(` ${token}`) ||
-    normalized.includes(`_${token}`) ||
-    normalized.includes(`-${token}`)
-  ));
+  return NON_GAME_FOLDER_TOKENS.some(
+    (token) =>
+      normalized === token ||
+      normalized.startsWith(`${token} `) ||
+      normalized.includes(` ${token}`) ||
+      normalized.includes(`_${token}`) ||
+      normalized.includes(`-${token}`)
+  );
 };
 
-const normalizePathForScanner = (targetPath) => String(targetPath || '')
-  .replace(/\//g, '\\')
-  .trim()
-  .toLowerCase();
+const normalizePathForScanner = (targetPath) =>
+  String(targetPath || '')
+    .replace(/\//g, '\\')
+    .trim()
+    .toLowerCase();
 
 const isDriveRootPath = (targetPath) => /^[a-z]:\\?$/i.test(String(targetPath || '').trim());
 
@@ -132,18 +190,37 @@ const isProtectedSystemPath = (targetPath) => {
     return true;
   }
 
-  return SYSTEM_PATH_PATTERNS.some((pattern) => (
-    normalizedPath === pattern.slice(1)
-    || normalizedPath.endsWith(pattern)
-    || normalizedPath.includes(`${pattern}\\`)
-  ));
+  return SYSTEM_PATH_PATTERNS.some(
+    (pattern) =>
+      normalizedPath === pattern.slice(1) || normalizedPath.endsWith(pattern) || normalizedPath.includes(`${pattern}\\`)
+  );
 };
 
 const NON_GAME_EXECUTABLE_TOKENS = [
-  'launcher', 'updater', 'crashreport', 'unins', 'uninstall', 'setup', 'install',
-  'redistributable', 'support', 'helper', 'service', 'eadesktop', 'origin',
-  'ubisoftconnect', 'upc', 'rockstarlauncher', 'socialclub', 'battle.net',
-  'galaxyclient', 'goggalaxy', 'riotclientservices', 'battleye', 'beclient', 'anticheat'
+  'launcher',
+  'updater',
+  'crashreport',
+  'unins',
+  'uninstall',
+  'setup',
+  'install',
+  'redistributable',
+  'support',
+  'helper',
+  'service',
+  'eadesktop',
+  'origin',
+  'ubisoftconnect',
+  'upc',
+  'rockstarlauncher',
+  'socialclub',
+  'battle.net',
+  'galaxyclient',
+  'goggalaxy',
+  'riotclientservices',
+  'battleye',
+  'beclient',
+  'anticheat',
 ];
 
 const isLikelyGameExecutable = (fileName, folderName = '') => {
@@ -161,10 +238,12 @@ const isLikelyGameExecutable = (fileName, folderName = '') => {
   if (!normalizedFileStem || !normalizedFolderStem) {
     return false;
   }
-  return normalizedFileStem.includes(normalizedFolderStem)
-    || normalizedFolderStem.includes(normalizedFileStem)
-    || normalizedFileStem.startsWith(normalizedFolderStem.slice(0, Math.min(normalizedFolderStem.length, 8)))
-    || normalizedFolderStem.startsWith(normalizedFileStem.slice(0, Math.min(normalizedFileStem.length, 8)));
+  return (
+    normalizedFileStem.includes(normalizedFolderStem) ||
+    normalizedFolderStem.includes(normalizedFileStem) ||
+    normalizedFileStem.startsWith(normalizedFolderStem.slice(0, Math.min(normalizedFolderStem.length, 8))) ||
+    normalizedFolderStem.startsWith(normalizedFileStem.slice(0, Math.min(normalizedFileStem.length, 8)))
+  );
 };
 
 const findPreferredExecutable = (gamePath, folderName) => {
@@ -250,7 +329,11 @@ const findExecutableDeep = (rootDir, maxDepth = 3) => {
         const stats = fs.statSync(entryPath);
         if (stats.isDirectory()) {
           walk(entryPath, depth - 1);
-        } else if (stats.isFile() && entry.toLowerCase().endsWith('.exe') && isLikelyGameExecutable(entry, path.basename(dir))) {
+        } else if (
+          stats.isFile() &&
+          entry.toLowerCase().endsWith('.exe') &&
+          isLikelyGameExecutable(entry, path.basename(dir))
+        ) {
           if (stats.size > bestSize) {
             bestSize = stats.size;
             bestExe = entryPath;
@@ -300,24 +383,25 @@ const createTrackedDefaults = () => ({
     daily: {},
     weekly: {},
     monthly: {},
-    yearly: {}
-  }
+    yearly: {},
+  },
 });
 
 const addGameIfUnique = (games, game) => {
   if (!game?.name || !game?.platform) {
     return;
   }
-  const exists = games.some((existingGame) => (
-    existingGame.platform === game.platform
-    && (
-      (existingGame.appid && game.appid && String(existingGame.appid) === String(game.appid))
-      || (existingGame.launchId && game.launchId && String(existingGame.launchId) === String(game.launchId))
-      || (existingGame.aumid && game.aumid && String(existingGame.aumid) === String(game.aumid))
-      || (existingGame.installDir && game.installDir && existingGame.installDir.toLowerCase() === game.installDir.toLowerCase())
-      || existingGame.name.toLowerCase() === game.name.toLowerCase()
-    )
-  ));
+  const exists = games.some(
+    (existingGame) =>
+      existingGame.platform === game.platform &&
+      ((existingGame.appid && game.appid && String(existingGame.appid) === String(game.appid)) ||
+        (existingGame.launchId && game.launchId && String(existingGame.launchId) === String(game.launchId)) ||
+        (existingGame.aumid && game.aumid && String(existingGame.aumid) === String(game.aumid)) ||
+        (existingGame.installDir &&
+          game.installDir &&
+          existingGame.installDir.toLowerCase() === game.installDir.toLowerCase()) ||
+        existingGame.name.toLowerCase() === game.name.toLowerCase())
+  );
   if (!exists) {
     games.push(game);
   }
@@ -487,7 +571,7 @@ const getSteamPlaytimeMap = (steamAppsPaths = []) => {
         } else {
           playtimeMap[appId] = {
             minutes: Math.max(existing.minutes, minutes),
-            lastPlayedMs: Math.max(existing.lastPlayedMs || 0, lastPlayedMs || 0) || null
+            lastPlayedMs: Math.max(existing.lastPlayedMs || 0, lastPlayedMs || 0) || null,
           };
         }
       });
@@ -541,10 +625,7 @@ const queryAllRows = (db, sql) => {
 };
 
 const getGamePieceTypeId = (db, typeName) => {
-  const rows = queryAllRows(
-    db,
-    `SELECT id FROM GamePieceTypes WHERE type = '${typeName}' LIMIT 1`
-  );
+  const rows = queryAllRows(db, `SELECT id FROM GamePieceTypes WHERE type = '${typeName}' LIMIT 1`);
   return rows[0]?.id || null;
 };
 
@@ -569,10 +650,7 @@ const getGogGalaxyPlaytimeMap = async () => {
 
       const titleTypeId = getGamePieceTypeId(db, 'title');
       const titleRows = titleTypeId
-        ? queryAllRows(
-            db,
-            `SELECT releaseKey, value AS title FROM GamePieces WHERE gamePieceTypeId = ${titleTypeId}`
-          )
+        ? queryAllRows(db, `SELECT releaseKey, value AS title FROM GamePieces WHERE gamePieceTypeId = ${titleTypeId}`)
         : [];
       const titleByReleaseKey = {};
       titleRows.forEach((row) => {
@@ -581,16 +659,13 @@ const getGogGalaxyPlaytimeMap = async () => {
         }
       });
 
-      const timeRows = queryAllRows(
-        db,
-        'SELECT releaseKey, minutesInGame FROM GAMETIMES'
-      );
+      const timeRows = queryAllRows(db, 'SELECT releaseKey, minutesInGame FROM GAMETIMES');
       timeRows.forEach((row) => {
         if (!row.releaseKey || typeof row.minutesInGame !== 'number') return;
         playtimeMap[row.releaseKey] = {
           minutes: row.minutesInGame,
           title: titleByReleaseKey[row.releaseKey] || null,
-          lastPlayedMs: null
+          lastPlayedMs: null,
         };
       });
 
@@ -682,7 +757,9 @@ const applyGogGalaxyPlaytime = (games, gogMap) => {
 
 const getActiveDrives = () => {
   if (process.platform !== 'win32') return [];
-  const logicalDiskOutput = runCommand('powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType | ConvertTo-Json -Compress"');
+  const logicalDiskOutput = runCommand(
+    'powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType | ConvertTo-Json -Compress"'
+  );
   let activeDrives = [];
 
   if (logicalDiskOutput) {
@@ -694,7 +771,12 @@ const getActiveDrives = () => {
           const driveType = Number(disk?.DriveType);
           return [2, 3, 4].includes(driveType);
         })
-        .map((disk) => String(disk?.DeviceID || '').replace(':', '').trim().toUpperCase())
+        .map((disk) =>
+          String(disk?.DeviceID || '')
+            .replace(':', '')
+            .trim()
+            .toUpperCase()
+        )
         .filter(Boolean)
         .filter((drive, index, list) => list.indexOf(drive) === index)
         .filter((drive) => {
@@ -737,7 +819,7 @@ const getLinuxLibraryRoots = () => {
     path.join(home, '.var', 'app'), // Flatpak app data
     path.join(home, 'Games'),
     '/mnt',
-    '/media'
+    '/media',
   ].forEach((candidate) => addUniquePath(roots, candidate));
   return roots;
 };
@@ -765,5 +847,5 @@ module.exports = {
   parseVdf,
   getSteamPlaytimeMap,
   getGogGalaxyPlaytimeMap,
-  applyGogGalaxyPlaytime
+  applyGogGalaxyPlaytime,
 };

@@ -1,14 +1,6 @@
 import React from 'react';
 
-function EmptyState({
-  icon = '✨',
-  title,
-  description,
-  actionLabel,
-  onAction,
-  compact = false,
-  style = {}
-}) {
+function EmptyState({ icon = '✨', title, description, actionLabel, onAction, compact = false, style = {} }) {
   return (
     <div
       className={`shared-empty-state${compact ? ' compact' : ''}`}
@@ -16,13 +8,14 @@ function EmptyState({
         padding: compact ? '28px 24px' : '40px 32px',
         borderRadius: '20px',
         border: '1px solid var(--border-color, rgba(255,255,255,0.14))',
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.01) 100%)',
+        background:
+          'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.01) 100%)',
         textAlign: 'center',
         color: 'var(--text)',
         boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
         position: 'relative',
         overflow: 'hidden',
-        ...style
+        ...style,
       }}
     >
       {/* Subtle gradient overlay for depth */}
@@ -34,7 +27,7 @@ function EmptyState({
           right: 0,
           height: '50%',
           background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
         }}
       />
       <div
@@ -44,7 +37,7 @@ function EmptyState({
           lineHeight: 1,
           filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
         }}
       >
         {icon}
@@ -55,7 +48,7 @@ function EmptyState({
           fontSize: compact ? '1.1rem' : '1.35rem',
           fontWeight: 700,
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
         }}
       >
         {title}
@@ -70,7 +63,7 @@ function EmptyState({
             marginInline: 'auto',
             fontSize: compact ? '0.92rem' : '0.98rem',
             position: 'relative',
-            zIndex: 1
+            zIndex: 1,
           }}
         >
           {description}
@@ -85,7 +78,8 @@ function EmptyState({
             padding: '12px 24px',
             borderRadius: '999px',
             border: '1px solid rgba(255,255,255,0.15)',
-            background: 'linear-gradient(135deg, var(--button-primary-bg, #ff6b35) 0%, var(--accent-secondary, #ff8c42) 100%)',
+            background:
+              'linear-gradient(135deg, var(--button-primary-bg, #ff6b35) 0%, var(--accent-secondary, #ff8c42) 100%)',
             color: 'var(--button-primary-text, #fff)',
             fontWeight: 600,
             fontSize: '0.95rem',
@@ -94,7 +88,7 @@ function EmptyState({
             transition: 'all 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
             position: 'relative',
             zIndex: 1,
-            overflow: 'hidden'
+            overflow: 'hidden',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';

@@ -11,9 +11,8 @@ export const LIBRARY_SHARE_CARD_SIZE_PX = 1080;
 export const PERIOD_LABELS = {
   all: 'All Time',
   weekly: 'This Week',
-  monthly: 'This Month'
+  monthly: 'This Month',
 };
-
 
 const resolvePlaytime = (game) => {
   const value = Number(game?.time_played ?? game?.playtime ?? game?.totalPlaytime ?? 0);
@@ -60,7 +59,9 @@ export function buildLibraryShareData(library = [], username = 'Pilot', period =
   if (validPeriod === 'all' || totalMinutes === 0) {
     totalMinutes = safeLibrary.reduce((sum, game) => sum + resolvePlaytime(game), 0);
     if (validPeriod === 'all') {
-      const steamGames = safeLibrary.filter((game) => String(game?.platform || game?.brandPlatform || '').toLowerCase() === 'steam');
+      const steamGames = safeLibrary.filter(
+        (game) => String(game?.platform || game?.brandPlatform || '').toLowerCase() === 'steam'
+      );
       steamMinutes = steamGames.reduce((sum, game) => sum + resolvePlaytime(game), 0);
       steamGameCount = steamGames.length;
       // Fallback: if dashboard didn't give a session count, sum library launch counts
@@ -117,11 +118,19 @@ const paletteToCssVars = (palette) => {
     '--recap-text': palette.text,
     '--recap-muted': palette.muted,
     '--recap-surface': palette.surface,
-    '--recap-surface-border': palette.surfaceBorder
+    '--recap-surface-border': palette.surfaceBorder,
   };
 };
 
-export function LibraryShareCard({ library, username, period, theme = null, visibleStats = null, showCover = true, watermark = 'gamepilot' }) {
+export function LibraryShareCard({
+  library,
+  username,
+  period,
+  theme = null,
+  visibleStats = null,
+  showCover = true,
+  watermark = 'gamepilot',
+}) {
   const data = buildLibraryShareData(library, username, period);
   const showSessions = data.sessionCount > 0;
   const topGame = data.mostPlayed?.[0];
@@ -132,7 +141,7 @@ export function LibraryShareCard({ library, username, period, theme = null, visi
   const stripStats = [
     { key: 'games', value: data.gameCount, label: 'games' },
     { key: 'sessions', value: data.sessionCount, label: 'sessions' },
-    { key: 'steamHours', value: data.steamHours, label: 'Steam hours' }
+    { key: 'steamHours', value: data.steamHours, label: 'Steam hours' },
   ].filter((stat) => {
     // If no sessions have been tracked locally, showing "0 sessions" next to hundreds
     // of hours of Steam playtime looks broken. Hide it unless the user explicitly
@@ -146,7 +155,7 @@ export function LibraryShareCard({ library, username, period, theme = null, visi
   const rootStyle = {
     width: LIBRARY_SHARE_CARD_SIZE_PX,
     height: LIBRARY_SHARE_CARD_SIZE_PX,
-    ...paletteToCssVars(theme)
+    ...paletteToCssVars(theme),
   };
 
   return (

@@ -22,12 +22,24 @@ const SPECIAL_EVENT_DOODLES = [
     border: '1px solid rgba(255, 117, 24, 0.5)',
     shadow: '0 20px 45px rgba(255, 117, 24, 0.3)',
     letterPalette: [
-      { gradient: 'linear-gradient(180deg, #ff7518 0%, #f72585 100%)', shadow: '0 8px 18px rgba(255,117,24,0.7)', tilt: -5 },
-      { gradient: 'linear-gradient(180deg, #9d4edd 0%, #3a0ca3 100%)', shadow: '0 8px 18px rgba(157,78,221,0.6)', tilt: 4 },
-      { gradient: 'linear-gradient(180deg, #70e000 0%, #38b000 100%)', shadow: '0 8px 18px rgba(112,224,0,0.6)', tilt: -3 }
+      {
+        gradient: 'linear-gradient(180deg, #ff7518 0%, #f72585 100%)',
+        shadow: '0 8px 18px rgba(255,117,24,0.7)',
+        tilt: -5,
+      },
+      {
+        gradient: 'linear-gradient(180deg, #9d4edd 0%, #3a0ca3 100%)',
+        shadow: '0 8px 18px rgba(157,78,221,0.6)',
+        tilt: 4,
+      },
+      {
+        gradient: 'linear-gradient(180deg, #70e000 0%, #38b000 100%)',
+        shadow: '0 8px 18px rgba(112,224,0,0.6)',
+        tilt: -3,
+      },
     ],
     metaStyle: { color: '#ffaa44', letterSpacing: '0.15em', textTransform: 'uppercase' },
-    pattern: 'grid'
+    pattern: 'grid',
   },
   {
     id: 'winter-solstice',
@@ -39,12 +51,24 @@ const SPECIAL_EVENT_DOODLES = [
     border: '1px solid rgba(100, 210, 255, 0.4)',
     shadow: '0 20px 45px rgba(100, 210, 255, 0.3)',
     letterPalette: [
-      { gradient: 'linear-gradient(180deg, #e0f2fe 0%, #7dd3fc 100%)', shadow: '0 8px 18px rgba(125,211,252,0.7)', tilt: -2 },
-      { gradient: 'linear-gradient(180deg, #38bdf8 0%, #0284c7 100%)', shadow: '0 8px 18px rgba(56,189,248,0.6)', tilt: 3 },
-      { gradient: 'linear-gradient(180deg, #fae8ff 0%, #f472b6 100%)', shadow: '0 8px 18px rgba(244,114,182,0.5)', tilt: -1 }
+      {
+        gradient: 'linear-gradient(180deg, #e0f2fe 0%, #7dd3fc 100%)',
+        shadow: '0 8px 18px rgba(125,211,252,0.7)',
+        tilt: -2,
+      },
+      {
+        gradient: 'linear-gradient(180deg, #38bdf8 0%, #0284c7 100%)',
+        shadow: '0 8px 18px rgba(56,189,248,0.6)',
+        tilt: 3,
+      },
+      {
+        gradient: 'linear-gradient(180deg, #fae8ff 0%, #f472b6 100%)',
+        shadow: '0 8px 18px rgba(244,114,182,0.5)',
+        tilt: -1,
+      },
     ],
     metaStyle: { color: '#bae6fd', letterSpacing: '0.1em', textTransform: 'uppercase' },
-    pattern: 'stars'
+    pattern: 'stars',
   },
   {
     id: 'friday-night-rush',
@@ -56,13 +80,25 @@ const SPECIAL_EVENT_DOODLES = [
     border: '1px solid rgba(255, 75, 75, 0.5)',
     shadow: '0 20px 45px rgba(255, 75, 75, 0.35)',
     letterPalette: [
-      { gradient: 'linear-gradient(180deg, #ff4b4b 0%, #ff8533 100%)', shadow: '0 8px 18px rgba(255,75,75,0.7)', tilt: -6 },
-      { gradient: 'linear-gradient(180deg, #ffd166 0%, #06d6a0 100%)', shadow: '0 8px 18px rgba(255,209,102,0.6)', tilt: 5 },
-      { gradient: 'linear-gradient(180deg, #118ab2 0%, #073b4c 100%)', shadow: '0 8px 18px rgba(17,138,178,0.6)', tilt: -3 }
+      {
+        gradient: 'linear-gradient(180deg, #ff4b4b 0%, #ff8533 100%)',
+        shadow: '0 8px 18px rgba(255,75,75,0.7)',
+        tilt: -6,
+      },
+      {
+        gradient: 'linear-gradient(180deg, #ffd166 0%, #06d6a0 100%)',
+        shadow: '0 8px 18px rgba(255,209,102,0.6)',
+        tilt: 5,
+      },
+      {
+        gradient: 'linear-gradient(180deg, #118ab2 0%, #073b4c 100%)',
+        shadow: '0 8px 18px rgba(17,138,178,0.6)',
+        tilt: -3,
+      },
     ],
     metaStyle: { color: '#ffb4a2', letterSpacing: '0.18em', textTransform: 'uppercase' },
-    pattern: 'pixels'
-  }
+    pattern: 'pixels',
+  },
 ];
 
 const DOODLE_LIBRARY = [
@@ -78,25 +114,25 @@ const DOODLE_LIBRARY = [
       {
         gradient: 'linear-gradient(180deg, #f72585 0%, #b5179e 60%, #7209b7 100%)',
         shadow: '0 10px 25px rgba(247,37,133,0.6)',
-        tilt: -6
+        tilt: -6,
       },
       {
         gradient: 'linear-gradient(180deg, #4895ef 0%, #4361ee 60%, #3a0ca3 100%)',
         shadow: '0 10px 25px rgba(67,97,238,0.45)',
-        tilt: 3
+        tilt: 3,
       },
       {
         gradient: 'linear-gradient(180deg, #4cc9f0 0%, #4895ef 100%)',
         shadow: '0 10px 25px rgba(76,201,240,0.45)',
-        tilt: -2
-      }
+        tilt: -2,
+      },
     ],
     metaStyle: {
       color: 'rgba(255,255,255,0.85)',
       letterSpacing: '0.2em',
-      textTransform: 'uppercase'
+      textTransform: 'uppercase',
     },
-    pattern: 'grid'
+    pattern: 'grid',
   },
   {
     id: 'pixel-parade',
@@ -110,25 +146,25 @@ const DOODLE_LIBRARY = [
       {
         gradient: 'linear-gradient(180deg, #ffb703 0%, #fb8500 100%)',
         shadow: '0 6px 12px rgba(251,133,0,0.55)',
-        tilt: -2
+        tilt: -2,
       },
       {
         gradient: 'linear-gradient(180deg, #8ecae6 0%, #219ebc 100%)',
         shadow: '0 6px 12px rgba(33,158,188,0.5)',
-        tilt: 4
+        tilt: 4,
       },
       {
         gradient: 'linear-gradient(180deg, #ff006e 0%, #d00000 100%)',
         shadow: '0 6px 12px rgba(208,0,0,0.55)',
-        tilt: -4
-      }
+        tilt: -4,
+      },
     ],
     metaStyle: {
       color: 'rgba(255,255,255,0.75)',
       letterSpacing: '0.05em',
-      textTransform: 'uppercase'
+      textTransform: 'uppercase',
     },
-    pattern: 'pixels'
+    pattern: 'pixels',
   },
   {
     id: 'nebula-script',
@@ -142,25 +178,25 @@ const DOODLE_LIBRARY = [
       {
         gradient: 'linear-gradient(120deg, #ffee93 0%, #ffd6a5 100%)',
         shadow: '0 12px 30px rgba(255,214,165,0.5)',
-        tilt: -2
+        tilt: -2,
       },
       {
         gradient: 'linear-gradient(120deg, #cdb4db 0%, #ffc8dd 100%)',
         shadow: '0 12px 30px rgba(205,180,219,0.5)',
-        tilt: 5
+        tilt: 5,
       },
       {
         gradient: 'linear-gradient(120deg, #a0c4ff 0%, #90dbf4 100%)',
         shadow: '0 12px 30px rgba(160,196,255,0.45)',
-        tilt: -5
-      }
+        tilt: -5,
+      },
     ],
     metaStyle: {
       color: 'rgba(238,242,255,0.9)',
       letterSpacing: '0.08em',
-      textTransform: 'capitalize'
+      textTransform: 'capitalize',
     },
-    pattern: 'stars'
+    pattern: 'stars',
   },
   {
     id: 'circuit-glow',
@@ -174,25 +210,25 @@ const DOODLE_LIBRARY = [
       {
         gradient: 'linear-gradient(180deg, #80ffdb 0%, #64dfdf 100%)',
         shadow: '0 12px 22px rgba(128,255,219,0.45)',
-        tilt: -1
+        tilt: -1,
       },
       {
         gradient: 'linear-gradient(180deg, #56cfe1 0%, #48bfe3 100%)',
         shadow: '0 12px 22px rgba(86,207,225,0.45)',
-        tilt: 2
+        tilt: 2,
       },
       {
         gradient: 'linear-gradient(180deg, #80ff72 0%, #7ee8fa 100%)',
         shadow: '0 12px 22px rgba(126,232,250,0.4)',
-        tilt: -3
-      }
+        tilt: -3,
+      },
     ],
     metaStyle: {
       color: 'rgba(128,255,219,0.85)',
       letterSpacing: '0.35em',
-      textTransform: 'uppercase'
+      textTransform: 'uppercase',
     },
-    pattern: 'circuit'
+    pattern: 'circuit',
   },
   {
     id: 'sunset-brush',
@@ -206,26 +242,26 @@ const DOODLE_LIBRARY = [
       {
         gradient: 'linear-gradient(140deg, #fff3b0 0%, #ffe066 100%)',
         shadow: '0 8px 18px rgba(255,240,138,0.6)',
-        tilt: -4
+        tilt: -4,
       },
       {
         gradient: 'linear-gradient(140deg, #ff9a8b 0%, #ff6a88 100%)',
         shadow: '0 8px 18px rgba(255,154,139,0.55)',
-        tilt: 6
+        tilt: 6,
       },
       {
         gradient: 'linear-gradient(140deg, #fecfef 0%, #fda085 100%)',
         shadow: '0 8px 18px rgba(253,160,133,0.6)',
-        tilt: -1
-      }
+        tilt: -1,
+      },
     ],
     metaStyle: {
       color: 'rgba(80,34,25,0.9)',
       letterSpacing: '0.1em',
-      textTransform: 'uppercase'
+      textTransform: 'uppercase',
     },
-    pattern: 'brush'
-  }
+    pattern: 'brush',
+  },
 ];
 
 const THEME_DOODLE_MAP = {
@@ -262,7 +298,7 @@ const THEME_DOODLE_MAP = {
   'forest-mist': 'sunset-brush',
   light: 'sunset-brush',
   dark: 'circuit-glow',
-  custom: 'sunset-brush'
+  custom: 'sunset-brush',
 };
 
 const THEME_TRANSITION_MAP = {
@@ -287,7 +323,7 @@ const THEME_TRANSITION_MAP = {
   'forest-mist': 'fade-glow',
   light: 'fade-glow',
   dark: 'slide-up',
-  custom: 'zoom-pop'
+  custom: 'zoom-pop',
 };
 
 // Returns true when a CSS colour string is perceptually light
@@ -296,15 +332,19 @@ const isColorLight = (colorStr) => {
   const hex = colorStr.match(/#([0-9a-fA-F]{3,8})/);
   if (hex) {
     let full = hex[1];
-    if (full.length === 3) full = full.split('').map((c) => c + c).join('');
+    if (full.length === 3)
+      full = full
+        .split('')
+        .map((c) => c + c)
+        .join('');
     const r = parseInt(full.slice(0, 2), 16);
     const g = parseInt(full.slice(2, 4), 16);
     const b = parseInt(full.slice(4, 6), 16);
-    return (0.299 * r + 0.587 * g + 0.114 * b) > 155;
+    return 0.299 * r + 0.587 * g + 0.114 * b > 155;
   }
   const rgb = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (rgb) {
-    return (0.299 * +rgb[1] + 0.587 * +rgb[2] + 0.114 * +rgb[3]) > 155;
+    return 0.299 * +rgb[1] + 0.587 * +rgb[2] + 0.114 * +rgb[3] > 155;
   }
   return false;
 };
@@ -323,15 +363,17 @@ const getBaseIndex = (doodleId) => {
 
 const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => {
   const normalizedTheme = themeId ? themeId.toLowerCase() : null;
-  const [doodleStyle, setDoodleStyle] = useState(
-    () => StorageService.getString('doodleStyleOverride') || 'auto'
-  );
+  const [doodleStyle, setDoodleStyle] = useState(() => StorageService.getString('doodleStyleOverride') || 'auto');
   const [daySignature, setDaySignature] = useState(getDayOfYear());
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
-  const [selectedLogoAnimation, setSelectedLogoAnimation] = useState(() => ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway');
-  const [profileCustomization, setProfileCustomization] = useState(() => ProgressionUnlockService.getProfileCustomization());
-  const [doodleWordmark, setDoodleWordmark] = useState(
-    () => StorageService.getString('doodleWordmark', DEFAULT_WORDMARK)
+  const [selectedLogoAnimation, setSelectedLogoAnimation] = useState(
+    () => ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway'
+  );
+  const [profileCustomization, setProfileCustomization] = useState(() =>
+    ProgressionUnlockService.getProfileCustomization()
+  );
+  const [doodleWordmark, setDoodleWordmark] = useState(() =>
+    StorageService.getString('doodleWordmark', DEFAULT_WORDMARK)
   );
   const [shuffleIndex, setShuffleIndex] = useState(0);
   const [isSparkling, setIsSparkling] = useState(false);
@@ -365,7 +407,9 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
         return;
       }
 
-      setSelectedLogoAnimation(ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway');
+      setSelectedLogoAnimation(
+        ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway'
+      );
     };
 
     const handleProfileUpdated = () => {
@@ -461,21 +505,23 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       const quotes = [
         welcomeMessage,
         roastShort ? `"${roastShort}"` : null,
-        champion?.gameName ? `🏆 ${champion.gameName} leads your week with ${Math.round(champion.minutes / 60)}h` : null,
+        champion?.gameName
+          ? `🏆 ${champion.gameName} leads your week with ${Math.round(champion.minutes / 60)}h`
+          : null,
         streaks?.currentStreak > 1 ? `🔥 ${streaks.currentStreak}-day gaming streak ongoing` : null,
-        timeGreeting
+        timeGreeting,
       ].filter(Boolean);
 
       return {
         personaLabel: primary?.label || 'Pilot',
         timeGreeting,
-        quotes
+        quotes,
       };
     } catch {
       return {
         personaLabel: 'Pilot',
         timeGreeting: 'Ready to play?',
-        quotes: [welcomeMessage || 'Ready to find your perfect play?']
+        quotes: [welcomeMessage || 'Ready to find your perfect play?'],
       };
     }
   }, [currentDateTime, welcomeMessage]);
@@ -494,20 +540,18 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const dayLabel = useMemo(() => {
     const weekday = new Intl.DateTimeFormat('en-GB', {
       weekday: 'long',
-      timeZone: preferredTimeZone
+      timeZone: preferredTimeZone,
     }).format(currentDateTime);
     const formattedDate = DateTimeFormatService.formatDate(currentDateTime);
     return `${weekday} • ${formattedDate}`;
   }, [currentDateTime, preferredTimeZone]);
 
-  const timeLabel = useMemo(() => (
-    DateTimeFormatService.formatTime(currentDateTime)
-  ), [currentDateTime]);
+  const timeLabel = useMemo(() => DateTimeFormatService.formatTime(currentDateTime), [currentDateTime]);
 
   const timeZoneLabel = useMemo(() => {
     const parts = new Intl.DateTimeFormat('en-GB', {
       timeZone: preferredTimeZone,
-      timeZoneName: 'short'
+      timeZoneName: 'short',
     }).formatToParts(currentDateTime);
 
     return parts.find((part) => part.type === 'timeZoneName')?.value || preferredTimeZone;
@@ -525,7 +569,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
           style={{
             backgroundImage: style.gradient,
             textShadow: style.shadow,
-            transform: `rotate(${style.tilt || 0}deg)`
+            transform: `rotate(${style.tilt || 0}deg)`,
           }}
         >
           {char}
@@ -544,7 +588,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     return {
       frameBorder: frame?.accentColor ? `1px solid ${frame.accentColor}` : undefined,
       frameShadow: frame?.shadowColor ? `0 20px 45px ${frame.shadowColor}` : undefined,
-      bannerBackground: banner?.preview || undefined
+      bannerBackground: banner?.preview || undefined,
     };
   }, [profileCustomization.selectedFrame, profileCustomization.selectedBanner]);
 
@@ -559,15 +603,13 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     'daily-doodle',
     `transition-${transitionVariant}`,
     mounted ? 'daily-doodle--enter' : '',
-    activeEventDoodle ? 'doodle-special-event' : ''
+    activeEventDoodle ? 'doodle-special-event' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
   if (!doodleEnabled) {
-    return (
-      <img src={LOGO_SRC} alt="GamePilot logo" className="logo-static" />
-    );
+    return <img src={LOGO_SRC} alt="GamePilot logo" className="logo-static" />;
   }
 
   return (
@@ -579,7 +621,9 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       role="button"
       tabIndex={0}
       title="Click to tap & shuffle daily gamer insights"
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleDoodleClick(); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') handleDoodleClick();
+      }}
     >
       <div
         className={`doodle-shell pattern-${doodle.pattern}${isLight ? ' doodle-shell--light' : ''}`}
@@ -587,7 +631,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
           fontFamily: doodle.fontFamily,
           background: rewardShellStyles.bannerBackground || doodle.background,
           border: rewardShellStyles.frameBorder || doodle.border,
-          boxShadow: rewardShellStyles.frameShadow || doodle.shadow
+          boxShadow: rewardShellStyles.frameShadow || doodle.shadow,
         }}
       >
         <div className="doodle-orbit" />
@@ -596,7 +640,11 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
         <div className="doodle-left">
           <div className="doodle-logo-row">
             <div className="doodle-logo-bounds">
-              <div key={resolvedLogoAnimation} className={`doodle-logo logo-animation-${resolvedLogoAnimation}`} aria-hidden="true">
+              <div
+                key={resolvedLogoAnimation}
+                className={`doodle-logo logo-animation-${resolvedLogoAnimation}`}
+                aria-hidden="true"
+              >
                 <div className="doodle-logo-ring" />
                 <div className="doodle-logo-particles">
                   <span className="doodle-logo-particle particle-a" />
@@ -606,17 +654,26 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
                 <img src={avatarSrc} alt={avatarAlt} loading="lazy" />
               </div>
             </div>
-            <div className="doodle-wordmark">
-              {letters}
-            </div>
+            <div className="doodle-wordmark">{letters}</div>
           </div>
         </div>
-        <div className="doodle-meta" style={{ ...doodle.metaStyle, '--identity-accent': 'var(--accent)', ...(isLight ? { color: 'rgba(30,20,10,0.85)', textShadow: '0 1px 3px rgba(255,255,255,0.5)' } : {}) }}>
+        <div
+          className="doodle-meta"
+          style={{
+            ...doodle.metaStyle,
+            '--identity-accent': 'var(--accent)',
+            ...(isLight ? { color: 'rgba(30,20,10,0.85)', textShadow: '0 1px 3px rgba(255,255,255,0.5)' } : {}),
+          }}
+        >
           <div className="doodle-meta-badges">
-            <span className="doodle-meta-label">{doodle.name} — {dayLabel}</span>
+            <span className="doodle-meta-label">
+              {doodle.name} — {dayLabel}
+            </span>
             {activeEventDoodle && <span className="doodle-event-tag">Special Doodle</span>}
           </div>
-          <span className="doodle-meta-datetime">{timeLabel} <span className="doodle-meta-timezone">{timeZoneLabel}</span></span>
+          <span className="doodle-meta-datetime">
+            {timeLabel} <span className="doodle-meta-timezone">{timeZoneLabel}</span>
+          </span>
           <span className="doodle-meta-greeting">{greeting}</span>
           <span className="doodle-meta-tagline doodle-quote-active">{activeQuote}</span>
         </div>

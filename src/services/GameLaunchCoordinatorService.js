@@ -5,7 +5,7 @@ import {
   createActiveSessionEntry,
   getActiveSessionStartTime,
   persistActiveGameSessions,
-  readActiveGameSessions
+  readActiveGameSessions,
 } from './ActiveSessionService';
 import DiscordPresenceService from './DiscordPresenceService';
 import { LauncherService } from './LauncherService';
@@ -16,8 +16,8 @@ const mergeLaunchMetadata = (existingSession = {}, normalizedSessionEntry = {}) 
   gameId: existingSession.gameId || normalizedSessionEntry.gameId,
   metadata: {
     ...(existingSession.metadata || {}),
-    ...(normalizedSessionEntry.metadata || {})
-  }
+    ...(normalizedSessionEntry.metadata || {}),
+  },
 });
 
 export class GameLaunchCoordinatorService {
@@ -30,7 +30,7 @@ export class GameLaunchCoordinatorService {
     if (hadExistingSession && typeof existingSession === 'string') {
       activeSessions[game.name] = {
         ...createActiveSessionEntry(game),
-        startTime: existingStartTime
+        startTime: existingStartTime,
       };
       persistActiveGameSessions(activeSessions);
     }
@@ -42,16 +42,16 @@ export class GameLaunchCoordinatorService {
     let launchedGame = {
       ...game,
       last_played: launchTimestamp,
-      launch_count: (game.launch_count || 0) + 1
+      launch_count: (game.launch_count || 0) + 1,
     };
     let libraryChanged = false;
 
     const updatedLibrary = (Array.isArray(library) ? library : []).map((existingGame) => {
-      const matchesGame = existingGame.name === game.name || (
-        typeof existingGame.appid !== 'undefined'
-        && typeof game.appid !== 'undefined'
-        && String(existingGame.appid) === String(game.appid)
-      );
+      const matchesGame =
+        existingGame.name === game.name ||
+        (typeof existingGame.appid !== 'undefined' &&
+          typeof game.appid !== 'undefined' &&
+          String(existingGame.appid) === String(game.appid));
 
       if (!matchesGame) {
         return existingGame;
@@ -61,7 +61,7 @@ export class GameLaunchCoordinatorService {
       launchedGame = {
         ...existingGame,
         last_played: launchTimestamp,
-        launch_count: (existingGame.launch_count || 0) + 1
+        launch_count: (existingGame.launch_count || 0) + 1,
       };
 
       return launchedGame;
@@ -70,7 +70,7 @@ export class GameLaunchCoordinatorService {
     return {
       launchedGame,
       updatedLibrary,
-      libraryChanged
+      libraryChanged,
     };
   }
 
@@ -91,7 +91,7 @@ export class GameLaunchCoordinatorService {
     } else if (typeof currentSession === 'string') {
       currentSessions[launchedGame.name] = {
         ...normalizedSessionEntry,
-        startTime: currentSessionStart
+        startTime: currentSessionStart,
       };
       persistActiveGameSessions(currentSessions);
     } else {
@@ -115,7 +115,7 @@ export class GameLaunchCoordinatorService {
       },
       onMonitorTimeout: (timedOutGame, meta) => {
         console.warn(`⚠️ Monitor timeout for ${timedOutGame.name}${meta?.reason ? ` (${meta.reason})` : ''}`);
-      }
+      },
     });
   }
 
@@ -164,13 +164,7 @@ export class GameLaunchCoordinatorService {
     return PlaytimeAutoLogger.endSession(gameName);
   }
 
-  static async launchGame({
-    game,
-    library,
-    onLibraryUpdated,
-    onLastPlayedGameUpdated,
-    onEndSession
-  }) {
+  static async launchGame({ game, library, onLibraryUpdated, onLastPlayedGameUpdated, onEndSession }) {
     const { hadExistingSession } = this.prepareExistingSessionForLaunch(game);
     const result = await LauncherService.launchGame(game);
 
@@ -180,7 +174,7 @@ export class GameLaunchCoordinatorService {
         success: false,
         mode: result?.mode || 'unknown',
         message: result?.message || 'Failed to launch game.',
-        result
+        result,
       };
     }
 
@@ -210,7 +204,7 @@ export class GameLaunchCoordinatorService {
       launchedGame,
       libraryChanged,
       startedNewSession,
-      result
+      result,
     };
   }
 }

@@ -42,10 +42,7 @@ import {
   SurpriseGameResultSection,
   RediscoverResultSection,
 } from './components/RecommendationShelves';
-import {
-  HomeGuidedContent,
-  HomeToolsContent,
-} from './components/HomeOrchestrators';
+import { HomeGuidedContent, HomeToolsContent } from './components/HomeOrchestrators';
 import { LibraryTodaySection } from './components/LibraryTodaySection';
 import {
   IdentitySnapshotCard,
@@ -79,7 +76,7 @@ const HOME_LAYOUT_PRESETS = Object.freeze({
     contentMaxWidth: 'none',
     heroDisplay: 'flex',
     widgetsDisplay: 'block',
-    twoColumn: false
+    twoColumn: false,
   },
   focus_finder: {
     heroPadding: '20px 24px 16px',
@@ -89,7 +86,7 @@ const HOME_LAYOUT_PRESETS = Object.freeze({
     contentMaxWidth: '820px',
     heroDisplay: 'flex',
     widgetsDisplay: 'none',
-    twoColumn: false
+    twoColumn: false,
   },
   dashboard_split: {
     heroPadding: '32px 24px 24px',
@@ -99,7 +96,7 @@ const HOME_LAYOUT_PRESETS = Object.freeze({
     contentMaxWidth: 'none',
     heroDisplay: 'flex',
     widgetsDisplay: 'block',
-    twoColumn: true
+    twoColumn: true,
   },
   streamer_overlay: {
     heroPadding: '16px 24px 12px',
@@ -109,7 +106,7 @@ const HOME_LAYOUT_PRESETS = Object.freeze({
     contentMaxWidth: '900px',
     heroDisplay: 'flex',
     widgetsDisplay: 'none',
-    twoColumn: false
+    twoColumn: false,
   },
   arcade_cabinet: {
     heroPadding: '48px 24px 36px',
@@ -119,8 +116,8 @@ const HOME_LAYOUT_PRESETS = Object.freeze({
     contentMaxWidth: 'none',
     heroDisplay: 'flex',
     widgetsDisplay: 'block',
-    twoColumn: false
-  }
+    twoColumn: false,
+  },
 });
 
 function Home({
@@ -138,7 +135,7 @@ function Home({
   library,
   theme = 'dark',
   activeSessions = {},
-  endSession = () => {}
+  endSession = () => {},
 }) {
   const isDashboard = mode === 'dashboard';
   const [username, setUsername] = useState('');
@@ -160,7 +157,12 @@ function Home({
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const [personaSnapshot, setPersonaSnapshot] = useState(null);
   const [streaks, setStreaks] = useState({ current: 0, longest: 0 });
-  const [weeklyHabitStats, setWeeklyHabitStats] = useState({ totalHours: 0, sessions: 0, daysPlayed: 0, uniqueGames: 0 });
+  const [weeklyHabitStats, setWeeklyHabitStats] = useState({
+    totalHours: 0,
+    sessions: 0,
+    daysPlayed: 0,
+    uniqueGames: 0,
+  });
   const [buyRecommendations, setBuyRecommendations] = useState(null);
   const [buyRecommendationsLoading, setBuyRecommendationsLoading] = useState(false);
   const [surpriseShelfIndex, setSurpriseShelfIndex] = useState(null);
@@ -194,14 +196,14 @@ function Home({
 
   const recentGames = useMemo(() => {
     return safeLibrary
-      .filter(game => game.last_played && game.time_played > 0)
+      .filter((game) => game.last_played && game.time_played > 0)
       .sort((a, b) => new Date(b.last_played) - new Date(a.last_played))
       .slice(0, 5);
   }, [safeLibrary]);
 
   const featuredGames = useMemo(() => {
     return safeLibrary
-      .filter(game => game.time_played > 120)
+      .filter((game) => game.time_played > 120)
       .sort((a, b) => b.time_played - a.time_played)
       .slice(0, 5);
   }, [safeLibrary]);
@@ -252,7 +254,7 @@ function Home({
       // Non-critical identity tracking
     }
     setRetentionRefreshKey((current) => current + 1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -260,7 +262,12 @@ function Home({
     const fresh = SessionService.isFreshSession(lastTs);
     SessionService.stampSession();
 
-    if (fresh && !SessionService.isWelcomeBackDismissed() && !SessionService.isWelcomeBackOptedOut() && safeLibrary.length >= 2) {
+    if (
+      fresh &&
+      !SessionService.isWelcomeBackDismissed() &&
+      !SessionService.isWelcomeBackOptedOut() &&
+      safeLibrary.length >= 2
+    ) {
       try {
         const data = WelcomeBackService.buildWelcomeBack(safeLibrary);
         if (data) {
@@ -271,7 +278,7 @@ function Home({
         console.error('Home: failed to build welcome back card', e);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -281,7 +288,10 @@ function Home({
       } catch (e) {
         console.error('Home: failed to refresh persona snapshot after questionnaire', e);
       }
-      const savedMessage = localStorage.getItem('gamepilot-welcomeMessage') || localStorage.getItem('welcomeMessage') || 'Ready to find your perfect play?';
+      const savedMessage =
+        localStorage.getItem('gamepilot-welcomeMessage') ||
+        localStorage.getItem('welcomeMessage') ||
+        'Ready to find your perfect play?';
       setWelcomeMessage(savedMessage);
     };
 
@@ -298,13 +308,19 @@ function Home({
       setBuyRecommendations(snapshot);
       setBuyRecommendationsLoading(false);
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [library, homeFamiliarityBias]);
 
   useEffect(() => {
-    const savedUsername = localStorage.getItem('gamepilot-profileUsername') || localStorage.getItem('profileUsername') || '';
-    const savedMessage = localStorage.getItem('gamepilot-welcomeMessage') || localStorage.getItem('welcomeMessage') || 'Ready to find your perfect play?';
+    const savedUsername =
+      localStorage.getItem('gamepilot-profileUsername') || localStorage.getItem('profileUsername') || '';
+    const savedMessage =
+      localStorage.getItem('gamepilot-welcomeMessage') ||
+      localStorage.getItem('welcomeMessage') ||
+      'Ready to find your perfect play?';
     const savedProfilePic = localStorage.getItem('gamepilot-profilePic') || localStorage.getItem('profilePic') || '';
     setUsername(savedUsername);
     setWelcomeMessage(savedMessage);
@@ -314,7 +330,7 @@ function Home({
   const closeGettingStarted = useCallback(() => {
     const preferences = {
       ...readGettingStartedPreferences(),
-      hasSeen: true
+      hasSeen: true,
     };
     saveGettingStartedPreferences(preferences);
     setShowGettingStarted(false);
@@ -338,7 +354,7 @@ function Home({
 
       setSessionFeedbackPrompt({
         ...detail,
-        promptKey: `${detail.gameId || detail.gameName}-${detail.endTime || Date.now()}`
+        promptKey: `${detail.gameId || detail.gameName}-${detail.endTime || Date.now()}`,
       });
     };
 
@@ -381,9 +397,10 @@ function Home({
       trackRecommendationResult(result);
     } else {
       setPerfectPlayResult({
-        error: Array.isArray(library) && library.length > 0
-          ? 'No games found matching your criteria. Try adjusting your filters!'
-          : 'Scan your games first to generate recommendations.'
+        error:
+          Array.isArray(library) && library.length > 0
+            ? 'No games found matching your criteria. Try adjusting your filters!'
+            : 'Scan your games first to generate recommendations.',
       });
     }
   };
@@ -407,21 +424,21 @@ function Home({
   const launchTonightPick = () => {
     handleTrackedLaunch(tonightPickGame, {
       feature: 'home_tonight_pick',
-      result: perfectPlayResult || gamePilotPicksResult
+      result: perfectPlayResult || gamePilotPicksResult,
     });
   };
 
   const launchContinuePlaying = () => {
     handleTrackedLaunch(continuePlayingGame, {
       feature: 'continue_playing',
-      result: continuePlayingResult
+      result: continuePlayingResult,
     });
   };
 
   const launchRediscoverShelf = () => {
     handleTrackedLaunch(rediscoverShelfGame, {
       feature: 'rediscover',
-      result: rediscoverGameResult
+      result: rediscoverGameResult,
     });
   };
 
@@ -431,37 +448,28 @@ function Home({
 
   const handleSurpriseSearch = () => {
     clearResults();
-    const result = RecommendationEngine.getSurpriseMeResult(
-      library || [],
-      recommendationMood,
-      time || null
-    );
+    const result = RecommendationEngine.getSurpriseMeResult(library || [], recommendationMood, time || null);
 
     if (result?.primaryGame) {
       setSurpriseGameResult(result);
       trackRecommendationResult(result);
     } else {
       setSurpriseGameResult({
-        error: 'No games available for surprise! Scan your games first.'
+        error: 'No games available for surprise! Scan your games first.',
       });
     }
   };
 
   const handleRediscoverSearch = () => {
     clearResults();
-    const result = RecommendationEngine.getRediscoverResult(
-      library || [],
-      recommendationMood,
-      time || null,
-      3
-    );
+    const result = RecommendationEngine.getRediscoverResult(library || [], recommendationMood, time || null, 3);
 
     if (result?.entries?.length > 0) {
       setRediscoverGameResult(result);
       trackRecommendationResult(result);
     } else {
       setRediscoverGameResult({
-        error: 'Scan your games first to rediscover old favorites!'
+        error: 'Scan your games first to rediscover old favorites!',
       });
     }
   };
@@ -482,7 +490,7 @@ function Home({
       {
         rawTimeAvailable: tracking.rawTimeAvailable ?? null,
         usedFallback: Boolean(result?.usedFallback),
-        source
+        source,
       }
     );
   };
@@ -502,7 +510,7 @@ function Home({
       timeAvailable: tracking.timeAvailable ?? null,
       rawTimeAvailable: tracking.rawTimeAvailable ?? null,
       recommendedGameIds: tracking.recommendedGameIds || [gameId],
-      source
+      source,
     });
   };
 
@@ -548,12 +556,12 @@ function Home({
     UserBehaviorProfile.trackRecommendationFeedback(recommendationType, gameId, helpful, {
       mood: result?.tracking?.mood || game?.mood || null,
       genre: result?.tracking?.genre || RecommendationEngine.getPrimaryGenre(game) || null,
-      timeAvailable: result?.tracking?.timeAvailable ?? null
+      timeAvailable: result?.tracking?.timeAvailable ?? null,
     });
 
     setRecommendationFeedbackState((current) => ({
       ...current,
-      [getRecommendationFeedbackKey(result, game)]: helpful
+      [getRecommendationFeedbackKey(result, game)]: helpful,
     }));
   };
 
@@ -561,7 +569,7 @@ function Home({
     UserBehaviorProfile.setFeedbackPromptEnabled('recommendation', false);
     setFeedbackPreferences((current) => ({
       ...current,
-      recommendationPromptEnabled: false
+      recommendationPromptEnabled: false,
     }));
   };
 
@@ -569,7 +577,7 @@ function Home({
     UserBehaviorProfile.setFeedbackPromptEnabled('recommendation', true);
     setFeedbackPreferences((current) => ({
       ...current,
-      recommendationPromptEnabled: true
+      recommendationPromptEnabled: true,
     }));
   };
 
@@ -586,7 +594,7 @@ function Home({
       genre: sessionFeedbackPrompt.genre,
       playtimeMinutes: sessionFeedbackPrompt.playtimeMinutes,
       endTime: sessionFeedbackPrompt.endTime,
-      completed: sessionCompleted
+      completed: sessionCompleted,
     });
 
     setSessionFeedbackPrompt(null);
@@ -597,7 +605,7 @@ function Home({
     UserBehaviorProfile.setFeedbackPromptEnabled('session', false);
     setFeedbackPreferences((current) => ({
       ...current,
-      sessionPromptEnabled: false
+      sessionPromptEnabled: false,
     }));
     setSessionFeedbackPrompt(null);
     setSessionCompleted(false);
@@ -612,10 +620,7 @@ function Home({
     if (!feedbackPreferences.recommendationPromptEnabled) {
       return (
         <div style={{ marginTop: '12px', textAlign: 'center' }}>
-          <button
-            onClick={enableRecommendationFeedback}
-            className="clear-button"
-          >
+          <button onClick={enableRecommendationFeedback} className="clear-button">
             Re-enable recommendation feedback
           </button>
         </div>
@@ -629,9 +634,7 @@ function Home({
 
     return (
       <div style={{ marginTop: '12px', textAlign: 'center' }}>
-        <div style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '8px' }}>
-          Was this a good recommendation?
-        </div>
+        <div style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '8px' }}>Was this a good recommendation?</div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <button
             onClick={() => submitRecommendationFeedback(result, game, true)}
@@ -643,7 +646,7 @@ function Home({
               borderColor: yesSelected ? '#4CAF50' : undefined,
               color: yesSelected ? '#4CAF50' : undefined,
               transform: yesSelected ? 'translateY(-1px)' : undefined,
-              fontWeight: yesSelected ? 700 : 500
+              fontWeight: yesSelected ? 700 : 500,
             }}
           >
             {yesSelected ? '✅ Liked' : '👍 Yes'}
@@ -658,7 +661,7 @@ function Home({
               borderColor: noSelected ? '#F44336' : undefined,
               color: noSelected ? '#F44336' : undefined,
               transform: noSelected ? 'translateY(-1px)' : undefined,
-              fontWeight: noSelected ? 700 : 500
+              fontWeight: noSelected ? 700 : 500,
             }}
           >
             {noSelected ? '✅ Saved' : '👎 No'}
@@ -672,7 +675,14 @@ function Home({
           </button>
         </div>
         {typeof submittedFeedback === 'boolean' && (
-          <p style={{ color: submittedFeedback ? '#4CAF50' : '#F44336', fontSize: '0.78rem', marginTop: '8px', marginBottom: '0' }}>
+          <p
+            style={{
+              color: submittedFeedback ? '#4CAF50' : '#F44336',
+              fontSize: '0.78rem',
+              marginTop: '8px',
+              marginBottom: '0',
+            }}
+          >
             Feedback saved. GamePilot will use this to improve future picks.
           </p>
         )}
@@ -693,9 +703,9 @@ function Home({
   const availableGenres = React.useMemo(() => {
     const genres = new Set();
     if (library && Array.isArray(library)) {
-      library.forEach(game => {
+      library.forEach((game) => {
         if (game.genres && Array.isArray(game.genres)) {
-          game.genres.forEach(genre => {
+          game.genres.forEach((genre) => {
             if (genre !== 'Unknown') {
               genres.add(genre);
             }
@@ -704,10 +714,26 @@ function Home({
       });
     }
     // If no games scanned yet, show common genre options (game types)
-    return Array.from(genres).length > 0 ? Array.from(genres).sort() : [
-      'Action', 'Adventure', 'Indie', 'Puzzle', 'Racing', 'RPG', 'Shooter', 'Simulation', 'Strategy', 'Platformer',
-      'Horror', 'Fighting', 'Sports', 'Roguelike', 'Management', 'Survival'
-    ];
+    return Array.from(genres).length > 0
+      ? Array.from(genres).sort()
+      : [
+          'Action',
+          'Adventure',
+          'Indie',
+          'Puzzle',
+          'Racing',
+          'RPG',
+          'Shooter',
+          'Simulation',
+          'Strategy',
+          'Platformer',
+          'Horror',
+          'Fighting',
+          'Sports',
+          'Roguelike',
+          'Management',
+          'Survival',
+        ];
   }, [library]);
 
   const endSessionButtonStyle = {
@@ -718,18 +744,23 @@ function Home({
     padding: '8px 16px',
     cursor: 'pointer',
     fontWeight: 'bold',
-    marginLeft: '8px'
+    marginLeft: '8px',
   };
 
-  const recommendationMood = Array.isArray(library) && library.length > 0
-    ? (mood || RecommendationEngine.getMoodWithMostGames(library))
-    : (mood || null);
-  const continuePlayingResult = React.useMemo(() => (
-    RecommendationEngine.getContinuePlayingResult(library, recommendationMood, time, lastPlayedGame)
-  ), [lastPlayedGame, library, recommendationMood, time]);
+  const recommendationMood =
+    Array.isArray(library) && library.length > 0
+      ? mood || RecommendationEngine.getMoodWithMostGames(library)
+      : mood || null;
+  const continuePlayingResult = React.useMemo(
+    () => RecommendationEngine.getContinuePlayingResult(library, recommendationMood, time, lastPlayedGame),
+    [lastPlayedGame, library, recommendationMood, time]
+  );
   const continuePlayingEntry = continuePlayingResult?.primaryEntry || null;
   const continuePlayingGame = continuePlayingEntry?.game || continuePlayingResult?.primaryGame || null;
-  const { artwork: continuePlayingArtwork, placeholder: continuePlayingPlaceholder } = resolveGameArtworkBundle(continuePlayingGame, { surface: 'portrait' });
+  const { artwork: continuePlayingArtwork, placeholder: continuePlayingPlaceholder } = resolveGameArtworkBundle(
+    continuePlayingGame,
+    { surface: 'portrait' }
+  );
   const perfectPlayEntries = perfectPlayResult?.entries || [];
   // Auto-computed pick that powers "Your Library Today" when the user hasn't
   // run a manual Perfect Play search. It goes through scoreGameByBehavior,
@@ -737,13 +768,22 @@ function Home({
   // tonight shelf. Recomputes whenever the bias changes.
   const autoTonightResult = React.useMemo(() => {
     if (!Array.isArray(library) || library.length === 0) return null;
-    return RecommendationEngine.getPerfectPlayResult(library, recommendationMood, selectedGenre || null, time || null, 4);
+    return RecommendationEngine.getPerfectPlayResult(
+      library,
+      recommendationMood,
+      selectedGenre || null,
+      time || null,
+      4
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [library, recommendationMood, selectedGenre, time, homeFamiliarityBias]);
   const autoTonightEntries = autoTonightResult?.entries || [];
   const surpriseEntry = surpriseGameResult?.primaryEntry || null;
   const surpriseGame = surpriseEntry?.game || surpriseGameResult?.primaryGame || null;
-  const { artwork: surpriseGameArtwork, placeholder: surpriseGamePlaceholder } = resolveGameArtworkBundle(surpriseGame, { surface: 'portrait' });
+  const { artwork: surpriseGameArtwork, placeholder: surpriseGamePlaceholder } = resolveGameArtworkBundle(
+    surpriseGame,
+    { surface: 'portrait' }
+  );
   const rediscoverEntries = rediscoverGameResult?.entries || [];
   const backlogPlan = useMemo(() => {
     if (!Array.isArray(library) || library.length === 0) return null;
@@ -770,28 +810,31 @@ function Home({
     completedCount: 0,
     totalCount: 0,
     label: 'This Week',
-    periodKey: null
+    periodKey: null,
   };
   const gamePilotPicksResult = retentionSnapshot?.gamePilotPicks || null;
   const gamePilotPickEntries = gamePilotPicksResult?.entries || [];
   const trackedRetentionPicksKeyRef = React.useRef('');
-  const tonightPickEntry = perfectPlayEntries[0]
-    || (homeFamiliarityBias ? autoTonightEntries[0] : null)
-    || gamePilotPickEntries[0]
-    || autoTonightEntries[0]
-    || null;
+  const tonightPickEntry =
+    perfectPlayEntries[0] ||
+    (homeFamiliarityBias ? autoTonightEntries[0] : null) ||
+    gamePilotPickEntries[0] ||
+    autoTonightEntries[0] ||
+    null;
   const tonightPickGame = tonightPickEntry?.game || null;
-  const { artwork: tonightPickArtwork, placeholder: tonightPickPlaceholder } = resolveGameArtworkBundle(tonightPickGame, { surface: 'portrait' });
+  const { artwork: tonightPickArtwork, placeholder: tonightPickPlaceholder } = resolveGameArtworkBundle(
+    tonightPickGame,
+    { surface: 'portrait' }
+  );
   const rediscoverShelfEntry = rediscoverEntries[0] || null;
   const rediscoverShelfFallback = useMemo(() => {
     if (!Array.isArray(library) || library.length === 0) {
       return null;
     }
 
-    const excludedKeys = new Set([
-      getHomeShelfGameKey(tonightPickGame),
-      getHomeShelfGameKey(continuePlayingGame)
-    ].filter(Boolean));
+    const excludedKeys = new Set(
+      [getHomeShelfGameKey(tonightPickGame), getHomeShelfGameKey(continuePlayingGame)].filter(Boolean)
+    );
 
     const candidates = library.filter((game) => {
       const gameKey = getHomeShelfGameKey(game);
@@ -806,9 +849,7 @@ function Home({
     const scored = candidates.map((game) => {
       const timePlayed = game.time_played || 0;
       const lastPlayed = game.last_played ? new Date(game.last_played).getTime() : 0;
-      const daysSinceLastPlayed = lastPlayed > 0
-        ? Math.max(0, (now - lastPlayed) / (1000 * 60 * 60 * 24))
-        : 365;
+      const daysSinceLastPlayed = lastPlayed > 0 ? Math.max(0, (now - lastPlayed) / (1000 * 60 * 60 * 24)) : 365;
       return { game, timePlayed, daysSinceLastPlayed };
     });
 
@@ -833,20 +874,24 @@ function Home({
     return topPool[pickIndex]?.game || null;
   }, [continuePlayingGame, getHomeShelfGameKey, library, tonightPickGame]);
   const rediscoverShelfGame = rediscoverShelfEntry?.game || rediscoverShelfFallback || null;
-  const { artwork: rediscoverShelfArtwork, placeholder: rediscoverShelfPlaceholder } = resolveGameArtworkBundle(rediscoverShelfGame, { surface: 'portrait' });
+  const { artwork: rediscoverShelfArtwork, placeholder: rediscoverShelfPlaceholder } = resolveGameArtworkBundle(
+    rediscoverShelfGame,
+    { surface: 'portrait' }
+  );
 
   const favoriteShelfFallback = useMemo(() => {
-    const excludedKeys = new Set([
-      getHomeShelfGameKey(tonightPickGame),
-      getHomeShelfGameKey(continuePlayingGame),
-      getHomeShelfGameKey(rediscoverShelfGame)
-    ].filter(Boolean));
+    const excludedKeys = new Set(
+      [
+        getHomeShelfGameKey(tonightPickGame),
+        getHomeShelfGameKey(continuePlayingGame),
+        getHomeShelfGameKey(rediscoverShelfGame),
+      ].filter(Boolean)
+    );
 
-    const fromFeatured = [...featuredGames, ...recentGames]
-      .find((game) => {
-        const gameKey = getHomeShelfGameKey(game);
-        return gameKey && !excludedKeys.has(gameKey);
-      });
+    const fromFeatured = [...featuredGames, ...recentGames].find((game) => {
+      const gameKey = getHomeShelfGameKey(game);
+      return gameKey && !excludedKeys.has(gameKey);
+    });
 
     if (fromFeatured) {
       return fromFeatured;
@@ -854,17 +899,32 @@ function Home({
 
     // Fall back to any library game not already used
     if (Array.isArray(library) && library.length > 0) {
-      return library.find((game) => {
-        const gameKey = getHomeShelfGameKey(game);
-        return gameKey && !excludedKeys.has(gameKey);
-      }) || null;
+      return (
+        library.find((game) => {
+          const gameKey = getHomeShelfGameKey(game);
+          return gameKey && !excludedKeys.has(gameKey);
+        }) || null
+      );
     }
 
     return null;
-  }, [continuePlayingGame, featuredGames, getHomeShelfGameKey, library, recentGames, rediscoverShelfGame, tonightPickGame]);
+  }, [
+    continuePlayingGame,
+    featuredGames,
+    getHomeShelfGameKey,
+    library,
+    recentGames,
+    rediscoverShelfGame,
+    tonightPickGame,
+  ]);
   const favoriteShelfGame = topRatedGames[0] || favoriteShelfFallback || null;
-  const { artwork: favoriteShelfArtwork, placeholder: favoriteShelfPlaceholder } = resolveGameArtworkBundle(favoriteShelfGame, { surface: 'portrait' });
-  const homeShelfCards = [tonightPickGame, continuePlayingGame, rediscoverShelfGame, favoriteShelfGame].filter(Boolean).length;
+  const { artwork: favoriteShelfArtwork, placeholder: favoriteShelfPlaceholder } = resolveGameArtworkBundle(
+    favoriteShelfGame,
+    { surface: 'portrait' }
+  );
+  const homeShelfCards = [tonightPickGame, continuePlayingGame, rediscoverShelfGame, favoriteShelfGame].filter(
+    Boolean
+  ).length;
   const weeklyQuestSummary = 'Playstyle picks and shelves tuned to how you actually play.';
   const weeklyPlayDays = weeklyHabitStats.daysPlayed || weeklyQuest?.weeklyStats?.activeDays || 0;
   const weeklyPlaytimeHours = weeklyHabitStats.totalHours || weeklyQuest?.weeklyStats?.playtimeHours || 0;
@@ -899,14 +959,15 @@ function Home({
       ? typeof favoriteShelfGame?.userRating === 'number' && favoriteShelfGame.userRating > 0
         ? `${favoriteShelfGame.name} is still one of your clearest personal favourites, which helps keep recommendations grounded in your actual taste.`
         : `${favoriteShelfGame.name} is carrying a lot of your recent library identity, so it stays close as a dependable anchor pick.`
-      : null
-  ].filter(Boolean).slice(0, 3);
+      : null,
+  ]
+    .filter(Boolean)
+    .slice(0, 3);
 
   useEffect(() => {
     const recommendedIds = gamePilotPicksResult?.tracking?.recommendedGameIds || [];
-    const nextTrackingKey = recommendedIds.length > 0
-      ? `${weeklyQuest?.periodKey || 'weekly'}:${recommendedIds.join('|')}`
-      : '';
+    const nextTrackingKey =
+      recommendedIds.length > 0 ? `${weeklyQuest?.periodKey || 'weekly'}:${recommendedIds.join('|')}` : '';
 
     if (!nextTrackingKey || trackedRetentionPicksKeyRef.current === nextTrackingKey) {
       return;
@@ -949,78 +1010,80 @@ function Home({
     );
   };
 
-  const similarToRecentShelf = similarToRecentEntries.length > 0 && similarToRecentReference ? (
-    <CollapsibleSection
-      title={`Because you played ${similarToRecentReference}`}
-      subtitle="Similar games from your backlog, matched by genre, theme, and tags."
-      icon={<Sparkles size={18} />}
-      className="home-similar-to-recent"
-      defaultOpen
-    >
-      <div className="home-similar-grid">
-        {similarToRecentEntries.map((entry, i) => {
-          const game = entry?.game;
-          if (!game) return null;
-          const { artwork, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait' });
-          const reasons = similarToRecentResult?.meta?.allReasons?.[i] || [];
-          return (
-            <div
-              key={game.appid || game.name || i}
-              className="home-shelf-card"
-              onClick={() => {
-                onLaunchGame(game);
-                trackRecommendationLaunch(similarToRecentResult, game);
-              }}
-            >
-              <div className="home-shelf-card-artwork">
-                {artwork ? (
-                  <img src={artwork} alt={game.name} className="home-shelf-card-img" />
-                ) : (
-                  <div className="home-shelf-card-placeholder">{placeholder || game.name}</div>
-                )}
-              </div>
-              <div className="home-shelf-card-body">
-                <div className="home-shelf-card-name">{game.name}</div>
-                {reasons.length > 0 && (
-                  <div className="home-shelf-card-reason">{reasons[0]}</div>
-                )}
-                <div className="home-shelf-card-meta">
-                  {game.time_played > 120
-                    ? `${formatPlaytime(game.time_played)} played`
-                    : game.time_played > 0
-                      ? 'Barely touched'
-                      : 'Unplayed in your backlog'}
+  const similarToRecentShelf =
+    similarToRecentEntries.length > 0 && similarToRecentReference ? (
+      <CollapsibleSection
+        title={`Because you played ${similarToRecentReference}`}
+        subtitle="Similar games from your backlog, matched by genre, theme, and tags."
+        icon={<Sparkles size={18} />}
+        className="home-similar-to-recent"
+        defaultOpen
+      >
+        <div className="home-similar-grid">
+          {similarToRecentEntries.map((entry, i) => {
+            const game = entry?.game;
+            if (!game) return null;
+            const { artwork, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait' });
+            const reasons = similarToRecentResult?.meta?.allReasons?.[i] || [];
+            return (
+              <div
+                key={game.appid || game.name || i}
+                className="home-shelf-card"
+                onClick={() => {
+                  onLaunchGame(game);
+                  trackRecommendationLaunch(similarToRecentResult, game);
+                }}
+              >
+                <div className="home-shelf-card-artwork">
+                  {artwork ? (
+                    <img src={artwork} alt={game.name} className="home-shelf-card-img" />
+                  ) : (
+                    <div className="home-shelf-card-placeholder">{placeholder || game.name}</div>
+                  )}
+                </div>
+                <div className="home-shelf-card-body">
+                  <div className="home-shelf-card-name">{game.name}</div>
+                  {reasons.length > 0 && <div className="home-shelf-card-reason">{reasons[0]}</div>}
+                  <div className="home-shelf-card-meta">
+                    {game.time_played > 120
+                      ? `${formatPlaytime(game.time_played)} played`
+                      : game.time_played > 0
+                        ? 'Barely touched'
+                        : 'Unplayed in your backlog'}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </CollapsibleSection>
-  ) : null;
+            );
+          })}
+        </div>
+      </CollapsibleSection>
+    ) : null;
 
-  const handleHomeControllerInput = useCallback((action) => {
-    const itemsCount = recentGames.length + featuredGames.length;
-    if (action === 'down' && selectedItemIndex < itemsCount - 1) {
-      setSelectedItemIndex(prev => prev + 1);
-      return true;
-    } else if (action === 'up' && selectedItemIndex > 0) {
-      setSelectedItemIndex(prev => prev - 1);
-      return true;
-    } else if (action === 'confirm' && selectedItemIndex >= 0) {
-      let gameToLaunch;
-      if (selectedItemIndex < recentGames.length) {
-        gameToLaunch = recentGames[selectedItemIndex];
-      } else if (selectedItemIndex < recentGames.length + featuredGames.length) {
-        gameToLaunch = featuredGames[selectedItemIndex - recentGames.length];
-      }
-      if (gameToLaunch) {
-        onLaunchGame(gameToLaunch);
+  const handleHomeControllerInput = useCallback(
+    (action) => {
+      const itemsCount = recentGames.length + featuredGames.length;
+      if (action === 'down' && selectedItemIndex < itemsCount - 1) {
+        setSelectedItemIndex((prev) => prev + 1);
         return true;
+      } else if (action === 'up' && selectedItemIndex > 0) {
+        setSelectedItemIndex((prev) => prev - 1);
+        return true;
+      } else if (action === 'confirm' && selectedItemIndex >= 0) {
+        let gameToLaunch;
+        if (selectedItemIndex < recentGames.length) {
+          gameToLaunch = recentGames[selectedItemIndex];
+        } else if (selectedItemIndex < recentGames.length + featuredGames.length) {
+          gameToLaunch = featuredGames[selectedItemIndex - recentGames.length];
+        }
+        if (gameToLaunch) {
+          onLaunchGame(gameToLaunch);
+          return true;
+        }
       }
-    }
-    return false;
-  }, [selectedItemIndex, recentGames, featuredGames, onLaunchGame]);
+      return false;
+    },
+    [selectedItemIndex, recentGames, featuredGames, onLaunchGame]
+  );
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
@@ -1032,9 +1095,12 @@ function Home({
     return () => window.removeEventListener('controllerInput', handleGlobalControllerInput);
   }, [handleHomeControllerInput]);
 
-  const getGameCardClass = useCallback((index) => {
-    return `game-card fade-in ${selectedItemIndex === index ? 'selected' : ''}`;
-  }, [selectedItemIndex]);
+  const getGameCardClass = useCallback(
+    (index) => {
+      return `game-card fade-in ${selectedItemIndex === index ? 'selected' : ''}`;
+    },
+    [selectedItemIndex]
+  );
 
   const launcherSummary = useMemo(() => {
     const libraryList = Array.isArray(library) ? library : [];
@@ -1051,7 +1117,12 @@ function Home({
       { name: 'Battlestate Games', icon: '🔫', games: libraryList.filter((game) => game.platform === 'BSG').length },
       { name: 'Amazon Games', icon: '📦', games: libraryList.filter((game) => game.platform === 'Amazon').length },
       { name: 'Itch.io', icon: '🎲', games: libraryList.filter((game) => game.platform === 'Itch.io').length },
-      { name: 'PlayStation', icon: '🎮', games: libraryList.filter((game) => game.brandPlatform === 'PlayStation' || game.platform === 'PlayStation').length }
+      {
+        name: 'PlayStation',
+        icon: '🎮',
+        games: libraryList.filter((game) => game.brandPlatform === 'PlayStation' || game.platform === 'PlayStation')
+          .length,
+      },
     ];
 
     const detectedLaunchers = launchers.filter((launcher) => launcher.games > 0);
@@ -1060,7 +1131,7 @@ function Home({
       launchers,
       detectedLaunchers,
       detectedLauncherCount: detectedLaunchers.length,
-      totalGames: libraryList.length
+      totalGames: libraryList.length,
     };
   }, [library]);
 
@@ -1125,7 +1196,11 @@ function Home({
               </div>
               <div className="discovery-card-actions">
                 <a
-                  href={game.appid ? `https://store.steampowered.com/app/${game.appid}` : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.name)}`}
+                  href={
+                    game.appid
+                      ? `https://store.steampowered.com/app/${game.appid}`
+                      : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.name)}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="discovery-link"
@@ -1144,7 +1219,7 @@ function Home({
   // Default to a daily-rotated pick, but allow the user to manually cycle
   // through all ranked wishlist entries.
   const buyEntries = useMemo(() => {
-    return buyRecommendations?.enabled ? (buyRecommendations.entries || []) : [];
+    return buyRecommendations?.enabled ? buyRecommendations.entries || [] : [];
   }, [buyRecommendations]);
 
   const [buyShelfIndex, setBuyShelfIndex] = useState(() => {
@@ -1175,12 +1250,15 @@ function Home({
 
   // Random wishlist pick for the "Surprise me" shelf, drawn from all wishlist entries.
   const surpriseShelfEntries = React.useMemo(() => {
-    return buyRecommendations?.enabled ? (buyRecommendations.allEntries || []) : [];
+    return buyRecommendations?.enabled ? buyRecommendations.allEntries || [] : [];
   }, [buyRecommendations]);
   const surpriseShelfEntry = React.useMemo(() => {
     if (surpriseShelfEntries.length === 0) return null;
     if (surpriseShelfEntries.length === 1) return surpriseShelfEntries[0];
-    const index = surpriseShelfIndex !== null ? Math.max(0, Math.min(surpriseShelfIndex, surpriseShelfEntries.length - 1)) : Math.floor(Math.random() * surpriseShelfEntries.length);
+    const index =
+      surpriseShelfIndex !== null
+        ? Math.max(0, Math.min(surpriseShelfIndex, surpriseShelfEntries.length - 1))
+        : Math.floor(Math.random() * surpriseShelfEntries.length);
     return surpriseShelfEntries[index] || null;
   }, [surpriseShelfEntries, surpriseShelfIndex]);
   const surpriseShelfGame = surpriseShelfEntry?.game || null;
@@ -1197,7 +1275,9 @@ function Home({
     }
     return resolveGameArtwork(game, { surface: 'portrait' });
   }, [surpriseShelfEntry, surpriseShelfGame]);
-  const surpriseShelfPlaceholder = surpriseShelfGame ? getGameArtworkPlaceholder({ game: surpriseShelfGame, surface: 'portrait' }) : null;
+  const surpriseShelfPlaceholder = surpriseShelfGame
+    ? getGameArtworkPlaceholder({ game: surpriseShelfGame, surface: 'portrait' })
+    : null;
 
   const openSurpriseShelfOnSteam = useCallback(() => {
     const item = surpriseShelfEntry?.meta?.wishlistItem || {};
@@ -1253,21 +1333,15 @@ function Home({
     '--home-hero-subtitle-size': homeLayoutPreset.heroSubtitleSize,
     '--home-section-gap': homeLayoutPreset.sectionGap,
     '--home-card-gap': homeLayoutPreset.cardGap,
-    '--home-content-max-width': homeLayoutPreset.contentMaxWidth
+    '--home-content-max-width': homeLayoutPreset.contentMaxWidth,
   };
 
   return (
-    <div
-      className={`home-page ${theme} ${homeLayoutClass}`}
-      style={homeRootStyle}
-    >
+    <div className={`home-page ${theme} ${homeLayoutClass}`} style={homeRootStyle}>
       <NavBar />
 
-      <MilestoneToast
-        milestones={activeMilestones}
-        onDismiss={() => setActiveMilestones([])}
-      />
-      
+      <MilestoneToast milestones={activeMilestones} onDismiss={() => setActiveMilestones([])} />
+
       {/* Hero Section */}
       <div className="home-hero">
         <DailyDoodleTitle
@@ -1289,33 +1363,27 @@ function Home({
         </p>
 
         {/* Scan Button */}
-        <button 
+        <button
           onClick={() => {
             if (onScan) {
               onScan();
             }
-          }} 
-          disabled={loading} 
+          }}
+          disabled={loading}
           className={`scan-button ${loading ? 'loading' : ''}`}
         >
-          {loading ? (
-            <span>Scanning...</span>
-          ) : (
-            <span>Scan Local Games</span>
-          )}
+          {loading ? <span>Scanning...</span> : <span>Scan Local Games</span>}
         </button>
-        
+
         <p className="scan-description">
           Automatically finds Steam, Epic, Game Pass, Rockstar, Battle.net, EA, Ubisoft, and GOG games
         </p>
-        
+
         {/* Launcher Status */}
         <div className="launcher-status">
           <div className="launcher-status-header">
             <div>
-              <h4 className="launcher-status-title">
-                Launcher Overview
-              </h4>
+              <h4 className="launcher-status-title">Launcher Overview</h4>
               <p className="launcher-status-copy">
                 {launcherSummary.totalGames > 0
                   ? `Showing the platforms currently represented in your merged library.`
@@ -1329,20 +1397,16 @@ function Home({
           </div>
           <div className="launcher-grid">
             {launcherSummary.launchers.map((launcher) => (
-                <div
-                  key={launcher.name}
-                  className={`launcher-badge ${launcher.games > 0 ? 'detected' : ''}`}
-                  title={`${launcher.name}: ${launcher.games} game${launcher.games === 1 ? '' : 's'} in your library`}
-                >
-                  <span>{launcher.icon}</span>
-                  <span>{launcher.name}</span>
-                  {launcher.games > 0 && (
-                    <span className="game-count">
-                      {launcher.games}
-                    </span>
-                  )}
-                </div>
-              ))}
+              <div
+                key={launcher.name}
+                className={`launcher-badge ${launcher.games > 0 ? 'detected' : ''}`}
+                title={`${launcher.name}: ${launcher.games} game${launcher.games === 1 ? '' : 's'} in your library`}
+              >
+                <span>{launcher.icon}</span>
+                <span>{launcher.name}</span>
+                {launcher.games > 0 && <span className="game-count">{launcher.games}</span>}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1450,10 +1514,7 @@ function Home({
           />
 
           {Array.isArray(library) && library.length > 0 && (
-            <EnergyVibePicker
-              library={library}
-              onLaunchGame={onLaunchGame}
-            />
+            <EnergyVibePicker library={library} onLaunchGame={onLaunchGame} />
           )}
 
           <CollapsibleSection
@@ -1530,10 +1591,7 @@ function Home({
           {similarToRecentShelf}
 
           {Array.isArray(library) && library.length > 0 && (
-            <EnergyVibePicker
-              library={library}
-              onLaunchGame={onLaunchGame}
-            />
+            <EnergyVibePicker library={library} onLaunchGame={onLaunchGame} />
           )}
 
           <FamiliarOrFreshNudge
@@ -1677,7 +1735,7 @@ function Home({
               className="home-backlog-section"
               eyebrow="Battle The Backlog"
               title="Your Backlog Plan"
-              copy={backlogPlan?.message || "Backlog games matched to how you actually play right now."}
+              copy={backlogPlan?.message || 'Backlog games matched to how you actually play right now.'}
               compact
             >
               <div className="home-backlog-stats">
@@ -1708,17 +1766,13 @@ function Home({
                       className={`home-backlog-game-card ${getGameCardClass(game)}${isTonightPick ? ' tonight-pick' : ''}`}
                       onClick={() => handleTrackedLaunch(game)}
                     >
-                      {isTonightPick && (
-                        <span className="home-backlog-tonight-badge">Tonight's backlog pick</span>
-                      )}
+                      {isTonightPick && <span className="home-backlog-tonight-badge">Tonight's backlog pick</span>}
                       <div className="home-backlog-game-artwork">
                         <LazyImage src={artwork} alt={game.name} placeholder={placeholder} />
                       </div>
                       <div className="home-backlog-game-info">
                         <span className="home-backlog-game-title">{game.name}</span>
-                        {reasons.length > 0 && (
-                          <span className="home-backlog-game-reason">{reasons[0]}</span>
-                        )}
+                        {reasons.length > 0 && <span className="home-backlog-game-reason">{reasons[0]}</span>}
                         {entry?.estimatedMinutes && (
                           <span className="home-backlog-game-time">
                             ~{Math.round(entry.estimatedMinutes / 60)}h to finish
@@ -1741,7 +1795,6 @@ function Home({
           >
             <WishlistSection library={library} platformIcons={platformIcons} onLaunchGame={onLaunchGame} />
           </HomeSection>
-
         </>
       )}
 
@@ -1763,7 +1816,17 @@ function Home({
             <p style={{ fontSize: '0.9rem', opacity: 0.75, marginBottom: '20px' }}>
               This helps GamePilot learn which recommendations actually land well for you.
             </p>
-            <label className="session-completed-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', cursor: 'pointer', justifyContent: 'center' }}>
+            <label
+              className="session-completed-toggle"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '16px',
+                cursor: 'pointer',
+                justifyContent: 'center',
+              }}
+            >
               <input
                 type="checkbox"
                 checked={sessionCompleted}
@@ -1771,10 +1834,24 @@ function Home({
               />
               <span>I completed this game 🏆</span>
             </label>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
-              <button onClick={() => submitSessionFeedback(true)} className="action-button primary">👍 Good Session</button>
-              <button onClick={() => submitSessionFeedback(false)} className="action-button secondary">👎 Not Really</button>
-              <button onClick={() => { setSessionFeedbackPrompt(null); setSessionCompleted(false); }} className="clear-button">Skip</button>
+            <div
+              style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '16px' }}
+            >
+              <button onClick={() => submitSessionFeedback(true)} className="action-button primary">
+                👍 Good Session
+              </button>
+              <button onClick={() => submitSessionFeedback(false)} className="action-button secondary">
+                👎 Not Really
+              </button>
+              <button
+                onClick={() => {
+                  setSessionFeedbackPrompt(null);
+                  setSessionCompleted(false);
+                }}
+                className="clear-button"
+              >
+                Skip
+              </button>
             </div>
             <button onClick={disableSessionFeedback} className="clear-button">
               Hide this feature
@@ -1797,12 +1874,9 @@ function Home({
               🐦 Twitter: @Mozog91
             </a>
           </div>
-          <p className="contact-note">
-            Questions, feedback, or bug reports? We'd love to hear from you!
-          </p>
+          <p className="contact-note">Questions, feedback, or bug reports? We'd love to hear from you!</p>
         </div>
       </footer>
-
     </div>
   );
 }

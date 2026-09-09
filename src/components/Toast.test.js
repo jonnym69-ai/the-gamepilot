@@ -7,8 +7,12 @@ const ToastHarness = () => {
 
   return (
     <div>
-      <button type="button" onClick={() => success('Library scan complete')}>Success</button>
-      <button type="button" onClick={() => error('Launch failed')}>Error</button>
+      <button type="button" onClick={() => success('Library scan complete')}>
+        Success
+      </button>
+      <button type="button" onClick={() => error('Launch failed')}>
+        Error
+      </button>
     </div>
   );
 };

@@ -11,7 +11,7 @@ const SESSION_DAYS_KEY = 'gamingSessionDays';
 const MILESTONE_DEFINITIONS = [
   { type: 'sessions', threshold: 1, name: 'Session Warmup', message: 'First session complete!' },
   { type: 'sessions', threshold: 10, name: 'Session Starter', message: '10 sessions completed!' },
-  { type: 'sessions', threshold: 50, name: 'Session Grinder', message: '50 sessions — you\'re dedicated!' },
+  { type: 'sessions', threshold: 50, name: 'Session Grinder', message: "50 sessions — you're dedicated!" },
   { type: 'sessions', threshold: 100, name: 'Century Sessions', message: '100 sessions! Century club!' },
   { type: 'sessions', threshold: 250, name: 'Session Veteran', message: '250 sessions — true veteran status!' },
   { type: 'sessions', threshold: 500, name: 'Session Legend', message: '500 sessions. Legendary.' },
@@ -27,7 +27,7 @@ const MILESTONE_DEFINITIONS = [
   { type: 'games', threshold: 100, name: 'Century Games', message: '100 unique games. Incredible range!' },
   { type: 'streak', threshold: 7, name: 'Week Warrior', message: '7-day streak! Week Warrior!' },
   { type: 'streak', threshold: 30, name: 'Month Master', message: '30-day streak! Unstoppable!' },
-  { type: 'streak', threshold: 100, name: 'Streak Centurion', message: '100-day streak. Centurion status!' }
+  { type: 'streak', threshold: 100, name: 'Streak Centurion', message: '100-day streak. Centurion status!' },
 ];
 
 // ---- Streaks ----
@@ -36,7 +36,11 @@ export const GamingStreaks = {
   getStreaks() {
     const stored = StorageService.getString(STREAKS_KEY);
     if (stored) {
-      try { return JSON.parse(stored); } catch { /* fallthrough */ }
+      try {
+        return JSON.parse(stored);
+      } catch {
+        /* fallthrough */
+      }
     }
     return { currentStreak: 0, longestStreak: 0, lastSessionDate: null };
   },
@@ -79,7 +83,11 @@ export const GamingStreaks = {
   getSessionDays() {
     const stored = StorageService.getString(SESSION_DAYS_KEY);
     if (stored) {
-      try { return JSON.parse(stored); } catch { /* fallthrough */ }
+      try {
+        return JSON.parse(stored);
+      } catch {
+        /* fallthrough */
+      }
     }
     return [];
   },
@@ -92,7 +100,7 @@ export const GamingStreaks = {
       StorageService.setString(SESSION_DAYS_KEY, JSON.stringify(days));
     }
     return days;
-  }
+  },
 };
 
 // ---- Backlog Stats ----
@@ -101,7 +109,7 @@ export const BacklogStats = {
   getStats() {
     const library = StorageService.get('library', []);
     const totalGames = library.length;
-    const playedGames = library.filter(g => (g.time_played || 0) > 0 || g.last_played).length;
+    const playedGames = library.filter((g) => (g.time_played || 0) > 0 || g.last_played).length;
     const unplayedGames = totalGames - playedGames;
     const completionRate = totalGames > 0 ? Math.round((playedGames / totalGames) * 100) : 0;
 
@@ -110,7 +118,7 @@ export const BacklogStats = {
       playedGames,
       unplayedGames,
       completionRate,
-      titles: this.getTitles(completionRate, totalGames)
+      titles: this.getTitles(completionRate, totalGames),
     };
   },
 
@@ -120,7 +128,7 @@ export const BacklogStats = {
     if (totalGames >= 500) titles.push('Collector');
     if (totalGames >= 1000) titles.push('The Dedication');
     return titles;
-  }
+  },
 };
 
 // ---- Milestones ----
@@ -129,7 +137,11 @@ export const Milestones = {
   getReached() {
     const stored = StorageService.getString(MILESTONES_KEY);
     if (stored) {
-      try { return JSON.parse(stored); } catch { /* fallthrough */ }
+      try {
+        return JSON.parse(stored);
+      } catch {
+        /* fallthrough */
+      }
     }
     return [];
   },
@@ -140,10 +152,10 @@ export const Milestones = {
 
   checkMilestones(stats) {
     const reached = this.getReached();
-    const reachedIds = new Set(reached.map(r => r.id));
+    const reachedIds = new Set(reached.map((r) => r.id));
     const newMilestones = [];
 
-    MILESTONE_DEFINITIONS.forEach(def => {
+    MILESTONE_DEFINITIONS.forEach((def) => {
       const id = `${def.type}_${def.threshold}`;
       if (reachedIds.has(id)) return;
 
@@ -160,7 +172,7 @@ export const Milestones = {
           threshold: def.threshold,
           name: def.name,
           message: def.message,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
         };
         reached.push(milestone);
         newMilestones.push(milestone);
@@ -175,8 +187,8 @@ export const Milestones = {
   },
 
   getAllDefinitions() {
-    return MILESTONE_DEFINITIONS.map(d => ({ ...d, id: `${d.type}_${d.threshold}` }));
-  }
+    return MILESTONE_DEFINITIONS.map((d) => ({ ...d, id: `${d.type}_${d.threshold}` }));
+  },
 };
 
 // ---- Identity Timeline ----
@@ -185,7 +197,11 @@ export const IdentityTimeline = {
   getEvents() {
     const stored = StorageService.getString(TIMELINE_KEY);
     if (stored) {
-      try { return JSON.parse(stored); } catch { /* fallthrough */ }
+      try {
+        return JSON.parse(stored);
+      } catch {
+        /* fallthrough */
+      }
     }
     return [];
   },
@@ -202,7 +218,7 @@ export const IdentityTimeline = {
       title,
       description,
       date: new Date().toISOString(),
-      ...metadata
+      ...metadata,
     });
     this.saveEvents(events);
     return events;
@@ -217,16 +233,21 @@ export const IdentityTimeline = {
   },
 
   addSessionEvent(gameName, playtimeMinutes) {
-    return this.addEvent('session', `Played ${gameName}`, `${playtimeMinutes} minute session`, { gameName, playtimeMinutes });
+    return this.addEvent('session', `Played ${gameName}`, `${playtimeMinutes} minute session`, {
+      gameName,
+      playtimeMinutes,
+    });
   },
 
   addStreakEvent(currentStreak) {
-    return this.addEvent('streak', `${currentStreak}-Day Streak`, `Gaming streak: ${currentStreak} days!`, { streak: currentStreak });
+    return this.addEvent('streak', `${currentStreak}-Day Streak`, `Gaming streak: ${currentStreak} days!`, {
+      streak: currentStreak,
+    });
   },
 
   addAchievementEvent(achievementName) {
     return this.addEvent('achievement', `Unlocked: ${achievementName}`, `Achievement earned!`, { achievementName });
-  }
+  },
 };
 
 // ---- Seasonal Tags ----
@@ -248,7 +269,11 @@ export const SeasonalTags = {
   getTags() {
     const stored = StorageService.getString(SEASONAL_KEY);
     if (stored) {
-      try { return JSON.parse(stored); } catch { /* fallthrough */ }
+      try {
+        return JSON.parse(stored);
+      } catch {
+        /* fallthrough */
+      }
     }
     return {};
   },
@@ -272,7 +297,10 @@ export const SeasonalTags = {
     const totalHours = Math.floor(tags[seasonKey].playtimeMinutes / 60);
     if (totalHours >= 50 && !tags[seasonKey].tag) {
       tags[seasonKey].tag = `${seasonKey} Warrior`;
-      IdentityTimeline.addEvent('seasonal', tags[seasonKey].tag, `Played ${totalHours} hours this season!`, { season: seasonKey, hours: totalHours });
+      IdentityTimeline.addEvent('seasonal', tags[seasonKey].tag, `Played ${totalHours} hours this season!`, {
+        season: seasonKey,
+        hours: totalHours,
+      });
     }
 
     this.saveTags(tags);
@@ -291,7 +319,7 @@ export const SeasonalTags = {
       .filter(([, data]) => data.tag)
       .map(([season, data]) => ({ season, tag: data.tag, hours: Math.floor(data.playtimeMinutes / 60) }))
       .sort((a, b) => b.season.localeCompare(a.season));
-  }
+  },
 };
 
 // ---- Genre Archetypes ----
@@ -309,7 +337,9 @@ export const GenreArchetypes = {
 
     // Check for special archetypes first
     const genreHours = {};
-    entries.forEach(([genre, count]) => { genreHours[genre] = count; });
+    entries.forEach(([genre, count]) => {
+      genreHours[genre] = count;
+    });
 
     if (totalHours > 0) {
       const rpgRatio = (genreHours['RPG'] || 0) / totalHours;
@@ -318,26 +348,41 @@ export const GenreArchetypes = {
       const retroRatio = ((genreHours['Retro'] || 0) + (genreHours['Platformer'] || 0)) / totalHours;
       const fpsRatio = (genreHours['Shooter'] || 0) / totalHours;
 
-      if (rpgRatio > 0.4 && totalHours > 200) return { name: 'RPG Scholar', icon: '📜', description: '200+ hours deep in RPGs. You know every questline.' };
-      if (avgSession < 20 && stats.totalSessions > 50) return { name: 'Speed Demon', icon: '⚡', description: 'Short, intense sessions. Always moving fast.' };
-      if (retroRatio > 0.5 && totalHours > 100) return { name: 'Retro Purist', icon: '🕹️', description: '50%+ playtime on retro platforms. Old school forever.' };
-      if (strategyRatio > 0.35 && totalHours > 100) return { name: 'Tactician', icon: '♟️', description: 'Strategy is your weapon. Every move is calculated.' };
-      if (fpsRatio > 0.4 && totalHours > 100) return { name: 'Aim Legend', icon: '🎯', description: 'Sharpshooter status. Reflexes like a pro.' };
-      if (platformDiversity >= 5 && totalHours > 200) return { name: 'Jack of All Trades', icon: '🃏', description: 'Played across 5+ platforms. No game is off-limits.' };
-      if (actionRatio > 0.4 && totalHours > 200) return { name: 'Action Hero', icon: '💥', description: 'Action is life. Explosions are just Tuesday.' };
+      if (rpgRatio > 0.4 && totalHours > 200)
+        return { name: 'RPG Scholar', icon: '📜', description: '200+ hours deep in RPGs. You know every questline.' };
+      if (avgSession < 20 && stats.totalSessions > 50)
+        return { name: 'Speed Demon', icon: '⚡', description: 'Short, intense sessions. Always moving fast.' };
+      if (retroRatio > 0.5 && totalHours > 100)
+        return {
+          name: 'Retro Purist',
+          icon: '🕹️',
+          description: '50%+ playtime on retro platforms. Old school forever.',
+        };
+      if (strategyRatio > 0.35 && totalHours > 100)
+        return { name: 'Tactician', icon: '♟️', description: 'Strategy is your weapon. Every move is calculated.' };
+      if (fpsRatio > 0.4 && totalHours > 100)
+        return { name: 'Aim Legend', icon: '🎯', description: 'Sharpshooter status. Reflexes like a pro.' };
+      if (platformDiversity >= 5 && totalHours > 200)
+        return {
+          name: 'Jack of All Trades',
+          icon: '🃏',
+          description: 'Played across 5+ platforms. No game is off-limits.',
+        };
+      if (actionRatio > 0.4 && totalHours > 200)
+        return { name: 'Action Hero', icon: '💥', description: 'Action is life. Explosions are just Tuesday.' };
     }
 
     // Fallback based on top genre
     const archetypeMap = {
-      'RPG': { name: 'Quest Walker', icon: '🗡️', description: 'Always chasing the next story.' },
-      'Action': { name: 'Combat Ace', icon: '⚔️', description: 'Thrives in the thick of battle.' },
-      'Strategy': { name: 'War General', icon: '🏰', description: 'Victory through superior planning.' },
-      'Shooter': { name: 'Marksman', icon: '🔫', description: 'Precision under pressure.' },
-      'Adventure': { name: 'Pathfinder', icon: '🧭', description: 'Every world is worth exploring.' },
-      'Simulation': { name: 'Architect', icon: '🏗️', description: 'Builder of worlds.' },
-      'Sports': { name: 'Athlete', icon: '🏆', description: 'Competitive spirit, always.' },
-      'Racing': { name: 'Speedster', icon: '🏎️', description: 'Faster than the rest.' },
-      'Puzzle': { name: 'Mind Bender', icon: '🧩', description: 'Sees solutions others miss.' }
+      RPG: { name: 'Quest Walker', icon: '🗡️', description: 'Always chasing the next story.' },
+      Action: { name: 'Combat Ace', icon: '⚔️', description: 'Thrives in the thick of battle.' },
+      Strategy: { name: 'War General', icon: '🏰', description: 'Victory through superior planning.' },
+      Shooter: { name: 'Marksman', icon: '🔫', description: 'Precision under pressure.' },
+      Adventure: { name: 'Pathfinder', icon: '🧭', description: 'Every world is worth exploring.' },
+      Simulation: { name: 'Architect', icon: '🏗️', description: 'Builder of worlds.' },
+      Sports: { name: 'Athlete', icon: '🏆', description: 'Competitive spirit, always.' },
+      Racing: { name: 'Speedster', icon: '🏎️', description: 'Faster than the rest.' },
+      Puzzle: { name: 'Mind Bender', icon: '🧩', description: 'Sees solutions others miss.' },
     };
 
     return archetypeMap[topGenre] || { name: 'Gamer', icon: '🎮', description: 'A true gaming enthusiast.' };
@@ -346,14 +391,18 @@ export const GenreArchetypes = {
   getStoredArchetype() {
     const stored = StorageService.getString(GENRE_ARCHETYPE_KEY);
     if (stored) {
-      try { return JSON.parse(stored); } catch { /* fallthrough */ }
+      try {
+        return JSON.parse(stored);
+      } catch {
+        /* fallthrough */
+      }
     }
     return null;
   },
 
   saveArchetype(archetype) {
     StorageService.setString(GENRE_ARCHETYPE_KEY, JSON.stringify(archetype));
-  }
+  },
 };
 
 // ---- Orchestration: Call this when a session ends ----
@@ -374,7 +423,7 @@ export const processSessionEnd = (gameName, playtimeMinutes, stats) => {
 
   // Unique games
   const history = PlaytimeAutoLogger.getSessionHistory();
-  const uniqueGames = new Set(history.map(s => s.gameName)).size;
+  const uniqueGames = new Set(history.map((s) => s.gameName)).size;
 
   const enrichedStats = {
     ...stats,
@@ -382,12 +431,12 @@ export const processSessionEnd = (gameName, playtimeMinutes, stats) => {
     totalPlayTime: history.reduce((sum, s) => sum + s.playtimeMinutes, 0),
     uniqueGamesPlayed: uniqueGames,
     currentStreak: streaks.currentStreak,
-    longestStreak: streaks.longestStreak
+    longestStreak: streaks.longestStreak,
   };
 
   // Milestones
   const newMilestones = Milestones.checkMilestones(enrichedStats);
-  newMilestones.forEach(m => IdentityTimeline.addMilestoneEvent(m));
+  newMilestones.forEach((m) => IdentityTimeline.addMilestoneEvent(m));
 
   // Genre archetype
   const genreStats = stats.favoriteGenre ? { [stats.favoriteGenre]: stats.totalPlayTime || 0 } : {};
@@ -400,7 +449,7 @@ export const processSessionEnd = (gameName, playtimeMinutes, stats) => {
     streaks,
     newMilestones,
     archetype,
-    enrichedStats
+    enrichedStats,
   };
 };
 
@@ -422,6 +471,6 @@ export const getEnhancedIdentity = () => {
     timeline,
     seasonalTags,
     currentSeasonalTag,
-    archetype
+    archetype,
   };
 };

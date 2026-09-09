@@ -33,13 +33,13 @@ const LevelUpToast = ({ show, level, xpTotal, onClose }) => {
       </div>
       <div className="confetti-container">
         {[...Array(20)].map((_, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             className="confetti"
             style={{
               left: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 0.5}s`,
-              backgroundColor: ['#4ade80', '#fbbf24', '#60a5fa', '#f472b6', '#a78bfa'][Math.floor(Math.random() * 5)]
+              backgroundColor: ['#4ade80', '#fbbf24', '#60a5fa', '#f472b6', '#a78bfa'][Math.floor(Math.random() * 5)],
             }}
           />
         ))}

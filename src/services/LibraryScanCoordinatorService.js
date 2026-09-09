@@ -33,7 +33,7 @@ export class LibraryScanCoordinatorService {
     return {
       allGames,
       mergedLibrary,
-      scanReport
+      scanReport,
     };
   }
 }

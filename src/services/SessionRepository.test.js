@@ -12,23 +12,21 @@ describe('SessionRepository', () => {
 
   test('getActiveSessions returns a clone of cached sessions', () => {
     SessionRepository.cache.activeSessions = {
-      'Game A': { startTime: '2024-01-01T00:00:00.000Z', sessionId: 'a-1' }
+      'Game A': { startTime: '2024-01-01T00:00:00.000Z', sessionId: 'a-1' },
     };
 
     const first = SessionRepository.getActiveSessions();
     const second = SessionRepository.getActiveSessions();
 
     expect(first).toEqual({
-      'Game A': { startTime: '2024-01-01T00:00:00.000Z', sessionId: 'a-1' }
+      'Game A': { startTime: '2024-01-01T00:00:00.000Z', sessionId: 'a-1' },
     });
     expect(first).not.toBe(second);
     expect(first['Game A']).not.toBe(second['Game A']);
   });
 
   test('getSessionHistory returns a clone of cached history', () => {
-    SessionRepository.cache.sessionHistory = [
-      { sessionId: 'h-1', gameName: 'Game A', playtimeMinutes: 10 }
-    ];
+    SessionRepository.cache.sessionHistory = [{ sessionId: 'h-1', gameName: 'Game A', playtimeMinutes: 10 }];
 
     const first = SessionRepository.getSessionHistory();
     const second = SessionRepository.getSessionHistory();
@@ -41,7 +39,7 @@ describe('SessionRepository', () => {
 
   test('saveActiveSessions updates cache and localStorage fallback', () => {
     const sessions = {
-      'Game B': { startTime: '2024-02-01T00:00:00.000Z', sessionId: 'b-1' }
+      'Game B': { startTime: '2024-02-01T00:00:00.000Z', sessionId: 'b-1' },
     };
 
     SessionRepository.saveActiveSessions(sessions);
@@ -56,10 +54,10 @@ describe('SessionRepository', () => {
       sessionId: 'settle-1',
       gameName: 'Game C',
       playtimeMinutes: 30,
-      timestamp: '2024-03-01T00:00:00.000Z'
+      timestamp: '2024-03-01T00:00:00.000Z',
     };
     const remainingSessions = {
-      'Game D': { startTime: '2024-03-01T01:00:00.000Z', sessionId: 'd-1' }
+      'Game D': { startTime: '2024-03-01T01:00:00.000Z', sessionId: 'd-1' },
     };
 
     const result = SessionRepository.settleSession(entry, remainingSessions);
@@ -75,7 +73,7 @@ describe('SessionRepository', () => {
       sessionId: 'dup-1',
       gameName: 'Game E',
       playtimeMinutes: 5,
-      timestamp: '2024-04-01T00:00:00.000Z'
+      timestamp: '2024-04-01T00:00:00.000Z',
     };
 
     SessionRepository.settleSession(entry, {});
@@ -86,13 +84,11 @@ describe('SessionRepository', () => {
   });
 
   test('replaceHistory overwrites entire history', () => {
-    SessionRepository.cache.sessionHistory = [
-      { sessionId: 'old-1', gameName: 'Old Game', playtimeMinutes: 1 }
-    ];
+    SessionRepository.cache.sessionHistory = [{ sessionId: 'old-1', gameName: 'Old Game', playtimeMinutes: 1 }];
 
     const newHistory = [
       { sessionId: 'new-1', gameName: 'New Game', playtimeMinutes: 10 },
-      { sessionId: 'new-2', gameName: 'New Game 2', playtimeMinutes: 20 }
+      { sessionId: 'new-2', gameName: 'New Game 2', playtimeMinutes: 20 },
     ];
 
     SessionRepository.replaceHistory(newHistory);
@@ -104,11 +100,9 @@ describe('SessionRepository', () => {
 
   test('clear wipes cache and localStorage fallback', () => {
     SessionRepository.cache.activeSessions = {
-      'Game F': { startTime: '2024-05-01T00:00:00.000Z', sessionId: 'f-1' }
+      'Game F': { startTime: '2024-05-01T00:00:00.000Z', sessionId: 'f-1' },
     };
-    SessionRepository.cache.sessionHistory = [
-      { sessionId: 'h-2', gameName: 'Game F', playtimeMinutes: 15 }
-    ];
+    SessionRepository.cache.sessionHistory = [{ sessionId: 'h-2', gameName: 'Game F', playtimeMinutes: 15 }];
 
     SessionRepository.clear();
 
@@ -120,16 +114,14 @@ describe('SessionRepository', () => {
 
   test('getSnapshot returns a clone of both cache slices', () => {
     SessionRepository.cache.activeSessions = {
-      'Game G': { startTime: '2024-06-01T00:00:00.000Z', sessionId: 'g-1' }
+      'Game G': { startTime: '2024-06-01T00:00:00.000Z', sessionId: 'g-1' },
     };
-    SessionRepository.cache.sessionHistory = [
-      { sessionId: 'snap-1', gameName: 'Game G', playtimeMinutes: 45 }
-    ];
+    SessionRepository.cache.sessionHistory = [{ sessionId: 'snap-1', gameName: 'Game G', playtimeMinutes: 45 }];
 
     const snapshot = SessionRepository.getSnapshot();
 
     expect(snapshot.activeSessions).toEqual({
-      'Game G': { startTime: '2024-06-01T00:00:00.000Z', sessionId: 'g-1' }
+      'Game G': { startTime: '2024-06-01T00:00:00.000Z', sessionId: 'g-1' },
     });
     expect(snapshot.sessionHistory).toHaveLength(1);
     expect(snapshot.activeSessions).not.toBe(SessionRepository.cache.activeSessions);
@@ -138,10 +130,10 @@ describe('SessionRepository', () => {
 
   test('initialize with no Electron API uses localStorage fallback', async () => {
     SessionRepository.cache.activeSessions = {
-      'Legacy Game': { startTime: '2024-01-01T00:00:00.000Z', sessionId: 'legacy-1' }
+      'Legacy Game': { startTime: '2024-01-01T00:00:00.000Z', sessionId: 'legacy-1' },
     };
     SessionRepository.cache.sessionHistory = [
-      { sessionId: 'legacy-h-1', gameName: 'Legacy Game', playtimeMinutes: 10 }
+      { sessionId: 'legacy-h-1', gameName: 'Legacy Game', playtimeMinutes: 10 },
     ];
 
     const snapshot = await SessionRepository.initialize();

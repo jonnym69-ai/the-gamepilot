@@ -36,14 +36,10 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
       });
     });
 
-    const topPlatform = Object.entries(gamesByPlatform)
-      .sort((a, b) => b[1] - a[1])[0];
-    const topGenre = Object.entries(gamesByGenre)
-      .sort((a, b) => b[1] - a[1])[0];
-    const topHoursGenre = Object.entries(hoursByGenre)
-      .sort((a, b) => b[1] - a[1])[0];
-    const topHoursPlatform = Object.entries(hoursByPlatform)
-      .sort((a, b) => b[1] - a[1])[0];
+    const topPlatform = Object.entries(gamesByPlatform).sort((a, b) => b[1] - a[1])[0];
+    const topGenre = Object.entries(gamesByGenre).sort((a, b) => b[1] - a[1])[0];
+    const topHoursGenre = Object.entries(hoursByGenre).sort((a, b) => b[1] - a[1])[0];
+    const topHoursPlatform = Object.entries(hoursByPlatform).sort((a, b) => b[1] - a[1])[0];
 
     const result = [];
 
@@ -55,14 +51,14 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
           icon: <Gamepad2 size={18} />,
           title: 'Platform Loyalty',
           text: `**${platform}** dominates your library — **${count} games** (${percent}%) live there.`,
-          highlight: platform
+          highlight: platform,
         });
       } else {
         result.push({
           icon: <Gamepad2 size={18} />,
           title: 'Platform Spread',
           text: `**${platform}** is your biggest launcher with **${count} games**, but your library is spread across ${Object.keys(gamesByPlatform).length} platforms.`,
-          highlight: `${count} games`
+          highlight: `${count} games`,
         });
       }
     }
@@ -73,7 +69,7 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
         icon: <Clock size={18} />,
         title: 'Genre Time Sink',
         text: `You've sunk **${Math.round(hours)} hours** into **${genre}** games — that's your most-played genre.`,
-        highlight: `${Math.round(hours)} hrs`
+        highlight: `${Math.round(hours)} hrs`,
       });
     }
 
@@ -85,14 +81,14 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
           icon: <Layers size={18} />,
           title: 'Genre Collection',
           text: `**${genre}** makes up **${percent}%** of your installed library (${count} games).`,
-          highlight: `${percent}%`
+          highlight: `${percent}%`,
         });
       }
     }
 
     // Niche collections (genres with >= NICHE_COUNT games but not the top genre)
     const nicheGenres = Object.entries(gamesByGenre)
-      .filter(([genre, count]) => genre !== (topGenre?.[0]) && count >= NICHE_COUNT)
+      .filter(([genre, count]) => genre !== topGenre?.[0] && count >= NICHE_COUNT)
       .sort((a, b) => b[1] - a[1]);
 
     if (nicheGenres.length > 0) {
@@ -101,7 +97,7 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
         icon: <Target size={18} />,
         title: 'Niche Interest',
         text: `You keep **${count} ${genre}** games installed — a dedicated ${genre.toLowerCase()} collection.`,
-        highlight: `${count} games`
+        highlight: `${count} games`,
       });
     }
 
@@ -111,14 +107,14 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
         icon: <Trophy size={18} />,
         title: 'Completion Rate',
         text: `You've finished **${completedGames}** of your **${totalGames}** games — a **${completionRate}%** completion rate.`,
-        highlight: `${completionRate}%`
+        highlight: `${completionRate}%`,
       });
     } else if (unplayedGames > 0) {
       result.push({
         icon: <Trophy size={18} />,
         title: 'Fresh Library',
         text: `**${unplayedGames}** of your **${totalGames}** games haven't been played yet — lots of new worlds to explore.`,
-        highlight: `${unplayedGames} unplayed`
+        highlight: `${unplayedGames} unplayed`,
       });
     }
 
@@ -127,7 +123,7 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
         icon: <Sparkles size={18} />,
         title: 'Backlog Snapshot',
         text: `**${backlogGames}** started games are still waiting to be finished — your active backlog.`,
-        highlight: `${backlogGames} backlog`
+        highlight: `${backlogGames} backlog`,
       });
     }
 
@@ -138,7 +134,7 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
           icon: <Clock size={18} />,
           title: 'Most Played Platform',
           text: `Most of your playtime is on **${platform}** with **${Math.round(hours)} hours** logged.`,
-          highlight: `${Math.round(hours)} hrs`
+          highlight: `${Math.round(hours)} hrs`,
         });
       }
     }
@@ -164,7 +160,7 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
             <div
               className="stats-driven-insight-text"
               dangerouslySetInnerHTML={{
-                __html: insight.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                __html: insight.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
               }}
             />
           </div>

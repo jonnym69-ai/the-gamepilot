@@ -11,17 +11,10 @@ const QUICK_TAGS = [
   'Learned something',
   'Multiplayer fun',
   'Solo grind',
-  'Worth replaying'
+  'Worth replaying',
 ];
 
-const MOOD_OPTIONS = [
-  'Relaxed',
-  'Competitive',
-  'Creative',
-  'Nostalgic',
-  'Excited',
-  'Focused'
-];
+const MOOD_OPTIONS = ['Relaxed', 'Competitive', 'Creative', 'Nostalgic', 'Excited', 'Focused'];
 
 export default function CaptainLogModal({
   isOpen,
@@ -30,7 +23,7 @@ export default function CaptainLogModal({
   gameId,
   sessionTimestamp,
   sessionMood,
-  sessionMinutes
+  sessionMinutes,
 }) {
   const [notes, setNotes] = useState('');
   const [mood, setMood] = useState(sessionMood || '');
@@ -46,9 +39,7 @@ export default function CaptainLogModal({
       setExistingEntries(entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 
       // Check if there's already an entry for this session
-      const sessionEntries = sessionTimestamp
-        ? CaptainLogService.getEntriesForSession(sessionTimestamp)
-        : [];
+      const sessionEntries = sessionTimestamp ? CaptainLogService.getEntriesForSession(sessionTimestamp) : [];
       if (sessionEntries.length > 0) {
         const latest = sessionEntries[0];
         setNotes(latest.notes || '');
@@ -68,9 +59,7 @@ export default function CaptainLogModal({
   }, [isOpen, gameName, sessionTimestamp, sessionMood]);
 
   const toggleTag = useCallback((tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }, []);
 
   const handleSave = useCallback(() => {
@@ -81,7 +70,7 @@ export default function CaptainLogModal({
       notes: notes.trim(),
       mood: mood || null,
       tags: selectedTags,
-      rating: rating > 0 ? rating : null
+      rating: rating > 0 ? rating : null,
     };
 
     if (editingId) {
@@ -97,11 +86,14 @@ export default function CaptainLogModal({
     setTimeout(() => setSaved(false), 2000);
   }, [editingId, gameName, gameId, sessionTimestamp, notes, mood, selectedTags, rating]);
 
-  const handleDelete = useCallback((id) => {
-    CaptainLogService.deleteEntry(id);
-    const entries = CaptainLogService.getEntriesForGame(gameName);
-    setExistingEntries(entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-  }, [gameName]);
+  const handleDelete = useCallback(
+    (id) => {
+      CaptainLogService.deleteEntry(id);
+      const entries = CaptainLogService.getEntriesForGame(gameName);
+      setExistingEntries(entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    },
+    [gameName]
+  );
 
   const handleEditExisting = useCallback((entry) => {
     setEditingId(entry.id);
@@ -113,9 +105,7 @@ export default function CaptainLogModal({
 
   if (!isOpen) return null;
 
-  const timeLabel = sessionMinutes
-    ? `${sessionMinutes}m session`
-    : 'Session log';
+  const timeLabel = sessionMinutes ? `${sessionMinutes}m session` : 'Session log';
 
   return (
     <div className="captain-log-overlay" onClick={onClose}>
@@ -125,7 +115,9 @@ export default function CaptainLogModal({
             <BookOpen size={20} />
             <div>
               <h3>Captain's Log</h3>
-              <span>{gameName} &middot; {timeLabel}</span>
+              <span>
+                {gameName} &middot; {timeLabel}
+              </span>
             </div>
           </div>
           <button type="button" className="captain-log-close" onClick={onClose}>
@@ -194,11 +186,7 @@ export default function CaptainLogModal({
           </div>
 
           <div className="captain-log-actions">
-            <button
-              type="button"
-              className={`captain-log-save ${saved ? 'saved' : ''}`}
-              onClick={handleSave}
-            >
+            <button type="button" className={`captain-log-save ${saved ? 'saved' : ''}`} onClick={handleSave}>
               <Save size={16} />
               {saved ? 'Saved!' : editingId ? 'Update Log' : 'Save Log'}
             </button>
@@ -224,7 +212,9 @@ export default function CaptainLogModal({
                     <div className="captain-log-entry-tags">
                       {entry.mood && <span className="captain-log-entry-mood">{entry.mood}</span>}
                       {entry.tags.map((t) => (
-                        <span key={t} className="captain-log-entry-tag">{t}</span>
+                        <span key={t} className="captain-log-entry-tag">
+                          {t}
+                        </span>
                       ))}
                     </div>
                     <div className="captain-log-entry-actions">

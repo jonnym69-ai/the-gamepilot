@@ -29,7 +29,9 @@ function ExportHub({ library = [], theme }) {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
   const [editShare, setEditShare] = useState(null);
-  const [recapCustomization] = useState(() => ProgressionUnlockService.getRecapCustomization?.() || { palette: null, visibleStats: {} });
+  const [recapCustomization] = useState(
+    () => ProgressionUnlockService.getRecapCustomization?.() || { palette: null, visibleStats: {} }
+  );
   const username = useMemo(() => ProfileService.getCurrentUsername(), []);
   const [exportOptions, setExportOptions] = useState(() => {
     const customization = ProgressionUnlockService.getExportFilterCustomization();
@@ -40,14 +42,20 @@ function ExportHub({ library = [], theme }) {
       selectedGames: [],
       hasPlaytime: false,
       includePrices: customization.includePrices,
-      includePlaytime: customization.includePlaytime
+      includePlaytime: customization.includePlaytime,
     };
   });
 
   const rewardSummary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
-  const safeLibrary = useMemo(() => (Array.isArray(library) && library.length > 0 ? library : getFallbackLibrary()), [library]);
+  const safeLibrary = useMemo(
+    () => (Array.isArray(library) && library.length > 0 ? library : getFallbackLibrary()),
+    [library]
+  );
   const backupSummary = useMemo(() => DataExportService.getBackupSummary(library || []), [library]);
-  const filteredLibrary = useMemo(() => DataExportService.applyExportFilters(safeLibrary, exportOptions), [safeLibrary, exportOptions]);
+  const filteredLibrary = useMemo(
+    () => DataExportService.applyExportFilters(safeLibrary, exportOptions),
+    [safeLibrary, exportOptions]
+  );
   const filteredCount = filteredLibrary.length;
 
   const isExportFilterUnlocked = (filterId) => ProgressionUnlockService.isExportFilterUnlocked(filterId);
@@ -76,7 +84,7 @@ function ExportHub({ library = [], theme }) {
       height: LIBRARY_SHARE_CARD_SIZE_PX,
       backgroundColor: null,
       logging: false,
-      useCORS: true
+      useCORS: true,
     });
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }, [error]);
@@ -110,64 +118,80 @@ function ExportHub({ library = [], theme }) {
     }
   }, [generateFilteredRecapBlob, exportOptions.dateRange, filteredCount, success, error]);
 
-  const handleShareFilteredRecapToDiscord = useCallback(async (text = null) => {
-    const blob = await generateFilteredRecapBlob();
-    const date = new Date().toISOString().split('T')[0];
-    const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
-    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
-    const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
-    if (result.success) {
-      success(result.imageStaged
-        ? 'Discord opened — your filtered recap image and caption are copied, just paste them in.'
-        : 'Discord opened — caption copied, image saved to attach.');
-    } else {
-      error(result.message || 'Could not share to Discord.');
-    }
-  }, [generateFilteredRecapBlob, exportOptions.dateRange, filteredLibrary, username, success, error]);
-
-  const handleShareFilteredRecapToMessenger = useCallback(async (text = null) => {
-    const blob = await generateFilteredRecapBlob();
-    const date = new Date().toISOString().split('T')[0];
-    const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
-    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
-    const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
-    if (result.success) {
-      success(result.imageStaged
-        ? 'Messenger opened — your filtered recap image and caption are copied, just paste them in.'
-        : 'Messenger opened — caption copied, image saved to attach.');
-    } else {
-      error(result.message || 'Could not share to Messenger.');
-    }
-  }, [generateFilteredRecapBlob, exportOptions.dateRange, filteredLibrary, username, success, error]);
-
-  const handleShareFilteredRecapToChannel = useCallback(async (channel, text = null) => {
-    const shareText = text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
-    let imageStaged = false;
-    if (LocalShareService.canCopyImage()) {
-      try {
-        const blob = await generateFilteredRecapBlob();
-        if (blob) {
-          const date = new Date().toISOString().split('T')[0];
-          const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
-          const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
-          imageStaged = copyResult.success;
-        }
-      } catch (err) {
-        imageStaged = false;
-      }
-    }
-
-    const result = await LocalShareService.openShareIntent(channel, shareText);
-    if (result.success) {
-      if (imageStaged) {
-        success(`${result.label} opened — your filtered recap image is copied, just paste it into the post.`);
+  const handleShareFilteredRecapToDiscord = useCallback(
+    async (text = null) => {
+      const blob = await generateFilteredRecapBlob();
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
+      const shareText =
+        text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
+      const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
+      if (result.success) {
+        success(
+          result.imageStaged
+            ? 'Discord opened — your filtered recap image and caption are copied, just paste them in.'
+            : 'Discord opened — caption copied, image saved to attach.'
+        );
       } else {
-        success(`${result.label} share opened.`);
+        error(result.message || 'Could not share to Discord.');
       }
-    } else {
-      error(result.message || 'Could not open share link.');
-    }
-  }, [generateFilteredRecapBlob, exportOptions.dateRange, filteredLibrary, username, success, error]);
+    },
+    [generateFilteredRecapBlob, exportOptions.dateRange, filteredLibrary, username, success, error]
+  );
+
+  const handleShareFilteredRecapToMessenger = useCallback(
+    async (text = null) => {
+      const blob = await generateFilteredRecapBlob();
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
+      const shareText =
+        text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
+      const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
+      if (result.success) {
+        success(
+          result.imageStaged
+            ? 'Messenger opened — your filtered recap image and caption are copied, just paste them in.'
+            : 'Messenger opened — caption copied, image saved to attach.'
+        );
+      } else {
+        error(result.message || 'Could not share to Messenger.');
+      }
+    },
+    [generateFilteredRecapBlob, exportOptions.dateRange, filteredLibrary, username, success, error]
+  );
+
+  const handleShareFilteredRecapToChannel = useCallback(
+    async (channel, text = null) => {
+      const shareText =
+        text || LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange);
+      let imageStaged = false;
+      if (LocalShareService.canCopyImage()) {
+        try {
+          const blob = await generateFilteredRecapBlob();
+          if (blob) {
+            const date = new Date().toISOString().split('T')[0];
+            const filename = `gamepilot-filtered-recap-${exportOptions.dateRange}-${date}.png`;
+            const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
+            imageStaged = copyResult.success;
+          }
+        } catch (err) {
+          imageStaged = false;
+        }
+      }
+
+      const result = await LocalShareService.openShareIntent(channel, shareText);
+      if (result.success) {
+        if (imageStaged) {
+          success(`${result.label} opened — your filtered recap image is copied, just paste it into the post.`);
+        } else {
+          success(`${result.label} share opened.`);
+        }
+      } else {
+        error(result.message || 'Could not open share link.');
+      }
+    },
+    [generateFilteredRecapBlob, exportOptions.dateRange, filteredLibrary, username, success, error]
+  );
 
   const handleBackupExport = async () => {
     try {
@@ -231,10 +255,16 @@ function ExportHub({ library = [], theme }) {
           <div className="confidence-badge">Local-first export center</div>
           <h1>Export, Import & Share</h1>
           <p>
-            Keep backups safe, export your library as a spreadsheet, and create visual recap/share assets from one place.
+            Keep backups safe, export your library as a spreadsheet, and create visual recap/share assets from one
+            place.
           </p>
         </div>
-        <button type="button" className="export-hub-btn" onClick={() => navigate('/year-in-review')} title="Open the full recap page with visuals and exports">
+        <button
+          type="button"
+          className="export-hub-btn"
+          onClick={() => navigate('/year-in-review')}
+          title="Open the full recap page with visuals and exports"
+        >
           <RefreshCcw size={16} />
           <span>Open Year in Review</span>
         </button>
@@ -262,44 +292,83 @@ function ExportHub({ library = [], theme }) {
       <div className="export-hub-grid">
         <section className="export-hub-card">
           <h2>Full Backup</h2>
-          <p>Save or restore your complete local GamePilot profile, including library curation, progression, rewards, settings, and usage history.</p>
+          <p>
+            Save or restore your complete local GamePilot profile, including library curation, progression, rewards,
+            settings, and usage history.
+          </p>
           <div className="export-hub-btn-row">
-            <button type="button" className="export-hub-btn" onClick={handleBackupExport} title="Download a full local backup including progression and profile data">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={handleBackupExport}
+              title="Download a full local backup including progression and profile data"
+            >
               <Download size={16} />
               <span>Export Backup</span>
             </button>
-            <button type="button" className="export-hub-btn" onClick={() => backupImportRef.current?.click()} title="Restore a previously exported full GamePilot backup">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={() => backupImportRef.current?.click()}
+              title="Restore a previously exported full GamePilot backup"
+            >
               <Upload size={16} />
               <span>Import Backup</span>
             </button>
-            <button type="button" className="export-hub-btn danger" onClick={handleClearAllData} title="Erase all local GamePilot data on this device">
+            <button
+              type="button"
+              className="export-hub-btn danger"
+              onClick={handleClearAllData}
+              title="Erase all local GamePilot data on this device"
+            >
               <Trash2 size={16} />
               <span>Clear All Data</span>
             </button>
           </div>
-          <input ref={backupImportRef} type="file" accept=".json" className="export-hub-hidden-input" onChange={handleBackupImport} />
+          <input
+            ref={backupImportRef}
+            type="file"
+            accept=".json"
+            className="export-hub-hidden-input"
+            onChange={handleBackupImport}
+          />
         </section>
 
         <section className="export-hub-card">
           <h2>Library Exports</h2>
           <p>Export your catalogue as a spreadsheet-friendly CSV or create visual showcase images and posters.</p>
           <div className="export-hub-btn-row">
-            <button type="button" className="export-hub-btn" onClick={() => {
-              const exported = DataExportService.exportLibraryAsCSV(library || []);
-              if (exported) {
-                success('Library CSV exported.');
-              } else {
-                error('Library CSV export failed.');
-              }
-            }} title="Export your library as CSV for spreadsheets or external analysis">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={() => {
+                const exported = DataExportService.exportLibraryAsCSV(library || []);
+                if (exported) {
+                  success('Library CSV exported.');
+                } else {
+                  error('Library CSV export failed.');
+                }
+              }}
+              title="Export your library as CSV for spreadsheets or external analysis"
+            >
               <Download size={16} />
               <span>Export CSV</span>
             </button>
-            <button type="button" className="export-hub-btn" onClick={() => setIsExportModalOpen(true)} title="Open the richer visual library showcase exporter">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={() => setIsExportModalOpen(true)}
+              title="Open the richer visual library showcase exporter"
+            >
               <ImageIcon size={16} />
               <span>Open Showcase Export</span>
             </button>
-            <button type="button" className="export-hub-btn" onClick={() => setIsCinematicExportOpen(true)} title="Open the cinematic poster generator for a stylized share image">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={() => setIsCinematicExportOpen(true)}
+              title="Open the cinematic poster generator for a stylized share image"
+            >
               <ImageIcon size={16} />
               <span>Open Cinematic Poster</span>
             </button>
@@ -356,19 +425,36 @@ function ExportHub({ library = [], theme }) {
           </div>
 
           <div className="export-hub-filter-summary">
-            <span>{filteredCount} game{filteredCount !== 1 ? 's' : ''} match the current filters</span>
+            <span>
+              {filteredCount} game{filteredCount !== 1 ? 's' : ''} match the current filters
+            </span>
           </div>
 
           <div className="export-hub-btn-row">
-            <button type="button" className="export-hub-btn" onClick={handleExportFilteredImage} title="Export a shareable recap image of the filtered library">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={handleExportFilteredImage}
+              title="Export a shareable recap image of the filtered library"
+            >
               <ImageIcon size={16} />
               <span>Export Filtered Recap Image</span>
             </button>
-            <button type="button" className="export-hub-btn" onClick={handleCopyFilteredRecapImage} title="Copy the filtered recap image to the clipboard">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={handleCopyFilteredRecapImage}
+              title="Copy the filtered recap image to the clipboard"
+            >
               <ImageIcon size={16} />
               <span>Copy Recap Image</span>
             </button>
-            <button type="button" className="export-hub-btn" onClick={handleExportFilteredCSV} title="Export filtered library as a viewable spreadsheet">
+            <button
+              type="button"
+              className="export-hub-btn"
+              onClick={handleExportFilteredCSV}
+              title="Export filtered library as a viewable spreadsheet"
+            >
               <Download size={16} />
               <span>Export Filtered Spreadsheet</span>
             </button>
@@ -382,7 +468,11 @@ function ExportHub({ library = [], theme }) {
                 onClick={() => {
                   setEditShare({
                     channel,
-                    caption: LocalShareService.buildLibraryShareText(filteredLibrary, username, exportOptions.dateRange),
+                    caption: LocalShareService.buildLibraryShareText(
+                      filteredLibrary,
+                      username,
+                      exportOptions.dateRange
+                    ),
                     onShare: (text) => {
                       if (channel.id === 'discord') {
                         handleShareFilteredRecapToDiscord(text);
@@ -391,7 +481,7 @@ function ExportHub({ library = [], theme }) {
                       } else {
                         handleShareFilteredRecapToChannel(channel.id, text);
                       }
-                    }
+                    },
                   });
                 }}
                 title={`Open a ${channel.label} share intent with your filtered library recap`}
@@ -402,7 +492,6 @@ function ExportHub({ library = [], theme }) {
             ))}
           </div>
         </section>
-
       </div>
 
       <div
@@ -414,7 +503,7 @@ function ExportHub({ library = [], theme }) {
           width: LIBRARY_SHARE_CARD_SIZE_PX,
           height: LIBRARY_SHARE_CARD_SIZE_PX,
           pointerEvents: 'none',
-          zIndex: -1
+          zIndex: -1,
         }}
       >
         <LibraryShareCard
@@ -427,10 +516,20 @@ function ExportHub({ library = [], theme }) {
       </div>
 
       {isExportModalOpen && (
-        <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} library={library || []} theme={theme} />
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          library={library || []}
+          theme={theme}
+        />
       )}
       {isCinematicExportOpen && (
-        <CinematicExport isOpen={isCinematicExportOpen} onClose={() => setIsCinematicExportOpen(false)} library={library || []} theme={theme} />
+        <CinematicExport
+          isOpen={isCinematicExportOpen}
+          onClose={() => setIsCinematicExportOpen(false)}
+          library={library || []}
+          theme={theme}
+        />
       )}
 
       <ShareCaptionDialog

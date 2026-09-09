@@ -5,7 +5,11 @@ import { GamingIdentity } from '../GamingIdentity';
 export function IdentityMatchBadge({ game, mood, genre }) {
   try {
     const identity = React.useMemo(() => {
-      try { return GamingIdentity.getProfile(); } catch { return null; }
+      try {
+        return GamingIdentity.getProfile();
+      } catch {
+        return null;
+      }
     }, []);
     if (!identity?.identity) return null;
 
@@ -30,7 +34,9 @@ export function IdentityMatchBadge({ game, mood, genre }) {
     return (
       <div className="identity-match-badges">
         {badges.map((b, i) => (
-          <span key={i} className={`identity-match-badge ${b.type}`}>{b.label}</span>
+          <span key={i} className={`identity-match-badge ${b.type}`}>
+            {b.label}
+          </span>
         ))}
       </div>
     );
@@ -68,9 +74,10 @@ export function RecommendationReasoning({ entry }) {
 
   const confidence = Number(explanation.confidence || 0);
   const matchScore = Number(explanation.matchScore || 0);
-  const allReasons = Array.isArray(explanation.reasons) && explanation.reasons.length > 0
-    ? explanation.reasons
-    : ['Recommended for you'];
+  const allReasons =
+    Array.isArray(explanation.reasons) && explanation.reasons.length > 0
+      ? explanation.reasons
+      : ['Recommended for you'];
   const globalHook = explanation.globalHook || null;
   const gameSpecificHook = explanation.gameSpecificHook || null;
   const gameKey = entry?.game?.appid || entry?.game?.name || 'recommendation';
@@ -84,17 +91,15 @@ export function RecommendationReasoning({ entry }) {
         </div>
       </div>
       <div className="recommendation-reasoning">
-        {globalHook && (
-          <div className="reasoning-global-hook">{globalHook}</div>
-        )}
-        {gameSpecificHook && (
-          <div className="reasoning-game-hook">{gameSpecificHook}</div>
-        )}
+        {globalHook && <div className="reasoning-global-hook">{globalHook}</div>}
+        {gameSpecificHook && <div className="reasoning-game-hook">{gameSpecificHook}</div>}
         {detailReasons.length > 0 && (
           <details className="reasoning-details">
             <summary>
               <span className="reasoning-summary-label">💡 Why this game?</span>
-              <span className="reasoning-summary-hint">{detailReasons.length} more reason{detailReasons.length === 1 ? '' : 's'}</span>
+              <span className="reasoning-summary-hint">
+                {detailReasons.length} more reason{detailReasons.length === 1 ? '' : 's'}
+              </span>
             </summary>
             <div className="reasoning-content">
               {detailReasons.map((reason, index) => (
@@ -123,36 +128,38 @@ export function CuratedShelfCard({
   actionLabel = 'Launch',
   formatPlaytime,
   cycling = false,
-  children
+  children,
 }) {
   if (!game) {
     return null;
   }
 
   return (
-    <div className={`game-card curated-shelf-card fade-in ${cycling ? 'cycling' : ''}`} style={{ maxWidth: '400px', width: '100%' }}>
+    <div
+      className={`game-card curated-shelf-card fade-in ${cycling ? 'cycling' : ''}`}
+      style={{ maxWidth: '400px', width: '100%' }}
+    >
       <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.7, marginBottom: '4px' }}>
+        <div
+          style={{
+            fontSize: '0.78rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            opacity: 0.7,
+            marginBottom: '4px',
+          }}
+        >
           {title}
         </div>
-        <div style={{ fontSize: '0.95rem', opacity: 0.85 }}>
-          {subtitle}
-        </div>
+        <div style={{ fontSize: '0.95rem', opacity: 0.85 }}>{subtitle}</div>
       </div>
       <RecommendationReasoning entry={entry} />
       <div className="game-card-image-wrapper">
         {artwork ? (
-          <LazyImage
-            src={artwork}
-            alt={game.name}
-            placeholder={placeholder}
-            className="game-image home-grid-poster"
-          />
+          <LazyImage src={artwork} alt={game.name} placeholder={placeholder} className="game-image home-grid-poster" />
         ) : (
           <div className="game-placeholder home-grid-poster">
-            <div className="platform-icon">
-              {platformIcons[game.platform] || '❓'}
-            </div>
+            <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
           </div>
         )}
       </div>
@@ -162,11 +169,7 @@ export function CuratedShelfCard({
         <span className="game-genre">
           {game.genres && game.genres.length > 0 ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
         </span>
-        {formatPlaytime(game.time_played) && (
-          <span className="game-playtime">
-            {formatPlaytime(game.time_played)}
-          </span>
-        )}
+        {formatPlaytime(game.time_played) && <span className="game-playtime">{formatPlaytime(game.time_played)}</span>}
       </div>
       {children}
       <div className="game-actions">
@@ -185,7 +188,7 @@ export function BuyShelfCard({
   count = 1,
   onNext,
   onPrev,
-  title = 'Buy this next'
+  title = 'Buy this next',
 }) {
   if (!entry || !entry.game) {
     return null;
@@ -232,18 +235,20 @@ export function BuyShelfCard({
       </div>
       <h4 className="game-name">{game.name}</h4>
       <div className="game-info">
-        {typeof meta.buyScore === 'number' && (
-          <span className="game-genre">{meta.buyScore}% match</span>
-        )}
-        {price && (
-          <span className="game-playtime">{price.priceFormatted || `$${price.price}`}</span>
-        )}
+        {typeof meta.buyScore === 'number' && <span className="game-genre">{meta.buyScore}% match</span>}
+        {price && <span className="game-playtime">{price.priceFormatted || `$${price.price}`}</span>}
       </div>
       {hasCycle && (
         <div className="buy-shelf-counter">
-          <button onClick={onPrev} className="buy-shelf-arrow" aria-label="Previous wishlist pick">‹</button>
-          <span className="buy-shelf-counter-text">{index + 1} / {count}</span>
-          <button onClick={onNext} className="buy-shelf-arrow" aria-label="Next wishlist pick">›</button>
+          <button onClick={onPrev} className="buy-shelf-arrow" aria-label="Previous wishlist pick">
+            ‹
+          </button>
+          <span className="buy-shelf-counter-text">
+            {index + 1} / {count}
+          </span>
+          <button onClick={onNext} className="buy-shelf-arrow" aria-label="Next wishlist pick">
+            ›
+          </button>
         </div>
       )}
       <div className="game-actions">

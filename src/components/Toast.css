@@ -18,7 +18,9 @@
   padding: 18px 20px;
   min-width: 320px;
   max-width: 520px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.12);
   pointer-events: all;
   transform: translateX(120%) scale(0.95);
   opacity: 0;

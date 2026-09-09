@@ -4,7 +4,13 @@ import SessionRepository from './SessionRepository';
 
 function normalizeArray(arr) {
   if (!Array.isArray(arr)) return [];
-  return arr.map((v) => String(v || '').toLowerCase().trim()).filter(Boolean);
+  return arr
+    .map((v) =>
+      String(v || '')
+        .toLowerCase()
+        .trim()
+    )
+    .filter(Boolean);
 }
 
 function scoreSimilarity(anchorGame, candidateGame) {
@@ -112,7 +118,10 @@ function buildReason(anchorGame, recommendedGame, secondRecentGame, publicIdenti
 
   // Case 2: Shared genre continuation from last played
   if (sharedGenres.length > 0) {
-    const genreText = sharedGenres.slice(0, 2).map((g) => g.charAt(0).toUpperCase() + g.slice(1)).join(' / ');
+    const genreText = sharedGenres
+      .slice(0, 2)
+      .map((g) => g.charAt(0).toUpperCase() + g.slice(1))
+      .join(' / ');
     return `Last played ${anchorName} ${timeAgoStr}. Since you're in a ${genreText} mood, pick up ${recName} next!`;
   }
 
@@ -150,8 +159,16 @@ function getLastSessionForGame(gameName) {
       return bTs - aTs;
     });
     const match = sorted.find((s) => {
-      const sName = String(s.gameName || s.gameId || '').trim().toLowerCase();
-      return sName && sName === String(gameName || '').trim().toLowerCase();
+      const sName = String(s.gameName || s.gameId || '')
+        .trim()
+        .toLowerCase();
+      return (
+        sName &&
+        sName ===
+          String(gameName || '')
+            .trim()
+            .toLowerCase()
+      );
     });
     if (!match) return null;
     const minutes = Number(match.playtimeMinutes ?? match.playtime ?? match.duration ?? match.minutes ?? 0);
@@ -223,14 +240,14 @@ function buildWelcomeBack(library) {
     lastSessionDuration: lastSession ? formatSessionDuration(lastSession.minutes) : null,
     allTimeLabel: publicIdentity?.label || null,
     allTimeRoast: publicIdentity?.roast || null,
-    score: bestScore
+    score: bestScore,
   };
 }
 
 export const WelcomeBackService = {
   buildWelcomeBack,
   pickAnchorGame,
-  scoreSimilarity
+  scoreSimilarity,
 };
 
 export default WelcomeBackService;

@@ -8,7 +8,9 @@
   padding: 4px;
   border-radius: 50%;
   opacity: 0.35;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
   animation: seasonal-hide-seek-float 4s ease-in-out infinite;
   pointer-events: auto;
 }
@@ -26,8 +28,13 @@
 }
 
 @keyframes seasonal-hide-seek-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 /* Tracker badge — fixed bottom right */
@@ -46,8 +53,14 @@
 }
 
 @keyframes seasonal-hide-seek-slide-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .seasonal-hide-seek-tracker-header {
@@ -92,7 +105,9 @@
   padding: 0 4px;
   line-height: 1;
   border-radius: 4px;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .seasonal-hide-seek-dismiss:hover {
@@ -124,7 +139,9 @@
 .seasonal-hide-seek-tracker-dot {
   font-size: 14px;
   opacity: 0.25;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .seasonal-hide-seek-tracker-dot.found {
@@ -156,8 +173,14 @@
 }
 
 @keyframes seasonal-hide-seek-toast-in {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .seasonal-hide-seek-toast-emoji {

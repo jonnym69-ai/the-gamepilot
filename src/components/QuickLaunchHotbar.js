@@ -54,7 +54,8 @@ export default function QuickLaunchHotbar({ library = [] }) {
     e.stopPropagation();
     const id = gameKey(game);
     const set = new Set((prefs.pinnedGameIds || []).map(String));
-    if (set.has(id)) set.delete(id); else set.add(id);
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
     InterfacePreferencesService.set('pinnedGameIds', Array.from(set));
   };
 
@@ -64,14 +65,21 @@ export default function QuickLaunchHotbar({ library = [] }) {
 
   return (
     <div className={`quick-launch-hotbar ${collapsed ? 'collapsed' : ''}`} role="toolbar" aria-label="Quick launch">
-      <button type="button" className="quick-launch-toggle" onClick={toggleCollapse} title={collapsed ? 'Expand quick launch' : 'Collapse quick launch'}>
+      <button
+        type="button"
+        className="quick-launch-toggle"
+        onClick={toggleCollapse}
+        title={collapsed ? 'Expand quick launch' : 'Collapse quick launch'}
+      >
         {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         <span>Quick Launch</span>
       </button>
       {!collapsed && (
         <div className="quick-launch-list">
           {games.map((game) => {
-            const art = resolveGameArtwork(game, { surface: 'portrait' }) || getGameArtworkPlaceholder({ game, surface: 'portrait' });
+            const art =
+              resolveGameArtwork(game, { surface: 'portrait' }) ||
+              getGameArtworkPlaceholder({ game, surface: 'portrait' });
             const id = gameKey(game);
             const isPinned = (prefs.pinnedGameIds || []).map(String).includes(id);
             return (
@@ -90,7 +98,9 @@ export default function QuickLaunchHotbar({ library = [] }) {
                   role="button"
                   tabIndex={0}
                   onClick={(e) => togglePin(e, game)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') togglePin(e, game); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') togglePin(e, game);
+                  }}
                   className={`quick-launch-pin ${isPinned ? 'pinned' : ''}`}
                   title={isPinned ? 'Unpin' : 'Pin to hotbar'}
                 >

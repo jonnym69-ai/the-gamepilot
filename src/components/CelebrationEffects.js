@@ -12,14 +12,14 @@ const ConfettiPiece = ({ color, delay, left, type }) => {
 
   const pieceType = type || Math.floor(Math.random() * 3);
   const shape = pieceType === 0 ? 'circle' : pieceType === 1 ? 'square' : 'triangle';
-  
+
   return (
     <div
       className={`confetti-piece ${shape} ${isActive ? 'active' : ''}`}
       style={{
         backgroundColor: color,
         left: `${left}%`,
-        animationDelay: `${delay}ms`
+        animationDelay: `${delay}ms`,
       }}
     />
   );
@@ -42,7 +42,7 @@ const Sparkle = ({ delay, top, left, size = 20 }) => {
         left: `${left}%`,
         width: size,
         height: size,
-        animationDelay: `${delay}ms`
+        animationDelay: `${delay}ms`,
       }}
     >
       ✨
@@ -51,12 +51,7 @@ const Sparkle = ({ delay, top, left, size = 20 }) => {
 };
 
 // Main celebration overlay
-export const CelebrationOverlay = ({ 
-  type = 'confetti', 
-  duration = 3000, 
-  onComplete,
-  intensity = 'medium' 
-}) => {
+export const CelebrationOverlay = ({ type = 'confetti', duration = 3000, onComplete, intensity = 'medium' }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [particles, setParticles] = useState([]);
 
@@ -64,15 +59,15 @@ export const CelebrationOverlay = ({
     // Generate particles based on intensity
     const particleCount = intensity === 'low' ? 30 : intensity === 'high' ? 100 : 60;
     const colors = ['#ff6b35', '#f093fb', '#3dd9ff', '#9b5cff', '#f5b700', '#22c55e', '#ff8c42'];
-    
+
     const newParticles = Array.from({ length: particleCount }, (_, i) => ({
       id: i,
       color: colors[Math.floor(Math.random() * colors.length)],
       delay: Math.random() * 500,
       left: Math.random() * 100,
-      type: Math.floor(Math.random() * 3)
+      type: Math.floor(Math.random() * 3),
     }));
-    
+
     setParticles(newParticles);
 
     // Auto-hide after duration
@@ -88,28 +83,29 @@ export const CelebrationOverlay = ({
 
   return (
     <div className={`celebration-overlay ${type}`}>
-      {type === 'confetti' && particles.map(p => (
-        <ConfettiPiece key={p.id} {...p} />
-      ))}
-      {type === 'sparkles' && particles.slice(0, 20).map((p, i) => (
-        <Sparkle 
-          key={p.id} 
-          delay={p.delay} 
-          top={10 + Math.random() * 80} 
-          left={p.left}
-          size={15 + Math.random() * 20}
-        />
-      ))}
+      {type === 'confetti' && particles.map((p) => <ConfettiPiece key={p.id} {...p} />)}
+      {type === 'sparkles' &&
+        particles
+          .slice(0, 20)
+          .map((p, i) => (
+            <Sparkle
+              key={p.id}
+              delay={p.delay}
+              top={10 + Math.random() * 80}
+              left={p.left}
+              size={15 + Math.random() * 20}
+            />
+          ))}
       {type === 'mixed' && (
         <>
-          {particles.slice(0, 40).map(p => (
+          {particles.slice(0, 40).map((p) => (
             <ConfettiPiece key={`c-${p.id}`} {...p} />
           ))}
           {particles.slice(0, 15).map((p, i) => (
-            <Sparkle 
+            <Sparkle
               key={`s-${p.id}`}
-              delay={p.delay + 200} 
-              top={10 + Math.random() * 80} 
+              delay={p.delay + 200}
+              top={10 + Math.random() * 80}
               left={p.left}
               size={15 + Math.random() * 20}
             />
@@ -146,13 +142,7 @@ export const XPGainFlash = ({ amount, onComplete }) => {
 };
 
 // Unlock notification with celebration
-export const UnlockCelebration = ({ 
-  rewardName, 
-  rewardType,
-  xpBonus,
-  onComplete,
-  duration = 4000 
-}) => {
+export const UnlockCelebration = ({ rewardName, rewardType, xpBonus, onComplete, duration = 4000 }) => {
   const [phase, setPhase] = useState('celebrating'); // celebrating, displaying, done
 
   useEffect(() => {
@@ -172,33 +162,32 @@ export const UnlockCelebration = ({
 
   const getTypeIcon = () => {
     switch (rewardType) {
-      case 'frame': return '🖼️';
-      case 'banner': return '🎨';
-      case 'title': return '🏆';
-      case 'theme': return '🎭';
-      case 'audio': return '🎵';
-      case 'collection': return '📚';
-      default: return '🎁';
+      case 'frame':
+        return '🖼️';
+      case 'banner':
+        return '🎨';
+      case 'title':
+        return '🏆';
+      case 'theme':
+        return '🎭';
+      case 'audio':
+        return '🎵';
+      case 'collection':
+        return '📚';
+      default:
+        return '🎁';
     }
   };
 
   return (
     <div className="unlock-celebration">
-      {phase === 'celebrating' && (
-        <CelebrationOverlay 
-          type="mixed" 
-          intensity="high" 
-          duration={1500}
-        />
-      )}
+      {phase === 'celebrating' && <CelebrationOverlay type="mixed" intensity="high" duration={1500} />}
       <div className={`unlock-card ${phase}`}>
         <div className="unlock-icon">{getTypeIcon()}</div>
         <div className="unlock-text">
           <span className="unlock-label">Unlocked!</span>
           <strong className="unlock-name">{rewardName}</strong>
-          {xpBonus > 0 && (
-            <span className="unlock-bonus">+{xpBonus.toLocaleString()} XP Bonus</span>
-          )}
+          {xpBonus > 0 && <span className="unlock-bonus">+{xpBonus.toLocaleString()} XP Bonus</span>}
         </div>
       </div>
     </div>
@@ -263,12 +252,7 @@ export const useCelebration = () => {
           />
         );
       case 'xpgain':
-        return (
-          <XPGainFlash
-            amount={activeCelebration.amount}
-            onComplete={clearCelebration}
-          />
-        );
+        return <XPGainFlash amount={activeCelebration.amount} onComplete={clearCelebration} />;
       default:
         return null;
     }
@@ -280,7 +264,7 @@ export const useCelebration = () => {
     triggerUnlock,
     triggerXPGain,
     clearCelebration,
-    CelebrationComponent
+    CelebrationComponent,
   };
 };
 

@@ -29,7 +29,7 @@ const isWithinDateRange = (value, start, end) => {
 const EXPORT_FIELD_PRESETS = Object.freeze({
   minimal: ['name', 'platform', 'time_played', 'launch_count'],
   standard: ['name', 'platform', 'time_played', 'launch_count', 'genres', 'mood', 'last_played', 'rating'],
-  full: null
+  full: null,
 });
 
 export class DataExportService {
@@ -39,7 +39,7 @@ export class DataExportService {
       const exportData = {
         exportDate: new Date().toISOString(),
         gameCount: library.length,
-        games: library
+        games: library,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -61,16 +61,16 @@ export class DataExportService {
 
       // Get all unique keys from all games
       const allKeys = new Set();
-      library.forEach(game => {
-        Object.keys(game).forEach(key => allKeys.add(key));
+      library.forEach((game) => {
+        Object.keys(game).forEach((key) => allKeys.add(key));
       });
 
       const headers = Array.from(allKeys);
       const rows = [headers.join(',')];
 
       // Add game data rows
-      library.forEach(game => {
-        const row = headers.map(header => {
+      library.forEach((game) => {
+        const row = headers.map((header) => {
           const value = game[header];
           if (value === null || value === undefined) {
             return '';
@@ -98,11 +98,11 @@ export class DataExportService {
   static exportAchievementsAsJSON(filename = null) {
     try {
       const unlockedAchievements = StorageService.get('unlockedAchievements', []);
-      
+
       const exportData = {
         exportDate: new Date().toISOString(),
         achievementCount: unlockedAchievements.length,
-        achievements: unlockedAchievements
+        achievements: unlockedAchievements,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -184,9 +184,7 @@ export class DataExportService {
 
           // Preserve backward-compatible return value for existing callers.
           const payload = raw.data || raw;
-          const games = Array.isArray(payload.gameLibrary)
-            ? payload.gameLibrary
-            : (payload.library?.games || []);
+          const games = Array.isArray(payload.gameLibrary) ? payload.gameLibrary : payload.library?.games || [];
           resolve(games);
         } catch (error) {
           reject(new Error('Invalid backup file format'));
@@ -223,7 +221,7 @@ export class DataExportService {
       hasPlaytime = false,
       hasLaunched = false,
       isFavorite = false,
-      isHidden = false
+      isHidden = false,
     } = options;
 
     let filtered = safeLibrary;
@@ -314,11 +312,14 @@ export class DataExportService {
         exportDate: new Date().toISOString(),
         filterOptions: options,
         gameCount: projected.length,
-        games: projected
+        games: projected,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      this.downloadFile(blob, options.filename || `gamepilot-library-filtered-${new Date().toISOString().split('T')[0]}.json`);
+      this.downloadFile(
+        blob,
+        options.filename || `gamepilot-library-filtered-${new Date().toISOString().split('T')[0]}.json`
+      );
       return true;
     } catch (error) {
       console.error('Error exporting filtered library as JSON:', error);
@@ -354,7 +355,10 @@ export class DataExportService {
 
       const csvContent = rows.join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      this.downloadFile(blob, options.filename || `gamepilot-library-filtered-${new Date().toISOString().split('T')[0]}.csv`);
+      this.downloadFile(
+        blob,
+        options.filename || `gamepilot-library-filtered-${new Date().toISOString().split('T')[0]}.csv`
+      );
       return true;
     } catch (error) {
       console.error('Error exporting filtered library as CSV:', error);
@@ -376,7 +380,7 @@ export class DataExportService {
         totalPlaytime: totalPlaytime,
         totalPlaytimeHours: (totalPlaytime / 60).toFixed(1),
         gamesWithPlaytime: Object.keys(gameLaunchData).length,
-        backupDate: new Date().toISOString()
+        backupDate: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error getting backup summary:', error);

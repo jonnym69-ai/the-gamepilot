@@ -9,7 +9,7 @@ const STEAM_VARIANTS = Object.freeze({
   // Steam desktop library vertical cover (same art Steam's library grid uses)
   portrait: 'library_600x900.jpg',
   bigscreen: 'library_600x900.jpg',
-  library_portrait: 'library_600x900.jpg'
+  library_portrait: 'library_600x900.jpg',
 });
 
 const PORTRAIT_SURFACES = new Set(['portrait', 'bigscreen', 'library_portrait']);
@@ -22,18 +22,18 @@ const SURFACE_DIMENSIONS = Object.freeze({
   wide: { width: 616, height: 353 },
   portrait: { width: 600, height: 900 },
   bigscreen: { width: 600, height: 900 },
-  library_portrait: { width: 600, height: 900 }
+  library_portrait: { width: 600, height: 900 },
 });
 
 const isLandscapeSteamAsset = (url = '') => {
   const value = String(url).toLowerCase();
   return (
-    value.includes('header')
-    || value.includes('capsule')
-    || value.includes('616x353')
-    || value.includes('460x215')
-    || value.includes('231x87')
-    || value.includes('184x69')
+    value.includes('header') ||
+    value.includes('capsule') ||
+    value.includes('616x353') ||
+    value.includes('460x215') ||
+    value.includes('231x87') ||
+    value.includes('184x69')
   );
 };
 
@@ -92,8 +92,10 @@ export const resolveGameArtwork = (game = {}, options = {}) => {
     game.libraryCapsule,
     game.iconUrl,
     game.icon,
-    game.logo
-  ].map(normalizeCandidate).filter(Boolean);
+    game.logo,
+  ]
+    .map(normalizeCandidate)
+    .filter(Boolean);
 
   if (preferPortrait) {
     const portraitCandidate = candidates.find((url) => !isLandscapeSteamAsset(url));
@@ -111,12 +113,13 @@ export const resolveGameArtwork = (game = {}, options = {}) => {
   return candidates[0] || '';
 };
 
-const escapeSvgText = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&apos;');
+const escapeSvgText = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
 // Placeholder art is generated inline as an SVG data URI so blank tiles render
 // with zero network calls — the app stays fully usable offline.
@@ -151,49 +154,50 @@ export const hasMissingCoverArt = (game) => {
 // Reads a local image file and downscales it to a compact JPEG data URI so
 // custom covers work fully offline without bloating local storage. Falls back
 // to the raw data URI if canvas processing is unavailable.
-export const fileToCoverDataUri = (file, { maxDimension = 600, quality = 0.82 } = {}) => new Promise((resolve, reject) => {
-  if (!file || !/^image\//i.test(String(file.type || ''))) {
-    reject(new Error('Please pick an image file.'));
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onerror = () => reject(new Error('Could not read the selected file.'));
-  reader.onload = () => {
-    const rawUri = String(reader.result || '');
-    if (!rawUri.startsWith('data:')) {
-      reject(new Error('Could not read the selected file.'));
+export const fileToCoverDataUri = (file, { maxDimension = 600, quality = 0.82 } = {}) =>
+  new Promise((resolve, reject) => {
+    if (!file || !/^image\//i.test(String(file.type || ''))) {
+      reject(new Error('Please pick an image file.'));
       return;
     }
 
-    const image = new Image();
-    image.onerror = () => reject(new Error('Could not load the selected image.'));
-    image.onload = () => {
-      try {
-        const longest = Math.max(image.naturalWidth || 0, image.naturalHeight || 0);
-        const scale = longest > maxDimension ? maxDimension / longest : 1;
-        const width = Math.max(1, Math.round((image.naturalWidth || maxDimension) * scale));
-        const height = Math.max(1, Math.round((image.naturalHeight || maxDimension) * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext('2d');
-        if (!context) {
-          resolve(rawUri);
-          return;
-        }
-        context.fillStyle = '#ffffff';
-        context.fillRect(0, 0, width, height);
-        context.drawImage(image, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      } catch {
-        resolve(rawUri);
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read the selected file.'));
+    reader.onload = () => {
+      const rawUri = String(reader.result || '');
+      if (!rawUri.startsWith('data:')) {
+        reject(new Error('Could not read the selected file.'));
+        return;
       }
+
+      const image = new Image();
+      image.onerror = () => reject(new Error('Could not load the selected image.'));
+      image.onload = () => {
+        try {
+          const longest = Math.max(image.naturalWidth || 0, image.naturalHeight || 0);
+          const scale = longest > maxDimension ? maxDimension / longest : 1;
+          const width = Math.max(1, Math.round((image.naturalWidth || maxDimension) * scale));
+          const height = Math.max(1, Math.round((image.naturalHeight || maxDimension) * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext('2d');
+          if (!context) {
+            resolve(rawUri);
+            return;
+          }
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, width, height);
+          context.drawImage(image, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch {
+          resolve(rawUri);
+        }
+      };
+      image.src = rawUri;
     };
-    image.src = rawUri;
-  };
-  reader.readAsDataURL(file);
-});
+    reader.readAsDataURL(file);
+  });
 
 export const getArtworkForSurface = (game = {}, surface = 'library_card') => {
   const src = resolveGameArtwork(game, { surface });
@@ -201,7 +205,7 @@ export const getArtworkForSurface = (game = {}, surface = 'library_card') => {
 
   return {
     src,
-    placeholder
+    placeholder,
   };
 };
 
@@ -223,6 +227,6 @@ export const resolveGameArtworkBundle = (game, { surface = 'portrait', fallbackS
   return {
     artwork,
     fallbackSrc: fallbackArtwork && fallbackArtwork !== artwork ? fallbackArtwork : undefined,
-    placeholder: getGameArtworkPlaceholder({ game, surface })
+    placeholder: getGameArtworkPlaceholder({ game, surface }),
   };
 };

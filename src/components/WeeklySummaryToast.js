@@ -19,16 +19,20 @@ const WeeklySummaryToast = ({ show, stats, onClose }) => {
   if (!show || !stats) return null;
 
   const { hoursThisWeek, hoursLastWeek, gamesPlayed, topGame, streak } = stats;
-  const percentChange = hoursLastWeek > 0 
-    ? Math.round(((hoursThisWeek - hoursLastWeek) / hoursLastWeek) * 100)
-    : 100;
+  const percentChange = hoursLastWeek > 0 ? Math.round(((hoursThisWeek - hoursLastWeek) / hoursLastWeek) * 100) : 100;
 
   return (
     <div className={`weekly-summary-toast ${exiting ? 'exiting' : ''}`}>
-      <button className="toast-close" onClick={() => { setExiting(true); setTimeout(onClose, 500); }}>
+      <button
+        className="toast-close"
+        onClick={() => {
+          setExiting(true);
+          setTimeout(onClose, 500);
+        }}
+      >
         <X size={18} />
       </button>
-      
+
       <div className="toast-header">
         <TrendingUp className="header-icon" />
         <h3>Weekly Summary</h3>
@@ -41,7 +45,8 @@ const WeeklySummaryToast = ({ show, stats, onClose }) => {
           <span className="stat-value">{hoursThisWeek}h this week</span>
           {percentChange !== 0 && (
             <span className={`stat-change ${percentChange > 0 ? 'up' : 'down'}`}>
-              {percentChange > 0 ? '+' : ''}{percentChange}%
+              {percentChange > 0 ? '+' : ''}
+              {percentChange}%
             </span>
           )}
         </div>

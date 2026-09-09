@@ -13,7 +13,7 @@ export function ContinuePlayingSection({
   formatPlaytime,
   message,
   onLaunch,
-  endSessionButton
+  endSessionButton,
 }) {
   if (!game) {
     return null;
@@ -22,44 +22,31 @@ export function ContinuePlayingSection({
   return (
     <div className="results-section">
       <div className="result-card">
-        <h3 className="result-title">
-          ▶️ Continue Playing
-        </h3>
+        <h3 className="result-title">▶️ Continue Playing</h3>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <div className="game-card" style={{ maxWidth: '280px', padding: '15px' }}>
             <div className="game-card-image-wrapper">
               {artwork ? (
-                <LazyImage
-                  src={artwork}
-                  alt={game.name}
-                  placeholder={placeholder}
-                  className="game-image"
-                />
+                <LazyImage src={artwork} alt={game.name} placeholder={placeholder} className="game-image" />
               ) : (
                 <div className="game-placeholder">
-                  <div className="platform-icon">
-                    {platformIcons[game.platform] || '❓'}
-                  </div>
+                  <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
                 </div>
               )}
             </div>
-            <h4 className="game-name">
-              {game.name}
-            </h4>
-            <p className="game-platform">
-              {game.platform}
-            </p>
+            <h4 className="game-name">{game.name}</h4>
+            <p className="game-platform">{game.platform}</p>
             <p style={{ fontSize: '0.8rem', color: 'var(--text)', opacity: 0.6, margin: '4px 0' }}>
               Last played: {formatLastPlayed(game.last_played)}
             </p>
             <div className="game-info">
               <span className="game-genre">
-                {game.genres && game.genres.length > 0 ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                {game.genres && game.genres.length > 0
+                  ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie'
+                  : 'Indie'}
               </span>
               {formatPlaytime(game.time_played) && (
-                <span className="game-playtime">
-                  {formatPlaytime(game.time_played)}
-                </span>
+                <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
               )}
             </div>
             <RecommendationReasoning entry={entry} />
@@ -92,7 +79,7 @@ export function MomentumSection({
   onLaunchGame,
   trackRecommendationLaunch,
   renderEndSessionButton,
-  handleWeeklyQuestPinToggle
+  handleWeeklyQuestPinToggle,
 }) {
   void weeklyQuest;
   void handleWeeklyQuestPinToggle;
@@ -102,12 +89,7 @@ export function MomentumSection({
   }
 
   return (
-    <HomeSection
-      className="home-guided-section-secondary"
-      eyebrow="For you"
-      title="Playstyle picks"
-      compact
-    >
+    <HomeSection className="home-guided-section-secondary" eyebrow="For you" title="Playstyle picks" compact>
       <div className="retention-section">
         <div className="retention-grid">
           {gamePilotPickEntries.length > 0 && (
@@ -131,7 +113,11 @@ export function MomentumSection({
                     return null;
                   }
 
-                  const { artwork: gameArtwork, fallbackSrc: gameArtworkFallback, placeholder: gamePlaceholder } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
+                  const {
+                    artwork: gameArtwork,
+                    fallbackSrc: gameArtworkFallback,
+                    placeholder: gamePlaceholder,
+                  } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
 
                   return (
                     <div key={game.appid || game.name || index} className={getGameCardClass(index)}>
@@ -148,29 +134,23 @@ export function MomentumSection({
                           />
                         ) : (
                           <div className="game-placeholder home-grid-poster">
-                            <div className="platform-icon">
-                              {platformIcons[game.platform] || '❓'}
-                            </div>
+                            <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
                           </div>
                         )}
                       </div>
-                      <h4 className="game-name">
-                        {game.name}
-                      </h4>
-                      <p className="game-platform">
-                        {game.platform}
-                      </p>
+                      <h4 className="game-name">{game.name}</h4>
+                      <p className="game-platform">{game.platform}</p>
                       <p style={{ fontSize: '0.8rem', color: 'var(--text)', opacity: 0.6, margin: '4px 0' }}>
                         Last played: {formatLastPlayed(game.last_played)}
                       </p>
                       <div className="game-info">
                         <span className="game-genre">
-                          {game.genres && game.genres.length > 0 ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                          {game.genres && game.genres.length > 0
+                            ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie'
+                            : 'Indie'}
                         </span>
                         {formatPlaytime(game.time_played) && (
-                          <span className="game-playtime">
-                            {formatPlaytime(game.time_played)}
-                          </span>
+                          <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
                         )}
                       </div>
                       <div className="game-actions">
@@ -207,7 +187,7 @@ export function MatchMyMoodSection({
   onMoodChange,
   onGenreChange,
   onTimeChange,
-  onFindGamesForMood
+  onFindGamesForMood,
 }) {
   const quickVibes = [
     { id: 'stress_relief', label: 'Stress Relief', icon: '🧘', mood: 'Relaxed' },
@@ -217,17 +197,13 @@ export function MatchMyMoodSection({
     { id: 'get_creative', label: 'Get Creative', icon: '🎨', mood: 'Creative' },
     { id: 'epic_escape', label: 'Epic Escape', icon: '🏔️', mood: 'Creative' },
     { id: 'test_my_skills', label: 'Test My Skills', icon: '🎯', mood: 'Focused' },
-    { id: 'nostalgia_trip', label: 'Nostalgia Trip', icon: '🕹️', mood: 'Relaxed' }
+    { id: 'nostalgia_trip', label: 'Nostalgia Trip', icon: '🕹️', mood: 'Relaxed' },
   ];
 
   return (
     <div className="match-my-mood-section">
-      <h2 className="match-my-mood-title">
-        🎭 Match My Mood
-      </h2>
-      <p className="match-my-mood-subtitle">
-        Tell us how you're feeling and what you need right now
-      </p>
+      <h2 className="match-my-mood-title">🎭 Match My Mood</h2>
+      <p className="match-my-mood-subtitle">Tell us how you're feeling and what you need right now</p>
 
       <div className="quick-vibes">
         <h3 className="quick-vibes-title">Quick Vibes</h3>
@@ -250,11 +226,7 @@ export function MatchMyMoodSection({
       </div>
 
       <div className="mood-filter-row">
-        <select
-          value={mood}
-          onChange={(event) => onMoodChange(event.target.value)}
-          className="mood-filter-select"
-        >
+        <select value={mood} onChange={(event) => onMoodChange(event.target.value)} className="mood-filter-select">
           <option value="">How was your day?</option>
           {availableMoods.map((moodOption) => (
             <option key={moodOption} value={moodOption}>
@@ -276,11 +248,7 @@ export function MatchMyMoodSection({
           ))}
         </select>
 
-        <select
-          value={time}
-          onChange={(event) => onTimeChange(event.target.value)}
-          className="mood-filter-select"
-        >
+        <select value={time} onChange={(event) => onTimeChange(event.target.value)} className="mood-filter-select">
           <option value="">How much time do you have?</option>
           <option value="quick">⚡ Quick (15-30 min)</option>
           <option value="medium">⏰ Medium (1-2 hours)</option>
@@ -307,22 +275,19 @@ export function TuneYourNextPickSection({
   onTimeChange,
   onFindPerfectPlay,
   onSurpriseMe,
-  onRediscover
+  onRediscover,
 }) {
   return (
     <div className="perfect-play-section">
       <p className="section-eyebrow">Curation Tools</p>
-      <h2 className="perfect-play-title">
-        🎯 Tune Your Next Pick
-      </h2>
+      <h2 className="perfect-play-title">🎯 Tune Your Next Pick</h2>
       <p className="perfect-play-subtitle">
-        Use mood, genre, and time to narrow the shelf when you want something more specific than the curated picks above.
+        Use mood, genre, and time to narrow the shelf when you want something more specific than the curated picks
+        above.
       </p>
       <div className="filter-grid">
         <div className="filter-card">
-          <label className="filter-label">
-            😌 Mood
-          </label>
+          <label className="filter-label">😌 Mood</label>
           <select value={mood} onChange={(event) => onMoodChange(event.target.value)} className="filter-select">
             <option value="">Any Mood</option>
             {availableMoods.map((moodOption) => (
@@ -333,10 +298,12 @@ export function TuneYourNextPickSection({
           </select>
         </div>
         <div className="filter-card">
-          <label className="filter-label">
-            🎮 Genre
-          </label>
-          <select value={selectedGenre} onChange={(event) => onGenreChange(event.target.value)} className="filter-select">
+          <label className="filter-label">🎮 Genre</label>
+          <select
+            value={selectedGenre}
+            onChange={(event) => onGenreChange(event.target.value)}
+            className="filter-select"
+          >
             <option value="">Any Genre</option>
             {availableGenres.map((genreOption) => (
               <option key={genreOption} value={genreOption}>
@@ -346,9 +313,7 @@ export function TuneYourNextPickSection({
           </select>
         </div>
         <div className="filter-card">
-          <label className="filter-label">
-            ⏰ Time Available
-          </label>
+          <label className="filter-label">⏰ Time Available</label>
           <select value={time} onChange={(event) => onTimeChange(event.target.value)} className="filter-select">
             <option value="">Any Time</option>
             <option value="quick">⚡ Quick (15-30 min)</option>
@@ -380,7 +345,7 @@ export function TopRatedSection({
   platformIcons,
   formatPlaytime,
   onLaunchGame,
-  renderEndSessionButton
+  renderEndSessionButton,
 }) {
   if (!Array.isArray(games) || games.length === 0) {
     return null;
@@ -389,15 +354,17 @@ export function TopRatedSection({
   return (
     <div className="results-section">
       <div className="result-card">
-        <h3 className="result-title">
-          ⭐ Your Top Rated Games
-        </h3>
+        <h3 className="result-title">⭐ Your Top Rated Games</h3>
         <p style={{ color: 'var(--text)', opacity: 0.7, marginBottom: '18px' }}>
           Your own favourites, kept separate from Perfect Play so recommendations can stay focused on discovery.
         </p>
         <div className="game-grid">
           {games.map((game, index) => {
-            const { artwork: gameArtwork, fallbackSrc: gameArtworkFallback, placeholder: gamePlaceholder } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
+            const {
+              artwork: gameArtwork,
+              fallbackSrc: gameArtworkFallback,
+              placeholder: gamePlaceholder,
+            } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
 
             return (
               <div key={game.appid || game.name || `top-rated-${index}`} className={getGameCardClass(index)}>
@@ -417,9 +384,7 @@ export function TopRatedSection({
                     />
                   ) : (
                     <div className="game-placeholder home-grid-poster">
-                      <div className="platform-icon">
-                        {platformIcons[game.platform] || '❓'}
-                      </div>
+                      <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
                     </div>
                   )}
                 </div>
@@ -427,12 +392,12 @@ export function TopRatedSection({
                 <p className="game-platform">{game.platform}</p>
                 <div className="game-info">
                   <span className="game-genre">
-                    {game.genres && game.genres.length > 0 ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                    {game.genres && game.genres.length > 0
+                      ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie'
+                      : 'Indie'}
                   </span>
                   {formatPlaytime(game.time_played) && (
-                    <span className="game-playtime">
-                      {formatPlaytime(game.time_played)}
-                    </span>
+                    <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
                   )}
                 </div>
                 <div className="game-actions">
@@ -459,7 +424,7 @@ export function PerfectPlayResultSection({
   handleTrackedLaunch,
   renderEndSessionButton,
   renderRecommendationFeedback,
-  onClear
+  onClear,
 }) {
   if (!result) {
     return null;
@@ -467,13 +432,9 @@ export function PerfectPlayResultSection({
 
   return (
     <div className={`result-card ${result.error ? 'error' : ''}`}>
-      <h3 className="result-title">
-        🎯 Perfect Play Result
-      </h3>
+      <h3 className="result-title">🎯 Perfect Play Result</h3>
       {result.error ? (
-        <p className="result-error">
-          {result.error}
-        </p>
+        <p className="result-error">{result.error}</p>
       ) : (
         <div>
           <div className="game-grid">
@@ -483,7 +444,11 @@ export function PerfectPlayResultSection({
                 return null;
               }
 
-              const { artwork: gameArtwork, fallbackSrc: gameArtworkFallback, placeholder: gamePlaceholder } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
+              const {
+                artwork: gameArtwork,
+                fallbackSrc: gameArtworkFallback,
+                placeholder: gamePlaceholder,
+              } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
 
               const recMood = result?.tracking?.mood || entry?.explanation?.personaIdentity?.anchors?.[0] || null;
               const recGenre = result?.tracking?.genre || game?.genres?.[0] || null;
@@ -503,26 +468,20 @@ export function PerfectPlayResultSection({
                       />
                     ) : (
                       <div className="game-placeholder home-grid-poster">
-                        <div className="platform-icon">
-                          {platformIcons[game.platform] || '❓'}
-                        </div>
+                        <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
                       </div>
                     )}
                   </div>
-                  <h4 className="game-name">
-                    {game.name}
-                  </h4>
-                  <p className="game-platform">
-                    {game.platform}
-                  </p>
+                  <h4 className="game-name">{game.name}</h4>
+                  <p className="game-platform">{game.platform}</p>
                   <div className="game-info">
                     <span className="game-genre">
-                      {game.genres && game.genres.length > 0 ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                      {game.genres && game.genres.length > 0
+                        ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie'
+                        : 'Indie'}
                     </span>
                     {formatPlaytime(game.time_played) && (
-                      <span className="game-playtime">
-                        {formatPlaytime(game.time_played)}
-                      </span>
+                      <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
                     )}
                   </div>
                   <div className="game-actions">
@@ -530,7 +489,7 @@ export function PerfectPlayResultSection({
                       onClick={() => {
                         handleTrackedLaunch(game, {
                           feature: 'perfect_play',
-                          result
+                          result,
                         });
                       }}
                       className="game-launch-button primary"
@@ -569,7 +528,7 @@ export function SurpriseGameResultSection({
   handleTrackedLaunch,
   renderEndSessionButton,
   renderRecommendationFeedback,
-  onClear
+  onClear,
 }) {
   if (!result) {
     return null;
@@ -577,57 +536,44 @@ export function SurpriseGameResultSection({
 
   return (
     <div className={`result-card surprise ${result.error ? 'error' : ''}`}>
-      <h3 className="result-title">
-        🎲 Surprise Game
-      </h3>
+      <h3 className="result-title">🎲 Surprise Game</h3>
       {result.error ? (
-        <p className="result-error">
-          {result.error}
-        </p>
+        <p className="result-error">{result.error}</p>
       ) : game ? (
         <div style={{ textAlign: 'center' }}>
-          <IdentityMatchBadge game={game} mood={result?.tracking?.mood || game?.mood || null} genre={result?.tracking?.genre || game?.genres?.[0] || null} />
+          <IdentityMatchBadge
+            game={game}
+            mood={result?.tracking?.mood || game?.mood || null}
+            genre={result?.tracking?.genre || game?.genres?.[0] || null}
+          />
           <div className="game-card-image-wrapper">
             {artwork ? (
-              <LazyImage
-                src={artwork}
-                alt={game.name}
-                placeholder={placeholder}
-                className="game-image"
-              />
+              <LazyImage src={artwork} alt={game.name} placeholder={placeholder} className="game-image" />
             ) : (
               <div className="game-placeholder">
-                <div className="platform-icon">
-                  {platformIcons[game.platform] || '❓'}
-                </div>
+                <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
               </div>
             )}
           </div>
-          <h4 className="game-name">
-            {game.name}
-          </h4>
-          <p className="game-platform">
-            {game.platform}
-          </p>
+          <h4 className="game-name">{game.name}</h4>
+          <p className="game-platform">{game.platform}</p>
           <div className="game-info">
             <span className="game-genre">
-              {game.genres && game.genres.length > 0 ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
+              {game.genres && game.genres.length > 0
+                ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie'
+                : 'Indie'}
             </span>
             {formatPlaytime(game.time_played) && (
-              <span className="game-playtime">
-                {formatPlaytime(game.time_played)}
-              </span>
+              <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
             )}
           </div>
-          <p className="game-description">
-            {result.message || 'A wildcard pick to shake up your rotation.'}
-          </p>
+          <p className="game-description">{result.message || 'A wildcard pick to shake up your rotation.'}</p>
           <div className="game-actions">
             <button
               onClick={() => {
                 handleTrackedLaunch(game, {
                   feature: 'surprise',
-                  result
+                  result,
                 });
               }}
               className="game-launch-button accent"
@@ -655,7 +601,7 @@ export function RediscoverResultSection({
   handleTrackedLaunch,
   renderEndSessionButton,
   renderRecommendationFeedback,
-  onClose
+  onClose,
 }) {
   if (!result) {
     return null;
@@ -663,19 +609,13 @@ export function RediscoverResultSection({
 
   return (
     <div className={`result-card rediscover ${result.error ? 'error' : ''}`}>
-      <h3 className="result-title">
-        🔄 Rediscover Games
-      </h3>
+      <h3 className="result-title">🔄 Rediscover Games</h3>
       {result.error ? (
-        <p className="result-error">
-          {result.error}
-        </p>
+        <p className="result-error">{result.error}</p>
       ) : (
         <div>
           <div className="rediscover-header">
-            <p className="rediscover-message">
-              {result.message || 'A few overlooked favorites worth another run.'}
-            </p>
+            <p className="rediscover-message">{result.message || 'A few overlooked favorites worth another run.'}</p>
             <button onClick={onClose} className="close-button">
               ✖️ Close
             </button>
@@ -687,7 +627,11 @@ export function RediscoverResultSection({
                 return null;
               }
 
-              const { artwork: gameArtwork, fallbackSrc: gameArtworkFallback, placeholder: gamePlaceholder } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
+              const {
+                artwork: gameArtwork,
+                fallbackSrc: gameArtworkFallback,
+                placeholder: gamePlaceholder,
+              } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
 
               const recMood = result?.tracking?.mood || entry?.explanation?.personaIdentity?.anchors?.[0] || null;
               const recGenre = result?.tracking?.genre || game?.genres?.[0] || null;
@@ -707,26 +651,20 @@ export function RediscoverResultSection({
                       />
                     ) : (
                       <div className="game-placeholder home-grid-poster">
-                        <div className="platform-icon">
-                          {platformIcons[game.platform] || '❓'}
-                        </div>
+                        <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
                       </div>
                     )}
                   </div>
-                  <h4 className="game-name">
-                    {game.name}
-                  </h4>
-                  <p className="game-platform">
-                    {game.platform}
-                  </p>
+                  <h4 className="game-name">{game.name}</h4>
+                  <p className="game-platform">{game.platform}</p>
                   <div className="game-info">
                     <span className="game-genre">
-                      {game.genres && game.genres.length > 0 ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                      {game.genres && game.genres.length > 0
+                        ? game.genres.filter((genre) => genre !== 'Unknown')[0] || 'Indie'
+                        : 'Indie'}
                     </span>
                     {formatPlaytime(game.time_played) && (
-                      <span className="game-playtime">
-                        {formatPlaytime(game.time_played)}
-                      </span>
+                      <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
                     )}
                   </div>
                   <div className="game-actions">
@@ -734,7 +672,7 @@ export function RediscoverResultSection({
                       onClick={() => {
                         handleTrackedLaunch(game, {
                           feature: 'rediscover',
-                          result
+                          result,
                         });
                       }}
                       className="game-launch-button secondary"
@@ -762,7 +700,9 @@ export function RecommendationResultsSection({ children, hasResults }) {
   return (
     <div className="results-section">
       <div style={{ marginBottom: '16px' }}>
-        <p className="section-eyebrow" style={{ marginBottom: '6px' }}>Recommendation Results</p>
+        <p className="section-eyebrow" style={{ marginBottom: '6px' }}>
+          Recommendation Results
+        </p>
         <h3 className="result-title" style={{ marginBottom: '6px' }}>
           Here&apos;s what GamePilot came back with
         </h3>

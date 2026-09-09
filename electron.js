@@ -7,9 +7,9 @@ const SessionDatabase = require('./sessionDatabase');
 const si = require('systeminformation');
 const discordPresence = require('./discordPresence');
 
- const APP_DISPLAY_NAME = 'GamePilot';
- app.setName(APP_DISPLAY_NAME);
- app.setPath('userData', path.join(app.getPath('appData'), APP_DISPLAY_NAME));
+const APP_DISPLAY_NAME = 'GamePilot';
+app.setName(APP_DISPLAY_NAME);
+app.setPath('userData', path.join(app.getPath('appData'), APP_DISPLAY_NAME));
 
 // Make shell globally available
 global.shell = shell;
@@ -47,17 +47,27 @@ const KNOWN_LAUNCHER_PROCESS_NAMES = new Set([
   'gamingservices.exe',
   'xboxpcapp.exe',
   'xboxapp.exe',
-  'xboxgamebar.exe'
+  'xboxgamebar.exe',
 ]);
 
 // Launcher/utility apps that can end up in the scanned library as if they were
 // games. They must never be watched for play sessions — a running launcher is
 // not playtime.
 const NON_GAME_WATCH_TITLES = new Set([
-  'gog galaxy', 'epic games launcher', 'ubisoft connect', 'battle.net',
-  'ea app', 'origin', 'riot client', 'rockstar games launcher',
-  'rockstar social club', 'xbox game bar', 'amazon games', 'itch', 'playnite',
-  'steamworks common redistributables'
+  'gog galaxy',
+  'epic games launcher',
+  'ubisoft connect',
+  'battle.net',
+  'ea app',
+  'origin',
+  'riot client',
+  'rockstar games launcher',
+  'rockstar social club',
+  'xbox game bar',
+  'amazon games',
+  'itch',
+  'playnite',
+  'steamworks common redistributables',
 ]);
 const APP_PREFERENCES_FILE = 'preferences.json';
 
@@ -99,14 +109,14 @@ const applyStartupLaunchPreference = (enabled) => {
     return {
       success: false,
       supported: false,
-      enabled: false
+      enabled: false,
     };
   }
 
   try {
     app.setLoginItemSettings({
       openAtLogin: Boolean(enabled),
-      openAsHidden: false
+      openAsHidden: false,
     });
 
     const loginItemSettings = app.getLoginItemSettings();
@@ -114,7 +124,7 @@ const applyStartupLaunchPreference = (enabled) => {
     return {
       success: true,
       supported: true,
-      enabled: Boolean(loginItemSettings.openAtLogin)
+      enabled: Boolean(loginItemSettings.openAtLogin),
     };
   } catch (error) {
     console.error('❌ Failed to apply startup launch preference:', error);
@@ -122,7 +132,7 @@ const applyStartupLaunchPreference = (enabled) => {
       success: false,
       supported: true,
       enabled: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
@@ -133,7 +143,7 @@ const getStartupLaunchSettings = () => {
       supported: false,
       enabled: false,
       persisted: false,
-      isPackaged: app.isPackaged
+      isPackaged: app.isPackaged,
     };
   }
 
@@ -144,18 +154,20 @@ const getStartupLaunchSettings = () => {
     supported: true,
     enabled: Boolean(loginItemSettings.openAtLogin),
     persisted: storedEnabled,
-    isPackaged: app.isPackaged
+    isPackaged: app.isPackaged,
   };
 };
 
-const normalizeMatcherValue = (value = '') => String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+const normalizeMatcherValue = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
 
-const tokenizeMatcherValue = (value = '') => (
+const tokenizeMatcherValue = (value = '') =>
   String(value)
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter(token => token.length >= 3)
-);
+    .filter((token) => token.length >= 3);
 
 const getProcessList = async () => {
   try {
@@ -171,7 +183,9 @@ const buildMonitorMatcher = (game = {}) => {
   const rawExecutable = `${game.executable || ''}`.trim();
   const normalizedExecutable = rawExecutable.toLowerCase();
   const protocolExecutable = /^[a-z]+:\/\//i.test(rawExecutable) || normalizedExecutable.startsWith('shell:');
-  const resolvedExecutablePath = `${game.executablePath || (!protocolExecutable ? rawExecutable : '') || ''}`.trim().toLowerCase();
+  const resolvedExecutablePath = `${game.executablePath || (!protocolExecutable ? rawExecutable : '') || ''}`
+    .trim()
+    .toLowerCase();
   const installDir = `${game.installDir || game.path || ''}`.trim().toLowerCase();
   const launchId = `${game.launchId || game.epicAppName || ''}`.trim().toLowerCase();
   const aumid = `${game.aumid || ''}`.trim().toLowerCase();
@@ -186,7 +200,7 @@ const buildMonitorMatcher = (game = {}) => {
     aumid,
     appid,
     nameSlug: normalizeMatcherValue(gameName),
-    nameTokens: Array.from(new Set(tokenizeMatcherValue(gameName)))
+    nameTokens: Array.from(new Set(tokenizeMatcherValue(gameName))),
   };
 };
 
@@ -195,7 +209,7 @@ const getMonitorPayload = (monitor, extra = {}) => ({
   gameName: monitor.game.name,
   appid: typeof monitor.game.appid !== 'undefined' ? monitor.game.appid : null,
   platform: monitor.game.platform || null,
-  ...extra
+  ...extra,
 });
 
 const sendMonitorEvent = (monitor, channel, extra = {}) => {
@@ -222,20 +236,12 @@ const processMatchesMonitor = (processInfo, monitor) => {
   const matcher = monitor.matcher;
 
   const exactExecutablePathMatch = Boolean(
-    matcher.resolvedExecutablePath
-    && processPath
-    && processPath === matcher.resolvedExecutablePath
+    matcher.resolvedExecutablePath && processPath && processPath === matcher.resolvedExecutablePath
   );
   const exactExecutableNameMatch = Boolean(
-    matcher.executableName
-    && processName
-    && processName === matcher.executableName
+    matcher.executableName && processName && processName === matcher.executableName
   );
-  const installDirMatch = Boolean(
-    matcher.installDir
-    && processPath
-    && processPath.startsWith(matcher.installDir)
-  );
+  const installDirMatch = Boolean(matcher.installDir && processPath && processPath.startsWith(matcher.installDir));
   const appIdMatch = Boolean(matcher.appid && commandLine.includes(matcher.appid));
   const launchIdMatch = Boolean(matcher.launchId && commandLine.includes(matcher.launchId));
   const aumidMatch = Boolean(matcher.aumid && commandLine.includes(matcher.aumid));
@@ -258,12 +264,10 @@ const processMatchesMonitor = (processInfo, monitor) => {
   const normalizedCommandLine = normalizeMatcherValue(commandLine);
 
   if (
-    matcher.nameSlug
-    && (
-      normalizedProcessName.includes(matcher.nameSlug)
-      || normalizedProcessPath.includes(matcher.nameSlug)
-      || normalizedCommandLine.includes(matcher.nameSlug)
-    )
+    matcher.nameSlug &&
+    (normalizedProcessName.includes(matcher.nameSlug) ||
+      normalizedProcessPath.includes(matcher.nameSlug) ||
+      normalizedCommandLine.includes(matcher.nameSlug))
   ) {
     return true;
   }
@@ -272,11 +276,9 @@ const processMatchesMonitor = (processInfo, monitor) => {
     return false;
   }
 
-  return matcher.nameTokens.every(token => (
-    processName.includes(token)
-    || processPath.includes(token)
-    || commandLine.includes(token)
-  ));
+  return matcher.nameTokens.every(
+    (token) => processName.includes(token) || processPath.includes(token) || commandLine.includes(token)
+  );
 };
 
 const stopGameMonitor = (monitorId, options = {}) => {
@@ -314,22 +316,18 @@ const pollGameMonitor = async (monitorId) => {
 
   try {
     const processList = await getProcessList();
-    const matchingProcesses = processList.filter(processInfo => processMatchesMonitor(processInfo, monitor));
+    const matchingProcesses = processList.filter((processInfo) => processMatchesMonitor(processInfo, monitor));
 
     if (matchingProcesses.length > 0) {
       monitor.trackedPids = new Set(
-        matchingProcesses
-          .map(({ pid }) => Number(pid))
-          .filter(pid => Number.isFinite(pid) && pid > 0)
+        matchingProcesses.map(({ pid }) => Number(pid)).filter((pid) => Number.isFinite(pid) && pid > 0)
       );
       monitor.lastSeenAt = Date.now();
 
       if (!monitor.detectedAt) {
         monitor.detectedAt = monitor.lastSeenAt;
         sendMonitorEvent(monitor, 'game-started', {
-          detectedProcesses: matchingProcesses
-            .map(processInfo => processInfo.name)
-            .filter(Boolean)
+          detectedProcesses: matchingProcesses.map((processInfo) => processInfo.name).filter(Boolean),
         });
       }
 
@@ -356,7 +354,7 @@ const pollGameMonitor = async (monitorId) => {
 };
 
 const stopAllGameMonitors = () => {
-  Array.from(activeGameMonitors.keys()).forEach(monitorId => {
+  Array.from(activeGameMonitors.keys()).forEach((monitorId) => {
     stopGameMonitor(monitorId, { reason: 'app-shutdown' });
   });
 };
@@ -367,7 +365,7 @@ if (process.env.ELECTRON_ENABLE_RELOADER === 'true') {
     require('electron-reloader')(module, {
       debug: false,
       watchRenderer: false,
-      ignore: [/node_modules/, /build/, /dist/, /backups/, /gamepilot-source.*\.zip$/]
+      ignore: [/node_modules/, /build/, /dist/, /backups/, /gamepilot-source.*\.zip$/],
     });
   } catch (_) {
     console.log('Electron reloader not available in production');
@@ -383,10 +381,10 @@ const collectSystemInfo = async () => {
     si.diskLayout(),
     si.memLayout(),
     si.fsSize(),
-    si.blockDevices()
+    si.blockDevices(),
   ]);
 
-  const primaryGpu = graphics.controllers.find(controller => !controller.integrated) || graphics.controllers[0] || {};
+  const primaryGpu = graphics.controllers.find((controller) => !controller.integrated) || graphics.controllers[0] || {};
 
   // Build a lookup from mount/fs path -> filesystem stats
   const fsMap = new Map();
@@ -418,7 +416,7 @@ const collectSystemInfo = async () => {
       if (!/^[A-Z]:$/.test(mountUpper)) continue;
 
       const bdIndex = getDiskIndex(bd.physical);
-      const physicalDisk = disks.find(d => {
+      const physicalDisk = disks.find((d) => {
         if (!d.device) return false;
         const dIndex = getDiskIndex(d.device);
         return dIndex !== null && bdIndex !== null && dIndex === bdIndex;
@@ -429,7 +427,8 @@ const collectSystemInfo = async () => {
         const diskName = physicalDisk.name || physicalDisk.model || '';
         const diskModel = physicalDisk.model || '';
         const isNVMe = /nvme/i.test(diskInterface) || /nvme/i.test(diskName) || /nvme/i.test(diskModel);
-        const isSSD = isNVMe || /ssd/i.test(physicalDisk.type || '') || /ssd/i.test(diskInterface) || /ssd/i.test(diskName);
+        const isSSD =
+          isNVMe || /ssd/i.test(physicalDisk.type || '') || /ssd/i.test(diskInterface) || /ssd/i.test(diskName);
 
         driveTypeMap[mountUpper] = {
           type: isNVMe ? 'NVMe' : isSSD ? 'SSD' : 'HDD',
@@ -437,7 +436,7 @@ const collectSystemInfo = async () => {
           isSSD,
           name: physicalDisk.name || physicalDisk.model || 'Unknown Drive',
           model: physicalDisk.model || physicalDisk.name || '',
-          size: physicalDisk.size ? Math.round(physicalDisk.size / (1024 ** 3)) : 0
+          size: physicalDisk.size ? Math.round(physicalDisk.size / 1024 ** 3) : 0,
         };
       }
     }
@@ -452,12 +451,12 @@ const collectSystemInfo = async () => {
       if (driveTypeMap[letter]) continue; // already resolved above
 
       const fsSizeBytes = fs.size || 0;
-      const fsSizeGB = Math.round(fsSizeBytes / (1024 ** 3));
+      const fsSizeGB = Math.round(fsSizeBytes / 1024 ** 3);
 
       let bestDisk = null;
       let bestDiff = Infinity;
       for (const disk of disks) {
-        const diskSizeGB = disk.size ? Math.round(disk.size / (1024 ** 3)) : 0;
+        const diskSizeGB = disk.size ? Math.round(disk.size / 1024 ** 3) : 0;
         // A partition can never be larger than its parent disk, so disqualify
         // physical disks that are smaller than the logical drive.
         if (diskSizeGB < fsSizeGB) continue;
@@ -481,7 +480,7 @@ const collectSystemInfo = async () => {
           isSSD,
           name: bestDisk.name || bestDisk.model || 'Unknown Drive',
           model: bestDisk.model || bestDisk.name || '',
-          size: bestDisk.size ? Math.round(bestDisk.size / (1024 ** 3)) : 0
+          size: bestDisk.size ? Math.round(bestDisk.size / 1024 ** 3) : 0,
         };
       } else {
         // Last resort: unknown but keep the letter so the mapper doesn’t bail
@@ -491,7 +490,7 @@ const collectSystemInfo = async () => {
           isSSD: false,
           name: fs.fs,
           model: fs.fs,
-          size: fsSizeGB
+          size: fsSizeGB,
         };
       }
     }
@@ -531,16 +530,16 @@ const collectSystemInfo = async () => {
       const fsStat = fsMap.get(mp.toLowerCase()) || fsMap.get(mp.toLowerCase().replace(/\\/g, '')) || null;
       partitions.push({
         mount: mp,
-        size: fsStat ? Math.round(fsStat.size / (1024 ** 3)) : 0,
-        free: fsStat ? Math.round(fsStat.available / (1024 ** 3)) : 0,
-        used: fsStat ? Math.round(fsStat.used / (1024 ** 3)) : 0,
-        usePercent: fsStat ? Math.round(fsStat.use) : 0
+        size: fsStat ? Math.round(fsStat.size / 1024 ** 3) : 0,
+        free: fsStat ? Math.round(fsStat.available / 1024 ** 3) : 0,
+        used: fsStat ? Math.round(fsStat.used / 1024 ** 3) : 0,
+        usePercent: fsStat ? Math.round(fsStat.use) : 0,
       });
     }
 
     return {
       type,
-      size: disk.size ? Math.round(disk.size / (1024 ** 3)) : 0,
+      size: disk.size ? Math.round(disk.size / 1024 ** 3) : 0,
       name,
       model: model || name,
       vendor,
@@ -548,35 +547,37 @@ const collectSystemInfo = async () => {
       mount: Array.from(ownedMounts)[0] || '',
       isSSD,
       isNVMe,
-      partitions
+      partitions,
     };
   };
 
   const storage = Array.isArray(disks) ? disks.map(normalizeDrive) : [];
 
-  const ramModules = Array.isArray(memModules) ? memModules.map(module => ({
-    sizeGB: module.size ? Math.round(module.size / (1024 ** 3)) : 0,
-    type: module.type || module.partNum || module.serialNum || '',
-    clockSpeed: module.clockSpeed || module.frequency || module.minVoltage || 0,
-    manufacturer: module.manufacturer || '',
-    partNum: module.partNum || '',
-    serialNum: module.serialNum || '',
-    formFactor: module.formFactor || '',
-    bank: module.bank || '',
-    voltageConfigured: module.voltageConfigured || module.voltage || null
-  })) : [];
+  const ramModules = Array.isArray(memModules)
+    ? memModules.map((module) => ({
+        sizeGB: module.size ? Math.round(module.size / 1024 ** 3) : 0,
+        type: module.type || module.partNum || module.serialNum || '',
+        clockSpeed: module.clockSpeed || module.frequency || module.minVoltage || 0,
+        manufacturer: module.manufacturer || '',
+        partNum: module.partNum || '',
+        serialNum: module.serialNum || '',
+        formFactor: module.formFactor || '',
+        bank: module.bank || '',
+        voltageConfigured: module.voltageConfigured || module.voltage || null,
+      }))
+    : [];
 
-  const detectedRamType = ramModules.find(m => m.type)?.type || memory.type || 'Unknown';
+  const detectedRamType = ramModules.find((m) => m.type)?.type || memory.type || 'Unknown';
   const detectedRamSpeed = (() => {
-    const moduleSpeeds = ramModules.map(m => m.clockSpeed).filter(Boolean);
+    const moduleSpeeds = ramModules.map((m) => m.clockSpeed).filter(Boolean);
     if (moduleSpeeds.length > 0) {
       return Math.round(moduleSpeeds.reduce((sum, speed) => sum + speed, 0) / moduleSpeeds.length);
     }
     return memory.clockSpeed || memory.speed || 0;
   })();
 
-  const ramTotalGb = memory.total ? Math.round(memory.total / (1024 ** 3)) : 0;
-  const ramFreeGb = memory.free ? Math.round(memory.free / (1024 ** 3)) : 0;
+  const ramTotalGb = memory.total ? Math.round(memory.total / 1024 ** 3) : 0;
+  const ramFreeGb = memory.free ? Math.round(memory.free / 1024 ** 3) : 0;
 
   return {
     cpu: {
@@ -591,14 +592,14 @@ const collectSystemInfo = async () => {
       processors: cpu.processors,
       socket: cpu.socket,
       family: cpu.family,
-      stepping: cpu.stepping
+      stepping: cpu.stepping,
     },
     gpu: {
       model: primaryGpu.model || 'Unknown GPU',
       vendor: primaryGpu.vendor || primaryGpu.subVendor || 'Unknown',
       vram: primaryGpu.vram || 0,
       vramGB: primaryGpu.vram ? Math.round(primaryGpu.vram / 1024) : 0,
-      bus: primaryGpu.bus || 'Unknown'
+      bus: primaryGpu.bus || 'Unknown',
     },
     ram: {
       total: ramTotalGb,
@@ -606,7 +607,7 @@ const collectSystemInfo = async () => {
       used: ramTotalGb && ramFreeGb ? ramTotalGb - ramFreeGb : 0,
       type: detectedRamType,
       speed: detectedRamSpeed,
-      modules: ramModules
+      modules: ramModules,
     },
     storage,
     os: {
@@ -614,32 +615,45 @@ const collectSystemInfo = async () => {
       distro: osInfo.distro,
       release: osInfo.release,
       arch: osInfo.arch,
-      build: osInfo.build
+      build: osInfo.build,
     },
     driveTypeMap,
-    logicalDrives: Array.isArray(fsSizes) ? fsSizes.map(fs => ({
-      mount: process.platform === 'win32' ? fs.fs : (fs.mount || fs.fs),
-      fsType: fs.type,
-      sizeGB: fs.size ? Math.round(fs.size / (1024 ** 3)) : 0,
-      usedGB: fs.used ? Math.round(fs.used / (1024 ** 3)) : 0,
-      freeGB: fs.available ? Math.round(fs.available / (1024 ** 3)) : 0,
-      usePercent: Math.round(fs.use || 0)
-    })).filter((drive) => process.platform === 'win32'
-      ? /^[A-Z]:$/i.test(drive.mount)
-      : String(drive.mount || '').startsWith('/') && !['tmpfs', 'devtmpfs', 'squashfs', 'overlay'].includes(String(drive.fsType || '').toLowerCase())) : [],
-    lastUpdated: Date.now()
+    logicalDrives: Array.isArray(fsSizes)
+      ? fsSizes
+          .map((fs) => ({
+            mount: process.platform === 'win32' ? fs.fs : fs.mount || fs.fs,
+            fsType: fs.type,
+            sizeGB: fs.size ? Math.round(fs.size / 1024 ** 3) : 0,
+            usedGB: fs.used ? Math.round(fs.used / 1024 ** 3) : 0,
+            freeGB: fs.available ? Math.round(fs.available / 1024 ** 3) : 0,
+            usePercent: Math.round(fs.use || 0),
+          }))
+          .filter((drive) =>
+            process.platform === 'win32'
+              ? /^[A-Z]:$/i.test(drive.mount)
+              : String(drive.mount || '').startsWith('/') &&
+                !['tmpfs', 'devtmpfs', 'squashfs', 'overlay'].includes(String(drive.fsType || '').toLowerCase())
+          )
+      : [],
+    lastUpdated: Date.now(),
   };
 };
 
-ipcMain.handle('session-store-initialize', async (_event, payload = {}) => sessionDatabase.initializeFromLegacy(payload));
-ipcMain.handle('session-store-save-active', async (_event, sessions = {}) => sessionDatabase.saveActiveSessions(sessions));
+ipcMain.handle('session-store-initialize', async (_event, payload = {}) =>
+  sessionDatabase.initializeFromLegacy(payload)
+);
+ipcMain.handle('session-store-save-active', async (_event, sessions = {}) =>
+  sessionDatabase.saveActiveSessions(sessions)
+);
 ipcMain.handle('session-store-settle', async (_event, payload = {}) => {
   if (!payload?.entry || !payload?.activeSessions) {
     throw new Error('Invalid session settlement payload');
   }
   return sessionDatabase.settleSession(payload.entry, payload.activeSessions);
 });
-ipcMain.handle('session-store-replace-history', async (_event, history = []) => sessionDatabase.replaceHistory(history));
+ipcMain.handle('session-store-replace-history', async (_event, history = []) =>
+  sessionDatabase.replaceHistory(history)
+);
 ipcMain.handle('session-store-clear', async () => sessionDatabase.clear());
 
 ipcMain.handle('get-system-info', async () => {
@@ -664,20 +678,19 @@ console.log('🔧 Setting up IPC handlers for game launching...');
 
 ipcMain.on('launch-game', async (event, game) => {
   console.log('🚀 Launching game:', game.name, 'Platform:', game.platform);
-  
+
   try {
     // Use the new GameLauncher class
     const result = await gameLauncher.launchGame(game);
-    
+
     // Send result back to renderer
     event.reply('launch-game-result', result);
     console.log('✅ Launch result:', result);
-    
   } catch (error) {
     console.error('❌ Launch error:', error);
-    event.reply('launch-game-result', { 
-      success: false, 
-      message: error.message 
+    event.reply('launch-game-result', {
+      success: false,
+      message: error.message,
     });
   }
 });
@@ -691,7 +704,7 @@ ipcMain.handle('launch-game', async (_event, game) => {
     console.error('❌ Launch error:', error);
     return {
       success: false,
-      message: error.message
+      message: error.message,
     };
   }
 });
@@ -714,8 +727,8 @@ ipcMain.handle('scan-game-libraries', async (_event, options = {}) => {
     return {
       games: [],
       debug: {
-        error: error?.message || 'Unknown scan error'
-      }
+        error: error?.message || 'Unknown scan error',
+      },
     };
   }
 });
@@ -736,7 +749,8 @@ ipcMain.handle('get-scan-debug', async () => global.lastScanDebug || null);
 // ---------------------------------------------------------------------------
 let cachedHltbBleed = { token: null, hpKey: null, hpVal: null, expires: 0 };
 
-const HLTB_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36';
+const HLTB_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36';
 const HLTB_DEBUG = process.env.GAMEPILOT_HLTB_DEBUG === 'true';
 
 const hltbDebug = (...args) => {
@@ -745,48 +759,52 @@ const hltbDebug = (...args) => {
   }
 };
 
-const sanitizeHltbQuery = (value) => String(value || '')
-  .replace(/Ôäó/g, '™')
-  .replace(/┬«/g, '®')
-  .replace(/┬®/g, '©')
-  .replace(/ÔÇÖ/g, '’')
-  .replace(/ÔÇ£|ÔÇØ/g, '"')
-  .replace(/ÔÇô|ÔÇö/g, '-')
-  .replace(/\s+/g, ' ')
-  .trim();
+const sanitizeHltbQuery = (value) =>
+  String(value || '')
+    .replace(/Ôäó/g, '™')
+    .replace(/┬«/g, '®')
+    .replace(/┬®/g, '©')
+    .replace(/ÔÇÖ/g, '’')
+    .replace(/ÔÇ£|ÔÇØ/g, '"')
+    .replace(/ÔÇô|ÔÇö/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-const httpsRequest = (url, body = null, headers = {}) => new Promise((resolve, reject) => {
-  let req;
-  try {
-    req = electron.net.request({ method: body ? 'POST' : 'GET', url });
-  } catch (err) {
-    return reject(err);
-  }
+const httpsRequest = (url, body = null, headers = {}) =>
+  new Promise((resolve, reject) => {
+    let req;
+    try {
+      req = electron.net.request({ method: body ? 'POST' : 'GET', url });
+    } catch (err) {
+      return reject(err);
+    }
 
-  const chunks = [];
-  req.on('response', (res) => {
-    res.on('data', (chunk) => chunks.push(chunk));
-    res.on('end', () => {
-      const data = Buffer.concat(chunks).toString('utf8');
-      resolve({ status: res.statusCode, headers: res.headers, body: data });
+    const chunks = [];
+    req.on('response', (res) => {
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        const data = Buffer.concat(chunks).toString('utf8');
+        resolve({ status: res.statusCode, headers: res.headers, body: data });
+      });
+      res.on('error', (err) => reject(err));
     });
-    res.on('error', (err) => reject(err));
+    req.on('error', (err) => reject(err));
+
+    const timer = setTimeout(() => {
+      try {
+        req.abort();
+      } catch {}
+      reject(new Error('httpsRequest timeout'));
+    }, 8000);
+    req.on('close', () => clearTimeout(timer));
+
+    if (headers) {
+      Object.entries(headers).forEach(([k, v]) => req.setHeader(k, v));
+    }
+
+    if (body) req.write(body);
+    req.end();
   });
-  req.on('error', (err) => reject(err));
-
-  const timer = setTimeout(() => {
-    try { req.abort(); } catch {}
-    reject(new Error('httpsRequest timeout'));
-  }, 8000);
-  req.on('close', () => clearTimeout(timer));
-
-  if (headers) {
-    Object.entries(headers).forEach(([k, v]) => req.setHeader(k, v));
-  }
-
-  if (body) req.write(body);
-  req.end();
-});
 
 // Step 1: fetch the rotating auth token + hpKey/hpVal pair from HLTB.
 const fetchHltbBleedInit = async () => {
@@ -795,22 +813,22 @@ const fetchHltbBleedInit = async () => {
     return { token: cachedHltbBleed.token, hpKey: cachedHltbBleed.hpKey, hpVal: cachedHltbBleed.hpVal };
   }
 
-  const init = await httpsRequest(
-    `https://howlongtobeat.com/api/bleed/init?t=${now}`,
-    null,
-    {
-      'User-Agent': HLTB_UA,
-      'Accept': 'application/json',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Referer': 'https://howlongtobeat.com/',
-      'Origin': 'https://howlongtobeat.com'
-    }
-  );
+  const init = await httpsRequest(`https://howlongtobeat.com/api/bleed/init?t=${now}`, null, {
+    'User-Agent': HLTB_UA,
+    Accept: 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+    Referer: 'https://howlongtobeat.com/',
+    Origin: 'https://howlongtobeat.com',
+  });
   if (init.status !== 200) {
     throw new Error(`HLTB bleed/init HTTP ${init.status}`);
   }
   let parsed;
-  try { parsed = JSON.parse(init.body); } catch { throw new Error('HLTB bleed/init parse failed'); }
+  try {
+    parsed = JSON.parse(init.body);
+  } catch {
+    throw new Error('HLTB bleed/init parse failed');
+  }
   if (!parsed || !parsed.token || !parsed.hpKey || !parsed.hpVal) {
     throw new Error('HLTB bleed/init missing fields');
   }
@@ -830,9 +848,7 @@ ipcMain.handle('hltb-search', async (_event, query) => {
     // Strip trademark symbols and punctuation from each term so HLTB's
     // search engine isn't tripped up by trailing colons or ™ symbols.
     const rawTerms = cleanedQuery.trim().split(/\s+/);
-    const cleanTerms = rawTerms.map((t) =>
-      t.replace(/[\u00ae\u2122\u00a9:;,.!?&\-–—]/g, '')
-    ).filter(Boolean);
+    const cleanTerms = rawTerms.map((t) => t.replace(/[\u00ae\u2122\u00a9:;,.!?&\-–—]/g, '')).filter(Boolean);
     const payloadBody = {
       searchType: 'games',
       searchTerms: cleanTerms.length ? cleanTerms : rawTerms,
@@ -840,35 +856,36 @@ ipcMain.handle('hltb-search', async (_event, query) => {
       size: 20,
       searchOptions: {
         games: {
-          userId: 0, platform: '', sortCategory: 'popular',
-          rangeCategory: 'main', rangeTime: { min: null, max: null },
+          userId: 0,
+          platform: '',
+          sortCategory: 'popular',
+          rangeCategory: 'main',
+          rangeTime: { min: null, max: null },
           gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
           rangeYear: { min: '', max: '' },
-          modifier: ''
+          modifier: '',
         },
         users: { sortCategory: 'postcount' },
         lists: { sortCategory: 'follows' },
-        filter: '', sort: 0, randomizer: 0
+        filter: '',
+        sort: 0,
+        randomizer: 0,
       },
       useCache: true,
-      [hpKey]: hpVal
+      [hpKey]: hpVal,
     };
     const payload = JSON.stringify(payloadBody);
-    const res = await httpsRequest(
-      'https://howlongtobeat.com/api/bleed',
-      payload,
-      {
-        'User-Agent': HLTB_UA,
-        'Content-Type': 'application/json',
-        'Accept': '*/*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Origin': 'https://howlongtobeat.com',
-        'Referer': 'https://howlongtobeat.com/',
-        'x-auth-token': token,
-        'x-hp-key': hpKey,
-        'x-hp-val': hpVal
-      }
-    );
+    const res = await httpsRequest('https://howlongtobeat.com/api/bleed', payload, {
+      'User-Agent': HLTB_UA,
+      'Content-Type': 'application/json',
+      Accept: '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      Origin: 'https://howlongtobeat.com',
+      Referer: 'https://howlongtobeat.com/',
+      'x-auth-token': token,
+      'x-hp-key': hpKey,
+      'x-hp-val': hpVal,
+    });
 
     if (res.status !== 200) {
       // Invalidate cached bleed init so next call re-fetches.
@@ -877,7 +894,11 @@ ipcMain.handle('hltb-search', async (_event, query) => {
       return { ok: false, error: `http-${res.status}` };
     }
     let parsed;
-    try { parsed = JSON.parse(res.body); } catch { return { ok: false, error: 'parse' }; }
+    try {
+      parsed = JSON.parse(res.body);
+    } catch {
+      return { ok: false, error: 'parse' };
+    }
     const data = parsed && Array.isArray(parsed.data) ? parsed.data : [];
     const results = data.map((g) => ({
       id: g.game_id,
@@ -890,7 +911,7 @@ ipcMain.handle('hltb-search', async (_event, query) => {
       completionistSeconds: g.comp_100 || 0,
       allStylesSeconds: g.comp_all || 0,
       releaseYear: g.release_world || null,
-      reviewScore: g.review_score || null
+      reviewScore: g.review_score || null,
     }));
     hltbDebug(`[HLTB] found ${results.length} result(s) for "${cleanedQuery}"`);
     return { ok: true, results };
@@ -907,18 +928,15 @@ ipcMain.handle('hltb-search', async (_event, query) => {
 // the page source. The renderer extracts save/config/controller bits locally.
 // ---------------------------------------------------------------------------
 const PCGW_HOST = 'www.pcgamingwiki.com';
-const PCGW_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 GamePilot/1.4 (+local-first librarian app)';
+const PCGW_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 GamePilot/1.4 (+local-first librarian app)';
 
 const pcgwApiGet = async (params) => {
   const qs = new URLSearchParams({ format: 'json', ...params }).toString();
-  const res = await httpsRequest(
-    `https://${PCGW_HOST}/w/api.php?${qs}`,
-    null,
-    {
-      'User-Agent': PCGW_UA,
-      'Accept': 'application/json'
-    }
-  );
+  const res = await httpsRequest(`https://${PCGW_HOST}/w/api.php?${qs}`, null, {
+    'User-Agent': PCGW_UA,
+    Accept: 'application/json',
+  });
   if (res.status !== 200) throw new Error(`pcgw-http-${res.status}`);
   return JSON.parse(res.body);
 };
@@ -930,15 +948,17 @@ const normalizePcgwTitle = (raw) => {
   let t = String(raw)
     .replace(/[\u00ae\u2122\u00a9]/g, '')
     .replace(/\s*\((?:steam|epic|gog|origin|ea app|ubisoft|xbox|microsoft store|pc|windows|\d{4})\)\s*/gi, ' ')
-    .replace(/[:\-\u2013\u2014]\s*(?:game of the year(?:\s+edition)?|goty(?:\s+edition)?|definitive edition|complete edition|deluxe edition|gold edition|ultimate edition|enhanced edition|legendary edition|director'?s cut|anniversary edition|remastered(?:\s+edition)?|remaster|hd|hd remaster|standard edition|special edition)\s*$/gi, '')
+    .replace(
+      /[:\-\u2013\u2014]\s*(?:game of the year(?:\s+edition)?|goty(?:\s+edition)?|definitive edition|complete edition|deluxe edition|gold edition|ultimate edition|enhanced edition|legendary edition|director'?s cut|anniversary edition|remastered(?:\s+edition)?|remaster|hd|hd remaster|standard edition|special edition)\s*$/gi,
+      ''
+    )
     .replace(/\s+remastered\s*$/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
   return t;
 };
 
-const buildPageUrl = (pageTitle) =>
-  `https://${PCGW_HOST}/wiki/${encodeURIComponent(pageTitle.replace(/ /g, '_'))}`;
+const buildPageUrl = (pageTitle) => `https://${PCGW_HOST}/wiki/${encodeURIComponent(pageTitle.replace(/ /g, '_'))}`;
 
 // Resolve a page title via the Cargo Infobox_game table using a Steam AppID.
 // Returns the canonical page title or null.
@@ -950,7 +970,7 @@ const pcgwResolveBySteamAppId = async (appid) => {
       tables: 'Infobox_game',
       fields: 'Infobox_game._pageName=PageName',
       where: `Infobox_game.Steam_AppID HOLDS "${String(appid).replace(/"/g, '')}"`,
-      limit: '1'
+      limit: '1',
     });
     const row = data?.cargoquery?.[0]?.title;
     const page = row?.PageName || row?.pageName || row?.['Page Name'];
@@ -967,7 +987,7 @@ const pcgwOpenSearch = async (query) => {
     action: 'opensearch',
     search: query,
     limit: '5',
-    namespace: '0'
+    namespace: '0',
   });
   const titles = Array.isArray(search) && Array.isArray(search[1]) ? search[1] : [];
   const urls = Array.isArray(search) && Array.isArray(search[3]) ? search[3] : [];
@@ -979,7 +999,7 @@ const pcgwFetchWikitext = async (pageTitle) => {
     action: 'parse',
     page: pageTitle,
     prop: 'wikitext',
-    redirects: '1'
+    redirects: '1',
   });
   return parse?.parse?.wikitext?.['*'] || '';
 };
@@ -1022,7 +1042,10 @@ ipcMain.handle('pcgw-lookup', async (_event, payload) => {
       const target = cand.q.toLowerCase();
       let bestIdx = 0;
       for (let i = 0; i < titles.length; i++) {
-        if (titles[i].toLowerCase() === target) { bestIdx = i; break; }
+        if (titles[i].toLowerCase() === target) {
+          bestIdx = i;
+          break;
+        }
       }
       chosen = titles[bestIdx];
       chosenUrl = urls[bestIdx] || buildPageUrl(chosen);
@@ -1052,14 +1075,10 @@ ipcMain.handle('pcgw-lookup', async (_event, payload) => {
 // merged snapshot for 7 days.
 // ---------------------------------------------------------------------------
 const steamHttpsGet = async (hostname, pathname) => {
-  const res = await httpsRequest(
-    `https://${hostname}${pathname}`,
-    null,
-    {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GamePilot/1.4',
-      'Accept': 'application/json'
-    }
-  );
+  const res = await httpsRequest(`https://${hostname}${pathname}`, null, {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GamePilot/1.4',
+    Accept: 'application/json',
+  });
   if (res.status !== 200) throw new Error(`steam-http-${res.status}`);
   return JSON.parse(res.body);
 };
@@ -1106,8 +1125,12 @@ ipcMain.handle('steam-global-achievements', async (_event, appid) => {
 });
 
 ipcMain.handle('steam-personal-achievements-preflight', async (_event, payload = {}) => {
-  const apiKey = String(payload?.apiKey || '').trim().replace(/[^A-Fa-f0-9]/g, '');
-  const steamId = String(payload?.steamId || '').trim().replace(/[^0-9]/g, '');
+  const apiKey = String(payload?.apiKey || '')
+    .trim()
+    .replace(/[^A-Fa-f0-9]/g, '');
+  const steamId = String(payload?.steamId || '')
+    .trim()
+    .replace(/[^0-9]/g, '');
   const games = Array.isArray(payload?.games) ? payload.games : [];
   if (!apiKey || apiKey.length < 20) return { ok: false, error: 'missing-api-key' };
   if (!steamId || steamId.length < 16) return { ok: false, error: 'missing-steamid' };
@@ -1115,7 +1138,7 @@ ipcMain.handle('steam-personal-achievements-preflight', async (_event, payload =
   const sampleGames = games
     .map((game) => ({
       appid: String(game?.appid || '').replace(/[^0-9]/g, ''),
-      name: String(game?.name || game?.title || '').trim()
+      name: String(game?.name || game?.title || '').trim(),
     }))
     .filter((game) => game.appid)
     .slice(0, 5);
@@ -1145,7 +1168,7 @@ ipcMain.handle('steam-personal-achievements-preflight', async (_event, payload =
           total: list.length,
           unlocked,
           locked: Math.max(0, list.length - unlocked),
-          sampleOnly: true
+          sampleOnly: true,
         });
       } catch (error) {
         sampleResults.push({
@@ -1153,7 +1176,7 @@ ipcMain.handle('steam-personal-achievements-preflight', async (_event, payload =
           name: game.name || `Steam App ${game.appid}`,
           ok: false,
           error: error.message || 'achievement-preflight-failed',
-          sampleOnly: true
+          sampleOnly: true,
         });
       }
     }
@@ -1165,7 +1188,7 @@ ipcMain.handle('steam-personal-achievements-preflight', async (_event, payload =
       communityVisibilityState: Number(player.communityvisibilitystate || 0),
       sampleCount: sampleResults.length,
       results: sampleResults,
-      message: 'Preflight only. GamePilot did not import or merge Steam unlock data.'
+      message: 'Preflight only. GamePilot did not import or merge Steam unlock data.',
     };
   } catch (error) {
     console.warn('[SteamPersonalAchievements] preflight failed:', error.message);
@@ -1219,16 +1242,20 @@ const parseWishlistFromHtml = (html) => {
   try {
     const raw = JSON.parse(match[1]);
     if (Array.isArray(raw)) {
-      return raw.map((item) => ({
-        appid: String(item?.appid || item?.id || ''),
-        name: item?.name || ''
-      })).filter((item) => item.name && item.appid);
+      return raw
+        .map((item) => ({
+          appid: String(item?.appid || item?.id || ''),
+          name: item?.name || '',
+        }))
+        .filter((item) => item.name && item.appid);
     }
     if (!raw || typeof raw !== 'object') return null;
-    return Object.entries(raw).map(([appid, item]) => ({
-      appid: String(appid),
-      name: item?.name || ''
-    })).filter((item) => item.name);
+    return Object.entries(raw)
+      .map(([appid, item]) => ({
+        appid: String(appid),
+        name: item?.name || '',
+      }))
+      .filter((item) => item.name);
   } catch {
     return null;
   }
@@ -1247,28 +1274,35 @@ const fetchSteamWishlistViaWindow = async (steamId) => {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        webSecurity: true
-      }
+        webSecurity: true,
+      },
     });
 
     const timeout = setTimeout(() => {
-      try { win.destroy(); } catch {}
+      try {
+        win.destroy();
+      } catch {}
       reject(new Error('Steam wishlist page took too long to load.'));
     }, 30_000);
 
     const finish = (items) => {
       clearTimeout(timeout);
-      try { win.destroy(); } catch {}
+      try {
+        win.destroy();
+      } catch {}
       resolve(items);
     };
 
     const fail = (err) => {
       clearTimeout(timeout);
-      try { win.destroy(); } catch {}
+      try {
+        win.destroy();
+      } catch {}
       reject(err);
     };
 
-    const extractWishlist = () => win.webContents.executeJavaScript(`
+    const extractWishlist = () =>
+      win.webContents.executeJavaScript(`
       (function() {
         if (typeof g_rgWishlistData !== 'undefined' && g_rgWishlistData) {
           return g_rgWishlistData;
@@ -1297,15 +1331,23 @@ const fetchSteamWishlistViaWindow = async (steamId) => {
           if (data && typeof data === 'object') {
             console.log('[SteamWishlist] Found wishlist data after', attempt + 1, 'attempt(s)');
             if (Array.isArray(data)) {
-              return finish(data.map((item) => ({
-                appid: String(item?.appid || item?.id || ''),
-                name: item?.name || ''
-              })).filter((item) => item.name && item.appid));
+              return finish(
+                data
+                  .map((item) => ({
+                    appid: String(item?.appid || item?.id || ''),
+                    name: item?.name || '',
+                  }))
+                  .filter((item) => item.name && item.appid)
+              );
             }
-            return finish(Object.entries(data).map(([appid, item]) => ({
-              appid: String(appid),
-              name: item?.name || ''
-            })).filter((item) => item.name));
+            return finish(
+              Object.entries(data)
+                .map(([appid, item]) => ({
+                  appid: String(appid),
+                  name: item?.name || '',
+                }))
+                .filter((item) => item.name)
+            );
           }
         }
 
@@ -1324,7 +1366,11 @@ const fetchSteamWishlistViaWindow = async (steamId) => {
         `);
         console.warn('[SteamWishlist] No g_rgWishlistData found. Page title:', pageTitle);
         console.warn('[SteamWishlist] Page body text:', bodyText.replace(/\s+/g, ' '));
-        fail(new Error('Steam wishlist page loaded but no wishlist data was found. Make sure your wishlist is public and not empty.'));
+        fail(
+          new Error(
+            'Steam wishlist page loaded but no wishlist data was found. Make sure your wishlist is public and not empty.'
+          )
+        );
       } catch (err) {
         fail(err);
       }
@@ -1335,7 +1381,8 @@ const fetchSteamWishlistViaWindow = async (steamId) => {
     });
 
     win.loadURL(url, {
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36'
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36',
     });
   });
 };
@@ -1345,9 +1392,10 @@ const fetchSteamWishlistDirect = async (steamId) => {
   if (!cleanId) return [];
   const baseUrl = `https://store.steampowered.com/wishlist/profiles/${cleanId}/wishlistdata/`;
   const res = await httpsRequest(`${baseUrl}?p=0`, null, {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 GamePilot/1.4',
-    'Accept': 'application/json, text/html',
-    'Referer': `https://store.steampowered.com/wishlist/profiles/${cleanId}/`
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 GamePilot/1.4',
+    Accept: 'application/json, text/html',
+    Referer: `https://store.steampowered.com/wishlist/profiles/${cleanId}/`,
   });
   if (res.status !== 200) throw new Error(`steam-wishlist-http-${res.status}`);
   const body = res.body || '';
@@ -1355,16 +1403,20 @@ const fetchSteamWishlistDirect = async (steamId) => {
     const fromHtml = parseWishlistFromHtml(body);
     if (fromHtml) return fromHtml;
     const isPrivate = /private|sign in|login|agecheck|denied|not available/i.test(body);
-    throw new Error(isPrivate
-      ? 'Steam returned a web page instead of the wishlist. Make sure your Steam profile and wishlist are public.'
-      : 'Steam returned an unexpected HTML page. The wishlist may be private or temporarily unavailable.');
+    throw new Error(
+      isPrivate
+        ? 'Steam returned a web page instead of the wishlist. Make sure your Steam profile and wishlist are public.'
+        : 'Steam returned an unexpected HTML page. The wishlist may be private or temporarily unavailable.'
+    );
   }
   const raw = JSON.parse(body);
   if (!raw || typeof raw !== 'object') return [];
-  return Object.entries(raw).map(([appid, item]) => ({
-    appid: String(appid),
-    name: item?.name || ''
-  })).filter((item) => item.name);
+  return Object.entries(raw)
+    .map(([appid, item]) => ({
+      appid: String(appid),
+      name: item?.name || '',
+    }))
+    .filter((item) => item.name);
 };
 
 const fetchSteamWishlist = async (steamId) => {
@@ -1386,10 +1438,7 @@ const enrichWishlistItems = async (items) => {
     const batch = items.slice(i, i + batchSize);
     const appids = batch.map((item) => item.appid).join(',');
     try {
-      const details = await steamHttpsGet(
-        'store.steampowered.com',
-        `/api/appdetails?appids=${appids}`
-      );
+      const details = await steamHttpsGet('store.steampowered.com', `/api/appdetails?appids=${appids}`);
       for (const item of batch) {
         const info = details?.[item.appid]?.data;
         enriched.push({
@@ -1397,7 +1446,7 @@ const enrichWishlistItems = async (items) => {
           name: item.name,
           genres: Array.isArray(info?.genres) ? info.genres.map((g) => g.description) : [],
           image: info?.header_image || null,
-          isFree: info?.is_free || false
+          isFree: info?.is_free || false,
         });
       }
     } catch (err) {
@@ -1466,9 +1515,18 @@ async function walkFolderSize(rootPath) {
 
   const visit = async (dir, depth) => {
     if (truncated) return;
-    if (depth > MAX_DISK_WALK_DEPTH) { truncated = true; return; }
-    if (Date.now() - startedAt > MAX_DISK_WALK_MS) { truncated = true; return; }
-    if (files > MAX_DISK_WALK_FILES) { truncated = true; return; }
+    if (depth > MAX_DISK_WALK_DEPTH) {
+      truncated = true;
+      return;
+    }
+    if (Date.now() - startedAt > MAX_DISK_WALK_MS) {
+      truncated = true;
+      return;
+    }
+    if (files > MAX_DISK_WALK_FILES) {
+      truncated = true;
+      return;
+    }
 
     let entries;
     try {
@@ -1520,7 +1578,7 @@ const resolveSaveLocationPath = (rawPath, game = {}) => {
     PROGRAMDATA: process.env.PROGRAMDATA || 'C:\\ProgramData',
     PUBLIC: process.env.PUBLIC || 'C:\\Users\\Public',
     DOCUMENTS: app.getPath('documents'),
-    SAVEDGAMES: path.join(app.getPath('home'), 'Saved Games')
+    SAVEDGAMES: path.join(app.getPath('home'), 'Saved Games'),
   };
 
   Object.entries(envMap).forEach(([token, replacement]) => {
@@ -1542,7 +1600,7 @@ const resolveSaveLocationPath = (rawPath, game = {}) => {
   const unresolvedTokens = Array.from(new Set(value.match(/<[^>]+>/g) || []));
   return {
     resolvedPath: path.normalize(value),
-    unresolvedTokens
+    unresolvedTokens,
   };
 };
 
@@ -1561,7 +1619,7 @@ const getSaveLocationStatus = async (candidate = {}, game = {}) => {
     bytes: 0,
     files: 0,
     dirs: 0,
-    truncated: false
+    truncated: false,
   };
 
   if (!resolved.resolvedPath || resolved.unresolvedTokens.length > 0) {
@@ -1602,11 +1660,18 @@ ipcMain.handle('open-save-location', async (_event, payload = {}) => {
   const game = payload?.game || {};
   const resolved = resolveSaveLocationPath(rawPath, game);
   if (!resolved.resolvedPath || resolved.unresolvedTokens.length > 0) {
-    return { ok: false, error: 'unresolved-path', resolvedPath: resolved.resolvedPath, unresolvedTokens: resolved.unresolvedTokens };
+    return {
+      ok: false,
+      error: 'unresolved-path',
+      resolvedPath: resolved.resolvedPath,
+      unresolvedTokens: resolved.unresolvedTokens,
+    };
   }
   try {
     const result = await shell.openPath(resolved.resolvedPath);
-    return result ? { ok: false, error: result, resolvedPath: resolved.resolvedPath } : { ok: true, resolvedPath: resolved.resolvedPath };
+    return result
+      ? { ok: false, error: result, resolvedPath: resolved.resolvedPath }
+      : { ok: true, resolvedPath: resolved.resolvedPath };
   } catch (err) {
     return { ok: false, error: err.message || 'open-save-location-failed', resolvedPath: resolved.resolvedPath };
   }
@@ -1623,9 +1688,18 @@ const sanitizeBackupSegment = (value, fallback = 'backup') => {
 
 const copySavePath = async (sourcePath, destinationPath, summary, depth = 0, startedAt = Date.now()) => {
   if (summary.truncated) return;
-  if (depth > MAX_SAVE_BACKUP_DEPTH) { summary.truncated = true; return; }
-  if (Date.now() - startedAt > MAX_SAVE_BACKUP_MS) { summary.truncated = true; return; }
-  if (summary.files >= MAX_SAVE_BACKUP_FILES) { summary.truncated = true; return; }
+  if (depth > MAX_SAVE_BACKUP_DEPTH) {
+    summary.truncated = true;
+    return;
+  }
+  if (Date.now() - startedAt > MAX_SAVE_BACKUP_MS) {
+    summary.truncated = true;
+    return;
+  }
+  if (summary.files >= MAX_SAVE_BACKUP_FILES) {
+    summary.truncated = true;
+    return;
+  }
 
   const stat = await fs.promises.lstat(sourcePath);
   if (stat.isSymbolicLink()) return;
@@ -1660,7 +1734,7 @@ ipcMain.handle('choose-save-backup-destination', async () => {
   try {
     const result = await dialog.showOpenDialog({
       title: 'Choose GamePilot save backup folder',
-      properties: ['openDirectory', 'createDirectory']
+      properties: ['openDirectory', 'createDirectory'],
     });
     if (result.canceled || !result.filePaths?.[0]) {
       return { ok: false, canceled: true };
@@ -1684,7 +1758,10 @@ ipcMain.handle('create-save-backup', async (_event, payload = {}) => {
 
     const validLocations = [];
     for (const location of requestedLocations.slice(0, 10)) {
-      const status = await getSaveLocationStatus({ ...location, path: location.resolvedPath || location.rawPath || location.path }, game);
+      const status = await getSaveLocationStatus(
+        { ...location, path: location.resolvedPath || location.rawPath || location.path },
+        game
+      );
       if (status.exists && status.canOpen && status.resolvedPath) {
         validLocations.push(status);
       }
@@ -1727,7 +1804,7 @@ ipcMain.handle('create-save-backup', async (_event, payload = {}) => {
         resolvedPath: location.resolvedPath,
         backupPath: destinationPath,
         relativeBackupPath: folderName,
-        ...summary
+        ...summary,
       });
     }
 
@@ -1738,11 +1815,11 @@ ipcMain.handle('create-save-backup', async (_event, payload = {}) => {
       game: {
         name: game.name || game.title || 'Unknown Game',
         appid: game.appid || game.steam_appid || game.appId || null,
-        platform: game.platform || null
+        platform: game.platform || null,
       },
       restoreSupported: false,
       locations: copiedLocations,
-      totals
+      totals,
     };
     const manifestPath = path.join(backupRoot, 'manifest.json');
     await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
@@ -1762,7 +1839,7 @@ const getBackupPathSummary = async (targetPath) => {
     bytes: 0,
     files: 0,
     dirs: 0,
-    truncated: false
+    truncated: false,
   };
 
   try {
@@ -1789,9 +1866,18 @@ const isPathInside = (childPath, parentPath) => {
 
 const copyRestorePath = async (sourcePath, destinationPath, summary, depth = 0, startedAt = Date.now()) => {
   if (summary.truncated) return;
-  if (depth > MAX_SAVE_BACKUP_DEPTH) { summary.truncated = true; return; }
-  if (Date.now() - startedAt > MAX_SAVE_BACKUP_MS) { summary.truncated = true; return; }
-  if (summary.files >= MAX_SAVE_BACKUP_FILES) { summary.truncated = true; return; }
+  if (depth > MAX_SAVE_BACKUP_DEPTH) {
+    summary.truncated = true;
+    return;
+  }
+  if (Date.now() - startedAt > MAX_SAVE_BACKUP_MS) {
+    summary.truncated = true;
+    return;
+  }
+  if (summary.files >= MAX_SAVE_BACKUP_FILES) {
+    summary.truncated = true;
+    return;
+  }
 
   const stat = await fs.promises.lstat(sourcePath);
   if (stat.isSymbolicLink()) return;
@@ -1837,12 +1923,15 @@ ipcMain.handle('preview-save-restore', async (_event, payload = {}) => {
     const comparisons = [];
     for (const location of manifest.locations.slice(0, 10)) {
       const backupSummary = await getBackupPathSummary(location.backupPath);
-      const liveSummary = await getSaveLocationStatus({
-        label: location.label,
-        type: location.type,
-        source: location.source,
-        path: location.resolvedPath
-      }, game);
+      const liveSummary = await getSaveLocationStatus(
+        {
+          label: location.label,
+          type: location.type,
+          source: location.source,
+          path: location.resolvedPath,
+        },
+        game
+      );
 
       comparisons.push({
         label: location.label || location.type || 'Location',
@@ -1858,7 +1947,7 @@ ipcMain.handle('preview-save-restore', async (_event, payload = {}) => {
         wouldOverwrite: Boolean(liveSummary.exists),
         backupTruncated: Boolean(backupSummary.truncated),
         targetTruncated: Boolean(liveSummary.truncated),
-        safeToRestore: false
+        safeToRestore: false,
       });
     }
 
@@ -1869,7 +1958,7 @@ ipcMain.handle('preview-save-restore', async (_event, payload = {}) => {
       backupPath: path.dirname(manifestPath),
       manifest,
       comparisons,
-      message: 'Restore preflight only. GamePilot did not copy or overwrite any live save files.'
+      message: 'Restore preflight only. GamePilot did not copy or overwrite any live save files.',
     };
   } catch (err) {
     return { ok: false, error: err.message || 'preview-save-restore-failed' };
@@ -1882,7 +1971,8 @@ ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
   const confirmation = String(payload?.confirmation || '').trim();
   const expectedConfirmation = String(game?.name || game?.title || 'RESTORE').trim();
 
-  if (!expectedConfirmation || confirmation !== expectedConfirmation) return { ok: false, error: 'confirmation-mismatch' };
+  if (!expectedConfirmation || confirmation !== expectedConfirmation)
+    return { ok: false, error: 'confirmation-mismatch' };
 
   try {
     const rawManifest = await fs.promises.readFile(manifestPath, 'utf8');
@@ -1900,11 +1990,15 @@ ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
     const startedAt = Date.now();
 
     for (const location of manifest.locations.slice(0, 10)) {
-      const backupPath = path.resolve(location.backupPath || path.join(manifestRoot, location.relativeBackupPath || ''));
+      const backupPath = path.resolve(
+        location.backupPath || path.join(manifestRoot, location.relativeBackupPath || '')
+      );
       const targetPath = path.resolve(location.resolvedPath || '');
       if (!backupPath || !targetPath) return { ok: false, error: 'invalid-restore-location' };
-      if (!isPathInside(backupPath, manifestRoot)) return { ok: false, error: 'backup-outside-manifest-root', backupPath };
-      if (isPathInside(targetPath, manifestRoot) || targetPath === manifestRoot) return { ok: false, error: 'target-inside-backup-root', targetPath };
+      if (!isPathInside(backupPath, manifestRoot))
+        return { ok: false, error: 'backup-outside-manifest-root', backupPath };
+      if (isPathInside(targetPath, manifestRoot) || targetPath === manifestRoot)
+        return { ok: false, error: 'target-inside-backup-root', targetPath };
 
       const backupSummary = await getBackupPathSummary(backupPath);
       if (!backupSummary.exists) return { ok: false, error: 'missing-backup-location', backupPath };
@@ -1920,7 +2014,7 @@ ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
         type: location.type || 'unknown',
         backupPath,
         targetPath,
-        ...summary
+        ...summary,
       });
     }
 
@@ -1932,12 +2026,15 @@ ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
       game: manifest.game || {
         name: game.name || game.title || 'Unknown Game',
         appid: game.appid || game.steam_appid || game.appId || null,
-        platform: game.platform || null
+        platform: game.platform || null,
       },
       locations: restoredLocations,
-      totals
+      totals,
     };
-    const receiptPath = path.join(manifestRoot, `restore-receipt-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+    const receiptPath = path.join(
+      manifestRoot,
+      `restore-receipt-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+    );
     await fs.promises.writeFile(receiptPath, JSON.stringify(receipt, null, 2), 'utf8');
 
     return {
@@ -1946,7 +2043,7 @@ ipcMain.handle('restore-save-backup', async (_event, payload = {}) => {
       backupPath: manifestRoot,
       receiptPath,
       receipt,
-      message: `Restored ${totals.files} file${totals.files === 1 ? '' : 's'} without deleting unknown live files.`
+      message: `Restored ${totals.files} file${totals.files === 1 ? '' : 's'} without deleting unknown live files.`,
     };
   } catch (err) {
     return { ok: false, error: err.message || 'restore-save-backup-failed' };
@@ -1960,8 +2057,8 @@ ipcMain.handle('choose-emulator-executable', async () => {
       properties: ['openFile'],
       filters: [
         { name: 'Executable Files', extensions: ['exe', 'bat', 'cmd'] },
-        { name: 'All Files', extensions: ['*'] }
-      ]
+        { name: 'All Files', extensions: ['*'] },
+      ],
     });
 
     return result.canceled ? null : result.filePaths?.[0] || null;
@@ -1975,7 +2072,7 @@ ipcMain.handle('choose-rom-folder', async () => {
   try {
     const result = await dialog.showOpenDialog({
       title: 'Choose ROM folder',
-      properties: ['openDirectory']
+      properties: ['openDirectory'],
     });
 
     return result.canceled ? null : result.filePaths?.[0] || null;
@@ -1987,9 +2084,16 @@ ipcMain.handle('choose-rom-folder', async () => {
 
 ipcMain.handle('scan-emulator-roms', async (_event, payload = {}) => {
   const romFolder = String(payload?.romFolder || '').trim();
-  const extensions = new Set((Array.isArray(payload?.extensions) ? payload.extensions : [])
-    .map((extension) => String(extension || '').replace(/^\./, '').trim().toLowerCase())
-    .filter(Boolean));
+  const extensions = new Set(
+    (Array.isArray(payload?.extensions) ? payload.extensions : [])
+      .map((extension) =>
+        String(extension || '')
+          .replace(/^\./, '')
+          .trim()
+          .toLowerCase()
+      )
+      .filter(Boolean)
+  );
 
   if (!romFolder || !fs.existsSync(romFolder)) {
     return [];
@@ -2034,7 +2138,7 @@ ipcMain.handle('scan-emulator-roms', async (_event, payload = {}) => {
         name: entry.name,
         fileName: entry.name,
         path: entryPath,
-        extension
+        extension,
       });
     });
   };
@@ -2078,7 +2182,8 @@ function buildUninstallPlan(game) {
       method: 'deeplink',
       url: `steam://uninstall/${appid}`,
       label: 'Steam',
-      message: 'Steam will open its built-in uninstall confirmation. Cloud saves and Steam Workshop subscriptions are preserved.'
+      message:
+        'Steam will open its built-in uninstall confirmation. Cloud saves and Steam Workshop subscriptions are preserved.',
     };
   }
   if ((platform === 'epic' || platform === 'epic games') && launchId) {
@@ -2086,7 +2191,8 @@ function buildUninstallPlan(game) {
       method: 'deeplink',
       url: `com.epicgames.launcher://apps/${launchId}?action=launch`,
       label: 'Epic Games Launcher',
-      message: 'Epic Games Launcher will open this game. Click ⋮ → Uninstall to remove it. Cloud saves are preserved on your Epic account.'
+      message:
+        'Epic Games Launcher will open this game. Click ⋮ → Uninstall to remove it. Cloud saves are preserved on your Epic account.',
     };
   }
   if (platform === 'gog' || platform === 'gog galaxy') {
@@ -2095,7 +2201,8 @@ function buildUninstallPlan(game) {
         method: 'deeplink',
         url: `goggalaxy://openGameView/${appid}`,
         label: 'GOG Galaxy',
-        message: 'GOG Galaxy will open this game. Use the “⋮ → Manage Installation → Uninstall” option to remove it cleanly.'
+        message:
+          'GOG Galaxy will open this game. Use the “⋮ → Manage Installation → Uninstall” option to remove it cleanly.',
       };
     }
   }
@@ -2104,7 +2211,8 @@ function buildUninstallPlan(game) {
       method: 'cmd',
       cmd: 'appwiz.cpl',
       label: 'EA / Programs & Features',
-      message: 'EA App handles uninstalls through Windows Programs & Features. The list will open — find the title and select Uninstall.'
+      message:
+        'EA App handles uninstalls through Windows Programs & Features. The list will open — find the title and select Uninstall.',
     };
   }
   if (platform === 'ubisoft' || platform === 'uplay' || platform === 'ubisoft connect') {
@@ -2112,7 +2220,7 @@ function buildUninstallPlan(game) {
       method: 'cmd',
       cmd: 'appwiz.cpl',
       label: 'Ubisoft / Programs & Features',
-      message: 'Open Ubisoft Connect → Library → Game → ⋮ → Uninstall, or remove it from Programs & Features.'
+      message: 'Open Ubisoft Connect → Library → Game → ⋮ → Uninstall, or remove it from Programs & Features.',
     };
   }
   if (platform === 'battle.net' || platform === 'blizzard') {
@@ -2120,7 +2228,7 @@ function buildUninstallPlan(game) {
       method: 'cmd',
       cmd: 'appwiz.cpl',
       label: 'Battle.net / Programs & Features',
-      message: 'Use Battle.net → Game → ⚙ Settings (cog) → Uninstall, or remove via Programs & Features.'
+      message: 'Use Battle.net → Game → ⚙ Settings (cog) → Uninstall, or remove via Programs & Features.',
     };
   }
   if (platform === 'xbox' || platform === 'microsoft store' || platform === 'microsoft') {
@@ -2128,7 +2236,8 @@ function buildUninstallPlan(game) {
       method: 'deeplink',
       url: 'ms-settings:appsfeatures',
       label: 'Apps & Features',
-      message: 'Windows opens Apps & Features. Locate the game and choose Uninstall — the Xbox app does not own the package directly.'
+      message:
+        'Windows opens Apps & Features. Locate the game and choose Uninstall — the Xbox app does not own the package directly.',
     };
   }
   if (platform === 'rockstar' || platform === 'rockstar games') {
@@ -2136,7 +2245,7 @@ function buildUninstallPlan(game) {
       method: 'cmd',
       cmd: 'appwiz.cpl',
       label: 'Rockstar / Programs & Features',
-      message: 'Rockstar Games Launcher uninstalls go through Programs & Features.'
+      message: 'Rockstar Games Launcher uninstalls go through Programs & Features.',
     };
   }
   if (platform === 'curseforge' && installDir) {
@@ -2144,7 +2253,8 @@ function buildUninstallPlan(game) {
       method: 'open-folder',
       target: installDir,
       label: 'CurseForge instance folder',
-      message: 'CurseForge instances are uninstalled inside CurseForge itself (… → Delete Profile). Opening the folder lets you verify what’s on disk first.'
+      message:
+        'CurseForge instances are uninstalled inside CurseForge itself (… → Delete Profile). Opening the folder lets you verify what’s on disk first.',
     };
   }
   if (installDir) {
@@ -2153,14 +2263,16 @@ function buildUninstallPlan(game) {
       target: installDir,
       cmd: 'appwiz.cpl',
       label: 'Manual',
-      message: 'GamePilot will open both Programs & Features and the install folder so you can choose how to remove it. GamePilot never deletes files itself.'
+      message:
+        'GamePilot will open both Programs & Features and the install folder so you can choose how to remove it. GamePilot never deletes files itself.',
     };
   }
   return {
     method: 'cmd',
     cmd: 'appwiz.cpl',
     label: 'Programs & Features',
-    message: 'GamePilot couldn’t identify a launcher-specific uninstall path. Programs & Features will open so you can find and remove the title.'
+    message:
+      'GamePilot couldn’t identify a launcher-specific uninstall path. Programs & Features will open so you can find and remove the title.',
   };
 }
 
@@ -2170,16 +2282,19 @@ ipcMain.handle('build-uninstall-plan', async (_event, game) => {
       const isSteamGame = String(game?.platform || '').toLowerCase() === 'steam';
       return {
         ok: true,
-        plan: isSteamGame ? {
-          method: 'deeplink',
-          url: 'steam://open/games',
-          label: 'Steam Library',
-          message: 'GamePilot will open your Steam Library. Use the game’s Manage menu to uninstall it safely.',
-        } : {
-          method: 'unsupported',
-          label: 'Unsupported on Linux',
-          message: 'This launcher is not supported in the Steam-first Linux beta. Manage the game with its original launcher.',
-        },
+        plan: isSteamGame
+          ? {
+              method: 'deeplink',
+              url: 'steam://open/games',
+              label: 'Steam Library',
+              message: 'GamePilot will open your Steam Library. Use the game’s Manage menu to uninstall it safely.',
+            }
+          : {
+              method: 'unsupported',
+              label: 'Unsupported on Linux',
+              message:
+                'This launcher is not supported in the Steam-first Linux beta. Manage the game with its original launcher.',
+            },
       };
     }
     return { ok: true, plan: buildUninstallPlan(game) };
@@ -2208,9 +2323,10 @@ ipcMain.handle('start-uninstall', async (_event, payload) => {
   const plan = buildUninstallPlan(game);
 
   // Helper: spawn a command with argument array (safe from injection).
-  const spawnArgs = (cmd, args) => new Promise((resolve, reject) => {
-    childExecFile(cmd, args, (err) => err ? reject(err) : resolve());
-  });
+  const spawnArgs = (cmd, args) =>
+    new Promise((resolve, reject) => {
+      childExecFile(cmd, args, (err) => (err ? reject(err) : resolve()));
+    });
 
   // Helper: open Programs & Features reliably. `control appwiz.cpl` is more
   // robust than bare `appwiz.cpl` which can fail silently.
@@ -2280,7 +2396,8 @@ ipcMain.handle('start-uninstall', async (_event, payload) => {
     } else if (plan.method === 'manual') {
       // Belt and braces: open both — user picks whichever path actually works.
       spawnArgs('control', ['appwiz.cpl']).catch((e) => console.warn('[Uninstall] appwiz.cpl error:', e.message));
-      if (plan.target) await shell.openPath(plan.target).catch((e) => console.warn('[Uninstall] openPath error:', e.message));
+      if (plan.target)
+        await shell.openPath(plan.target).catch((e) => console.warn('[Uninstall] openPath error:', e.message));
     }
     return { ok: true, plan };
   } catch (err) {
@@ -2319,7 +2436,7 @@ ipcMain.handle('set-startup-launch-enabled', async (_event, enabled) => {
       supported: false,
       enabled: false,
       persisted: false,
-      isPackaged: app.isPackaged
+      isPackaged: app.isPackaged,
     };
   }
 
@@ -2329,14 +2446,14 @@ ipcMain.handle('set-startup-launch-enabled', async (_event, enabled) => {
     return {
       ...applyResult,
       persisted: getStartupLaunchPreference(),
-      isPackaged: app.isPackaged
+      isPackaged: app.isPackaged,
     };
   }
 
   const preferences = readAppPreferences();
   const writeSucceeded = writeAppPreferences({
     ...preferences,
-    launchOnStartup: applyResult.enabled
+    launchOnStartup: applyResult.enabled,
   });
 
   return {
@@ -2345,7 +2462,7 @@ ipcMain.handle('set-startup-launch-enabled', async (_event, enabled) => {
     enabled: applyResult.enabled,
     persisted: applyResult.enabled,
     isPackaged: app.isPackaged,
-    message: writeSucceeded ? null : 'Unable to persist startup preference'
+    message: writeSucceeded ? null : 'Unable to persist startup preference',
   };
 });
 
@@ -2366,13 +2483,22 @@ const buildWatchEntry = (game = {}) => {
     platform: game.platform || null,
     resolvedExecutablePath: matcher.resolvedExecutablePath,
     installDir: matcher.installDir,
-    executableName: matcher.executableName
+    executableName: matcher.executableName,
   };
 };
 
 const GENERIC_EXECUTABLE_NAMES = new Set([
-  'game.exe', 'launcher.exe', 'start.exe', 'run.exe', 'play.exe',
-  'main.exe', 'client.exe', 'app.exe', 'setup.exe', 'win64.exe', 'win32.exe'
+  'game.exe',
+  'launcher.exe',
+  'start.exe',
+  'run.exe',
+  'play.exe',
+  'main.exe',
+  'client.exe',
+  'app.exe',
+  'setup.exe',
+  'win64.exe',
+  'win32.exe',
 ]);
 
 const processMatchesWatchEntry = (processInfo, entry) => {
@@ -2400,7 +2526,11 @@ const processMatchesWatchEntry = (processInfo, entry) => {
     const isWrapper = ['proton', 'pressure-vessel', 'steam-runtime', 'wineserver', 'wine64', 'wine'].some(
       (w) => processName === w || processName.startsWith(`${w}.`)
     );
-    if (entry.installDir && commandLine.includes(entry.installDir) && (isWrapper || processPath.startsWith(entry.installDir))) {
+    if (
+      entry.installDir &&
+      commandLine.includes(entry.installDir) &&
+      (isWrapper || processPath.startsWith(entry.installDir))
+    ) {
       return true;
     }
   }
@@ -2408,11 +2538,11 @@ const processMatchesWatchEntry = (processInfo, entry) => {
   // Name-only match is a fallback: require a distinctive name and, when an
   // installDir exists, that the process actually lives under it.
   if (
-    entry.executableName
-    && processName
-    && processName === entry.executableName
-    && entry.executableName.length >= 6
-    && !GENERIC_EXECUTABLE_NAMES.has(entry.executableName)
+    entry.executableName &&
+    processName &&
+    processName === entry.executableName &&
+    entry.executableName.length >= 6 &&
+    !GENERIC_EXECUTABLE_NAMES.has(entry.executableName)
   ) {
     if (!entry.installDir || (processPath && processPath.startsWith(entry.installDir))) {
       return true;
@@ -2473,7 +2603,7 @@ const pollPassiveWatch = async () => {
           platform: entry.platform,
           startedAt: Date.now(),
           lastSeenAt: Date.now(),
-          missedPolls: 0
+          missedPolls: 0,
         };
         passiveSessions.set(key, session);
         sendPassiveSessionEvent('passive-session-started', {
@@ -2481,7 +2611,7 @@ const pollPassiveWatch = async () => {
           appid: session.appid,
           platform: session.platform,
           startedAt: session.startedAt,
-          source: 'passive-watch'
+          source: 'passive-watch',
         });
       }
     }
@@ -2498,7 +2628,7 @@ const pollPassiveWatch = async () => {
         platform: session.platform,
         startedAt: session.startedAt,
         endedAt: Date.now(),
-        source: 'passive-watch'
+        source: 'passive-watch',
       });
     }
   }
@@ -2531,16 +2661,14 @@ ipcMain.handle('start-game-monitor', async (event, payload = {}) => {
   if (!monitorId || !game?.name) {
     return {
       success: false,
-      message: 'Missing monitor identifier or game metadata'
+      message: 'Missing monitor identifier or game metadata',
     };
   }
 
   stopGameMonitor(monitorId, { reason: 'restarted' });
 
   const baselinePids = new Set(
-    (await getProcessList())
-      .map(({ pid }) => Number(pid))
-      .filter(pid => Number.isFinite(pid) && pid > 0)
+    (await getProcessList()).map(({ pid }) => Number(pid)).filter((pid) => Number.isFinite(pid) && pid > 0)
   );
 
   const monitor = {
@@ -2556,7 +2684,7 @@ ipcMain.handle('start-game-monitor', async (event, payload = {}) => {
     initialPollTimeoutId: null,
     polling: false,
     detectedAt: null,
-    lastSeenAt: null
+    lastSeenAt: null,
   };
 
   activeGameMonitors.set(monitorId, monitor);
@@ -2571,7 +2699,7 @@ ipcMain.handle('start-game-monitor', async (event, payload = {}) => {
 
   return {
     success: true,
-    monitorId
+    monitorId,
   };
 });
 
@@ -2598,7 +2726,7 @@ ipcMain.handle('stop-game-monitor', async (event, payload = {}) => {
   if (!monitorId) {
     return {
       success: false,
-      message: 'Missing monitor identifier'
+      message: 'Missing monitor identifier',
     };
   }
 
@@ -2606,7 +2734,7 @@ ipcMain.handle('stop-game-monitor', async (event, payload = {}) => {
 
   return {
     success: true,
-    stopped
+    stopped,
   };
 });
 
@@ -2646,35 +2774,38 @@ ipcMain.handle('discord-disconnect', async () => {
   }
 });
 
-app.whenReady().then(() => {
-  console.log('🚀 App ready, creating window...');
-  applyStartupLaunchPreference(getStartupLaunchPreference());
+app
+  .whenReady()
+  .then(() => {
+    console.log('🚀 App ready, creating window...');
+    applyStartupLaunchPreference(getStartupLaunchPreference());
 
-  createTray();
+    createTray();
 
-  // Register app:// protocol for local file access
-  protocol.registerFileProtocol('app', (request, callback) => {
-    try {
-      const relativePath = decodeURIComponent(request.url.replace(/^app:\/\//, '')).replace(/^[/\\]+/, '');
-      const appRoot = path.resolve(__dirname);
-      const resolvedPath = path.resolve(appRoot, relativePath);
-      if (resolvedPath !== appRoot && !resolvedPath.startsWith(`${appRoot}${path.sep}`)) {
-        console.warn('Blocked app protocol path outside application root:', relativePath);
-        return callback({ error: -10 });
+    // Register app:// protocol for local file access
+    protocol.registerFileProtocol('app', (request, callback) => {
+      try {
+        const relativePath = decodeURIComponent(request.url.replace(/^app:\/\//, '')).replace(/^[/\\]+/, '');
+        const appRoot = path.resolve(__dirname);
+        const resolvedPath = path.resolve(appRoot, relativePath);
+        if (resolvedPath !== appRoot && !resolvedPath.startsWith(`${appRoot}${path.sep}`)) {
+          console.warn('Blocked app protocol path outside application root:', relativePath);
+          return callback({ error: -10 });
+        }
+        return callback(resolvedPath);
+      } catch (error) {
+        console.error('Failed to resolve app protocol request', error);
+        return callback({ error: -2 });
       }
-      return callback(resolvedPath);
-    } catch (error) {
-      console.error('Failed to resolve app protocol request', error);
-      return callback({ error: -2 });
-    }
-  });
+    });
 
-  createWindow();
-}).catch(err => {
-  console.error('❌ Error in app.whenReady():', err);
-  console.error('❌ Error stack:', err.stack);
-  process.exit(1);
-});
+    createWindow();
+  })
+  .catch((err) => {
+    console.error('❌ Error in app.whenReady():', err);
+    console.error('❌ Error stack:', err.stack);
+    process.exit(1);
+  });
 
 function createTray() {
   if (process.platform === 'darwin') {
@@ -2710,14 +2841,15 @@ function createTray() {
 let cachedTrayGames = [];
 
 function buildTrayMenu(games = []) {
-  const gameItems = Array.isArray(games) && games.length > 0
-    ? games.map((game) => ({
-        label: game.name,
-        click: () => {
-          gameLauncher.launch(game).catch(() => {});
-        }
-      }))
-    : [{ label: 'No recent games yet', enabled: false }];
+  const gameItems =
+    Array.isArray(games) && games.length > 0
+      ? games.map((game) => ({
+          label: game.name,
+          click: () => {
+            gameLauncher.launch(game).catch(() => {});
+          },
+        }))
+      : [{ label: 'No recent games yet', enabled: false }];
 
   return Menu.buildFromTemplate([
     { label: 'Open GamePilot', click: () => createWindow() },
@@ -2728,8 +2860,8 @@ function buildTrayMenu(games = []) {
     { type: 'separator' },
     {
       label: 'Quit',
-      click: () => app.quit()
-    }
+      click: () => app.quit(),
+    },
   ]);
 }
 
@@ -2753,8 +2885,8 @@ function createGameBarOverlayWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      webSecurity: true
-    }
+      webSecurity: true,
+    },
   });
 
   gameBarWindow.loadURL(
@@ -2800,7 +2932,7 @@ function createWindow() {
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true,
-        webSecurity: true
+        webSecurity: true,
       },
       show: true,
     });
@@ -2822,9 +2954,8 @@ function createWindow() {
 
     mainWindow.webContents.on('will-navigate', (event, url) => {
       const developmentOrigin = 'http://localhost:3000';
-      const isAllowedNavigation = process.env.NODE_ENV === 'development'
-        ? url.startsWith(developmentOrigin)
-        : url.startsWith('file://');
+      const isAllowedNavigation =
+        process.env.NODE_ENV === 'development' ? url.startsWith(developmentOrigin) : url.startsWith('file://');
       if (!isAllowedNavigation) {
         event.preventDefault();
       }
@@ -2864,9 +2995,9 @@ function createWindow() {
           {
             label: 'Quit',
             accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-            click: () => app.quit()
-          }
-        ]
+            click: () => app.quit(),
+          },
+        ],
       },
       {
         label: 'Edit',
@@ -2877,8 +3008,8 @@ function createWindow() {
           { role: 'cut' },
           { role: 'copy' },
           { role: 'paste' },
-          { role: 'selectall' }
-        ]
+          { role: 'selectall' },
+        ],
       },
       {
         label: 'View',
@@ -2891,15 +3022,12 @@ function createWindow() {
           { role: 'zoomin' },
           { role: 'zoomout' },
           { type: 'separator' },
-          { role: 'togglefullscreen' }
-        ]
+          { role: 'togglefullscreen' },
+        ],
       },
       {
         label: 'Window',
-        submenu: [
-          { role: 'minimize' },
-          { role: 'close' }
-        ]
+        submenu: [{ role: 'minimize' }, { role: 'close' }],
       },
       {
         label: 'Help',
@@ -2911,17 +3039,16 @@ function createWindow() {
                 type: 'info',
                 title: 'About GamePilot',
                 message: 'GamePilot',
-                detail: `A comprehensive PC gaming library manager\n\nCreated by Jonathan Morris\n\nVersion ${app.getVersion()}`
+                detail: `A comprehensive PC gaming library manager\n\nCreated by Jonathan Morris\n\nVersion ${app.getVersion()}`,
               });
-            }
-          }
-        ]
-      }
+            },
+          },
+        ],
+      },
     ];
 
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
-
   } catch (error) {
     console.error('❌ Error creating window:', error);
     console.error('❌ Error stack:', error.stack);

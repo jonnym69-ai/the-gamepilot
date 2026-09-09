@@ -1,15 +1,5 @@
 import React, { useMemo, useRef, useCallback } from 'react';
-import {
-  User,
-  Download,
-  Share2,
-  Trophy,
-  Clock,
-  Gamepad2,
-  BarChart3,
-  Sparkles,
-  Zap
-} from 'lucide-react';
+import { User, Download, Share2, Trophy, Clock, Gamepad2, BarChart3, Sparkles, Zap } from 'lucide-react';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
 import GamingPersonaService from '../services/GamingPersonaService';
@@ -57,7 +47,10 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
 
     return {
       label: persona?.primaryPersona?.label || 'Gamer in Progress',
-      description: persona?.summaryRoast || persona?.primaryPersona?.roast || 'Building your gaming identity one session at a time.',
+      description:
+        persona?.summaryRoast ||
+        persona?.primaryPersona?.roast ||
+        'Building your gaming identity one session at a time.',
       tags: persona?.subTraits?.map((trait) => trait.label) || [],
       contextLine: persona?.contextLine || null,
       totalGames: library.length,
@@ -68,12 +61,12 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
       topMoods,
       topGenres,
       recentGenre,
-      peakWindow: recentPeakHour !== null
-        ? UserBehaviorProfile.getTimeOfDay(recentPeakHour)
-        : (peakHours[0]?.timeOfDay || 'Unknown'),
-      completionRate: allTime?.sessions > 0
-        ? Math.round(((allTime?.questUsage?.totalCompleted || 0) / allTime.sessions) * 100)
-        : 0
+      peakWindow:
+        recentPeakHour !== null
+          ? UserBehaviorProfile.getTimeOfDay(recentPeakHour)
+          : peakHours[0]?.timeOfDay || 'Unknown',
+      completionRate:
+        allTime?.sessions > 0 ? Math.round(((allTime?.questUsage?.totalCompleted || 0) / allTime.sessions) * 100) : 0,
     };
   }, [library]);
 
@@ -148,7 +141,7 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
         { label: 'Games', value: String(identity.totalGames) },
         { label: 'Hours', value: String(identity.totalHours) },
         { label: 'Sessions', value: String(identity.totalSessions) },
-        { label: 'Avg Session', value: `${identity.avgSession}m` }
+        { label: 'Avg Session', value: `${identity.avgSession}m` },
       ];
 
       let statX = 32;
@@ -221,7 +214,9 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
           <p className="gamer-identity-desc">{identity.description}</p>
           <div className="gamer-identity-tags">
             {identity.tags.slice(0, 4).map((tag) => (
-              <span key={tag} className="gamer-tag">{tag}</span>
+              <span key={tag} className="gamer-tag">
+                {tag}
+              </span>
             ))}
           </div>
         </div>
@@ -232,9 +227,7 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
         <StatPill icon={Clock} label="Hours" value={identity.totalHours} />
         <StatPill icon={Zap} label="Sessions" value={identity.totalSessions} />
         <StatPill icon={BarChart3} label="Avg" value={`${identity.avgSession}m`} />
-        {identity.completedCount > 0 && (
-          <StatPill icon={Trophy} label="Completed" value={identity.completedCount} />
-        )}
+        {identity.completedCount > 0 && <StatPill icon={Trophy} label="Completed" value={identity.completedCount} />}
       </div>
 
       <div className="gamer-card-footer">

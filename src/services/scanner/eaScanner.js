@@ -9,7 +9,7 @@ const {
   findBestExecutablePath,
   findExecutableDeep,
   createTrackedDefaults,
-  getActiveDrives
+  getActiveDrives,
 } = require('./scannerUtils');
 
 let getGameGenres;
@@ -21,7 +21,8 @@ try {
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
-    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires')) return ['Strategy'];
+    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires'))
+      return ['Strategy'];
     if (name.includes('action') || name.includes('far cry') || name.includes('resident evil')) return ['Action'];
     if (name.includes('adventure') || name.includes('tomb raider') || name.includes('zelda')) return ['Adventure'];
     if (name.includes('simulation') || name.includes('sims') || name.includes('cities')) return ['Simulation'];
@@ -73,11 +74,13 @@ const EA_EXCLUDED_TITLE_TOKENS = [
   'starcraft',
   'hearthstone',
   'heroes of the storm',
-  'call of duty'
+  'call of duty',
 ];
 
 const isExcludedFromEA = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
   if (!normalized) {
     return false;
   }
@@ -95,7 +98,7 @@ const EA_FOREIGN_LIBRARY_PATH_TOKENS = [
   '\\ubisoft connect\\',
   '\\battle.net\\',
   '\\riot games\\',
-  '\\xboxgames\\'
+  '\\xboxgames\\',
 ];
 
 const EA_TOOL_EXECUTABLE_TOKENS = [
@@ -106,11 +109,14 @@ const EA_TOOL_EXECUTABLE_TOKENS = [
   'config',
   'settings',
   'benchmark',
-  'tool'
+  'tool',
 ];
 
 const isLikelyForeignLauncherPath = (filePath) => {
-  const normalized = String(filePath || '').replace(/\//g, '\\').trim().toLowerCase();
+  const normalized = String(filePath || '')
+    .replace(/\//g, '\\')
+    .trim()
+    .toLowerCase();
   if (!normalized) {
     return false;
   }
@@ -119,7 +125,10 @@ const isLikelyForeignLauncherPath = (filePath) => {
 };
 
 const isLikelyToolExecutable = (filePath) => {
-  const fileName = path.basename(String(filePath || '')).toLowerCase().replace(/\.exe$/, '');
+  const fileName = path
+    .basename(String(filePath || ''))
+    .toLowerCase()
+    .replace(/\.exe$/, '');
   if (!fileName) {
     return true;
   }
@@ -128,34 +137,40 @@ const isLikelyToolExecutable = (filePath) => {
 };
 
 const EA_SYSTEM_FOLDER_PATTERNS = [
-  'program files', 'program files (x86)', 'windows', 'users', 'documents and settings',
-  'appdata', 'application data', 'local settings', 'programdata', 'perflogs',
-  'system volume', 'recycle.bin', '$recycle.bin'
+  'program files',
+  'program files (x86)',
+  'windows',
+  'users',
+  'documents and settings',
+  'appdata',
+  'application data',
+  'local settings',
+  'programdata',
+  'perflogs',
+  'system volume',
+  'recycle.bin',
+  '$recycle.bin',
 ];
 
 const isEASystemPath = (filePath) => {
   const normalized = filePath.toLowerCase();
-  return EA_SYSTEM_FOLDER_PATTERNS.some(pattern => normalized.includes(pattern));
+  return EA_SYSTEM_FOLDER_PATTERNS.some((pattern) => normalized.includes(pattern));
 };
 
-const EA_BLOCKED_PATH_PATTERNS = [
-  '\\windows',
-  '\\perflogs',
-  '\\$recycle.bin',
-  '\\system volume information'
-];
+const EA_BLOCKED_PATH_PATTERNS = ['\\windows', '\\perflogs', '\\$recycle.bin', '\\system volume information'];
 
 const isBlockedEAPath = (filePath) => {
-  const normalized = String(filePath || '').replace(/\//g, '\\').trim().toLowerCase();
+  const normalized = String(filePath || '')
+    .replace(/\//g, '\\')
+    .trim()
+    .toLowerCase();
   if (!normalized) {
     return true;
   }
 
-  return EA_BLOCKED_PATH_PATTERNS.some((pattern) => (
-    normalized === pattern.slice(1)
-    || normalized.endsWith(pattern)
-    || normalized.includes(`${pattern}\\`)
-  ));
+  return EA_BLOCKED_PATH_PATTERNS.some(
+    (pattern) => normalized === pattern.slice(1) || normalized.endsWith(pattern) || normalized.includes(`${pattern}\\`)
+  );
 };
 
 const isValidEAInstallDirectory = (installDir) => {
@@ -170,10 +185,11 @@ const isValidEAInstallDirectory = (installDir) => {
   }
 };
 
-const normalizeEADisplayName = (value) => String(value || '')
-  .replace(/_/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim();
+const normalizeEADisplayName = (value) =>
+  String(value || '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const getEAInstallDataRoots = () => {
   const roots = [];
@@ -217,8 +233,14 @@ const resolveEAInstallDataFolder = (displayName) => {
       continue;
     }
 
-    const executablePath = findBestExecutablePath(candidateInstallDir, folderName) || findExecutableDeep(candidateInstallDir, 2);
-    if (!executablePath || isBlockedEAPath(executablePath) || isExcludedFromEA(executablePath) || isLikelyToolExecutable(executablePath)) {
+    const executablePath =
+      findBestExecutablePath(candidateInstallDir, folderName) || findExecutableDeep(candidateInstallDir, 2);
+    if (
+      !executablePath ||
+      isBlockedEAPath(executablePath) ||
+      isExcludedFromEA(executablePath) ||
+      isLikelyToolExecutable(executablePath)
+    ) {
       continue;
     }
 
@@ -226,7 +248,7 @@ const resolveEAInstallDataFolder = (displayName) => {
       displayName: folderName,
       executablePath,
       installDir: candidateInstallDir,
-      titleId: folderName
+      titleId: folderName,
     };
   }
 
@@ -237,16 +259,10 @@ const EA_REGISTRY_ROOTS = [
   'HKLM\\SOFTWARE\\WOW6432Node\\Electronic Arts\\Electronic Arts',
   'HKLM\\SOFTWARE\\Electronic Arts\\Electronic Arts',
   'HKLM\\SOFTWARE\\WOW6432Node\\Electronic Arts',
-  'HKLM\\SOFTWARE\\Electronic Arts'
+  'HKLM\\SOFTWARE\\Electronic Arts',
 ];
 
-const EA_REGISTRY_SKIP_TOKENS = [
-  'ea desktop',
-  'ea core',
-  'eadm',
-  'origin',
-  'electronic arts'
-];
+const EA_REGISTRY_SKIP_TOKENS = ['ea desktop', 'ea core', 'eadm', 'origin', 'electronic arts'];
 
 const parseRegistryInstallEntries = (registryRoot, valueName) => {
   const output = runCommand(`reg query "${registryRoot}" /s /v ${valueName}`);
@@ -271,7 +287,7 @@ const parseRegistryInstallEntries = (registryRoot, valueName) => {
     if (match && currentKey) {
       entries.push({
         registryKey: currentKey,
-        installDir: match[1].trim()
+        installDir: match[1].trim(),
       });
     }
   });
@@ -288,11 +304,20 @@ const getEARegistryGames = () => {
       const gameName = registryKey.split('\\').pop() || '';
       const normalizedGameName = gameName.toLowerCase();
 
-      if (!gameName || EA_REGISTRY_SKIP_TOKENS.some((token) => normalizedGameName === token || normalizedGameName.includes(`${token}\\`))) {
+      if (
+        !gameName ||
+        EA_REGISTRY_SKIP_TOKENS.some(
+          (token) => normalizedGameName === token || normalizedGameName.includes(`${token}\\`)
+        )
+      ) {
         return;
       }
 
-      if (!isValidEAInstallDirectory(installDir) || isLikelyForeignLauncherPath(installDir) || isExcludedFromEA(gameName)) {
+      if (
+        !isValidEAInstallDirectory(installDir) ||
+        isLikelyForeignLauncherPath(installDir) ||
+        isExcludedFromEA(gameName)
+      ) {
         return;
       }
 
@@ -306,7 +331,12 @@ const getEARegistryGames = () => {
         executablePath = findExecutableDeep(installDir, 4);
       }
 
-      if (!executablePath || isBlockedEAPath(executablePath) || isExcludedFromEA(executablePath) || isLikelyToolExecutable(executablePath)) {
+      if (
+        !executablePath ||
+        isBlockedEAPath(executablePath) ||
+        isExcludedFromEA(executablePath) ||
+        isLikelyToolExecutable(executablePath)
+      ) {
         return;
       }
 
@@ -319,7 +349,7 @@ const getEARegistryGames = () => {
         executablePath,
         installDir,
         launchId: gameName,
-        ...createTrackedDefaults()
+        ...createTrackedDefaults(),
       });
     });
   });
@@ -335,7 +365,7 @@ const createEAGame = ({ displayName, executablePath, installDir, titleId }) => (
   executablePath,
   installDir,
   launchId: titleId,
-  ...createTrackedDefaults()
+  ...createTrackedDefaults(),
 });
 
 const scanEALibrary = () => {
@@ -351,8 +381,19 @@ const scanEALibrary = () => {
     const titleId = candidate.titleId || displayName;
 
     if (!displayName || isExcludedFromEA(displayName) || isExcludedFromEA(titleId)) return false;
-    if (!isValidEAInstallDirectory(installDir) || isLikelyForeignLauncherPath(installDir) || seenInstallDirs.has(installDir.toLowerCase())) return false;
-    if (!executablePath || isBlockedEAPath(executablePath) || isExcludedFromEA(executablePath) || isLikelyToolExecutable(executablePath)) return false;
+    if (
+      !isValidEAInstallDirectory(installDir) ||
+      isLikelyForeignLauncherPath(installDir) ||
+      seenInstallDirs.has(installDir.toLowerCase())
+    )
+      return false;
+    if (
+      !executablePath ||
+      isBlockedEAPath(executablePath) ||
+      isExcludedFromEA(executablePath) ||
+      isLikelyToolExecutable(executablePath)
+    )
+      return false;
     if (foundGames.has(displayName.toLowerCase())) return false;
 
     foundGames.add(displayName.toLowerCase());
@@ -373,7 +414,7 @@ const scanEALibrary = () => {
       if (!fs.existsSync(installDataPath)) return;
       if (isBlockedEAPath(installDataPath)) return;
       if (seenInstallDirs.has(installDataPath.toLowerCase())) return;
-      
+
       const isDir = fs.statSync(installDataPath).isDirectory();
       if (!isDir) return;
 
@@ -383,7 +424,7 @@ const scanEALibrary = () => {
           displayName: folder,
           executablePath: directExe,
           installDir: installDataPath,
-          titleId: folder
+          titleId: folder,
         });
         return;
       }
@@ -398,17 +439,19 @@ const scanEALibrary = () => {
       const displayName = manifest.displayName || manifest.productName || folder;
       const titleId = manifest.productId || manifest.titleId || folder;
       if (!isValidEAInstallDirectory(realInstallDir)) return;
-      let resolvedExe = findBestExecutablePath(realInstallDir, displayName) || findBestExecutablePath(realInstallDir, path.basename(realInstallDir));
+      let resolvedExe =
+        findBestExecutablePath(realInstallDir, displayName) ||
+        findBestExecutablePath(realInstallDir, path.basename(realInstallDir));
       if (!resolvedExe) {
         resolvedExe = findExecutableDeep(realInstallDir, 3);
         if (!resolvedExe) return;
       }
-      
+
       addGame({
         displayName,
         executablePath: resolvedExe,
         installDir: realInstallDir,
-        titleId
+        titleId,
       });
     });
   });
@@ -427,7 +470,7 @@ const scanEALibrary = () => {
       displayName: game.name,
       executablePath: game.executablePath || game.executable,
       installDir: game.installDir,
-      titleId: game.launchId || game.name
+      titleId: game.launchId || game.name,
     });
   });
 

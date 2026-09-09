@@ -2,19 +2,22 @@ const {
   resolveGameArtwork,
   getGameArtworkPlaceholder,
   hasMissingCoverArt,
-  fileToCoverDataUri
+  fileToCoverDataUri,
 } = require('./GameArtworkService');
 
 describe('GameArtworkService', () => {
   describe('resolveGameArtwork', () => {
     test('builds Steam CDN art for appid games on the requested surface', () => {
-      expect(resolveGameArtwork({ appid: '730' })).toContain('cdn.akamai.steamstatic.com/steam/apps/730/capsule_231x87.jpg');
+      expect(resolveGameArtwork({ appid: '730' })).toContain(
+        'cdn.akamai.steamstatic.com/steam/apps/730/capsule_231x87.jpg'
+      );
       expect(resolveGameArtwork({ appid: '730' }, { surface: 'portrait' })).toContain('library_600x900.jpg');
     });
 
     test('cover override always wins', () => {
-      expect(resolveGameArtwork({ appid: '730', coverArtOverride: 'https://example.com/cover.jpg' }))
-        .toBe('https://example.com/cover.jpg');
+      expect(resolveGameArtwork({ appid: '730', coverArtOverride: 'https://example.com/cover.jpg' })).toBe(
+        'https://example.com/cover.jpg'
+      );
     });
 
     test('returns empty string when nothing resolvable exists', () => {

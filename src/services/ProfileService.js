@@ -11,7 +11,7 @@ export const SOCIAL_PLATFORMS = [
   { key: 'discord', label: 'Discord', icon: '💬', color: '#5865F2' },
   { key: 'bluesky', label: 'Bluesky', icon: '🦋', color: '#0085FF' },
   { key: 'threads', label: 'Threads', icon: '🧵', color: '#FFFFFF' },
-  { key: 'other', label: 'Other', icon: '🔗', color: '#888888' }
+  { key: 'other', label: 'Other', icon: '🔗', color: '#888888' },
 ];
 
 const migrateLegacyStreamLink = (links) => {
@@ -21,17 +21,17 @@ const migrateLegacyStreamLink = (links) => {
   if (!legacyUrl) return links;
   const alreadyExists = links.some((l) => l.url === legacyUrl);
   if (alreadyExists) return links;
-  const platform = SOCIAL_PLATFORMS.find((p) =>
-    legacyUrl.toLowerCase().includes(p.key === 'x' ? 'twitter.com' : p.key)
-  ) || SOCIAL_PLATFORMS.find((p) => p.key === 'other');
+  const platform =
+    SOCIAL_PLATFORMS.find((p) => legacyUrl.toLowerCase().includes(p.key === 'x' ? 'twitter.com' : p.key)) ||
+    SOCIAL_PLATFORMS.find((p) => p.key === 'other');
   return [
     ...links,
     {
       id: `legacy-${Date.now()}`,
       platform: platform.key,
       url: legacyUrl,
-      enabled: legacyEnabled
-    }
+      enabled: legacyEnabled,
+    },
   ];
 };
 
@@ -49,18 +49,20 @@ export const ProfileService = {
       platform: link.platform || 'other',
       url: (link.url || '').trim(),
       enabled: link.enabled !== false,
-      label: link.label || ''
+      label: link.label || '',
     }));
   },
 
   setSocialLinks(links) {
-    const clean = (links || []).map((link) => ({
-      id: link.id || `${link.platform}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      platform: link.platform || 'other',
-      url: (link.url || '').trim(),
-      enabled: link.enabled !== false,
-      label: (link.label || '').trim()
-    })).filter((link) => link.url);
+    const clean = (links || [])
+      .map((link) => ({
+        id: link.id || `${link.platform}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        platform: link.platform || 'other',
+        url: (link.url || '').trim(),
+        enabled: link.enabled !== false,
+        label: (link.label || '').trim(),
+      }))
+      .filter((link) => link.url);
     StorageService.set('shareSocialLinks', clean);
   },
 
@@ -80,11 +82,12 @@ export const ProfileService = {
     }
     if (toInclude.length === 0) return text;
     const lines = toInclude.map((link) => {
-      const platform = SOCIAL_PLATFORMS.find((p) => p.key === link.platform) || SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
+      const platform =
+        SOCIAL_PLATFORMS.find((p) => p.key === link.platform) || SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
       return `${platform.icon} ${platform.label}: ${link.url}`;
     });
     return `${text}\n\n${lines.join('\n')}`;
-  }
+  },
 };
 
 export default ProfileService;

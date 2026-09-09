@@ -8,7 +8,7 @@ const {
   findBestExecutablePath,
   findExecutableDeep,
   createTrackedDefaults,
-  getActiveDrives
+  getActiveDrives,
 } = require('./scannerUtils');
 
 let getGameGenres;
@@ -20,7 +20,8 @@ try {
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
-    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires')) return ['Strategy'];
+    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires'))
+      return ['Strategy'];
     if (name.includes('action') || name.includes('far cry') || name.includes('resident evil')) return ['Action'];
     if (name.includes('adventure') || name.includes('tomb raider') || name.includes('zelda')) return ['Adventure'];
     if (name.includes('simulation') || name.includes('sims') || name.includes('cities')) return ['Simulation'];
@@ -70,7 +71,7 @@ const getItchInstallPaths = () => {
     'HKCU\\SOFTWARE\\itch.io',
     'HKLM\\SOFTWARE\\WOW6432Node\\itch',
     'HKLM\\SOFTWARE\\itch',
-    'HKCU\\SOFTWARE\\itch'
+    'HKCU\\SOFTWARE\\itch',
   ];
 
   registryRoots.forEach((root) => {
@@ -88,16 +89,12 @@ const getItchInstallPaths = () => {
   return paths;
 };
 
-const ITCH_SKIP_TOKENS = [
-  'itch setup',
-  'itch installer',
-  'butler',
-  'itch launcher',
-  'itch.io launcher'
-];
+const ITCH_SKIP_TOKENS = ['itch setup', 'itch installer', 'butler', 'itch launcher', 'itch.io launcher'];
 
 const isExcludedItchTitle = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
   if (!normalized) return true;
   return ITCH_SKIP_TOKENS.some((token) => normalized === token || normalized.includes(token));
 };
@@ -174,7 +171,7 @@ const scanItchLibrary = () => {
         executablePath: executablePath || null,
         installDir: gamePath,
         launchId,
-        ...createTrackedDefaults()
+        ...createTrackedDefaults(),
       });
     });
   });

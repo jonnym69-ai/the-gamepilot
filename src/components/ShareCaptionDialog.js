@@ -40,7 +40,13 @@ export function ShareCaptionDialog({ isOpen, onClose, channel, caption, onShare 
 
   return createPortal(
     <div className="share-caption-dialog-backdrop" onClick={onClose} role="presentation">
-      <div className="share-caption-dialog" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="share-caption-title">
+      <div
+        className="share-caption-dialog"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-caption-title"
+      >
         <div className="share-caption-dialog-header">
           <h3 id="share-caption-title">Share to {channelLabel}</h3>
           <button type="button" className="share-caption-dialog-close" onClick={onClose} aria-label="Close">

@@ -5,7 +5,7 @@ const PERIOD_LABELS = {
   monthly: 'month',
   yearly: 'year',
   daily: 'day',
-  all: 'all-time'
+  all: 'all-time',
 };
 
 const GRIND_HOUR_THRESHOLDS = {
@@ -13,25 +13,14 @@ const GRIND_HOUR_THRESHOLDS = {
   monthly: 15,
   yearly: 50,
   daily: 2,
-  all: 25
+  all: 25,
 };
 
 const MARATHON_SHARE_THRESHOLD = 0.4;
 
-const GRIND_VERBS = [
-  'grinding',
-  'diving into',
-  'chasing glory in',
-  'exploring',
-  'mastering'
-];
+const GRIND_VERBS = ['grinding', 'diving into', 'chasing glory in', 'exploring', 'mastering'];
 
-const REDISCOVERY_VERBS = [
-  'came back to',
-  'rediscovered',
-  'returned to',
-  'revisited'
-];
+const REDISCOVERY_VERBS = ['came back to', 'rediscovered', 'returned to', 'revisited'];
 
 const pickOne = (items) => {
   if (!Array.isArray(items) || items.length === 0) return '';
@@ -143,7 +132,7 @@ const buildMoodStory = (periodSnapshot, period) => {
     Relaxed: 'keeping things cozy',
     Social: 'hanging with friends',
     Focused: 'zeroing in',
-    Creative: 'building and experimenting'
+    Creative: 'building and experimenting',
   };
   const vibe = vibeMap[mood] || `riding a ${mood.toLowerCase()} vibe`;
 
@@ -216,7 +205,7 @@ export class RecapStoryService {
         periodLabel,
         username: username || 'Pilot',
         hasData: false,
-        stories: [`No playtime tracked this ${periodLabel} yet — time to launch something?`]
+        stories: [`No playtime tracked this ${periodLabel} yet — time to launch something?`],
       };
     }
 
@@ -233,11 +222,15 @@ export class RecapStoryService {
     if (sessionStyleStory) stories.push(sessionStyleStory);
 
     if (activeDays >= 5 && uniqueGames >= 1) {
-      stories.push(`You gamed on ${activeDays} days this ${periodLabel} across ${uniqueGames} title${uniqueGames === 1 ? '' : 's'}.`);
+      stories.push(
+        `You gamed on ${activeDays} days this ${periodLabel} across ${uniqueGames} title${uniqueGames === 1 ? '' : 's'}.`
+      );
     }
 
     if (stories.length === 0) {
-      stories.push(`You logged ${formatPlaytime(totalPlaytimeMinutes)} this ${periodLabel} — ${sessions} session${sessions === 1 ? '' : 's'} in total.`);
+      stories.push(
+        `You logged ${formatPlaytime(totalPlaytimeMinutes)} this ${periodLabel} — ${sessions} session${sessions === 1 ? '' : 's'} in total.`
+      );
     }
 
     return {
@@ -249,7 +242,7 @@ export class RecapStoryService {
       sessions,
       activeDays,
       uniqueGames,
-      stories: stories.slice(0, 5)
+      stories: stories.slice(0, 5),
     };
   }
 
@@ -267,18 +260,14 @@ export class RecapStoryService {
 
   static buildShareText(periodSnapshot = {}, period = 'weekly', username = 'Pilot') {
     const packageData = this.buildPeriodStories(periodSnapshot, period, username);
-    const title = period === 'weekly'
-      ? "This Week's GamePilot Recap"
-      : period === 'monthly'
-        ? "This Month's GamePilot Recap"
-        : "GamePilot Recap";
+    const title =
+      period === 'weekly'
+        ? "This Week's GamePilot Recap"
+        : period === 'monthly'
+          ? "This Month's GamePilot Recap"
+          : 'GamePilot Recap';
 
-    const lines = [
-      `${title} — ${username || 'Pilot'}`,
-      ...packageData.stories,
-      '',
-      'Generated locally by GamePilot.'
-    ];
+    const lines = [`${title} — ${username || 'Pilot'}`, ...packageData.stories, '', 'Generated locally by GamePilot.'];
 
     return lines.join('\n');
   }

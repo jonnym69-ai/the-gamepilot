@@ -43,7 +43,7 @@ export function LibraryTodaySection({
   buyEntryIndex,
   buyEntryCount,
   onBuyNext,
-  onBuyPrev
+  onBuyPrev,
 }) {
   if (!homeShelfCards) {
     return (
@@ -64,9 +64,7 @@ export function LibraryTodaySection({
     <div className="results-section">
       <div className="result-card">
         <div className="library-today-header">
-          <h3 className="result-title">
-            📚 Your Library Today
-          </h3>
+          <h3 className="result-title">📚 Your Library Today</h3>
           {onFamiliarityChange && (
             <div className="familiarity-toggle-buttons library-today-familiarity">
               <button
@@ -94,7 +92,8 @@ export function LibraryTodaySection({
           )}
         </div>
         <p style={{ color: 'var(--text)', opacity: 0.8, marginBottom: '10px' }}>
-          Start with a few thoughtful shelves instead of a blank choice. One strong pick for tonight, one easy comeback, one game worth rediscovering, and one favourite to keep close.
+          Start with a few thoughtful shelves instead of a blank choice. One strong pick for tonight, one easy comeback,
+          one game worth rediscovering, and one favourite to keep close.
         </p>
         <p style={{ color: 'var(--text)', opacity: 0.65, marginBottom: '20px', fontSize: '0.92rem' }}>
           {weeklyQuestSummary}
@@ -102,7 +101,9 @@ export function LibraryTodaySection({
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
           <div className="home-reward-pill">
             <span>This week</span>
-            <strong>{weeklyPlayDays} play day{weeklyPlayDays === 1 ? '' : 's'}</strong>
+            <strong>
+              {weeklyPlayDays} play day{weeklyPlayDays === 1 ? '' : 's'}
+            </strong>
           </div>
           <div className="home-reward-pill">
             <span>Logged</span>
@@ -110,14 +111,20 @@ export function LibraryTodaySection({
           </div>
           <div className="home-reward-pill">
             <span>Recent activity</span>
-            <strong>{recentLibraryActivity} recent game{recentLibraryActivity === 1 ? '' : 's'}</strong>
+            <strong>
+              {recentLibraryActivity} recent game{recentLibraryActivity === 1 ? '' : 's'}
+            </strong>
           </div>
         </div>
         <div className="game-grid library-today-grid" style={{ alignItems: 'stretch' }}>
           {tonightPickGame && (
             <CuratedShelfCard
               title="Tonight's best pick"
-              subtitle={tonightPickGame === continuePlayingGame ? 'A smart return based on what you were already enjoying.' : 'A curated fit based on your current filters, habits, and library.'}
+              subtitle={
+                tonightPickGame === continuePlayingGame
+                  ? 'A smart return based on what you were already enjoying.'
+                  : 'A curated fit based on your current filters, habits, and library.'
+              }
               game={tonightPickGame}
               entry={tonightPickEntry}
               artwork={tonightPickArtwork}
@@ -234,12 +241,8 @@ export function LibraryStoryCard({ items }) {
   return (
     <div className="results-section">
       <div className="result-card library-story-card">
-        <h3 className="result-title">
-          📝 Your Library Story
-        </h3>
-        <p className="library-story-intro">
-          A quick read on what your library has been saying lately.
-        </p>
+        <h3 className="result-title">📝 Your Library Story</h3>
+        <p className="library-story-intro">A quick read on what your library has been saying lately.</p>
         <div className="library-story-grid">
           {items.map((storyItem, index) => (
             <div key={`library-story-${index}`} className="library-story-item">

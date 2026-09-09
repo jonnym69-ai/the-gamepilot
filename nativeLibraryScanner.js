@@ -20,7 +20,7 @@ const loadScannerExport = (moduleBaseName, exportName) => {
     path.join(__dirname, 'src', 'services', 'scanner', moduleBaseName),
     path.join(__dirname, moduleBaseName),
     `./src/services/scanner/${moduleBaseName}`,
-    `./${moduleBaseName}`
+    `./${moduleBaseName}`,
   ];
   for (const candidate of candidates) {
     try {
@@ -51,7 +51,7 @@ const STEAM_PLAYTIME_REQUIRE_CANDIDATES = [
   path.join(__dirname, 'src', 'services', 'scanner', 'scannerUtils'),
   path.join(__dirname, 'scannerUtils'),
   './src/services/scanner/scannerUtils',
-  './scannerUtils'
+  './scannerUtils',
 ];
 
 for (const candidate of STEAM_PLAYTIME_REQUIRE_CANDIDATES) {
@@ -67,7 +67,9 @@ for (const candidate of STEAM_PLAYTIME_REQUIRE_CANDIDATES) {
 }
 
 if (typeof getSteamPlaytimeMap !== 'function') {
-  console.error('[Scanner] Steam playtime reader unavailable — imported Steam playtime will be empty. Ensure scannerUtils is bundled.');
+  console.error(
+    '[Scanner] Steam playtime reader unavailable — imported Steam playtime will be empty. Ensure scannerUtils is bundled.'
+  );
   getSteamPlaytimeMap = () => ({});
 }
 
@@ -78,7 +80,7 @@ const GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES = [
   path.join(__dirname, 'src', 'services', 'scanner', 'scannerUtils'),
   path.join(__dirname, 'scannerUtils'),
   './src/services/scanner/scannerUtils',
-  './scannerUtils'
+  './scannerUtils',
 ];
 
 for (const candidate of GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES) {
@@ -94,7 +96,9 @@ for (const candidate of GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES) {
 }
 
 if (typeof getGogGalaxyPlaytimeMap !== 'function') {
-  console.warn('[Scanner] GOG Galaxy playtime reader unavailable. Install GOG Galaxy and connect platforms to import historical playtime.');
+  console.warn(
+    '[Scanner] GOG Galaxy playtime reader unavailable. Install GOG Galaxy and connect platforms to import historical playtime.'
+  );
   getGogGalaxyPlaytimeMap = async () => ({});
   applyGogGalaxyPlaytime = (games) => games;
 }
@@ -114,11 +118,12 @@ try {
     // Fallback function if genre database is not available
     getGameGenres = (gameName) => {
       if (!gameName) return ['Story-driven'];
-      
+
       const name = gameName.toLowerCase();
       if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
       if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
-      if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires')) return ['Strategy'];
+      if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires'))
+        return ['Strategy'];
       if (name.includes('action') || name.includes('far cry') || name.includes('resident evil')) return ['Action'];
       if (name.includes('adventure') || name.includes('tomb raider') || name.includes('zelda')) return ['Adventure'];
       if (name.includes('simulation') || name.includes('sims') || name.includes('cities')) return ['Simulation'];
@@ -128,7 +133,7 @@ try {
       if (name.includes('platformer') || name.includes('mario') || name.includes('sonic')) return ['Platformer'];
       if (name.includes('horror') || name.includes('outlast') || name.includes('amnesia')) return ['Horror'];
       if (name.includes('indie') || name.includes('stardew') || name.includes('hollow')) return ['Indie'];
-      
+
       return ['Story-driven']; // Default fallback
     };
   }
@@ -140,7 +145,7 @@ const scannerRuntimeCache = {
   eaInstallRoots: null,
   ubisoftInstallRoots: null,
   ubisoftRegistryInstallRoots: null,
-  rockstarRegistryInstallRoots: null
+  rockstarRegistryInstallRoots: null,
 };
 
 const createTrackedDefaults = () => ({
@@ -152,8 +157,8 @@ const createTrackedDefaults = () => ({
     daily: {},
     weekly: {},
     monthly: {},
-    yearly: {}
-  }
+    yearly: {},
+  },
 });
 
 const SHELL_COMMAND_TIMEOUT_MS = 4000;
@@ -164,22 +169,23 @@ const runCommand = (command) => {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
       timeout: SHELL_COMMAND_TIMEOUT_MS,
-      windowsHide: true
+      windowsHide: true,
     });
   } catch (error) {
     return '';
   }
 };
 
-const sanitizeScannedGameName = (value) => String(value || '')
-  .replace(/Ôäó/g, '™')
-  .replace(/┬«/g, '®')
-  .replace(/┬®/g, '©')
-  .replace(/ÔÇÖ/g, '’')
-  .replace(/ÔÇ£|ÔÇØ/g, '"')
-  .replace(/ÔÇô|ÔÇö/g, '-')
-  .replace(/\s+/g, ' ')
-  .trim();
+const sanitizeScannedGameName = (value) =>
+  String(value || '')
+    .replace(/Ôäó/g, '™')
+    .replace(/┬«/g, '®')
+    .replace(/┬®/g, '©')
+    .replace(/ÔÇÖ/g, '’')
+    .replace(/ÔÇ£|ÔÇØ/g, '"')
+    .replace(/ÔÇô|ÔÇö/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const BATTLE_NET_FOLDER_HINTS = [
   'world of warcraft',
@@ -190,7 +196,7 @@ const BATTLE_NET_FOLDER_HINTS = [
   'warcraft',
   'heroes of the storm',
   'hearthstone',
-  'call of duty'
+  'call of duty',
 ];
 
 const isLikelyBattleNetGameDirectory = (gamePath, folderName, knownGames = []) => {
@@ -200,9 +206,11 @@ const isLikelyBattleNetGameDirectory = (gamePath, folderName, knownGames = []) =
     const normalizedRegistryKey = String(game?.registryKey || '').toLowerCase();
     const normalizedCode = String(game?.code || '').toLowerCase();
     return (
-      (normalizedGameName && (normalizedFolder.includes(normalizedGameName) || normalizedGameName.includes(normalizedFolder)))
-      || (normalizedRegistryKey && (normalizedFolder.includes(normalizedRegistryKey) || normalizedRegistryKey.includes(normalizedFolder)))
-      || (normalizedCode && normalizedFolder.includes(normalizedCode))
+      (normalizedGameName &&
+        (normalizedFolder.includes(normalizedGameName) || normalizedGameName.includes(normalizedFolder))) ||
+      (normalizedRegistryKey &&
+        (normalizedFolder.includes(normalizedRegistryKey) || normalizedRegistryKey.includes(normalizedFolder))) ||
+      (normalizedCode && normalizedFolder.includes(normalizedCode))
     );
   });
 
@@ -234,12 +242,13 @@ const safeReadJson = (targetPath) => {
   }
 };
 
-const normalizeScannerToken = (value) => String(value || '')
-  .toLowerCase()
-  .replace(/iii/g, '3')
-  .replace(/ii/g, '2')
-  .replace(/iv/g, '4')
-  .replace(/[^a-z0-9]/g, '');
+const normalizeScannerToken = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/iii/g, '3')
+    .replace(/ii/g, '2')
+    .replace(/iv/g, '4')
+    .replace(/[^a-z0-9]/g, '');
 
 const addUniquePath = (paths, candidatePath) => {
   if (!candidatePath || typeof candidatePath !== 'string') return;
@@ -299,8 +308,7 @@ const collectNestedGameDirectories = (rootPath, depth = 2) => {
         if (remainingDepth > 0) {
           visit(entryPath, remainingDepth - 1);
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     });
   };
 
@@ -314,21 +322,24 @@ const addGameIfUnique = (games, game) => {
   }
   const normalizedGame = {
     ...game,
-    name: sanitizeScannedGameName(game.name)
+    name: sanitizeScannedGameName(game.name),
   };
   if (!normalizedGame.name || isLikelyNonGameFolder(normalizedGame.name)) {
     return;
   }
-  const exists = games.some((existingGame) => (
-    existingGame.platform === normalizedGame.platform
-    && (
-      (existingGame.appid && normalizedGame.appid && String(existingGame.appid) === String(normalizedGame.appid))
-      || (existingGame.launchId && normalizedGame.launchId && String(existingGame.launchId) === String(normalizedGame.launchId))
-      || (existingGame.aumid && normalizedGame.aumid && String(existingGame.aumid) === String(normalizedGame.aumid))
-      || (existingGame.installDir && normalizedGame.installDir && existingGame.installDir.toLowerCase() === normalizedGame.installDir.toLowerCase())
-      || existingGame.name.toLowerCase() === normalizedGame.name.toLowerCase()
-    )
-  ));
+  const exists = games.some(
+    (existingGame) =>
+      existingGame.platform === normalizedGame.platform &&
+      ((existingGame.appid && normalizedGame.appid && String(existingGame.appid) === String(normalizedGame.appid)) ||
+        (existingGame.launchId &&
+          normalizedGame.launchId &&
+          String(existingGame.launchId) === String(normalizedGame.launchId)) ||
+        (existingGame.aumid && normalizedGame.aumid && String(existingGame.aumid) === String(normalizedGame.aumid)) ||
+        (existingGame.installDir &&
+          normalizedGame.installDir &&
+          existingGame.installDir.toLowerCase() === normalizedGame.installDir.toLowerCase()) ||
+        existingGame.name.toLowerCase() === normalizedGame.name.toLowerCase())
+  );
 
   if (!exists) {
     games.push(normalizedGame);
@@ -336,18 +347,70 @@ const addGameIfUnique = (games, game) => {
 };
 
 const NON_GAME_FOLDER_TOKENS = [
-  'launcher', 'launchers', 'social club', 'rockstar games launcher',
-  'gog galaxy', 'galaxyclient', 'ubisoft connect', 'ubisoftconnect', 'riot client',
-  'commonredist', 'redistributables', 'redistributable', 'installer',
-  'installers', 'prerequisite', 'prerequisites', 'prereq', 'support',
-  'tools', 'tool', 'cache', 'logs', 'log', 'updater', 'updates',
-  'runtime', 'service', 'services', 'setup', 'uninstall', 'uninstaller',
-  'bonus content', 'soundtrack', 'artbook', 'directx', 'vcredist', 'dotnet',
-  'engine', 'sdk', 'launcherdata', 'anticheat', 'easyanticheat', 'eac', 'beclient',
-  'games', 'game', 'battleye', 'battlEye', 'escapefromtarkov_data', 'eft_data', 'data',
-  'program files', 'program files (x86)', 'windows', 'users', 'documents and settings',
-  'appdata', 'application data', 'local settings', 'programdata', 'perflogs',
-  'system volume information', 'recycle.bin', '$recycle.bin'
+  'launcher',
+  'launchers',
+  'social club',
+  'rockstar games launcher',
+  'gog galaxy',
+  'galaxyclient',
+  'ubisoft connect',
+  'ubisoftconnect',
+  'riot client',
+  'commonredist',
+  'redistributables',
+  'redistributable',
+  'installer',
+  'installers',
+  'prerequisite',
+  'prerequisites',
+  'prereq',
+  'support',
+  'tools',
+  'tool',
+  'cache',
+  'logs',
+  'log',
+  'updater',
+  'updates',
+  'runtime',
+  'service',
+  'services',
+  'setup',
+  'uninstall',
+  'uninstaller',
+  'bonus content',
+  'soundtrack',
+  'artbook',
+  'directx',
+  'vcredist',
+  'dotnet',
+  'engine',
+  'sdk',
+  'launcherdata',
+  'anticheat',
+  'easyanticheat',
+  'eac',
+  'beclient',
+  'games',
+  'game',
+  'battleye',
+  'battlEye',
+  'escapefromtarkov_data',
+  'eft_data',
+  'data',
+  'program files',
+  'program files (x86)',
+  'windows',
+  'users',
+  'documents and settings',
+  'appdata',
+  'application data',
+  'local settings',
+  'programdata',
+  'perflogs',
+  'system volume information',
+  'recycle.bin',
+  '$recycle.bin',
 ];
 
 const SYSTEM_PATH_PATTERNS = [
@@ -360,25 +423,29 @@ const SYSTEM_PATH_PATTERNS = [
   '\\appdata',
   '\\documents and settings',
   '\\$recycle.bin',
-  '\\system volume information'
+  '\\system volume information',
 ];
 
 const isLikelyNonGameFolder = (folderName) => {
-  const normalized = String(folderName || '').trim().toLowerCase();
+  const normalized = String(folderName || '')
+    .trim()
+    .toLowerCase();
   if (!normalized || normalized.length < 2) return true;
-  return NON_GAME_FOLDER_TOKENS.some((token) => (
-    normalized === token ||
-    normalized.startsWith(`${token} `) ||
-    normalized.includes(` ${token}`) ||
-    normalized.includes(`_${token}`) ||
-    normalized.includes(`-${token}`)
-  ));
+  return NON_GAME_FOLDER_TOKENS.some(
+    (token) =>
+      normalized === token ||
+      normalized.startsWith(`${token} `) ||
+      normalized.includes(` ${token}`) ||
+      normalized.includes(`_${token}`) ||
+      normalized.includes(`-${token}`)
+  );
 };
 
-const normalizePathForScanner = (targetPath) => String(targetPath || '')
-  .replace(/\//g, '\\')
-  .trim()
-  .toLowerCase();
+const normalizePathForScanner = (targetPath) =>
+  String(targetPath || '')
+    .replace(/\//g, '\\')
+    .trim()
+    .toLowerCase();
 
 const isDriveRootPath = (targetPath) => /^[a-z]:\\?$/i.test(String(targetPath || '').trim());
 
@@ -392,18 +459,37 @@ const isProtectedSystemPath = (targetPath) => {
     return true;
   }
 
-  return SYSTEM_PATH_PATTERNS.some((pattern) => (
-    normalizedPath === pattern.slice(1)
-    || normalizedPath.endsWith(pattern)
-    || normalizedPath.includes(`${pattern}\\`)
-  ));
+  return SYSTEM_PATH_PATTERNS.some(
+    (pattern) =>
+      normalizedPath === pattern.slice(1) || normalizedPath.endsWith(pattern) || normalizedPath.includes(`${pattern}\\`)
+  );
 };
 
 const NON_GAME_EXECUTABLE_TOKENS = [
-  'launcher', 'updater', 'crashreport', 'unins', 'uninstall', 'setup', 'install',
-  'redistributable', 'support', 'helper', 'service', 'eadesktop', 'origin',
-  'ubisoftconnect', 'upc', 'rockstarlauncher', 'socialclub', 'battle.net',
-  'galaxyclient', 'goggalaxy', 'riotclientservices', 'battleye', 'beclient', 'anticheat'
+  'launcher',
+  'updater',
+  'crashreport',
+  'unins',
+  'uninstall',
+  'setup',
+  'install',
+  'redistributable',
+  'support',
+  'helper',
+  'service',
+  'eadesktop',
+  'origin',
+  'ubisoftconnect',
+  'upc',
+  'rockstarlauncher',
+  'socialclub',
+  'battle.net',
+  'galaxyclient',
+  'goggalaxy',
+  'riotclientservices',
+  'battleye',
+  'beclient',
+  'anticheat',
 ];
 
 const isLikelyGameExecutable = (fileName, folderName = '') => {
@@ -422,10 +508,12 @@ const isLikelyGameExecutable = (fileName, folderName = '') => {
     return false;
   }
 
-  return normalizedFileStem.includes(normalizedFolderStem)
-    || normalizedFolderStem.includes(normalizedFileStem)
-    || normalizedFileStem.startsWith(normalizedFolderStem.slice(0, Math.min(normalizedFolderStem.length, 8)))
-    || normalizedFolderStem.startsWith(normalizedFileStem.slice(0, Math.min(normalizedFileStem.length, 8)));
+  return (
+    normalizedFileStem.includes(normalizedFolderStem) ||
+    normalizedFolderStem.includes(normalizedFileStem) ||
+    normalizedFileStem.startsWith(normalizedFolderStem.slice(0, Math.min(normalizedFolderStem.length, 8))) ||
+    normalizedFolderStem.startsWith(normalizedFileStem.slice(0, Math.min(normalizedFileStem.length, 8)))
+  );
 };
 
 const findPreferredExecutable = (gamePath, folderName) => {
@@ -531,7 +619,11 @@ const findExecutableDeep = (rootDir, maxDepth = 3) => {
         const stats = fs.statSync(entryPath);
         if (stats.isDirectory()) {
           walk(entryPath, depth - 1);
-        } else if (stats.isFile() && entry.toLowerCase().endsWith('.exe') && isLikelyGameExecutable(entry, path.basename(dir))) {
+        } else if (
+          stats.isFile() &&
+          entry.toLowerCase().endsWith('.exe') &&
+          isLikelyGameExecutable(entry, path.basename(dir))
+        ) {
           if (stats.size > bestSize) {
             bestSize = stats.size;
             bestExe = entryPath;
@@ -550,7 +642,9 @@ const getActiveDrives = () => {
     return scannerRuntimeCache.activeDrives;
   }
 
-  const logicalDiskOutput = runCommand('powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType | ConvertTo-Json -Compress"');
+  const logicalDiskOutput = runCommand(
+    'powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType | ConvertTo-Json -Compress"'
+  );
   let activeDrives = [];
 
   if (logicalDiskOutput) {
@@ -562,7 +656,12 @@ const getActiveDrives = () => {
           const driveType = Number(disk?.DriveType);
           return [2, 3, 4].includes(driveType);
         })
-        .map((disk) => String(disk?.DeviceID || '').replace(':', '').trim().toUpperCase())
+        .map((disk) =>
+          String(disk?.DeviceID || '')
+            .replace(':', '')
+            .trim()
+            .toUpperCase()
+        )
         .filter(Boolean)
         .filter((drive, index, list) => list.indexOf(drive) === index)
         .filter((drive) => {
@@ -598,7 +697,9 @@ const getActiveDrives = () => {
 
 const getXboxMap = () => {
   try {
-    const output = runCommand(`powershell "Get-StartApps | Where-Object { $_.AppID -like '*Microsoft*' -or $_.AppID -like '*Xbox*' } | ConvertTo-Json"`);
+    const output = runCommand(
+      `powershell "Get-StartApps | Where-Object { $_.AppID -like '*Microsoft*' -or $_.AppID -like '*Xbox*' } | ConvertTo-Json"`
+    );
     if (!output) {
       return {};
     }
@@ -625,7 +726,9 @@ const getSteamLibraryFolderPaths = (steamAppsPath) => {
     const content = fs.readFileSync(libraryFoldersPath, 'utf8');
     const pathMatches = content.matchAll(/"path"\s+"([^"]+)"/g);
     for (const match of pathMatches) {
-      const steamLibraryRoot = String(match[1] || '').replace(/\\\\/g, '\\').trim();
+      const steamLibraryRoot = String(match[1] || '')
+        .replace(/\\\\/g, '\\')
+        .trim();
       if (steamLibraryRoot) {
         addUniquePath(discoveredPaths, path.join(steamLibraryRoot, 'steamapps'));
       }
@@ -643,10 +746,12 @@ const getSteamInstallPaths = () => {
     queryRegistryValue('HKLM\\SOFTWARE\\Valve\\Steam', 'InstallPath'),
     queryRegistryValue('HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam', 'InstallPath'),
     queryRegistryValue('HKCU\\SOFTWARE\\Valve\\Steam', 'InstallPath'),
-    queryRegistryValue('HKCU\\SOFTWARE\\Valve\\Steam', 'SteamPath')
-  ].filter(Boolean).forEach((installPath) => {
-    addUniquePath(paths, path.join(installPath, 'steamapps'));
-  });
+    queryRegistryValue('HKCU\\SOFTWARE\\Valve\\Steam', 'SteamPath'),
+  ]
+    .filter(Boolean)
+    .forEach((installPath) => {
+      addUniquePath(paths, path.join(installPath, 'steamapps'));
+    });
 
   // Check known defaults
   getActiveDrives().forEach((drive) => {
@@ -655,7 +760,7 @@ const getSteamInstallPaths = () => {
       `${drive}:\\Program Files\\Steam\\steamapps`,
       `${drive}:\\Steam\\steamapps`,
       `${drive}:\\Games\\Steam\\steamapps`,
-      `${drive}:\\SteamLibrary\\steamapps`
+      `${drive}:\\SteamLibrary\\steamapps`,
     ].forEach((candidatePath) => {
       addUniquePath(paths, candidatePath);
     });
@@ -668,7 +773,7 @@ const getSteamInstallPaths = () => {
       addUniquePath(extraPaths, extraPath);
     });
   });
-  
+
   extraPaths.forEach((extraPath) => addUniquePath(paths, extraPath));
 
   return paths;
@@ -686,13 +791,13 @@ const scanSteamLibrary = () => {
       scannerDebug('[Scanner] Path does not exist:', steamPath);
       return;
     }
-    
+
     const files = safeReadDir(steamPath);
     scannerDebug('[Scanner] Files in path:', files.length);
-    
+
     const acfFiles = files.filter((fileName) => fileName.endsWith('.acf'));
     scannerDebug('[Scanner] ACF files found:', acfFiles.length);
-    
+
     acfFiles.forEach((acfFile) => {
       try {
         const content = fs.readFileSync(path.join(steamPath, acfFile), 'utf8');
@@ -714,7 +819,7 @@ const scanSteamLibrary = () => {
           'Steamworks SDK Redist',
           'Proton Experimental',
           'Proton-GE',
-          'Steamworks SDK Redistributables'
+          'Steamworks SDK Redistributables',
         ];
 
         if (skipGames.some((skipName) => gameName.includes(skipName)) || isLikelyNonGameFolder(gameName)) {
@@ -750,7 +855,7 @@ const scanSteamLibrary = () => {
           executable: `steam://run/${appId}`,
           installDir: gamePath,
           installSize,
-          ...tracked
+          ...tracked,
         });
         scannerDebug('[Scanner] Added Steam game:', gameName);
       } catch (error) {
@@ -773,10 +878,9 @@ const scanGOGLibrary = () => {
       return;
     }
 
-    const uniqueKey = [
-      game.platform || 'GOG',
-      game.appid || game.launchId || game.installDir || game.name
-    ].join('::').toLowerCase();
+    const uniqueKey = [game.platform || 'GOG', game.appid || game.launchId || game.installDir || game.name]
+      .join('::')
+      .toLowerCase();
 
     if (seenGameKeys.has(uniqueKey)) {
       return;
@@ -790,7 +894,7 @@ const scanGOGLibrary = () => {
       icon: '',
       genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
       ...createTrackedDefaults(),
-      ...game
+      ...game,
     });
   };
 
@@ -798,8 +902,10 @@ const scanGOGLibrary = () => {
     `${process.env.LOCALAPPDATA || process.env.localappdata}\\GOG.com\\Galaxy\\storage\\games`,
     `${process.env.LOCALAPPDATA || process.env.localappdata}\\GOG\\Games`,
     `${process.env.ProgramFiles || 'C:\\Program Files'}\\GOG Galaxy\\Games`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\GOG Galaxy\\Games`
-  ].filter(Boolean).forEach((candidatePath) => addUniquePath(fallbackPaths, candidatePath));
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\GOG Galaxy\\Games`,
+  ]
+    .filter(Boolean)
+    .forEach((candidatePath) => addUniquePath(fallbackPaths, candidatePath));
 
   getActiveDrives().forEach((drive) => {
     addUniquePath(fallbackPaths, `${drive}:\\GOG Games`);
@@ -814,7 +920,7 @@ const scanGOGLibrary = () => {
     'HKCU\\SOFTWARE\\GOG.com\\Games',
     'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
     'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
-    'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
+    'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
   ];
 
   registryRoots.forEach((registryRoot) => {
@@ -836,7 +942,11 @@ const scanGOGLibrary = () => {
       }
 
       const resolvedInstallDir = [installLocation, pathValue]
-        .map((candidate) => String(candidate || '').trim().replace(/^"|"$/g, ''))
+        .map((candidate) =>
+          String(candidate || '')
+            .trim()
+            .replace(/^"|"$/g, '')
+        )
         .find((candidate) => candidate && fs.existsSync(candidate));
 
       const resolvedName = displayName || path.basename(resolvedInstallDir || '') || '';
@@ -853,9 +963,13 @@ const scanGOGLibrary = () => {
 
       const resolvedExecutablePath = [
         exeValue,
-        resolvedInstallDir ? findBestExecutablePath(resolvedInstallDir, path.basename(resolvedInstallDir)) : null
+        resolvedInstallDir ? findBestExecutablePath(resolvedInstallDir, path.basename(resolvedInstallDir)) : null,
       ]
-        .map((candidate) => String(candidate || '').trim().replace(/^"|"$/g, ''))
+        .map((candidate) =>
+          String(candidate || '')
+            .trim()
+            .replace(/^"|"$/g, '')
+        )
         .find((candidate) => candidate && fs.existsSync(candidate));
 
       addGogGame({
@@ -864,7 +978,7 @@ const scanGOGLibrary = () => {
         appid: gameId || '',
         executable: resolvedExecutablePath || (gameId ? `goggalaxy://openGameById/${gameId}` : null),
         executablePath: resolvedExecutablePath || null,
-        installDir: resolvedInstallDir || null
+        installDir: resolvedInstallDir || null,
       });
     });
   });
@@ -881,14 +995,14 @@ const getEpicManifestPaths = () => {
 
   addUniqueValues(paths, [
     `${process.env.ProgramData || 'C:\\ProgramData'}\\Epic\\EpicGamesLauncher\\Data\\Manifests`,
-    `${process.env.ProgramData || 'C:\\ProgramData'}\\Epic\\UnrealEngineLauncher\\LauncherInstalled.dat`
+    `${process.env.ProgramData || 'C:\\ProgramData'}\\Epic\\UnrealEngineLauncher\\LauncherInstalled.dat`,
   ]);
 
   getActiveDrives().forEach((drive) => {
     addUniqueValues(paths, [
       `${drive}:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests`,
       `${drive}:\\Epic Games\\Launcher\\Portal\\Data\\Manifests`,
-      `${drive}:\\Games\\Epic Games\\Launcher\\Portal\\Data\\Manifests`
+      `${drive}:\\Games\\Epic Games\\Launcher\\Portal\\Data\\Manifests`,
     ]);
   });
 
@@ -899,7 +1013,7 @@ const getEpicLogPaths = () => {
   const paths = [];
 
   addUniqueValues(paths, [
-    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\EpicGamesLauncher\\Saved\\Logs`
+    `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\EpicGamesLauncher\\Saved\\Logs`,
   ]);
 
   return paths.filter((entry) => String(entry).toLowerCase().endsWith('logs') && fs.existsSync(entry));
@@ -985,9 +1099,8 @@ const scanEpicLibrary = () => {
           const appName = manifest.AppName || manifest.CatalogItemId || '';
           const detectedGenres = getGameGenres(manifest.DisplayName);
           const installLocation = manifest.InstallLocation ? String(manifest.InstallLocation).trim() : '';
-          const installSize = typeof manifest.InstallSize === 'number' && manifest.InstallSize > 0
-            ? manifest.InstallSize
-            : null;
+          const installSize =
+            typeof manifest.InstallSize === 'number' && manifest.InstallSize > 0 ? manifest.InstallSize : null;
           const launchId = manifest.CatalogItemId || manifest.AppName || '';
           const mainGameAppName = manifest.MainGameAppName ? String(manifest.MainGameAppName).trim() : null;
           const launchExecutable = manifest.LaunchExecutable ? String(manifest.LaunchExecutable).trim() : null;
@@ -1008,8 +1121,8 @@ const scanEpicLibrary = () => {
               installSize,
               launchExecutable: launchExecutable || undefined,
               launchCommand: launchCommand || undefined,
-              mainGameAppName: mainGameAppName || undefined
-            }
+              mainGameAppName: mainGameAppName || undefined,
+            },
           });
         } catch (error) {
           // Ignore malformed Epic manifest
@@ -1041,7 +1154,7 @@ const scanUbisoftLibrary = () => {
     `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft\\Ubisoft Game Launcher\\games`,
     `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft\\Ubisoft Game Launcher\\games`,
     `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft\\games`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft\\games`
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft\\games`,
   ];
 
   // Add drive-specific paths
@@ -1057,7 +1170,7 @@ const scanUbisoftLibrary = () => {
   // Also check the main Ubisoft installation folder directly (for games like Far Cry 6)
   const mainUbisoftPaths = [
     `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft`,
-    `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft`
+    `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft`,
   ];
 
   uplayPaths.push(...mainUbisoftPaths);
@@ -1076,11 +1189,12 @@ const scanUbisoftLibrary = () => {
       let foundExecutable = null;
 
       // First try direct executable in game folder
-      const directExecutables = safeReadDir(gamePath).filter(file => 
-        file.toLowerCase().endsWith('.exe') && 
-        (file.toLowerCase().includes(folder.toLowerCase().replace(/\s+/g, '')) ||
-         file.toLowerCase().includes('launcher') ||
-         file.toLowerCase().includes('game'))
+      const directExecutables = safeReadDir(gamePath).filter(
+        (file) =>
+          file.toLowerCase().endsWith('.exe') &&
+          (file.toLowerCase().includes(folder.toLowerCase().replace(/\s+/g, '')) ||
+            file.toLowerCase().includes('launcher') ||
+            file.toLowerCase().includes('game'))
       );
 
       if (directExecutables.length > 0) {
@@ -1090,7 +1204,7 @@ const scanUbisoftLibrary = () => {
         for (const subfolder of executableSubfolders) {
           const subfolderPath = path.join(gamePath, subfolder);
           if (fs.existsSync(subfolderPath) && fs.statSync(subfolderPath).isDirectory()) {
-            const subfolderExecutables = safeReadDir(subfolderPath).filter(file => 
+            const subfolderExecutables = safeReadDir(subfolderPath).filter((file) =>
               file.toLowerCase().endsWith('.exe')
             );
             if (subfolderExecutables.length > 0) {
@@ -1105,7 +1219,7 @@ const scanUbisoftLibrary = () => {
         // Get genres from database for better Perfect Play recommendations
         const gameName = folder.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
         const detectedGenres = getGameGenres(gameName);
-        
+
         games.push({
           name: gameName,
           platform: 'Uplay',
@@ -1116,7 +1230,7 @@ const scanUbisoftLibrary = () => {
           executablePath: foundExecutable,
           installDir: gamePath,
           launchId: folder,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
         console.log('[Scanner] Added Ubisoft game:', gameName);
       }
@@ -1138,31 +1252,29 @@ const scanFolderLibraries = (platform, paths, executableBuilder = null) => {
 
       if (platform === 'EA') {
         const eaSkipFolders = ['EA Desktop', 'EA Core', 'Setup', 'Cache', 'Logs', 'Data', 'Temp'];
-        if (eaSkipFolders.some(skip => folder.toLowerCase().includes(skip.toLowerCase()))) {
+        if (eaSkipFolders.some((skip) => folder.toLowerCase().includes(skip.toLowerCase()))) {
           return;
         }
       }
 
       const folderFiles = safeReadDir(gamePath);
-      const hasExecutable = folderFiles.some(file =>
-        file.toLowerCase().endsWith('.exe') ||
-        file.toLowerCase().endsWith('.lnk') ||
-        file.toLowerCase().includes('launch') ||
-        file.toLowerCase().includes('run')
+      const hasExecutable = folderFiles.some(
+        (file) =>
+          file.toLowerCase().endsWith('.exe') ||
+          file.toLowerCase().endsWith('.lnk') ||
+          file.toLowerCase().includes('launch') ||
+          file.toLowerCase().includes('run')
       );
 
       const detectedExecutablePath = findBestExecutablePath(gamePath, folder);
       const looksInstalled = looksLikeInstalledGameDirectory(gamePath, folder);
 
-      const builtExecutableMeta = typeof executableBuilder === 'function'
-        ? executableBuilder(gamePath, folder)
-        : null;
-      const builtExecutable = builtExecutableMeta && typeof builtExecutableMeta === 'object'
-        ? builtExecutableMeta.executable
-        : builtExecutableMeta;
-      const extraMetadata = builtExecutableMeta && typeof builtExecutableMeta === 'object'
-        ? builtExecutableMeta
-        : {};
+      const builtExecutableMeta = typeof executableBuilder === 'function' ? executableBuilder(gamePath, folder) : null;
+      const builtExecutable =
+        builtExecutableMeta && typeof builtExecutableMeta === 'object'
+          ? builtExecutableMeta.executable
+          : builtExecutableMeta;
+      const extraMetadata = builtExecutableMeta && typeof builtExecutableMeta === 'object' ? builtExecutableMeta : {};
       const builtExecutablePath = builtExecutable?.startsWith('file://')
         ? builtExecutable.replace('file://', '')
         : builtExecutable;
@@ -1172,22 +1284,21 @@ const scanFolderLibraries = (platform, paths, executableBuilder = null) => {
         // Get genres from database for better Perfect Play recommendations
         const gameName = extraMetadata.name || folder;
         const detectedGenres = getGameGenres(gameName);
-        
+
         games.push({
           name: gameName,
           platform,
           genres: detectedGenres.length > 0 ? detectedGenres : ['Story-driven'],
           iconUrl: '',
           icon: '',
-          executable: builderExists ? builtExecutable : (detectedExecutablePath || builtExecutable || null),
+          executable: builderExists ? builtExecutable : detectedExecutablePath || builtExecutable || null,
           executablePath: detectedExecutablePath || (builderExists ? builtExecutablePath : null),
           installDir: gamePath,
           ...extraMetadata,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   paths.forEach((rootPath) => {
@@ -1221,7 +1332,7 @@ const scanBattleNetLibrary = () => {
     { name: 'Warcraft III', registryKey: 'Warcraft III', code: 'W3' },
     { name: 'Warcraft I & II: Remastered', registryKey: 'Warcraft I & II Remastered', code: 'W1' },
     { name: 'Diablo II: Resurrected', registryKey: 'Diablo II Resurrected', code: 'OSI' },
-    { name: 'Diablo Immortal', registryKey: 'Diablo Immortal', code: 'ANBS' }
+    { name: 'Diablo Immortal', registryKey: 'Diablo Immortal', code: 'ANBS' },
   ];
 
   const knownBattleNetRoots = [];
@@ -1233,7 +1344,7 @@ const scanBattleNetLibrary = () => {
     `${process.env.Public || 'C:\\Users\\Public'}\\Games\\Battle.net`,
     `${process.env.Public || 'C:\\Users\\Public'}\\Games\\Blizzard`,
     `${process.env.ProgramFiles || 'C:\\Program Files'}\\Blizzard`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Blizzard`
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Blizzard`,
   ]);
 
   getActiveDrives().forEach((drive) => {
@@ -1247,7 +1358,7 @@ const scanBattleNetLibrary = () => {
       `${drive}:\\Diablo 3`,
       `${drive}:\\Games\\Diablo 3`,
       `${drive}:\\Program Files\\Battle.net`,
-      `${drive}:\\Program Files (x86)\\Battle.net`
+      `${drive}:\\Program Files (x86)\\Battle.net`,
     ]);
   });
 
@@ -1255,7 +1366,7 @@ const scanBattleNetLibrary = () => {
     const registryLocations = [
       `HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Blizzard Entertainment\\${game.registryKey}`,
       `HKEY_LOCAL_MACHINE\\SOFTWARE\\Blizzard Entertainment\\${game.registryKey}`,
-      `HKEY_CURRENT_USER\\SOFTWARE\\Blizzard Entertainment\\${game.registryKey}`
+      `HKEY_CURRENT_USER\\SOFTWARE\\Blizzard Entertainment\\${game.registryKey}`,
     ];
 
     let installDir = '';
@@ -1264,27 +1375,36 @@ const scanBattleNetLibrary = () => {
       if (!registryOutput.includes('HKEY_')) {
         return false;
       }
-      installDir = queryRegistryValue(registryLocation, 'InstallPath') || queryRegistryValue(registryLocation, 'GamePath') || '';
+      installDir =
+        queryRegistryValue(registryLocation, 'InstallPath') || queryRegistryValue(registryLocation, 'GamePath') || '';
       return true;
     });
 
     if (!installDir) {
-      installDir = knownBattleNetRoots.find((rootPath) => {
-        const normalizedRootName = normalizeScannerToken(path.basename(rootPath));
-        return [game.name, game.registryKey, ...(game.aliases || [])].some((candidate) => {
-          const normalizedCandidate = normalizeScannerToken(candidate);
-          return normalizedRootName && (normalizedRootName.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedRootName));
-        });
-      }) || '';
+      installDir =
+        knownBattleNetRoots.find((rootPath) => {
+          const normalizedRootName = normalizeScannerToken(path.basename(rootPath));
+          return [game.name, game.registryKey, ...(game.aliases || [])].some((candidate) => {
+            const normalizedCandidate = normalizeScannerToken(candidate);
+            return (
+              normalizedRootName &&
+              (normalizedRootName.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedRootName))
+            );
+          });
+        }) || '';
     }
 
-    if (!foundRegistry && !installDir && !knownBattleNetRoots.some((rootPath) => fs.existsSync(path.join(rootPath, game.registryKey)))) {
+    if (
+      !foundRegistry &&
+      !installDir &&
+      !knownBattleNetRoots.some((rootPath) => fs.existsSync(path.join(rootPath, game.registryKey)))
+    ) {
       return;
     }
 
     // Get genres from database for better Perfect Play recommendations
     const detectedGenres = getGameGenres(game.name);
-    
+
     addGameIfUnique(games, {
       name: game.name,
       platform: 'Battle.net',
@@ -1296,7 +1416,7 @@ const scanBattleNetLibrary = () => {
       installDir: installDir || null,
       executablePath: installDir ? findPreferredExecutable(installDir, game.name) : null,
       executable: `"C:\\Program Files (x86)\\Battle.net\\Battle.net.exe" --exec="launch ${game.code}"`,
-      ...createTrackedDefaults()
+      ...createTrackedDefaults(),
     });
   });
 
@@ -1312,18 +1432,18 @@ const scanBattleNetLibrary = () => {
           return;
         }
 
-        const matchedKnownGame = blizzardGames.find((game) => (
+        const matchedKnownGame = blizzardGames.find((game) =>
           [game.name, game.registryKey, ...(game.aliases || [])].some((candidate) => {
             const normalizedCandidate = normalizeScannerToken(candidate);
             const normalizedFolder = normalizeScannerToken(folder);
             return normalizedFolder.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedFolder);
           })
-        ));
+        );
 
         // Get genres from database for better Perfect Play recommendations
         const gameName = matchedKnownGame?.name || folder;
         const detectedGenres = getGameGenres(gameName);
-        
+
         addGameIfUnique(games, {
           name: gameName,
           platform: 'Battle.net',
@@ -1337,10 +1457,9 @@ const scanBattleNetLibrary = () => {
           executable: matchedKnownGame?.code
             ? `"C:\\Program Files (x86)\\Battle.net\\Battle.net.exe" --exec="launch ${matchedKnownGame.code}"`
             : null,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
-      } catch (error) {
-      }
+      } catch (error) {}
     });
   });
 
@@ -1355,7 +1474,7 @@ const getUbisoftInstallRoots = () => {
   const roots = [];
   const settingsCandidates = [
     `${process.env.LOCALAPPDATA || process.env.localappdata || ''}\\Ubisoft Game Launcher\\settings.yml`,
-    `${process.env.LOCALAPPDATA || process.env.localappdata || ''}\\Ubisoft Connect\\settings.yml`
+    `${process.env.LOCALAPPDATA || process.env.localappdata || ''}\\Ubisoft Connect\\settings.yml`,
   ];
 
   settingsCandidates.forEach((settingsPath) => {
@@ -1368,8 +1487,7 @@ const getUbisoftInstallRoots = () => {
       const gameInstallPath = parseYamlScalar(settingsContent, 'game_installation_path');
       const installerCachePath = parseYamlScalar(settingsContent, 'installer_cache_path');
       addUniqueValues(roots, [gameInstallPath, installerCachePath]);
-    } catch (error) {
-    }
+    } catch (error) {}
   });
 
   scannerRuntimeCache.ubisoftInstallRoots = roots;
@@ -1395,14 +1513,22 @@ const scanXboxLibrary = () => {
     safeReadDir(rootPath).forEach((folder) => {
       const gamePath = path.join(rootPath, folder);
       try {
-        if (!fs.statSync(gamePath).isDirectory() || folder.includes('GameSave') || folder.includes('Video') || isLikelyNonGameFolder(folder)) {
+        if (
+          !fs.statSync(gamePath).isDirectory() ||
+          folder.includes('GameSave') ||
+          folder.includes('Video') ||
+          isLikelyNonGameFolder(folder)
+        ) {
           return;
         }
 
         let aumid = xboxAumidMap[folder] || null;
         if (!aumid) {
           Object.entries(xboxAumidMap).some(([appName, appId]) => {
-            if (appName.toLowerCase().includes(folder.toLowerCase()) || folder.toLowerCase().includes(appName.toLowerCase())) {
+            if (
+              appName.toLowerCase().includes(folder.toLowerCase()) ||
+              folder.toLowerCase().includes(appName.toLowerCase())
+            ) {
               aumid = appId;
               return true;
             }
@@ -1416,10 +1542,12 @@ const scanXboxLibrary = () => {
           iconUrl: '',
           icon: '',
           aumid,
-          executable: aumid ? `shell:AppsFolder\\${aumid}` : (findPreferredExecutable(gamePath, folder) || `${gamePath}\\${folder}.exe`),
+          executable: aumid
+            ? `shell:AppsFolder\\${aumid}`
+            : findPreferredExecutable(gamePath, folder) || `${gamePath}\\${folder}.exe`,
           executablePath: findPreferredExecutable(gamePath, folder),
           installDir: gamePath,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
       } catch (error) {
         // Ignore inaccessible folders.
@@ -1441,7 +1569,7 @@ const scanEALibrary = () => {
     `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\Electronic Arts`,
     `${process.env.LOCALAPPDATA || process.env.localappdata || 'C:\\Users\\Public\\AppData\\Local'}\\EA Desktop`,
     `${process.env.ProgramFiles || 'C:\\Program Files'}\\Electronic Arts`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Electronic Arts`
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Electronic Arts`,
   ];
   const explicitInstallRoots = [];
 
@@ -1449,7 +1577,7 @@ const scanEALibrary = () => {
     queryRegistryValue('HKLM\\SOFTWARE\\WOW6432Node\\Electronic Arts\\EA Desktop', 'Install Dir'),
     queryRegistryValue('HKLM\\SOFTWARE\\Electronic Arts\\EA Desktop', 'Install Dir'),
     queryRegistryValue('HKLM\\SOFTWARE\\WOW6432Node\\Origin', 'ClientPath'),
-    queryRegistryValue('HKLM\\SOFTWARE\\Origin', 'ClientPath')
+    queryRegistryValue('HKLM\\SOFTWARE\\Origin', 'ClientPath'),
   ]);
 
   getActiveDrives().forEach((drive) => {
@@ -1490,7 +1618,7 @@ const scanEALibrary = () => {
           executablePath: directExe,
           installDir: installDataPath,
           launchId: folder,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
         return; // done with this folder
       }
@@ -1519,7 +1647,7 @@ const scanEALibrary = () => {
         executablePath: resolvedExe,
         installDir: realInstallDir,
         launchId: titleId,
-        ...createTrackedDefaults()
+        ...createTrackedDefaults(),
       });
     });
   });
@@ -1532,7 +1660,7 @@ const scanPlaystationLibrary = () => {
   const paths = [
     `${process.env.LOCALAPPDATA || process.env.localappdata}\\PlayStation`,
     `${process.env.ProgramFiles || 'C:\\Program Files'}\\PlayStation PC LLC`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\PlayStation PC LLC`
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\PlayStation PC LLC`,
   ];
 
   getActiveDrives().forEach((drive) => {
@@ -1541,8 +1669,8 @@ const scanPlaystationLibrary = () => {
 
   const knownPsGames = [
     'God of War',
-    'Marvel\'s Spider-Man Remastered',
-    'Marvel\'s Spider-Man: Miles Morales',
+    "Marvel's Spider-Man Remastered",
+    "Marvel's Spider-Man: Miles Morales",
     'Horizon Zero Dawn Complete Edition',
     'Days Gone',
     'Returnal',
@@ -1550,8 +1678,8 @@ const scanPlaystationLibrary = () => {
     'Uncharted: Legacy of Thieves Collection',
     'Ratchet & Clank: Rift Apart',
     'Sackboy: A Rift Apart',
-    'Ghost of Tsushima Director\'s Cut',
-    'HELLDIVERS 2'
+    "Ghost of Tsushima Director's Cut",
+    'HELLDIVERS 2',
   ];
 
   paths.forEach((rootPath) => {
@@ -1566,7 +1694,9 @@ const scanPlaystationLibrary = () => {
 
         // Check if it matches a known PS game or looks like a game
         const isKnown = knownPsGames.some((knownGame) => folder.includes(knownGame) || knownGame.includes(folder));
-        const gameName = isKnown ? knownPsGames.find((knownGame) => folder.includes(knownGame) || knownGame.includes(folder)) || folder : folder;
+        const gameName = isKnown
+          ? knownPsGames.find((knownGame) => folder.includes(knownGame) || knownGame.includes(folder)) || folder
+          : folder;
 
         games.push({
           name: gameName,
@@ -1574,7 +1704,7 @@ const scanPlaystationLibrary = () => {
           iconUrl: '',
           icon: '',
           executable: null,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
       } catch (error) {
         // Ignore inaccessible folders
@@ -1592,7 +1722,7 @@ const scanRiotLibrary = () => {
   addUniqueValues(riotPaths, [
     `${process.env.LOCALAPPDATA || process.env.localappdata || ''}\\Riot Games`,
     `${process.env.ProgramFiles || 'C:\\Program Files'}\\Riot Games`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Riot Games`
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Riot Games`,
   ]);
 
   getActiveDrives().forEach((drive) => {
@@ -1606,7 +1736,11 @@ const scanRiotLibrary = () => {
     safeReadDir(rootPath).forEach((folder) => {
       const gamePath = path.join(rootPath, folder);
       try {
-        if (!fs.statSync(gamePath).isDirectory() || isLikelyNonGameFolder(folder) || folder.toLowerCase().includes('riot client')) {
+        if (
+          !fs.statSync(gamePath).isDirectory() ||
+          isLikelyNonGameFolder(folder) ||
+          folder.toLowerCase().includes('riot client')
+        ) {
           return;
         }
 
@@ -1642,10 +1776,9 @@ const scanRiotLibrary = () => {
           executable,
           launchId,
           installDir: gamePath,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
-      } catch (error) {
-      }
+      } catch (error) {}
     });
   });
 
@@ -1660,7 +1793,7 @@ const scanCurseForgeLibrary = () => {
     `${process.env.USERPROFILE || process.env.userprofile || ''}\\curseforge\\minecraft\\Instances`,
     `${process.env.USERPROFILE || process.env.userprofile || ''}\\CurseForge\\Minecraft\\Instances`,
     `${process.env.USERPROFILE || process.env.userprofile || ''}\\curseforge\\Instances`,
-    `${process.env.USERPROFILE || process.env.userprofile || ''}\\Documents\\Curse\\Minecraft\\Instances`
+    `${process.env.USERPROFILE || process.env.userprofile || ''}\\Documents\\Curse\\Minecraft\\Instances`,
   ]);
 
   instancePaths.forEach((instancesPath) => {
@@ -1680,10 +1813,9 @@ const scanCurseForgeLibrary = () => {
           icon: '',
           executable: `curseforge://core/PlayMinecraft?modpackId=${modpackId}`,
           installDir: gamePath,
-          ...createTrackedDefaults()
+          ...createTrackedDefaults(),
         });
-      } catch (error) {
-      }
+      } catch (error) {}
     });
   });
 
@@ -1714,7 +1846,7 @@ const normalizeCapabilityState = (game = {}) => {
     hasInstallDir,
     hasLaunchId,
     hasProtocolLaunch,
-    isLaunchReady: launchCapability === 'direct' || launchCapability === 'launcher'
+    isLaunchReady: launchCapability === 'direct' || launchCapability === 'launcher',
   };
 };
 
@@ -1725,9 +1857,9 @@ const enrichGameWithCollectionTrust = (game = {}) => ({
     hasName: Boolean(game.name),
     hasInstallDir: Boolean(game.installDir),
     hasExecutable: Boolean(game.executable || game.executablePath),
-    status: 'detected'
+    status: 'detected',
   },
-  capabilities: normalizeCapabilityState(game)
+  capabilities: normalizeCapabilityState(game),
 });
 
 const buildPlatformStatusMap = (platformEntries = []) => {
@@ -1739,14 +1871,14 @@ const buildPlatformStatusMap = (platformEntries = []) => {
     accumulator[entry.platform] = {
       key: entry.key,
       displayName: entry.platform,
-      scanStatus: entry.error ? 'error' : (games.length > 0 ? 'found' : 'empty'),
+      scanStatus: entry.error ? 'error' : games.length > 0 ? 'found' : 'empty',
       gameCount: games.length,
       launchReadyCount: readyCount,
       launchFallbackCount: games.length - readyCount,
       pathCount: debugPaths.length,
       paths: debugPaths,
       error: entry.error || null,
-      lastScanAt: Date.now()
+      lastScanAt: Date.now(),
     };
 
     return accumulator;
@@ -1761,8 +1893,10 @@ const dedupeGames = (games) => {
       game.appid || '',
       game.launchId || game.code || game.aumid || '',
       game.installDir || '',
-      game.name || ''
-    ].join('::').toLowerCase();
+      game.name || '',
+    ]
+      .join('::')
+      .toLowerCase();
     if (seen.has(key)) {
       return false;
     }
@@ -1773,20 +1907,20 @@ const dedupeGames = (games) => {
 
 const filterCrossPlatformDuplicates = (games) => {
   const platformPriority = {
-    'Steam': 1,
-    'Epic': 2,
-    'GOG': 3,
-    'Xbox': 4,
+    Steam: 1,
+    Epic: 2,
+    GOG: 3,
+    Xbox: 4,
     'Battle.net': 5,
-    'EA': 6,
-    'Uplay': 7,
-    'Rockstar': 8,
-    'PlayStation': 9,
-    'BSG': 10,
-    'Riot': 11,
-    'CurseForge': 12,
-    'Amazon': 13,
-    'Itch.io': 14
+    EA: 6,
+    Uplay: 7,
+    Rockstar: 8,
+    PlayStation: 9,
+    BSG: 10,
+    Riot: 11,
+    CurseForge: 12,
+    Amazon: 13,
+    'Itch.io': 14,
   };
 
   const gamesByName = new Map();
@@ -1797,7 +1931,7 @@ const filterCrossPlatformDuplicates = (games) => {
 
     const existing = gamesByName.get(normalizedName);
     const currentPriority = platformPriority[game.platform] || 99;
-    const existingPriority = existing ? (platformPriority[existing.platform] || 99) : 99;
+    const existingPriority = existing ? platformPriority[existing.platform] || 99 : 99;
 
     if (!existing || currentPriority < existingPriority) {
       gamesByName.set(normalizedName, game);
@@ -1816,7 +1950,7 @@ const getBSGRegistryCandidates = () => {
   const registryRoots = [
     'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
     'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
-    'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
+    'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
   ];
 
   registryRoots.forEach((registryRoot) => {
@@ -1833,8 +1967,12 @@ const getBSGRegistryCandidates = () => {
       }
 
       [installLocation, uninstallString]
-        .map((candidate) => String(candidate || '').trim().replace(/^"|"$/g, ''))
-        .map((candidate) => candidate.endsWith('.exe') ? path.dirname(candidate) : candidate)
+        .map((candidate) =>
+          String(candidate || '')
+            .trim()
+            .replace(/^"|"$/g, '')
+        )
+        .map((candidate) => (candidate.endsWith('.exe') ? path.dirname(candidate) : candidate))
         .forEach((candidate) => addUniquePath(candidates, candidate));
     });
   });
@@ -1843,9 +1981,7 @@ const getBSGRegistryCandidates = () => {
 };
 
 const findBSGLauncherPath = (installDir = '') => {
-  const localAppDataPrograms = process.env.LOCALAPPDATA
-    ? path.join(process.env.LOCALAPPDATA, 'Programs')
-    : null;
+  const localAppDataPrograms = process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Programs') : null;
   const launcherCandidates = [
     installDir ? path.join(installDir, 'BsgLauncher.exe') : null,
     installDir ? path.join(installDir, 'Launcher', 'BsgLauncher.exe') : null,
@@ -1858,7 +1994,9 @@ const findBSGLauncherPath = (installDir = '') => {
     'C:\\Program Files\\BsgLauncher\\BsgLauncher.exe',
     'C:\\Program Files (x86)\\BsgLauncher\\BsgLauncher.exe',
     localAppDataPrograms ? path.join(localAppDataPrograms, 'BsgLauncher', 'BsgLauncher.exe') : null,
-    localAppDataPrograms ? path.join(localAppDataPrograms, 'Battlestate Games', 'BsgLauncher', 'BsgLauncher.exe') : null
+    localAppDataPrograms
+      ? path.join(localAppDataPrograms, 'Battlestate Games', 'BsgLauncher', 'BsgLauncher.exe')
+      : null,
   ].filter(Boolean);
 
   return launcherCandidates.find((candidate) => fs.existsSync(candidate)) || null;
@@ -1886,16 +2024,20 @@ const resolveTarkovInstallCandidate = (candidatePath) => {
       }
     });
 
-  return childFolders.find((childPath) => (
-    fs.existsSync(path.join(childPath, 'EscapeFromTarkov.exe'))
-    || fs.existsSync(path.join(childPath, 'EscapeFromTarkov_BE.exe'))
-    || fs.existsSync(path.join(childPath, 'EscapeFromTarkov_Arena.exe'))
-  )) || null;
+  return (
+    childFolders.find(
+      (childPath) =>
+        fs.existsSync(path.join(childPath, 'EscapeFromTarkov.exe')) ||
+        fs.existsSync(path.join(childPath, 'EscapeFromTarkov_BE.exe')) ||
+        fs.existsSync(path.join(childPath, 'EscapeFromTarkov_Arena.exe'))
+    ) || null
+  );
 };
 
 const createBSGGame = (name, installDir, launcherPath) => {
   const detectedGenres = getGameGenres(name);
-  const executablePath = findBSGLauncherPath(installDir) || launcherPath || path.join(installDir, 'EscapeFromTarkov_BE.exe');
+  const executablePath =
+    findBSGLauncherPath(installDir) || launcherPath || path.join(installDir, 'EscapeFromTarkov_BE.exe');
 
   return {
     name,
@@ -1909,7 +2051,7 @@ const createBSGGame = (name, installDir, launcherPath) => {
     executable: executablePath,
     executablePath,
     installDir,
-    ...createTrackedDefaults()
+    ...createTrackedDefaults(),
   };
 };
 
@@ -1926,7 +2068,7 @@ const scanBSGLibrary = () => {
       `${drive}:\\Games\\Battlestate Games`,
       `${drive}:\\Games\\Escape from Tarkov`,
       `${drive}:\\Program Files\\Battlestate Games`,
-      `${drive}:\\Program Files (x86)\\Battlestate Games`
+      `${drive}:\\Program Files (x86)\\Battlestate Games`,
     ].forEach((candidate) => addUniquePath(candidateRoots, candidate));
   });
 
@@ -1943,15 +2085,34 @@ const scanBSGLibrary = () => {
     }
 
     const hasArenaExecutable = fs.existsSync(path.join(installDir, 'EscapeFromTarkov_Arena.exe'));
-    addGameIfUnique(games, createBSGGame(hasArenaExecutable ? 'Escape from Tarkov: Arena' : 'Escape from Tarkov', installDir, launcherPath));
+    addGameIfUnique(
+      games,
+      createBSGGame(hasArenaExecutable ? 'Escape from Tarkov: Arena' : 'Escape from Tarkov', installDir, launcherPath)
+    );
   });
 
   return games;
 };
 
-const getSupportedScanPlatforms = (platform = process.platform) => platform === 'win32'
-  ? ['steam', 'epic', 'gog', 'ea', 'uplay', 'battleNet', 'rockstar', 'xbox', 'playstation', 'bsg', 'riot', 'curseForge', 'amazon', 'itch']
-  : ['steam'];
+const getSupportedScanPlatforms = (platform = process.platform) =>
+  platform === 'win32'
+    ? [
+        'steam',
+        'epic',
+        'gog',
+        'ea',
+        'uplay',
+        'battleNet',
+        'rockstar',
+        'xbox',
+        'playstation',
+        'bsg',
+        'riot',
+        'curseForge',
+        'amazon',
+        'itch',
+      ]
+    : ['steam'];
 
 const safeRunPlatformScanner = (label, scanner) => {
   if (typeof scanner !== 'function') {
@@ -1972,8 +2133,9 @@ const scanAllLibraries = async () => {
   scannerDebug('[Scanner] Starting scanAllLibraries...');
 
   if (getSupportedScanPlatforms().length === 1) {
-    const steamGames = safeRunPlatformScanner('Steam', scanSteamLibraryNew || scanSteamLibrary)
-      .map((game) => enrichGameWithCollectionTrust(game));
+    const steamGames = safeRunPlatformScanner('Steam', scanSteamLibraryNew || scanSteamLibrary).map((game) =>
+      enrichGameWithCollectionTrust(game)
+    );
     const deduped = dedupeGames(filterCrossPlatformDuplicates(steamGames));
     global.lastScanDebug = {
       summary: {
@@ -2011,9 +2173,7 @@ const scanAllLibraries = async () => {
 
   const activeDrives = getActiveDrives();
 
-  const gogPaths = [
-    `${process.env.LOCALAPPDATA || process.env.localappdata}\\GOG.com\\Galaxy\\storage\\games`
-  ];
+  const gogPaths = [`${process.env.LOCALAPPDATA || process.env.localappdata}\\GOG.com\\Galaxy\\storage\\games`];
   activeDrives.forEach((drive) => {
     gogPaths.push(`${drive}:\\GOG Games`);
     gogPaths.push(`${drive}:\\Games\\GOG`);
@@ -2029,7 +2189,7 @@ const scanAllLibraries = async () => {
     `${process.env.LOCALAPPDATA || process.env.localappdata}\\Electronic Arts\\EA Desktop`,
     `${process.env.ProgramFiles || process.env.programfiles}\\Electronic Arts\\EA Desktop`,
     `${process.env['ProgramFiles(x86)']}\\Electronic Arts\\EA Desktop`,
-    `${process.env.ProgramData || process.env.programdata}\\Electronic Arts\\EA Desktop`
+    `${process.env.ProgramData || process.env.programdata}\\Electronic Arts\\EA Desktop`,
   ];
   activeDrives.forEach((drive) => {
     originPaths.push(`${drive}:\\Origin Games`);
@@ -2050,7 +2210,7 @@ const scanAllLibraries = async () => {
     `${process.env['ProgramFiles(x86)']}\\Ubisoft\\Ubisoft Game Launcher\\games`,
     `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft\\Ubisoft Game Launcher\\games`,
     `${process.env.ProgramFiles || process.env.programfiles}\\Ubisoft\\games`,
-    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft\\games`
+    `${process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'}\\Ubisoft\\games`,
   ];
   activeDrives.forEach((drive) => {
     uplayPaths.push(`${drive}:\\Ubisoft`);
@@ -2070,7 +2230,7 @@ const scanAllLibraries = async () => {
     `${process.env.ProgramFiles || process.env.programfiles}\\Rockstar Games`,
     `${process.env['ProgramFiles(x86)']}\\Rockstar Games`,
     `${process.env.ProgramData || process.env.programdata}\\Rockstar Games`,
-    `${process.env.LOCALAPPDATA || process.env.localappdata}\\Rockstar Games`
+    `${process.env.LOCALAPPDATA || process.env.localappdata}\\Rockstar Games`,
   ];
   activeDrives.forEach((drive) => {
     rockstarPaths.push(`${drive}:\\Program Files\\Rockstar Games`);
@@ -2088,17 +2248,17 @@ const scanAllLibraries = async () => {
 
   const steamGames = safeRunPlatformScanner('Steam', scanSteamLibraryNew || scanSteamLibrary);
   scannerDebug('[Scanner] Steam found:', steamGames.length, 'games');
-  
+
   const epicGames = safeRunPlatformScanner('Epic', scanEpicLibrary);
   scannerDebug('[Scanner] Epic found:', epicGames.length, 'games');
-  
+
   const gogGames = safeRunPlatformScanner('GOG', scanGOGLibrary);
   scannerDebug('[Scanner] GOG found:', gogGames.length, 'games');
-  
+
   const uplayGames = safeRunPlatformScanner('Uplay', scanUbisoftLibrary);
   const rockstarGames = safeRunPlatformScanner('Rockstar', scanRockstarLibraryNew);
   scannerDebug('[Scanner] Rockstar found:', rockstarGames.length, 'games');
-  
+
   const eaGames = safeRunPlatformScanner('EA', scanEALibraryNew || scanEALibrary);
   scannerDebug(`[Scanner] EA found: ${eaGames.length} games`);
 
@@ -2127,7 +2287,7 @@ const scanAllLibraries = async () => {
     { key: 'riot', platform: 'Riot', games: riotGames, paths: [] },
     { key: 'curseForge', platform: 'CurseForge', games: curseForgeGames, paths: [] },
     { key: 'amazon', platform: 'Amazon', games: amazonGames, paths: [] },
-    { key: 'itch', platform: 'Itch.io', games: itchGames, paths: [] }
+    { key: 'itch', platform: 'Itch.io', games: itchGames, paths: [] },
   ];
 
   const games = [
@@ -2144,15 +2304,15 @@ const scanAllLibraries = async () => {
     ...riotGames,
     ...curseForgeGames,
     ...amazonGames,
-    ...itchGames
+    ...itchGames,
   ].map((game) => enrichGameWithCollectionTrust(game));
 
   scannerDebug('[Scanner] Total games before dedupe:', games.length);
-  
+
   // First filter cross-platform duplicates (prefer Epic/Steam over Rockstar)
   const crossPlatformFiltered = filterCrossPlatformDuplicates(games);
   scannerDebug('[Scanner] After cross-platform dedupe:', crossPlatformFiltered.length);
-  
+
   // Then dedupe within same platform
   const deduped = dedupeGames(crossPlatformFiltered);
   scannerDebug('[Scanner] Total games after dedupe:', deduped.length);
@@ -2184,14 +2344,14 @@ const scanAllLibraries = async () => {
       successfulPlatformCount,
       emptyPlatformCount,
       errorPlatformCount,
-      lastScanAt: Date.now()
+      lastScanAt: Date.now(),
     },
     activeDrives,
     paths: {
       gog: gogPaths,
       origin: originPaths,
       uplay: uplayPaths,
-      rockstar: rockstarPaths
+      rockstar: rockstarPaths,
     },
     platformStatus,
     platformCounts: {
@@ -2208,14 +2368,14 @@ const scanAllLibraries = async () => {
       riot: riotGames.length,
       curseForge: curseForgeGames.length,
       amazon: amazonGames.length,
-      itch: itchGames.length
-    }
+      itch: itchGames.length,
+    },
   };
-  
+
   return deduped;
 };
 
 module.exports = {
   scanAllLibraries,
-  getSupportedScanPlatforms
+  getSupportedScanPlatforms,
 };

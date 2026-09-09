@@ -56,7 +56,9 @@ const RivalryBanner = () => {
         </div>
         <div className="rivalry-vs">
           <span className="rivalry-vs-text">VS</span>
-          <span className="rivalry-margin">{leader} +{margin}</span>
+          <span className="rivalry-margin">
+            {leader} +{margin}
+          </span>
         </div>
         <div className="rivalry-game rivalry-game-b">
           <LazyImage

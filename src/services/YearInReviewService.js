@@ -6,12 +6,25 @@ import { ProgressionUnlockService } from './ProgressionUnlockService';
 import GamingPersonaService from './GamingPersonaService';
 import PeriodChampionService from './PeriodChampionService';
 
-const MONTH_LABELS = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+const MONTH_LABELS = Object.freeze([
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]);
 const SESSION_BUCKET_LABELS = Object.freeze({
   '0-30': 'Sprint Sessions',
   '30-60': 'Focused Runs',
   '60-120': 'Extended Flights',
-  '120+': 'Marathon Missions'
+  '120+': 'Marathon Missions',
 });
 const incrementCounter = (counter, key, amount = 1) => {
   const normalizedKey = typeof key === 'string' ? key.trim() : '';
@@ -23,8 +36,7 @@ const incrementCounter = (counter, key, amount = 1) => {
 
 const sortCounts = (counts = {}) => {
   const safeCounts = counts && typeof counts === 'object' ? counts : {};
-  return Object.entries(safeCounts)
-    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
+  return Object.entries(safeCounts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
 };
 
 const buildRankedList = (counts = {}, limit = 5) => {
@@ -43,7 +55,7 @@ const getPersonaVoice = () => {
   return {
     label: primary?.label || null,
     roast: persona?.summaryRoast || primary?.roast || null,
-    voice: primary?.voice || null
+    voice: primary?.voice || null,
   };
 };
 
@@ -68,7 +80,7 @@ const buildMonthlyBreakdown = (sessions = []) => {
     playtimeHours: Object.fromEntries(
       Object.entries(playtimeMinutes).map(([label, value]) => [label, Number((value / 60).toFixed(1))])
     ),
-    sessionCounts
+    sessionCounts,
   };
 };
 
@@ -107,7 +119,7 @@ const buildTopGames = (sessions = [], limit = 5) => {
         sessions: 0,
         lastPlayed: session.timestamp,
         longestSessionMinutes: 0,
-        avgSessionMinutes: 0
+        avgSessionMinutes: 0,
       });
     }
 
@@ -123,7 +135,7 @@ const buildTopGames = (sessions = [], limit = 5) => {
   return Array.from(gameMap.values())
     .map((entry) => ({
       ...entry,
-      avgSessionMinutes: entry.sessions > 0 ? Math.round(entry.totalPlaytime / entry.sessions) : 0
+      avgSessionMinutes: entry.sessions > 0 ? Math.round(entry.totalPlaytime / entry.sessions) : 0,
     }))
     .sort((left, right) => right.totalPlaytime - left.totalPlaytime || right.sessions - left.sessions)
     .slice(0, limit);
@@ -163,32 +175,38 @@ const buildDeepStats = (sessions = [], topGames = []) => {
       dateKey,
       dateLabel: formatReviewDate(session.timestamp),
       playtimeMinutes: 0,
-      sessions: 0
+      sessions: 0,
     };
     current.playtimeMinutes += session.playtimeMinutes;
     current.sessions += 1;
     dayMap.set(dateKey, current);
   });
 
-  const busiestDay = Array.from(dayMap.values())
-    .sort((left, right) => right.playtimeMinutes - left.playtimeMinutes || right.sessions - left.sessions)[0] || null;
-  const topBySessions = [...topGames]
-    .sort((left, right) => right.sessions - left.sessions || right.totalPlaytime - left.totalPlaytime)[0] || null;
+  const busiestDay =
+    Array.from(dayMap.values()).sort(
+      (left, right) => right.playtimeMinutes - left.playtimeMinutes || right.sessions - left.sessions
+    )[0] || null;
+  const topBySessions =
+    [...topGames].sort(
+      (left, right) => right.sessions - left.sessions || right.totalPlaytime - left.totalPlaytime
+    )[0] || null;
 
   return {
-    longestSession: longestSession ? {
-      gameName: longestSession.gameName,
-      platform: longestSession.platform,
-      playtimeMinutes: longestSession.playtimeMinutes,
-      dateLabel: formatReviewDate(longestSession.timestamp)
-    } : null,
+    longestSession: longestSession
+      ? {
+          gameName: longestSession.gameName,
+          platform: longestSession.platform,
+          playtimeMinutes: longestSession.playtimeMinutes,
+          dateLabel: formatReviewDate(longestSession.timestamp),
+        }
+      : null,
     busiestDay,
     topBySessions,
     weekendSessions: weekendSessions.length,
     weekendPlaytimeMinutes: weekendSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
     lateNightSessions: lateNightSessions.length,
     lateNightPlaytimeMinutes: lateNightSessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
-    gamesWithMultipleSessions: topGames.filter((game) => game.sessions > 1).length
+    gamesWithMultipleSessions: topGames.filter((game) => game.sessions > 1).length,
   };
 };
 
@@ -215,7 +233,7 @@ const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSes
   if (!dominantMood && !dominantGenre && !preferredSessionBucket) {
     return {
       label: 'Adaptive Pilot',
-      description: 'Your local profile is still taking shape across moods, genres, and session rhythm.'
+      description: 'Your local profile is still taking shape across moods, genres, and session rhythm.',
     };
   }
 
@@ -223,7 +241,9 @@ const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSes
   // Keep the label clean: never combine mood + genre with a separator, and never use 'leaning'.
   const label = dominantGenre
     ? `${dominantGenre} ${styleDescriptor} player`
-    : (dominantMood ? `${dominantMood} Pilot` : `${styleDescriptor} player`);
+    : dominantMood
+      ? `${dominantMood} Pilot`
+      : `${styleDescriptor} player`;
 
   const descriptionParts = [];
   if (dominantMood) {
@@ -233,7 +253,9 @@ const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSes
     descriptionParts.push(`${dominantGenre.toLowerCase()} games shaped the genre side of your profile`);
   }
   if (preferredSessionBucket) {
-    descriptionParts.push(`${SESSION_BUCKET_LABELS[preferredSessionBucket] || 'Flexible Sessions'} gave your year a ${styleDescriptor} rhythm`);
+    descriptionParts.push(
+      `${SESSION_BUCKET_LABELS[preferredSessionBucket] || 'Flexible Sessions'} gave your year a ${styleDescriptor} rhythm`
+    );
   }
   if (peakPlayWindow) {
     descriptionParts.push(`${peakPlayWindow.toLowerCase()} was your most active play window`);
@@ -241,7 +263,7 @@ const buildBlendedPersonaIdentity = ({ dominantMood, dominantGenre, preferredSes
 
   return {
     label,
-    description: `${descriptionParts.join('. ')}.`
+    description: `${descriptionParts.join('. ')}.`,
   };
 };
 
@@ -257,7 +279,7 @@ const buildPersonaFromSessions = (sessions = []) => {
       peakPlayWindow: null,
       avgSessionMinutes: 0,
       moodMix: [],
-      genreMix: []
+      genreMix: [],
     };
   }
 
@@ -278,7 +300,7 @@ const buildPersonaFromSessions = (sessions = []) => {
       topMoodEntries.push({
         mood,
         count,
-        completionRate: 0
+        completionRate: 0,
       });
     });
 
@@ -292,12 +314,13 @@ const buildPersonaFromSessions = (sessions = []) => {
     dominantMood,
     dominantGenre,
     preferredSessionBucket,
-    peakPlayWindow
+    peakPlayWindow,
   });
 
   return {
     identityLabel: personaIdentity?.label || (dominantMood ? `${dominantMood} Pilot` : 'Adaptive Pilot'),
-    identityDescription: personaIdentity?.description || 'Built a unique local play profile through completed sessions.',
+    identityDescription:
+      personaIdentity?.description || 'Built a unique local play profile through completed sessions.',
     dominantMood,
     dominantGenre,
     preferredSessionBucket,
@@ -305,7 +328,7 @@ const buildPersonaFromSessions = (sessions = []) => {
     peakPlayWindow,
     avgSessionMinutes,
     moodMix: buildRankedList(moodCounts, 3),
-    genreMix: buildRankedList(genreCounts, 3)
+    genreMix: buildRankedList(genreCounts, 3),
   };
 };
 
@@ -323,22 +346,26 @@ const buildPersonaEvolution = (sessions = []) => {
     summary = `You shifted from ${opening.dominantMood.toLowerCase()} sessions into a more ${closing.dominantMood.toLowerCase()} finish.`;
   } else if (opening.dominantGenre && closing.dominantGenre && opening.dominantGenre !== closing.dominantGenre) {
     summary = `Your genre focus moved from ${opening.dominantGenre} into ${closing.dominantGenre} as the year went on.`;
-  } else if (opening.preferredSessionBucket && closing.preferredSessionBucket && opening.preferredSessionBucket !== closing.preferredSessionBucket) {
+  } else if (
+    opening.preferredSessionBucket &&
+    closing.preferredSessionBucket &&
+    opening.preferredSessionBucket !== closing.preferredSessionBucket
+  ) {
     summary = `Your session rhythm evolved from ${opening.preferredSessionLabel.toLowerCase()} to ${closing.preferredSessionLabel.toLowerCase()}.`;
   }
 
   return {
     opening,
     closing,
-    summary
+    summary,
   };
 };
 
 const SEASON_MONTHS = Object.freeze({
-  Winter: [11, 0, 1],   // Dec, Jan, Feb
-  Spring: [2, 3, 4],    // Mar, Apr, May
-  Summer: [5, 6, 7],   // Jun, Jul, Aug
-  Autumn: [8, 9, 10]    // Sep, Oct, Nov
+  Winter: [11, 0, 1], // Dec, Jan, Feb
+  Spring: [2, 3, 4], // Mar, Apr, May
+  Summer: [5, 6, 7], // Jun, Jul, Aug
+  Autumn: [8, 9, 10], // Sep, Oct, Nov
 });
 
 const SEASON_ORDER = Object.freeze(['Winter', 'Spring', 'Summer', 'Autumn']);
@@ -358,15 +385,17 @@ const buildSeasonalChapter = (season, seasonSessions, prevSeason) => {
       headline: `${season} was quiet.`,
       body: 'No tracked sessions this season. Sometimes life gets in the way of the sticks.',
       stats: null,
-      pivot: null
+      pivot: null,
     };
   }
 
   const totalMinutes = seasonSessions.reduce((sum, s) => sum + s.playtimeMinutes, 0);
-  const uniqueGames = new Set(seasonSessions.map(s => String(s.gameId || s.gameName))).size;
+  const uniqueGames = new Set(seasonSessions.map((s) => String(s.gameId || s.gameName))).size;
   const persona = buildPersonaFromSessions(seasonSessions);
-  const longest = seasonSessions.reduce((best, s) =>
-    (!best || s.playtimeMinutes > best.playtimeMinutes) ? s : best, null);
+  const longest = seasonSessions.reduce(
+    (best, s) => (!best || s.playtimeMinutes > best.playtimeMinutes ? s : best),
+    null
+  );
 
   // Find dominant game by playtime
   const gameMap = new Map();
@@ -382,40 +411,52 @@ const buildSeasonalChapter = (season, seasonSessions, prevSeason) => {
   // Detect pivot from previous season
   let pivot = null;
   if (prevSeason?.persona) {
-    if (prevSeason.persona.dominantMood && persona.dominantMood && prevSeason.persona.dominantMood !== persona.dominantMood) {
+    if (
+      prevSeason.persona.dominantMood &&
+      persona.dominantMood &&
+      prevSeason.persona.dominantMood !== persona.dominantMood
+    ) {
       pivot = {
         type: 'mood',
         from: prevSeason.persona.dominantMood,
         to: persona.dominantMood,
-        text: `A shift in tone — you moved from ${prevSeason.persona.dominantMood.toLowerCase()} into ${persona.dominantMood.toLowerCase()}.`
+        text: `A shift in tone — you moved from ${prevSeason.persona.dominantMood.toLowerCase()} into ${persona.dominantMood.toLowerCase()}.`,
       };
-    } else if (prevSeason.persona.dominantGenre && persona.dominantGenre && prevSeason.persona.dominantGenre !== persona.dominantGenre) {
+    } else if (
+      prevSeason.persona.dominantGenre &&
+      persona.dominantGenre &&
+      prevSeason.persona.dominantGenre !== persona.dominantGenre
+    ) {
       pivot = {
         type: 'genre',
         from: prevSeason.persona.dominantGenre,
         to: persona.dominantGenre,
-        text: `You pivoted from ${prevSeason.persona.dominantGenre} into ${persona.dominantGenre}.`
+        text: `You pivoted from ${prevSeason.persona.dominantGenre} into ${persona.dominantGenre}.`,
       };
-    } else if (prevSeason.persona.preferredSessionBucket && persona.preferredSessionBucket &&
-               prevSeason.persona.preferredSessionBucket !== persona.preferredSessionBucket) {
+    } else if (
+      prevSeason.persona.preferredSessionBucket &&
+      persona.preferredSessionBucket &&
+      prevSeason.persona.preferredSessionBucket !== persona.preferredSessionBucket
+    ) {
       pivot = {
         type: 'session',
         from: prevSeason.persona.preferredSessionLabel,
         to: persona.preferredSessionLabel,
-        text: `Your rhythm changed — ${prevSeason.persona.preferredSessionLabel.toLowerCase()} gave way to ${persona.preferredSessionLabel.toLowerCase()}.`
+        text: `Your rhythm changed — ${prevSeason.persona.preferredSessionLabel.toLowerCase()} gave way to ${persona.preferredSessionLabel.toLowerCase()}.`,
       };
     }
   }
 
   // Build narrative headline
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const monthsActive = [...new Set(seasonSessions.map(s => s.timestamp.getMonth()))].sort((a, b) => a - b);
-  const monthRange = monthsActive.length > 0
-    ? `${monthNames[monthsActive[0]]}${monthsActive.length > 1 ? `–${monthNames[monthsActive[monthsActive.length - 1]]}` : ''}`
-    : '';
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthsActive = [...new Set(seasonSessions.map((s) => s.timestamp.getMonth()))].sort((a, b) => a - b);
+  const monthRange =
+    monthsActive.length > 0
+      ? `${monthNames[monthsActive[0]]}${monthsActive.length > 1 ? `–${monthNames[monthsActive[monthsActive.length - 1]]}` : ''}`
+      : '';
 
   let headline;
-  const isEveningHeavy = seasonSessions.filter(s => s.timestamp.getHours() >= 18).length > seasonSessions.length / 2;
+  const isEveningHeavy = seasonSessions.filter((s) => s.timestamp.getHours() >= 18).length > seasonSessions.length / 2;
 
   if (pivot) {
     headline = `${season}: The ${pivot.type === 'genre' ? 'pivot' : pivot.type === 'mood' ? 'turn' : 'shift'}.`;
@@ -432,12 +473,16 @@ const buildSeasonalChapter = (season, seasonSessions, prevSeason) => {
   // Build narrative body
   const bodyParts = [];
   const gamingPersona = getPersonaVoice();
-  bodyParts.push(`You logged ${Math.round(totalMinutes / 60)} hours across ${seasonSessions.length} sessions${uniqueGames > 1 ? ` and ${uniqueGames} games` : ''}.`);
+  bodyParts.push(
+    `You logged ${Math.round(totalMinutes / 60)} hours across ${seasonSessions.length} sessions${uniqueGames > 1 ? ` and ${uniqueGames} games` : ''}.`
+  );
 
   if (gamingPersona.roast) {
     bodyParts.push(gamingPersona.roast);
   } else if (persona.dominantMood && persona.dominantGenre) {
-    bodyParts.push(`${persona.identityLabel} — ${persona.dominantMood.toLowerCase()} energy, ${persona.dominantGenre.toLowerCase()} focus.`);
+    bodyParts.push(
+      `${persona.identityLabel} — ${persona.dominantMood.toLowerCase()} energy, ${persona.dominantGenre.toLowerCase()} focus.`
+    );
   } else if (persona.dominantMood) {
     bodyParts.push(`${persona.identityLabel} — a ${persona.dominantMood.toLowerCase()} stretch.`);
   }
@@ -447,7 +492,9 @@ const buildSeasonalChapter = (season, seasonSessions, prevSeason) => {
   }
 
   if (longest) {
-    bodyParts.push(`Your longest sitting: ${Math.round(longest.playtimeMinutes)} minutes on ${formatReviewDate(longest.timestamp) || 'one focused day'}.`);
+    bodyParts.push(
+      `Your longest sitting: ${Math.round(longest.playtimeMinutes)} minutes on ${formatReviewDate(longest.timestamp) || 'one focused day'}.`
+    );
   }
 
   if (pivot) {
@@ -469,13 +516,19 @@ const buildSeasonalChapter = (season, seasonSessions, prevSeason) => {
       dominantGenre: persona.dominantGenre,
       preferredSessionLabel: persona.preferredSessionLabel,
       topGame: topGame ? { name: topGame.name, hours: Number((topGame.minutes / 60).toFixed(1)) } : null,
-      longestSession: longest ? { gameName: longest.gameName, minutes: longest.playtimeMinutes, dateLabel: formatReviewDate(longest.timestamp) } : null
+      longestSession: longest
+        ? {
+            gameName: longest.gameName,
+            minutes: longest.playtimeMinutes,
+            dateLabel: formatReviewDate(longest.timestamp),
+          }
+        : null,
     },
     persona: {
       identityLabel: persona.identityLabel,
-      identityDescription: persona.identityDescription
+      identityDescription: persona.identityDescription,
     },
-    pivot
+    pivot,
   };
 };
 
@@ -512,7 +565,7 @@ const buildSeasonalStory = (sessions = [], selectedYear) => {
   }
 
   // Build overall narrative arc
-  const activeSeasons = chapters.filter(c => c.hasData);
+  const activeSeasons = chapters.filter((c) => c.hasData);
   const gamingPersona = getPersonaVoice();
   const totalHours = Math.round(yearSessions.reduce((sum, s) => sum + s.playtimeMinutes, 0) / 60);
   const uniqueGames = new Set(yearSessions.map((s) => String(s.gameId || s.gameName))).size;
@@ -527,11 +580,14 @@ const buildSeasonalStory = (sessions = [], selectedYear) => {
   } else {
     const first = activeSeasons[0];
     const last = activeSeasons[activeSeasons.length - 1];
-    const pivots = activeSeasons.filter(c => c.pivot).length;
+    const pivots = activeSeasons.filter((c) => c.pivot).length;
     if (pivots >= 2) {
       arc = `A year of change — ${pivots} pivots in playstyle across the seasons.`;
-    } else if (first.persona?.identityLabel && last.persona?.identityLabel &&
-               first.persona.identityLabel === last.persona.identityLabel) {
+    } else if (
+      first.persona?.identityLabel &&
+      last.persona?.identityLabel &&
+      first.persona.identityLabel === last.persona.identityLabel
+    ) {
       arc = `Consistent all year — ${first.persona.identityLabel} from start to finish.`;
     } else {
       arc = `You started as ${first.persona?.identityLabel || 'a player'} and ended as ${last.persona?.identityLabel || 'someone new'}.`;
@@ -542,21 +598,22 @@ const buildSeasonalStory = (sessions = [], selectedYear) => {
     arc,
     chapters,
     activeSeasons: activeSeasons.length,
-    totalSeasons: SEASON_ORDER.length
+    totalSeasons: SEASON_ORDER.length,
   };
 };
 
 const buildHabitSummary = (selectedYear, sessions = []) => {
   const yearSessions = sessions.filter((s) => new Date(s.timestamp || 0).getFullYear() === selectedYear);
   const daysActive = new Set(yearSessions.map((s) => getDateKey(s.timestamp))).size;
-  const avgSessionMinutes = yearSessions.length > 0
-    ? Math.round(yearSessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0) / yearSessions.length)
-    : 0;
+  const avgSessionMinutes =
+    yearSessions.length > 0
+      ? Math.round(yearSessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0) / yearSessions.length)
+      : 0;
 
   return {
     daysActive,
     avgSessionMinutes,
-    sessionsCount: yearSessions.length
+    sessionsCount: yearSessions.length,
   };
 };
 
@@ -577,7 +634,7 @@ const buildDistributionSummary = (sessions = []) => {
     genres,
     topPlatforms: buildRankedList(platforms, 4),
     topMoods: buildRankedList(moods, 4),
-    topGenres: buildRankedList(genres, 4)
+    topGenres: buildRankedList(genres, 4),
   };
 };
 
@@ -587,7 +644,7 @@ const buildEngagementSummary = () => {
     currentStreak: Number(engagement?.currentStreak || 0),
     longestStreak: Number(engagement?.longestStreak || 0),
     totalLogins: Number(engagement?.totalLogins || 0),
-    lastLoginDate: engagement?.lastLoginDate || null
+    lastLoginDate: engagement?.lastLoginDate || null,
   };
 };
 
@@ -603,52 +660,64 @@ const buildSummaryCards = ({ year, summary, topGames, persona, distributions, ha
       id: 'headline',
       title: `${year} at a Glance`,
       value: `${summary.playtimeHours}h`,
-      detail: `${summary.sessions} sessions across ${summary.uniqueGames} games`
+      detail: `${summary.sessions} sessions across ${summary.uniqueGames} games`,
     },
     {
       id: 'top-game',
       title: 'Most Played',
       value: topGame?.name || 'No sessions yet',
-      detail: topGame ? `${Math.round(topGame.totalPlaytime / 60)}h · ${topGame.sessions} launch${topGame.sessions !== 1 ? 'es' : ''} this year` : 'Launch and finish sessions to populate this card'
+      detail: topGame
+        ? `${Math.round(topGame.totalPlaytime / 60)}h · ${topGame.sessions} launch${topGame.sessions !== 1 ? 'es' : ''} this year`
+        : 'Launch and finish sessions to populate this card',
     },
     {
       id: 'longest-session',
       title: 'Longest Session',
       value: longestSession?.gameName || 'No marathon yet',
-      detail: longestSession ? `${Math.round(longestSession.playtimeMinutes)} minutes${longestSession.dateLabel ? ` · ${longestSession.dateLabel}` : ''}` : 'Your biggest single sitting will appear here'
+      detail: longestSession
+        ? `${Math.round(longestSession.playtimeMinutes)} minutes${longestSession.dateLabel ? ` · ${longestSession.dateLabel}` : ''}`
+        : 'Your biggest single sitting will appear here',
     },
     {
       id: 'persona',
       title: 'Player Identity',
       value: gamingPersona.label || persona.identityLabel,
-      detail: gamingPersona.roast || (persona.dominantMood ? `${persona.dominantMood} mood · ${persona.preferredSessionLabel}` : 'Build your local play profile')
+      detail:
+        gamingPersona.roast ||
+        (persona.dominantMood
+          ? `${persona.dominantMood} mood · ${persona.preferredSessionLabel}`
+          : 'Build your local play profile'),
     },
     {
       id: 'platform',
       title: 'Platform Home',
       value: topPlatform?.label || '—',
-      detail: topPlatform ? `${topPlatform.count} sessions` : 'No platform trend yet'
+      detail: topPlatform ? `${topPlatform.count} sessions` : 'No platform trend yet',
     },
     {
       id: 'mood',
       title: 'Mood of the Year',
       value: topMood?.label || '—',
-      detail: topMood ? `${topMood.count} tracked sessions` : 'No mood trend yet'
+      detail: topMood ? `${topMood.count} tracked sessions` : 'No mood trend yet',
     },
     {
       id: 'habits',
       title: 'Days Active',
       value: `${habits.daysActive}`,
-      detail: habits.daysActive > 0 ? `${habits.sessionsCount} sessions · ~${habits.avgSessionMinutes} min avg` : 'Play sessions will appear here as you build your habit history'
+      detail:
+        habits.daysActive > 0
+          ? `${habits.sessionsCount} sessions · ~${habits.avgSessionMinutes} min avg`
+          : 'Play sessions will appear here as you build your habit history',
     },
     {
       id: 'streak',
       title: 'Current Streak',
       value: `${engagement.currentStreak}`,
-      detail: engagement.longestStreak > 0
-        ? `Best streak: ${engagement.longestStreak} days`
-        : 'Daily check-ins will build your streak over time'
-    }
+      detail:
+        engagement.longestStreak > 0
+          ? `Best streak: ${engagement.longestStreak} days`
+          : 'Daily check-ins will build your streak over time',
+    },
   ];
 };
 
@@ -669,9 +738,9 @@ export class YearInReviewService {
 
   static getAvailableYears(library = []) {
     try {
-      const years = Array.from(new Set(
-        this.getNormalizedSessionHistory(library).map((session) => session.timestamp.getFullYear())
-      )).sort((left, right) => right - left);
+      const years = Array.from(
+        new Set(this.getNormalizedSessionHistory(library).map((session) => session.timestamp.getFullYear()))
+      ).sort((left, right) => right - left);
 
       return years.length > 0 ? years : [new Date().getFullYear()];
     } catch (e) {
@@ -690,9 +759,12 @@ export class YearInReviewService {
         sessions: sessions.length,
         uniqueGames: new Set(sessions.map((session) => String(session.gameId || session.gameName))).size,
         activeDays: new Set(sessions.map((session) => getDateKey(session.timestamp))).size,
-        avgSessionMinutes: sessions.length > 0 ? Math.round(sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0) / sessions.length) : 0,
+        avgSessionMinutes:
+          sessions.length > 0
+            ? Math.round(sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0) / sessions.length)
+            : 0,
         longestSessionMinutes: sessions.reduce((max, session) => Math.max(max, session.playtimeMinutes), 0),
-        playtimeHours: Number((sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0) / 60).toFixed(1))
+        playtimeHours: Number((sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0) / 60).toFixed(1)),
       };
       const distributions = buildDistributionSummary(sessions);
       const topGames = buildTopGames(sessions, 6);
@@ -701,7 +773,7 @@ export class YearInReviewService {
       const persona = {
         ...basePersona,
         identityLabel: gamingPersona.label || basePersona.identityLabel,
-        identityDescription: gamingPersona.roast || basePersona.identityDescription
+        identityDescription: gamingPersona.roast || basePersona.identityDescription,
       };
       const habits = buildHabitSummary(safeYear, sessions);
       const engagement = buildEngagementSummary();
@@ -721,8 +793,8 @@ export class YearInReviewService {
             key,
             label: key.charAt(0).toUpperCase() + key.slice(1),
             unlocked: group.unlocked ?? 0,
-            total: group.total ?? 0
-          }))
+            total: group.total ?? 0,
+          })),
         };
       } catch {
         progression = { level: 1, xp: 0, progressionGroups: [] };
@@ -752,8 +824,8 @@ export class YearInReviewService {
           distributions,
           habits,
           engagement,
-          deepStats
-        })
+          deepStats,
+        }),
       };
     } catch (e) {
       console.error('YearInReviewService: Failed to generate year snapshot', e);
@@ -765,7 +837,7 @@ export class YearInReviewService {
         activeDays: 0,
         avgSessionMinutes: 0,
         longestSessionMinutes: 0,
-        playtimeHours: 0
+        playtimeHours: 0,
       };
       const fallbackDistributions = {
         platforms: {},
@@ -773,7 +845,7 @@ export class YearInReviewService {
         genres: {},
         topPlatforms: [],
         topMoods: [],
-        topGenres: []
+        topGenres: [],
       };
       const fallbackPersona = {
         identityLabel: 'Uncharted Pilot',
@@ -785,23 +857,23 @@ export class YearInReviewService {
         peakPlayWindow: null,
         avgSessionMinutes: 0,
         moodMix: [],
-        genreMix: []
+        genreMix: [],
       };
       const fallbackHabits = {
         daysActive: 0,
         avgSessionMinutes: 0,
-        sessionsCount: 0
+        sessionsCount: 0,
       };
       const fallbackEngagement = {
         currentStreak: 0,
         longestStreak: 0,
         totalLogins: 0,
-        lastLoginDate: null
+        lastLoginDate: null,
       };
       const fallbackMonthly = {
         playtimeMinutes: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0])),
         playtimeHours: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0])),
-        sessionCounts: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0]))
+        sessionCounts: Object.fromEntries(MONTH_LABELS.map((label) => [label, 0])),
       };
 
       let fallbackProgression = { level: 1, xp: 0, progressionGroups: [] };
@@ -814,8 +886,8 @@ export class YearInReviewService {
             key,
             label: key.charAt(0).toUpperCase() + key.slice(1),
             unlocked: group.unlocked ?? 0,
-            total: group.total ?? 0
-          }))
+            total: group.total ?? 0,
+          })),
         };
       } catch {
         // keep defaults
@@ -845,8 +917,8 @@ export class YearInReviewService {
           distributions: fallbackDistributions,
           habits: fallbackHabits,
           engagement: fallbackEngagement,
-          deepStats: buildDeepStats([], [])
-        })
+          deepStats: buildDeepStats([], []),
+        }),
       };
     }
   }
@@ -871,9 +943,9 @@ export class YearInReviewService {
         distributions: {
           topPlatforms: snapshot.distributions.topPlatforms,
           topMoods: snapshot.distributions.topMoods,
-          topGenres: snapshot.distributions.topGenres
+          topGenres: snapshot.distributions.topGenres,
         },
-        summaryCards: snapshot.summaryCards
+        summaryCards: snapshot.summaryCards,
       };
     } catch (e) {
       console.error('YearInReviewService: Failed to build export payload', e);

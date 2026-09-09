@@ -12,7 +12,7 @@ const CATEGORIES = [
   { id: 'bug', label: 'Bug report' },
   { id: 'ui', label: 'UI / UX polish' },
   { id: 'launcher', label: 'New launcher / platform' },
-  { id: 'other', label: 'Other idea' }
+  { id: 'other', label: 'Other idea' },
 ];
 
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -38,7 +38,7 @@ function Feedback() {
       id: makeId(),
       category,
       text: text.trim(),
-      createdAt: Date.now()
+      createdAt: Date.now(),
     };
     const next = [entry, ...suggestions];
     StorageService.set(FEEDBACK_STORAGE_KEY, next);
@@ -48,11 +48,14 @@ function Feedback() {
     window.setTimeout(() => setSaved(false), 1500);
   }, [canSave, category, suggestions, text]);
 
-  const deleteSuggestion = useCallback((id) => {
-    const next = suggestions.filter((entry) => entry.id !== id);
-    StorageService.set(FEEDBACK_STORAGE_KEY, next);
-    setSuggestions(next);
-  }, [suggestions]);
+  const deleteSuggestion = useCallback(
+    (id) => {
+      const next = suggestions.filter((entry) => entry.id !== id);
+      StorageService.set(FEEDBACK_STORAGE_KEY, next);
+      setSuggestions(next);
+    },
+    [suggestions]
+  );
 
   const clearAll = useCallback(() => {
     StorageService.set(FEEDBACK_STORAGE_KEY, []);
@@ -68,7 +71,7 @@ function Feedback() {
         return `- [${label}] ${entry.text}`;
       }),
       '',
-      ...(text.trim() ? [`New idea: [${CATEGORIES.find((c) => c.id === category)?.label}] ${text.trim()}`] : [])
+      ...(text.trim() ? [`New idea: [${CATEGORIES.find((c) => c.id === category)?.label}] ${text.trim()}`] : []),
     ].filter((line) => line !== '');
     return lines.join('\n');
   }, [category, suggestions, text]);
@@ -101,8 +104,8 @@ function Feedback() {
           <span className="feedback-kicker">Have your say</span>
           <h1>What would you like to see in GamePilot?</h1>
           <p>
-            Suggest features, report bugs, or share wild ideas. Everything is stored locally
-            unless you choose to copy or tweet it. No account needed.
+            Suggest features, report bugs, or share wild ideas. Everything is stored locally unless you choose to copy
+            or tweet it. No account needed.
           </p>
         </header>
 
@@ -129,18 +132,11 @@ function Feedback() {
           />
 
           <div className="feedback-form-actions">
-            <button
-              type="button"
-              className="feedback-save"
-              onClick={saveSuggestion}
-              disabled={!canSave}
-            >
+            <button type="button" className="feedback-save" onClick={saveSuggestion} disabled={!canSave}>
               {saved ? <Check size={16} /> : <Lightbulb size={16} />}
               {saved ? 'Saved locally' : 'Save idea'}
             </button>
-            <span className="feedback-privacy-note">
-              Stored on this device only
-            </span>
+            <span className="feedback-privacy-note">Stored on this device only</span>
           </div>
         </section>
 

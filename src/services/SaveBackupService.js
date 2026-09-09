@@ -34,18 +34,12 @@ const normalizeLocation = (path, type, source = 'pcgamingwiki') => {
     source,
     label: type === 'save' ? 'Save data' : 'Config files',
     rawPath,
-    path: rawPath
+    path: rawPath,
   };
 };
 
-const getGameKey = (game = {}) => String(
-  game.appid
-    || game.steam_appid
-    || game.appId
-    || game.name
-    || game.title
-    || ''
-).toLowerCase();
+const getGameKey = (game = {}) =>
+  String(game.appid || game.steam_appid || game.appId || game.name || game.title || '').toLowerCase();
 
 const normalizeHistoryEntry = (result = {}, game = {}) => {
   const manifest = result.manifest || {};
@@ -61,7 +55,7 @@ const normalizeHistoryEntry = (result = {}, game = {}) => {
     manifestPath: result.manifestPath || '',
     restoreSupported: Boolean(manifest.restoreSupported),
     totals: manifest.totals || { bytes: 0, files: 0, dirs: 0, truncated: false },
-    locations: Array.isArray(manifest.locations) ? manifest.locations : []
+    locations: Array.isArray(manifest.locations) ? manifest.locations : [],
   };
 };
 
@@ -70,7 +64,7 @@ class SaveBackupService {
     const pcgw = await PCGamingWikiService.lookup(game);
     const candidates = [
       normalizeLocation(pcgw?.saveLocation, 'save'),
-      normalizeLocation(pcgw?.configLocation, 'config')
+      normalizeLocation(pcgw?.configLocation, 'config'),
     ].filter(Boolean);
 
     const plan = {
@@ -83,9 +77,13 @@ class SaveBackupService {
       readyCount: 0,
       missingCount: candidates.length,
       hasElectronBridge: Boolean(typeof window !== 'undefined' && window.electronAPI?.saveLocationStatus),
-      hasBackupBridge: Boolean(typeof window !== 'undefined' && window.electronAPI?.chooseSaveBackupDestination && window.electronAPI?.createSaveBackup),
+      hasBackupBridge: Boolean(
+        typeof window !== 'undefined' &&
+          window.electronAPI?.chooseSaveBackupDestination &&
+          window.electronAPI?.createSaveBackup
+      ),
       hasRestorePreviewBridge: Boolean(typeof window !== 'undefined' && window.electronAPI?.previewSaveRestore),
-      note: 'GamePilot can create a timestamped local backup with a manifest. Restore is intentionally disabled until overwrite safety checks are built.'
+      note: 'GamePilot can create a timestamped local backup with a manifest. Restore is intentionally disabled until overwrite safety checks are built.',
     };
 
     if (!plan.hasElectronBridge || candidates.length === 0) {
@@ -99,12 +97,12 @@ class SaveBackupService {
         ...plan,
         locations,
         readyCount: locations.filter((location) => location.exists).length,
-        missingCount: locations.filter((location) => !location.exists).length
+        missingCount: locations.filter((location) => !location.exists).length,
       };
     } catch (error) {
       return {
         ...plan,
-        error: error.message || 'Unable to validate save locations'
+        error: error.message || 'Unable to validate save locations',
       };
     }
   }
@@ -113,7 +111,10 @@ class SaveBackupService {
     if (!window.electronAPI?.openSaveLocation || !location) {
       return { ok: false, error: 'electron-only' };
     }
-    return window.electronAPI.openSaveLocation({ game, path: location.resolvedPath || location.rawPath || location.path });
+    return window.electronAPI.openSaveLocation({
+      game,
+      path: location.resolvedPath || location.rawPath || location.path,
+    });
   }
 
   static async chooseDestination() {
@@ -127,7 +128,9 @@ class SaveBackupService {
     if (!window.electronAPI?.createSaveBackup) {
       return { ok: false, error: 'electron-only' };
     }
-    const backupLocations = Array.isArray(locations) ? locations.filter((location) => location?.exists && location?.canOpen) : [];
+    const backupLocations = Array.isArray(locations)
+      ? locations.filter((location) => location?.exists && location?.canOpen)
+      : [];
     if (!destinationRoot) return { ok: false, error: 'missing-destination' };
     if (backupLocations.length === 0) return { ok: false, error: 'no-existing-locations' };
     const result = await window.electronAPI.createSaveBackup({ game, destinationRoot, locations: backupLocations });
@@ -149,8 +152,9 @@ class SaveBackupService {
   static recordBackupResult(result, game = {}) {
     if (!result?.ok || !result.manifest) return null;
     const entry = normalizeHistoryEntry(result, game);
-    const history = this.getBackupHistory()
-      .filter((item) => item.id !== entry.id && item.manifestPath !== entry.manifestPath);
+    const history = this.getBackupHistory().filter(
+      (item) => item.id !== entry.id && item.manifestPath !== entry.manifestPath
+    );
     const nextHistory = [entry, ...history]
       .sort((left, right) => Number(right.createdAt || 0) - Number(left.createdAt || 0))
       .slice(0, MAX_HISTORY_ENTRIES);
@@ -171,9 +175,10 @@ class SaveBackupService {
         backupPath: location.backupPath || '',
         targetPath: location.resolvedPath || '',
         files: Number(location.files || 0),
-        bytes: Number(location.bytes || 0)
+        bytes: Number(location.bytes || 0),
       })),
-      message: 'Restore preview only. GamePilot will not overwrite live save files until restore safety checks are implemented.'
+      message:
+        'Restore preview only. GamePilot will not overwrite live save files until restore safety checks are implemented.',
     };
   }
 
@@ -210,19 +215,19 @@ class SaveBackupService {
       return {
         ok: false,
         error: 'safety-backup-failed',
-        safetyBackup
+        safetyBackup,
       };
     }
 
     const restoreResult = await window.electronAPI.restoreSaveBackup({
       game,
       manifestPath: historyEntry.manifestPath,
-      confirmation: options.confirmation
+      confirmation: options.confirmation,
     });
 
     return {
       ...restoreResult,
-      safetyBackup
+      safetyBackup,
     };
   }
 
@@ -237,8 +242,12 @@ class SaveBackupService {
 
     if (gameRunning) blockers.push('Game appears to have an active session. Close/end the session before restore.');
     if (uncheckedTargets) blockers.push('Run live-target preflight before restore can be considered.');
-    if (missingBackupCount > 0) blockers.push(`${missingBackupCount} backup location${missingBackupCount === 1 ? '' : 's'} missing from disk.`);
-    if (overwriteCount > 0) requirements.push(`${overwriteCount} live target${overwriteCount === 1 ? '' : 's'} will be overwritten, but unknown extra live files are not deleted.`);
+    if (missingBackupCount > 0)
+      blockers.push(`${missingBackupCount} backup location${missingBackupCount === 1 ? '' : 's'} missing from disk.`);
+    if (overwriteCount > 0)
+      requirements.push(
+        `${overwriteCount} live target${overwriteCount === 1 ? '' : 's'} will be overwritten, but unknown extra live files are not deleted.`
+      );
     requirements.push('Create a fresh safety backup of current live saves immediately before restore.');
     requirements.push('Require typed confirmation matching the game name before copying files.');
 
@@ -251,9 +260,10 @@ class SaveBackupService {
       blockers,
       requirements,
       status: blockers.length > 0 ? 'blocked' : 'guarded',
-      message: blockers.length > 0
-        ? 'Restore remains blocked until safety issues are resolved.'
-        : 'Restore can run after a fresh safety backup and typed confirmation.'
+      message:
+        blockers.length > 0
+          ? 'Restore remains blocked until safety issues are resolved.'
+          : 'Restore can run after a fresh safety backup and typed confirmation.',
     };
   }
 

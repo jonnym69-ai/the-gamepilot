@@ -49,7 +49,7 @@ export class StorageDriveMapper {
     if (!entry) return null;
     return {
       ...entry,
-      mount: letter
+      mount: letter,
     };
   }
 
@@ -80,10 +80,7 @@ export class StorageDriveMapper {
 
     for (const { mount, drive } of candidates) {
       const mountLower = mount.toLowerCase();
-      if (
-        normalized.startsWith(mountLower) ||
-        normalized.startsWith(mountLower.replace(/\\/g, '/'))
-      ) {
+      if (normalized.startsWith(mountLower) || normalized.startsWith(mountLower.replace(/\\/g, '/'))) {
         return drive;
       }
     }
@@ -130,7 +127,7 @@ export class StorageDriveMapper {
       color: this.getDriveTypeColor(drive),
       cssClass: this.getDriveTypeClass(drive),
       mount: drive?.mount || this.extractDriveLetter(installDir) || null,
-      name: drive?.name || drive?.model || 'Unknown Drive'
+      name: drive?.name || drive?.model || 'Unknown Drive',
     };
   }
 

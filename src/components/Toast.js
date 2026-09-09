@@ -39,37 +39,46 @@ export const ToastProvider = ({ children }) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const addToast = useCallback((message, type = 'info', duration = 3000) => {
-    nextId.current += 1;
-    const id = `toast-${Date.now()}-${nextId.current}`;
-    const effectiveDuration = resolveToastDuration(duration);
-    const newToast = { id, message: String(message || ''), type, duration: effectiveDuration };
+  const addToast = useCallback(
+    (message, type = 'info', duration = 3000) => {
+      nextId.current += 1;
+      const id = `toast-${Date.now()}-${nextId.current}`;
+      const effectiveDuration = resolveToastDuration(duration);
+      const newToast = { id, message: String(message || ''), type, duration: effectiveDuration };
 
-    setToasts((current) => [...current.slice(-3), newToast]);
+      setToasts((current) => [...current.slice(-3), newToast]);
 
-    if (effectiveDuration > 0) {
-      const timer = window.setTimeout(() => removeToast(id), effectiveDuration);
-      timers.current.set(id, timer);
-    }
+      if (effectiveDuration > 0) {
+        const timer = window.setTimeout(() => removeToast(id), effectiveDuration);
+        timers.current.set(id, timer);
+      }
 
-    return id;
-  }, [removeToast]);
+      return id;
+    },
+    [removeToast]
+  );
 
-  useEffect(() => () => {
-    timers.current.forEach((timer) => window.clearTimeout(timer));
-    timers.current.clear();
-  }, []);
+  useEffect(
+    () => () => {
+      timers.current.forEach((timer) => window.clearTimeout(timer));
+      timers.current.clear();
+    },
+    []
+  );
 
-  const value = useMemo(() => ({
-    addToast,
-    removeToast,
-    success: (message, duration) => addToast(message, 'success', duration),
-    error: (message, duration) => addToast(message, 'error', duration),
-    warning: (message, duration) => addToast(message, 'warning', duration),
-    info: (message, duration) => addToast(message, 'info', duration),
-    roast: (message, duration) => addToast(message, 'roast', duration),
-    toasts
-  }), [addToast, removeToast, toasts]);
+  const value = useMemo(
+    () => ({
+      addToast,
+      removeToast,
+      success: (message, duration) => addToast(message, 'success', duration),
+      error: (message, duration) => addToast(message, 'error', duration),
+      warning: (message, duration) => addToast(message, 'warning', duration),
+      info: (message, duration) => addToast(message, 'info', duration),
+      roast: (message, duration) => addToast(message, 'roast', duration),
+      toasts,
+    }),
+    [addToast, removeToast, toasts]
+  );
 
   return (
     <ToastContext.Provider value={value}>
@@ -113,13 +122,21 @@ const Toast = ({ toast, removeToast }) => {
       aria-atomic="true"
     >
       <div className="toast-content">
-        {isRoast && <span className="toast-roast-icon" aria-hidden="true">GP</span>}
+        {isRoast && (
+          <span className="toast-roast-icon" aria-hidden="true">
+            GP
+          </span>
+        )}
         <span className="toast-message">{toast.message}</span>
         <button className="toast-close" onClick={handleClose} type="button" aria-label="Dismiss notification">
           <span aria-hidden="true">×</span>
         </button>
       </div>
-      {isPersistent && <span className="toast-dismiss-hint" aria-hidden="true">Click × to dismiss</span>}
+      {isPersistent && (
+        <span className="toast-dismiss-hint" aria-hidden="true">
+          Click × to dismiss
+        </span>
+      )}
     </div>
   );
 };

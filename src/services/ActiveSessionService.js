@@ -40,9 +40,9 @@ export const createActiveSessionEntry = (game) => ({
     emulator: game?.emulator || null,
     emulatorProfileId: game?.emulatorProfileId || null,
     romPath: game?.romPath || null,
-    brandPlatform: game?.brandPlatform || null
+    brandPlatform: game?.brandPlatform || null,
   },
-  paused: false
+  paused: false,
 });
 
 const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
@@ -57,7 +57,7 @@ const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
       startTime: sessionStartTime,
       gameId: sessionEntry.gameId || gameName,
       metadata: isPlainObject(sessionEntry.metadata) ? sessionEntry.metadata : {},
-      paused: Boolean(sessionEntry.paused)
+      paused: Boolean(sessionEntry.paused),
     };
   }
 
@@ -65,7 +65,7 @@ const normalizeActiveSessionEntry = (gameName, sessionEntry) => {
     startTime: sessionStartTime,
     gameId: gameName,
     metadata: {},
-    paused: false
+    paused: false,
   };
 };
 

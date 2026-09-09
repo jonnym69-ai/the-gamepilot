@@ -30,7 +30,7 @@ export class GamingIdentity {
     }
     const stats = this.getGamingStats();
     const identity = this.getGamingIdentity(stats);
-    
+
     // Get or set join date
     let joinDate = StorageService.getString('joinDate');
     if (!joinDate) {
@@ -66,7 +66,7 @@ export class GamingIdentity {
       gamingPersona,
       // Signature games + emergent taste clusters (derived from actual play data)
       signatureGames: identity?.signatureGames || [],
-      tasteClusters: identity?.tasteClusters || []
+      tasteClusters: identity?.tasteClusters || [],
     };
     _profileCache = profile;
     _profileCacheTime = Date.now();
@@ -80,7 +80,7 @@ export class GamingIdentity {
   static getGamerTitle(stats) {
     const level = this.calculateGamerLevel(stats);
     const platformStats = AchievementTracker.getPlatformStats();
-    
+
     const titles = [
       { name: 'Newbie', requirement: () => level >= 1 },
       { name: 'Casual Gamer', requirement: () => level >= 3 },
@@ -91,34 +91,34 @@ export class GamingIdentity {
       { name: 'Platform Master', requirement: () => Object.keys(platformStats).length >= 5 },
       { name: 'Time Lord', requirement: () => stats.totalPlayTime >= 60000 }, // 1000+ hours (totalPlayTime is in minutes)
       { name: 'Achievement Hunter', requirement: () => stats.achievementProgress?.unlocked >= 20 },
-      { name: 'Game Master', requirement: () => level >= 25 }
+      { name: 'Game Master', requirement: () => level >= 25 },
     ];
-    
+
     // Find highest title achieved
     for (let i = titles.length - 1; i >= 0; i--) {
       if (titles[i].requirement()) {
         return titles[i].name;
       }
     }
-    
+
     return 'Newbie';
   }
 
   static getAchievedBadges() {
     const achievements = AchievementTracker.getUnlockedAchievements();
     const badges = [];
-    
+
     // Achievement badges
-    achievements.forEach(achievementId => {
+    achievements.forEach((achievementId) => {
       badges.push({
         id: achievementId,
         type: 'achievement',
         icon: this.getAchievementIcon(achievementId),
         name: this.getAchievementName(achievementId),
-        date: StorageService.getString(`achievement_${achievementId}_date`, new Date().toISOString())
+        date: StorageService.getString(`achievement_${achievementId}_date`, new Date().toISOString()),
       });
     });
-    
+
     // Weekly mood badges
     const weeklyBadge = AchievementTracker.getWeeklyMoodBadge();
     if (weeklyBadge) {
@@ -128,10 +128,10 @@ export class GamingIdentity {
         icon: '🏆',
         name: weeklyBadge.badge,
         description: `Most used mood: ${weeklyBadge.mood}`,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
       });
     }
-    
+
     // Platform badges
     const platformStats = AchievementTracker.getPlatformStats();
     Object.entries(platformStats).forEach(([platform, count]) => {
@@ -142,11 +142,11 @@ export class GamingIdentity {
           icon: this.getPlatformIcon(platform),
           name: `${platform} Fan`,
           description: `${count} launches on ${platform}`,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
         });
       }
     });
-    
+
     return badges.sort((a, b) => new Date(b.date) - new Date(a.date));
   }
 
@@ -161,18 +161,22 @@ export class GamingIdentity {
     const allTimeSnapshot = dashboardData?.periods?.all;
     const onboardingSeed = StartupPersonalizationService.getSeededRecommendationContext();
     const legacyTimeStats = AchievementTracker.getTimeStats();
-    const platformStats = Object.keys(allTimeSnapshot?.platformCounts || {}).length > 0
-      ? allTimeSnapshot.platformCounts
-      : AchievementTracker.getPlatformStats();
-    const featureStats = Object.keys(allTimeSnapshot?.featureUsage?.counts || {}).length > 0
-      ? allTimeSnapshot.featureUsage.counts
-      : AchievementTracker.getFeatureStats();
-    const moodStats = Object.keys(allTimeSnapshot?.moodCounts || {}).length > 0
-      ? allTimeSnapshot.moodCounts
-      : AchievementTracker.getMoodStats();
-    const genreStats = Object.keys(allTimeSnapshot?.genreCounts || {}).length > 0
-      ? allTimeSnapshot.genreCounts
-      : AchievementTracker.getGenreStats();
+    const platformStats =
+      Object.keys(allTimeSnapshot?.platformCounts || {}).length > 0
+        ? allTimeSnapshot.platformCounts
+        : AchievementTracker.getPlatformStats();
+    const featureStats =
+      Object.keys(allTimeSnapshot?.featureUsage?.counts || {}).length > 0
+        ? allTimeSnapshot.featureUsage.counts
+        : AchievementTracker.getFeatureStats();
+    const moodStats =
+      Object.keys(allTimeSnapshot?.moodCounts || {}).length > 0
+        ? allTimeSnapshot.moodCounts
+        : AchievementTracker.getMoodStats();
+    const genreStats =
+      Object.keys(allTimeSnapshot?.genreCounts || {}).length > 0
+        ? allTimeSnapshot.genreCounts
+        : AchievementTracker.getGenreStats();
     const trackedPlayTime = Number(allTimeSnapshot?.playtimeMinutes || legacyTimeStats.total || 0);
     // Lifetime floor from library (Steam/GOG imports + local). Never show a
     // "0h identity" when the library clearly has hundreds of imported hours.
@@ -182,7 +186,7 @@ export class GamingIdentity {
             Number(game?.time_played) || 0,
             Number(game?.playtime?.total) || 0,
             Number(game?.importedPlaytimeMinutes) || 0,
-            Number(game?.playtimeForever) || 0
+            Number(game?.playtimeForever) || 0,
           ];
           return sum + Math.max(...candidates, 0);
         }, 0)
@@ -190,7 +194,7 @@ export class GamingIdentity {
     const importedSummaryMinutes = Number(dashboardData?.importedPlaytime?.totalMinutes) || 0;
     const totalPlayTime = Math.max(trackedPlayTime, libraryLifetimeMinutes, importedSummaryMinutes);
     const totalSessions = Number(allTimeSnapshot?.sessions || legacyTimeStats.sessions || 0);
-    
+
     const stats = {
       totalPlayTime,
       trackedPlayTime,
@@ -199,15 +203,21 @@ export class GamingIdentity {
       averageSessionTime: totalSessions > 0 ? Math.round(trackedPlayTime / totalSessions) : 0,
       favoritePlatform: this.getFavoritePlatform(platformStats),
       mostUsedFeature: this.getMostUsedFeature(featureStats),
-      favoriteMood: this.getFavoriteMood(moodStats) !== 'None' ? this.getFavoriteMood(moodStats) : (onboardingSeed?.moods?.[0] || 'None'),
-      favoriteGenre: this.getFavoriteGenre(genreStats) !== 'None' ? this.getFavoriteGenre(genreStats) : (onboardingSeed?.genres?.[0] || 'None'),
+      favoriteMood:
+        this.getFavoriteMood(moodStats) !== 'None'
+          ? this.getFavoriteMood(moodStats)
+          : onboardingSeed?.moods?.[0] || 'None',
+      favoriteGenre:
+        this.getFavoriteGenre(genreStats) !== 'None'
+          ? this.getFavoriteGenre(genreStats)
+          : onboardingSeed?.genres?.[0] || 'None',
       platformDiversity: Object.keys(platformStats).length,
       achievementProgress: {
         unlocked: AchievementTracker.getUnlockedAchievements().length,
-        total: this.getTotalAchievements()
+        total: this.getTotalAchievements(),
       },
       librarySize: librarySize,
-      onboardingSeed
+      onboardingSeed,
     };
     _statsCache = stats;
     _statsCacheTime = Date.now();
@@ -252,7 +262,10 @@ export class GamingIdentity {
       descriptionParts.push(behaviorPersona.personaIdentity.description);
     }
     if (signatureGames.length > 0) {
-      const topNames = signatureGames.slice(0, 3).map((g) => g.name).join(', ');
+      const topNames = signatureGames
+        .slice(0, 3)
+        .map((g) => g.name)
+        .join(', ');
       descriptionParts.push(`Anchored by ${topNames}.`);
     }
 
@@ -262,13 +275,19 @@ export class GamingIdentity {
       favoriteMood: dominantMood,
       favoriteGenre: dominantGenre,
       archetype: archetype?.name || null,
-      description: descriptionParts.join(' ') || `${habits.frequency} ${gamerType} gamer with ${playStyle.toLowerCase()} playstyle`,
+      description:
+        descriptionParts.join(' ') ||
+        `${habits.frequency} ${gamerType} gamer with ${playStyle.toLowerCase()} playstyle`,
       preferences,
       habits,
-      signature: this.generateGamerSignature(stats, { personaLabel: primaryPersona?.label || behaviorLabel, gamerType, playStyle }),
+      signature: this.generateGamerSignature(stats, {
+        personaLabel: primaryPersona?.label || behaviorLabel,
+        gamerType,
+        playStyle,
+      }),
       personaTags: behaviorPersona?.personaTags || [],
       signatureGames,
-      tasteClusters
+      tasteClusters,
     };
   }
 
@@ -332,7 +351,11 @@ export class GamingIdentity {
 
         let genres = Array.isArray(game.genres) ? game.genres.filter(Boolean) : [];
         if (genres.length === 0) {
-          try { genres = getGameGenres(game.name) || []; } catch (e) { genres = []; }
+          try {
+            genres = getGameGenres(game.name) || [];
+          } catch (e) {
+            genres = [];
+          }
         }
 
         return {
@@ -344,7 +367,7 @@ export class GamingIdentity {
           rating: ratingValue,
           wouldReplay: rating?.wouldReplay || null,
           score: Math.round(score * 10) / 10,
-          genres
+          genres,
         };
       })
       .filter(Boolean)
@@ -373,85 +396,116 @@ export class GamingIdentity {
         id: 'soulslike',
         label: 'Souls-like Specialist',
         description: 'Drawn to punishing combat, methodical bosses, and the one-more-attempt loop.',
-        test: (game) => /\b(dark souls|elden ring|sekiro|bloodborne|demon.?s souls|nioh|lies of p|wo long|lords of the fallen|salt and sanctuary|blasphemous|the surge|mortal shell|thymesia|steelrising|hellpoint|remnant|ashen|code vein|hollow knight)\b/i.test(game.name)
-          || (game.genres || []).some((g) => /souls/i.test(g))
+        test: (game) =>
+          /\b(dark souls|elden ring|sekiro|bloodborne|demon.?s souls|nioh|lies of p|wo long|lords of the fallen|salt and sanctuary|blasphemous|the surge|mortal shell|thymesia|steelrising|hellpoint|remnant|ashen|code vein|hollow knight)\b/i.test(
+            game.name
+          ) || (game.genres || []).some((g) => /souls/i.test(g)),
       },
       {
         id: 'survival-craft',
         label: 'Survival Architect',
         description: 'Thrives in gather-build-survive loops where every raid and base matters.',
-        test: (game) => /\b(rust|valheim|the forest|sons of the forest|ark|7 days to die|conan exiles|green hell|the long dark|grounded|stranded deep|raft|icarus|scum|dayz|v rising|enshrouded|palworld)\b/i.test(game.name)
-          || (game.genres || []).includes('Survival')
+        test: (game) =>
+          /\b(rust|valheim|the forest|sons of the forest|ark|7 days to die|conan exiles|green hell|the long dark|grounded|stranded deep|raft|icarus|scum|dayz|v rising|enshrouded|palworld)\b/i.test(
+            game.name
+          ) || (game.genres || []).includes('Survival'),
       },
       {
         id: 'factory-automation',
         label: 'Automation Engineer',
         description: 'Optimizes production lines and chases the perfect throughput curve.',
-        test: (game) => /\b(factorio|dyson sphere|satisfactory|shapez|big pharma|game dev tycoon|rise of industry|production line|project hospital)\b/i.test(game.name)
-          || (game.genres || []).includes('Management')
+        test: (game) =>
+          /\b(factorio|dyson sphere|satisfactory|shapez|big pharma|game dev tycoon|rise of industry|production line|project hospital)\b/i.test(
+            game.name
+          ) || (game.genres || []).includes('Management'),
       },
       {
         id: 'story-rpg',
         label: 'Narrative RPG Voyager',
         description: 'Loses hours to branching dialogue, companion arcs, and world-shaping choices.',
-        test: (game) => /\b(the witcher|cyberpunk|baldur.?s gate|mass effect|dragon age|disco elysium|the outer worlds|fallout|skyrim|oblivion|pillars of eternity|tyranny|torment|elex|greedfall)\b/i.test(game.name)
-          || ((game.genres || []).includes('RPG') && (game.genres || []).some((g) => /story|narrative|adventure/i.test(g)))
+        test: (game) =>
+          /\b(the witcher|cyberpunk|baldur.?s gate|mass effect|dragon age|disco elysium|the outer worlds|fallout|skyrim|oblivion|pillars of eternity|tyranny|torment|elex|greedfall)\b/i.test(
+            game.name
+          ) ||
+          ((game.genres || []).includes('RPG') &&
+            (game.genres || []).some((g) => /story|narrative|adventure/i.test(g))),
       },
       {
         id: 'competitive-shooter',
         label: 'Ranked Sharpshooter',
         description: 'Lives on the ladder — aim, map control, and clutch moments are the core loop.',
-        test: (game) => /\b(counter.strike|csgo|cs2|valorant|rainbow six|siege|apex|overwatch|call of duty|pubg|fortnite|warzone|escape from tarkov|hunt showdown)\b/i.test(game.name)
-          || ((game.genres || []).includes('Shooter') && (game.genres || []).some((g) => /competitive|multiplayer|fps/i.test(g)))
+        test: (game) =>
+          /\b(counter.strike|csgo|cs2|valorant|rainbow six|siege|apex|overwatch|call of duty|pubg|fortnite|warzone|escape from tarkov|hunt showdown)\b/i.test(
+            game.name
+          ) ||
+          ((game.genres || []).includes('Shooter') &&
+            (game.genres || []).some((g) => /competitive|multiplayer|fps/i.test(g))),
       },
       {
         id: 'strategy-tactics',
         label: 'Grand Tactician',
         description: 'Commands empires, plots turn-by-turn, and outthinks the board.',
-        test: (game) => /\b(civilization|civ |endless legend|age of wonders|total war|crusader kings|stellaris|europa universalis|hearts of iron|xcom|into the breach|fire emblem|advanced wars|age of empires|starcraft|warcraft)\b/i.test(game.name)
-          || (game.genres || []).includes('Strategy')
+        test: (game) =>
+          /\b(civilization|civ |endless legend|age of wonders|total war|crusader kings|stellaris|europa universalis|hearts of iron|xcom|into the breach|fire emblem|advanced wars|age of empires|starcraft|warcraft)\b/i.test(
+            game.name
+          ) || (game.genres || []).includes('Strategy'),
       },
       {
         id: 'cozy-sandbox',
         label: 'Cozy Sandbox Dweller',
         description: 'Unwinds in open-ended worlds where the pace is yours and the stakes are low.',
-        test: (game) => /\b(stardew valley|animal crossing|minecraft|terraria|spiritfarer|cozy grove|coral island|fields of mistria|dragon quest builders)\b/i.test(game.name)
-          || ((game.genres || []).includes('Sandbox') && (game.genres || []).some((g) => /casual|relaxed|indie/i.test(g)))
+        test: (game) =>
+          /\b(stardew valley|animal crossing|minecraft|terraria|spiritfarer|cozy grove|coral island|fields of mistria|dragon quest builders)\b/i.test(
+            game.name
+          ) ||
+          ((game.genres || []).includes('Sandbox') && (game.genres || []).some((g) => /casual|relaxed|indie/i.test(g))),
       },
       {
         id: 'horror-immersion',
         label: 'Dread Survivor',
         description: 'Seeks the tension — the darker and more atmospheric, the better.',
-        test: (game) => /\b(resident evil|silent hill|amnesia|outlast|alien isolation|phasmophobia|the evil within|dead space|frictional|soma|little nightmares|visage|mortuary assistant)\b/i.test(game.name)
-          || (game.genres || []).includes('Horror')
+        test: (game) =>
+          /\b(resident evil|silent hill|amnesia|outlast|alien isolation|phasmophobia|the evil within|dead space|frictional|soma|little nightmares|visage|mortuary assistant)\b/i.test(
+            game.name
+          ) || (game.genres || []).includes('Horror'),
       },
       {
         id: 'platformer-purist',
         label: 'Precision Platformer',
         description: 'Finds flow in jumping, dashing, and timing-perfect platforming challenges.',
-        test: (game) => /\b(celeste|hollow knight|ori and the blind forest|ori and the will of the wisps|cuphead|shovel knight|super meat boy|a hat in time|yooka-laylee|banjo-kazooie|crash bandicoot|spyro|ratchet and clank|sonic|super mario|little big planet|guacamelee|donkey kong country|kirby|metroid dread|metroidvania|castlevania|axiom verge)\b/i.test(game.name)
-          || (game.genres || []).some((g) => /platformer|metroidvania/i.test(g))
+        test: (game) =>
+          /\b(celeste|hollow knight|ori and the blind forest|ori and the will of the wisps|cuphead|shovel knight|super meat boy|a hat in time|yooka-laylee|banjo-kazooie|crash bandicoot|spyro|ratchet and clank|sonic|super mario|little big planet|guacamelee|donkey kong country|kirby|metroid dread|metroidvania|castlevania|axiom verge)\b/i.test(
+            game.name
+          ) || (game.genres || []).some((g) => /platformer|metroidvania/i.test(g)),
       },
       {
         id: 'roguelike-obsessed',
         label: 'Run Chaser',
         description: 'One-more-run is a lifestyle. Mastery through repetition and build variety.',
-        test: (game) => /\b(hades|dead cells|binding of isaac|slay the spire|enter the gungeon|risk of rain|rogue legacy|hollow knight|spelunky|cult of the lamb|balatro|inkbound|ftl|into the breach|darkest dungeon)\b/i.test(game.name)
-          || (game.genres || []).includes('Roguelike')
+        test: (game) =>
+          /\b(hades|dead cells|binding of isaac|slay the spire|enter the gungeon|risk of rain|rogue legacy|hollow knight|spelunky|cult of the lamb|balatro|inkbound|ftl|into the breach|darkest dungeon)\b/i.test(
+            game.name
+          ) || (game.genres || []).includes('Roguelike'),
       },
       {
         id: 'mmo-dedicated',
         label: 'Realm Citizen',
         description: 'Commits to shared worlds — raid nights, guild politics, and persistent progression.',
-        test: (game) => /\b(world of warcraft|wow|final fantasy xiv|ffxiv|eso|elder scrolls online|guild wars|black desert|eve online|new world|lost ark|star citizen|albion)\b/i.test(game.name)
-          || (game.genres || []).includes('MMO')
-      }
+        test: (game) =>
+          /\b(world of warcraft|wow|final fantasy xiv|ffxiv|eso|elder scrolls online|guild wars|black desert|eve online|new world|lost ark|star citizen|albion)\b/i.test(
+            game.name
+          ) || (game.genres || []).includes('MMO'),
+      },
     ];
 
     const results = [];
     for (const def of CLUSTER_DEFINITIONS) {
       const matched = signatureGames.filter((g) => {
-        try { return def.test(g); } catch { return false; }
+        try {
+          return def.test(g);
+        } catch {
+          return false;
+        }
       });
       if (matched.length >= 2) {
         results.push({
@@ -459,7 +513,7 @@ export class GamingIdentity {
           label: def.label,
           description: def.description,
           gameNames: matched.map((g) => g.name),
-          matchCount: matched.length
+          matchCount: matched.length,
         });
       }
     }
@@ -494,7 +548,9 @@ export class GamingIdentity {
         if (sigGames.length > 0) {
           sigGenres = new Set(sigGames.flatMap((s) => s.genres || []));
         }
-      } catch { /* optional */ }
+      } catch {
+        /* optional */
+      }
     }
 
     // Check playtime threshold
@@ -522,7 +578,7 @@ export class GamingIdentity {
     const isFamiliar = reasons.length > 0;
     return {
       label: isFamiliar ? 'familiar' : 'fresh',
-      reasons
+      reasons,
     };
   }
 
@@ -546,7 +602,9 @@ export class GamingIdentity {
       if (sigGames.length > 0) {
         sigGenres = new Set(sigGames.flatMap((s) => s.genres || []));
       }
-    } catch { /* optional */ }
+    } catch {
+      /* optional */
+    }
 
     const familiarGenres = new Map();
     const freshGenres = new Map();
@@ -557,7 +615,11 @@ export class GamingIdentity {
       const classification = this.classifyFamiliarity(game, { sigGenres });
       let genres = Array.isArray(game.genres) ? game.genres.filter(Boolean) : [];
       if (genres.length === 0) {
-        try { genres = getGameGenres(game.name) || []; } catch { genres = []; }
+        try {
+          genres = getGameGenres(game.name) || [];
+        } catch {
+          genres = [];
+        }
       }
 
       if (classification.label === 'familiar') {
@@ -573,13 +635,13 @@ export class GamingIdentity {
       familiarGenres: [...familiarGenres.entries()].sort((a, b) => b[1] - a[1]).map(([g]) => g),
       freshGenres: [...freshGenres.entries()].sort((a, b) => b[1] - a[1]).map(([g]) => g),
       familiarGames,
-      freshGames
+      freshGames,
     };
   }
 
   static determineGamerType(stats) {
     const { totalPlayTime, platformDiversity, favoriteMood } = stats;
-    
+
     if (totalPlayTime > 500) return 'Hardcore';
     if (platformDiversity > 4) return 'Explorer';
     if (favoriteMood === 'Social') return 'Competitor';
@@ -590,7 +652,7 @@ export class GamingIdentity {
 
   static determinePlayStyle(stats) {
     const { averageSessionTime, favoriteMood, mostUsedFeature } = stats;
-    
+
     if (averageSessionTime > 120) return 'Marathon';
     if (averageSessionTime < 30) return 'Quick Sessions';
     if (mostUsedFeature === 'perfect_play' || mostUsedFeature === 'perfectPlay') return 'Strategic';
@@ -603,18 +665,18 @@ export class GamingIdentity {
       sessionLength: stats.averageSessionTime > 60 ? 'Long' : 'Short',
       platformVariety: stats.platformDiversity > 3 ? 'Diverse' : 'Focused',
       moodStability: stats.favoriteMood ? 'Consistent' : 'Varied',
-      achievementFocus: stats.achievementProgress.unlocked > 10 ? 'Achievement Hunter' : 'Casual'
+      achievementFocus: stats.achievementProgress.unlocked > 10 ? 'Achievement Hunter' : 'Casual',
     };
   }
 
   static determineHabits(stats) {
     const { totalSessions, totalPlayTime } = stats;
     const sessionsPerWeek = Math.round((totalSessions / 30) * 7); // Assuming 30 days of data
-    
+
     return {
       frequency: sessionsPerWeek > 7 ? 'Daily' : sessionsPerWeek > 3 ? 'Regular' : 'Occasional',
       consistency: totalPlayTime > 0 ? 'Consistent' : 'New',
-      engagement: stats.achievementProgress.unlocked > 5 ? 'Highly Engaged' : 'Developing'
+      engagement: stats.achievementProgress.unlocked > 5 ? 'Highly Engaged' : 'Developing',
     };
   }
 
@@ -630,33 +692,42 @@ export class GamingIdentity {
   // Helper functions
   static getAchievementIcon(achievementId) {
     const icons = {
-      'first_game': '🎮',
-      'collector_5': '📚',
-      'hour_1': '⏱️',
-      'relaxed_5': '😌',
-      'perfect_play_1': '✨',
-      'platform_diverse': '🔄'
+      first_game: '🎮',
+      collector_5: '📚',
+      hour_1: '⏱️',
+      relaxed_5: '😌',
+      perfect_play_1: '✨',
+      platform_diverse: '🔄',
     };
     return icons[achievementId] || '🏆';
   }
 
   static getAchievementName(achievementId) {
     const names = {
-      'first_game': 'First Steps',
-      'collector_5': 'Collector',
-      'hour_1': 'Quick Session',
-      'relaxed_5': 'Chill Master',
-      'perfect_play_1': 'Perfect Start',
-      'platform_diverse': 'Platform Diverse'
+      first_game: 'First Steps',
+      collector_5: 'Collector',
+      hour_1: 'Quick Session',
+      relaxed_5: 'Chill Master',
+      perfect_play_1: 'Perfect Start',
+      platform_diverse: 'Platform Diverse',
     };
     return names[achievementId] || 'Achievement';
   }
 
   static getPlatformIcon(platform) {
     const icons = {
-      'Steam': '🚂', 'Epic': '🎮', 'GOG': '🌌', 'EA': '🎪',
-      'Uplay': '🔷', 'Battle.net': '⚔️', 'Xbox': '🎯',
-      'PlayStation': '🎮', 'Rockstar': '🪨', 'BSG': '🔫', 'Riot': '👊', 'Manual': '📝'
+      Steam: '🚂',
+      Epic: '🎮',
+      GOG: '🌌',
+      EA: '🎪',
+      Uplay: '🔷',
+      'Battle.net': '⚔️',
+      Xbox: '🎯',
+      PlayStation: '🎮',
+      Rockstar: '🪨',
+      BSG: '🔫',
+      Riot: '👊',
+      Manual: '📝',
     };
     return icons[platform] || '❓';
   }
@@ -664,13 +735,13 @@ export class GamingIdentity {
   static getFavoritePlatform(platformStats) {
     const entries = Object.entries(platformStats);
     if (entries.length === 0) return 'None';
-    return entries.sort(([,a], [,b]) => b - a)[0][0];
+    return entries.sort(([, a], [, b]) => b - a)[0][0];
   }
 
   static getMostUsedFeature(featureStats) {
     const entries = Object.entries(featureStats);
     if (entries.length === 0) return 'None';
-    return entries.sort(([,a], [,b]) => b - a)[0][0];
+    return entries.sort(([, a], [, b]) => b - a)[0][0];
   }
 
   static getFavoriteMood(moodStats) {
@@ -678,7 +749,7 @@ export class GamingIdentity {
     if (entries.length === 0) return 'None';
 
     if (typeof entries[0][1] === 'number') {
-      return entries.sort(([,a], [,b]) => b - a)[0][0];
+      return entries.sort(([, a], [, b]) => b - a)[0][0];
     }
 
     const moodCounts = {};
@@ -690,13 +761,13 @@ export class GamingIdentity {
 
     const aggregatedEntries = Object.entries(moodCounts);
     if (aggregatedEntries.length === 0) return 'None';
-    return aggregatedEntries.sort(([,a], [,b]) => b - a)[0][0];
+    return aggregatedEntries.sort(([, a], [, b]) => b - a)[0][0];
   }
 
   static getFavoriteGenre(genreStats) {
     const entries = Object.entries(genreStats);
     if (entries.length === 0) return 'None';
-    return entries.sort(([,a], [,b]) => b - a)[0][0];
+    return entries.sort(([, a], [, b]) => b - a)[0][0];
   }
 
   static getTotalAchievements() {
@@ -727,7 +798,7 @@ export class GamingIdentity {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
   }
 
@@ -754,7 +825,7 @@ export class GamingIdentity {
       playStyle: profile.identity?.playStyle || null,
       totalPlayTime: profile.stats?.totalPlayTime || 0,
       totalSessions: profile.stats?.totalSessions || 0,
-      librarySize: profile.stats?.librarySize || 0
+      librarySize: profile.stats?.librarySize || 0,
     });
 
     // Keep last 52 snapshots (roughly a year of weekly snapshots)
@@ -775,13 +846,48 @@ export class GamingIdentity {
     const newRewards = [];
 
     const rewardDefs = [
-      { id: 'mood_master', name: 'Mood Master', icon: '🎭', requirement: () => profile.identity?.favoriteMood && profile.stats?.totalSessions >= 10 },
-      { id: 'genre_specialist', name: 'Genre Specialist', icon: '🎯', requirement: () => profile.identity?.favoriteGenre && profile.stats?.totalPlayTime >= 300 },
-      { id: 'archetype_unlocked', name: 'True Identity', icon: '🏆', requirement: () => profile.identity?.archetype !== null && profile.stats?.librarySize >= 5 },
-      { id: 'marathon_runner', name: 'Marathon Runner', icon: '⏱️', requirement: () => profile.identity?.playStyle === 'Marathon' && profile.stats?.totalPlayTime >= 600 },
-      { id: 'quick_session_king', name: 'Quick Session King', icon: '⚡', requirement: () => profile.identity?.playStyle === 'Quick Sessions' && profile.stats?.totalSessions >= 20 },
-      { id: 'strategist', name: 'Strategist', icon: '♟️', requirement: () => profile.identity?.playStyle === 'Strategic' && profile.stats?.totalSessions >= 15 },
-      { id: 'explorer', name: 'Explorer', icon: '🗺️', requirement: () => profile.identity?.playStyle === 'Explorer' && profile.stats?.librarySize >= 8 }
+      {
+        id: 'mood_master',
+        name: 'Mood Master',
+        icon: '🎭',
+        requirement: () => profile.identity?.favoriteMood && profile.stats?.totalSessions >= 10,
+      },
+      {
+        id: 'genre_specialist',
+        name: 'Genre Specialist',
+        icon: '🎯',
+        requirement: () => profile.identity?.favoriteGenre && profile.stats?.totalPlayTime >= 300,
+      },
+      {
+        id: 'archetype_unlocked',
+        name: 'True Identity',
+        icon: '🏆',
+        requirement: () => profile.identity?.archetype !== null && profile.stats?.librarySize >= 5,
+      },
+      {
+        id: 'marathon_runner',
+        name: 'Marathon Runner',
+        icon: '⏱️',
+        requirement: () => profile.identity?.playStyle === 'Marathon' && profile.stats?.totalPlayTime >= 600,
+      },
+      {
+        id: 'quick_session_king',
+        name: 'Quick Session King',
+        icon: '⚡',
+        requirement: () => profile.identity?.playStyle === 'Quick Sessions' && profile.stats?.totalSessions >= 20,
+      },
+      {
+        id: 'strategist',
+        name: 'Strategist',
+        icon: '♟️',
+        requirement: () => profile.identity?.playStyle === 'Strategic' && profile.stats?.totalSessions >= 15,
+      },
+      {
+        id: 'explorer',
+        name: 'Explorer',
+        icon: '🗺️',
+        requirement: () => profile.identity?.playStyle === 'Explorer' && profile.stats?.librarySize >= 8,
+      },
     ];
 
     for (const def of rewardDefs) {
@@ -806,7 +912,7 @@ export class GamingIdentity {
       { id: 'marathon_runner', name: 'Marathon Runner', icon: '⏱️', desc: '10+ hours as a marathon player.' },
       { id: 'quick_session_king', name: 'Quick Session King', icon: '⚡', desc: '20+ quick sessions logged.' },
       { id: 'strategist', name: 'Strategist', icon: '♟️', desc: '15+ strategic sessions played.' },
-      { id: 'explorer', name: 'Explorer', icon: '🗺️', desc: '8+ games in your library as an explorer.' }
+      { id: 'explorer', name: 'Explorer', icon: '🗺️', desc: '8+ games in your library as an explorer.' },
     ];
     const unlocked = StorageService.get(IDENTITY_REWARDS_KEY, []);
     return all.map((r) => ({ ...r, unlocked: unlocked.includes(r.id) }));

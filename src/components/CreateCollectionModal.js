@@ -4,25 +4,59 @@ import { UserRuleCollectionService } from '../services/UserRuleCollectionService
 import './CreateCollectionModal.css';
 
 const PRESET_COLORS = [
-  '#ff6b35', '#f472b6', '#a78bfa', '#34d399', '#3dd9ff',
-  '#facc15', '#f87171', '#22d3ee', '#fb923c', '#818cf8'
+  '#ff6b35',
+  '#f472b6',
+  '#a78bfa',
+  '#34d399',
+  '#3dd9ff',
+  '#facc15',
+  '#f87171',
+  '#22d3ee',
+  '#fb923c',
+  '#818cf8',
 ];
 
 const GENRE_OPTIONS = [
-  'Action', 'Adventure', 'RPG', 'Strategy', 'Simulation',
-  'Sports', 'Racing', 'Puzzle', 'Platformer', 'Shooter',
-  'Fighting', 'Horror', 'Survival', 'Roguelike', 'Indie',
-  'MMO', 'Visual Novel', 'Management'
+  'Action',
+  'Adventure',
+  'RPG',
+  'Strategy',
+  'Simulation',
+  'Sports',
+  'Racing',
+  'Puzzle',
+  'Platformer',
+  'Shooter',
+  'Fighting',
+  'Horror',
+  'Survival',
+  'Roguelike',
+  'Indie',
+  'MMO',
+  'Visual Novel',
+  'Management',
 ];
 
 const MOOD_OPTIONS = ['Relaxed', 'Competitive', 'Creative', 'Nostalgic', 'Excited', 'Focused'];
-const PLATFORM_OPTIONS = ['Steam', 'Epic', 'GOG', 'EA', 'Uplay', 'Battle.net', 'Xbox', 'PlayStation', 'Rockstar', 'Riot', 'Manual'];
+const PLATFORM_OPTIONS = [
+  'Steam',
+  'Epic',
+  'GOG',
+  'EA',
+  'Uplay',
+  'Battle.net',
+  'Xbox',
+  'PlayStation',
+  'Rockstar',
+  'Riot',
+  'Manual',
+];
 const COMPLETION_OPTIONS = [
   { value: '', label: 'Any status' },
   { value: 'completed', label: 'Completed' },
   { value: 'playing', label: 'Playing / In Progress' },
   { value: 'backlog', label: 'Backlog / Unplayed' },
-  { value: 'uncompleted', label: 'Not Completed' }
+  { value: 'uncompleted', label: 'Not Completed' },
 ];
 
 export default function CreateCollectionModal({ isOpen, onClose, library = [], onCreated }) {
@@ -41,9 +75,7 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
   const [preview, setPreview] = useState(null);
 
   const toggleInList = useCallback((list, setList, item) => {
-    setList((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
-    );
+    setList((prev) => (prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]));
   }, []);
 
   const buildRules = useCallback(() => {
@@ -58,7 +90,17 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
     if (maxSessions !== '') rules.maxSessions = Number(maxSessions);
     if (neverPlayed) rules.neverPlayed = true;
     return rules;
-  }, [selectedGenres, selectedMoods, selectedPlatforms, completionStatus, minPlaytime, maxPlaytime, minSessions, maxSessions, neverPlayed]);
+  }, [
+    selectedGenres,
+    selectedMoods,
+    selectedPlatforms,
+    completionStatus,
+    minPlaytime,
+    maxPlaytime,
+    minSessions,
+    maxSessions,
+    neverPlayed,
+  ]);
 
   const handlePreview = useCallback(() => {
     const rules = buildRules();
@@ -76,7 +118,7 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
       description,
       rules,
       color,
-      icon: 'folder'
+      icon: 'folder',
     });
     onCreated?.(collection);
     onClose();
@@ -116,12 +158,7 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
         <div className="ccm-body">
           <div className="ccm-section">
             <label>Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Weekend RPGs"
-            />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Weekend RPGs" />
           </div>
 
           <div className="ccm-section">
@@ -199,12 +236,11 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
 
           <div className="ccm-section">
             <label>Completion Status</label>
-            <select
-              value={completionStatus}
-              onChange={(e) => setCompletionStatus(e.target.value)}
-            >
+            <select value={completionStatus} onChange={(e) => setCompletionStatus(e.target.value)}>
               {COMPLETION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </select>
           </div>
@@ -253,11 +289,7 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
 
           <div className="ccm-section ccm-toggle">
             <label>
-              <input
-                type="checkbox"
-                checked={neverPlayed}
-                onChange={(e) => setNeverPlayed(e.target.checked)}
-              />
+              <input type="checkbox" checked={neverPlayed} onChange={(e) => setNeverPlayed(e.target.checked)} />
               Only unplayed games (never launched)
             </label>
           </div>
@@ -267,11 +299,11 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
               <strong>Preview: {preview.games.length} games match</strong>
               <div className="ccm-preview-games">
                 {preview.games.slice(0, 8).map((g) => (
-                  <span key={g.appid || g.name} className="ccm-preview-game">{g.name}</span>
+                  <span key={g.appid || g.name} className="ccm-preview-game">
+                    {g.name}
+                  </span>
                 ))}
-                {preview.games.length > 8 && (
-                  <span className="ccm-preview-more">+{preview.games.length - 8} more</span>
-                )}
+                {preview.games.length > 8 && <span className="ccm-preview-more">+{preview.games.length - 8} more</span>}
               </div>
             </div>
           )}

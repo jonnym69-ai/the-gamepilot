@@ -12,7 +12,7 @@ const VIBE_DESCRIPTIONS = {
   'Story Hunter': 'You want rich worlds, strong characters, and memorable narrative beats.',
   Experimenter: 'You like trying weird, fresh, or surprising things instead of staying in one lane.',
   Completionist: 'You love finishing systems, collecting everything, and clearing the map.',
-  'Variety Seeker': 'You like bouncing between different moods, genres, and session styles.'
+  'Variety Seeker': 'You like bouncing between different moods, genres, and session styles.',
 };
 
 const STYLE_DESCRIPTIONS = {
@@ -20,7 +20,7 @@ const STYLE_DESCRIPTIONS = {
   Focused: 'Clean, purposeful, mission-control energy.',
   Energetic: 'Lively, bright, momentum-forward presentation.',
   Prestige: 'Premium, polished, celebratory identity feel.',
-  Minimal: 'Quiet, sharp, uncluttered librarian mode.'
+  Minimal: 'Quiet, sharp, uncluttered librarian mode.',
 };
 
 export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, onSkip }) {
@@ -61,19 +61,24 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
   })();
 
   const handleComplete = () => {
-    const savedProfile = StartupPersonalizationService.completeOnboarding({
-      selectedMoods,
-      favoriteGenres,
-      sessionPreference,
-      playerVibe,
-      personalizationStyle
-    }, {
-      founderEnhanced
-    });
+    const savedProfile = StartupPersonalizationService.completeOnboarding(
+      {
+        selectedMoods,
+        favoriteGenres,
+        sessionPreference,
+        playerVibe,
+        personalizationStyle,
+      },
+      {
+        founderEnhanced,
+      }
+    );
 
-    window.dispatchEvent(new CustomEvent('gamepilot:startup-questionnaire-completed', {
-      detail: savedProfile
-    }));
+    window.dispatchEvent(
+      new CustomEvent('gamepilot:startup-questionnaire-completed', {
+        detail: savedProfile,
+      })
+    );
 
     onComplete?.(savedProfile);
   };
@@ -81,9 +86,11 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
   const handleSkip = () => {
     const savedProfile = StartupPersonalizationService.skipOnboarding();
 
-    window.dispatchEvent(new CustomEvent('gamepilot:startup-questionnaire-completed', {
-      detail: savedProfile
-    }));
+    window.dispatchEvent(
+      new CustomEvent('gamepilot:startup-questionnaire-completed', {
+        detail: savedProfile,
+      })
+    );
 
     onSkip?.(savedProfile);
   };
@@ -97,7 +104,8 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
           </div>
           <h2>Make GamePilot feel like your own gaming librarian from day one.</h2>
           <p>
-            Pick the moods, genres, and session style that best fit your habits. GamePilot will use this as a local starting seed for identity and recommendations, then adapt over time as your real play history grows.
+            Pick the moods, genres, and session style that best fit your habits. GamePilot will use this as a local
+            starting seed for identity and recommendations, then adapt over time as your real play history grows.
           </p>
           {founderEnhanced && (
             <div className="startup-founder-pill">
@@ -135,7 +143,10 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
           {step === 1 && (
             <div className="startup-questionnaire-step">
               <h3>Which genres are your favorites?</h3>
-              <p>Choose 3-5. These seed cold-start recommendations before GamePilot has enough behavior data to learn from real sessions.</p>
+              <p>
+                Choose 3-5. These seed cold-start recommendations before GamePilot has enough behavior data to learn
+                from real sessions.
+              </p>
               <div className="startup-chip-grid">
                 {GENRES.map((genre) => (
                   <button
@@ -155,7 +166,10 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
           {step === 2 && (
             <div className="startup-questionnaire-step">
               <h3>How long would you usually play for?</h3>
-              <p>This gives GamePilot an initial session-length bias for suggestions like Perfect Play and other time-aware recommendation surfaces.</p>
+              <p>
+                This gives GamePilot an initial session-length bias for suggestions like Perfect Play and other
+                time-aware recommendation surfaces.
+              </p>
               <div className="startup-choice-grid">
                 {sessionOptions.map((option) => (
                   <button
@@ -175,7 +189,10 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
           {step === 3 && (
             <div className="startup-questionnaire-step">
               <h3>Choose the vibe for your GamePilot.</h3>
-              <p>Pick the identity that feels most like you, then choose how you want your cockpit to feel. Founders get an enhanced personalization finish layered on top.</p>
+              <p>
+                Pick the identity that feels most like you, then choose how you want your cockpit to feel. Founders get
+                an enhanced personalization finish layered on top.
+              </p>
               <div className="startup-choice-grid" style={{ marginBottom: '18px' }}>
                 {playerVibes.map((vibe) => (
                   <button
@@ -217,7 +234,9 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
                 </div>
                 <div className="startup-summary-card">
                   <span>Identity</span>
-                  <strong>{playerVibe} • {personalizationStyle}</strong>
+                  <strong>
+                    {playerVibe} • {personalizationStyle}
+                  </strong>
                 </div>
               </div>
             </div>
@@ -225,11 +244,7 @@ export default function StartupQuestionnaire({ isOpen, founderTier, onComplete, 
         </div>
 
         <div className="startup-questionnaire-footer">
-          <button
-            type="button"
-            className="ghost"
-            onClick={handleSkip}
-          >
+          <button type="button" className="ghost" onClick={handleSkip}>
             Skip for now
           </button>
           <button

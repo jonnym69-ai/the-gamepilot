@@ -1,6 +1,24 @@
 import React, { useState, useMemo, useContext, useEffect, useCallback, useRef } from 'react';
 import html2canvas from 'html2canvas';
-import { Search, Grid, List, Clock, Heart, Pin, Trash2, Sparkles, Dices, Play, ChevronLeft, ChevronRight, BarChart3, X, EyeOff, Eye, ImageOff } from 'lucide-react';
+import {
+  Search,
+  Grid,
+  List,
+  Clock,
+  Heart,
+  Pin,
+  Trash2,
+  Sparkles,
+  Dices,
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  BarChart3,
+  X,
+  EyeOff,
+  Eye,
+  ImageOff,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
 import GameModal from './components/GameModal';
@@ -144,7 +162,7 @@ const LIBRARY_PRESENTATION_PRESETS = Object.freeze({
     favoriteBg: 'rgba(0, 0, 0, 0.7)',
     cardShadow: '0 10px 24px rgba(0, 0, 0, 0.14)',
     listIcon: { width: 64, height: 64, padding: 8, borderRadius: '50%', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.35)' },
-    listHero: { width: 118, height: 66, padding: 0, borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }
+    listHero: { width: 118, height: 66, padding: 0, borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' },
   },
   compact_matrix: {
     accent: '#3dd9ff',
@@ -162,7 +180,7 @@ const LIBRARY_PRESENTATION_PRESETS = Object.freeze({
     favoriteBg: 'rgba(17, 24, 39, 0.72)',
     cardShadow: '0 8px 18px rgba(11, 17, 32, 0.2)',
     listIcon: { width: 56, height: 56, padding: 7, borderRadius: '18px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.28)' },
-    listHero: { width: 102, height: 58, padding: 0, borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' }
+    listHero: { width: 102, height: 58, padding: 0, borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' },
   },
   spotlight_showcase: {
     accent: '#f093fb',
@@ -179,8 +197,14 @@ const LIBRARY_PRESENTATION_PRESETS = Object.freeze({
     tagColor: '#f093fb',
     favoriteBg: 'rgba(34, 21, 49, 0.78)',
     cardShadow: '0 14px 32px rgba(240, 147, 251, 0.16)',
-    listIcon: { width: 72, height: 72, padding: 10, borderRadius: '22px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.28)' },
-    listHero: { width: 132, height: 74, padding: 0, borderRadius: '12px', boxShadow: '0 4px 14px rgba(0,0,0,0.24)' }
+    listIcon: {
+      width: 72,
+      height: 72,
+      padding: 10,
+      borderRadius: '22px',
+      boxShadow: 'inset 0 0 10px rgba(0,0,0,0.28)',
+    },
+    listHero: { width: 132, height: 74, padding: 0, borderRadius: '12px', boxShadow: '0 4px 14px rgba(0,0,0,0.24)' },
   },
   intel_panels: {
     accent: '#7ddc84',
@@ -198,8 +222,8 @@ const LIBRARY_PRESENTATION_PRESETS = Object.freeze({
     favoriteBg: 'rgba(5, 33, 27, 0.78)',
     cardShadow: '0 12px 26px rgba(15, 118, 110, 0.14)',
     listIcon: { width: 60, height: 60, padding: 8, borderRadius: '12px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.28)' },
-    listHero: { width: 120, height: 68, padding: 0, borderRadius: '10px', boxShadow: '0 3px 10px rgba(0,0,0,0.24)' }
-  }
+    listHero: { width: 120, height: 68, padding: 0, borderRadius: '10px', boxShadow: '0 3px 10px rgba(0,0,0,0.24)' },
+  },
 });
 
 const getDisplayPlatform = (game) => {
@@ -207,9 +231,9 @@ const getDisplayPlatform = (game) => {
   return game.brandPlatform || game.platform || 'Unknown';
 };
 
-function Library({ 
-  library = [], 
-  onLaunchGame = NOOP, 
+function Library({
+  library = [],
+  onLaunchGame = NOOP,
   onScan = null,
   onScanLibrary = null,
   scanLocalLibrary = null,
@@ -241,7 +265,7 @@ function Library({
   searchQuery = '',
   setSearchQuery = NOOP,
   endSession = NOOP,
-  currency = 'USD'
+  currency = 'USD',
 }) {
   const navigate = useNavigate();
   const { currentTheme } = useContext(ThemeContext);
@@ -290,7 +314,7 @@ function Library({
     emulatorPath: '',
     romFolder: '',
     extensions: EmulatorLibraryService.getDefaultExtensions().join(', '),
-    launchTemplate: '"{emulator}" "{rom}"'
+    launchTemplate: '"{emulator}" "{rom}"',
   }));
   const [localSortBy, setLocalSortBy] = useState(sortBy);
   const [localFilterMood, setLocalFilterMood] = useState(filterMood);
@@ -311,7 +335,10 @@ function Library({
   const luckyAnimationTimeoutRef = useRef(null);
   const luckyPreviewIntervalRef = useRef(null);
   const interfacePrefs = useInterfacePreferences();
-  const pinnedIds = useMemo(() => new Set((interfacePrefs.pinnedGameIds || []).map(String)), [interfacePrefs.pinnedGameIds]);
+  const pinnedIds = useMemo(
+    () => new Set((interfacePrefs.pinnedGameIds || []).map(String)),
+    [interfacePrefs.pinnedGameIds]
+  );
   const handleTogglePin = useCallback((game) => {
     const key = String(getFavoriteGameKey(game));
     InterfacePreferencesService.togglePin(key);
@@ -341,116 +368,154 @@ function Library({
       height: LIBRARY_SHARE_CARD_SIZE_PX,
       backgroundColor: null,
       logging: false,
-      useCORS: true
+      useCORS: true,
     });
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }, []);
 
-  const handleCopyLibraryShareText = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
-    const copied = await LocalShareService.copyTextToClipboard(shareText);
-    if (copied) {
-      success('Library recap text copied to clipboard.');
-    } else {
-      toastError('Could not copy library recap text.');
-    }
-    return copied;
-  }, [library, username, sharePeriod, success, toastError]);
+  const handleCopyLibraryShareText = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildLibraryShareText(library, username, sharePeriod)
+        );
+      const copied = await LocalShareService.copyTextToClipboard(shareText);
+      if (copied) {
+        success('Library recap text copied to clipboard.');
+      } else {
+        toastError('Could not copy library recap text.');
+      }
+      return copied;
+    },
+    [library, username, sharePeriod, success, toastError]
+  );
 
-  const handleDownloadShareText = useCallback((text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
-    const result = LocalShareService.downloadShareText(shareText, `gamepilot-${sharePeriod}-recap-${new Date().toISOString().split('T')[0]}.txt`);
-    if (result) {
-      success('Library recap caption downloaded.');
-    } else {
-      toastError('Could not download caption.');
-    }
-  }, [library, username, sharePeriod, success, toastError]);
+  const handleDownloadShareText = useCallback(
+    (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildLibraryShareText(library, username, sharePeriod)
+        );
+      const result = LocalShareService.downloadShareText(
+        shareText,
+        `gamepilot-${sharePeriod}-recap-${new Date().toISOString().split('T')[0]}.txt`
+      );
+      if (result) {
+        success('Library recap caption downloaded.');
+      } else {
+        toastError('Could not download caption.');
+      }
+    },
+    [library, username, sharePeriod, success, toastError]
+  );
 
-  const handleShareToChannel = useCallback(async (channel, text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
+  const handleShareToChannel = useCallback(
+    async (channel, text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildLibraryShareText(library, username, sharePeriod)
+        );
 
-    // Social web intents are text-only, so pre-stage the recap image on the
-    // clipboard where supported. Gamers can then paste it straight into the post.
-    let imageStaged = false;
-    if (library.length > 0 && LocalShareService.canCopyImage()) {
-      try {
-        const blob = await generateLibraryShareCardBlob();
-        if (blob) {
-          const { filename } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
-          const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
-          imageStaged = copyResult.success;
+      // Social web intents are text-only, so pre-stage the recap image on the
+      // clipboard where supported. Gamers can then paste it straight into the post.
+      let imageStaged = false;
+      if (library.length > 0 && LocalShareService.canCopyImage()) {
+        try {
+          const blob = await generateLibraryShareCardBlob();
+          if (blob) {
+            const { filename } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+            const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
+            imageStaged = copyResult.success;
+          }
+        } catch (error) {
+          imageStaged = false;
         }
-      } catch (error) {
-        imageStaged = false;
       }
-    }
 
-    const result = await LocalShareService.openShareIntent(channel, shareText);
-    if (result.success) {
-      if (imageStaged) {
-        success(`${result.label} opened — your recap image is copied, just paste it into the post.`);
+      const result = await LocalShareService.openShareIntent(channel, shareText);
+      if (result.success) {
+        if (imageStaged) {
+          success(`${result.label} opened — your recap image is copied, just paste it into the post.`);
+        } else {
+          success(`${result.label} share opened. Save the recap image to attach it to your post.`);
+        }
       } else {
-        success(`${result.label} share opened. Save the recap image to attach it to your post.`);
+        toastError(result.message || 'Could not open share link.');
       }
-    } else {
-      toastError(result.message || 'Could not open share link.');
-    }
-  }, [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]);
+    },
+    [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]
+  );
 
-  const handleShareToDiscord = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
-    let imageBlob = null;
-    let filename = 'gamepilot-library-recap.png';
+  const handleShareToDiscord = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildLibraryShareText(library, username, sharePeriod)
+        );
+      let imageBlob = null;
+      let filename = 'gamepilot-library-recap.png';
 
-    if (library.length > 0 && LocalShareService.canCopyImage()) {
-      try {
-        imageBlob = await generateLibraryShareCardBlob();
-        const packageResult = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
-        filename = packageResult.filename;
-      } catch (error) {
-        imageBlob = null;
+      if (library.length > 0 && LocalShareService.canCopyImage()) {
+        try {
+          imageBlob = await generateLibraryShareCardBlob();
+          const packageResult = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+          filename = packageResult.filename;
+        } catch (error) {
+          imageBlob = null;
+        }
       }
-    }
 
-    const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      if (result.imageStaged) {
-        success('Discord opened — your recap image and caption are copied, just paste them in.');
+      const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        if (result.imageStaged) {
+          success('Discord opened — your recap image and caption are copied, just paste them in.');
+        } else {
+          success('Discord opened — caption copied, save the image to attach it.');
+        }
       } else {
-        success('Discord opened — caption copied, save the image to attach it.');
+        toastError(result.message || 'Could not share to Discord.');
       }
-    } else {
-      toastError(result.message || 'Could not share to Discord.');
-    }
-  }, [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]);
+    },
+    [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]
+  );
 
-  const handleShareToMessenger = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod));
-    let imageBlob = null;
-    let filename = 'gamepilot-library-recap.png';
+  const handleShareToMessenger = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildLibraryShareText(library, username, sharePeriod)
+        );
+      let imageBlob = null;
+      let filename = 'gamepilot-library-recap.png';
 
-    if (library.length > 0 && LocalShareService.canCopyImage()) {
-      try {
-        imageBlob = await generateLibraryShareCardBlob();
-        const packageResult = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
-        filename = packageResult.filename;
-      } catch (error) {
-        imageBlob = null;
+      if (library.length > 0 && LocalShareService.canCopyImage()) {
+        try {
+          imageBlob = await generateLibraryShareCardBlob();
+          const packageResult = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+          filename = packageResult.filename;
+        } catch (error) {
+          imageBlob = null;
+        }
       }
-    }
 
-    const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      if (result.imageStaged) {
-        success('Messenger opened — your recap image and caption are copied, just paste them in.');
+      const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        if (result.imageStaged) {
+          success('Messenger opened — your recap image and caption are copied, just paste them in.');
+        } else {
+          success('Messenger opened — caption copied, save the image to attach it.');
+        }
       } else {
-        success('Messenger opened — caption copied, save the image to attach it.');
+        toastError(result.message || 'Could not share to Messenger.');
       }
-    } else {
-      toastError(result.message || 'Could not share to Messenger.');
-    }
-  }, [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]);
+    },
+    [library, username, sharePeriod, generateLibraryShareCardBlob, success, toastError]
+  );
 
   const handleDownloadLibraryShareCard = useCallback(async () => {
     const blob = await generateLibraryShareCardBlob();
@@ -480,19 +545,30 @@ function Library({
     return false;
   }, [generateLibraryShareCardBlob, library, username, sharePeriod, success, toastError]);
 
-  const handleNativeShareLibraryCard = useCallback(async (text = null) => {
-    const blob = await generateLibraryShareCardBlob();
-    const { text: baseText, filename, title } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
-    if (!blob) {
-      toastError('Could not generate share card.');
-      return;
-    }
-    const file = new File([blob], filename, { type: 'image/png' });
-    const result = await LocalShareService.shareWithNativeShare({ text: text || ProfileService.appendSocialLinksToShareText(baseText), files: [file], title });
-    if (!result.success) {
-      toastError(result.message || 'Native share failed.');
-    }
-  }, [generateLibraryShareCardBlob, library, username, sharePeriod, toastError]);
+  const handleNativeShareLibraryCard = useCallback(
+    async (text = null) => {
+      const blob = await generateLibraryShareCardBlob();
+      const {
+        text: baseText,
+        filename,
+        title,
+      } = LocalShareService.buildLibraryShareCardPackage(library, username, sharePeriod);
+      if (!blob) {
+        toastError('Could not generate share card.');
+        return;
+      }
+      const file = new File([blob], filename, { type: 'image/png' });
+      const result = await LocalShareService.shareWithNativeShare({
+        text: text || ProfileService.appendSocialLinksToShareText(baseText),
+        files: [file],
+        title,
+      });
+      if (!result.success) {
+        toastError(result.message || 'Native share failed.');
+      }
+    },
+    [generateLibraryShareCardBlob, library, username, sharePeriod, toastError]
+  );
 
   const generateTopRatedShareCardBlob = useCallback(async () => {
     if (!topRatedShareCardRef.current) {
@@ -504,92 +580,124 @@ function Library({
       height: TOP_RATED_SHARE_CARD_SIZE_PX,
       backgroundColor: null,
       logging: false,
-      useCORS: true
+      useCORS: true,
     });
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }, []);
 
-  const handleShareTopRatedToChannel = useCallback(async (channel, text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
-    let imageStaged = false;
-    try {
-      const blob = await generateTopRatedShareCardBlob();
-      if (blob && LocalShareService.canCopyImage()) {
-        const { filename } = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
-        const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
-        imageStaged = copyResult.success;
+  const handleShareTopRatedToChannel = useCallback(
+    async (channel, text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames)
+        );
+      let imageStaged = false;
+      try {
+        const blob = await generateTopRatedShareCardBlob();
+        if (blob && LocalShareService.canCopyImage()) {
+          const { filename } = LocalShareService.buildTopRatedShareCardPackage(
+            library,
+            username,
+            selectedTopRatedGames
+          );
+          const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
+          imageStaged = copyResult.success;
+        }
+      } catch (error) {
+        imageStaged = false;
       }
-    } catch (error) {
-      imageStaged = false;
-    }
-    const result = await LocalShareService.openShareIntent(channel, shareText);
-    if (result.success) {
-      if (imageStaged) {
-        success(`${result.label} opened — your top-rated card is copied, just paste it into the post.`);
+      const result = await LocalShareService.openShareIntent(channel, shareText);
+      if (result.success) {
+        if (imageStaged) {
+          success(`${result.label} opened — your top-rated card is copied, just paste it into the post.`);
+        } else {
+          success(`${result.label} share opened. Save the top-rated card to attach it to your post.`);
+        }
       } else {
-        success(`${result.label} share opened. Save the top-rated card to attach it to your post.`);
+        toastError(result.message || 'Could not open share link.');
       }
-    } else {
-      toastError(result.message || 'Could not open share link.');
-    }
-  }, [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]);
+    },
+    [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]
+  );
 
-  const handleShareTopRatedToDiscord = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
-    let imageBlob = null;
-    let filename = 'gamepilot-top-rated.png';
-    try {
-      imageBlob = await generateTopRatedShareCardBlob();
-      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
-      filename = packageResult.filename;
-    } catch (error) {
-      imageBlob = null;
-    }
-    const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      if (result.imageStaged) {
-        success('Discord opened — your top-rated card and caption are copied, just paste them in.');
+  const handleShareTopRatedToDiscord = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames)
+        );
+      let imageBlob = null;
+      let filename = 'gamepilot-top-rated.png';
+      try {
+        imageBlob = await generateTopRatedShareCardBlob();
+        const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
+        filename = packageResult.filename;
+      } catch (error) {
+        imageBlob = null;
+      }
+      const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        if (result.imageStaged) {
+          success('Discord opened — your top-rated card and caption are copied, just paste them in.');
+        } else {
+          success('Discord opened — caption copied, save the top-rated card to attach it.');
+        }
       } else {
-        success('Discord opened — caption copied, save the top-rated card to attach it.');
+        toastError(result.message || 'Could not share to Discord.');
       }
-    } else {
-      toastError(result.message || 'Could not share to Discord.');
-    }
-  }, [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]);
+    },
+    [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]
+  );
 
-  const handleShareTopRatedToMessenger = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
-    let imageBlob = null;
-    let filename = 'gamepilot-top-rated.png';
-    try {
-      imageBlob = await generateTopRatedShareCardBlob();
-      const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
-      filename = packageResult.filename;
-    } catch (error) {
-      imageBlob = null;
-    }
-    const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      if (result.imageStaged) {
-        success('Messenger opened — your top-rated card and caption are copied, just paste them in.');
+  const handleShareTopRatedToMessenger = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames)
+        );
+      let imageBlob = null;
+      let filename = 'gamepilot-top-rated.png';
+      try {
+        imageBlob = await generateTopRatedShareCardBlob();
+        const packageResult = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
+        filename = packageResult.filename;
+      } catch (error) {
+        imageBlob = null;
+      }
+      const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        if (result.imageStaged) {
+          success('Messenger opened — your top-rated card and caption are copied, just paste them in.');
+        } else {
+          success('Messenger opened — caption copied, save the top-rated card to attach it.');
+        }
       } else {
-        success('Messenger opened — caption copied, save the top-rated card to attach it.');
+        toastError(result.message || 'Could not share to Messenger.');
       }
-    } else {
-      toastError(result.message || 'Could not share to Messenger.');
-    }
-  }, [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]);
+    },
+    [library, username, selectedTopRatedGames, generateTopRatedShareCardBlob, success, toastError]
+  );
 
-  const handleCopyTopRatedShareText = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames));
-    const copied = await LocalShareService.copyTextToClipboard(shareText);
-    if (copied) {
-      success('Top-rated picks text copied to clipboard.');
-    } else {
-      toastError('Could not copy top-rated picks text.');
-    }
-    return copied;
-  }, [library, username, selectedTopRatedGames, success, toastError]);
+  const handleCopyTopRatedShareText = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames)
+        );
+      const copied = await LocalShareService.copyTextToClipboard(shareText);
+      if (copied) {
+        success('Top-rated picks text copied to clipboard.');
+      } else {
+        toastError('Could not copy top-rated picks text.');
+      }
+      return copied;
+    },
+    [library, username, selectedTopRatedGames, success, toastError]
+  );
 
   const handleCopyTopRatedShareCard = useCallback(async () => {
     const blob = await generateTopRatedShareCardBlob();
@@ -619,19 +727,30 @@ function Library({
     return true;
   }, [generateTopRatedShareCardBlob, library, username, selectedTopRatedGames, success, toastError]);
 
-  const handleNativeShareTopRatedCard = useCallback(async (text = null) => {
-    const blob = await generateTopRatedShareCardBlob();
-    const { text: baseText, filename, title } = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
-    if (!blob) {
-      toastError('Could not generate top-rated card.');
-      return;
-    }
-    const file = new File([blob], filename, { type: 'image/png' });
-    const result = await LocalShareService.shareWithNativeShare({ text: text || ProfileService.appendSocialLinksToShareText(baseText), files: [file], title });
-    if (!result.success) {
-      toastError(result.message || 'Native share failed.');
-    }
-  }, [generateTopRatedShareCardBlob, library, username, selectedTopRatedGames, toastError]);
+  const handleNativeShareTopRatedCard = useCallback(
+    async (text = null) => {
+      const blob = await generateTopRatedShareCardBlob();
+      const {
+        text: baseText,
+        filename,
+        title,
+      } = LocalShareService.buildTopRatedShareCardPackage(library, username, selectedTopRatedGames);
+      if (!blob) {
+        toastError('Could not generate top-rated card.');
+        return;
+      }
+      const file = new File([blob], filename, { type: 'image/png' });
+      const result = await LocalShareService.shareWithNativeShare({
+        text: text || ProfileService.appendSocialLinksToShareText(baseText),
+        files: [file],
+        title,
+      });
+      if (!result.success) {
+        toastError(result.message || 'Native share failed.');
+      }
+    },
+    [generateTopRatedShareCardBlob, library, username, selectedTopRatedGames, toastError]
+  );
 
   const generateMultiGameShareCardBlob = useCallback(async () => {
     if (!multiGameShareCardRef.current) {
@@ -643,21 +762,28 @@ function Library({
       height: MULTI_GAME_SHARE_CARD_SIZE_PX,
       backgroundColor: null,
       logging: false,
-      useCORS: true
+      useCORS: true,
     });
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }, []);
 
-  const handleCopyMultiGameShareText = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
-    const copied = await LocalShareService.copyTextToClipboard(shareText);
-    if (copied) {
-      success('Picks caption copied to clipboard.');
-    } else {
-      toastError('Could not copy caption.');
-    }
-    return copied;
-  }, [multiGamePicks, username, success, toastError]);
+  const handleCopyMultiGameShareText = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildMultiGameShareText(multiGamePicks, username)
+        );
+      const copied = await LocalShareService.copyTextToClipboard(shareText);
+      if (copied) {
+        success('Picks caption copied to clipboard.');
+      } else {
+        toastError('Could not copy caption.');
+      }
+      return copied;
+    },
+    [multiGamePicks, username, success, toastError]
+  );
 
   const handleCopyMultiGameShareCard = useCallback(async () => {
     const blob = await generateMultiGameShareCardBlob();
@@ -687,90 +813,122 @@ function Library({
     return true;
   }, [generateMultiGameShareCardBlob, multiGamePicks, username, success, toastError]);
 
-  const handleShareMultiGameToChannel = useCallback(async (channel, text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
-    let imageStaged = false;
-    try {
+  const handleShareMultiGameToChannel = useCallback(
+    async (channel, text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildMultiGameShareText(multiGamePicks, username)
+        );
+      let imageStaged = false;
+      try {
+        const blob = await generateMultiGameShareCardBlob();
+        if (blob && LocalShareService.canCopyImage()) {
+          const { filename } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+          const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
+          imageStaged = copyResult.success;
+        }
+      } catch {
+        imageStaged = false;
+      }
+      const result = await LocalShareService.openShareIntent(channel, shareText);
+      if (result.success) {
+        if (imageStaged) {
+          success(`${result.label} opened — your picks card is copied, just paste it into the post.`);
+        } else {
+          success(`${result.label} share opened. Save the picks card to attach it to your post.`);
+        }
+      } else {
+        toastError(result.message || 'Could not open share link.');
+      }
+    },
+    [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]
+  );
+
+  const handleShareMultiGameToDiscord = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildMultiGameShareText(multiGamePicks, username)
+        );
+      let imageBlob = null;
+      let filename = 'gamepilot-picks.png';
+      try {
+        imageBlob = await generateMultiGameShareCardBlob();
+        const pkg = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+        filename = pkg.filename;
+      } catch {
+        imageBlob = null;
+      }
+      const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        if (result.imageStaged) {
+          success('Discord opened — your picks image and caption are copied, just paste them in.');
+        } else {
+          success('Discord opened — caption copied, save the image to attach it.');
+        }
+      } else {
+        toastError(result.message || 'Could not share to Discord.');
+      }
+    },
+    [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]
+  );
+
+  const handleShareMultiGameToMessenger = useCallback(
+    async (text = null) => {
+      const shareText =
+        text ||
+        ProfileService.appendSocialLinksToShareText(
+          LocalShareService.buildMultiGameShareText(multiGamePicks, username)
+        );
+      let imageBlob = null;
+      let filename = 'gamepilot-picks.png';
+      try {
+        imageBlob = await generateMultiGameShareCardBlob();
+        const pkg = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+        filename = pkg.filename;
+      } catch {
+        imageBlob = null;
+      }
+      const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
+      if (result.success) {
+        if (result.imageStaged) {
+          success('Messenger opened — your picks image and caption are copied, just paste them in.');
+        } else {
+          success('Messenger opened — caption copied, save the image to attach it.');
+        }
+      } else {
+        toastError(result.message || 'Could not share to Messenger.');
+      }
+    },
+    [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]
+  );
+
+  const handleNativeShareMultiGameCard = useCallback(
+    async (text = null) => {
       const blob = await generateMultiGameShareCardBlob();
-      if (blob && LocalShareService.canCopyImage()) {
-        const { filename } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
-        const copyResult = await LocalShareService.copyImageToClipboard(blob, filename);
-        imageStaged = copyResult.success;
+      if (!blob) {
+        toastError('Could not generate share card.');
+        return;
       }
-    } catch {
-      imageStaged = false;
-    }
-    const result = await LocalShareService.openShareIntent(channel, shareText);
-    if (result.success) {
-      if (imageStaged) {
-        success(`${result.label} opened — your picks card is copied, just paste it into the post.`);
-      } else {
-        success(`${result.label} share opened. Save the picks card to attach it to your post.`);
+      const {
+        text: baseText,
+        filename,
+        title,
+      } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
+      const file = new File([blob], filename, { type: 'image/png' });
+      const result = await LocalShareService.shareWithNativeShare({
+        text: text || ProfileService.appendSocialLinksToShareText(baseText),
+        files: [file],
+        title,
+      });
+      if (!result.success) {
+        toastError(result.message || 'Native share failed.');
       }
-    } else {
-      toastError(result.message || 'Could not open share link.');
-    }
-  }, [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]);
-
-  const handleShareMultiGameToDiscord = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
-    let imageBlob = null;
-    let filename = 'gamepilot-picks.png';
-    try {
-      imageBlob = await generateMultiGameShareCardBlob();
-      const pkg = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
-      filename = pkg.filename;
-    } catch {
-      imageBlob = null;
-    }
-    const result = await LocalShareService.shareToDiscord({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      if (result.imageStaged) {
-        success('Discord opened — your picks image and caption are copied, just paste them in.');
-      } else {
-        success('Discord opened — caption copied, save the image to attach it.');
-      }
-    } else {
-      toastError(result.message || 'Could not share to Discord.');
-    }
-  }, [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]);
-
-  const handleShareMultiGameToMessenger = useCallback(async (text = null) => {
-    const shareText = text || ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username));
-    let imageBlob = null;
-    let filename = 'gamepilot-picks.png';
-    try {
-      imageBlob = await generateMultiGameShareCardBlob();
-      const pkg = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
-      filename = pkg.filename;
-    } catch {
-      imageBlob = null;
-    }
-    const result = await LocalShareService.shareToMessenger({ imageBlob, text: shareText, filename });
-    if (result.success) {
-      if (result.imageStaged) {
-        success('Messenger opened — your picks image and caption are copied, just paste them in.');
-      } else {
-        success('Messenger opened — caption copied, save the image to attach it.');
-      }
-    } else {
-      toastError(result.message || 'Could not share to Messenger.');
-    }
-  }, [multiGamePicks, username, generateMultiGameShareCardBlob, success, toastError]);
-
-  const handleNativeShareMultiGameCard = useCallback(async (text = null) => {
-    const blob = await generateMultiGameShareCardBlob();
-    if (!blob) {
-      toastError('Could not generate share card.');
-      return;
-    }
-    const { text: baseText, filename, title } = LocalShareService.buildMultiGameShareCardPackage(multiGamePicks, username);
-    const file = new File([blob], filename, { type: 'image/png' });
-    const result = await LocalShareService.shareWithNativeShare({ text: text || ProfileService.appendSocialLinksToShareText(baseText), files: [file], title });
-    if (!result.success) {
-      toastError(result.message || 'Native share failed.');
-    }
-  }, [generateMultiGameShareCardBlob, multiGamePicks, username, toastError]);
+    },
+    [generateMultiGameShareCardBlob, multiGamePicks, username, toastError]
+  );
 
   const handleToggleFavorite = useCallback((key) => {
     setFavorites((prev) => {
@@ -806,7 +964,7 @@ function Library({
   const handleEmulatorDraftChange = useCallback((field, value) => {
     setEmulatorDraft((previousDraft) => ({
       ...previousDraft,
-      [field]: value
+      [field]: value,
     }));
   }, []);
 
@@ -845,7 +1003,7 @@ function Library({
       emulatorPath: savedProfile.emulatorPath || '',
       romFolder: '',
       extensions: EmulatorLibraryService.getDefaultExtensions().join(', '),
-      launchTemplate: savedProfile.launchTemplate || '"{emulator}" "{rom}"'
+      launchTemplate: savedProfile.launchTemplate || '"{emulator}" "{rom}"',
     });
   }, [emulatorDraft]);
 
@@ -941,7 +1099,9 @@ function Library({
       }
     };
     loadFreeGames();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const refreshFreeGames = async () => {
@@ -1039,40 +1199,51 @@ function Library({
     setSelectedGameIndex(0);
   };
 
-  const missingCoverCount = useMemo(() => (
-    Array.isArray(library)
-      ? library.filter((game) => game && !game.isHidden && hasMissingCoverArt(game)).length
-      : 0
-  ), [library]);
+  const missingCoverCount = useMemo(
+    () =>
+      Array.isArray(library) ? library.filter((game) => game && !game.isHidden && hasMissingCoverArt(game)).length : 0,
+    [library]
+  );
 
   const filteredAndSortedGames = useMemo(() => {
     if (!Array.isArray(library)) return [];
-    
-    let filtered = library.filter(game => {
+
+    let filtered = library.filter((game) => {
       if (!game) return false;
       const displayPlatform = getDisplayPlatform(game);
       const resolvedMood = getResolvedMood(game);
       const gameMoodScores = getMoodScoresForGame(game.genres || []);
       const matchesSearch = game.name ? game.name.toLowerCase().includes(localSearchQuery.toLowerCase()) : false;
-      const matchesMood = !localFilterMood || 
-                          resolvedMood === localFilterMood || 
-                          (gameMoodScores && gameMoodScores[localFilterMood] > 0) ||
-                          (game.mood && game.mood.trim() === localFilterMood);
-      const matchesGenre = !localFilterGenre || (game.genres && Array.isArray(game.genres) && game.genres.includes(localFilterGenre));
+      const matchesMood =
+        !localFilterMood ||
+        resolvedMood === localFilterMood ||
+        (gameMoodScores && gameMoodScores[localFilterMood] > 0) ||
+        (game.mood && game.mood.trim() === localFilterMood);
+      const matchesGenre =
+        !localFilterGenre || (game.genres && Array.isArray(game.genres) && game.genres.includes(localFilterGenre));
       const matchesPlatform = !localFilterPlatform || displayPlatform === localFilterPlatform;
       const gamePlaytime = game.time_played || 0;
       const maxTimeFilter = localFilterMaxTime === '' ? null : parseInt(localFilterMaxTime, 10);
-      const matchesMaxTime = maxTimeFilter === null
-        ? true
-        : maxTimeFilter === 0
-        ? gamePlaytime === 0
-        : gamePlaytime > 0 && gamePlaytime <= maxTimeFilter;
+      const matchesMaxTime =
+        maxTimeFilter === null
+          ? true
+          : maxTimeFilter === 0
+            ? gamePlaytime === 0
+            : gamePlaytime > 0 && gamePlaytime <= maxTimeFilter;
       const matchesReplayIntent = !localFilterReplayIntent || (game.replayIntent || 'none') === localFilterReplayIntent;
       const matchesHidden = showHidden ? true : !(game.isHidden || false);
       const matchesCover = !missingCoverOnly || hasMissingCoverArt(game);
 
-      return matchesSearch && matchesMood && matchesGenre && matchesPlatform &&
-             matchesMaxTime && matchesReplayIntent && matchesHidden && matchesCover;
+      return (
+        matchesSearch &&
+        matchesMood &&
+        matchesGenre &&
+        matchesPlatform &&
+        matchesMaxTime &&
+        matchesReplayIntent &&
+        matchesHidden &&
+        matchesCover
+      );
     });
 
     const hltbCache = HowLongToBeatService.getCacheSnapshot();
@@ -1084,23 +1255,29 @@ function Library({
 
     filtered.sort((a, b) => {
       switch (localSortBy) {
-        case 'most-played': return (b.time_played || 0) - (a.time_played || 0);
-        case 'least-played': return (a.time_played || 0) - (b.time_played || 0);
-        case 'genre': return (a.genres?.[0] || '').localeCompare(b.genres?.[0] || '');
-        case 'recent': return getLastPlayedSortValue(b.last_played) - getLastPlayedSortValue(a.last_played);
-        case 'recently-added': return (b.dateAdded || 0) - (a.dateAdded || 0);
-        case 'last-played': 
+        case 'most-played':
+          return (b.time_played || 0) - (a.time_played || 0);
+        case 'least-played':
+          return (a.time_played || 0) - (b.time_played || 0);
+        case 'genre':
+          return (a.genres?.[0] || '').localeCompare(b.genres?.[0] || '');
+        case 'recent':
+          return getLastPlayedSortValue(b.last_played) - getLastPlayedSortValue(a.last_played);
+        case 'recently-added':
+          return (b.dateAdded || 0) - (a.dateAdded || 0);
+        case 'last-played':
           const aLP = getLastPlayedSortValue(a.last_played);
           const bLP = getLastPlayedSortValue(b.last_played);
           if (aLP === 0 && bLP === 0) return a.name.localeCompare(b.name);
-          return (aLP === 0) ? 1 : (bLP === 0) ? -1 : bLP - aLP;
+          return aLP === 0 ? 1 : bLP === 0 ? -1 : bLP - aLP;
         case 'rating':
           const aRating = typeof a.userRating === 'number' ? a.userRating : -1;
           const bRating = typeof b.userRating === 'number' ? b.userRating : -1;
           if (aRating === bRating) return a.name.localeCompare(b.name);
           return bRating - aRating;
-        case 'platform': return (a.platform || '').localeCompare(b.platform || '');
-        case 'mood': 
+        case 'platform':
+          return (a.platform || '').localeCompare(b.platform || '');
+        case 'mood':
           const aScores = getMoodScoresForGame(a.genres || []);
           const bScores = getMoodScoresForGame(b.genres || []);
           const aMaxScore = Math.max(...Object.values(aScores), 0);
@@ -1131,12 +1308,25 @@ function Library({
           if (aHltbS === 0) return 1;
           if (bHltbS === 0) return -1;
           return aHltbS - bHltbS;
-        default: return a.name.localeCompare(b.name);
+        default:
+          return a.name.localeCompare(b.name);
       }
     });
 
     return filtered;
-  }, [library, localSearchQuery, localFilterMood, localFilterGenre, localFilterPlatform, localFilterMaxTime, localFilterReplayIntent, showHidden, missingCoverOnly, localSortBy, favorites]);
+  }, [
+    library,
+    localSearchQuery,
+    localFilterMood,
+    localFilterGenre,
+    localFilterPlatform,
+    localFilterMaxTime,
+    localFilterReplayIntent,
+    showHidden,
+    missingCoverOnly,
+    localSortBy,
+    favorites,
+  ]);
 
   const displayedGames = useMemo(() => {
     return filteredAndSortedGames.slice(0, displayCount);
@@ -1171,7 +1361,10 @@ function Library({
       if (cancelled) return;
       SteamNewsService.warmup(displayedGames, { concurrency: 2, delayMs: 400 });
     }, 900);
-    return () => { cancelled = true; clearTimeout(handle); };
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [displayedGames]);
 
   useEffect(() => {
@@ -1182,7 +1375,10 @@ function Library({
       if (cancelled) return;
       HowLongToBeatService.warmup(displayedGames, { concurrency: 1, delayMs: 500 });
     }, 1000);
-    return () => { cancelled = true; clearTimeout(handle); };
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [displayedGames]);
 
   // Disk Usage warmup — quietly measures install folder sizes in the background
@@ -1195,7 +1391,10 @@ function Library({
       if (cancelled) return;
       DiskUsageService.warmup(displayedGames);
     }, 1200);
-    return () => { cancelled = true; clearTimeout(handle); };
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [displayedGames]);
 
   const getVisibleGameCount = useCallback(() => {
@@ -1212,30 +1411,36 @@ function Library({
     return Math.max(1, Math.floor(containerWidth / Math.max(firstCardWidth, 1)));
   }, [viewMode]);
 
-  const moveSelectionByOffset = useCallback((offset) => {
-    const visibleGameCount = getVisibleGameCount();
-    if (visibleGameCount === 0) {
-      return;
-    }
+  const moveSelectionByOffset = useCallback(
+    (offset) => {
+      const visibleGameCount = getVisibleGameCount();
+      if (visibleGameCount === 0) {
+        return;
+      }
 
-    setSelectedGameIndex((prev) => {
-      const currentIndex = prev < 0 ? 0 : prev;
-      return Math.max(0, Math.min(visibleGameCount - 1, currentIndex + offset));
-    });
-  }, [getVisibleGameCount]);
+      setSelectedGameIndex((prev) => {
+        const currentIndex = prev < 0 ? 0 : prev;
+        return Math.max(0, Math.min(visibleGameCount - 1, currentIndex + offset));
+      });
+    },
+    [getVisibleGameCount]
+  );
 
-  const moveSelectionByPage = useCallback((direction) => {
-    const visibleGameCount = getVisibleGameCount();
-    if (visibleGameCount === 0) {
-      return;
-    }
+  const moveSelectionByPage = useCallback(
+    (direction) => {
+      const visibleGameCount = getVisibleGameCount();
+      if (visibleGameCount === 0) {
+        return;
+      }
 
-    const pageStep = Math.max(1, Math.floor(viewMode === 'grid' ? itemsPerPage / 2 : 8));
-    setSelectedGameIndex((prev) => {
-      const currentIndex = prev < 0 ? 0 : prev;
-      return Math.max(0, Math.min(visibleGameCount - 1, currentIndex + (direction * pageStep)));
-    });
-  }, [getVisibleGameCount, itemsPerPage, viewMode]);
+      const pageStep = Math.max(1, Math.floor(viewMode === 'grid' ? itemsPerPage / 2 : 8));
+      setSelectedGameIndex((prev) => {
+        const currentIndex = prev < 0 ? 0 : prev;
+        return Math.max(0, Math.min(visibleGameCount - 1, currentIndex + direction * pageStep));
+      });
+    },
+    [getVisibleGameCount, itemsPerPage, viewMode]
+  );
 
   const handleLoadMore = useCallback(() => {
     setDisplayCount((prev) => prev + itemsPerPage);
@@ -1243,7 +1448,8 @@ function Library({
 
   const goToPreviousPage = useCallback(() => {
     const currentRouteIndex = CONTROLLER_NAV_ROUTES.indexOf('/library');
-    const previousRoute = CONTROLLER_NAV_ROUTES[(currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length];
+    const previousRoute =
+      CONTROLLER_NAV_ROUTES[(currentRouteIndex - 1 + CONTROLLER_NAV_ROUTES.length) % CONTROLLER_NAV_ROUTES.length];
     navigate(previousRoute);
   }, [navigate]);
 
@@ -1261,10 +1467,14 @@ function Library({
   const bulkMarkCompleted = () => {
     if (selectedGames.size === 0) return;
     const completedGames = StorageService.get('completedGames', []);
-    selectedGames.forEach(gameId => {
-      const game = displayedGames.find(g => (g.appid || g.name) === gameId);
-      if (game && !completedGames.some(cg => cg.name === game.name)) {
-        completedGames.push({ name: game.name, completedAt: new Date().toISOString(), playTime: game.time_played || 0 });
+    selectedGames.forEach((gameId) => {
+      const game = displayedGames.find((g) => (g.appid || g.name) === gameId);
+      if (game && !completedGames.some((cg) => cg.name === game.name)) {
+        completedGames.push({
+          name: game.name,
+          completedAt: new Date().toISOString(),
+          playTime: game.time_played || 0,
+        });
       }
     });
     StorageService.set('completedGames', completedGames);
@@ -1297,27 +1507,27 @@ function Library({
     if (luckyPreviewIntervalRef.current) {
       clearInterval(luckyPreviewIntervalRef.current);
     }
-    
-    const scoredGames = filteredAndSortedGames.map(game => {
+
+    const scoredGames = filteredAndSortedGames.map((game) => {
       let score = Math.random() * 20;
-      
+
       // Prefer games with some playtime but not too much
       const playtime = game.time_played || 0;
       if (playtime > 0 && playtime < 180) score += 15;
       else if (playtime === 0) score += 10;
-      
+
       // Favorites bonus
       if (favorites.includes(getFavoriteGameKey(game))) score += 12;
-      
+
       return { game, score };
     });
-    
+
     scoredGames.sort((a, b) => b.score - a.score);
     const pick = scoredGames[0];
-    
+
     setLibrarianPick({
       game: pick.game,
-      method: 'smart'
+      method: 'smart',
     });
   };
 
@@ -1334,7 +1544,7 @@ function Library({
 
     setLibrarianPick(null);
     setIsLuckyAnimating(true);
-    
+
     const randomIndex = Math.floor(Math.random() * filteredAndSortedGames.length);
     const game = filteredAndSortedGames[randomIndex];
 
@@ -1361,84 +1571,99 @@ function Library({
       setLuckyPreviewName('');
       setLibrarianPick({
         game,
-        method: 'random'
+        method: 'random',
       });
     }, 1200);
   };
 
-  const handleControllerInput = useCallback((action) => {
-    const visibleGameCount = getVisibleGameCount();
-    const gridColumnCount = getGridColumnCount();
+  const handleControllerInput = useCallback(
+    (action) => {
+      const visibleGameCount = getVisibleGameCount();
+      const gridColumnCount = getGridColumnCount();
 
-    if (isModalOpen) {
-      return;
-    }
+      if (isModalOpen) {
+        return;
+      }
 
-    if (action === 'cancel') {
-      goToPreviousPage();
-      return;
-    }
+      if (action === 'cancel') {
+        goToPreviousPage();
+        return;
+      }
 
-    if (action === 'page_previous') {
-      goToPreviousPage();
-      return;
-    }
+      if (action === 'page_previous') {
+        goToPreviousPage();
+        return;
+      }
 
-    if (action === 'page_next') {
-      goToNextPage();
-      return;
-    }
+      if (action === 'page_next') {
+        goToNextPage();
+        return;
+      }
 
-    if (action === 'scroll_down') {
-      window.scrollBy({ top: 220, behavior: 'smooth' });
-      return;
-    }
+      if (action === 'scroll_down') {
+        window.scrollBy({ top: 220, behavior: 'smooth' });
+        return;
+      }
 
-    if (action === 'scroll_up') {
-      window.scrollBy({ top: -220, behavior: 'smooth' });
-      return;
-    }
+      if (action === 'scroll_up') {
+        window.scrollBy({ top: -220, behavior: 'smooth' });
+        return;
+      }
 
-    if (viewMode === 'grid') {
+      if (viewMode === 'grid') {
+        if (action === 'left') {
+          moveSelectionByOffset(-1);
+          return;
+        }
+
+        if (action === 'right') {
+          moveSelectionByOffset(1);
+          return;
+        }
+
+        if (action === 'up') {
+          moveSelectionByOffset(-gridColumnCount);
+          return;
+        }
+
+        if (action === 'down') {
+          moveSelectionByOffset(gridColumnCount);
+          return;
+        }
+      }
+
       if (action === 'left') {
-        moveSelectionByOffset(-1);
+        moveSelectionByPage(-1);
         return;
       }
 
       if (action === 'right') {
+        moveSelectionByPage(1);
+        return;
+      }
+
+      if (action === 'down' && selectedGameIndex < visibleGameCount - 1) {
         moveSelectionByOffset(1);
-        return;
+      } else if (action === 'up' && selectedGameIndex > 0) {
+        moveSelectionByOffset(-1);
+      } else if (action === 'confirm' && selectedGameIndex >= 0 && selectedGameIndex < visibleGameCount) {
+        openGameModal(displayedGames[selectedGameIndex]);
       }
-
-      if (action === 'up') {
-        moveSelectionByOffset(-gridColumnCount);
-        return;
-      }
-
-      if (action === 'down') {
-        moveSelectionByOffset(gridColumnCount);
-        return;
-      }
-    }
-
-    if (action === 'left') {
-      moveSelectionByPage(-1);
-      return;
-    }
-
-    if (action === 'right') {
-      moveSelectionByPage(1);
-      return;
-    }
-
-    if (action === 'down' && selectedGameIndex < visibleGameCount - 1) {
-      moveSelectionByOffset(1);
-    } else if (action === 'up' && selectedGameIndex > 0) {
-      moveSelectionByOffset(-1);
-    } else if (action === 'confirm' && selectedGameIndex >= 0 && selectedGameIndex < visibleGameCount) {
-      openGameModal(displayedGames[selectedGameIndex]);
-    }
-  }, [selectedGameIndex, getVisibleGameCount, getGridColumnCount, isModalOpen, goToPreviousPage, goToNextPage, moveSelectionByOffset, moveSelectionByPage, openGameModal, displayedGames, viewMode]);
+    },
+    [
+      selectedGameIndex,
+      getVisibleGameCount,
+      getGridColumnCount,
+      isModalOpen,
+      goToPreviousPage,
+      goToNextPage,
+      moveSelectionByOffset,
+      moveSelectionByPage,
+      openGameModal,
+      displayedGames,
+      viewMode,
+    ]
+  );
 
   useEffect(() => {
     const handleGlobalControllerInput = (event) => {
@@ -1451,28 +1676,37 @@ function Library({
   // UI Presentation Logic
   const rewardPresentationCustomization = ProgressionUnlockService.getRewardPresentationCustomization?.() || {};
   const libraryPresentationRewards = ProgressionUnlockService.getLibraryPresentationVariants?.() || [];
-  const selectedLibraryPresentation = libraryPresentationRewards.find(
-    (presentation) => presentation.id === rewardPresentationCustomization.selectedLibraryVariant
-  ) || libraryPresentationRewards[0] || null;
+  const selectedLibraryPresentation =
+    libraryPresentationRewards.find(
+      (presentation) => presentation.id === rewardPresentationCustomization.selectedLibraryVariant
+    ) ||
+    libraryPresentationRewards[0] ||
+    null;
   const libraryPresentationId = selectedLibraryPresentation?.id || 'classic_shelf';
-  const libraryPresentationPreset = LIBRARY_PRESENTATION_PRESETS[libraryPresentationId] || LIBRARY_PRESENTATION_PRESETS.classic_shelf;
+  const libraryPresentationPreset =
+    LIBRARY_PRESENTATION_PRESETS[libraryPresentationId] || LIBRARY_PRESENTATION_PRESETS.classic_shelf;
   const libraryCardStyle = rewardPresentationCustomization?.selectedCardStyle || 'standard';
 
   const libraryRootStyle = {
     '--library-presentation-accent': libraryPresentationPreset.accent,
     '--library-presentation-secondary': libraryPresentationPreset.secondary,
-    '--library-presentation-preview': selectedLibraryPresentation?.preview || 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))',
+    '--library-presentation-preview':
+      selectedLibraryPresentation?.preview ||
+      'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))',
     '--library-presentation-card-border': `${libraryPresentationPreset.accent}33`,
     '--library-presentation-card-radius': `${libraryPresentationPreset.cardRadius}px`,
     '--library-presentation-card-shadow': libraryPresentationPreset.cardShadow,
     '--library-presentation-tag-bg': libraryPresentationPreset.tagBg,
-    '--library-presentation-tag-color': libraryPresentationPreset.tagColor
+    '--library-presentation-tag-color': libraryPresentationPreset.tagColor,
   };
 
-  const getGameCardClass = useCallback((game, index) => {
-    const baseClass = viewMode === 'grid' ? 'game-card' : 'game-list-item';
-    return `${baseClass} fade-in ${selectedGameIndex === index ? 'controller-selected' : ''}`;
-  }, [selectedGameIndex, viewMode]);
+  const getGameCardClass = useCallback(
+    (game, index) => {
+      const baseClass = viewMode === 'grid' ? 'game-card' : 'game-list-item';
+      return `${baseClass} fade-in ${selectedGameIndex === index ? 'controller-selected' : ''}`;
+    },
+    [selectedGameIndex, viewMode]
+  );
 
   // Scroll selected game into view when navigating with controller
   useEffect(() => {
@@ -1494,7 +1728,7 @@ function Library({
         selectedElement.scrollIntoView({
           behavior: 'smooth',
           block: 'center',
-          inline: 'nearest'
+          inline: 'nearest',
         });
       }
     }
@@ -1503,47 +1737,74 @@ function Library({
   const playedGameCount = library.filter((game) => (game.time_played || 0) > 0).length;
   const totalPlaytimeMinutes = library.reduce((sum, game) => sum + (Number(game?.time_played) || 0), 0);
   const selectedModalGame = selectedGame
-    ? library.find((game) => getFavoriteGameKey(game) === getFavoriteGameKey(selectedGame) || game.name === selectedGame.name) || selectedGame
+    ? library.find(
+        (game) => getFavoriteGameKey(game) === getFavoriteGameKey(selectedGame) || game.name === selectedGame.name
+      ) || selectedGame
     : null;
-  const recentlyAddedCount = useMemo(() => (
-    library.filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS)).length
-  ), [library]);
-  const recentlyAddedShelfGames = useMemo(() => (
-    filteredAndSortedGames
-      .filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS))
-      .slice(0, 6)
-  ), [filteredAndSortedGames]);
-  const topRatedShelfGames = useMemo(() => (
-    filteredAndSortedGames
-      .filter((game) => typeof game.userRating === 'number' && game.userRating > 0)
-      .sort((left, right) => {
-        const ratingDifference = right.userRating - left.userRating;
-        if (ratingDifference !== 0) return ratingDifference;
-        return (right.time_played || 0) - (left.time_played || 0);
-      })
-      .slice(0, 6)
-  ), [filteredAndSortedGames]);
-  const pinnedGames = useMemo(() => (
-    library.filter((game) => pinnedIds.has(String(getFavoriteGameKey(game))))
-  ), [library, pinnedIds]);
-  const favoriteGames = useMemo(() => (
-    library.filter((game) => favorites.includes(getFavoriteGameKey(game)))
-  ), [library, favorites]);
-  const recentlyPlayedShelfGames = useMemo(() => (
-    library
-      .filter((game) => game.last_played && game.time_played > 0)
-      .sort((a, b) => getLastPlayedSortValue(b.last_played) - getLastPlayedSortValue(a.last_played))
-      .slice(0, 7)
-  ), [library]);
-  const activeFilterCount = [localFilterPlatform, localFilterMood, localFilterGenre, localFilterMaxTime, localFilterReplayIntent, localFilterCompletion].filter(Boolean).length + (localSearchQuery ? 1 : 0) + (showHidden ? 1 : 0) + (missingCoverOnly ? 1 : 0);
+  const recentlyAddedCount = useMemo(
+    () => library.filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS)).length,
+    [library]
+  );
+  const recentlyAddedShelfGames = useMemo(
+    () =>
+      filteredAndSortedGames
+        .filter((game) => GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS))
+        .slice(0, 6),
+    [filteredAndSortedGames]
+  );
+  const topRatedShelfGames = useMemo(
+    () =>
+      filteredAndSortedGames
+        .filter((game) => typeof game.userRating === 'number' && game.userRating > 0)
+        .sort((left, right) => {
+          const ratingDifference = right.userRating - left.userRating;
+          if (ratingDifference !== 0) return ratingDifference;
+          return (right.time_played || 0) - (left.time_played || 0);
+        })
+        .slice(0, 6),
+    [filteredAndSortedGames]
+  );
+  const pinnedGames = useMemo(
+    () => library.filter((game) => pinnedIds.has(String(getFavoriteGameKey(game)))),
+    [library, pinnedIds]
+  );
+  const favoriteGames = useMemo(
+    () => library.filter((game) => favorites.includes(getFavoriteGameKey(game))),
+    [library, favorites]
+  );
+  const recentlyPlayedShelfGames = useMemo(
+    () =>
+      library
+        .filter((game) => game.last_played && game.time_played > 0)
+        .sort((a, b) => getLastPlayedSortValue(b.last_played) - getLastPlayedSortValue(a.last_played))
+        .slice(0, 7),
+    [library]
+  );
+  const activeFilterCount =
+    [
+      localFilterPlatform,
+      localFilterMood,
+      localFilterGenre,
+      localFilterMaxTime,
+      localFilterReplayIntent,
+      localFilterCompletion,
+    ].filter(Boolean).length +
+    (localSearchQuery ? 1 : 0) +
+    (showHidden ? 1 : 0) +
+    (missingCoverOnly ? 1 : 0);
 
   return (
-    <div className={`App ${theme} library-page library-presentation-${libraryPresentationId} library-card-style-${libraryCardStyle}`} style={libraryRootStyle}>
+    <div
+      className={`App ${theme} library-page library-presentation-${libraryPresentationId} library-card-style-${libraryCardStyle}`}
+      style={libraryRootStyle}
+    >
       <NavBar />
-      
+
       <div className="library-header">
         <div className="library-header-copy">
-          <h1 className="library-title">{currentTheme ? getThemeSpecificLibraryTitle(currentTheme.id) : "📚 Library"}</h1>
+          <h1 className="library-title">
+            {currentTheme ? getThemeSpecificLibraryTitle(currentTheme.id) : '📚 Library'}
+          </h1>
           <p className="library-header-summary">
             {library.length > 0
               ? `${filteredAndSortedGames.length} visible game${filteredAndSortedGames.length === 1 ? '' : 's'} from ${library.length} total in your current library view.`
@@ -1572,7 +1833,9 @@ function Library({
 
       {/* Librarian Pick Display */}
       {(isLuckyAnimating || librarianPick) && (
-        <div className={`librarian-pick-banner ${isLuckyAnimating ? 'random shuffling' : librarianPick.method === 'smart' ? 'smart' : 'random'}`}>
+        <div
+          className={`librarian-pick-banner ${isLuckyAnimating ? 'random shuffling' : librarianPick.method === 'smart' ? 'smart' : 'random'}`}
+        >
           <div className="librarian-pick-icon">
             {isLuckyAnimating ? '🎰' : librarianPick.method === 'smart' ? '✨' : '🎲'}
           </div>
@@ -1596,10 +1859,7 @@ function Library({
             <div className={`librarian-pick-game-chip${isLuckyAnimating ? ' is-animating' : ''}`}>
               <span>{isLuckyAnimating ? luckyPreviewName || 'Rolling the dice...' : librarianPick.game.name}</span>
               {!isLuckyAnimating && (
-                <button 
-                  onClick={() => onLaunchGame(librarianPick.game)}
-                  className="librarian-pick-play"
-                >
+                <button onClick={() => onLaunchGame(librarianPick.game)} className="librarian-pick-play">
                   ▶ Play
                 </button>
               )}
@@ -1611,11 +1871,7 @@ function Library({
               </div>
             )}
             {!isLuckyAnimating && (
-              <button 
-                onClick={() => setLibrarianPick(null)}
-                className="librarian-pick-dismiss"
-                title="Dismiss"
-              >
+              <button onClick={() => setLibrarianPick(null)} className="librarian-pick-dismiss" title="Dismiss">
                 ×
               </button>
             )}
@@ -1632,7 +1888,9 @@ function Library({
               <p>Optional radar from the Epic Games Store — auto-refreshes hourly.</p>
             </div>
             <div className="free-games-controls">
-              <button onClick={refreshFreeGames} disabled={loadingFreeGames}>Refresh</button>
+              <button onClick={refreshFreeGames} disabled={loadingFreeGames}>
+                Refresh
+              </button>
               <button onClick={() => setShowFreeGames(false)}>Hide</button>
             </div>
           </div>
@@ -1642,7 +1900,7 @@ function Library({
             </div>
           )}
           <div className="free-games-grid">
-            {freeGames.map(game => (
+            {freeGames.map((game) => (
               <div key={game.id} className="free-game-card">
                 <div className="free-game-thumb" style={{ backgroundImage: `url(${game.image})` }} />
                 <div className="free-game-body">
@@ -1652,7 +1910,9 @@ function Library({
                   )}
                   <div className="free-game-meta">
                     {game.isMysteryGame && <span>Upcoming reveal</span>}
-                    <button onClick={() => window.open(game.url, '_blank')}>{game.isMysteryGame ? 'View Radar' : 'Claim'}</button>
+                    <button onClick={() => window.open(game.url, '_blank')}>
+                      {game.isMysteryGame ? 'View Radar' : 'Claim'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1698,7 +1958,8 @@ function Library({
               InterfacePreferencesService.set('playtimeUnit', next);
             }}
           >
-            <Clock size={16} /> {(() => {
+            <Clock size={16} />{' '}
+            {(() => {
               const unit = interfacePrefs.playtimeUnit || 'auto';
               if (unit === 'hours') return 'Hours';
               if (unit === 'days') return 'Days';
@@ -1715,7 +1976,11 @@ function Library({
             onShareToMessenger={handleShareToMessenger}
             onDownloadText={handleDownloadShareText}
             onNativeShare={handleNativeShareLibraryCard}
-            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildLibraryShareText(library, username, sharePeriod))}
+            buildCaption={() =>
+              ProfileService.appendSocialLinksToShareText(
+                LocalShareService.buildLibraryShareText(library, username, sharePeriod)
+              )
+            }
           />
           <ShareMenu
             imageAvailable={library.length > 0}
@@ -1727,7 +1992,11 @@ function Library({
             onShareToMessenger={handleShareTopRatedToMessenger}
             onDownloadText={handleCopyTopRatedShareText}
             onNativeShare={handleNativeShareTopRatedCard}
-            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames))}
+            buildCaption={() =>
+              ProfileService.appendSocialLinksToShareText(
+                LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames)
+              )
+            }
             triggerLabel="Share 10/10 Picks"
           />
           <ShareMenu
@@ -1740,7 +2009,11 @@ function Library({
             onShareToMessenger={handleShareMultiGameToMessenger}
             onDownloadText={handleCopyMultiGameShareText}
             onNativeShare={handleNativeShareMultiGameCard}
-            buildCaption={() => ProfileService.appendSocialLinksToShareText(LocalShareService.buildMultiGameShareText(multiGamePicks, username))}
+            buildCaption={() =>
+              ProfileService.appendSocialLinksToShareText(
+                LocalShareService.buildMultiGameShareText(multiGamePicks, username)
+              )
+            }
             triggerLabel="Share My Picks"
           />
           <button
@@ -1778,10 +2051,7 @@ function Library({
           >
             <Dices size={16} /> {isLuckyAnimating ? 'Drawing...' : 'Feeling Lucky'}
           </button>
-          <button
-            onClick={toggleBulkMode}
-            className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}
-          >
+          <button onClick={toggleBulkMode} className={`bulk-mode-btn ${bulkMode ? 'active' : ''}`}>
             {bulkMode ? 'Exit Bulk' : 'Bulk Mode'}
           </button>
           {bulkMode && (
@@ -1791,27 +2061,17 @@ function Library({
             </div>
           )}
           {bulkMode && selectedGames.size > 0 && (
-            <button
-              onClick={bulkMarkCompleted}
-              className="export-button"
-            >
+            <button onClick={bulkMarkCompleted} className="export-button">
               Mark {selectedGames.size} Done
             </button>
           )}
           {bulkMode && selectedGames.size > 0 && (
-            <button
-              onClick={bulkRemoveGames}
-              className="export-button"
-            >
+            <button onClick={bulkRemoveGames} className="export-button">
               <Trash2 size={16} /> Remove {selectedGames.size}
             </button>
           )}
           {!bulkMode && (
-            <button
-              onClick={() => setShowAnalytics(true)}
-              className="export-button"
-              title="Open Library Analytics"
-            >
+            <button onClick={() => setShowAnalytics(true)} className="export-button" title="Open Library Analytics">
               <BarChart3 size={16} /> Analytics
             </button>
           )}
@@ -1822,7 +2082,9 @@ function Library({
         <div className="library-analytics-overlay" onClick={() => setShowAnalytics(false)}>
           <div className="library-analytics-modal" onClick={(e) => e.stopPropagation()}>
             <div className="library-analytics-modal-header">
-              <h2><BarChart3 size={20} /> Library Analytics</h2>
+              <h2>
+                <BarChart3 size={20} /> Library Analytics
+              </h2>
               <button className="analytics-close-btn" onClick={() => setShowAnalytics(false)}>
                 <X size={18} />
               </button>
@@ -1836,7 +2098,9 @@ function Library({
         <div className="emulator-library-header">
           <div>
             <h3>Emulator Library</h3>
-            <p>{emulatorProfiles.length} profile{emulatorProfiles.length === 1 ? '' : 's'} configured for ROM scanning.</p>
+            <p>
+              {emulatorProfiles.length} profile{emulatorProfiles.length === 1 ? '' : 's'} configured for ROM scanning.
+            </p>
           </div>
           <div className="emulator-library-actions">
             <button
@@ -1871,8 +2135,12 @@ function Library({
                 onChange={(event) => handleEmulatorDraftChange('consolePlatform', event.target.value)}
                 placeholder="Console, e.g. GameCube"
               />
-              <button type="button" onClick={chooseEmulatorExecutable}>Choose Emulator</button>
-              <button type="button" onClick={chooseRomFolder}>Choose ROM Folder</button>
+              <button type="button" onClick={chooseEmulatorExecutable}>
+                Choose Emulator
+              </button>
+              <button type="button" onClick={chooseRomFolder}>
+                Choose ROM Folder
+              </button>
               <input
                 type="text"
                 value={emulatorDraft.extensions}
@@ -1885,7 +2153,9 @@ function Library({
                 onChange={(event) => handleEmulatorDraftChange('launchTemplate', event.target.value)}
                 placeholder={'"{emulator}" "{rom}"'}
               />
-              <button type="button" className="emulator-add-profile" onClick={addEmulatorProfile}>Add Profile</button>
+              <button type="button" className="emulator-add-profile" onClick={addEmulatorProfile}>
+                Add Profile
+              </button>
             </div>
             {(emulatorDraft.emulatorPath || emulatorDraft.romFolder) && (
               <div className="emulator-path-preview">
@@ -1897,8 +2167,12 @@ function Library({
               <div className="emulator-profile-list">
                 {emulatorProfiles.map((profile) => (
                   <div key={profile.id} className="emulator-profile-chip">
-                    <span>{profile.name} · {profile.consolePlatform}</span>
-                    <button type="button" onClick={() => removeEmulatorProfile(profile.id)}>Remove</button>
+                    <span>
+                      {profile.name} · {profile.consolePlatform}
+                    </span>
+                    <button type="button" onClick={() => removeEmulatorProfile(profile.id)}>
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1911,505 +2185,610 @@ function Library({
         <EmptyLibraryState onScan={handleScanLibrary} theme={theme} />
       ) : (
         <>
-
-      {/* Search and Grid */}
-      <div className="search-filter-section">
-        <div className="search-bar">
-          <Search size={20} />
-          <input type="text" placeholder="Search games..." value={localSearchQuery} onChange={handleSearchChange} className="search-input" />
-        </div>
-        <div className="filter-group">
-          <label>Sort By</label>
-          <select value={localSortBy} onChange={(e) => handleSortChange(e.target.value)} className="filter-select">
-            <option value="name">Name</option>
-            <option value="recently-added">Recently Added</option>
-            <option value="last-played">Last Played</option>
-            <option value="most-played">Most Played</option>
-            <option value="least-played">Least Played</option>
-            <option value="genre">Genre</option>
-            <option value="platform">Platform</option>
-            <option value="storage-size">Storage Size</option>
-            <option value="rating">Your Rating</option>
-            <option value="mood">Mood</option>
-            <option value="favorites">Favorites First</option>
-            <option value="hltb-longest">HLTB: Longest</option>
-            <option value="hltb-shortest">HLTB: Shortest</option>
-          </select>
-        </div>
-        <div className="view-toggle">
-          <button onClick={() => setViewMode('grid')} className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}><Grid size={20} /></button>
-          <button onClick={() => setViewMode('list')} className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}><List size={20} /></button>
-        </div>
-        {activeFilterCount > 0 && (
-          <button onClick={clearAllFilters} className="library-clear-filters-btn">
-            Clear Filters
-          </button>
-        )}
-      </div>
-
-      <div className="quick-filters">
-        <div className="filter-group">
-          <label>Platform</label>
-          <select value={localFilterPlatform} onChange={(e) => handlePlatformFilterChange(e.target.value)} className="filter-select">
-            <option value="">All Platforms</option>
-            <option value="Steam">Steam</option>
-            <option value="Epic">Epic</option>
-            <option value="GOG">GOG</option>
-            <option value="EA">EA</option>
-            <option value="Ubisoft">Ubisoft</option>
-            <option value="Battle.net">Battle.net</option>
-            <option value="Xbox">Xbox</option>
-            <option value="PlayStation">PlayStation</option>
-            <option value="Rockstar">Rockstar</option>
-            <option value="BSG">Battlestate Games</option>
-            <option value="Riot">Riot Games</option>
-            <option value="CurseForge">CurseForge</option>
-            <option value="Amazon">Amazon Games</option>
-            <option value="Itch.io">Itch.io</option>
-            <option value="Manual">Manual Entry</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Mood</label>
-          <select value={localFilterMood} onChange={(e) => handleMoodFilterChange(e.target.value)} className="filter-select">
-            <option value="">All Moods</option>
-            {MOODS.map(mood => (
-              <option key={mood} value={mood}>{mood}</option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Genre</label>
-          <select value={localFilterGenre} onChange={(e) => handleGenreFilterChange(e.target.value)} className="filter-select">
-            <option value="">All Genres</option>
-            {Array.from(new Set(library.flatMap(g => g.genres || [])))
-              .filter(genre => genre && genre !== 'Unknown' && genre.toLowerCase() !== 'unknown')
-              .sort()
-              .map(genre => (
-                <option key={genre} value={genre}>{genre}</option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Playtime</label>
-          <select value={localFilterMaxTime} onChange={(e) => handlePlaytimeFilterChange(e.target.value)} className="filter-select">
-            <option value="">Any Time</option>
-            <option value="0">Never Played</option>
-            <option value="120">Under 2 hours</option>
-            <option value="600">Under 10 hours</option>
-            <option value="3000">Under 50 hours</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Status</label>
-          <select value={localFilterReplayIntent} onChange={(e) => handleReplayIntentFilterChange(e.target.value)} className="filter-select">
-            <option value="">Any Status</option>
-            <option value="active">Currently Playing</option>
-            <option value="soon">Playing Soon</option>
-            <option value="finished">Finished</option>
-            <option value="endless">Endless / Ongoing</option>
-            <option value="none">Not Planned</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Completion</label>
-          <select value={localFilterCompletion} onChange={(e) => handleCompletionFilterChange(e.target.value)} className="filter-select">
-            <option value="">Any</option>
-            <option value="not-started">Not Started</option>
-            <option value="playing">Playing</option>
-            <option value="beaten">Beaten</option>
-            <option value="completed">Completed</option>
-            <option value="100%">100%</option>
-            <option value="abandoned">Abandoned</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Hidden</label>
-          <button
-            onClick={() => setShowHidden((s) => !s)}
-            className={`library-filter-toggle ${showHidden ? 'active' : ''}`}
-          >
-            {showHidden ? 'Showing Hidden' : 'Show Hidden'}
-          </button>
-        </div>
-        {missingCoverCount > 0 && (
-          <div className="filter-group">
-            <label>Cover Art</label>
-            <button
-              onClick={() => setMissingCoverOnly((s) => !s)}
-              className={`library-filter-toggle ${missingCoverOnly ? 'active' : ''}`}
-              title="Games with no resolvable cover art — open a game to add one via Cover Art Override"
-            >
-              {missingCoverOnly ? `Only Missing (${missingCoverCount})` : `Missing · ${missingCoverCount}`}
-            </button>
+          {/* Search and Grid */}
+          <div className="search-filter-section">
+            <div className="search-bar">
+              <Search size={20} />
+              <input
+                type="text"
+                placeholder="Search games..."
+                value={localSearchQuery}
+                onChange={handleSearchChange}
+                className="search-input"
+              />
+            </div>
+            <div className="filter-group">
+              <label>Sort By</label>
+              <select value={localSortBy} onChange={(e) => handleSortChange(e.target.value)} className="filter-select">
+                <option value="name">Name</option>
+                <option value="recently-added">Recently Added</option>
+                <option value="last-played">Last Played</option>
+                <option value="most-played">Most Played</option>
+                <option value="least-played">Least Played</option>
+                <option value="genre">Genre</option>
+                <option value="platform">Platform</option>
+                <option value="storage-size">Storage Size</option>
+                <option value="rating">Your Rating</option>
+                <option value="mood">Mood</option>
+                <option value="favorites">Favorites First</option>
+                <option value="hltb-longest">HLTB: Longest</option>
+                <option value="hltb-shortest">HLTB: Shortest</option>
+              </select>
+            </div>
+            <div className="view-toggle">
+              <button onClick={() => setViewMode('grid')} className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}>
+                <Grid size={20} />
+              </button>
+              <button onClick={() => setViewMode('list')} className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}>
+                <List size={20} />
+              </button>
+            </div>
+            {activeFilterCount > 0 && (
+              <button onClick={clearAllFilters} className="library-clear-filters-btn">
+                Clear Filters
+              </button>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="library-context-bar">
-        <div className="library-context-pill">
-          <span>Showing</span>
-          <strong>{displayedGames.length} of {filteredAndSortedGames.length}</strong>
-        </div>
-        <div className="library-context-pill library-context-pill-highlight">
-          <span>New in {RECENTLY_ADDED_WINDOW_DAYS} days</span>
-          <strong>{recentlyAddedCount}</strong>
-        </div>
-        <div className="library-context-pill">
-          <span>Filters</span>
-          <strong>{activeFilterCount > 0 ? `${activeFilterCount} active` : 'None'}</strong>
-        </div>
-        <div className="library-context-pill">
-          <span>Loaded</span>
-          <strong>{displayedGames.length} / {filteredAndSortedGames.length}</strong>
-        </div>
-        <div className="library-context-pill">
-          <span>Free Games Radar</span>
-          <strong>{showFreeGames ? 'Visible' : 'Hidden'}</strong>
-        </div>
-      </div>
-
-      {/* Unified Shelf Carousel */}
-      {(() => {
-        const allSections = [
-          { id: 'recently-played', kicker: 'Pick up where you left off', title: 'Recently Played', games: recentlyPlayedShelfGames, getBadge: (g) => formatLastPlayedShort(g.last_played) },
-          { id: 'pinned', kicker: 'Quick access', title: 'Pinned Games', games: pinnedGames, getBadge: () => null },
-          { id: 'favorites', kicker: 'Your picks', title: 'Favourite Games', games: favoriteGames, getBadge: () => null },
-          { id: 'top-rated', kicker: 'Highest rated', title: 'Top Rated Games', games: topRatedShelfGames, getBadge: (g) => `${g.userRating}/10` },
-          { id: 'recent', kicker: 'Fresh in your library', title: 'Newly Added Games', games: recentlyAddedShelfGames, getBadge: () => 'New' },
-        ];
-        // Only show shelves that actually have games so an empty Pinned shelf
-        // (or any other empty category) cannot hide the populated ones.
-        const sections = allSections.filter((section) => section.games.length > 0);
-        if (sections.length === 0) return null;
-        // Clamp the carousel index into the available-section range so a
-        // previously selected section that is now empty cannot leave the
-        // carousel pointing at a removed shelf.
-        const safeIndex = Math.min(Math.max(carouselIndex, 0), sections.length - 1);
-        const active = sections[safeIndex];
-        return (
-          <section className="library-recent-section" aria-labelledby="library-carousel-title">
-            <div className="library-recent-section-header">
-              <div>
-                <span className="library-recent-section-kicker">{active.kicker}</span>
-                <h2 id="library-carousel-title" className="library-recent-section-title">{active.title}</h2>
-              </div>
-              <div className="library-shelf-carousel-controls">
-                <button
-                  type="button"
-                  onClick={() => setCarouselIndex((i) => (i - 1 + sections.length) % sections.length)}
-                  aria-label="Previous section"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCarouselIndex((i) => (i + 1) % sections.length)}
-                  aria-label="Next section"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
+          <div className="quick-filters">
+            <div className="filter-group">
+              <label>Platform</label>
+              <select
+                value={localFilterPlatform}
+                onChange={(e) => handlePlatformFilterChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Platforms</option>
+                <option value="Steam">Steam</option>
+                <option value="Epic">Epic</option>
+                <option value="GOG">GOG</option>
+                <option value="EA">EA</option>
+                <option value="Ubisoft">Ubisoft</option>
+                <option value="Battle.net">Battle.net</option>
+                <option value="Xbox">Xbox</option>
+                <option value="PlayStation">PlayStation</option>
+                <option value="Rockstar">Rockstar</option>
+                <option value="BSG">Battlestate Games</option>
+                <option value="Riot">Riot Games</option>
+                <option value="CurseForge">CurseForge</option>
+                <option value="Amazon">Amazon Games</option>
+                <option value="Itch.io">Itch.io</option>
+                <option value="Manual">Manual Entry</option>
+              </select>
             </div>
-            <div className="library-recent-shelf">
-              {active.games.map((game) => {
-                const favoriteKey = getFavoriteGameKey(game);
-                const isFavorite = favorites.includes(favoriteKey);
-                const badge = active.getBadge ? active.getBadge(game) : null;
-                return (
-                  <div
-                    key={`${active.id}-${game.appid || game.name}`}
-                    className="library-recent-shelf-card"
-                    title={game.name}
-                  >
-                    <button
-                      type="button"
-                      className="library-recent-shelf-art"
-                      onClick={() => onLaunchGame(game)}
-                      aria-label={`Launch ${game.name}`}
-                    >
-                      <LazyImage
-                        src={resolveGameArtwork(game, { surface: 'portrait' })}
-                        alt={game.name}
-                        gameName={game.name}
-                        platform={getDisplayPlatform(game)}
-                        genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
-                        mood={game.mood}
-                        placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
-                        className="library-recent-shelf-art-image"
-                      />
-                      <div className="library-recent-shelf-overlay">
-                        <Play size={20} />
-                      </div>
-                      {badge && (
-                        <span className="library-recent-shelf-badge">{badge}</span>
-                      )}
-                    </button>
-                    <div className="library-recent-shelf-name">{game.name}</div>
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleTogglePin(game);
-                      }}
-                      aria-label={pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`}
-                      className={`library-recent-shelf-pin ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
-                    >
-                      <Pin size={12} />
-                    </button>
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleToggleFavorite(favoriteKey);
-                      }}
-                      aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
-                      className={`library-recent-shelf-fav ${isFavorite ? 'is-favorite' : ''}`}
-                    >
-                      <Heart size={12} fill={isFavorite ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
-                );
-              })}
+            <div className="filter-group">
+              <label>Mood</label>
+              <select
+                value={localFilterMood}
+                onChange={(e) => handleMoodFilterChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Moods</option>
+                {MOODS.map((mood) => (
+                  <option key={mood} value={mood}>
+                    {mood}
+                  </option>
+                ))}
+              </select>
             </div>
-          </section>
-        );
-      })()}
-
-      <div ref={libraryContainerRef} className={`library-${viewMode}`} style={viewMode === 'grid' ? {
-        display: 'grid',
-        gridTemplateColumns: `repeat(auto-fill, minmax(${libraryPresentationPreset.gridMinWidth}px, 1fr))`,
-        gap: `${libraryPresentationPreset.gridGap}px`,
-        padding: '20px'
-      } : { 
-        display: 'flex',
-        flexDirection: 'column',
-        gap: `${libraryPresentationPreset.listGap}px`,
-        padding: '20px'
-      }}>
-        {displayedGames.map((game, index) => {
-          const favoriteKey = getFavoriteGameKey(game);
-          const isFavorite = favorites.includes(favoriteKey);
-          const resolvedMood = getResolvedMood(game);
-          const gameValue = getGameValue(game);
-          const isRecentlyAdded = GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS);
-          const needsCoverArt = hasMissingCoverArt(game);
-
-          return (
-          <div 
-            key={game.appid || game.name} 
-            className={`${getGameCardClass(game, index)}${isRecentlyAdded ? ' is-recently-added' : ''}`}
-            onClick={() => bulkMode ? null : openGameModal(game)}
-            style={viewMode === 'grid' ? {
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--library-presentation-card-radius)',
-              padding: `${libraryPresentationPreset.cardPadding}px`,
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: 'var(--library-presentation-card-shadow)',
-              border: '1px solid var(--library-presentation-card-border)'
-            } : {
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              padding: libraryPresentationPreset.listPadding,
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--library-presentation-card-radius)',
-              border: '1px solid var(--border-primary)',
-              cursor: 'pointer'
-            }}
-          >
-            {/* Bulk Selection Overlay */}
-            {bulkMode && (
-              <div className="bulk-checkbox-container" style={{ marginRight: '10px' }}>
-                <input 
-                  type="checkbox" 
-                  checked={selectedGames.has(game.appid || game.name)}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    const newSet = new Set(selectedGames);
-                    const id = game.appid || game.name;
-                    if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
-                    setSelectedGames(newSet);
-                  }}
-                />
+            <div className="filter-group">
+              <label>Genre</label>
+              <select
+                value={localFilterGenre}
+                onChange={(e) => handleGenreFilterChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Genres</option>
+                {Array.from(new Set(library.flatMap((g) => g.genres || [])))
+                  .filter((genre) => genre && genre !== 'Unknown' && genre.toLowerCase() !== 'unknown')
+                  .sort()
+                  .map((genre) => (
+                    <option key={genre} value={genre}>
+                      {genre}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Playtime</label>
+              <select
+                value={localFilterMaxTime}
+                onChange={(e) => handlePlaytimeFilterChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">Any Time</option>
+                <option value="0">Never Played</option>
+                <option value="120">Under 2 hours</option>
+                <option value="600">Under 10 hours</option>
+                <option value="3000">Under 50 hours</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Status</label>
+              <select
+                value={localFilterReplayIntent}
+                onChange={(e) => handleReplayIntentFilterChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">Any Status</option>
+                <option value="active">Currently Playing</option>
+                <option value="soon">Playing Soon</option>
+                <option value="finished">Finished</option>
+                <option value="endless">Endless / Ongoing</option>
+                <option value="none">Not Planned</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Completion</label>
+              <select
+                value={localFilterCompletion}
+                onChange={(e) => handleCompletionFilterChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">Any</option>
+                <option value="not-started">Not Started</option>
+                <option value="playing">Playing</option>
+                <option value="beaten">Beaten</option>
+                <option value="completed">Completed</option>
+                <option value="100%">100%</option>
+                <option value="abandoned">Abandoned</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Hidden</label>
+              <button
+                onClick={() => setShowHidden((s) => !s)}
+                className={`library-filter-toggle ${showHidden ? 'active' : ''}`}
+              >
+                {showHidden ? 'Showing Hidden' : 'Show Hidden'}
+              </button>
+            </div>
+            {missingCoverCount > 0 && (
+              <div className="filter-group">
+                <label>Cover Art</label>
+                <button
+                  onClick={() => setMissingCoverOnly((s) => !s)}
+                  className={`library-filter-toggle ${missingCoverOnly ? 'active' : ''}`}
+                  title="Games with no resolvable cover art — open a game to add one via Cover Art Override"
+                >
+                  {missingCoverOnly ? `Only Missing (${missingCoverCount})` : `Missing · ${missingCoverCount}`}
+                </button>
               </div>
             )}
-            
-            <div className="game-card-image-wrapper" style={viewMode === 'grid' ? {
-                width: '100%',
-                aspectRatio: '2 / 3',
-                height: 'auto',
-                marginBottom: '12px',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                flexShrink: 0,
-                backgroundColor: '#1a1a1a',
-                position: 'relative'
-            } : {
-                width: '120px',
-                aspectRatio: '231 / 87',
-                height: 'auto',
-                marginRight: '15px',
-                borderRadius: '6px',
-                overflow: 'hidden',
-                flexShrink: 0,
-                backgroundColor: '#1a1a1a',
-                position: 'relative'
-            }}>
-                <LazyImage 
-                    src={resolveGameArtwork(game, { surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card' })}
-                    fallbackSrc={viewMode === 'grid' ? resolveGameArtwork(game, { surface: 'hero' }) : undefined}
-                    alt={game.name} 
-                    gameName={game.name}
-                    platform={getDisplayPlatform(game)}
-                    genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
-                    mood={game.mood}
-                    placeholder={getGameArtworkPlaceholder({ game, surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card' })}
-                    style={{ height: '100%', width: '100%', objectFit: 'cover' }}
-                />
-                {needsCoverArt && (
-                  <div
-                    className="game-card-cover-hint"
-                    title="No cover art found — click to add one via Cover Art Override"
-                    onClick={(e) => { e.stopPropagation(); openGameModal(game); }}
-                  >
-                    <ImageOff size={14} /> Add Cover
-                  </div>
-                )}
-              </div>
-              <div className="game-info" style={{ flexGrow: 1 }}>
-                <div className="library-game-title-row">
-                  <h3 className="library-game-title">{game.name}</h3>
-                  <div className="library-game-title-actions">
-                    {isRecentlyAdded && <span className="library-new-badge">New</span>}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTogglePin(game);
-                      }}
-                      aria-label={pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`}
-                      className={`library-pin-button ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
-                    >
-                      <Pin size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleFavorite(favoriteKey);
-                      }}
-                      aria-label={isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`}
-                      className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
-                    >
-                      <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
-                </div>
-                <p className="playtime library-game-playtime">
-                  <Clock size={12} /> {formatTimePlayed(game.time_played)}
-                  <HLTBChip game={game} autoFetch />
-                  <PatchNewsBadge game={game} />
-                  <DiskSizeChip game={game} />
-                </p>
-                {gameValue > 0 && (
-                  <p className="library-game-value">
-                    Value: {formatPrice(gameValue, currency)}
-                  </p>
-                )}
-                <div className="library-game-tags">
-                  <span className="library-game-tag platform">
-                    {getDisplayPlatform(game)}
-                    {Array.isArray(game.launchSources) && game.launchSources.length > 1 && (
-                      <span
-                        className="library-game-tag-multi-source"
-                        title={`Also available on ${game.launchSources
-                          .map((source) => source.platform)
-                          .filter((platform) => platform && platform !== getDisplayPlatform(game))
-                          .join(', ')}`}
-                      >
-                        +{game.launchSources.length - 1}
-                      </span>
-                    )}
-                  </span>
-                  {resolvedMood && (
-                    <span className="library-game-tag mood">
-                      {resolvedMood}
-                    </span>
-                  )}
-                  {Array.isArray(game.genres) && game.genres[0] && (
-                    <span className="library-game-tag genre">
-                      {game.genres[0]}
-                    </span>
-                  )}
-                  {game.replayIntent && game.replayIntent !== 'none' && (
-                    <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>
-                      {game.replayIntent === 'active' && '▶ Playing'}
-                      {game.replayIntent === 'soon' && '⏳ Soon'}
-                      {game.replayIntent === 'finished' && '✓ Done'}
-                      {game.replayIntent === 'endless' && '∞ Endless'}
-                    </span>
-                  )}
-                </div>
-              </div>
+          </div>
 
-              <div className={`library-game-actions ${viewMode === 'list' ? 'list-mode' : 'grid-mode'}`}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onLaunchGame(game);
-                  }}
-                  className="library-launch-button"
-                  aria-label={`Launch ${game.name}`}
-                >
-                  Launch
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleHidden(game);
-                    success(game.hidden ? 'Game unhidden' : 'Game hidden');
-                  }}
-                  className="library-action-button"
-                  title={game.hidden ? 'Unhide game' : 'Hide game'}
-                  aria-label={`${game.hidden ? 'Unhide' : 'Hide'} ${game.name}`}
-                >
-                  {game.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`Remove "${game.name}" from your library?`)) {
-                      onRemoveGames([game.appid || game.name]);
-                      success(`Removed "${game.name}" from library`);
-                    }
-                  }}
-                  className="library-action-button danger"
-                  title="Remove game"
-                  aria-label={`Remove ${game.name} from library`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
+          <div className="library-context-bar">
+            <div className="library-context-pill">
+              <span>Showing</span>
+              <strong>
+                {displayedGames.length} of {filteredAndSortedGames.length}
+              </strong>
             </div>
-          )})}
-      </div>
+            <div className="library-context-pill library-context-pill-highlight">
+              <span>New in {RECENTLY_ADDED_WINDOW_DAYS} days</span>
+              <strong>{recentlyAddedCount}</strong>
+            </div>
+            <div className="library-context-pill">
+              <span>Filters</span>
+              <strong>{activeFilterCount > 0 ? `${activeFilterCount} active` : 'None'}</strong>
+            </div>
+            <div className="library-context-pill">
+              <span>Loaded</span>
+              <strong>
+                {displayedGames.length} / {filteredAndSortedGames.length}
+              </strong>
+            </div>
+            <div className="library-context-pill">
+              <span>Free Games Radar</span>
+              <strong>{showFreeGames ? 'Visible' : 'Hidden'}</strong>
+            </div>
+          </div>
 
-      {/* Load More */}
-      {displayCount < filteredAndSortedGames.length && (
-        <div className="library-pagination-footer">
-          <button
-            onClick={handleLoadMore}
-            className="library-pagination-button"
+          {/* Unified Shelf Carousel */}
+          {(() => {
+            const allSections = [
+              {
+                id: 'recently-played',
+                kicker: 'Pick up where you left off',
+                title: 'Recently Played',
+                games: recentlyPlayedShelfGames,
+                getBadge: (g) => formatLastPlayedShort(g.last_played),
+              },
+              { id: 'pinned', kicker: 'Quick access', title: 'Pinned Games', games: pinnedGames, getBadge: () => null },
+              {
+                id: 'favorites',
+                kicker: 'Your picks',
+                title: 'Favourite Games',
+                games: favoriteGames,
+                getBadge: () => null,
+              },
+              {
+                id: 'top-rated',
+                kicker: 'Highest rated',
+                title: 'Top Rated Games',
+                games: topRatedShelfGames,
+                getBadge: (g) => `${g.userRating}/10`,
+              },
+              {
+                id: 'recent',
+                kicker: 'Fresh in your library',
+                title: 'Newly Added Games',
+                games: recentlyAddedShelfGames,
+                getBadge: () => 'New',
+              },
+            ];
+            // Only show shelves that actually have games so an empty Pinned shelf
+            // (or any other empty category) cannot hide the populated ones.
+            const sections = allSections.filter((section) => section.games.length > 0);
+            if (sections.length === 0) return null;
+            // Clamp the carousel index into the available-section range so a
+            // previously selected section that is now empty cannot leave the
+            // carousel pointing at a removed shelf.
+            const safeIndex = Math.min(Math.max(carouselIndex, 0), sections.length - 1);
+            const active = sections[safeIndex];
+            return (
+              <section className="library-recent-section" aria-labelledby="library-carousel-title">
+                <div className="library-recent-section-header">
+                  <div>
+                    <span className="library-recent-section-kicker">{active.kicker}</span>
+                    <h2 id="library-carousel-title" className="library-recent-section-title">
+                      {active.title}
+                    </h2>
+                  </div>
+                  <div className="library-shelf-carousel-controls">
+                    <button
+                      type="button"
+                      onClick={() => setCarouselIndex((i) => (i - 1 + sections.length) % sections.length)}
+                      aria-label="Previous section"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCarouselIndex((i) => (i + 1) % sections.length)}
+                      aria-label="Next section"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+                <div className="library-recent-shelf">
+                  {active.games.map((game) => {
+                    const favoriteKey = getFavoriteGameKey(game);
+                    const isFavorite = favorites.includes(favoriteKey);
+                    const badge = active.getBadge ? active.getBadge(game) : null;
+                    return (
+                      <div
+                        key={`${active.id}-${game.appid || game.name}`}
+                        className="library-recent-shelf-card"
+                        title={game.name}
+                      >
+                        <button
+                          type="button"
+                          className="library-recent-shelf-art"
+                          onClick={() => onLaunchGame(game)}
+                          aria-label={`Launch ${game.name}`}
+                        >
+                          <LazyImage
+                            src={resolveGameArtwork(game, { surface: 'portrait' })}
+                            alt={game.name}
+                            gameName={game.name}
+                            platform={getDisplayPlatform(game)}
+                            genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
+                            mood={game.mood}
+                            placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
+                            className="library-recent-shelf-art-image"
+                          />
+                          <div className="library-recent-shelf-overlay">
+                            <Play size={20} />
+                          </div>
+                          {badge && <span className="library-recent-shelf-badge">{badge}</span>}
+                        </button>
+                        <div className="library-recent-shelf-name">{game.name}</div>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleTogglePin(game);
+                          }}
+                          aria-label={pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`}
+                          className={`library-recent-shelf-pin ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
+                        >
+                          <Pin size={12} />
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleToggleFavorite(favoriteKey);
+                          }}
+                          aria-label={
+                            isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`
+                          }
+                          className={`library-recent-shelf-fav ${isFavorite ? 'is-favorite' : ''}`}
+                        >
+                          <Heart size={12} fill={isFavorite ? 'currentColor' : 'none'} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })()}
+
+          <div
+            ref={libraryContainerRef}
+            className={`library-${viewMode}`}
+            style={
+              viewMode === 'grid'
+                ? {
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(auto-fill, minmax(${libraryPresentationPreset.gridMinWidth}px, 1fr))`,
+                    gap: `${libraryPresentationPreset.gridGap}px`,
+                    padding: '20px',
+                  }
+                : {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: `${libraryPresentationPreset.listGap}px`,
+                    padding: '20px',
+                  }
+            }
           >
-            Load More
-          </button>
-        </div>
-      )}
+            {displayedGames.map((game, index) => {
+              const favoriteKey = getFavoriteGameKey(game);
+              const isFavorite = favorites.includes(favoriteKey);
+              const resolvedMood = getResolvedMood(game);
+              const gameValue = getGameValue(game);
+              const isRecentlyAdded = GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS);
+              const needsCoverArt = hasMissingCoverArt(game);
 
+              return (
+                <div
+                  key={game.appid || game.name}
+                  className={`${getGameCardClass(game, index)}${isRecentlyAdded ? ' is-recently-added' : ''}`}
+                  onClick={() => (bulkMode ? null : openGameModal(game))}
+                  style={
+                    viewMode === 'grid'
+                      ? {
+                          backgroundColor: 'var(--bg-card)',
+                          borderRadius: 'var(--library-presentation-card-radius)',
+                          padding: `${libraryPresentationPreset.cardPadding}px`,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          boxShadow: 'var(--library-presentation-card-shadow)',
+                          border: '1px solid var(--library-presentation-card-border)',
+                        }
+                      : {
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          padding: libraryPresentationPreset.listPadding,
+                          backgroundColor: 'var(--bg-card)',
+                          borderRadius: 'var(--library-presentation-card-radius)',
+                          border: '1px solid var(--border-primary)',
+                          cursor: 'pointer',
+                        }
+                  }
+                >
+                  {/* Bulk Selection Overlay */}
+                  {bulkMode && (
+                    <div className="bulk-checkbox-container" style={{ marginRight: '10px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedGames.has(game.appid || game.name)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const newSet = new Set(selectedGames);
+                          const id = game.appid || game.name;
+                          if (newSet.has(id)) newSet.delete(id);
+                          else newSet.add(id);
+                          setSelectedGames(newSet);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div
+                    className="game-card-image-wrapper"
+                    style={
+                      viewMode === 'grid'
+                        ? {
+                            width: '100%',
+                            aspectRatio: '2 / 3',
+                            height: 'auto',
+                            marginBottom: '12px',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            backgroundColor: '#1a1a1a',
+                            position: 'relative',
+                          }
+                        : {
+                            width: '120px',
+                            aspectRatio: '231 / 87',
+                            height: 'auto',
+                            marginRight: '15px',
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            backgroundColor: '#1a1a1a',
+                            position: 'relative',
+                          }
+                    }
+                  >
+                    <LazyImage
+                      src={resolveGameArtwork(game, {
+                        surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card',
+                      })}
+                      fallbackSrc={viewMode === 'grid' ? resolveGameArtwork(game, { surface: 'hero' }) : undefined}
+                      alt={game.name}
+                      gameName={game.name}
+                      platform={getDisplayPlatform(game)}
+                      genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
+                      mood={game.mood}
+                      placeholder={getGameArtworkPlaceholder({
+                        game,
+                        surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card',
+                      })}
+                      style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                    />
+                    {needsCoverArt && (
+                      <div
+                        className="game-card-cover-hint"
+                        title="No cover art found — click to add one via Cover Art Override"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGameModal(game);
+                        }}
+                      >
+                        <ImageOff size={14} /> Add Cover
+                      </div>
+                    )}
+                  </div>
+                  <div className="game-info" style={{ flexGrow: 1 }}>
+                    <div className="library-game-title-row">
+                      <h3 className="library-game-title">{game.name}</h3>
+                      <div className="library-game-title-actions">
+                        {isRecentlyAdded && <span className="library-new-badge">New</span>}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTogglePin(game);
+                          }}
+                          aria-label={pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`}
+                          className={`library-pin-button ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
+                        >
+                          <Pin size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFavorite(favoriteKey);
+                          }}
+                          aria-label={
+                            isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`
+                          }
+                          className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
+                        >
+                          <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="playtime library-game-playtime">
+                      <Clock size={12} /> {formatTimePlayed(game.time_played)}
+                      <HLTBChip game={game} autoFetch />
+                      <PatchNewsBadge game={game} />
+                      <DiskSizeChip game={game} />
+                    </p>
+                    {gameValue > 0 && <p className="library-game-value">Value: {formatPrice(gameValue, currency)}</p>}
+                    <div className="library-game-tags">
+                      <span className="library-game-tag platform">
+                        {getDisplayPlatform(game)}
+                        {Array.isArray(game.launchSources) && game.launchSources.length > 1 && (
+                          <span
+                            className="library-game-tag-multi-source"
+                            title={`Also available on ${game.launchSources
+                              .map((source) => source.platform)
+                              .filter((platform) => platform && platform !== getDisplayPlatform(game))
+                              .join(', ')}`}
+                          >
+                            +{game.launchSources.length - 1}
+                          </span>
+                        )}
+                      </span>
+                      {resolvedMood && <span className="library-game-tag mood">{resolvedMood}</span>}
+                      {Array.isArray(game.genres) && game.genres[0] && (
+                        <span className="library-game-tag genre">{game.genres[0]}</span>
+                      )}
+                      {game.replayIntent && game.replayIntent !== 'none' && (
+                        <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>
+                          {game.replayIntent === 'active' && '▶ Playing'}
+                          {game.replayIntent === 'soon' && '⏳ Soon'}
+                          {game.replayIntent === 'finished' && '✓ Done'}
+                          {game.replayIntent === 'endless' && '∞ Endless'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={`library-game-actions ${viewMode === 'list' ? 'list-mode' : 'grid-mode'}`}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onLaunchGame(game);
+                      }}
+                      className="library-launch-button"
+                      aria-label={`Launch ${game.name}`}
+                    >
+                      Launch
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleHidden(game);
+                        success(game.hidden ? 'Game unhidden' : 'Game hidden');
+                      }}
+                      className="library-action-button"
+                      title={game.hidden ? 'Unhide game' : 'Hide game'}
+                      aria-label={`${game.hidden ? 'Unhide' : 'Hide'} ${game.name}`}
+                    >
+                      {game.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Remove "${game.name}" from your library?`)) {
+                          onRemoveGames([game.appid || game.name]);
+                          success(`Removed "${game.name}" from library`);
+                        }
+                      }}
+                      className="library-action-button danger"
+                      title="Remove game"
+                      aria-label={`Remove ${game.name} from library`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Load More */}
+          {displayCount < filteredAndSortedGames.length && (
+            <div className="library-pagination-footer">
+              <button onClick={handleLoadMore} className="library-pagination-button">
+                Load More
+              </button>
+            </div>
+          )}
         </>
       )}
 
       {/* Modals */}
-      {isModalOpen && <GameModal game={selectedModalGame} library={library} isOpen={isModalOpen} onClose={closeGameModal} onLaunch={onLaunchGame} onSelectGame={setSelectedGame} systemInfo={systemInfo} onUpdateRating={onUpdateRating} onToggleFavorite={handleToggleFavorite} isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))} onTogglePin={handleTogglePin} onUpdateCollections={onUpdateCollections} onToggleHidden={onToggleHidden} onUpdateCompletion={onUpdateCompletion} onUpdateNotes={onUpdateNotes} onUpdateCoverArt={onUpdateCoverArt} onAddSessionNote={onAddSessionNote} onTogglePlayedElsewhere={onTogglePlayedElsewhere} />}
+      {isModalOpen && (
+        <GameModal
+          game={selectedModalGame}
+          library={library}
+          isOpen={isModalOpen}
+          onClose={closeGameModal}
+          onLaunch={onLaunchGame}
+          onSelectGame={setSelectedGame}
+          systemInfo={systemInfo}
+          onUpdateRating={onUpdateRating}
+          onToggleFavorite={handleToggleFavorite}
+          isFavorite={favorites.includes(getFavoriteGameKey(selectedModalGame))}
+          onTogglePin={handleTogglePin}
+          onUpdateCollections={onUpdateCollections}
+          onToggleHidden={onToggleHidden}
+          onUpdateCompletion={onUpdateCompletion}
+          onUpdateNotes={onUpdateNotes}
+          onUpdateCoverArt={onUpdateCoverArt}
+          onAddSessionNote={onAddSessionNote}
+          onTogglePlayedElsewhere={onTogglePlayedElsewhere}
+        />
+      )}
       <RecapCustomizeModal
         isOpen={isRecapCustomizeOpen}
         onClose={() => setIsRecapCustomizeOpen(false)}
@@ -2428,7 +2807,7 @@ function Library({
           width: LIBRARY_SHARE_CARD_SIZE_PX,
           height: LIBRARY_SHARE_CARD_SIZE_PX,
           pointerEvents: 'none',
-          zIndex: -1
+          zIndex: -1,
         }}
       >
         <div ref={libraryShareCardRef}>
@@ -2453,7 +2832,7 @@ function Library({
           width: TOP_RATED_SHARE_CARD_SIZE_PX,
           height: TOP_RATED_SHARE_CARD_SIZE_PX,
           pointerEvents: 'none',
-          zIndex: -1
+          zIndex: -1,
         }}
       >
         <div ref={topRatedShareCardRef}>
@@ -2503,9 +2882,7 @@ function Library({
               })}
             </div>
             <div className="library-top-rated-picker-actions">
-              <span className="library-top-rated-picker-count">
-                {selectedTopRatedGames.length}/6 selected
-              </span>
+              <span className="library-top-rated-picker-count">{selectedTopRatedGames.length}/6 selected</span>
               <button
                 className="library-top-rated-picker-clear"
                 onClick={() => setSelectedTopRatedGames([])}
@@ -2513,10 +2890,7 @@ function Library({
               >
                 Clear
               </button>
-              <button
-                className="library-top-rated-picker-done"
-                onClick={() => setShowTopRatedPicker(false)}
-              >
+              <button className="library-top-rated-picker-done" onClick={() => setShowTopRatedPicker(false)}>
                 Done
               </button>
             </div>
@@ -2534,7 +2908,7 @@ function Library({
             width: MULTI_GAME_SHARE_CARD_SIZE_PX,
             height: MULTI_GAME_SHARE_CARD_SIZE_PX,
             pointerEvents: 'none',
-            zIndex: -1
+            zIndex: -1,
           }}
         >
           <div ref={multiGameShareCardRef}>
@@ -2583,9 +2957,7 @@ function Library({
               })}
             </div>
             <div className="library-top-rated-picker-actions">
-              <span className="library-top-rated-picker-count">
-                {multiGamePicks.length}/3 selected
-              </span>
+              <span className="library-top-rated-picker-count">{multiGamePicks.length}/3 selected</span>
               <button
                 className="library-top-rated-picker-clear"
                 onClick={() => setMultiGamePicks([])}
@@ -2593,10 +2965,7 @@ function Library({
               >
                 Clear
               </button>
-              <button
-                className="library-top-rated-picker-done"
-                onClick={() => setShowMultiGamePicker(false)}
-              >
+              <button className="library-top-rated-picker-done" onClick={() => setShowMultiGamePicker(false)}>
                 Done
               </button>
             </div>

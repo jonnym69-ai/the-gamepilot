@@ -29,21 +29,23 @@ function GettingStartedModal({ isOpen, onClose, onHidePermanently, onScan, theme
         aria-describedby="getting-started-description"
         onClick={(event) => event.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className="modal-close"
-          aria-label="Close getting started guide"
-        >
+        <button type="button" onClick={onClose} className="modal-close" aria-label="Close getting started guide">
           <span aria-hidden="true">×</span>
         </button>
-        <h2 id="getting-started-title" className={`modal-title ${theme}`}>Your gaming librarian</h2>
+        <h2 id="getting-started-title" className={`modal-title ${theme}`}>
+          Your gaming librarian
+        </h2>
         <p id="getting-started-description" style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
-          GamePilot reads your libraries, builds a living persona from how you play, and recommends your next session — with a roast on the side.
+          GamePilot reads your libraries, builds a living persona from how you play, and recommends your next session —
+          with a roast on the side.
         </p>
         <div className="getting-started-actions">
-          <button onClick={handleScan} className="getting-started-primary">Scan my games</button>
-          <button onClick={onHidePermanently} className="getting-started-secondary">Skip for now</button>
+          <button onClick={handleScan} className="getting-started-primary">
+            Scan my games
+          </button>
+          <button onClick={onHidePermanently} className="getting-started-secondary">
+            Skip for now
+          </button>
         </div>
       </div>
     </div>

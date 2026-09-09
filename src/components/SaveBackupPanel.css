@@ -49,7 +49,9 @@
 }
 
 @keyframes save-backup-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .save-backup-list {

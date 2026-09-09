@@ -14,10 +14,13 @@ const MilestoneToast = ({ milestones = [], onDismiss }) => {
     setVisible(milestones);
 
     const timers = milestones.map((m, i) =>
-      setTimeout(() => {
-        setVisible((prev) => prev.filter((p) => p.id !== m.id));
-        if (onDismiss) onDismiss(m);
-      }, 6000 + i * 500)
+      setTimeout(
+        () => {
+          setVisible((prev) => prev.filter((p) => p.id !== m.id));
+          if (onDismiss) onDismiss(m);
+        },
+        6000 + i * 500
+      )
     );
 
     return () => timers.forEach(clearTimeout);

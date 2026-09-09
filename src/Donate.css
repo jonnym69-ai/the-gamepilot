@@ -56,7 +56,9 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .hero-primary {
@@ -278,7 +280,10 @@
   color: var(--text);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .updates-button:hover {
@@ -354,7 +359,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: border 0.2s ease, transform 0.2s ease;
+  transition:
+    border 0.2s ease,
+    transform 0.2s ease;
 }
 
 .feature-card:hover {
@@ -367,7 +374,7 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 45%),
-              radial-gradient(circle at 80% 0%, rgba(255, 107, 53, 0.12), transparent 35%);
+    radial-gradient(circle at 80% 0%, rgba(255, 107, 53, 0.12), transparent 35%);
   pointer-events: none;
   opacity: 0.4;
 }
@@ -446,7 +453,7 @@
   padding: 3px 8px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted, rgba(255,255,255,0.6));
+  color: var(--text-muted, rgba(255, 255, 255, 0.6));
 }
 
 .store-unlock-owned,
@@ -957,8 +964,12 @@
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .founder-card:hover {
@@ -1281,12 +1292,12 @@
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .drop-zone {
     max-width: 100%;
     padding: 24px 16px;
   }
-  
+
   .admin-data-section h4 {
     font-size: 15px;
   }
@@ -1296,11 +1307,11 @@
   .drop-zone p {
     font-size: 14px;
   }
-  
+
   .drop-zone small {
     font-size: 11px;
   }
-  
+
   .data-button {
     padding: 10px 16px;
     font-size: 13px;
@@ -1357,7 +1368,9 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  transition: border 0.2s ease, transform 0.2s ease;
+  transition:
+    border 0.2s ease,
+    transform 0.2s ease;
 }
 
 .tier-perk-card:hover {
@@ -1430,7 +1443,9 @@
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   text-decoration: none;
   justify-content: center;
 }
@@ -1501,12 +1516,12 @@
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .tier-card-header {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .tier-price {
     align-self: flex-start;
   }
@@ -1517,20 +1532,20 @@
     padding: 20px;
     gap: 16px;
   }
-  
+
   .tier-card-header h3 {
     font-size: 20px;
   }
-  
+
   .tier-card-header p {
     font-size: 14px;
   }
-  
+
   .tier-price {
     font-size: 16px;
     padding: 6px 12px;
   }
-  
+
   .tier-cta {
     padding: 10px 16px;
     font-size: 14px;
@@ -1542,27 +1557,27 @@
   .donate-container {
     padding: 15px;
   }
-  
+
   .support-links {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .founders-section {
     margin: 40px 0;
     padding: 30px 15px;
   }
-  
+
   .founders-grid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .tier-info {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .tier-item {
     width: 100%;
     justify-content: center;
@@ -1573,13 +1588,13 @@
   .founders-section h2 {
     font-size: 28px;
   }
-  
+
   .support-card {
     flex-direction: column;
     text-align: center;
     gap: 12px;
   }
-  
+
   .support-icon {
     margin: 0 auto;
   }
@@ -1632,7 +1647,9 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(10, 15, 30, 0.6);
   text-align: center;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .donate-price-card.highlighted {
@@ -1716,7 +1733,9 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   width: 100%;
   justify-content: center;
 }

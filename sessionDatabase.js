@@ -50,7 +50,7 @@ class SessionDatabase {
 
   async initialize() {
     const SQL = await initSqlJs({
-      locateFile: () => require.resolve('sql.js/dist/sql-wasm.wasm')
+      locateFile: () => require.resolve('sql.js/dist/sql-wasm.wasm'),
     });
 
     // If the legacy single-file database exists, migrate its data into the
@@ -59,7 +59,10 @@ class SessionDatabase {
       await this.migrateFromLegacyDb(SQL);
     }
 
-    this.activeDb = await openDatabase(SQL, this.activeDbPath, `
+    this.activeDb = await openDatabase(
+      SQL,
+      this.activeDbPath,
+      `
       PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS active_sessions (
         game_name TEXT PRIMARY KEY,
@@ -68,9 +71,13 @@ class SessionDatabase {
         last_confirmed_at TEXT NOT NULL,
         payload_json TEXT NOT NULL
       );
-    `);
+    `
+    );
 
-    this.historyDb = await openDatabase(SQL, this.historyDbPath, `
+    this.historyDb = await openDatabase(
+      SQL,
+      this.historyDbPath,
+      `
       PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS session_history (
         session_id TEXT PRIMARY KEY,
@@ -87,7 +94,8 @@ class SessionDatabase {
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       );
-    `);
+    `
+    );
 
     // Ensure schema is persisted for fresh databases.
     persistDatabase(this.activeDb, this.activeDbPath);
@@ -126,7 +134,10 @@ class SessionDatabase {
       }
 
       // Write into the new split databases.
-      this.activeDb = await openDatabase(SQL, this.activeDbPath, `
+      this.activeDb = await openDatabase(
+        SQL,
+        this.activeDbPath,
+        `
         CREATE TABLE IF NOT EXISTS active_sessions (
           game_name TEXT PRIMARY KEY,
           session_id TEXT NOT NULL UNIQUE,
@@ -134,8 +145,12 @@ class SessionDatabase {
           last_confirmed_at TEXT NOT NULL,
           payload_json TEXT NOT NULL
         );
-      `);
-      this.historyDb = await openDatabase(SQL, this.historyDbPath, `
+      `
+      );
+      this.historyDb = await openDatabase(
+        SQL,
+        this.historyDbPath,
+        `
         CREATE TABLE IF NOT EXISTS session_history (
           session_id TEXT PRIMARY KEY,
           game_name TEXT NOT NULL,
@@ -151,7 +166,8 @@ class SessionDatabase {
           key TEXT PRIMARY KEY,
           value TEXT NOT NULL
         );
-      `);
+      `
+      );
 
       // Populate active sessions.
       transactionOn(this.activeDb, this.activeDbPath, () => {
@@ -162,7 +178,13 @@ class SessionDatabase {
         try {
           Object.entries(activeSessions).forEach(([gameName, session]) => {
             if (!session?.sessionId || !session?.startTime) return;
-            stmt.run([gameName, session.sessionId, session.startTime, session.lastConfirmedAt || session.startTime, JSON.stringify(session)]);
+            stmt.run([
+              gameName,
+              session.sessionId,
+              session.startTime,
+              session.lastConfirmedAt || session.startTime,
+              JSON.stringify(session),
+            ]);
           });
         } finally {
           stmt.free();
@@ -173,7 +195,9 @@ class SessionDatabase {
       transactionOn(this.historyDb, this.historyDbPath, () => {
         this.historyDb.run('DELETE FROM session_history');
         sessionHistory.forEach((entry) => this.insertHistoryEntry(entry));
-        this.historyDb.run("INSERT OR REPLACE INTO app_metadata (key, value) VALUES ('local_storage_migrated', 'true')");
+        this.historyDb.run(
+          "INSERT OR REPLACE INTO app_metadata (key, value) VALUES ('local_storage_migrated', 'true')"
+        );
       });
 
       // Rename legacy file so we never migrate again.
@@ -198,7 +222,7 @@ class SessionDatabase {
           session.sessionId,
           session.startTime,
           session.lastConfirmedAt || session.startTime,
-          JSON.stringify(session)
+          JSON.stringify(session),
         ]);
       });
     } finally {
@@ -208,19 +232,22 @@ class SessionDatabase {
 
   insertHistoryEntry(entry) {
     if (!entry?.sessionId || !entry?.gameName) return false;
-    this.historyDb.run(`
+    this.historyDb.run(
+      `
       INSERT OR IGNORE INTO session_history (
         session_id, game_name, game_id, started_at, ended_at, playtime_minutes, payload_json
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [
-      entry.sessionId,
-      entry.gameName,
-      entry.gameId == null ? null : String(entry.gameId),
-      entry.startTime || null,
-      entry.endTime || entry.timestamp || new Date().toISOString(),
-      Math.max(0, Math.round(Number(entry.playtimeMinutes) || 0)),
-      JSON.stringify(entry)
-    ]);
+    `,
+      [
+        entry.sessionId,
+        entry.gameName,
+        entry.gameId == null ? null : String(entry.gameId),
+        entry.startTime || null,
+        entry.endTime || entry.timestamp || new Date().toISOString(),
+        Math.max(0, Math.round(Number(entry.playtimeMinutes) || 0)),
+        JSON.stringify(entry),
+      ]
+    );
     return this.historyDb.getRowsModified() > 0;
   }
 
@@ -237,7 +264,9 @@ class SessionDatabase {
     }
 
     const sessionHistory = [];
-    const historyStatement = this.historyDb.prepare('SELECT payload_json FROM session_history ORDER BY ended_at ASC, rowid ASC');
+    const historyStatement = this.historyDb.prepare(
+      'SELECT payload_json FROM session_history ORDER BY ended_at ASC, rowid ASC'
+    );
     try {
       while (historyStatement.step()) {
         sessionHistory.push(JSON.parse(historyStatement.getAsObject().payload_json));
@@ -258,8 +287,12 @@ class SessionDatabase {
         this.replaceActiveSessions(payload.activeSessions);
       });
       transactionOn(this.historyDb, this.historyDbPath, () => {
-        (Array.isArray(payload.sessionHistory) ? payload.sessionHistory : []).forEach((entry) => this.insertHistoryEntry(entry));
-        this.historyDb.run("INSERT OR REPLACE INTO app_metadata (key, value) VALUES ('local_storage_migrated', 'true')");
+        (Array.isArray(payload.sessionHistory) ? payload.sessionHistory : []).forEach((entry) =>
+          this.insertHistoryEntry(entry)
+        );
+        this.historyDb.run(
+          "INSERT OR REPLACE INTO app_metadata (key, value) VALUES ('local_storage_migrated', 'true')"
+        );
       });
     }
     return this.getSnapshot();

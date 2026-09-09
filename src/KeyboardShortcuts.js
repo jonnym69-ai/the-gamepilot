@@ -3,28 +3,29 @@ import StorageService from './services/StorageService';
 
 const SHORTCUT_SETTINGS_KEY = 'keyboardShortcutSettings';
 
-const normalizeShortcut = (shortcut) => String(shortcut || '')
-  .trim()
-  .split('+')
-  .map((part) => part.trim())
-  .filter(Boolean)
-  .map((part, index, parts) => {
-    const lower = part.toLowerCase();
-    if (lower === 'cmd' || lower === 'meta' || lower === 'control' || lower === 'ctrl') {
-      return 'Ctrl';
-    }
-    if (lower === 'option' || lower === 'alt') {
-      return 'Alt';
-    }
-    if (lower === 'shift') {
-      return 'Shift';
-    }
-    if (parts.length === 1 && part === '?') {
-      return '?';
-    }
-    return part.length === 1 ? part.toUpperCase() : `${part.charAt(0).toUpperCase()}${part.slice(1)}`;
-  })
-  .join('+');
+const normalizeShortcut = (shortcut) =>
+  String(shortcut || '')
+    .trim()
+    .split('+')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part, index, parts) => {
+      const lower = part.toLowerCase();
+      if (lower === 'cmd' || lower === 'meta' || lower === 'control' || lower === 'ctrl') {
+        return 'Ctrl';
+      }
+      if (lower === 'option' || lower === 'alt') {
+        return 'Alt';
+      }
+      if (lower === 'shift') {
+        return 'Shift';
+      }
+      if (parts.length === 1 && part === '?') {
+        return '?';
+      }
+      return part.length === 1 ? part.toUpperCase() : `${part.charAt(0).toUpperCase()}${part.slice(1)}`;
+    })
+    .join('+');
 
 const readShortcutSettings = () => {
   try {
@@ -34,9 +35,10 @@ const readShortcutSettings = () => {
     }
     return {
       enabled: parsed.enabled !== false,
-      bindings: parsed.bindings && typeof parsed.bindings === 'object' && !Array.isArray(parsed.bindings)
-        ? parsed.bindings
-        : {}
+      bindings:
+        parsed.bindings && typeof parsed.bindings === 'object' && !Array.isArray(parsed.bindings)
+          ? parsed.bindings
+          : {},
     };
   } catch (error) {
     return { enabled: true, bindings: {} };
@@ -80,7 +82,7 @@ export class KeyboardShortcuts {
       actionId,
       defaultShortcut: normalizeShortcut(defaultShortcut),
       callback,
-      description
+      description,
     });
     this.rebuildShortcutIndex();
   }
@@ -132,15 +134,15 @@ export class KeyboardShortcuts {
       return { success: true, message: 'Shortcut reset to default.' };
     }
 
-    const duplicateAction = Array.from(this.actions.keys()).find((candidateId) => (
-      candidateId !== actionId && this.getShortcutForAction(candidateId) === normalizedShortcut
-    ));
+    const duplicateAction = Array.from(this.actions.keys()).find(
+      (candidateId) => candidateId !== actionId && this.getShortcutForAction(candidateId) === normalizedShortcut
+    );
 
     if (duplicateAction) {
       const duplicateMeta = this.actions.get(duplicateAction);
       return {
         success: false,
-        message: `${normalizedShortcut} is already assigned to ${duplicateMeta?.description || duplicateAction}.`
+        message: `${normalizedShortcut} is already assigned to ${duplicateMeta?.description || duplicateAction}.`,
       };
     }
 
@@ -163,7 +165,7 @@ export class KeyboardShortcuts {
   static getSettings() {
     return {
       enabled: this.isEnabled(),
-      bindings: { ...(this.settings.bindings || {}) }
+      bindings: { ...(this.settings.bindings || {}) },
     };
   }
 
@@ -172,9 +174,11 @@ export class KeyboardShortcuts {
       return;
     }
 
-    if (event.target.tagName === 'INPUT' ||
-        event.target.tagName === 'TEXTAREA' ||
-        event.target.contentEditable === 'true') {
+    if (
+      event.target.tagName === 'INPUT' ||
+      event.target.tagName === 'TEXTAREA' ||
+      event.target.contentEditable === 'true'
+    ) {
       return;
     }
 
@@ -215,7 +219,7 @@ export class KeyboardShortcuts {
       actionId,
       key: this.getShortcutForAction(actionId),
       defaultKey: value.defaultShortcut,
-      description: value.description
+      description: value.description,
     }));
   }
 
@@ -223,9 +227,7 @@ export class KeyboardShortcuts {
     const shortcuts = this.getShortcutList();
     if (shortcuts.length === 0) return;
 
-    const helpText = shortcuts
-      .map((shortcut) => `${shortcut.key}: ${shortcut.description}`)
-      .join('\n');
+    const helpText = shortcuts.map((shortcut) => `${shortcut.key}: ${shortcut.description}`).join('\n');
 
     alert(`Keyboard Shortcuts:\n\n${helpText}`);
   }

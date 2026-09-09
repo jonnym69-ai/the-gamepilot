@@ -7,7 +7,7 @@ import {
   isValidGenre as baseIsValidGenre,
   isValidMood as baseIsValidMood,
   mapGameGenresToValid,
-  normalizeGenres
+  normalizeGenres,
 } from '../constants/GenresMoods';
 
 const getLastPlayedTimestamp = (lastPlayedValue) => {
@@ -24,7 +24,6 @@ const getLastPlayedTimestamp = (lastPlayedValue) => {
 };
 
 export class GenreMoodMapper {
-
   // Get mood for a genre
   static getMoodForGenre(genre) {
     return baseGetMoodForGenre(genre);
@@ -62,8 +61,8 @@ export class GenreMoodMapper {
     }
 
     const genresForMood = this.getGenresForMood(mood);
-    
-    return library.filter(game => {
+
+    return library.filter((game) => {
       // User override takes priority
       if (typeof game?.moodOverride === 'string' && game.moodOverride.trim()) {
         return game.moodOverride.trim() === mood;
@@ -74,21 +73,21 @@ export class GenreMoodMapper {
         return false;
       }
 
-      return normalizedGenres.some(genre => genresForMood.includes(genre));
+      return normalizedGenres.some((genre) => genresForMood.includes(genre));
     });
   }
 
   // Get games matching mood and time constraint
   static getGamesForMoodAndTime(library, mood, availableMinutes) {
     const moodGames = this.getGamesForMood(library, mood);
-    
+
     if (availableMinutes === null || availableMinutes === undefined) {
       return moodGames;
     }
 
     // Filter by time - games that can be played in available time
     // Estimate: if game has playtime data, use it; otherwise assume 30-60 min sessions
-    return moodGames.filter(game => {
+    return moodGames.filter((game) => {
       if (!game || typeof game !== 'object') return false;
       if (!game.time_played || !game.launch_count) {
         return true;
@@ -102,7 +101,7 @@ export class GenreMoodMapper {
   // Get recommended game for Perfect Play
   static getPerfectPlayRecommendation(library, mood, availableMinutes) {
     const games = this.getGamesForMoodAndTime(library, mood, availableMinutes);
-    
+
     if (games.length === 0) {
       return null;
     }
@@ -112,11 +111,11 @@ export class GenreMoodMapper {
     const sorted = games.sort((a, b) => {
       const aLastPlayed = getLastPlayedTimestamp(a.last_played);
       const bLastPlayed = getLastPlayedTimestamp(b.last_played);
-      
+
       if (aLastPlayed !== bLastPlayed) {
         return aLastPlayed - bLastPlayed; // Least recently played first
       }
-      
+
       const aPlayCount = a.launch_count || 0;
       const bPlayCount = b.launch_count || 0;
       return aPlayCount - bPlayCount; // Less played first
@@ -128,7 +127,7 @@ export class GenreMoodMapper {
   // Get multiple recommendations
   static getPerfectPlayRecommendations(library, mood, availableMinutes, count = 5) {
     const games = this.getGamesForMoodAndTime(library, mood, availableMinutes);
-    
+
     if (games.length === 0) {
       return [];
     }
@@ -137,11 +136,11 @@ export class GenreMoodMapper {
     const sorted = games.sort((a, b) => {
       const aLastPlayed = getLastPlayedTimestamp(a.last_played);
       const bLastPlayed = getLastPlayedTimestamp(b.last_played);
-      
+
       if (aLastPlayed !== bLastPlayed) {
         return aLastPlayed - bLastPlayed;
       }
-      
+
       const aPlayCount = a.launch_count || 0;
       const bPlayCount = b.launch_count || 0;
       return aPlayCount - bPlayCount;
@@ -161,10 +160,8 @@ export class GenreMoodMapper {
     const genresForMood = this.getGenresForMood(mood);
     const distribution = {};
 
-    genresForMood.forEach(genre => {
-      distribution[genre] = games.filter(g => 
-        g.genres && g.genres.includes(genre)
-      ).length;
+    genresForMood.forEach((genre) => {
+      distribution[genre] = games.filter((g) => g.genres && g.genres.includes(genre)).length;
     });
 
     return distribution;

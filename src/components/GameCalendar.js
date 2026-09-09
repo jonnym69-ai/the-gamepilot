@@ -17,7 +17,7 @@ const formatDateKey = (date, timeZone = getPreferredTimeZone()) => {
     timeZone,
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   }).format(date);
 };
 
@@ -44,7 +44,7 @@ const GameCalendar = () => {
     title: '',
     type: 'release',
     description: '',
-    time: ''
+    time: '',
   });
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedDateStats, setSelectedDateStats] = useState(null);
@@ -75,7 +75,7 @@ const GameCalendar = () => {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
       return { daysInMonth: 30, startingDayOfWeek: 0 }; // Safe defaults
     }
-    
+
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -90,10 +90,10 @@ const GameCalendar = () => {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
       return [];
     }
-    
+
     try {
       const dateString = formatDateKey(date);
-      return events.filter(event => event && event.date === dateString);
+      return events.filter((event) => event && event.date === dateString);
     } catch (error) {
       console.error('Error getting events for date:', error);
       return [];
@@ -111,34 +111,34 @@ const GameCalendar = () => {
   const handleDateClick = (day) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     setSelectedDate(clickedDate);
-    
+
     // Get stats for this date - try both timestamp and date fields
     const dateStr = formatDateKey(clickedDate);
     const localeDateStr = clickedDate.toLocaleDateString();
     const history = PlaytimeAutoLogger.getSessionHistory();
-    
-    const daySessions = history.filter(s => {
+
+    const daySessions = history.filter((s) => {
       if (s.timestamp && formatDateKey(new Date(s.timestamp)) === dateStr) return true;
       if (s.date === localeDateStr) return true;
       return false;
     });
-    
+
     // Calculate per-game playtime
     const gamePlaytime = {};
-    daySessions.forEach(s => {
+    daySessions.forEach((s) => {
       const gameName = s.gameName;
       if (!gamePlaytime[gameName]) gamePlaytime[gameName] = 0;
       gamePlaytime[gameName] += s.playtimeMinutes || 0;
     });
-    
+
     // Sort games by playtime to find top game
     const sortedGames = Object.entries(gamePlaytime).sort((a, b) => b[1] - a[1]);
     const topGame = sortedGames.length > 0 ? sortedGames[0][0] : null;
     const topGameTime = sortedGames.length > 0 ? sortedGames[0][1] : 0;
-    
+
     const totalPlaytime = daySessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0);
-    const uniqueGames = [...new Set(daySessions.map(s => s.gameName))];
-    
+    const uniqueGames = [...new Set(daySessions.map((s) => s.gameName))];
+
     setSelectedDateStats({
       date: clickedDate,
       playtimeMinutes: totalPlaytime,
@@ -146,7 +146,7 @@ const GameCalendar = () => {
       sessions: daySessions.length,
       games: uniqueGames,
       topGame,
-      topGameTime
+      topGameTime,
     });
     setShowStatsModal(true);
   };
@@ -157,7 +157,7 @@ const GameCalendar = () => {
     const event = {
       id: Date.now().toString(),
       date: formatDateKey(selectedDate),
-      ...newEvent
+      ...newEvent,
     };
 
     saveEvents([...events, event]);
@@ -166,15 +166,15 @@ const GameCalendar = () => {
   };
 
   const handleDeleteEvent = (eventId) => {
-    saveEvents(events.filter(e => e.id !== eventId));
+    saveEvents(events.filter((e) => e.id !== eventId));
   };
 
   const renderCalendar = () => {
     const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentDate);
     const days = [];
     const today = new Date();
-    const isCurrentMonth = today.getMonth() === currentDate.getMonth() && 
-                          today.getFullYear() === currentDate.getFullYear();
+    const isCurrentMonth =
+      today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear();
 
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
@@ -195,11 +195,7 @@ const GameCalendar = () => {
           {dayEvents.length > 0 && (
             <div className="event-indicators">
               {dayEvents.slice(0, 3).map((event, idx) => (
-                <div
-                  key={idx}
-                  className={`event-dot ${event.type}`}
-                  title={event.title}
-                ></div>
+                <div key={idx} className={`event-dot ${event.type}`} title={event.title}></div>
               ))}
               {dayEvents.length > 3 && <span className="more-events">+{dayEvents.length - 3}</span>}
             </div>
@@ -214,7 +210,7 @@ const GameCalendar = () => {
   const getUpcomingEvents = () => {
     const today = formatDateKey(new Date());
     return events
-      .filter(event => event.date >= today)
+      .filter((event) => event.date >= today)
       .sort((a, b) => {
         const leftDate = parseDateKeyToLocalDate(a.date);
         const rightDate = parseDateKeyToLocalDate(b.date);
@@ -230,7 +226,7 @@ const GameCalendar = () => {
     event: '🎉',
     tournament: '🏆',
     sale: '💰',
-    other: '📅'
+    other: '📅',
   };
 
   return (
@@ -255,39 +251,35 @@ const GameCalendar = () => {
 
       <div className="calendar-grid">
         <div className="calendar-weekdays">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="weekday">{day}</div>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+            <div key={day} className="weekday">
+              {day}
+            </div>
           ))}
         </div>
-        <div className="calendar-days">
-          {renderCalendar()}
-        </div>
+        <div className="calendar-days">{renderCalendar()}</div>
       </div>
 
       <div className="upcoming-events">
         <h4>Upcoming Events</h4>
         {getUpcomingEvents().length > 0 ? (
           <div className="events-list">
-            {getUpcomingEvents().map(event => (
+            {getUpcomingEvents().map((event) => (
               <div key={event.id} className="event-item">
                 <div className="event-icon">{eventTypeIcons[event.type]}</div>
                 <div className="event-details">
                   <div className="event-title">{event.title}</div>
                   <div className="event-date">
-                    {(parseDateKeyToLocalDate(event.date) || new Date(event.date)).toLocaleDateString('en-US', { 
-                      month: 'short', 
+                    {(parseDateKeyToLocalDate(event.date) || new Date(event.date)).toLocaleDateString('en-US', {
+                      month: 'short',
                       day: 'numeric',
-                      year: 'numeric'
+                      year: 'numeric',
                     })}
                     {event.time && ` at ${event.time}`}
                   </div>
                   {event.description && <div className="event-description">{event.description}</div>}
                 </div>
-                <button 
-                  className="delete-event"
-                  onClick={() => handleDeleteEvent(event.id)}
-                  title="Delete event"
-                >
+                <button className="delete-event" onClick={() => handleDeleteEvent(event.id)} title="Delete event">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -304,60 +296,96 @@ const GameCalendar = () => {
             <div className="modal-header">
               <h3>
                 <Trophy size={20} />
-                Daily Stats - {selectedDateStats.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                Daily Stats -{' '}
+                {selectedDateStats.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </h3>
               <button onClick={() => setShowStatsModal(false)} className="close-modal">
                 <X size={20} />
               </button>
             </div>
             <div className="modal-body">
-              <div className="stats-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '20px' }}>
-                <div className="stat-box" style={{ textAlign: 'center', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+              <div
+                className="stats-summary"
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '20px' }}
+              >
+                <div
+                  className="stat-box"
+                  style={{
+                    textAlign: 'center',
+                    padding: '15px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '8px',
+                  }}
+                >
                   <Clock size={24} style={{ marginBottom: '8px', opacity: 0.8 }} />
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                     {Math.floor(selectedDateStats.playtimeMinutes / 60)}h {selectedDateStats.playtimeMinutes % 60}m
                   </div>
                   <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Playtime</div>
                 </div>
-                <div className="stat-box" style={{ textAlign: 'center', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                <div
+                  className="stat-box"
+                  style={{
+                    textAlign: 'center',
+                    padding: '15px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '8px',
+                  }}
+                >
                   <Gamepad2 size={24} style={{ marginBottom: '8px', opacity: 0.8 }} />
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{selectedDateStats.gamesPlayed}</div>
                   <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Games Played</div>
                 </div>
-                <div className="stat-box" style={{ textAlign: 'center', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                <div
+                  className="stat-box"
+                  style={{
+                    textAlign: 'center',
+                    padding: '15px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '8px',
+                  }}
+                >
                   <Trophy size={24} style={{ marginBottom: '8px', opacity: 0.8 }} />
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{selectedDateStats.sessions}</div>
                   <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>Sessions</div>
                 </div>
               </div>
-              
+
               {selectedDateStats.topGame && (
-                <div style={{ 
-                  padding: '16px', 
-                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.15))', 
-                  borderRadius: '12px',
-                  marginBottom: '16px',
-                  border: '1px solid rgba(139, 92, 246, 0.3)'
-                }}>
+                <div
+                  style={{
+                    padding: '16px',
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.15))',
+                    borderRadius: '12px',
+                    marginBottom: '16px',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                  }}
+                >
                   <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '4px' }}>TOP GAME</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '4px' }}>{selectedDateStats.topGame}</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '4px' }}>
+                    {selectedDateStats.topGame}
+                  </div>
                   <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
                     {Math.floor(selectedDateStats.topGameTime / 60)}h {selectedDateStats.topGameTime % 60}m played
                   </div>
                 </div>
               )}
-              
+
               {selectedDateStats.games.length > 0 ? (
                 <div className="games-list">
                   <h4 style={{ marginBottom: '10px' }}>All Games Played</h4>
                   {selectedDateStats.games.map((game, idx) => (
-                    <div key={idx} className="game-item" style={{ 
-                      padding: '8px 12px', 
-                      background: 'rgba(255,255,255,0.03)', 
-                      borderRadius: '6px',
-                      marginBottom: '6px',
-                      fontSize: '0.9rem'
-                    }}>
+                    <div
+                      key={idx}
+                      className="game-item"
+                      style={{
+                        padding: '8px 12px',
+                        background: 'rgba(255,255,255,0.03)',
+                        borderRadius: '6px',
+                        marginBottom: '6px',
+                        fontSize: '0.9rem',
+                      }}
+                    >
                       {game}
                     </div>
                   ))}
@@ -369,7 +397,14 @@ const GameCalendar = () => {
               )}
             </div>
             <div className="modal-footer">
-              <button onClick={() => { setShowStatsModal(false); setShowAddModal(true); }} className="btn-add" style={{ marginRight: '10px' }}>
+              <button
+                onClick={() => {
+                  setShowStatsModal(false);
+                  setShowAddModal(true);
+                }}
+                className="btn-add"
+                style={{ marginRight: '10px' }}
+              >
                 <Plus size={16} />
                 Add Event
               </button>
@@ -387,7 +422,8 @@ const GameCalendar = () => {
             <div className="modal-header">
               <h3>
                 <Plus size={20} />
-                Add Event - {selectedDate?.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                Add Event -{' '}
+                {selectedDate?.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="close-modal">
                 <X size={20} />
@@ -406,10 +442,7 @@ const GameCalendar = () => {
               </div>
               <div className="form-group">
                 <label>Event Type</label>
-                <select
-                  value={newEvent.type}
-                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
-                >
+                <select value={newEvent.type} onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}>
                   <option value="release">Game Release</option>
                   <option value="dlc">DLC/Expansion</option>
                   <option value="update">Update/Patch</option>

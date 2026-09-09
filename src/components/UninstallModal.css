@@ -12,7 +12,14 @@
   animation: um-fade 140ms ease-out;
 }
 
-@keyframes um-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes um-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 .uninstall-modal {
   position: relative;
@@ -23,7 +30,9 @@
   color: var(--text-primary, #e2e8f0);
   border: 1px solid rgba(248, 113, 113, 0.32);
   border-radius: 16px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(248, 113, 113, 0.08) inset;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(248, 113, 113, 0.08) inset;
   padding: 22px 24px 18px;
   display: flex;
   flex-direction: column;
@@ -41,10 +50,20 @@
   padding: 6px;
   border-radius: 6px;
 }
-.uninstall-modal-close:hover { color: var(--text-primary, #e2e8f0); background: rgba(255, 255, 255, 0.06); }
-.uninstall-modal-close:focus-visible { outline: 2px solid var(--accent-primary, #ff6b35); outline-offset: 2px; }
+.uninstall-modal-close:hover {
+  color: var(--text-primary, #e2e8f0);
+  background: rgba(255, 255, 255, 0.06);
+}
+.uninstall-modal-close:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
 
-.uninstall-modal-header { display: flex; flex-direction: column; gap: 4px; }
+.uninstall-modal-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .uninstall-modal-title {
   display: flex;
   align-items: center;
@@ -78,8 +97,16 @@
   padding: 10px 12px;
   color: var(--text-secondary, #94a3b8);
 }
-.uninstall-stat svg { margin-top: 2px; flex-shrink: 0; }
-.uninstall-stat div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.uninstall-stat svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.uninstall-stat div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 .uninstall-stat-label {
   font-size: 10.5px;
   text-transform: uppercase;
@@ -172,7 +199,9 @@
   font-size: 13px;
   cursor: pointer;
   border: none;
-  transition: filter 120ms ease, transform 120ms ease;
+  transition:
+    filter 120ms ease,
+    transform 120ms ease;
 }
 .uninstall-modal-cancel:focus-visible,
 .uninstall-modal-confirm:focus-visible {
@@ -184,15 +213,24 @@
   background: rgba(148, 163, 184, 0.16);
   color: var(--text-primary, #e2e8f0);
 }
-.uninstall-modal-cancel:hover { background: rgba(148, 163, 184, 0.26); }
+.uninstall-modal-cancel:hover {
+  background: rgba(148, 163, 184, 0.26);
+}
 .uninstall-modal-confirm {
   background: linear-gradient(135deg, #f87171, #dc2626);
   color: white;
 }
-.uninstall-modal-confirm:hover { filter: brightness(1.08); }
+.uninstall-modal-confirm:hover {
+  filter: brightness(1.08);
+}
 .uninstall-modal-confirm:disabled,
-.uninstall-modal-cancel:disabled { opacity: 0.6; cursor: not-allowed; }
+.uninstall-modal-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 @media (max-width: 540px) {
-  .uninstall-modal-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .uninstall-modal-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

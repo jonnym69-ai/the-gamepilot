@@ -30,7 +30,7 @@ describe('InterfacePreferencesService', () => {
     test('respects stored prefs for existing users', () => {
       StorageService.set('interfacePreferences', {
         ornamentLevel: 'full',
-        showHomeRetentionQuests: true
+        showHomeRetentionQuests: true,
       });
       const fresh = loadFresh();
       expect(fresh.get('ornamentLevel')).toBe('full');

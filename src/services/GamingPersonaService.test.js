@@ -25,7 +25,7 @@ const ARCHETYPE_IDS = [
   'speedrunner',
   'multiplayer_mainliner',
   'weekend_warrior',
-  'lunch_break_gamer'
+  'lunch_break_gamer',
 ];
 
 const makeGame = (overrides = {}) => ({
@@ -35,29 +35,33 @@ const makeGame = (overrides = {}) => ({
   genres: ['RPG'],
   tags: [],
   time_played: 0,
-  ...overrides
+  ...overrides,
 });
 
 // A large, entirely unplayed library — textbook Backlog Archaeologist.
 const seedBacklogLibrary = (count = 25) => {
-  const games = Array.from({ length: count }, (_, i) => makeGame({
-    appid: String(i + 1),
-    name: `Unplayed Game ${i + 1}`,
-    time_played: 0
-  }));
+  const games = Array.from({ length: count }, (_, i) =>
+    makeGame({
+      appid: String(i + 1),
+      name: `Unplayed Game ${i + 1}`,
+      time_played: 0,
+    })
+  );
   StorageService.set('library', games);
   return games;
 };
 
 // A small library of hard games played for real hours — textbook masochist.
 const seedHardLibrary = () => {
-  const games = [1, 2, 3].map((i) => makeGame({
-    appid: String(i),
-    name: `Pain Simulator ${i}`,
-    genres: ['Action'],
-    tags: ['souls-like'],
-    time_played: 120
-  }));
+  const games = [1, 2, 3].map((i) =>
+    makeGame({
+      appid: String(i),
+      name: `Pain Simulator ${i}`,
+      genres: ['Action'],
+      tags: ['souls-like'],
+      time_played: 120,
+    })
+  );
   StorageService.set('library', games);
   return games;
 };
@@ -72,7 +76,7 @@ const makeSession = ({ hoursAgo = 0, atHour = null, minutes = 90, gameName = 'La
     sessionId: `${gameName}-${start.getTime()}-${Math.random()}`,
     gameName,
     startTime: start.toISOString(),
-    playtimeMinutes: minutes
+    playtimeMinutes: minutes,
   };
 };
 
@@ -102,9 +106,7 @@ describe('GamingPersonaService', () => {
 
   describe('getAffinityGenres', () => {
     test('returns the affinity list for a known persona id', () => {
-      expect(GamingPersonaService.getAffinityGenres('story_diver')).toEqual(
-        PERSONA_AFFINITY_GENRES.story_diver
-      );
+      expect(GamingPersonaService.getAffinityGenres('story_diver')).toEqual(PERSONA_AFFINITY_GENRES.story_diver);
     });
 
     test('returns empty array for an unknown persona id', () => {
@@ -123,7 +125,9 @@ describe('GamingPersonaService', () => {
     });
 
     test('matches on tags as well as genres', () => {
-      expect(GamingPersonaService.gameMatchesPersona({ genres: [], tags: ['Puzzle'] }, 'backlog_archaeologist')).toBe(true);
+      expect(GamingPersonaService.gameMatchesPersona({ genres: [], tags: ['Puzzle'] }, 'backlog_archaeologist')).toBe(
+        true
+      );
     });
 
     test('matches on partial containment (e.g. "Action RPG" contains "RPG")', () => {
@@ -234,7 +238,7 @@ describe('GamingPersonaService', () => {
     const seedRotationLibrary = () => {
       const games = [
         makeGame({ appid: 'old', name: 'Old Favorite', genres: ['FPS'], time_played: 10000 }),
-        makeGame({ appid: 'new', name: 'New Crush', genres: ['Survival'], time_played: 0 })
+        makeGame({ appid: 'new', name: 'New Crush', genres: ['Survival'], time_played: 0 }),
       ];
       StorageService.set('library', games);
       return games;
@@ -252,7 +256,7 @@ describe('GamingPersonaService', () => {
       // 20h of New Crush across recent sessions (>= 10h takeover threshold)
       SessionRepository.replaceHistory([
         makeSession({ gameName: 'New Crush', minutes: 600, hoursAgo: 2 }),
-        makeSession({ gameName: 'New Crush', minutes: 600, hoursAgo: 26 })
+        makeSession({ gameName: 'New Crush', minutes: 600, hoursAgo: 26 }),
       ]);
       const persona = GamingPersonaService.getPersona();
       expect(persona.blendFactor).toBe(1);
@@ -262,9 +266,7 @@ describe('GamingPersonaService', () => {
     test('below the 10h takeover threshold, all-time play still fills the gaps', () => {
       seedRotationLibrary();
       // Only 1h tracked — blend factor 0.1, so lifetime playtime still dominates
-      SessionRepository.replaceHistory([
-        makeSession({ gameName: 'New Crush', minutes: 60 })
-      ]);
+      SessionRepository.replaceHistory([makeSession({ gameName: 'New Crush', minutes: 60 })]);
       const persona = GamingPersonaService.getPersona();
       expect(persona.blendFactor).toBeLessThan(1);
       expect(persona.topGames[0].name).toBe('Old Favorite');
@@ -282,12 +284,12 @@ describe('GamingPersonaService', () => {
       // outweigh a 20h recent binge. Share-based blending must not.
       StorageService.set('library', [
         makeGame({ appid: 'rust', name: 'Rust', genres: ['Survival'], time_played: 95220 }),
-        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], time_played: 0 })
+        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], time_played: 0 }),
       ]);
       // 8.8h tracked (< 10h takeover threshold -> blendFactor 0.88), all Zomboid
       SessionRepository.replaceHistory([
         makeSession({ gameName: 'Project Zomboid', minutes: 264, hoursAgo: 2 }),
-        makeSession({ gameName: 'Project Zomboid', minutes: 264, hoursAgo: 26 })
+        makeSession({ gameName: 'Project Zomboid', minutes: 264, hoursAgo: 26 }),
       ]);
       const persona = GamingPersonaService.getPersona();
       expect(persona.blendFactor).toBeLessThan(1);
@@ -297,11 +299,11 @@ describe('GamingPersonaService', () => {
     test('roasts and evidence show real recent hours, not blend-scaled units', () => {
       StorageService.set('library', [
         makeGame({ appid: 'rust', name: 'Rust', genres: ['Survival'], time_played: 95220 }),
-        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], time_played: 0 })
+        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], time_played: 0 }),
       ]);
       SessionRepository.replaceHistory([
         makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 2 }),
-        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 })
+        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 }),
       ]);
       const persona = GamingPersonaService.getPersona();
       // 20h raw recent play — evidence should say 20h, not a scaled figure
@@ -311,12 +313,12 @@ describe('GamingPersonaService', () => {
     test('launcher apps are excluded from persona signals', () => {
       StorageService.set('library', [
         makeGame({ appid: 'gog', name: 'GOG Galaxy', genres: [], time_played: 5000 }),
-        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], time_played: 300 })
+        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], time_played: 300 }),
       ]);
       SessionRepository.replaceHistory([
         makeSession({ gameName: 'GOG Galaxy', minutes: 5 }),
         makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 2 }),
-        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 })
+        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 }),
       ]);
       const persona = GamingPersonaService.getPersona();
       expect(persona.topGames.some((g) => g.name === 'GOG Galaxy')).toBe(false);
@@ -327,9 +329,7 @@ describe('GamingPersonaService', () => {
       seedRotationLibrary();
       // 12h of New Crush, but from 60 days ago — a calendar window would drop
       // these, the adaptive pool keeps them because they are the most recent.
-      SessionRepository.replaceHistory([
-        makeSession({ gameName: 'New Crush', minutes: 720, hoursAgo: 24 * 60 })
-      ]);
+      SessionRepository.replaceHistory([makeSession({ gameName: 'New Crush', minutes: 720, hoursAgo: 24 * 60 })]);
       const persona = GamingPersonaService.getPersona();
       expect(persona.topGames[0].name).toBe('New Crush');
     });
@@ -344,12 +344,18 @@ describe('GamingPersonaService', () => {
   describe('theme layer (game-related personas)', () => {
     const seedZomboidWeek = () => {
       StorageService.set('library', [
-        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], tags: ['Zombies', 'Post-apocalyptic', 'Open World Survival Craft'], time_played: 0 }),
-        makeGame({ appid: 'rust', name: 'Rust', genres: ['Survival'], tags: ['Survival'], time_played: 95220 })
+        makeGame({
+          appid: 'pz',
+          name: 'Project Zomboid',
+          genres: ['Survival'],
+          tags: ['Zombies', 'Post-apocalyptic', 'Open World Survival Craft'],
+          time_played: 0,
+        }),
+        makeGame({ appid: 'rust', name: 'Rust', genres: ['Survival'], tags: ['Survival'], time_played: 95220 }),
       ]);
       SessionRepository.replaceHistory([
         makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 2 }),
-        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 })
+        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 }),
       ]);
     };
 
@@ -380,12 +386,24 @@ describe('GamingPersonaService', () => {
 
     test('theme follows the mode: recent rotation vs all-time library', () => {
       StorageService.set('library', [
-        makeGame({ appid: 'racer', name: 'Speed Demons', genres: ['Racing'], tags: ['Racing', 'Driving'], time_played: 95220 }),
-        makeGame({ appid: 'pz', name: 'Project Zomboid', genres: ['Survival'], tags: ['Zombies', 'Post-apocalyptic'], time_played: 0 })
+        makeGame({
+          appid: 'racer',
+          name: 'Speed Demons',
+          genres: ['Racing'],
+          tags: ['Racing', 'Driving'],
+          time_played: 95220,
+        }),
+        makeGame({
+          appid: 'pz',
+          name: 'Project Zomboid',
+          genres: ['Survival'],
+          tags: ['Zombies', 'Post-apocalyptic'],
+          time_played: 0,
+        }),
       ]);
       SessionRepository.replaceHistory([
         makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 2 }),
-        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 })
+        makeSession({ gameName: 'Project Zomboid', minutes: 600, hoursAgo: 26 }),
       ]);
       const recent = GamingPersonaService.getPersona();
       expect(recent.primaryPersona.theme?.id).toBe('doomsday_prepper');
@@ -410,9 +428,7 @@ describe('GamingPersonaService', () => {
     test('identity affinity genres always match the primary persona id', () => {
       seedHardLibrary();
       const identity = GamingPersonaService.getPublicIdentity();
-      expect(identity.affinityGenres).toEqual(
-        GamingPersonaService.getAffinityGenres(identity.primary.id)
-      );
+      expect(identity.affinityGenres).toEqual(GamingPersonaService.getAffinityGenres(identity.primary.id));
     });
 
     test('handles an empty library without crashing', () => {

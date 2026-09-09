@@ -2,9 +2,7 @@ import { getElectronAPI, waitForElectronAPI } from './ElectronBridge';
 
 export class LauncherService {
   static async launchGame(game) {
-    const electronAPI = process.env.NODE_ENV === 'production'
-      ? await waitForElectronAPI()
-      : getElectronAPI();
+    const electronAPI = process.env.NODE_ENV === 'production' ? await waitForElectronAPI() : getElectronAPI();
     if (!electronAPI || typeof electronAPI.launchGame !== 'function') {
       console.error('Electron APIs not available for game launch, retrying...');
       // Retry after a short delay in production mode

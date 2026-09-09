@@ -45,7 +45,7 @@ const normalizeBrandPlatformName = (brandPlatform, platform, game = {}) => {
     developer: game?.developer || game?.developers || '',
     publisher: game?.publisher || game?.publishers || '',
     gameName: game?.name || '',
-    tags: Array.isArray(game?.tags) ? game.tags : []
+    tags: Array.isArray(game?.tags) ? game.tags : [],
   });
   if (inferredBrandPlatform) {
     return normalizePlatformName(inferredBrandPlatform);
@@ -70,7 +70,7 @@ const normalizeLastPlayedValue = (lastPlayedValue) => {
 
 const mergePlaytimeBucket = (existingBucket = {}, incomingBucket = {}) => ({
   ...(existingBucket || {}),
-  ...(incomingBucket || {})
+  ...(incomingBucket || {}),
 });
 
 /**
@@ -106,15 +106,17 @@ const getLaunchSources = (game) => {
       .filter((source) => source && typeof source === 'object' && source.platform)
       .map((source) => ({
         platform: normalizePlatformName(source.platform),
-        appid: source.appid || null
+        appid: source.appid || null,
       }));
   }
 
   if (game?.platform) {
-    return [{
-      platform: normalizePlatformName(game.platform),
-      appid: game.appid || null
-    }];
+    return [
+      {
+        platform: normalizePlatformName(game.platform),
+        appid: game.appid || null,
+      },
+    ];
   }
 
   return [];
@@ -164,27 +166,28 @@ const normalizeGameLibraryEntry = (game) => {
       daily: { ...(game?.playtime?.daily || {}) },
       weekly: { ...(game?.playtime?.weekly || {}) },
       monthly: { ...(game?.playtime?.monthly || {}) },
-      yearly: { ...(game?.playtime?.yearly || {}) }
-    }
+      yearly: { ...(game?.playtime?.yearly || {}) },
+    },
   };
 };
 
-const normalizeLibraryData = (libraryData) => (
+const normalizeLibraryData = (libraryData) =>
   Array.isArray(libraryData)
-    // Launcher/utility entries (e.g. the GOG Galaxy client) are dropped here so
-    // any merge or rescan cleans them out of the stored library for good.
-    ? libraryData.map(normalizeGameLibraryEntry).filter(Boolean).filter((game) => !isNonGameTitle(game))
-    : []
-);
+    ? // Launcher/utility entries (e.g. the GOG Galaxy client) are dropped here so
+      // any merge or rescan cleans them out of the stored library for good.
+      libraryData
+        .map(normalizeGameLibraryEntry)
+        .filter(Boolean)
+        .filter((game) => !isNonGameTitle(game))
+    : [];
 
-const getMostRecentlyPlayedGame = (libraryData = []) => (
+const getMostRecentlyPlayedGame = (libraryData = []) =>
   normalizeLibraryData(libraryData).reduce((mostRecentGame, currentGame) => {
     const currentLastPlayed = normalizeLastPlayedValue(currentGame?.last_played) || 0;
     const mostRecentLastPlayed = normalizeLastPlayedValue(mostRecentGame?.last_played) || 0;
 
     return currentLastPlayed > mostRecentLastPlayed ? currentGame : mostRecentGame;
-  }, null)
-);
+  }, null);
 
 const mergeTrackedGameData = (existingGame, incomingGame) => {
   const normalizedExistingGame = normalizeGameLibraryEntry(existingGame) || {};
@@ -199,9 +202,10 @@ const mergeTrackedGameData = (existingGame, incomingGame) => {
   );
   const incomingLastPlayed = normalizeLastPlayedValue(normalizedIncomingGame.last_played);
   const existingLastPlayed = normalizeLastPlayedValue(normalizedExistingGame.last_played);
-  const resolvedLastPlayed = incomingLastPlayed !== null && existingLastPlayed !== null
-    ? Math.max(incomingLastPlayed, existingLastPlayed)
-    : incomingLastPlayed ?? existingLastPlayed;
+  const resolvedLastPlayed =
+    incomingLastPlayed !== null && existingLastPlayed !== null
+      ? Math.max(incomingLastPlayed, existingLastPlayed)
+      : (incomingLastPlayed ?? existingLastPlayed);
 
   // Preserve the EXISTING entry's primary platform/appid so user-facing
   // launch behaviour is unchanged when a re-scan finds the same game on
@@ -222,15 +226,21 @@ const mergeTrackedGameData = (existingGame, incomingGame) => {
     time_played: resolvedTimePlayed,
     launch_count: resolvedLaunchCount,
     last_played: resolvedLastPlayed,
-    userRating: normalizedIncomingGame.userRating !== null ? normalizedIncomingGame.userRating : normalizedExistingGame.userRating,
-    replayIntent: normalizedIncomingGame.replayIntent !== null ? normalizedIncomingGame.replayIntent : normalizedExistingGame.replayIntent,
+    userRating:
+      normalizedIncomingGame.userRating !== null
+        ? normalizedIncomingGame.userRating
+        : normalizedExistingGame.userRating,
+    replayIntent:
+      normalizedIncomingGame.replayIntent !== null
+        ? normalizedIncomingGame.replayIntent
+        : normalizedExistingGame.replayIntent,
     playtime: {
       total: resolvedTimePlayed,
       daily: mergePlaytimeBucket(normalizedExistingGame.playtime?.daily, normalizedIncomingGame.playtime?.daily),
       weekly: mergePlaytimeBucket(normalizedExistingGame.playtime?.weekly, normalizedIncomingGame.playtime?.weekly),
       monthly: mergePlaytimeBucket(normalizedExistingGame.playtime?.monthly, normalizedIncomingGame.playtime?.monthly),
-      yearly: mergePlaytimeBucket(normalizedExistingGame.playtime?.yearly, normalizedIncomingGame.playtime?.yearly)
-    }
+      yearly: mergePlaytimeBucket(normalizedExistingGame.playtime?.yearly, normalizedIncomingGame.playtime?.yearly),
+    },
   });
 };
 
@@ -240,9 +250,7 @@ const findExistingEntryIndex = (mergedLibrary, normalizedGame) => {
   // Primary path: canonical-key match (handles cross-launcher dedup,
   // trademark differences, casing/whitespace variants).
   if (incomingKey) {
-    const indexByKey = mergedLibrary.findIndex(
-      (game) => getCanonicalGameKey(game) === incomingKey
-    );
+    const indexByKey = mergedLibrary.findIndex((game) => getCanonicalGameKey(game) === incomingKey);
     if (indexByKey >= 0) {
       return indexByKey;
     }
@@ -286,5 +294,5 @@ export {
   normalizeLastPlayedValue,
   normalizeTrackedNumber,
   getCanonicalGameKey,
-  getLaunchSources
+  getLaunchSources,
 };

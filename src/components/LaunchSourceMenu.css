@@ -39,7 +39,9 @@
   cursor: pointer;
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
-  transition: filter 120ms ease, background 120ms ease;
+  transition:
+    filter 120ms ease,
+    background 120ms ease;
 }
 
 .launch-source-menu-toggle:hover {

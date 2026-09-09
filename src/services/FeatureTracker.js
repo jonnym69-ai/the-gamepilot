@@ -9,7 +9,7 @@ export class FeatureTracker {
     PERFECT_PLAY: 'perfectPlay',
     SURPRISE_ME: 'surpriseMe',
     REDISCOVER: 'rediscover',
-    CONTINUE_PLAYING: 'continuePlaying'
+    CONTINUE_PLAYING: 'continuePlaying',
   };
 
   // Get all tracking data
@@ -30,12 +30,12 @@ export class FeatureTracker {
         [this.FEATURES.PERFECT_PLAY]: 0,
         [this.FEATURES.SURPRISE_ME]: 0,
         [this.FEATURES.REDISCOVER]: 0,
-        [this.FEATURES.CONTINUE_PLAYING]: 0
+        [this.FEATURES.CONTINUE_PLAYING]: 0,
       },
       moods: {},
       genres: {},
       mostPlayedGames: {},
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
   }
 
@@ -91,17 +91,17 @@ export class FeatureTracker {
     try {
       const data = this.getTrackingData();
       const gameKey = game.appid || game.name;
-      
+
       if (!data.mostPlayedGames[gameKey]) {
         data.mostPlayedGames[gameKey] = {
           name: game.name,
           platform: game.platform,
           appid: game.appid,
           playCount: 0,
-          totalPlaytime: 0
+          totalPlaytime: 0,
         };
       }
-      
+
       data.mostPlayedGames[gameKey].playCount += 1;
       data.lastUpdated = Date.now();
       StorageService.setString(this.STORAGE_KEY, JSON.stringify(data));
@@ -117,7 +117,7 @@ export class FeatureTracker {
     try {
       const data = this.getTrackingData();
       const gameKey = game.appid || game.name;
-      
+
       if (data.mostPlayedGames[gameKey]) {
         data.mostPlayedGames[gameKey].totalPlaytime += minutes;
         data.lastUpdated = Date.now();
@@ -133,7 +133,7 @@ export class FeatureTracker {
     const data = this.getTrackingData();
     return {
       features: data.features,
-      totalFeatureUses: Object.values(data.features).reduce((a, b) => a + b, 0)
+      totalFeatureUses: Object.values(data.features).reduce((a, b) => a + b, 0),
     };
   }
 
@@ -142,11 +142,11 @@ export class FeatureTracker {
     const data = this.getTrackingData();
     const moods = data.moods || {};
     const total = Object.values(moods).reduce((a, b) => a + b, 0);
-    
+
     return {
       moods,
       totalMoodSelections: total,
-      mostSelectedMood: Object.entries(moods).sort(([,a], [,b]) => b - a)[0]?.[0] || null
+      mostSelectedMood: Object.entries(moods).sort(([, a], [, b]) => b - a)[0]?.[0] || null,
     };
   }
 
@@ -155,11 +155,11 @@ export class FeatureTracker {
     const data = this.getTrackingData();
     const genres = data.genres || {};
     const total = Object.values(genres).reduce((a, b) => a + b, 0);
-    
+
     return {
       genres,
       totalGenreSelections: total,
-      mostSelectedGenre: Object.entries(genres).sort(([,a], [,b]) => b - a)[0]?.[0] || null
+      mostSelectedGenre: Object.entries(genres).sort(([, a], [, b]) => b - a)[0]?.[0] || null,
     };
   }
 
@@ -167,20 +167,16 @@ export class FeatureTracker {
   static getMostPlayedGames(limit = 10) {
     const data = this.getTrackingData();
     const games = Object.values(data.mostPlayedGames || {});
-    
-    return games
-      .sort((a, b) => b.playCount - a.playCount)
-      .slice(0, limit);
+
+    return games.sort((a, b) => b.playCount - a.playCount).slice(0, limit);
   }
 
   // Get top games by playtime
   static getTopGamesByPlaytime(limit = 10) {
     const data = this.getTrackingData();
     const games = Object.values(data.mostPlayedGames || {});
-    
-    return games
-      .sort((a, b) => b.totalPlaytime - a.totalPlaytime)
-      .slice(0, limit);
+
+    return games.sort((a, b) => b.totalPlaytime - a.totalPlaytime).slice(0, limit);
   }
 
   // Clear all tracking data
@@ -205,7 +201,7 @@ export class FeatureTracker {
       moods: moodStats,
       genres: genreStats,
       mostPlayedGames,
-      lastUpdated: data.lastUpdated
+      lastUpdated: data.lastUpdated,
     };
   }
 }

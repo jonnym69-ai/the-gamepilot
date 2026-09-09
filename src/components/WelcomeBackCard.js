@@ -9,7 +9,9 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
 
   useEffect(() => {
     if (!data) return undefined;
-    const handleEscape = (e) => { if (e.key === 'Escape') onDismiss(); };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onDismiss();
+    };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [data, onDismiss]);
@@ -52,31 +54,36 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
           overflow: 'hidden',
           borderRadius: '16px',
           border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(108,92,231,0.15)'
+          boxShadow: '0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(108,92,231,0.15)',
         }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="welcome-back-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="modal-close"
-          aria-label="Close welcome back"
-        >
+        <button type="button" onClick={handleDismiss} className="modal-close" aria-label="Close welcome back">
           <span aria-hidden="true">×</span>
         </button>
 
         {/* Recent activity header */}
-        <div style={{
-          padding: '24px 28px 18px',
-          background: 'linear-gradient(135deg, rgba(108,92,231,0.9) 0%, rgba(88,72,200,0.9) 100%)',
-          color: '#fff'
-        }}>
+        <div
+          style={{
+            padding: '24px 28px 18px',
+            background: 'linear-gradient(135deg, rgba(108,92,231,0.9) 0%, rgba(88,72,200,0.9) 100%)',
+            color: '#fff',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <Gamepad2 size={15} style={{ opacity: 0.85 }} />
-            <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.85 }}>
+            <span
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.12em',
+                opacity: 0.85,
+              }}
+            >
               Welcome back
             </span>
           </div>
@@ -92,7 +99,15 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
             {/* Anchor game (Last Played) */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: '1' }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#a29bfe' }}>
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: '#a29bfe',
+                }}
+              >
                 ⏱️ Last Played
               </span>
               {lastSessionDuration && (
@@ -110,7 +125,7 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
                   borderRadius: '10px',
                   objectFit: 'cover',
                   border: '2px solid rgba(108,92,231,0.5)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.35)'
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
                 }}
                 onError={() => setImgError(true)}
               />
@@ -125,7 +140,15 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: '1' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Sparkles size={12} style={{ opacity: 0.7, color: '#ffeaa7' }} />
-                <span style={{ fontSize: '0.65rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#ffeaa7' }}>
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    opacity: 0.7,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: '#ffeaa7',
+                  }}
+                >
                   {label ? `${label} Pick` : 'Relatable Pick'}
                 </span>
               </div>
@@ -139,7 +162,7 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
                   borderRadius: '10px',
                   objectFit: 'cover',
                   border: '2px solid var(--accent, #6c5ce7)',
-                  boxShadow: '0 4px 16px rgba(108,92,231,0.35)'
+                  boxShadow: '0 4px 16px rgba(108,92,231,0.35)',
                 }}
                 onError={() => setRecImgError(true)}
               />
@@ -150,17 +173,17 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
           </div>
 
           {/* Reason highlight box */}
-          <div style={{
-            background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderLeft: '3px solid var(--accent, #6c5ce7)',
-            borderRadius: '10px',
-            padding: '12px 16px',
-            marginBottom: '18px'
-          }}>
-            <p style={{ fontSize: '0.85rem', lineHeight: 1.6, margin: 0, opacity: 0.9 }}>
-              {reason}
-            </p>
+          <div
+            style={{
+              background: 'var(--bg-secondary, rgba(255,255,255,0.04))',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderLeft: '3px solid var(--accent, #6c5ce7)',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              marginBottom: '18px',
+            }}
+          >
+            <p style={{ fontSize: '0.85rem', lineHeight: 1.6, margin: 0, opacity: 0.9 }}>{reason}</p>
           </div>
 
           {/* Actions */}
@@ -178,10 +201,15 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 flex: '1 1 auto',
-                boxShadow: '0 4px 14px rgba(108,92,231,0.35)'
+                boxShadow: '0 4px 14px rgba(108,92,231,0.35)',
               }}
             >
-              ▶️ Jump back into {anchorGame?.name ? (anchorGame.name.length > 18 ? `${anchorGame.name.slice(0, 16)}...` : anchorGame.name) : 'Last Game'}
+              ▶️ Jump back into{' '}
+              {anchorGame?.name
+                ? anchorGame.name.length > 18
+                  ? `${anchorGame.name.slice(0, 16)}...`
+                  : anchorGame.name
+                : 'Last Game'}
             </button>
             {recommendedGame && (
               <button
@@ -196,10 +224,15 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
                   fontWeight: 600,
                   fontSize: '0.82rem',
                   cursor: 'pointer',
-                  flex: '1 1 auto'
+                  flex: '1 1 auto',
                 }}
               >
-                ✨ Try {recommendedGame?.name ? (recommendedGame.name.length > 18 ? `${recommendedGame.name.slice(0, 16)}...` : recommendedGame.name) : 'Next'}
+                ✨ Try{' '}
+                {recommendedGame?.name
+                  ? recommendedGame.name.length > 18
+                    ? `${recommendedGame.name.slice(0, 16)}...`
+                    : recommendedGame.name
+                  : 'Next'}
               </button>
             )}
             <button
@@ -213,7 +246,7 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
                 color: 'var(--text)',
                 fontWeight: 600,
                 fontSize: '0.82rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               Skip
@@ -221,16 +254,18 @@ function WelcomeBackCard({ data, onLaunchGame, onDismiss, onOptOut }) {
           </div>
 
           {/* Opt-out toggle */}
-          <label style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginTop: '16px',
-            fontSize: '0.75rem',
-            opacity: 0.5,
-            cursor: 'pointer',
-            userSelect: 'none'
-          }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '16px',
+              fontSize: '0.75rem',
+              opacity: 0.5,
+              cursor: 'pointer',
+              userSelect: 'none',
+            }}
+          >
             <input
               type="checkbox"
               checked={dontShowAgain}

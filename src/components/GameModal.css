@@ -19,7 +19,10 @@
   max-height: calc(100vh - 48px);
   width: 100%;
   overflow: hidden;
-  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 80px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 32px 64px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 80px rgba(0, 0, 0, 0.2);
   animation: gameModalSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   flex-direction: column;
@@ -62,7 +65,7 @@
   height: 64px;
   border-radius: 14px;
   object-fit: cover;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -72,7 +75,7 @@
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .game-modal-subtitle {
@@ -171,8 +174,12 @@
 }
 
 @keyframes modalSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .screenshots-section {
@@ -182,7 +189,7 @@
 .game-hero-fallback {
   min-height: 320px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.78));
   display: flex;
   align-items: center;
@@ -197,7 +204,7 @@
   height: 144px;
   border-radius: 20px;
   object-fit: cover;
-  box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
 .game-hero-copy {
@@ -212,7 +219,7 @@
 
 .game-hero-copy p {
   margin: 0;
-  color: rgba(255,255,255,0.82);
+  color: rgba(255, 255, 255, 0.82);
   line-height: 1.7;
 }
 
@@ -228,7 +235,7 @@
   height: 340px;
   border-radius: 16px;
   overflow: hidden;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.3);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -430,7 +437,10 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .rating-editor-header {
@@ -497,15 +507,21 @@
   outline: none;
   cursor: pointer;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
-  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .rating-slider:hover {
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(251, 191, 36, 0.08);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.35),
+    0 0 0 4px rgba(251, 191, 36, 0.08);
 }
 
 .rating-slider:focus-visible {
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(251, 191, 36, 0.16);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.35),
+    0 0 0 4px rgba(251, 191, 36, 0.16);
 }
 
 .rating-slider::-webkit-slider-thumb {
@@ -518,7 +534,9 @@
   border: 2px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 4px 12px rgba(251, 146, 60, 0.35);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .rating-slider::-webkit-slider-thumb:hover {
@@ -557,7 +575,9 @@
   font-size: 0.68rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.28);
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
   cursor: default;
 }
 
@@ -943,7 +963,9 @@
 .launch-button {
   background: linear-gradient(135deg, var(--accent-primary, #ff6b35) 0%, var(--accent-secondary, #ff8c42) 100%);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 6px 18px rgba(255, 107, 53, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
 }
@@ -963,7 +985,9 @@
 
 .launch-button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(255, 107, 53, 0.45), 0 4px 8px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 10px 24px rgba(255, 107, 53, 0.45),
+    0 4px 8px rgba(0, 0, 0, 0.25);
   filter: brightness(1.08);
 }
 
@@ -1038,8 +1062,8 @@
   font-weight: 700;
   font-size: 0.95rem;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .compatibility-note {
@@ -1170,7 +1194,7 @@
 .launch-button:hover {
   background: var(--button-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .store-button {
@@ -1181,7 +1205,7 @@
 .store-button:hover {
   background: #1d4ed8;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .wishlist-button {
@@ -1191,7 +1215,7 @@
 }
 
 .wishlist-button:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-color: var(--button-bg);
   transform: translateY(-2px);
 }
@@ -1248,11 +1272,11 @@
   .modal-title h2 {
     font-size: 20px;
   }
-  
+
   .modal-content {
     padding: 15px;
   }
-  
+
   .screenshot-main {
     height: 250px;
   }
@@ -1276,11 +1300,11 @@
   .requirements-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .modal-actions {
     flex-direction: column;
   }
-  
+
   .modal-actions button {
     width: 100%;
     justify-content: center;
@@ -1386,7 +1410,9 @@
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .game-modal-hltb-prompt-btn:hover {
   background: rgba(255, 255, 255, 0.12);

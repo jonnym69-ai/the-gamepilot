@@ -22,7 +22,9 @@
   justify-content: center;
   margin: 0 auto 24px;
   box-shadow: 0 10px 40px rgba(255, 107, 53, 0.3);
-  transition: transform var(--transition-base, 0.25s ease), box-shadow var(--transition-base, 0.25s ease);
+  transition:
+    transform var(--transition-base, 0.25s ease),
+    box-shadow var(--transition-base, 0.25s ease);
 }
 
 .empty-library-header:hover .empty-library-icon {
@@ -67,7 +69,10 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform var(--transition-base, 0.25s ease), box-shadow var(--transition-base, 0.25s ease), opacity var(--transition-base, 0.25s ease);
+  transition:
+    transform var(--transition-base, 0.25s ease),
+    box-shadow var(--transition-base, 0.25s ease),
+    opacity var(--transition-base, 0.25s ease);
 }
 
 .empty-library-scan-button:hover:not(:disabled) {
@@ -128,7 +133,9 @@
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   font-size: 0.8125rem;
   font-weight: 500;
-  transition: transform var(--transition-fast, 0.15s ease), border-color var(--transition-fast, 0.15s ease);
+  transition:
+    transform var(--transition-fast, 0.15s ease),
+    border-color var(--transition-fast, 0.15s ease);
 }
 
 .empty-library-platform-chip:hover {
@@ -137,7 +144,9 @@
 }
 
 @keyframes empty-library-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 640px) {
@@ -240,7 +249,10 @@ body.reduced-motion .empty-library-scan-spinner {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text, #f8fafc);
-  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .library-control-panel .export-button:hover {
@@ -286,7 +298,10 @@ body.reduced-motion .empty-library-scan-spinner {
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text, #f8fafc);
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .library-control-panel .bulk-mode-btn.active {
@@ -406,7 +421,7 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-header-summary {
   margin: 0;
   font-size: 0.92rem;
-  color: var(--text-secondary, rgba(255,255,255,0.62));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.62));
   line-height: 1.6;
   max-width: 560px;
 }
@@ -419,7 +434,7 @@ body.reduced-motion .empty-library-scan-spinner {
   border-radius: 999px;
   background: rgba(255, 107, 53, 0.1);
   border: 1px solid rgba(255, 107, 53, 0.22);
-  color: var(--text-secondary, rgba(255,255,255,0.7));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
   font-size: 0.8rem;
   font-weight: 600;
   margin-top: 4px;
@@ -440,7 +455,7 @@ body.reduced-motion .empty-library-scan-spinner {
   border-radius: 999px;
   background: rgba(125, 220, 132, 0.12);
   border: 1px solid rgba(125, 220, 132, 0.24);
-  color: var(--text-secondary, rgba(255,255,255,0.7));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
   font-size: 0.8rem;
   font-weight: 600;
   width: fit-content;
@@ -471,7 +486,7 @@ body.reduced-motion .empty-library-scan-spinner {
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.16);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
   transition: var(--transition-base, 0.25s ease);
   position: relative;
 }
@@ -479,7 +494,7 @@ body.reduced-motion .empty-library-scan-spinner {
 .stat-card:hover {
   background: rgba(255, 255, 255, 0.07);
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
 }
 
 .stat-number {
@@ -495,7 +510,7 @@ body.reduced-motion .empty-library-scan-spinner {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-secondary, rgba(255,255,255,0.5));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
   white-space: nowrap;
 }
 
@@ -516,7 +531,7 @@ body.reduced-motion .empty-library-scan-spinner {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.09);
   font-size: 0.82rem;
-  color: var(--text-secondary, rgba(255,255,255,0.55));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.55));
   white-space: nowrap;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
@@ -526,7 +541,7 @@ body.reduced-motion .empty-library-scan-spinner {
 }
 
 .library-context-pill strong {
-  color: var(--text-primary, rgba(255,255,255,0.88));
+  color: var(--text-primary, rgba(255, 255, 255, 0.88));
   font-weight: 600;
 }
 
@@ -682,7 +697,7 @@ body.reduced-motion .empty-library-scan-spinner {
 
 .emulator-library-header p {
   margin: 3px 0 0;
-  color: var(--text-secondary, rgba(255,255,255,0.58));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.58));
   font-size: 0.8rem;
 }
 
@@ -837,7 +852,10 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-card-style-neon .game-list-item,
 .card-style-neon .game-card {
   border-color: rgba(0, 212, 255, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.14), 0 0 26px rgba(0, 212, 255, 0.12), var(--library-presentation-card-shadow) !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 212, 255, 0.14),
+    0 0 26px rgba(0, 212, 255, 0.12),
+    var(--library-presentation-card-shadow) !important;
 }
 
 .library-card-style-neon .game-card::before,
@@ -849,8 +867,8 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-card-style-glass .game-card,
 .library-card-style-glass .game-list-item,
 .card-style-glass .game-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03)) !important;
-  border-color: rgba(255,255,255,0.16) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
@@ -858,7 +876,9 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-card-style-glass .game-card-image-wrapper,
 .library-card-style-glass .game-list-image,
 .card-style-glass .game-card-image-wrapper {
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
 .library-card-style-retro .game-card,
@@ -866,7 +886,9 @@ body.reduced-motion .empty-library-scan-spinner {
 .card-style-retro .game-card {
   border-radius: 6px !important;
   border-color: rgba(74, 222, 128, 0.42) !important;
-  box-shadow: 4px 4px 0 rgba(15, 23, 42, 0.85), var(--library-presentation-card-shadow) !important;
+  box-shadow:
+    4px 4px 0 rgba(15, 23, 42, 0.85),
+    var(--library-presentation-card-shadow) !important;
 }
 
 .library-card-style-retro .game-card::before,
@@ -885,11 +907,13 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-card-style-holographic .game-card,
 .library-card-style-holographic .game-list-item,
 .card-style-holographic .game-card {
-  border-color: rgba(255,255,255,0.18) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
-    linear-gradient(135deg, rgba(255,0,128,0.1) 0%, rgba(0,255,255,0.08) 50%, rgba(255,255,0,0.08) 100%) !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 16px 34px rgba(255, 0, 128, 0.12), var(--library-presentation-card-shadow) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    linear-gradient(135deg, rgba(255, 0, 128, 0.1) 0%, rgba(0, 255, 255, 0.08) 50%, rgba(255, 255, 0, 0.08) 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 16px 34px rgba(255, 0, 128, 0.12),
+    var(--library-presentation-card-shadow) !important;
 }
 
 .library-card-style-holographic .game-card::before,
@@ -900,7 +924,7 @@ body.reduced-motion .empty-library-scan-spinner {
 
 .library-card-style-holographic .library-game-tag.platform,
 .library-card-style-holographic .library-game-tag.mood {
-  background: linear-gradient(135deg, rgba(255,0,128,0.16), rgba(0,255,255,0.12));
+  background: linear-gradient(135deg, rgba(255, 0, 128, 0.16), rgba(0, 255, 255, 0.12));
 }
 
 /* Library Game Card Info */
@@ -927,7 +951,7 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-game-playtime {
   margin: 0 0 8px;
   font-size: 0.8rem;
-  color: var(--text-secondary, rgba(255,255,255,0.55));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.55));
   display: flex;
   align-items: center;
   gap: 6px;
@@ -937,7 +961,7 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-game-value {
   margin: 0 0 8px;
   font-size: 0.78rem;
-  color: var(--text-secondary, rgba(255,255,255,0.5));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
   font-weight: 500;
 }
 
@@ -959,7 +983,7 @@ body.reduced-motion .empty-library-scan-spinner {
   letter-spacing: 0.04em;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary, rgba(255,255,255,0.7));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
 }
 
 .library-game-tag.platform {
@@ -981,7 +1005,7 @@ body.reduced-motion .empty-library-scan-spinner {
   margin-left: 3px;
   padding: 0 4px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
   font-size: 0.65rem;
   font-weight: 700;
   color: var(--text-primary, #fff);
@@ -990,7 +1014,7 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-favorite-button {
   background: none;
   border: none;
-  color: var(--text-secondary, rgba(255,255,255,0.45));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.45));
   cursor: pointer;
   padding: 2px;
   display: flex;
@@ -1018,7 +1042,7 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-pin-button {
   background: none;
   border: none;
-  color: var(--text-secondary, rgba(255,255,255,0.45));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.45));
   cursor: pointer;
   padding: 2px;
   display: flex;
@@ -1069,7 +1093,9 @@ body.reduced-motion .empty-library-scan-spinner {
 .library-page .game-card.is-recently-added,
 .library-page .game-list-item.is-recently-added {
   border-color: rgba(125, 220, 132, 0.34) !important;
-  box-shadow: 0 0 0 1px rgba(125, 220, 132, 0.1), var(--library-presentation-card-shadow) !important;
+  box-shadow:
+    0 0 0 1px rgba(125, 220, 132, 0.1),
+    var(--library-presentation-card-shadow) !important;
 }
 
 .library-page .game-card.is-recently-added:hover,
@@ -1113,7 +1139,7 @@ body.reduced-motion .empty-library-scan-spinner {
 }
 
 .library-recent-section-meta {
-  color: var(--text-secondary, rgba(255,255,255,0.58));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.58));
   font-size: 0.78rem;
   font-weight: 700;
   white-space: nowrap;
@@ -1169,7 +1195,7 @@ body.reduced-motion .empty-library-scan-spinner {
   gap: 7px;
   padding: 7px 11px;
   border-radius: 999px;
-  color: var(--text-secondary, rgba(255,255,255,0.66));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.66));
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -1197,7 +1223,7 @@ body.reduced-motion .empty-library-scan-spinner {
   border-radius: 14px;
   border: 1px dashed rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.035);
-  color: var(--text-secondary, rgba(255,255,255,0.58));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.58));
   font-size: 0.86rem;
   font-weight: 600;
   animation: empty-state-enter 0.5s ease both;
@@ -1210,8 +1236,13 @@ body.reduced-motion .empty-library-scan-spinner {
   padding-bottom: 4px;
 }
 
-.library-recent-shelf::-webkit-scrollbar { height: 6px; }
-.library-recent-shelf::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+.library-recent-shelf::-webkit-scrollbar {
+  height: 6px;
+}
+.library-recent-shelf::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
 
 .library-recent-shelf-card {
   position: relative;
@@ -1315,16 +1346,24 @@ body.reduced-motion .empty-library-scan-spinner {
   outline-offset: 2px;
 }
 
-.library-recent-shelf-pin { right: 28px; }
-.library-recent-shelf-fav { right: 4px; }
+.library-recent-shelf-pin {
+  right: 28px;
+}
+.library-recent-shelf-fav {
+  right: 4px;
+}
 
 .library-recent-shelf-card:hover .library-recent-shelf-pin,
 .library-recent-shelf-card:hover .library-recent-shelf-fav {
   opacity: 1;
 }
 
-.library-recent-shelf-pin.is-pinned { color: #f1c40f; }
-.library-recent-shelf-fav.is-favorite { color: #ff4757; }
+.library-recent-shelf-pin.is-pinned {
+  color: #f1c40f;
+}
+.library-recent-shelf-fav.is-favorite {
+  color: #ff4757;
+}
 
 /* Game Card Image Wrapper */
 .game-card-image-wrapper {
@@ -1543,7 +1582,9 @@ body.big-screen-mode .game-card.selected {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .library-top-rated-picker-item:hover:not(.disabled) {
@@ -1613,7 +1654,9 @@ body.big-screen-mode .game-card.selected {
   font-size: 0.9rem;
   border: none;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
 }
 
 .library-top-rated-picker-clear:focus-visible,

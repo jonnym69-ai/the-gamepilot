@@ -34,9 +34,15 @@ const LibrariansNotes = ({ game }) => {
     let cancelled = false;
     setLoading(true);
     PCGamingWikiService.lookup(game)
-      .then((result) => { if (!cancelled) setEntry(result); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((result) => {
+        if (!cancelled) setEntry(result);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [game]);
 
   const openExternal = (url) => {
@@ -56,8 +62,8 @@ const LibrariansNotes = ({ game }) => {
           <h3>Librarian's Notes</h3>
         </div>
         <p>
-          PCGamingWiki lookups are off. Enable them in Settings to surface save-file paths,
-          configuration locations, and controller-support info per game.
+          PCGamingWiki lookups are off. Enable them in Settings to surface save-file paths, configuration locations, and
+          controller-support info per game.
         </p>
         <button
           type="button"
@@ -107,7 +113,8 @@ const LibrariansNotes = ({ game }) => {
 
       {(!hasAnyData || stub) && (
         <p className="librarians-notes-empty-line">
-          The wiki page for <em>{pageTitle || 'this game'}</em> exists but its save / config / controller rows haven't been filled out yet. You can contribute on PCGamingWiki — the panel will pick up changes within 30 days.
+          The wiki page for <em>{pageTitle || 'this game'}</em> exists but its save / config / controller rows haven't
+          been filled out yet. You can contribute on PCGamingWiki — the panel will pick up changes within 30 days.
         </p>
       )}
 

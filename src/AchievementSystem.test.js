@@ -32,7 +32,7 @@ describe('AchievementSystem curated catalog', () => {
       'session_warrior_30',
       'session_warrior_1h',
       'session_warrior_2h',
-      'session_warrior_4h'
+      'session_warrior_4h',
     ]);
     expect(ACHIEVEMENTS.daily.some(({ id }) => id === 'daily_2hours')).toBe(true);
     expect(ACHIEVEMENTS.daily.some(({ id }) => id === 'daily_5hours')).toBe(false);
@@ -58,9 +58,7 @@ describe('AchievementSystem curated catalog', () => {
   });
 
   test('derives rating and completion achievements from the current library', () => {
-    StorageService.set('library', [
-      { name: 'Rated and finished', userRating: 8, completionStatus: 'completed' }
-    ]);
+    StorageService.set('library', [{ name: 'Rated and finished', userRating: 8, completionStatus: 'completed' }]);
     AchievementTracker.checkAndUnlockAchievements();
 
     expect(AchievementTracker.isAchievementUnlocked('rating_1')).toBe(true);
@@ -99,7 +97,7 @@ describe('AchievementSystem curated catalog', () => {
   });
 
   test('tracks backlog dust-off milestones', () => {
-    const sixMonthsAgo = Date.now() - (1000 * 60 * 60 * 24 * 200);
+    const sixMonthsAgo = Date.now() - 1000 * 60 * 60 * 24 * 200;
     const oldGame = { name: 'Stale Game', last_played: sixMonthsAgo };
 
     expect(AchievementTracker.checkDustOff(oldGame)).toBe(true);
@@ -111,7 +109,7 @@ describe('AchievementSystem curated catalog', () => {
   });
 
   test('tracks backlog shelf-diver milestones', () => {
-    const twoYearsAgo = Date.now() - (1000 * 60 * 60 * 24 * 730);
+    const twoYearsAgo = Date.now() - 1000 * 60 * 60 * 24 * 730;
     const oldGame = { name: 'Ancient Game', dateAdded: twoYearsAgo };
 
     expect(AchievementTracker.checkShelfDiver(oldGame)).toBe(true);

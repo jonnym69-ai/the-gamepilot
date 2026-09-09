@@ -7,7 +7,7 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 const RANGE_OPTIONS = [
   { id: '3m', label: '3 months', days: 90 },
   { id: '6m', label: '6 months', days: 182 },
-  { id: '12m', label: '12 months', days: 364 }
+  { id: '12m', label: '12 months', days: 364 },
 ];
 
 const PlaytimeHeatmap = ({ library = [] }) => {
@@ -24,7 +24,7 @@ const PlaytimeHeatmap = ({ library = [] }) => {
     }, {});
     return {
       map,
-      totalMinutes: sessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0)
+      totalMinutes: sessions.reduce((sum, s) => sum + (s.playtimeMinutes || 0), 0),
     };
   }, [library]);
 
@@ -83,7 +83,7 @@ const PlaytimeHeatmap = ({ library = [] }) => {
       heatmapData: weeks,
       activeDays: activeInRange,
       totalHours: Math.round(minutesInRange / 60),
-      monthMarkers: markers
+      monthMarkers: markers,
     };
   }, [daily, range.days]);
 
@@ -134,9 +134,7 @@ const PlaytimeHeatmap = ({ library = [] }) => {
       <div className={`heatmap-container range-${rangeId}`}>
         <div className="heatmap-days">
           <span className="heatmap-month-spacer" aria-hidden="true"></span>
-          {days.map((day, i) => (
-            (i % 2 === 1) ? <span key={day}>{day}</span> : <span key={day}></span>
-          ))}
+          {days.map((day, i) => (i % 2 === 1 ? <span key={day}>{day}</span> : <span key={day}></span>))}
         </div>
         <div className="heatmap-grid-wrapper">
           <div className="heatmap-months" aria-hidden="true">

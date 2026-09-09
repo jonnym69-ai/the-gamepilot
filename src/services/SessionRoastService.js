@@ -43,89 +43,129 @@ const formatHours = (minutes) => {
 const MODIFIERS = {
   lateNight: (hour) => {
     if (hour === null) return null;
-    if (hour >= 1 && hour <= 4) return pickRandom([
-      `${hour}am. Again.`,
-      'The sun will be up soon. That is not a concern.',
-      'Sleep is just a loading screen.',
-      'Night owls unite. Separately. In the dark. Like now.'
-    ], hour);
-    if (hour >= 0 && hour <= 5) return pickRandom([
-      'Midnight oil: burned.',
-      'The early birds can wait. The late birds are playing.',
-      '2am is still technically today. Technically.'
-    ], hour);
+    if (hour >= 1 && hour <= 4)
+      return pickRandom(
+        [
+          `${hour}am. Again.`,
+          'The sun will be up soon. That is not a concern.',
+          'Sleep is just a loading screen.',
+          'Night owls unite. Separately. In the dark. Like now.',
+        ],
+        hour
+      );
+    if (hour >= 0 && hour <= 5)
+      return pickRandom(
+        [
+          'Midnight oil: burned.',
+          'The early birds can wait. The late birds are playing.',
+          '2am is still technically today. Technically.',
+        ],
+        hour
+      );
     return null;
   },
 
   longSession: (minutes) => {
-    if (minutes >= 360) return pickRandom([
-      '6+ hours. That is not a session. That is a lifestyle.',
-      'Somewhere, a responsible adult is worried about you.',
-      'The game called. It wants to see other people.',
-      'Marathon complete. Your back will file a complaint tomorrow.'
-    ], Math.floor(minutes));
-    if (minutes >= 240) return pickRandom([
-      '4 hours. Bold choice.',
-      'A solid sitting. Your chair knows you well.',
-      'Time flies when you are ignoring responsibilities.'
-    ], Math.floor(minutes));
+    if (minutes >= 360)
+      return pickRandom(
+        [
+          '6+ hours. That is not a session. That is a lifestyle.',
+          'Somewhere, a responsible adult is worried about you.',
+          'The game called. It wants to see other people.',
+          'Marathon complete. Your back will file a complaint tomorrow.',
+        ],
+        Math.floor(minutes)
+      );
+    if (minutes >= 240)
+      return pickRandom(
+        [
+          '4 hours. Bold choice.',
+          'A solid sitting. Your chair knows you well.',
+          'Time flies when you are ignoring responsibilities.',
+        ],
+        Math.floor(minutes)
+      );
     return null;
   },
 
   shortSession: (minutes) => {
-    if (minutes > 0 && minutes < 10) return pickRandom([
-      `${minutes} minutes. Did you even load in?`,
-      'A drive-by session. In and out. Respect.',
-      'Quick check. The game is fine. You are fine. Everything is fine.',
-      'That was less a session and more a cameo appearance.'
-    ], minutes);
-    if (minutes >= 10 && minutes < 20) return pickRandom([
-      'A snack-sized session.',
-      'Just enough to remember the controls.',
-      'In and out in under 20. Efficiency.'
-    ], minutes);
+    if (minutes > 0 && minutes < 10)
+      return pickRandom(
+        [
+          `${minutes} minutes. Did you even load in?`,
+          'A drive-by session. In and out. Respect.',
+          'Quick check. The game is fine. You are fine. Everything is fine.',
+          'That was less a session and more a cameo appearance.',
+        ],
+        minutes
+      );
+    if (minutes >= 10 && minutes < 20)
+      return pickRandom(
+        ['A snack-sized session.', 'Just enough to remember the controls.', 'In and out in under 20. Efficiency.'],
+        minutes
+      );
     return null;
   },
 
   weekend: (isWeekendSession) => {
     if (!isWeekendSession) return null;
-    return pickRandom([
-      'Weekend well spent.',
-      'Saturday: optimized.',
-      'The backlog is weeping with joy.',
-      'This is what weekends are for.'
-    ], Date.now() % 4);
+    return pickRandom(
+      [
+        'Weekend well spent.',
+        'Saturday: optimized.',
+        'The backlog is weeping with joy.',
+        'This is what weekends are for.',
+      ],
+      Date.now() % 4
+    );
   },
 
   repeatGame: (sessionCountToday) => {
-    if (sessionCountToday >= 4) return pickRandom([
-      `${sessionCountToday} sessions today. This is a relationship.`,
-      'Back again? The game has stopped asking where you have been.',
-      'At this point, the game should be paying rent.',
-      `${sessionCountToday} times today. The game knows your order.`
-    ], sessionCountToday);
-    if (sessionCountToday === 3) return pickRandom([
-      'Third session today. The game is starting to take this personally.',
-      'Back again? This is becoming a pattern. A beautiful, unhealthy pattern.'
-    ], sessionCountToday);
+    if (sessionCountToday >= 4)
+      return pickRandom(
+        [
+          `${sessionCountToday} sessions today. This is a relationship.`,
+          'Back again? The game has stopped asking where you have been.',
+          'At this point, the game should be paying rent.',
+          `${sessionCountToday} times today. The game knows your order.`,
+        ],
+        sessionCountToday
+      );
+    if (sessionCountToday === 3)
+      return pickRandom(
+        [
+          'Third session today. The game is starting to take this personally.',
+          'Back again? This is becoming a pattern. A beautiful, unhealthy pattern.',
+        ],
+        sessionCountToday
+      );
     return null;
   },
 
   streak: (currentStreak) => {
-    if (currentStreak >= 30) return pickRandom([
-      `${currentStreak}-day streak. This is no longer gaming. This is devotion.`,
-      'A month. You have gamed every day for a month. The streak has a life of its own.'
-    ], currentStreak);
-    if (currentStreak >= 14) return pickRandom([
-      `${currentStreak} days straight. The streak is now the boss of you.`,
-      'Two weeks. You and the games have an understanding.'
-    ], currentStreak);
-    if (currentStreak >= 7) return pickRandom([
-      `${currentStreak}-day streak. Commitment recognized.`,
-      'A full week. The games are starting to expect you.'
-    ], currentStreak);
+    if (currentStreak >= 30)
+      return pickRandom(
+        [
+          `${currentStreak}-day streak. This is no longer gaming. This is devotion.`,
+          'A month. You have gamed every day for a month. The streak has a life of its own.',
+        ],
+        currentStreak
+      );
+    if (currentStreak >= 14)
+      return pickRandom(
+        [
+          `${currentStreak} days straight. The streak is now the boss of you.`,
+          'Two weeks. You and the games have an understanding.',
+        ],
+        currentStreak
+      );
+    if (currentStreak >= 7)
+      return pickRandom(
+        [`${currentStreak}-day streak. Commitment recognized.`, 'A full week. The games are starting to expect you.'],
+        currentStreak
+      );
     return null;
-  }
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -138,7 +178,7 @@ const countSessionsToday = (gameName, history) => {
   today.setHours(0, 0, 0, 0);
   const todayMs = today.getTime();
   return history.filter((s) => {
-    const sDate = s.endTime ? new Date(s.endTime) : (s.startTime ? new Date(s.startTime) : null);
+    const sDate = s.endTime ? new Date(s.endTime) : s.startTime ? new Date(s.startTime) : null;
     if (!sDate || Number.isNaN(sDate.getTime())) return false;
     return sDate.getTime() >= todayMs && s.gameName === gameName;
   }).length;
@@ -185,14 +225,10 @@ export const generateSessionRoast = (sessionDetail) => {
     const primary = persona?.primaryPersona;
     if (primary && Array.isArray(primary.contextRoasts) && primary.contextRoasts.length > 0) {
       const library = JSON.parse(localStorage.getItem('library') || '[]');
-      const game = library.find((g) =>
-        (g.name || g.title || '') === sessionDetail.gameName
-      ) || { name: sessionDetail.gameName };
-      const gameMinutes = Math.max(
-        Number(game.time_played || 0),
-        Number(game.playtime?.total || 0),
-        minutes
-      );
+      const game = library.find((g) => (g.name || g.title || '') === sessionDetail.gameName) || {
+        name: sessionDetail.gameName,
+      };
+      const gameMinutes = Math.max(Number(game.time_played || 0), Number(game.playtime?.total || 0), minutes);
       personaRoast = GamingPersonaService.getGameSpecificRoast(
         { ...game, time_played: gameMinutes },
         { seed: Math.floor(Date.now() / 1000) % 1000 }
@@ -216,7 +252,7 @@ export const generateSessionRoast = (sessionDetail) => {
     MODIFIERS.shortSession(minutes),
     MODIFIERS.weekend(weekend),
     MODIFIERS.repeatGame(sessionsToday),
-    MODIFIERS.streak(streak)
+    MODIFIERS.streak(streak),
   ].filter(Boolean);
 
   // Build the message: modifier + persona roast + time summary
@@ -225,9 +261,7 @@ export const generateSessionRoast = (sessionDetail) => {
 
   // Pick at most 2 modifiers to keep it punchy
   const selectedModifiers = modifiers.slice(0, 2);
-  const modifierText = selectedModifiers.length > 0
-    ? selectedModifiers.join(' ')
-    : null;
+  const modifierText = selectedModifiers.length > 0 ? selectedModifiers.join(' ') : null;
 
   // Compose: prefer persona roast as the main line, modifiers as flavor
   let message;
@@ -244,7 +278,7 @@ export const generateSessionRoast = (sessionDetail) => {
   return {
     message,
     personaLabel,
-    timeSummary
+    timeSummary,
   };
 };
 

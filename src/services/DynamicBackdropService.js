@@ -30,10 +30,17 @@ const rgbToHsl = (r, g, b) => {
   const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
   let h = 0;
   switch (max) {
-    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-    case g: h = ((b - r) / d + 2) / 6; break;
-    case b: h = ((r - g) / d + 4) / 6; break;
-    default: break;
+    case r:
+      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      break;
+    case g:
+      h = ((b - r) / d + 2) / 6;
+      break;
+    case b:
+      h = ((r - g) / d + 4) / 6;
+      break;
+    default:
+      break;
   }
   return { h: h * 360, s, l };
 };
@@ -57,7 +64,7 @@ const hslToRgb = (h, s, l) => {
   return {
     r: clamp(hue2rgb(p, q, h + 1 / 3) * 255),
     g: clamp(hue2rgb(p, q, h) * 255),
-    b: clamp(hue2rgb(p, q, h - 1 / 3) * 255)
+    b: clamp(hue2rgb(p, q, h - 1 / 3) * 255),
   };
 };
 
@@ -71,13 +78,14 @@ const adjustHsl = (hex, { h: dh = 0, s: ds = 0, l: dl = 0 }) => {
   return rgbToHex(next.r, next.g, next.b);
 };
 
-const loadImage = (src) => new Promise((resolve, reject) => {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => resolve(img);
-  img.onerror = () => reject(new Error('Failed to load image'));
-  img.src = src;
-});
+const loadImage = (src) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = src;
+  });
 
 const getPixelBuckets = (data, bucketCount = 8) => {
   const buckets = [];
@@ -104,7 +112,7 @@ const getPixelBuckets = (data, bucketCount = 8) => {
       r: Math.round(b.r / b.count),
       g: Math.round(b.g / b.count),
       b: Math.round(b.b / b.count),
-      count: b.count
+      count: b.count,
     }));
 };
 
@@ -131,11 +139,7 @@ const extractPaletteFromImage = async (imageUrl) => {
       secondary: rgbToHex(secondary.r, secondary.g, secondary.b),
       accent: rgbToHex(accent.r, accent.g, accent.b),
       dark: rgbToHex(dominant.r * 0.3, dominant.g * 0.3, dominant.b * 0.3),
-      light: rgbToHex(
-        clamp(dominant.r + 80),
-        clamp(dominant.g + 80),
-        clamp(dominant.b + 80)
-      )
+      light: rgbToHex(clamp(dominant.r + 80), clamp(dominant.g + 80), clamp(dominant.b + 80)),
     };
   } catch (error) {
     return null;
@@ -145,13 +149,14 @@ const extractPaletteFromImage = async (imageUrl) => {
 const getCacheKey = (imageUrl) => `${CACHE_PREFIX}${imageUrl}`;
 
 const pruneCache = () => {
-  const keys = StorageService.keys()
-    .filter((key) => key.startsWith('dynamicBackdrop-'));
+  const keys = StorageService.keys().filter((key) => key.startsWith('dynamicBackdrop-'));
   if (keys.length <= MAX_CACHE_SIZE) return;
-  const sorted = keys.map((key) => {
-    const entry = StorageService.get(key, null);
-    return { key, ts: entry?.cachedAt || 0 };
-  }).sort((a, b) => a.ts - b.ts);
+  const sorted = keys
+    .map((key) => {
+      const entry = StorageService.get(key, null);
+      return { key, ts: entry?.cachedAt || 0 };
+    })
+    .sort((a, b) => a.ts - b.ts);
   const toRemove = sorted.slice(0, sorted.length - MAX_CACHE_SIZE);
   toRemove.forEach((item) => StorageService.remove(item.key));
 };
@@ -193,7 +198,7 @@ const DynamicBackdropService = {
       animationSpeed = 20,
       blur = 0,
       vignette = 40,
-      overlayOpacity = 55
+      overlayOpacity = 55,
     } = options;
 
     const i = intensity / 100;
@@ -202,7 +207,9 @@ const DynamicBackdropService = {
     const accent = palette.accent;
     const dark = palette.dark;
     const light = palette.light;
-    const overlay = Math.round((overlayOpacity / 100) * 255).toString(16).padStart(2, '0');
+    const overlay = Math.round((overlayOpacity / 100) * 255)
+      .toString(16)
+      .padStart(2, '0');
     const speed = Math.max(3, 60 - animationSpeed);
 
     const common = {
@@ -214,7 +221,7 @@ const DynamicBackdropService = {
       '--backdrop-overlay': `#000000${overlay}`,
       '--backdrop-blur': `${blur}px`,
       '--backdrop-vignette': vignette / 100,
-      '--backdrop-animation-speed': `${speed}s`
+      '--backdrop-animation-speed': `${speed}s`,
     };
 
     if (mode === 'gradient') {
@@ -224,7 +231,7 @@ const DynamicBackdropService = {
           radial-gradient(ellipse at 80% 80%, ${adjustHsl(secondary, { l: 0.1 * i })} 0%, transparent 50%),
           radial-gradient(ellipse at 50% 50%, ${adjustHsl(accent, { l: -0.1 * i })} 0%, transparent 70%),
           linear-gradient(135deg, ${dark} 0%, ${base} 50%, ${dark} 100%)`,
-        '--dynamic-backdrop-size': '200% 200%'
+        '--dynamic-backdrop-size': '200% 200%',
       };
     }
 
@@ -236,7 +243,7 @@ const DynamicBackdropService = {
           radial-gradient(at 80% 20%, ${adjustHsl(accent, { l: 0.1 * i })} 0%, transparent 40%),
           radial-gradient(at 40% 80%, ${adjustHsl(secondary, { l: 0.15 * i })} 0%, transparent 40%),
           radial-gradient(at 80% 80%, ${adjustHsl(base, { h: 20, l: 0.1 * i })} 0%, transparent 40%),
-          linear-gradient(180deg, ${dark} 0%, ${adjustHsl(dark, { l: 0.05 })} 100%)`
+          linear-gradient(180deg, ${dark} 0%, ${adjustHsl(dark, { l: 0.05 })} 100%)`,
       };
     }
 
@@ -245,14 +252,14 @@ const DynamicBackdropService = {
         ...common,
         '--dynamic-backdrop': `
           linear-gradient(125deg, ${dark} 0%, ${adjustHsl(base, { l: -0.05 })} 40%, ${adjustHsl(secondary, { h: -30, l: 0.1 * i })} 60%, ${adjustHsl(accent, { h: 30, l: 0.1 * i })} 80%, ${dark} 100%)`,
-        '--dynamic-backdrop-size': '400% 400%'
+        '--dynamic-backdrop-size': '400% 400%',
       };
     }
 
     if (mode === 'cover') {
       return {
         ...common,
-        '--dynamic-backdrop': `linear-gradient(${adjustHsl(dark, { l: 0.1 })} 0%, ${dark} 100%)`
+        '--dynamic-backdrop': `linear-gradient(${adjustHsl(dark, { l: 0.1 })} 0%, ${dark} 100%)`,
       };
     }
 
@@ -268,20 +275,14 @@ const DynamicBackdropService = {
       blur: 0,
       vignette: 40,
       overlayOpacity: 55,
-      source: 'lastPlayed'
+      source: 'lastPlayed',
     });
   },
 
   saveSettings(settings) {
     StorageService.set('dynamicBackdropSettings', settings);
-  }
+  },
 };
 
 export default DynamicBackdropService;
-export {
-  adjustHsl,
-  rgbToHsl,
-  hslToRgb,
-  hexToRgb,
-  rgbToHex
-};
+export { adjustHsl, rgbToHsl, hslToRgb, hexToRgb, rgbToHex };

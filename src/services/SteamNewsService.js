@@ -10,7 +10,7 @@
 import StorageService from './StorageService';
 
 const CACHE_KEY = 'steamNewsCacheV1';
-const TTL_MS = 6 * 60 * 60 * 1000;       // 6h fresh window
+const TTL_MS = 6 * 60 * 60 * 1000; // 6h fresh window
 const PENDING_TTL_MS = 1 * 60 * 60 * 1000; // re-try misses after 1h
 const SETTINGS_KEY = 'steamNewsEnabled';
 
@@ -22,12 +22,17 @@ const readCache = () => {
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 };
 
 const writeCache = (cache) => {
-  try { StorageService.set(CACHE_KEY, cache); }
-  catch (err) { console.warn('[SteamNews] cache write failed:', err); }
+  try {
+    StorageService.set(CACHE_KEY, cache);
+  } catch (err) {
+    console.warn('[SteamNews] cache write failed:', err);
+  }
 };
 
 const isFresh = (entry) => {
@@ -45,12 +50,13 @@ const getAppId = (game) => {
 
 // Strip Steam BBCode + raw HTML so we can show a clean preview line. We don't
 // try to render it — the click-through goes to the canonical Steam news page.
-const stripMarkup = (str) => String(str || '')
-  .replace(/\[\/?[a-z][^\]]*\]/gi, '')   // BBCode tags
-  .replace(/<[^>]+>/g, '')               // HTML
-  .replace(/&[a-z]+;/gi, ' ')            // HTML entities
-  .replace(/\s+/g, ' ')
-  .trim();
+const stripMarkup = (str) =>
+  String(str || '')
+    .replace(/\[\/?[a-z][^\]]*\]/gi, '') // BBCode tags
+    .replace(/<[^>]+>/g, '') // HTML
+    .replace(/&[a-z]+;/gi, ' ') // HTML entities
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const buildEntry = (apiResult) => {
   const now = Date.now();
@@ -58,25 +64,30 @@ const buildEntry = (apiResult) => {
     return { found: false, fetchedAt: now, error: apiResult?.error || 'unknown', items: [] };
   }
   const raw = Array.isArray(apiResult.items) ? apiResult.items : [];
-  const items = raw.map((n) => ({
-    gid: String(n.gid || ''),
-    title: String(n.title || '').trim(),
-    url: n.url || (n.gid ? `https://steamcommunity.com/games/${apiResult.appid || ''}/announcements/detail/${n.gid}` : null),
-    feedLabel: n.feedlabel || '',
-    feedName: n.feedname || '',
-    author: n.author || '',
-    // API returns unix seconds.
-    dateMs: typeof n.date === 'number' ? n.date * 1000 : null,
-    preview: stripMarkup(n.contents).slice(0, 220)
-  })).filter((it) => it.title && it.dateMs);
+  const items = raw
+    .map((n) => ({
+      gid: String(n.gid || ''),
+      title: String(n.title || '').trim(),
+      url:
+        n.url ||
+        (n.gid ? `https://steamcommunity.com/games/${apiResult.appid || ''}/announcements/detail/${n.gid}` : null),
+      feedLabel: n.feedlabel || '',
+      feedName: n.feedname || '',
+      author: n.author || '',
+      // API returns unix seconds.
+      dateMs: typeof n.date === 'number' ? n.date * 1000 : null,
+      preview: stripMarkup(n.contents).slice(0, 220),
+    }))
+    .filter((it) => it.title && it.dateMs);
   return {
     found: items.length > 0,
     fetchedAt: now,
-    items
+    items,
   };
 };
 
-const PATCH_KEYWORDS = /\b(patch|update|hotfix|bug ?fix|fixes|fixed|version|release notes|changelog|build \d|server side|stability|rollout|quality of life|qol)\b/i;
+const PATCH_KEYWORDS =
+  /\b(patch|update|hotfix|bug ?fix|fixes|fixed|version|release notes|changelog|build \d|server side|stability|rollout|quality of life|qol)\b/i;
 
 class SteamNewsService {
   static isEnabled() {
@@ -146,7 +157,7 @@ class SteamNewsService {
         sinceLastPlayed: false,
         unread: false,
         latest,
-        ageDays: latest ? Math.round((Date.now() - latest.dateMs) / 86400000) : null
+        ageDays: latest ? Math.round((Date.now() - latest.dateMs) / 86400000) : null,
       };
     }
     const newer = entry.items.filter((it) => it.dateMs > lastPlayedMs);
@@ -159,16 +170,14 @@ class SteamNewsService {
       latest,
       newerCount: newer.length,
       isPatch,
-      ageDays: Math.round((Date.now() - latest.dateMs) / 86400000)
+      ageDays: Math.round((Date.now() - latest.dateMs) / 86400000),
     };
   }
 
   // Bulk warmup for Library — throttled, tolerates failures silently.
   static async warmup(games, { concurrency = 2, delayMs = 400 } = {}) {
     if (!this.isEnabled()) return;
-    const queue = (games || [])
-      .map((g) => ({ game: g, appid: getAppId(g) }))
-      .filter((x) => x.appid);
+    const queue = (games || []).map((g) => ({ game: g, appid: getAppId(g) })).filter((x) => x.appid);
     if (queue.length === 0) return;
     const cache = readCache();
     const stale = queue.filter(({ appid }) => !isFresh(cache[appid]));
@@ -179,7 +188,11 @@ class SteamNewsService {
       while (cursor < stale.length) {
         const idx = cursor++;
         const { game } = stale[idx];
-        try { await this.getNews(game); } catch { /* swallow */ }
+        try {
+          await this.getNews(game);
+        } catch {
+          /* swallow */
+        }
         if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
       }
     });

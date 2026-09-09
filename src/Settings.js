@@ -1,6 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, Bell, Database, Trash2, Save, AlertCircle, Heart, Keyboard, Eye, SlidersHorizontal, Archive, Info, MessageSquarePlus, Compass } from 'lucide-react';
+import {
+  Settings as SettingsIcon,
+  Palette,
+  Bell,
+  Database,
+  Trash2,
+  Save,
+  AlertCircle,
+  Heart,
+  Keyboard,
+  Eye,
+  SlidersHorizontal,
+  Archive,
+  Info,
+  MessageSquarePlus,
+  Compass,
+} from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
@@ -28,9 +44,16 @@ import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { APP_VERSION } from './appVersion';
 import './Settings.css';
 
-function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, minimizeOnLaunch = false, setMinimizeOnLaunch }) {
+function Settings({
+  library = [],
+  dynamicCoverBg = false,
+  setDynamicCoverBg,
+  minimizeOnLaunch = false,
+  setMinimizeOnLaunch,
+}) {
   const navigate = useNavigate();
-  const { currentTheme, setTheme, availableThemes, bigScreenMode, toggleBigScreenMode, autoTheme, toggleAutoTheme } = useTheme();
+  const { currentTheme, setTheme, availableThemes, bigScreenMode, toggleBigScreenMode, autoTheme, toggleAutoTheme } =
+    useTheme();
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [timeFormat, setTimeFormat] = useState('24-hour');
   const [timezone, setTimezone] = useState('UTC');
@@ -42,7 +65,9 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [steamNewsEnabled, setSteamNewsEnabled] = useState(() => SteamNewsService.isEnabled());
   const [diskUsageEnabled, setDiskUsageEnabled] = useState(() => DiskUsageService.isEnabled());
   const [wishlistEnabled, setWishlistEnabled] = useState(() => WishlistService.isEnabled());
-  const [buyRecommendationsEnabled, setBuyRecommendationsEnabled] = useState(() => BuyRecommendationService.isEnabled());
+  const [buyRecommendationsEnabled, setBuyRecommendationsEnabled] = useState(() =>
+    BuyRecommendationService.isEnabled()
+  );
   const [steamWishlistEnabled, setSteamWishlistEnabled] = useState(() => SteamWishlistService.isEnabled());
   const [steamId, setSteamId] = useState(() => SteamWishlistService.getSteamId());
   const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
@@ -60,16 +85,20 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
   const [customBgPreview, setCustomBgPreview] = useState('');
   const [shortcutSettings, setShortcutSettings] = useState(() => KeyboardShortcuts.getSettings());
   const [shortcutEntries, setShortcutEntries] = useState(() => KeyboardShortcuts.getShortcutList());
-  const [recommendationStyle, setRecommendationStyle] = useState(() => StorageService.getString('recommendationStyle', 'balanced'));
-  const [storyFrequency, setStoryFrequency] = useState(() => StorageService.getString('gamingStoryFrequency', 'weekly'));
+  const [recommendationStyle, setRecommendationStyle] = useState(() =>
+    StorageService.getString('recommendationStyle', 'balanced')
+  );
+  const [storyFrequency, setStoryFrequency] = useState(() =>
+    StorageService.getString('gamingStoryFrequency', 'weekly')
+  );
   const [recommendationOutcomePromptsEnabled, setRecommendationOutcomePromptsEnabled] = useState(
     () => UserBehaviorProfile.getFeedbackPreferences().sessionPromptEnabled
   );
   const [personalityToastsEnabled, setPersonalityToastsEnabled] = useState(
     () => StorageService.getString('personalityToastsEnabled', 'true') === 'true'
   );
-  const [toastDurationPreference, setToastDurationPreference] = useState(
-    () => StorageService.getString('toastDurationPreference', 'short')
+  const [toastDurationPreference, setToastDurationPreference] = useState(() =>
+    StorageService.getString('toastDurationPreference', 'short')
   );
   const { success, error: toastError } = useToast();
 
@@ -212,7 +241,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
     try {
       const result = await LocalShareService.postToDiscordWebhook({
         text: 'GamePilot webhook test — this is a test message. If you can see this, your webhook is working!',
-        filename: 'test.txt'
+        filename: 'test.txt',
       });
       if (result.success) {
         success('Test message sent to Discord! Check your channel.');
@@ -286,7 +315,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
 
     StorageService.setString('customBgImage', customBgImage);
     StorageService.setString('customBgOverlay', customBgOverlay.toString());
-    
+
     // Apply custom theme
     setTheme('custom');
     success('Custom background applied! Your theme has been updated.');
@@ -320,7 +349,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
         'minimizeOnLaunch',
         'recommendationStyle',
         'launchOnStartup',
-        'bigScreenMode'
+        'bigScreenMode',
       ];
       settingsKeys.forEach((key) => StorageService.remove(key));
       setDateFormat('DD/MM/YYYY');
@@ -367,58 +396,73 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>Basic Settings</h2>
                   </div>
                   <div className="basic-settings">
-                  <div className="setting-item">
-                    <label>Date Format</label>
-                    <select value={dateFormat} onChange={(e) => setDateFormat(e.target.value)} className="settings-select">
-                      <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2023)</option>
-                      <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2023)</option>
-                      <option value="YYYY-MM-DD">YYYY-MM-DD (2023-12-31)</option>
-                    </select>
-                  </div>
-                  
-                  <div className="setting-item">
-                    <label>Time Format</label>
-                    <select value={timeFormat} onChange={(e) => setTimeFormat(e.target.value)} className="settings-select">
-                      <option value="12-hour">12-hour (3:45 PM)</option>
-                      <option value="24-hour">24-hour (15:45)</option>
-                    </select>
-                  </div>
-                  
-                  <div className="setting-item">
-                    <label>Timezone</label>
-                    <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="settings-select">
-                      <option value="UTC">UTC</option>
-                      <option value="America/New_York">Eastern Time (ET)</option>
-                      <option value="America/Chicago">Central Time (CT)</option>
-                      <option value="America/Denver">Mountain Time (MT)</option>
-                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                      <option value="Europe/London">London (GMT/BST)</option>
-                      <option value="Europe/Paris">Paris (CET/CEST)</option>
-                      <option value="Europe/Berlin">Berlin (CET/CEST)</option>
-                      <option value="Asia/Tokyo">Tokyo (JST)</option>
-                      <option value="Asia/Shanghai">Shanghai (CST)</option>
-                      <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
-                      <option value="Pacific/Auckland">Auckland (NZDT/NZST)</option>
-                    </select>
-                  </div>
-                  
-                  <div className="setting-item">
-                    <label>Currency</label>
-                    <select value={selectedCurrency} onChange={(e) => setSelectedCurrency(e.target.value)} className="settings-select">
-                      <option value="USD">USD - US Dollar ($)</option>
-                      <option value="EUR">EUR - Euro (€)</option>
-                      <option value="GBP">GBP - British Pound (£)</option>
-                      <option value="JPY">JPY - Japanese Yen (¥)</option>
-                      <option value="CAD">CAD - Canadian Dollar (C$)</option>
-                      <option value="AUD">AUD - Australian Dollar (A$)</option>
-                      <option value="CHF">CHF - Swiss Franc (CHF)</option>
-                      <option value="CNY">CNY - Chinese Yuan (¥)</option>
-                      <option value="INR">INR - Indian Rupee (₹)</option>
-                      <option value="BRL">BRL - Brazilian Real (R$)</option>
-                      <option value="RUB">RUB - Russian Ruble (₽)</option>
-                    </select>
-                  </div>
+                    <div className="setting-item">
+                      <label>Date Format</label>
+                      <select
+                        value={dateFormat}
+                        onChange={(e) => setDateFormat(e.target.value)}
+                        className="settings-select"
+                      >
+                        <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2023)</option>
+                        <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2023)</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD (2023-12-31)</option>
+                      </select>
+                    </div>
 
+                    <div className="setting-item">
+                      <label>Time Format</label>
+                      <select
+                        value={timeFormat}
+                        onChange={(e) => setTimeFormat(e.target.value)}
+                        className="settings-select"
+                      >
+                        <option value="12-hour">12-hour (3:45 PM)</option>
+                        <option value="24-hour">24-hour (15:45)</option>
+                      </select>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Timezone</label>
+                      <select
+                        value={timezone}
+                        onChange={(e) => setTimezone(e.target.value)}
+                        className="settings-select"
+                      >
+                        <option value="UTC">UTC</option>
+                        <option value="America/New_York">Eastern Time (ET)</option>
+                        <option value="America/Chicago">Central Time (CT)</option>
+                        <option value="America/Denver">Mountain Time (MT)</option>
+                        <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                        <option value="Europe/London">London (GMT/BST)</option>
+                        <option value="Europe/Paris">Paris (CET/CEST)</option>
+                        <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                        <option value="Asia/Tokyo">Tokyo (JST)</option>
+                        <option value="Asia/Shanghai">Shanghai (CST)</option>
+                        <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+                        <option value="Pacific/Auckland">Auckland (NZDT/NZST)</option>
+                      </select>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Currency</label>
+                      <select
+                        value={selectedCurrency}
+                        onChange={(e) => setSelectedCurrency(e.target.value)}
+                        className="settings-select"
+                      >
+                        <option value="USD">USD - US Dollar ($)</option>
+                        <option value="EUR">EUR - Euro (€)</option>
+                        <option value="GBP">GBP - British Pound (£)</option>
+                        <option value="JPY">JPY - Japanese Yen (¥)</option>
+                        <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                        <option value="AUD">AUD - Australian Dollar (A$)</option>
+                        <option value="CHF">CHF - Swiss Franc (CHF)</option>
+                        <option value="CNY">CNY - Chinese Yuan (¥)</option>
+                        <option value="INR">INR - Indian Rupee (₹)</option>
+                        <option value="BRL">BRL - Brazilian Real (R$)</option>
+                        <option value="RUB">RUB - Russian Ruble (₽)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -437,227 +481,233 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>Appearance</h2>
                   </div>
                   <div className="appearance-settings">
-                  <div className="setting-item">
-                    <label>Theme Mode</label>
-                    <div className="theme-mode-buttons" style={{
-                      display: 'flex',
-                      gap: '8px',
-                      flexWrap: 'wrap'
-                    }}>
-                      {[
-                        { value: 'light', label: '☀️ Light', description: 'Clean and bright' },
-                        { value: 'dark', label: '🌙 Dark', description: 'Easy on the eyes' },
-                        { value: 'custom', label: '🎨 Custom', description: 'Choose your style' }
-                      ].map(mode => (
-                        <button
-                          key={mode.value}
-                          onClick={() => handleThemeModeChange(mode.value)}
-                          className={`theme-mode-btn ${themeMode === mode.value ? 'active' : ''}`}
-                          style={{
-                            padding: '12px 16px',
-                            border: `2px solid ${themeMode === mode.value ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
-                            borderRadius: '8px',
-                            backgroundColor: themeMode === mode.value ? 'var(--accent-primary)' : 'var(--bg-secondary)',
-                            color: themeMode === mode.value ? 'white' : 'var(--text-primary)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '4px',
-                            minWidth: '100px',
-                            transition: 'all 0.2s ease'
-                          }}
-                          aria-label={`Switch to ${mode.description.toLowerCase()} theme`}
-                          tabIndex={0}
-                        >
-                          <span style={{ fontSize: '16px' }}>{mode.label}</span>
-                          <span style={{ fontSize: '12px', opacity: 0.8 }}>{mode.description}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {themeMode === 'custom' && (
                     <div className="setting-item">
-                      <label>Custom Theme</label>
-                      <div className="theme-wheel-display" style={{ alignItems: 'stretch' }}>
-                        <div className="theme-wheel-preview">
-                          <div
-                            className="theme-preview"
-                            style={{
-                              background: availableThemes[currentTheme]?.preview || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              width: '100%',
-                              height: '100%',
-                              borderRadius: '8px',
-                              position: 'relative'
-                            }}
-                          >
-                          </div>
-                        </div>
-
-                        <div className="theme-wheel-info" style={{ gap: '10px' }}>
-                          <div className="theme-wheel-name">
-                            {availableThemes[currentTheme]?.name || currentTheme || 'Current Theme'}
-                          </div>
-                          <div className="theme-wheel-index">
-                            {Object.keys(availableThemes).length} themes available in your collection
-                          </div>
-                          <div className="theme-wheel-access-badge" style={{ color: 'var(--text-primary)' }}>
-                            <Palette size={12} />
-                            Browse and switch themes from the dedicated Themes page
-                          </div>
+                      <label>Theme Mode</label>
+                      <div
+                        className="theme-mode-buttons"
+                        style={{
+                          display: 'flex',
+                          gap: '8px',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        {[
+                          { value: 'light', label: '☀️ Light', description: 'Clean and bright' },
+                          { value: 'dark', label: '🌙 Dark', description: 'Easy on the eyes' },
+                          { value: 'custom', label: '🎨 Custom', description: 'Choose your style' },
+                        ].map((mode) => (
                           <button
-                            type="button"
-                            className="save-btn"
-                            onClick={() => {
-                              navigate('/themes');
+                            key={mode.value}
+                            onClick={() => handleThemeModeChange(mode.value)}
+                            className={`theme-mode-btn ${themeMode === mode.value ? 'active' : ''}`}
+                            style={{
+                              padding: '12px 16px',
+                              border: `2px solid ${themeMode === mode.value ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
+                              borderRadius: '8px',
+                              backgroundColor:
+                                themeMode === mode.value ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                              color: themeMode === mode.value ? 'white' : 'var(--text-primary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '4px',
+                              minWidth: '100px',
+                              transition: 'all 0.2s ease',
                             }}
+                            aria-label={`Switch to ${mode.description.toLowerCase()} theme`}
+                            tabIndex={0}
                           >
-                            Open Themes Page
+                            <span style={{ fontSize: '16px' }}>{mode.label}</span>
+                            <span style={{ fontSize: '12px', opacity: 0.8 }}>{mode.description}</span>
                           </button>
-                        </div>
+                        ))}
                       </div>
                     </div>
-                  )}
-                  
-                  <div className="setting-item">
-                    <label>Big Screen/Controller Mode</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={bigScreenMode}
-                        onChange={() => toggleBigScreenMode()}
-                        id="big-screen-mode"
-                      />
-                      <label htmlFor="big-screen-mode" className="toggle-slider"></label>
-                    </div>
-                    <p className="setting-description">
-                      Optimizes the interface for larger screens and enables controller navigation. Ideal for TV or console-like setups.
-                    </p>
-                  </div>
-                  
-                  <div className="setting-item">
-                    <label>Auto-switch to system theme</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={autoTheme}
-                        onChange={() => toggleAutoTheme()}
-                        id="auto-theme"
-                      />
-                      <label htmlFor="auto-theme" className="toggle-slider"></label>
-                    </div>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Last-played cover art background</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={dynamicCoverBg}
-                        onChange={() => {
-                          const next = !dynamicCoverBg;
-                          setDynamicCoverBg(next);
-                          StorageService.setString('dynamicCoverBg', next ? 'true' : 'false');
-                        }}
-                        id="dynamic-cover-bg"
-                      />
-                      <label htmlFor="dynamic-cover-bg" className="toggle-slider"></label>
-                    </div>
-                    <p className="setting-description">
-                      Use the cover art of your most recently played game as a subtle full-screen background. Falls back to the normal theme when no recent game exists.
-                    </p>
-                  </div>
+                    {themeMode === 'custom' && (
+                      <div className="setting-item">
+                        <label>Custom Theme</label>
+                        <div className="theme-wheel-display" style={{ alignItems: 'stretch' }}>
+                          <div className="theme-wheel-preview">
+                            <div
+                              className="theme-preview"
+                              style={{
+                                background:
+                                  availableThemes[currentTheme]?.preview ||
+                                  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: '8px',
+                                position: 'relative',
+                              }}
+                            ></div>
+                          </div>
 
-                  <div className="setting-item">
-                    <label>Minimize on game launch</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={minimizeOnLaunch}
-                        onChange={() => {
-                          const next = !minimizeOnLaunch;
-                          setMinimizeOnLaunch(next);
-                          StorageService.setString('minimizeOnLaunch', next ? 'true' : 'false');
-                        }}
-                        id="minimize-on-launch"
-                      />
-                      <label htmlFor="minimize-on-launch" className="toggle-slider"></label>
-                    </div>
-                    <p className="setting-description">
-                      Automatically minimize GamePilot to the taskbar when you launch a game, and restore the window when the session ends.
-                    </p>
-                  </div>
+                          <div className="theme-wheel-info" style={{ gap: '10px' }}>
+                            <div className="theme-wheel-name">
+                              {availableThemes[currentTheme]?.name || currentTheme || 'Current Theme'}
+                            </div>
+                            <div className="theme-wheel-index">
+                              {Object.keys(availableThemes).length} themes available in your collection
+                            </div>
+                            <div className="theme-wheel-access-badge" style={{ color: 'var(--text-primary)' }}>
+                              <Palette size={12} />
+                              Browse and switch themes from the dedicated Themes page
+                            </div>
+                            <button
+                              type="button"
+                              className="save-btn"
+                              onClick={() => {
+                                navigate('/themes');
+                              }}
+                            >
+                              Open Themes Page
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="setting-item">
-                    <label>Welcome back pop-up</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={welcomeBackEnabled}
-                        onChange={() => {
-                          const next = !welcomeBackEnabled;
-                          setWelcomeBackEnabled(next);
-                          SessionService.setWelcomeBackOptedOut(!next);
-                        }}
-                        id="welcome-back-toggle"
-                      />
-                      <label htmlFor="welcome-back-toggle" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Big Screen/Controller Mode</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={bigScreenMode}
+                          onChange={() => toggleBigScreenMode()}
+                          id="big-screen-mode"
+                        />
+                        <label htmlFor="big-screen-mode" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Optimizes the interface for larger screens and enables controller navigation. Ideal for TV or
+                        console-like setups.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      When you open GamePilot for the first time in a session, show a pop-up with a game recommendation based on what you've been playing — served with your persona roast.
-                    </p>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Personality toasts</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={personalityToastsEnabled}
-                        onChange={() => {
-                          const next = !personalityToastsEnabled;
-                          setPersonalityToastsEnabled(next);
-                          StorageService.setString('personalityToastsEnabled', next ? 'true' : 'false');
-                        }}
-                        id="personality-toasts-toggle"
-                      />
-                      <label htmlFor="personality-toasts-toggle" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Auto-switch to system theme</label>
+                      <div className="toggle-switch">
+                        <input type="checkbox" checked={autoTheme} onChange={() => toggleAutoTheme()} id="auto-theme" />
+                        <label htmlFor="auto-theme" className="toggle-slider"></label>
+                      </div>
                     </div>
-                    <p className="setting-description">
-                      Show personality-driven roast toasts after sessions, when streaks hit milestones, when rivalries heat up, and when your gaming identity shifts. Disable for plain session notifications only.
-                    </p>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Toast duration</label>
-                    <div className="segmented-control" role="radiogroup" aria-label="Toast duration">
-                      {[
-                        { value: 'short', label: 'Short', hint: '3s' },
-                        { value: 'long', label: 'Long', hint: '8s' },
-                        { value: 'persistent', label: 'Until dismissed', hint: 'no timeout' },
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={toastDurationPreference === opt.value}
-                          className={`segmented-option ${toastDurationPreference === opt.value ? 'segmented-option-active' : ''}`}
-                          onClick={() => {
-                            setToastDurationPreference(opt.value);
-                            StorageService.setString('toastDurationPreference', opt.value);
-                            success(`Toast duration set to ${opt.label} (${opt.hint})`);
+                    <div className="setting-item">
+                      <label>Last-played cover art background</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={dynamicCoverBg}
+                          onChange={() => {
+                            const next = !dynamicCoverBg;
+                            setDynamicCoverBg(next);
+                            StorageService.setString('dynamicCoverBg', next ? 'true' : 'false');
                           }}
-                        >
-                          <span className="segmented-option-label">{opt.label}</span>
-                          <span className="segmented-option-hint">{opt.hint}</span>
-                        </button>
-                      ))}
+                          id="dynamic-cover-bg"
+                        />
+                        <label htmlFor="dynamic-cover-bg" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Use the cover art of your most recently played game as a subtle full-screen background. Falls
+                        back to the normal theme when no recent game exists.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      Control how long notifications stay on screen. "Until dismissed" keeps toasts visible until you click the × button — useful for roasts you don't want to miss.
-                    </p>
-                  </div>
+
+                    <div className="setting-item">
+                      <label>Minimize on game launch</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={minimizeOnLaunch}
+                          onChange={() => {
+                            const next = !minimizeOnLaunch;
+                            setMinimizeOnLaunch(next);
+                            StorageService.setString('minimizeOnLaunch', next ? 'true' : 'false');
+                          }}
+                          id="minimize-on-launch"
+                        />
+                        <label htmlFor="minimize-on-launch" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Automatically minimize GamePilot to the taskbar when you launch a game, and restore the window
+                        when the session ends.
+                      </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Welcome back pop-up</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={welcomeBackEnabled}
+                          onChange={() => {
+                            const next = !welcomeBackEnabled;
+                            setWelcomeBackEnabled(next);
+                            SessionService.setWelcomeBackOptedOut(!next);
+                          }}
+                          id="welcome-back-toggle"
+                        />
+                        <label htmlFor="welcome-back-toggle" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        When you open GamePilot for the first time in a session, show a pop-up with a game
+                        recommendation based on what you've been playing — served with your persona roast.
+                      </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Personality toasts</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={personalityToastsEnabled}
+                          onChange={() => {
+                            const next = !personalityToastsEnabled;
+                            setPersonalityToastsEnabled(next);
+                            StorageService.setString('personalityToastsEnabled', next ? 'true' : 'false');
+                          }}
+                          id="personality-toasts-toggle"
+                        />
+                        <label htmlFor="personality-toasts-toggle" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Show personality-driven roast toasts after sessions, when streaks hit milestones, when rivalries
+                        heat up, and when your gaming identity shifts. Disable for plain session notifications only.
+                      </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Toast duration</label>
+                      <div className="segmented-control" role="radiogroup" aria-label="Toast duration">
+                        {[
+                          { value: 'short', label: 'Short', hint: '3s' },
+                          { value: 'long', label: 'Long', hint: '8s' },
+                          { value: 'persistent', label: 'Until dismissed', hint: 'no timeout' },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            role="radio"
+                            aria-checked={toastDurationPreference === opt.value}
+                            className={`segmented-option ${toastDurationPreference === opt.value ? 'segmented-option-active' : ''}`}
+                            onClick={() => {
+                              setToastDurationPreference(opt.value);
+                              StorageService.setString('toastDurationPreference', opt.value);
+                              success(`Toast duration set to ${opt.label} (${opt.hint})`);
+                            }}
+                          >
+                            <span className="segmented-option-label">{opt.label}</span>
+                            <span className="segmented-option-hint">{opt.hint}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="setting-description">
+                        Control how long notifications stay on screen. "Until dismissed" keeps toasts visible until you
+                        click the × button — useful for roasts you don't want to miss.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -676,111 +726,116 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>Custom Background</h2>
                   </div>
                   <div className="settings-group">
-                  <p className="section-description">
-                    Upload your own background image to personalize GamePilot. Supports JPG, PNG, GIF, and WebP (max 5MB).
-                  </p>
+                    <p className="section-description">
+                      Upload your own background image to personalize GamePilot. Supports JPG, PNG, GIF, and WebP (max
+                      5MB).
+                    </p>
 
-                  <div className="setting-item">
-                    <label>Upload Background Image</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBackgroundUpload}
-                      style={{
-                        padding: '8px',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '4px',
-                        background: 'var(--input-bg)',
-                        color: 'var(--text-color)',
-                        cursor: 'pointer'
-                      }}
-                    />
-                  </div>
+                    <div className="setting-item">
+                      <label>Upload Background Image</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBackgroundUpload}
+                        style={{
+                          padding: '8px',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '4px',
+                          background: 'var(--input-bg)',
+                          color: 'var(--text-color)',
+                          cursor: 'pointer',
+                        }}
+                      />
+                    </div>
 
-                  {(customBgPreview || customBgImage) && (
-                    <>
-                      <div className="setting-item">
-                        <label>Preview</label>
-                        <div style={{
-                          width: '100%',
-                          height: '200px',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          border: '2px solid var(--border-color)'
-                        }}>
-                          <img
-                            src={customBgPreview || customBgImage}
-                            alt="Custom background preview"
+                    {(customBgPreview || customBgImage) && (
+                      <>
+                        <div className="setting-item">
+                          <label>Preview</label>
+                          <div
                             style={{
                               width: '100%',
-                              height: '100%',
-                              objectFit: 'cover'
+                              height: '200px',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              position: 'relative',
+                              border: '2px solid var(--border-color)',
+                            }}
+                          >
+                            <img
+                              src={customBgPreview || customBgImage}
+                              alt="Custom background preview"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: `rgba(0, 0, 0, ${customBgOverlay / 100})`,
+                                pointerEvents: 'none',
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="setting-item">
+                          <label>Overlay Darkness: {customBgOverlay}%</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="80"
+                            value={customBgOverlay}
+                            onChange={handleOverlayChange}
+                            style={{
+                              width: '100%',
+                              accentColor: 'var(--primary-color)',
                             }}
                           />
-                          <div style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: `rgba(0, 0, 0, ${customBgOverlay / 100})`,
-                            pointerEvents: 'none'
-                          }} />
+                          <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                            Adjust darkness overlay to ensure text remains readable
+                          </p>
                         </div>
-                      </div>
 
-                      <div className="setting-item">
-                        <label>Overlay Darkness: {customBgOverlay}%</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="80"
-                          value={customBgOverlay}
-                          onChange={handleOverlayChange}
-                          style={{
-                            width: '100%',
-                            accentColor: 'var(--primary-color)'
-                          }}
-                        />
-                        <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
-                          Adjust darkness overlay to ensure text remains readable
-                        </p>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                        <button
-                          onClick={saveCustomTheme}
-                          className="action-button primary"
-                          style={{
-                            flex: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px'
-                          }}
-                        >
-                          <Save size={16} />
-                          Apply Custom Background
-                        </button>
-                        <button
-                          onClick={clearCustomBackground}
-                          className="action-button"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            background: '#dc3545',
-                            color: 'white'
-                          }}
-                        >
-                          <Trash2 size={16} />
-                          Clear
-                        </button>
-                      </div>
-                    </>
-                  )}
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                          <button
+                            onClick={saveCustomTheme}
+                            className="action-button primary"
+                            style={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            <Save size={16} />
+                            Apply Custom Background
+                          </button>
+                          <button
+                            onClick={clearCustomBackground}
+                            className="action-button"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              background: '#dc3545',
+                              color: 'white',
+                            }}
+                          >
+                            <Trash2 size={16} />
+                            Clear
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </CollapsibleSection>
@@ -814,386 +869,424 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>Preferences</h2>
                   </div>
                   <div className="preferences-settings">
+                    <h4 style={{ marginTop: '8px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>
+                      Local Storage & Recaps
+                    </h4>
 
-                  <h4 style={{ marginTop: '8px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Local Storage & Recaps</h4>
-
-                  <div className="setting-item">
-                    <label>Enable local cache</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={cacheEnabled}
-                        onChange={(e) => setCacheEnabled(e.target.checked)}
-                        id="cache"
-                      />
-                      <label htmlFor="cache" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Enable local cache</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={cacheEnabled}
+                          onChange={(e) => setCacheEnabled(e.target.checked)}
+                          id="cache"
+                        />
+                        <label htmlFor="cache" className="toggle-slider"></label>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Gaming story frequency</label>
-                    <select
-                      value={storyFrequency}
-                      onChange={(e) => setStoryFrequency(e.target.value)}
-                      className="settings-select"
-                      aria-label="Gaming story frequency"
-                    >
-                      <option value="off">Off</option>
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="yearly">Yearly</option>
-                    </select>
-                    <p className="setting-description">
-                      How often GamePilot generates a themed recap of your recent play.
-                    </p>
-                  </div>
-
-                  <div className="setting-item">
-                    <label>Recommendation outcome prompts</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={recommendationOutcomePromptsEnabled}
-                        onChange={(event) => {
-                          const enabled = event.target.checked;
-                          setRecommendationOutcomePromptsEnabled(enabled);
-                          UserBehaviorProfile.setFeedbackPromptEnabled('session', enabled);
-                        }}
-                        id="recommendation-outcome-prompts"
-                      />
-                      <label htmlFor="recommendation-outcome-prompts" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Gaming story frequency</label>
+                      <select
+                        value={storyFrequency}
+                        onChange={(e) => setStoryFrequency(e.target.value)}
+                        className="settings-select"
+                        aria-label="Gaming story frequency"
+                      >
+                        <option value="off">Off</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                      <p className="setting-description">
+                        How often GamePilot generates a themed recap of your recent play.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      Ask for Great pick, Not now, or Not for me after a meaningful session launched from a GamePilot recommendation.
-                    </p>
-                  </div>
 
-                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Data Sources</h4>
-
-                  <div className="setting-item">
-                    <label>HowLongToBeat lookups</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={hltbEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setHltbEnabled(next);
-                          HowLongToBeatService.setEnabled(next);
-                          success(`HowLongToBeat lookups ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="hltb-enabled"
-                      />
-                      <label htmlFor="hltb-enabled" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Recommendation outcome prompts</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={recommendationOutcomePromptsEnabled}
+                          onChange={(event) => {
+                            const enabled = event.target.checked;
+                            setRecommendationOutcomePromptsEnabled(enabled);
+                            UserBehaviorProfile.setFeedbackPromptEnabled('session', enabled);
+                          }}
+                          id="recommendation-outcome-prompts"
+                        />
+                        <label htmlFor="recommendation-outcome-prompts" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Ask for Great pick, Not now, or Not for me after a meaningful session launched from a GamePilot
+                        recommendation.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      On by default. Sends each game's title (and only the title) directly to <code>howlongtobeat.com</code> to fetch story-length estimates that power Session Fit and the time chips on Library cards. No GamePilot server is involved — the lookup is anonymous and results are cached on your device for 14 days. Turn this off any time to stop all future requests immediately.
-                    </p>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>PCGamingWiki lookups (Librarian's Notes)</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={pcgwEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setPcgwEnabled(next);
-                          PCGamingWikiService.setEnabled(next);
-                          success(`PCGamingWiki lookups ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="pcgw-enabled"
-                      />
-                      <label htmlFor="pcgw-enabled" className="toggle-slider"></label>
+                    <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>
+                      Data Sources
+                    </h4>
+
+                    <div className="setting-item">
+                      <label>HowLongToBeat lookups</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={hltbEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setHltbEnabled(next);
+                            HowLongToBeatService.setEnabled(next);
+                            success(`HowLongToBeat lookups ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="hltb-enabled"
+                        />
+                        <label htmlFor="hltb-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        On by default. Sends each game's title (and only the title) directly to{' '}
+                        <code>howlongtobeat.com</code> to fetch story-length estimates that power Session Fit and the
+                        time chips on Library cards. No GamePilot server is involved — the lookup is anonymous and
+                        results are cached on your device for 14 days. Turn this off any time to stop all future
+                        requests immediately.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      On by default. When you open a game, GamePilot queries the public <code>pcgamingwiki.com</code> MediaWiki API for save-file paths, configuration locations, and controller-support info. Anonymous, no GamePilot server involved, results cached locally for 30 days.
-                    </p>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Steam Snapshot (reviews + achievement rarity)</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={steamSnapshotEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setSteamSnapshotEnabled(next);
-                          SteamPublicService.setEnabled(next);
-                          success(`Steam Snapshot ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="steam-snapshot-enabled"
-                      />
-                      <label htmlFor="steam-snapshot-enabled" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>PCGamingWiki lookups (Librarian's Notes)</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={pcgwEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setPcgwEnabled(next);
+                            PCGamingWikiService.setEnabled(next);
+                            success(`PCGamingWiki lookups ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="pcgw-enabled"
+                        />
+                        <label htmlFor="pcgw-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        On by default. When you open a game, GamePilot queries the public <code>pcgamingwiki.com</code>{' '}
+                        MediaWiki API for save-file paths, configuration locations, and controller-support info.
+                        Anonymous, no GamePilot server involved, results cached locally for 30 days.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      On by default. For Steam games, GamePilot queries the public <code>store.steampowered.com</code> review summary and the global achievement-rarity endpoint to surface "Very Positive · 94% of 12k reviews" and "Rarest achievement: only 0.4% of players have it." Anonymous, no API key, no GamePilot server, cached locally for 7 days.
-                    </p>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Patch &amp; News Radar (Steam News)</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={steamNewsEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setSteamNewsEnabled(next);
-                          SteamNewsService.setEnabled(next);
-                          success(`Patch & News Radar ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="steam-news-enabled"
-                      />
-                      <label htmlFor="steam-news-enabled" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Steam Snapshot (reviews + achievement rarity)</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={steamSnapshotEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setSteamSnapshotEnabled(next);
+                            SteamPublicService.setEnabled(next);
+                            success(`Steam Snapshot ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="steam-snapshot-enabled"
+                        />
+                        <label htmlFor="steam-snapshot-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        On by default. For Steam games, GamePilot queries the public <code>store.steampowered.com</code>{' '}
+                        review summary and the global achievement-rarity endpoint to surface "Very Positive · 94% of 12k
+                        reviews" and "Rarest achievement: only 0.4% of players have it." Anonymous, no API key, no
+                        GamePilot server, cached locally for 7 days.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      On by default. For Steam games, GamePilot queries the public <code>api.steampowered.com</code> news feed to surface a "Patch / News" badge on Library cards when something has been posted since you last played, plus a recent-posts list inside the Game modal. Anonymous, no API key, no GamePilot server, cached locally for 6 hours.
-                    </p>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Disk Usage &amp; Library Reclaimer</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={diskUsageEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setDiskUsageEnabled(next);
-                          DiskUsageService.setEnabled(next);
-                          success(`Disk Usage scanning ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="disk-usage-enabled"
-                      />
-                      <label htmlFor="disk-usage-enabled" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Patch &amp; News Radar (Steam News)</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={steamNewsEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setSteamNewsEnabled(next);
+                            SteamNewsService.setEnabled(next);
+                            success(`Patch & News Radar ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="steam-news-enabled"
+                        />
+                        <label htmlFor="steam-news-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        On by default. For Steam games, GamePilot queries the public <code>api.steampowered.com</code>{' '}
+                        news feed to surface a "Patch / News" badge on Library cards when something has been posted
+                        since you last played, plus a recent-posts list inside the Game modal. Anonymous, no API key, no
+                        GamePilot server, cached locally for 6 hours.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      On by default. GamePilot walks each game's install folder locally to measure disk usage and powers the Library Reclaimer page + size chips on Library cards. Everything stays on-device — no data leaves your machine. Folder walks are throttled and bounded so they cannot hang the app.
-                  </p>
-                  </div>
 
-                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Discovery & Buying</h4>
-
-                  <div className="setting-item">
-                    <label>Wishlist & Price Alerts</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={wishlistEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setWishlistEnabled(next);
-                          WishlistService.setEnabled(next);
-                          success(`Wishlist ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="wishlist-enabled"
-                      />
-                      <label htmlFor="wishlist-enabled" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Disk Usage &amp; Library Reclaimer</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={diskUsageEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setDiskUsageEnabled(next);
+                            DiskUsageService.setEnabled(next);
+                            success(`Disk Usage scanning ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="disk-usage-enabled"
+                        />
+                        <label htmlFor="disk-usage-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        On by default. GamePilot walks each game's install folder locally to measure disk usage and
+                        powers the Library Reclaimer page + size chips on Library cards. Everything stays on-device — no
+                        data leaves your machine. Folder walks are throttled and bounded so they cannot hang the app.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      On by default. Track games you want and get price-drop alerts via IsThereAnyDeal. Prices are cached locally for 24 hours. No user data leaves your device.
-                    </p>
-                  </div>
 
-                  <div className="setting-item">
-                    <label>Buy Recommendations</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={buyRecommendationsEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setBuyRecommendationsEnabled(next);
-                          BuyRecommendationService.setEnabled(next);
-                          success(`Buy Recommendations ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="buy-recommendations-enabled"
-                      />
-                      <label htmlFor="buy-recommendations-enabled" className="toggle-slider"></label>
-                    </div>
-                    <p className="setting-description">
-                      Off by default. Ranks your local Wishlist using owned-library taste signals and cached price context. This first scaffold does not call external catalog APIs, open stores, purchase anything, or send your play history anywhere.
-                    </p>
-                  </div>
+                    <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>
+                      Discovery & Buying
+                    </h4>
 
-                  <div className="setting-item">
-                    <label>Steam Wishlist Import</label>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={steamWishlistEnabled}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          setSteamWishlistEnabled(next);
-                          SteamWishlistService.setEnabled(next);
-                          success(`Steam Wishlist import ${next ? 'enabled' : 'disabled'}.`);
-                        }}
-                        id="steam-wishlist-enabled"
-                      />
-                      <label htmlFor="steam-wishlist-enabled" className="toggle-slider"></label>
+                    <div className="setting-item">
+                      <label>Wishlist & Price Alerts</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={wishlistEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setWishlistEnabled(next);
+                            WishlistService.setEnabled(next);
+                            success(`Wishlist ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="wishlist-enabled"
+                        />
+                        <label htmlFor="wishlist-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        On by default. Track games you want and get price-drop alerts via IsThereAnyDeal. Prices are
+                        cached locally for 24 hours. No user data leaves your device.
+                      </p>
                     </div>
-                    <p className="setting-description">
-                      Off by default. Import your public Steam wishlist using your Steam64 ID. Adds those games to GamePilot's local Wishlist so Buy Recommendations can rank what to buy next. Your ID and wishlist data stay on-device.
-                    </p>
-                    {steamWishlistEnabled && (
-                      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            placeholder="Paste your Steam64 ID or profile URL..."
-                            value={steamId}
-                            onChange={(e) => {
-                              const next = e.target.value;
-                              setSteamId(next);
-                              SteamWishlistService.setSteamId(next);
-                            }}
-                            onBlur={() => {
-                              const normalized = SteamWishlistService.getSteamId();
-                              setSteamId(normalized);
-                            }}
-                            style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
-                          />
-                          <button
-                            className="export-button"
-                            disabled={!SteamWishlistService.getSteamId() || steamWishlistSyncing}
-                            onClick={async () => {
-                              setSteamWishlistSyncing(true);
-                              try {
+
+                    <div className="setting-item">
+                      <label>Buy Recommendations</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={buyRecommendationsEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setBuyRecommendationsEnabled(next);
+                            BuyRecommendationService.setEnabled(next);
+                            success(`Buy Recommendations ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="buy-recommendations-enabled"
+                        />
+                        <label htmlFor="buy-recommendations-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Off by default. Ranks your local Wishlist using owned-library taste signals and cached price
+                        context. This first scaffold does not call external catalog APIs, open stores, purchase
+                        anything, or send your play history anywhere.
+                      </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Steam Wishlist Import</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={steamWishlistEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setSteamWishlistEnabled(next);
+                            SteamWishlistService.setEnabled(next);
+                            success(`Steam Wishlist import ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="steam-wishlist-enabled"
+                        />
+                        <label htmlFor="steam-wishlist-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Off by default. Import your public Steam wishlist using your Steam64 ID. Adds those games to
+                        GamePilot's local Wishlist so Buy Recommendations can rank what to buy next. Your ID and
+                        wishlist data stay on-device.
+                      </p>
+                      {steamWishlistEnabled && (
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              placeholder="Paste your Steam64 ID or profile URL..."
+                              value={steamId}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                setSteamId(next);
+                                SteamWishlistService.setSteamId(next);
+                              }}
+                              onBlur={() => {
                                 const normalized = SteamWishlistService.getSteamId();
                                 setSteamId(normalized);
-                                const result = await SteamWishlistService.sync();
-                                setSteamWishlistLastResult(result);
-                                if (result.success) {
-                                  success(`Synced ${result.count} game${result.count === 1 ? '' : 's'} from Steam wishlist.`);
-                                } else {
-                                  const msg = result.error || 'Steam wishlist sync failed.';
-                                  console.warn('[Settings] Steam wishlist sync:', msg);
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: '8px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg)',
+                                color: 'var(--text)',
+                              }}
+                            />
+                            <button
+                              className="export-button"
+                              disabled={!SteamWishlistService.getSteamId() || steamWishlistSyncing}
+                              onClick={async () => {
+                                setSteamWishlistSyncing(true);
+                                try {
+                                  const normalized = SteamWishlistService.getSteamId();
+                                  setSteamId(normalized);
+                                  const result = await SteamWishlistService.sync();
+                                  setSteamWishlistLastResult(result);
+                                  if (result.success) {
+                                    success(
+                                      `Synced ${result.count} game${result.count === 1 ? '' : 's'} from Steam wishlist.`
+                                    );
+                                  } else {
+                                    const msg = result.error || 'Steam wishlist sync failed.';
+                                    console.warn('[Settings] Steam wishlist sync:', msg);
+                                  }
+                                } finally {
+                                  setSteamWishlistSyncing(false);
                                 }
-                              } finally {
-                                setSteamWishlistSyncing(false);
-                              }
-                            }}
-                            style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}
-                          >
-                            {steamWishlistSyncing ? 'Syncing...' : 'Sync Now'}
-                          </button>
+                              }}
+                              style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}
+                            >
+                              {steamWishlistSyncing ? 'Syncing...' : 'Sync Now'}
+                            </button>
+                          </div>
+                          {steamWishlistLastResult?.fetchedAt && (
+                            <p className="setting-description" style={{ margin: '4px 0 0' }}>
+                              {steamWishlistLastResult.success
+                                ? `Last sync: ${steamWishlistLastResult.count} new game${steamWishlistLastResult.count === 1 ? '' : 's'} added from ${steamWishlistLastResult.totalFetched} fetched.`
+                                : `Last sync failed: ${steamWishlistLastResult.error}`}
+                            </p>
+                          )}
                         </div>
-                        {steamWishlistLastResult?.fetchedAt && (
-                          <p className="setting-description" style={{ margin: '4px 0 0' }}>
-                            {steamWishlistLastResult.success
-                              ? `Last sync: ${steamWishlistLastResult.count} new game${steamWishlistLastResult.count === 1 ? '' : 's'} added from ${steamWishlistLastResult.totalFetched} fetched.`
-                              : `Last sync failed: ${steamWishlistLastResult.error}`}
+                      )}
+                    </div>
+
+                    <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>System</h4>
+
+                    {startupLaunchSupported && (
+                      <div className="setting-item">
+                        <div>
+                          <label>Launch GamePilot when Windows starts</label>
+                          <p className="setting-description" style={{ margin: '6px 0 0' }}>
+                            Opens GamePilot automatically after you sign in to Windows.
                           </p>
-                        )}
+                        </div>
+                        <div className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={launchOnStartup}
+                            disabled={startupLaunchLoading}
+                            onChange={(e) => handleStartupLaunchToggle(e.target.checked)}
+                            id="launch-on-startup"
+                          />
+                          <label htmlFor="launch-on-startup" className="toggle-slider"></label>
+                        </div>
                       </div>
                     )}
-                  </div>
 
-                  <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>System</h4>
+                    <div
+                      className="setting-item"
+                      style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        <div>
+                          <label htmlFor="discord-webhook-url">Discord Share Webhook</label>
+                          <p className="setting-description" style={{ margin: '6px 0 0' }}>
+                            Optional: paste a Discord webhook URL to post share cards directly to a channel.
+                          </p>
+                        </div>
+                      </div>
+                      <input
+                        id="discord-webhook-url"
+                        type="text"
+                        value={discordWebhookUrl}
+                        onChange={(e) => setDiscordWebhookUrl(e.target.value)}
+                        onBlur={() => {
+                          const trimmed = discordWebhookUrl.trim();
+                          if (trimmed && !trimmed.startsWith('https://discord.com/api/webhooks/')) {
+                            toastError('Discord webhook URL must start with https://discord.com/api/webhooks/');
+                            return;
+                          }
+                          LocalShareService.setDiscordWebhookUrl(trimmed);
+                          if (trimmed) success('Discord webhook URL saved.');
+                        }}
+                        placeholder="https://discord.com/api/webhooks/..."
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'var(--input-bg, #1a1a2e)',
+                          color: 'inherit',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={testDiscordWebhook}
+                        disabled={webhookTestLoading || !discordWebhookUrl.trim()}
+                        style={{
+                          marginTop: 8,
+                          padding: '6px 16px',
+                          borderRadius: 8,
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: webhookTestLoading ? 'rgba(255,255,255,0.05)' : 'var(--accent, #6c5ce7)',
+                          color: '#fff',
+                          fontWeight: 600,
+                          fontSize: '0.82rem',
+                          cursor: webhookTestLoading || !discordWebhookUrl.trim() ? 'not-allowed' : 'pointer',
+                          opacity: webhookTestLoading || !discordWebhookUrl.trim() ? 0.5 : 1,
+                        }}
+                      >
+                        {webhookTestLoading ? 'Sending...' : 'Test Webhook'}
+                      </button>
+                    </div>
 
-                  {startupLaunchSupported && (
                     <div className="setting-item">
                       <div>
-                        <label>Launch GamePilot when Windows starts</label>
+                        <label>Discord Rich Presence</label>
                         <p className="setting-description" style={{ margin: '6px 0 0' }}>
-                          Opens GamePilot automatically after you sign in to Windows.
+                          Show what you're playing on your Discord profile. Updates automatically when you launch a
+                          game.
                         </p>
                       </div>
                       <div className="toggle-switch">
                         <input
                           type="checkbox"
-                          checked={launchOnStartup}
-                          disabled={startupLaunchLoading}
-                          onChange={(e) => handleStartupLaunchToggle(e.target.checked)}
-                          id="launch-on-startup"
+                          checked={discordRichPresence}
+                          onChange={(e) => {
+                            const enabled = e.target.checked;
+                            DiscordPresenceService.setEnabled(enabled);
+                            setDiscordRichPresence(enabled);
+                            if (enabled) {
+                              DiscordPresenceService.setIdlePresence();
+                            }
+                          }}
+                          id="discord-rich-presence"
                         />
-                        <label htmlFor="launch-on-startup" className="toggle-slider"></label>
+                        <label htmlFor="discord-rich-presence" className="toggle-slider"></label>
                       </div>
                     </div>
-                  )}
-
-                  <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                      <div>
-                        <label htmlFor="discord-webhook-url">Discord Share Webhook</label>
-                        <p className="setting-description" style={{ margin: '6px 0 0' }}>
-                          Optional: paste a Discord webhook URL to post share cards directly to a channel.
-                        </p>
-                      </div>
-                    </div>
-                    <input
-                      id="discord-webhook-url"
-                      type="text"
-                      value={discordWebhookUrl}
-                      onChange={(e) => setDiscordWebhookUrl(e.target.value)}
-                      onBlur={() => {
-                        const trimmed = discordWebhookUrl.trim();
-                        if (trimmed && !trimmed.startsWith('https://discord.com/api/webhooks/')) {
-                          toastError('Discord webhook URL must start with https://discord.com/api/webhooks/');
-                          return;
-                        }
-                        LocalShareService.setDiscordWebhookUrl(trimmed);
-                        if (trimmed) success('Discord webhook URL saved.');
-                      }}
-                      placeholder="https://discord.com/api/webhooks/..."
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        borderRadius: 8,
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        background: 'var(--input-bg, #1a1a2e)',
-                        color: 'inherit'
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={testDiscordWebhook}
-                      disabled={webhookTestLoading || !discordWebhookUrl.trim()}
-                      style={{
-                        marginTop: 8,
-                        padding: '6px 16px',
-                        borderRadius: 8,
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        background: webhookTestLoading ? 'rgba(255,255,255,0.05)' : 'var(--accent, #6c5ce7)',
-                        color: '#fff',
-                        fontWeight: 600,
-                        fontSize: '0.82rem',
-                        cursor: webhookTestLoading || !discordWebhookUrl.trim() ? 'not-allowed' : 'pointer',
-                        opacity: webhookTestLoading || !discordWebhookUrl.trim() ? 0.5 : 1
-                      }}
-                    >
-                      {webhookTestLoading ? 'Sending...' : 'Test Webhook'}
-                    </button>
-                  </div>
-
-                  <div className="setting-item">
-                    <div>
-                      <label>Discord Rich Presence</label>
-                      <p className="setting-description" style={{ margin: '6px 0 0' }}>
-                        Show what you're playing on your Discord profile. Updates automatically when you launch a game.
-                      </p>
-                    </div>
-                    <div className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={discordRichPresence}
-                        onChange={(e) => {
-                          const enabled = e.target.checked;
-                          DiscordPresenceService.setEnabled(enabled);
-                          setDiscordRichPresence(enabled);
-                          if (enabled) {
-                            DiscordPresenceService.setIdlePresence();
-                          }
-                        }}
-                        id="discord-rich-presence"
-                      />
-                      <label htmlFor="discord-rich-presence" className="toggle-slider"></label>
-                    </div>
-                  </div>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1214,7 +1307,9 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <div className="setting-item">
                       <div>
                         <label>Enable keyboard shortcuts</label>
-                        <p className="setting-description">Turn the global shortcut layer on or off without losing your custom bindings.</p>
+                        <p className="setting-description">
+                          Turn the global shortcut layer on or off without losing your custom bindings.
+                        </p>
                       </div>
                       <div className="toggle-switch">
                         <input
@@ -1230,7 +1325,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <div className="notification-section">
                       <h4>Shortcut Bindings</h4>
                       <p className="setting-description" style={{ marginBottom: '16px' }}>
-                        Use combinations like <strong>Ctrl+K</strong>, <strong>Ctrl+Shift+P</strong>, or <strong>?</strong>. Clear a field to fall back to the default binding.
+                        Use combinations like <strong>Ctrl+K</strong>, <strong>Ctrl+Shift+P</strong>, or{' '}
+                        <strong>?</strong>. Clear a field to fall back to the default binding.
                       </p>
                       {shortcutEntries.map((shortcutEntry) => (
                         <div key={shortcutEntry.actionId} className="setting-item shortcut-setting-item">
@@ -1261,7 +1357,10 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                       <div className="setting-item shortcut-setting-item">
                         <div>
                           <label>Shortcut help overlay</label>
-                          <p className="setting-description">Use {KeyboardShortcuts.getShortcutForAction('show_shortcuts') || '?'} anywhere outside text inputs to see the current shortcut list.</p>
+                          <p className="setting-description">
+                            Use {KeyboardShortcuts.getShortcutForAction('show_shortcuts') || '?'} anywhere outside text
+                            inputs to see the current shortcut list.
+                          </p>
                         </div>
                         <button
                           type="button"
@@ -1291,25 +1390,31 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>Data Management</h2>
                   </div>
                   <div className="data-settings">
-                  <div className="data-actions">
-                    <button onClick={() => LibraryExportService.exportLibrary(library, 'csv')} className="data-button export">
-                      <Save size={16} />
-                      Export CSV
-                    </button>
-                    <button onClick={() => LibraryExportService.exportLibrary(library, 'markdown')} className="data-button export">
-                      <Save size={16} />
-                      Export Markdown
-                    </button>
-                    <button onClick={clearCache} className="data-button clear">
-                      <Trash2 size={16} />
-                      Clear Cache
-                    </button>
-                    <button onClick={resetSettings} className="data-button reset">
-                      <AlertCircle size={16} />
-                      Reset All
-                    </button>
-                  </div>
-                  <ScanReportPanel />
+                    <div className="data-actions">
+                      <button
+                        onClick={() => LibraryExportService.exportLibrary(library, 'csv')}
+                        className="data-button export"
+                      >
+                        <Save size={16} />
+                        Export CSV
+                      </button>
+                      <button
+                        onClick={() => LibraryExportService.exportLibrary(library, 'markdown')}
+                        className="data-button export"
+                      >
+                        <Save size={16} />
+                        Export Markdown
+                      </button>
+                      <button onClick={clearCache} className="data-button clear">
+                        <Trash2 size={16} />
+                        Clear Cache
+                      </button>
+                      <button onClick={resetSettings} className="data-button reset">
+                        <AlertCircle size={16} />
+                        Reset All
+                      </button>
+                    </div>
+                    <ScanReportPanel />
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1340,7 +1445,8 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                   </div>
                   <div className="patreon-section">
                     <p>
-                      GamePilot is free and local-first. If you want to support development, visit the Founders Lounge for patron options and founder perks.
+                      GamePilot is free and local-first. If you want to support development, visit the Founders Lounge
+                      for patron options and founder perks.
                     </p>
                     <button
                       onClick={() => navigate('/donate')}
@@ -1357,7 +1463,7 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        marginTop: '12px'
+                        marginTop: '12px',
                       }}
                     >
                       <Heart size={16} />
@@ -1381,22 +1487,41 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
                     <h2>About GamePilot</h2>
                   </div>
                   <div className="about-settings">
-                    <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <div
+                      className="setting-item"
+                      style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                        }}
+                      >
                         <div>
-                          <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>GamePilot v{APP_VERSION}</strong>
+                          <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>
+                            GamePilot v{APP_VERSION}
+                          </strong>
                           <p className="setting-description" style={{ margin: '4px 0 0' }}>
-                            Local-first PC gaming librarian and personality companion. Zero cloud tracking, offline analytics.
+                            Local-first PC gaming librarian and personality companion. Zero cloud tracking, offline
+                            analytics.
                           </p>
                         </div>
-                        <span className="collapsible-folder-badge" style={{ alignSelf: 'flex-start' }}>v{APP_VERSION}</span>
+                        <span className="collapsible-folder-badge" style={{ alignSelf: 'flex-start' }}>
+                          v{APP_VERSION}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
+                    <div
+                      className="setting-item"
+                      style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}
+                    >
                       <label>Share Ideas or Report Issues</label>
                       <p className="setting-description">
-                        Have a feature idea, scanner suggestion, or bug to report? Help us make GamePilot the best librarian for your game collection.
+                        Have a feature idea, scanner suggestion, or bug to report? Help us make GamePilot the best
+                        librarian for your game collection.
                       </p>
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button
@@ -1473,7 +1598,6 @@ function Settings({ library = [], dynamicCoverBg = false, setDynamicCoverBg, min
               Save Settings
             </button>
           </div>
-
         </div>
       </div>
     </>

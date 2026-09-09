@@ -17,9 +17,7 @@ const WeeklyDigestCard = ({ library = [] }) => {
       const totalMinutes = weekly.totalPlaytimeMinutes || 0;
       const hours = Math.floor(totalMinutes / 60);
       const mins = totalMinutes % 60;
-      const timeStr = hours > 0
-        ? mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
-        : mins > 0 ? `${mins}m` : '0m';
+      const timeStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : mins > 0 ? `${mins}m` : '0m';
 
       const gamesPlayed = weekly.uniqueGames || 0;
       const sessions = weekly.sessionCount || 0;

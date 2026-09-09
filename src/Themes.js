@@ -11,7 +11,7 @@ const SEASONAL_THEMES = {
   spring: 'spring-bloom',
   summer: 'summer-heat',
   autumn: 'autumn-harvest',
-  winter: 'winter-frost'
+  winter: 'winter-frost',
 };
 
 const getCurrentSeason = () => {
@@ -26,13 +26,13 @@ const SEASON_LABELS = {
   spring: 'Spring Bloom',
   summer: 'Summer Heat',
   autumn: 'Autumn Harvest',
-  winter: 'Winter Frost'
+  winter: 'Winter Frost',
 };
 
 const pageStyle = {
   minHeight: '100vh',
   padding: '24px',
-  color: 'var(--text)'
+  color: 'var(--text)',
 };
 
 const heroStyle = {
@@ -42,7 +42,7 @@ const heroStyle = {
   border: '1px solid var(--border-color)',
   borderRadius: '16px',
   padding: '24px',
-  boxShadow: 'var(--shadow)'
+  boxShadow: 'var(--shadow)',
 };
 
 const sectionStyle = {
@@ -52,20 +52,20 @@ const sectionStyle = {
   border: '1px solid var(--border-color)',
   borderRadius: '16px',
   padding: '24px',
-  boxShadow: 'var(--shadow)'
+  boxShadow: 'var(--shadow)',
 };
 
 const gridStyle = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '16px'
+  gap: '16px',
 };
 
 const cardStyle = {
   border: '1px solid var(--border-color)',
   borderRadius: '14px',
   padding: '16px',
-  background: 'var(--bg-secondary)'
+  background: 'var(--bg-secondary)',
 };
 
 const previewStyle = (preview) => ({
@@ -73,15 +73,11 @@ const previewStyle = (preview) => ({
   borderRadius: '12px',
   marginBottom: '12px',
   background: preview || 'linear-gradient(135deg, rgba(255, 107, 53, 0.24), rgba(34, 40, 104, 0.2))',
-  border: '1px solid rgba(255,255,255,0.08)'
+  border: '1px solid rgba(255,255,255,0.08)',
 });
 
 function Themes() {
-  const {
-    currentTheme,
-    setTheme,
-    availableThemes
-  } = useTheme();
+  const { currentTheme, setTheme, availableThemes } = useTheme();
 
   const [autoSeasonal, setAutoSeasonal] = useState(() => {
     return StorageService.getString('autoSeasonalTheme') !== 'false';
@@ -105,31 +101,33 @@ function Themes() {
   const themeTierProgression = useMemo(() => ProgressionUnlockService.getThemeTierProgression() || {}, []);
   const unlockableThemes = useMemo(() => ProgressionUnlockService.getUnlockableThemes() || [], []);
   const seasonalChallenges = useMemo(() => SeasonalRewardService.getActiveChallenges() || [], []);
-  const currentChallenge = seasonalChallenges.find(c => c.isActive);
+  const currentChallenge = seasonalChallenges.find((c) => c.isActive);
 
   const themeCards = useMemo(() => {
     const coreThemes = Object.values(availableThemes || {})
       .filter((themeMeta) => themeMeta.id === 'light' || themeMeta.id === 'dark')
       .map((themeMeta) => ({
-      id: themeMeta.id,
-      name: themeMeta.name,
-      description: 'Core theme available immediately.',
-      preview: moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.card
-        ? `linear-gradient(135deg, ${moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.primary}, ${moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.accent})`
-        : null,
-      unlocked: true,
-      requiredXP: 0,
-      isCore: true
-    }));
+        id: themeMeta.id,
+        name: themeMeta.name,
+        description: 'Core theme available immediately.',
+        preview: moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.card
+          ? `linear-gradient(135deg, ${moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.primary}, ${moodThemes.find((entry) => entry.id === themeMeta.id)?.palette?.accent})`
+          : null,
+        unlocked: true,
+        requiredXP: 0,
+        isCore: true,
+      }));
 
     const unlockableThemeCards = unlockableThemes.map((themeMeta) => ({
       id: themeMeta.id,
       name: themeMeta.name,
       description: themeMeta.description || 'XP-gated theme unlock.',
-      preview: themeMeta.preview || `linear-gradient(135deg, ${themeMeta.palette?.primary || '#ff6b35'}, ${themeMeta.palette?.accent || '#f093fb'})`,
+      preview:
+        themeMeta.preview ||
+        `linear-gradient(135deg, ${themeMeta.palette?.primary || '#ff6b35'}, ${themeMeta.palette?.accent || '#f093fb'})`,
       unlocked: Boolean(themeMeta.unlocked),
       requiredXP: themeMeta.requiredXP || 0,
-      isCore: false
+      isCore: false,
     }));
 
     const seen = new Set();
@@ -154,21 +152,25 @@ function Themes() {
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
           <span className="confidence-badge">Current: {currentTheme}</span>
-          <span className="match-score">Unlocked Themes: {rewardSummary?.unlockedCounts?.themes ?? 0}/{rewardSummary?.totalCounts?.themes ?? 0}</span>
+          <span className="match-score">
+            Unlocked Themes: {rewardSummary?.unlockedCounts?.themes ?? 0}/{rewardSummary?.totalCounts?.themes ?? 0}
+          </span>
         </div>
 
         {/* Seasonal Theme Toggle */}
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '16px', 
-          background: 'var(--bg-secondary)', 
-          borderRadius: '12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
+        <div
+          style={{
+            marginTop: '20px',
+            padding: '16px',
+            background: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
           <div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>Seasonal Themes</h3>
             <p style={{ margin: 0, opacity: 0.7, fontSize: '13px' }}>
@@ -185,7 +187,7 @@ function Themes() {
               color: '#fff',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '14px'
+              fontSize: '14px',
             }}
           >
             {autoSeasonal ? 'Auto: On' : 'Auto: Off'}
@@ -194,20 +196,31 @@ function Themes() {
 
         {/* Seasonal Challenge Progress */}
         {currentChallenge && !currentChallenge.unlocked && (
-          <div style={{ 
-            marginTop: '16px', 
-            padding: '16px', 
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2))', 
-            borderRadius: '12px',
-            border: '1px solid rgba(139, 92, 246, 0.3)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '16px',
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2))',
+              borderRadius: '12px',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+            }}
+          >
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}
+            >
               <h3 style={{ margin: 0, fontSize: '15px', color: '#a78bfa' }}>Limited Time: {currentChallenge.name}</h3>
-              <span style={{ fontSize: '12px', opacity: 0.7 }}>{currentChallenge.plays}/{currentChallenge.requirement.count} games</span>
+              <span style={{ fontSize: '12px', opacity: 0.7 }}>
+                {currentChallenge.plays}/{currentChallenge.requirement.count} games
+              </span>
             </div>
             <p style={{ margin: '0 0 12px 0', fontSize: '13px', opacity: 0.8 }}>{currentChallenge.description}</p>
             <div className="weekly-quest-progress-bar" style={{ height: '8px' }}>
-              <span style={{ width: `${currentChallenge.progressPercent}%`, background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)' }} />
+              <span
+                style={{
+                  width: `${currentChallenge.progressPercent}%`,
+                  background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)',
+                }}
+              />
             </div>
             <p style={{ margin: '8px 0 0 0', fontSize: '11px', opacity: 0.6 }}>
               Play {currentChallenge.requirement.count - currentChallenge.plays} more to unlock the theme!
@@ -217,18 +230,24 @@ function Themes() {
 
         {/* Unlocked Seasonal Reward */}
         {currentChallenge?.unlocked && (
-          <div style={{ 
-            marginTop: '16px', 
-            padding: '16px', 
-            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(59, 130, 246, 0.2))', 
-            borderRadius: '12px',
-            border: '1px solid rgba(34, 197, 94, 0.3)'
-          }}>
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '16px',
+              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(59, 130, 246, 0.2))',
+              borderRadius: '12px',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '24px' }}>🎉 unlocked!</span>
               <div>
-                <h3 style={{ margin: 0, fontSize: '15px', color: '#4ade80' }}>{currentChallenge.name} Theme Unlocked!</h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '13px', opacity: 0.8 }}>You can now use this theme anytime.</p>
+                <h3 style={{ margin: 0, fontSize: '15px', color: '#4ade80' }}>
+                  {currentChallenge.name} Theme Unlocked!
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', opacity: 0.8 }}>
+                  You can now use this theme anytime.
+                </p>
               </div>
             </div>
           </div>
@@ -242,9 +261,15 @@ function Themes() {
             const isCurrent = currentTheme === themeMeta.id;
             const isLocked = !themeMeta.unlocked;
             return (
-              <div key={themeMeta.id} style={cardStyle} className={`theme-gallery-card ${isCurrent ? 'active' : ''} ${isLocked ? 'locked' : ''}`}>
+              <div
+                key={themeMeta.id}
+                style={cardStyle}
+                className={`theme-gallery-card ${isCurrent ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+              >
                 <div style={previewStyle(themeMeta.preview)} className="theme-gallery-preview" />
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}
+                >
                   <div>
                     <h3 style={{ margin: '0 0 6px 0' }}>{themeMeta.name}</h3>
                     <p style={{ margin: 0, opacity: 0.75, fontSize: '0.92rem' }}>{themeMeta.description}</p>

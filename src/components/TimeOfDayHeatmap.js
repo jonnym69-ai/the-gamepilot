@@ -43,9 +43,7 @@ const TimeOfDayHeatmap = ({ library = [] }) => {
   return (
     <div className="time-of-day-heatmap">
       <div className="time-of-day-header">
-        <span className="time-of-day-total">
-          {Math.round(totalMinutes / 60)}h tracked
-        </span>
+        <span className="time-of-day-total">{Math.round(totalMinutes / 60)}h tracked</span>
         <div className="time-of-day-legend">
           <span>Less</span>
           <div className="legend-gradient" />
@@ -68,7 +66,7 @@ const TimeOfDayHeatmap = ({ library = [] }) => {
             <div className="time-of-day-day-label">{day}</div>
             {HOUR_LABELS.map((hour) => {
               const value = grid[dayIndex][hour];
-              const hours = Math.round(value / 60 * 10) / 10;
+              const hours = Math.round((value / 60) * 10) / 10;
               return (
                 <div
                   key={`${day}-${hour}`}

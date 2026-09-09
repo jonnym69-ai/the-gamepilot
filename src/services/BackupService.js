@@ -11,7 +11,7 @@ const BackupService = {
    */
   createBackup() {
     try {
-      const keys = StorageService.keys().filter(key => !EXCLUDED_KEYS.includes(key));
+      const keys = StorageService.keys().filter((key) => !EXCLUDED_KEYS.includes(key));
       const data = {};
       for (const key of keys) {
         data[key] = StorageService.get(key);
@@ -22,7 +22,7 @@ const BackupService = {
         exportedAt: new Date().toISOString(),
         app: 'GamePilot',
         entries: keys.length,
-        data
+        data,
       };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       return { success: true, data: backup, blob, message: 'Backup created successfully.' };
@@ -88,7 +88,7 @@ const BackupService = {
       sessions: Array.isArray(sessions) ? sessions.length : 0,
       settings: Object.keys(data).length,
       exportedAt: backup?.exportedAt || null,
-      totalSize
+      totalSize,
     };
   },
 
@@ -135,7 +135,7 @@ const BackupService = {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }
+  },
 };
 
 export default BackupService;

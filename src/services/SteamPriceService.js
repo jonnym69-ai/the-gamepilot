@@ -12,17 +12,17 @@ export class SteamPriceService {
     try {
       const cached = StorageService.getString(this.CACHE_KEY);
       if (!cached) return {};
-      
+
       const data = JSON.parse(cached);
       const now = Date.now();
-      
+
       // Clean expired entries
-      Object.keys(data).forEach(appId => {
+      Object.keys(data).forEach((appId) => {
         if (now - data[appId].timestamp > this.CACHE_DURATION) {
           delete data[appId];
         }
       });
-      
+
       StorageService.set(this.CACHE_KEY, data);
       return data;
     } catch (error) {
@@ -37,7 +37,7 @@ export class SteamPriceService {
       const cache = this.getCache();
       cache[appId] = {
         ...priceData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       StorageService.set(this.CACHE_KEY, cache);
     } catch (error) {
@@ -56,10 +56,9 @@ export class SteamPriceService {
     }
 
     try {
-      const response = await fetch(
-        `${this.STEAM_API_URL}?appids=${appId}&cc=US&filters=price_overview`,
-        { method: 'GET' }
-      );
+      const response = await fetch(`${this.STEAM_API_URL}?appids=${appId}&cc=US&filters=price_overview`, {
+        method: 'GET',
+      });
 
       if (!response.ok) {
         console.warn(`Failed to fetch price for app ${appId}`);
@@ -67,14 +66,14 @@ export class SteamPriceService {
       }
 
       const data = await response.json();
-      
+
       if (!data[appId] || !data[appId].success) {
         console.warn(`No price data for app ${appId}`);
         return null;
       }
 
       const appData = data[appId].data;
-      
+
       if (!appData.price_overview) {
         // Game is free
         const freeData = {
@@ -82,7 +81,7 @@ export class SteamPriceService {
           priceNumeric: 0,
           currency: 'USD',
           discount: 0,
-          originalPrice: 0
+          originalPrice: 0,
         };
         this.saveToCache(appId, freeData);
         return freeData;
@@ -95,7 +94,7 @@ export class SteamPriceService {
         currency: priceOverview.currency || 'USD',
         discount: priceOverview.discount_percent || 0,
         originalPrice: priceOverview.initial / 100,
-        name: appData.name
+        name: appData.name,
       };
 
       // Cache the result
@@ -110,16 +109,16 @@ export class SteamPriceService {
   // Fetch prices for multiple games
   static async fetchPrices(appIds) {
     const prices = {};
-    
+
     for (const appId of appIds) {
       const price = await this.fetchPrice(appId);
       if (price) {
         prices[appId] = price;
       }
       // Add small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
+
     return prices;
   }
 
@@ -132,9 +131,9 @@ export class SteamPriceService {
   // Get price for a game with currency conversion
   static getPrice(game, currency = null) {
     if (!game) return null;
-    
+
     const selectedCurrency = currency || getCurrentCurrency();
-    
+
     // Check if game has cached price
     const cache = this.getCache();
     const appId = game.appid || game.steamAppId;
@@ -143,19 +142,19 @@ export class SteamPriceService {
       return {
         ...cachedPrice,
         price: this.formatPriceInCurrency(cachedPrice.priceNumeric, selectedCurrency),
-        currency: selectedCurrency
+        currency: selectedCurrency,
       };
     }
-    
+
     // Return stored price if available
     if (game.price) {
       return {
         price: this.formatPriceInCurrency(game.priceNumeric || 0, selectedCurrency),
         priceNumeric: game.priceNumeric || 0,
-        currency: selectedCurrency
+        currency: selectedCurrency,
       };
     }
-    
+
     return null;
   }
 

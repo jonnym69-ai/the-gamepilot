@@ -30,9 +30,15 @@ const PatchNewsPanel = ({ game }) => {
     let cancelled = false;
     setLoading(true);
     SteamNewsService.getNews(game)
-      .then((result) => { if (!cancelled) setEntry(result); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((result) => {
+        if (!cancelled) setEntry(result);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [game]);
 
   if (!game || String(game.platform || '').toLowerCase() !== 'steam') return null;
@@ -54,7 +60,10 @@ const PatchNewsPanel = ({ game }) => {
         <button
           type="button"
           className="patch-news-enable"
-          onClick={() => { SteamNewsService.setEnabled(true); setEnabled(true); }}
+          onClick={() => {
+            SteamNewsService.setEnabled(true);
+            setEnabled(true);
+          }}
         >
           Enable now
         </button>

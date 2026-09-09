@@ -1,16 +1,6 @@
 import React from 'react';
 
-function SpecCard({
-  icon: Icon,
-  title,
-  model,
-  details,
-  badgeText,
-  badgeColor,
-  score,
-  scoreColor,
-  children,
-}) {
+function SpecCard({ icon: Icon, title, model, details, badgeText, badgeColor, score, scoreColor, children }) {
   return (
     <div className="spec-card">
       <div className="spec-header">
@@ -25,10 +15,7 @@ function SpecCard({
       )}
       {children}
       {badgeText && (
-        <div
-          className="tier-badge"
-          style={{ background: badgeColor }}
-        >
+        <div className="tier-badge" style={{ background: badgeColor }}>
           {badgeText}
         </div>
       )}

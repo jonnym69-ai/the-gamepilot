@@ -60,24 +60,27 @@ export function RecentSessionsSummary() {
       });
 
       const lastSession = sorted[0];
-      const lastMinutes = Math.round(Number(
-        lastSession?.playtimeMinutes ?? lastSession?.playtime ?? lastSession?.duration ?? lastSession?.minutes ?? 0
-      ) || 0);
+      const lastMinutes = Math.round(
+        Number(
+          lastSession?.playtimeMinutes ?? lastSession?.playtime ?? lastSession?.duration ?? lastSession?.minutes ?? 0
+        ) || 0
+      );
       const lastGame = lastSession?.gameName || lastSession?.gameId || null;
       const lastTs = lastSession?.endTime || lastSession?.timestamp || null;
 
-      const longestThisWeek = weekSessions
-        .map((s) => ({
-          name: s.gameName || s.gameId || 'Unknown',
-          minutes: Math.round(Number(s.playtimeMinutes ?? s.playtime ?? s.duration ?? s.minutes ?? 0) || 0),
-          ts: s.endTime || s.timestamp || null,
-        }))
-        .filter((s) => s.minutes > 0)
-        .sort((a, b) => b.minutes - a.minutes)[0] || null;
+      const longestThisWeek =
+        weekSessions
+          .map((s) => ({
+            name: s.gameName || s.gameId || 'Unknown',
+            minutes: Math.round(Number(s.playtimeMinutes ?? s.playtime ?? s.duration ?? s.minutes ?? 0) || 0),
+            ts: s.endTime || s.timestamp || null,
+          }))
+          .filter((s) => s.minutes > 0)
+          .sort((a, b) => b.minutes - a.minutes)[0] || null;
 
-      const gamesThisWeek = [...new Set(
-        weekSessions.map((s) => String(s.gameName || s.gameId || '').trim()).filter(Boolean)
-      )];
+      const gamesThisWeek = [
+        ...new Set(weekSessions.map((s) => String(s.gameName || s.gameId || '').trim()).filter(Boolean)),
+      ];
 
       const totalWeekMinutes = weekSessions.reduce((sum, s) => {
         const m = Math.round(Number(s.playtimeMinutes ?? s.playtime ?? s.duration ?? s.minutes ?? 0) || 0);
@@ -88,10 +91,12 @@ export function RecentSessionsSummary() {
         lastGame,
         lastDuration: formatDuration(lastMinutes),
         lastTimeAgo: formatRelativeTime(lastTs),
-        longestThisWeek: longestThisWeek ? {
-          name: longestThisWeek.name,
-          duration: formatDuration(longestThisWeek.minutes),
-        } : null,
+        longestThisWeek: longestThisWeek
+          ? {
+              name: longestThisWeek.name,
+              duration: formatDuration(longestThisWeek.minutes),
+            }
+          : null,
         gamesThisWeek,
         totalWeekTime: formatDuration(totalWeekMinutes),
         weekSessionCount: weekSessions.length,
@@ -113,7 +118,8 @@ export function RecentSessionsSummary() {
               <span className="recent-session-label">Last session</span>
               <span className="recent-session-value">{data.lastGame}</span>
               <span className="recent-session-meta">
-                {data.lastDuration ? `${data.lastDuration} · ` : ''}{data.lastTimeAgo}
+                {data.lastDuration ? `${data.lastDuration} · ` : ''}
+                {data.lastTimeAgo}
               </span>
             </div>
           )}
@@ -131,7 +137,8 @@ export function RecentSessionsSummary() {
                 {data.weekSessionCount} session{data.weekSessionCount !== 1 ? 's' : ''} · {data.totalWeekTime || '0m'}
               </span>
               <span className="recent-session-meta">
-                {data.gamesThisWeek.length} game{data.gamesThisWeek.length !== 1 ? 's' : ''}: {data.gamesThisWeek.slice(0, 4).join(', ')}
+                {data.gamesThisWeek.length} game{data.gamesThisWeek.length !== 1 ? 's' : ''}:{' '}
+                {data.gamesThisWeek.slice(0, 4).join(', ')}
                 {data.gamesThisWeek.length > 4 ? ` +${data.gamesThisWeek.length - 4}` : ''}
               </span>
             </div>
@@ -144,7 +151,11 @@ export function RecentSessionsSummary() {
 
 export function CurrentEraCard() {
   const era = React.useMemo(() => {
-    try { return CurrentEraService.getCurrentEra(); } catch { return null; }
+    try {
+      return CurrentEraService.getCurrentEra();
+    } catch {
+      return null;
+    }
   }, []);
 
   if (!era || !era.snapshot || era.snapshot.totalMinutes <= 0) return null;
@@ -164,14 +175,17 @@ export function CurrentEraCard() {
           <div className="identity-header">
             <span className="identity-label">{era.name}</span>
             <p className="identity-description" style={{ opacity: 0.75, marginBottom: 6 }}>
-              {era.flavor} · {hours}h across {era.snapshot.topGames.length} game{era.snapshot.topGames.length !== 1 ? 's' : ''}
+              {era.flavor} · {hours}h across {era.snapshot.topGames.length} game
+              {era.snapshot.topGames.length !== 1 ? 's' : ''}
               {era.snapshot.avgSessionLength > 0 ? ` · ~${era.snapshot.avgSessionLength}m sessions` : ''}
             </p>
           </div>
           {topGames.length > 0 && (
             <div className="identity-tags">
               {topGames.map((game) => (
-                <span key={game.name} className="identity-tag">{game.name}</span>
+                <span key={game.name} className="identity-tag">
+                  {game.name}
+                </span>
               ))}
             </div>
           )}
@@ -201,9 +215,7 @@ export function IdentitySnapshotCard({ persona }) {
   const primary = publicIdentity?.primary || null;
   const roast = publicIdentity?.roast || null;
   const label = publicIdentity?.label || null;
-  const tags = [
-    ...(publicIdentity?.subTraits || []).map((trait) => trait.label)
-  ].filter(Boolean);
+  const tags = [...(publicIdentity?.subTraits || []).map((trait) => trait.label)].filter(Boolean);
   const confidence = publicIdentity?.confidence || 'none';
   const isEmpty = !label && tags.length === 0 && !roast;
   const canTune = !StartupPersonalizationService.hasCompletedOnboarding();
@@ -212,14 +224,15 @@ export function IdentitySnapshotCard({ persona }) {
   const blendFactor = publicIdentity?.blendFactor ?? 0;
   const isWarmingUp = blendFactor < 1;
 
-  const confidenceMeta = {
-    high: { label: 'Locked in', className: 'is-confirmed' },
-    medium: { label: 'Learning', className: 'is-growing' },
-    low: { label: 'Early read', className: 'is-provisional' },
-    confirmed: { label: 'Locked in', className: 'is-confirmed' },
-    growing: { label: 'Learning', className: 'is-growing' },
-    provisional: { label: 'Early read', className: 'is-provisional' }
-  }[confidence] || null;
+  const confidenceMeta =
+    {
+      high: { label: 'Locked in', className: 'is-confirmed' },
+      medium: { label: 'Learning', className: 'is-growing' },
+      low: { label: 'Early read', className: 'is-provisional' },
+      confirmed: { label: 'Locked in', className: 'is-confirmed' },
+      growing: { label: 'Learning', className: 'is-growing' },
+      provisional: { label: 'Early read', className: 'is-provisional' },
+    }[confidence] || null;
 
   const provisionalNote = isWarmingUp
     ? 'Warming up — blending your library with tracked play until ~10h of recent sessions. After that, this is purely your current rotation.'
@@ -235,7 +248,8 @@ export function IdentitySnapshotCard({ persona }) {
           <div className="identity-empty">
             <span className="identity-empty-icon">🧭</span>
             <p className="identity-empty-text">
-              Scan your library and play a few sessions — GamePilot will build a roast-backed persona from how you actually play.
+              Scan your library and play a few sessions — GamePilot will build a roast-backed persona from how you
+              actually play.
             </p>
           </div>
         </div>
@@ -257,11 +271,11 @@ export function IdentitySnapshotCard({ persona }) {
           <div className="identity-header">
             <span className="identity-label">{label || 'Gamer in progress'}</span>
             {primary?.description && (
-              <p className="identity-description" style={{ opacity: 0.75, marginBottom: 6 }}>{primary.description}</p>
+              <p className="identity-description" style={{ opacity: 0.75, marginBottom: 6 }}>
+                {primary.description}
+              </p>
             )}
-            {roast && (
-              <p className="identity-description">{roast}</p>
-            )}
+            {roast && <p className="identity-description">{roast}</p>}
             {topGameName && (
               <p className="identity-provisional-note" style={{ marginTop: 4 }}>
                 Built from your play — currently led by {topGameName}.
@@ -285,7 +299,7 @@ export function IdentitySnapshotCard({ persona }) {
                       color: 'var(--button-primary-bg)',
                       font: 'inherit',
                       textDecoration: 'underline',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     Tune recommendations →
@@ -296,7 +310,9 @@ export function IdentitySnapshotCard({ persona }) {
           )}
           <div className="identity-tags">
             {tags.map((tag, i) => (
-              <span key={`tag-${i}`} className="identity-tag">{tag}</span>
+              <span key={`tag-${i}`} className="identity-tag">
+                {tag}
+              </span>
             ))}
           </div>
           <div className="identity-metrics">
@@ -338,7 +354,7 @@ export function IdentitySnapshotCard({ persona }) {
                 color: 'var(--button-primary-bg)',
                 font: 'inherit',
                 textDecoration: 'underline',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               View all-time persona →
@@ -387,18 +403,16 @@ export function WeeklyPlaySnapshot({ weeklyStats, streaks }) {
   );
 }
 
-export function BecauseYouAreSection({
-  library,
-  platformIcons,
-  formatPlaytime,
-  onLaunchGame,
-  getGameCardClass
-}) {
+export function BecauseYouAreSection({ library, platformIcons, formatPlaytime, onLaunchGame, getGameCardClass }) {
   try {
     const publicIdentity = React.useMemo(() => {
       // This shelf is the all-time showcase: the all-time persona roasting
       // your most-played games, so the voice and the picks agree.
-      try { return GamingPersonaService.getPublicIdentity({ mode: 'all-time' }); } catch { return null; }
+      try {
+        return GamingPersonaService.getPublicIdentity({ mode: 'all-time' });
+      } catch {
+        return null;
+      }
     }, []);
     if (!publicIdentity?.label) return null;
 
@@ -414,9 +428,7 @@ export function BecauseYouAreSection({
     return (
       <div className="results-section">
         <div className="result-card because-you-are-card">
-          <h3 className="result-title">
-            {publicIdentity.becauseYouAre}
-          </h3>
+          <h3 className="result-title">{publicIdentity.becauseYouAre}</h3>
           <p style={{ color: 'var(--text)', opacity: 0.7, marginBottom: '16px', fontSize: '0.9rem' }}>
             {publicIdentity.roast
               ? `${publicIdentity.roast} These are your most-played games of all time.`
@@ -424,12 +436,25 @@ export function BecauseYouAreSection({
           </p>
           <div className="game-grid">
             {matchedGames.map((game, index) => {
-              const { artwork, fallbackSrc: artworkFallback, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
+              const {
+                artwork,
+                fallbackSrc: artworkFallback,
+                placeholder,
+              } = resolveGameArtworkBundle(game, { surface: 'portrait', fallbackSurface: 'hero' });
               return (
-                <div key={game.appid || game.name || index} className={getGameCardClass ? getGameCardClass(index) : 'game-card'}>
+                <div
+                  key={game.appid || game.name || index}
+                  className={getGameCardClass ? getGameCardClass(index) : 'game-card'}
+                >
                   <div className="game-card-image-wrapper">
                     {artwork ? (
-                      <LazyImage src={artwork} fallbackSrc={artworkFallback} alt={game.name} placeholder={placeholder} className="game-image home-grid-poster" />
+                      <LazyImage
+                        src={artwork}
+                        fallbackSrc={artworkFallback}
+                        alt={game.name}
+                        placeholder={placeholder}
+                        className="game-image home-grid-poster"
+                      />
                     ) : (
                       <div className="game-placeholder home-grid-poster">
                         <div className="platform-icon">{platformIcons[game.platform] || '❓'}</div>
@@ -440,7 +465,9 @@ export function BecauseYouAreSection({
                   <p className="game-platform">{game.platform}</p>
                   <div className="game-info">
                     <span className="game-genre">
-                      {game.genres && game.genres.length > 0 ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie' : 'Indie'}
+                      {game.genres && game.genres.length > 0
+                        ? game.genres.filter((g) => g !== 'Unknown')[0] || 'Indie'
+                        : 'Indie'}
                     </span>
                     {formatPlaytime(game.time_played) && (
                       <span className="game-playtime">{formatPlaytime(game.time_played)}</span>
@@ -472,20 +499,21 @@ export function FamiliarOrFreshNudge({ library, onLaunchGame, formatPlaytime, fo
   try {
     const profiles = GamingIdentity.getFamiliarityProfiles();
 
-    familiarGame = (profiles.familiarGames || [])
-      .filter((g) => g.last_played)
-      .sort((a, b) => new Date(b.last_played).getTime() - new Date(a.last_played).getTime())[0] || null;
+    familiarGame =
+      (profiles.familiarGames || [])
+        .filter((g) => g.last_played)
+        .sort((a, b) => new Date(b.last_played).getTime() - new Date(a.last_played).getTime())[0] || null;
 
-    freshGame = (profiles.freshGames || [])
-      .sort((a, b) => {
+    freshGame =
+      (profiles.freshGames || []).sort((a, b) => {
         const aTime = a.date_added ? new Date(a.date_added).getTime() : 0;
         const bTime = b.date_added ? new Date(b.date_added).getTime() : 0;
         return bTime - aTime;
       })[0] || null;
 
     if (!familiarGame && profiles.familiarGames.length > 0) {
-      familiarGame = profiles.familiarGames
-        .sort((a, b) => Number(b.time_played || 0) - Number(a.time_played || 0))[0] || null;
+      familiarGame =
+        profiles.familiarGames.sort((a, b) => Number(b.time_played || 0) - Number(a.time_played || 0))[0] || null;
     }
 
     if (!freshGame) {
@@ -509,7 +537,8 @@ export function FamiliarOrFreshNudge({ library, onLaunchGame, formatPlaytime, fo
             <div className="familiar-fresh-label">Familiar</div>
             <div className="familiar-fresh-game-name">{familiarGame.name}</div>
             <div className="familiar-fresh-detail">
-              {familiarGame.time_played > 0 && `${formatPlaytime ? formatPlaytime(familiarGame.time_played) : `${Math.round(familiarGame.time_played / 60)}h`} played`}
+              {familiarGame.time_played > 0 &&
+                `${formatPlaytime ? formatPlaytime(familiarGame.time_played) : `${Math.round(familiarGame.time_played / 60)}h`} played`}
               {familiarGame.last_played && formatLastPlayed && ` · ${formatLastPlayed(familiarGame.last_played)}`}
             </div>
             <div className="familiar-fresh-action">Continue</div>
@@ -552,10 +581,7 @@ export function CurrentChampionCard({ library = [] }) {
   const [isCapturing, setIsCapturing] = React.useState(false);
   const username = ProfileService.getCurrentUsername();
 
-  const weekChampion = React.useMemo(
-    () => PeriodChampionService.getLiveChampion('week', { library }),
-    [library]
-  );
+  const weekChampion = React.useMemo(() => PeriodChampionService.getLiveChampion('week', { library }), [library]);
   const lastMonthChampion = React.useMemo(
     () => PeriodChampionService.getLastLockedChampion('month', { library }),
     [library]
@@ -576,7 +602,10 @@ export function CurrentChampionCard({ library = [] }) {
   return (
     <div className="results-section">
       <div className="result-card champion-card">
-        <div className="champion-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          className="champion-card-header"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h3 className="result-title">🏆 This Week's Champion</h3>
             {isLive && <span className="champion-live-badge">Live</span>}
@@ -593,7 +622,12 @@ export function CurrentChampionCard({ library = [] }) {
               if (!shareCardRef.current) return false;
               setIsCapturing(true);
               try {
-                const canvas = await html2canvas(shareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                const canvas = await html2canvas(shareCardRef.current, {
+                  scale: 2,
+                  backgroundColor: null,
+                  useCORS: true,
+                  logging: false,
+                });
                 const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
                 if (!blob) return false;
                 return LocalShareService.copyImageToClipboard(blob);
@@ -608,7 +642,12 @@ export function CurrentChampionCard({ library = [] }) {
               if (!shareCardRef.current) return;
               setIsCapturing(true);
               try {
-                const canvas = await html2canvas(shareCardRef.current, { scale: 2, backgroundColor: null, useCORS: true, logging: false });
+                const canvas = await html2canvas(shareCardRef.current, {
+                  scale: 2,
+                  backgroundColor: null,
+                  useCORS: true,
+                  logging: false,
+                });
                 const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
                 if (!blob) return;
                 const url = URL.createObjectURL(blob);
@@ -655,15 +694,14 @@ export function CurrentChampionCard({ library = [] }) {
               <span className="champion-hours">{hours}</span>
               <span className="champion-hours-label">this week</span>
               {weekChampion.totalPeriodMinutes > weekChampion.minutes && (
-                <span className="champion-total">· {totalHours} total across {weekChampion.sessionCount} session{weekChampion.sessionCount === 1 ? '' : 's'}</span>
+                <span className="champion-total">
+                  · {totalHours} total across {weekChampion.sessionCount} session
+                  {weekChampion.sessionCount === 1 ? '' : 's'}
+                </span>
               )}
             </div>
-            {personaLabel && (
-              <div className="champion-persona-label">{personaLabel}</div>
-            )}
-            {roastLine && (
-              <p className="champion-roast">{roastLine}</p>
-            )}
+            {personaLabel && <div className="champion-persona-label">{personaLabel}</div>}
+            {roastLine && <p className="champion-roast">{roastLine}</p>}
             {runnerUp && (
               <div className="champion-runner-up">
                 Runner-up: {runnerUp.name} ({formatChampionHours(runnerUp.minutes)})
@@ -702,11 +740,7 @@ export function CurrentChampionCard({ library = [] }) {
         {/* Hidden Render Target for Champion Share Image */}
         <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
           <div ref={shareCardRef}>
-            <ChampionShareCard
-              champion={weekChampion}
-              periodType="week"
-              username={username}
-            />
+            <ChampionShareCard champion={weekChampion} periodType="week" username={username} />
           </div>
         </div>
       </div>

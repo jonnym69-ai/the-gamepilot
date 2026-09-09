@@ -18,7 +18,7 @@ import {
   LayoutGrid,
   Folder,
   Shield,
-  Star
+  Star,
 } from 'lucide-react';
 import { SmartCollectionsService } from '../services/SmartCollectionsService';
 import { UserRuleCollectionService } from '../services/UserRuleCollectionService';
@@ -42,7 +42,7 @@ const ICON_MAP = {
   sparkles: Sparkles,
   folder: Folder,
   shield: Shield,
-  star: Star
+  star: Star,
 };
 
 const SmartCollectionCard = ({ collection, onLaunchGame, onDismiss }) => {
@@ -54,29 +54,24 @@ const SmartCollectionCard = ({ collection, onLaunchGame, onDismiss }) => {
     <div className="smart-collection-card" style={{ '--collection-accent': collection.color }}>
       <div className="smart-collection-header">
         <div className="smart-collection-meta">
-          <div className="smart-collection-icon" style={{ background: `${collection.color}20`, color: collection.color }}>
+          <div
+            className="smart-collection-icon"
+            style={{ background: `${collection.color}20`, color: collection.color }}
+          >
             <Icon size={18} />
           </div>
           <div className="smart-collection-titles">
             <h4 className="smart-collection-title">
               {collection.title}
-              {collection.isUserCreated && (
-                <span className="smart-collection-user-badge">Custom</span>
-              )}
-              {collection.isPreset && (
-                <span className="smart-collection-preset-badge">Preset</span>
-              )}
+              {collection.isUserCreated && <span className="smart-collection-user-badge">Custom</span>}
+              {collection.isPreset && <span className="smart-collection-preset-badge">Preset</span>}
             </h4>
             <p className="smart-collection-subtitle">{collection.subtitle}</p>
           </div>
         </div>
         <div className="smart-collection-actions">
           {collection.games.length > 4 && (
-            <button
-              type="button"
-              className="smart-collection-expand"
-              onClick={() => setExpanded(!expanded)}
-            >
+            <button type="button" className="smart-collection-expand" onClick={() => setExpanded(!expanded)}>
               {expanded ? 'Show less' : `+${collection.games.length - 4} more`}
             </button>
           )}
@@ -96,7 +91,9 @@ const SmartCollectionCard = ({ collection, onLaunchGame, onDismiss }) => {
           <p>{collection.insight}</p>
           <div className="smart-collection-gaps">
             {collection.gaps?.slice(0, 6).map((gap) => (
-              <span key={gap} className="smart-gap-pill">{gap}</span>
+              <span key={gap} className="smart-gap-pill">
+                {gap}
+              </span>
             ))}
           </div>
         </div>
@@ -181,11 +178,7 @@ const SmartCollectionsShelf = ({ library = [], onLaunchGame }) => {
         </div>
         <div className="smart-collections-empty">
           <p>No smart collections yet.</p>
-          <button
-            type="button"
-            className="smart-collections-create-btn"
-            onClick={() => setShowCreateModal(true)}
-          >
+          <button type="button" className="smart-collections-create-btn" onClick={() => setShowCreateModal(true)}>
             Create your first collection
           </button>
         </div>

@@ -59,7 +59,13 @@ const SmartNudgeCard = ({ library = [], onLaunchGame }) => {
       <div className="smart-nudge-card-body">
         <div className="smart-nudge-card-art">
           {artwork ? (
-            <img src={artwork} alt={nudge.game.name} onError={(e) => { e.target.style.display = 'none'; }} />
+            <img
+              src={artwork}
+              alt={nudge.game.name}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
           ) : (
             <div className="smart-nudge-card-placeholder">{placeholder}</div>
           )}
@@ -71,7 +77,11 @@ const SmartNudgeCard = ({ library = [], onLaunchGame }) => {
             <button className="smart-nudge-card-play" onClick={handleLaunch}>
               <Play size={14} /> Jump back in
             </button>
-            <button className="smart-nudge-card-dismiss" onClick={handleDismissPermanently} title="Stop showing these reminders">
+            <button
+              className="smart-nudge-card-dismiss"
+              onClick={handleDismissPermanently}
+              title="Stop showing these reminders"
+            >
               <EyeOff size={12} /> Don't remind me
             </button>
           </div>

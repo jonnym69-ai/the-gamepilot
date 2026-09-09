@@ -51,10 +51,7 @@ export const NostalgiaService = {
       if (!session.timestamp) return false;
       const yearDiff = today.getFullYear() - session.timestamp.getFullYear();
       if (yearDiff < 1) return false; // at least 1 year ago
-      return (
-        session.timestamp.getMonth() === currentMonth &&
-        session.timestamp.getDate() === currentDate
-      );
+      return session.timestamp.getMonth() === currentMonth && session.timestamp.getDate() === currentDate;
     });
 
     if (candidates.length === 0) {
@@ -80,7 +77,7 @@ export const NostalgiaService = {
       yearsAgo,
       date: best.timestamp,
       cacheKey,
-      alreadyShown: !!alreadyShown
+      alreadyShown: !!alreadyShown,
     };
 
     dailyMemo = { day, librarySize, result };
@@ -93,7 +90,7 @@ export const NostalgiaService = {
 
   invalidateMemo() {
     dailyMemo = null;
-  }
+  },
 };
 
 export default NostalgiaService;

@@ -9,7 +9,7 @@ const {
   createTrackedDefaults,
   addGameIfUnique,
   parseVdf,
-  getSteamPlaytimeMap
+  getSteamPlaytimeMap,
 } = require('./scannerUtils');
 const { getSupportedScanPlatforms } = require('../../../nativeLibraryScanner');
 const { isLaunchPlatformSupported } = require('../../../launchHandler');

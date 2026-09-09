@@ -14,9 +14,11 @@ const getSessionTimestampMs = (entry) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const getSessionMinutes = (entry) => Math.max(0, Math.round(Number(
-  entry?.playtimeMinutes ?? entry?.playtime ?? entry?.duration ?? entry?.minutes ?? 0
-) || 0));
+const getSessionMinutes = (entry) =>
+  Math.max(
+    0,
+    Math.round(Number(entry?.playtimeMinutes ?? entry?.playtime ?? entry?.duration ?? entry?.minutes ?? 0) || 0)
+  );
 
 /**
  * Collapse duplicate / near-duplicate session rows that can accumulate from
@@ -56,13 +58,17 @@ const dedupeSessionHistory = (history = []) => {
   const FUZZY_WINDOW_MS = 2 * 60 * 1000;
 
   merged.forEach((entry) => {
-    const gameKey = String(entry.gameName || entry.gameId || '').trim().toLowerCase();
+    const gameKey = String(entry.gameName || entry.gameId || '')
+      .trim()
+      .toLowerCase();
     const ts = getSessionTimestampMs(entry);
     const minutes = getSessionMinutes(entry);
 
     const entrySessionId = entry?.sessionId ? String(entry.sessionId) : '';
     const duplicateIndex = result.findIndex((kept) => {
-      const keptKey = String(kept.gameName || kept.gameId || '').trim().toLowerCase();
+      const keptKey = String(kept.gameName || kept.gameId || '')
+        .trim()
+        .toLowerCase();
       if (!gameKey || keptKey !== gameKey) return false;
       // Skip fuzzy merge when BOTH entries have unique sessionIds — they are
       // distinct sessions, not legacy duplicates missing an identifier.
@@ -88,9 +94,22 @@ const dedupeSessionHistory = (history = []) => {
     // forward and collapse distinct sessions into one (sliding-window bug).
     const mergedTimestamp = keptTs <= entryTs ? keptTs : entryTs;
     const tsField = entry?.endTime ? 'endTime' : 'timestamp';
-    result[duplicateIndex] = minutes >= keptMin
-      ? { ...kept, ...entry, playtimeMinutes: Math.max(keptMin, minutes), sessionId: entry.sessionId || kept.sessionId, [tsField]: new Date(mergedTimestamp).toISOString() }
-      : { ...entry, ...kept, playtimeMinutes: Math.max(keptMin, minutes), sessionId: kept.sessionId || entry.sessionId, [tsField]: new Date(mergedTimestamp).toISOString() };
+    result[duplicateIndex] =
+      minutes >= keptMin
+        ? {
+            ...kept,
+            ...entry,
+            playtimeMinutes: Math.max(keptMin, minutes),
+            sessionId: entry.sessionId || kept.sessionId,
+            [tsField]: new Date(mergedTimestamp).toISOString(),
+          }
+        : {
+            ...entry,
+            ...kept,
+            playtimeMinutes: Math.max(keptMin, minutes),
+            sessionId: kept.sessionId || entry.sessionId,
+            [tsField]: new Date(mergedTimestamp).toISOString(),
+          };
   });
 
   return result;
@@ -99,7 +118,7 @@ const dedupeSessionHistory = (history = []) => {
 class SessionRepository {
   static cache = {
     activeSessions: StorageService.get(ACTIVE_SESSIONS_KEY, {}),
-    sessionHistory: dedupeSessionHistory(StorageService.get(SESSION_HISTORY_KEY, []))
+    sessionHistory: dedupeSessionHistory(StorageService.get(SESSION_HISTORY_KEY, [])),
   };
 
   static initialized = false;
@@ -115,7 +134,7 @@ class SessionRepository {
 
     const legacyPayload = {
       activeSessions: isPlainObject(this.cache.activeSessions) ? this.cache.activeSessions : {},
-      sessionHistory: Array.isArray(this.cache.sessionHistory) ? this.cache.sessionHistory : []
+      sessionHistory: Array.isArray(this.cache.sessionHistory) ? this.cache.sessionHistory : [],
     };
 
     if (!this.api?.sessionStoreInitialize) {
@@ -123,11 +142,12 @@ class SessionRepository {
       return this.getSnapshot();
     }
 
-    this.initializing = this.api.sessionStoreInitialize(legacyPayload)
+    this.initializing = this.api
+      .sessionStoreInitialize(legacyPayload)
       .then((snapshot) => {
         this.cache = {
           activeSessions: isPlainObject(snapshot?.activeSessions) ? snapshot.activeSessions : {},
-          sessionHistory: Array.isArray(snapshot?.sessionHistory) ? snapshot.sessionHistory : []
+          sessionHistory: Array.isArray(snapshot?.sessionHistory) ? snapshot.sessionHistory : [],
         };
         // Collapse any pre-SQLite duplicate rows so stats/persona stop showing
         // inflated session counts from testing/migration noise.
@@ -153,7 +173,7 @@ class SessionRepository {
   static getSnapshot() {
     return clone({
       activeSessions: isPlainObject(this.cache.activeSessions) ? this.cache.activeSessions : {},
-      sessionHistory: Array.isArray(this.cache.sessionHistory) ? this.cache.sessionHistory : []
+      sessionHistory: Array.isArray(this.cache.sessionHistory) ? this.cache.sessionHistory : [],
     });
   }
 

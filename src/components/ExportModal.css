@@ -153,7 +153,7 @@
   font-size: 0.9em;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type='checkbox'] {
   width: 16px;
   height: 16px;
   accent-color: var(--accent-color, #ff6b35);
@@ -215,29 +215,29 @@
     width: 95%;
     max-height: calc(100vh - var(--app-navbar-offset) - 24px);
   }
-  
+
   .export-modal-header,
   .export-modal-content,
   .export-modal-footer {
     padding: 16px;
   }
-  
+
   .page-options,
   .layout-options,
   .format-options {
     flex-direction: column;
   }
-  
+
   .page-option,
   .layout-option,
   .format-option {
     justify-content: center;
   }
-  
+
   .export-modal-footer {
     flex-direction: column;
   }
-  
+
   .export-button {
     width: 100%;
     justify-content: center;
@@ -351,7 +351,7 @@
   font-size: 14px;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type='checkbox'] {
   width: 16px;
   height: 16px;
   accent-color: var(--button-bg);
@@ -381,7 +381,7 @@
 
 .export-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .export-button.csv {
@@ -421,10 +421,10 @@
 }
 
 .shareable-link-result {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .shareable-link-result p {
@@ -456,7 +456,7 @@
     width: 95vw;
     max-height: calc(100vh - var(--app-navbar-offset) - 24px);
   }
-  
+
   .modal-content {
     padding: 15px;
   }

@@ -1,6 +1,17 @@
 import StorageService from './StorageService';
 
-const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+const KONAMI_CODE = [
+  'ArrowUp',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowLeft',
+  'ArrowRight',
+  'b',
+  'a',
+];
 const KONAMI_KEY = 'konamiActivated';
 const SECRET_ACHIEVEMENTS_KEY = 'secretAchievements';
 
@@ -10,7 +21,7 @@ const SECRET_ACHIEVEMENTS = [
   { id: 'early_bird', name: 'Early Bird', description: 'Played before 6 AM', icon: 'bird' },
   { id: 'completionist', name: 'Completionist', description: 'Launched every game in library', icon: 'trophy' },
   { id: 'speedrunner', name: 'Speedrunner', description: 'Launched 5 games in 5 minutes', icon: 'zap' },
-  { id: 'loyal', name: 'Loyal', description: 'Used app for 7 consecutive days', icon: 'heart' }
+  { id: 'loyal', name: 'Loyal', description: 'Used app for 7 consecutive days', icon: 'heart' },
 ];
 
 let konamiIndex = 0;
@@ -36,13 +47,13 @@ export const EasterEggService = {
     }
 
     StorageService.setString(KONAMI_KEY, 'true');
-    
+
     const unlocked = this.unlockSecretAchievement('konami_code');
-    
-    return { 
-      type: 'activated', 
+
+    return {
+      type: 'activated',
       message: ' KONAMI CODE ACTIVATED! You feel... nostalgic.',
-      achievement: unlocked
+      achievement: unlocked,
     };
   },
 
@@ -65,7 +76,7 @@ export const EasterEggService = {
     const launches = StorageService.get('recentLaunches', []);
     const now = Date.now();
 
-    const recentLaunches = launches.filter(l => now - l.time < timeWindowMs);
+    const recentLaunches = launches.filter((l) => now - l.time < timeWindowMs);
     recentLaunches.push({ time: now });
     StorageService.set('recentLaunches', recentLaunches);
 
@@ -97,14 +108,14 @@ export const EasterEggService = {
     stored.push(achievementId);
     StorageService.set(SECRET_ACHIEVEMENTS_KEY, stored);
 
-    return SECRET_ACHIEVEMENTS.find(a => a.id === achievementId);
+    return SECRET_ACHIEVEMENTS.find((a) => a.id === achievementId);
   },
 
   getSecretAchievements: () => {
     const unlocked = StorageService.get(SECRET_ACHIEVEMENTS_KEY, []);
-    return SECRET_ACHIEVEMENTS.map(a => ({
+    return SECRET_ACHIEVEMENTS.map((a) => ({
       ...a,
-      unlocked: unlocked.includes(a.id)
+      unlocked: unlocked.includes(a.id),
     }));
   },
 
@@ -114,7 +125,7 @@ export const EasterEggService = {
     StorageService.remove(KONAMI_KEY);
     StorageService.remove(SECRET_ACHIEVEMENTS_KEY);
     StorageService.remove('recentLaunches');
-  }
+  },
 };
 
 export default EasterEggService;

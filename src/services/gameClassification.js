@@ -41,9 +41,9 @@ export const isGameCompleted = (game) => {
   if (!game) return false;
   const COMPLETED_STATUSES = ['finished', 'beaten', 'completed', '100%'];
   return Boolean(
-    game.completed
-    || COMPLETED_STATUSES.includes(game.completionStatus)
-    || COMPLETED_STATUSES.includes(game.replayIntent)
+    game.completed ||
+      COMPLETED_STATUSES.includes(game.completionStatus) ||
+      COMPLETED_STATUSES.includes(game.replayIntent)
   );
 };
 
@@ -53,16 +53,24 @@ export const isGameCompleted = (game) => {
 // or session surfaces. Exact matches, plus prefix matches for versioned names
 // like "GOG Galaxy 2.0".
 const NON_GAME_TITLE_TOKENS = [
-  'gog galaxy', 'epic games launcher', 'ubisoft connect', 'battle.net',
-  'ea app', 'riot client', 'rockstar games launcher', 'rockstar social club',
-  'xbox game bar', 'xbox accessories', 'amazon games', 'playnite',
-  'steamworks common redistributables'
+  'gog galaxy',
+  'epic games launcher',
+  'ubisoft connect',
+  'battle.net',
+  'ea app',
+  'riot client',
+  'rockstar games launcher',
+  'rockstar social club',
+  'xbox game bar',
+  'xbox accessories',
+  'amazon games',
+  'playnite',
+  'steamworks common redistributables',
 ];
 
 export const isNonGameTitle = (gameOrName) => {
-  const raw = typeof gameOrName === 'string'
-    ? gameOrName
-    : (gameOrName?.name || gameOrName?.title || gameOrName?.gameName || '');
+  const raw =
+    typeof gameOrName === 'string' ? gameOrName : gameOrName?.name || gameOrName?.title || gameOrName?.gameName || '';
   const name = String(raw).trim().toLowerCase();
   if (!name) return false;
   return NON_GAME_TITLE_TOKENS.some((token) => name === token || name.startsWith(`${token} `));

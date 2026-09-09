@@ -7,12 +7,8 @@ const getMinutesPlayed = (game) => {
   return Math.max(Number.isFinite(direct) ? direct : 0, Number.isFinite(nested) ? nested : 0);
 };
 
-const getGameStatus = (game) => (
-  game?.completionStatus
-  || game?.completion_status
-  || game?.status
-  || (game?.completed ? 'Completed' : 'Unfinished')
-);
+const getGameStatus = (game) =>
+  game?.completionStatus || game?.completion_status || game?.status || (game?.completed ? 'Completed' : 'Unfinished');
 
 const isCompleted = (game) => {
   const status = getGameStatus(game);
@@ -59,21 +55,17 @@ export class LibraryAnalyticsService {
       }
     });
 
-    const avgSessionLength = sessionLengths.length > 0
-      ? Math.round(totalSessionMinutes / sessionLengths.length)
-      : 0;
+    const avgSessionLength = sessionLengths.length > 0 ? Math.round(totalSessionMinutes / sessionLengths.length) : 0;
 
     const sortedLengths = [...sessionLengths].sort((a, b) => a - b);
-    const medianSessionLength = sortedLengths.length > 0
-      ? sortedLengths[Math.floor(sortedLengths.length / 2)]
-      : 0;
+    const medianSessionLength = sortedLengths.length > 0 ? sortedLengths[Math.floor(sortedLengths.length / 2)] : 0;
 
     const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets));
     const peakDayIndex = dayBuckets.indexOf(Math.max(...dayBuckets));
 
     // Streak analysis
     const sessionDates = sessionList
-      .map((s) => s.startedAt ? new Date(s.startedAt).toDateString() : null)
+      .map((s) => (s.startedAt ? new Date(s.startedAt).toDateString() : null))
       .filter(Boolean);
     const uniqueDates = [...new Set(sessionDates)].sort((a, b) => new Date(a) - new Date(b));
     let currentStreak = 0;
@@ -121,7 +113,7 @@ export class LibraryAnalyticsService {
       dayDistribution: dayBuckets.map((m, i) => ({ day: dayLabels[i], minutes: m })),
       currentStreak,
       longestStreak,
-      totalSessionMinutes
+      totalSessionMinutes,
     };
   }
 
@@ -155,7 +147,7 @@ export class LibraryAnalyticsService {
         remainingHours,
         completionPct: Math.round(completionPct),
         score: Math.round(score),
-        isQuickWin: hltbHours !== null && remainingHours !== null && remainingHours <= 5 && completionPct > 20
+        isQuickWin: hltbHours !== null && remainingHours !== null && remainingHours <= 5 && completionPct > 20,
       };
     });
 
@@ -169,7 +161,7 @@ export class LibraryAnalyticsService {
       estimatedTotalHours: scored.reduce((sum, s) => sum + (s.remainingHours || 0), 0),
       quickWins,
       bestInvestments,
-      topPicks: scored.slice(0, 5)
+      topPicks: scored.slice(0, 5),
     };
   }
 
@@ -224,17 +216,16 @@ export class LibraryAnalyticsService {
     Object.values(genreStats).forEach((s) => {
       s.completionRate = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
       s.dropRate = s.total > 0 ? Math.round((s.dropped / s.total) * 100) : 0;
-      s.avgHours = s.games > 0 ? Math.round(s.hours / s.games * 10) / 10 : 0;
+      s.avgHours = s.games > 0 ? Math.round((s.hours / s.games) * 10) / 10 : 0;
     });
 
     Object.values(moodStats).forEach((s) => {
       s.completionRate = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
       s.dropRate = s.total > 0 ? Math.round((s.dropped / s.total) * 100) : 0;
-      s.avgHours = s.games > 0 ? Math.round(s.hours / s.games * 10) / 10 : 0;
+      s.avgHours = s.games > 0 ? Math.round((s.hours / s.games) * 10) / 10 : 0;
     });
 
-    const topGenre = Object.entries(genreStats)
-      .sort((a, b) => b[1].hours - a[1].hours)[0];
+    const topGenre = Object.entries(genreStats).sort((a, b) => b[1].hours - a[1].hours)[0];
     const bestCompletionGenre = Object.entries(genreStats)
       .filter(([, s]) => s.games >= 3)
       .sort((a, b) => b[1].completionRate - a[1].completionRate)[0];
@@ -248,7 +239,7 @@ export class LibraryAnalyticsService {
       matrix: Object.values(matrix).sort((a, b) => b.hours - a.hours),
       topGenre: topGenre ? { name: topGenre[0], ...topGenre[1] } : null,
       bestCompletionGenre: bestCompletionGenre ? { name: bestCompletionGenre[0], ...bestCompletionGenre[1] } : null,
-      worstCompletionGenre: worstCompletionGenre ? { name: worstCompletionGenre[0], ...worstCompletionGenre[1] } : null
+      worstCompletionGenre: worstCompletionGenre ? { name: worstCompletionGenre[0], ...worstCompletionGenre[1] } : null,
     };
   }
 
@@ -270,15 +261,18 @@ export class LibraryAnalyticsService {
       if (mood) moods.add(mood);
       totalMinutes += getMinutesPlayed(game);
       const rating = game.userRating || game.rating || 0;
-      if (rating > 0) { ratedGames++; ratedSum += rating; }
+      if (rating > 0) {
+        ratedGames++;
+        ratedSum += rating;
+      }
     });
 
     const genreDiversity = Math.min(100, Math.round((genres.size / Math.max(1, games.length)) * 200));
     const platformDiversity = Math.min(100, Math.round((platforms.size / 5) * 100));
     const moodDiversity = Math.min(100, Math.round((moods.size / 5) * 100));
-    const avgRating = ratedGames > 0 ? Math.round(ratedSum / ratedGames * 10) / 10 : 0;
+    const avgRating = ratedGames > 0 ? Math.round((ratedSum / ratedGames) * 10) / 10 : 0;
 
-    const score = Math.round((genreDiversity + platformDiversity + moodDiversity + (avgRating * 10)) / 4);
+    const score = Math.round((genreDiversity + platformDiversity + moodDiversity + avgRating * 10) / 4);
 
     return {
       score,
@@ -290,7 +284,7 @@ export class LibraryAnalyticsService {
       platformCount: platforms.size,
       moodCount: moods.size,
       totalGames: games.length,
-      totalHours: Math.round(totalMinutes / 60 * 10) / 10
+      totalHours: Math.round((totalMinutes / 60) * 10) / 10,
     };
   }
 
@@ -309,7 +303,7 @@ export class LibraryAnalyticsService {
         type: 'warning',
         icon: '⚠️',
         title: `${matrix.worstCompletionGenre.name} Drop-off`,
-        text: `You only finish ${matrix.worstCompletionGenre.completionRate}% of ${matrix.worstCompletionGenre.name} games. Consider shorter titles in this genre.`
+        text: `You only finish ${matrix.worstCompletionGenre.completionRate}% of ${matrix.worstCompletionGenre.name} games. Consider shorter titles in this genre.`,
       });
     }
 
@@ -318,7 +312,7 @@ export class LibraryAnalyticsService {
         type: 'success',
         icon: '✅',
         title: `${matrix.bestCompletionGenre.name} Specialist`,
-        text: `You complete ${matrix.bestCompletionGenre.completionRate}% of ${matrix.bestCompletionGenre.name} games — this is your strongest genre.`
+        text: `You complete ${matrix.bestCompletionGenre.completionRate}% of ${matrix.bestCompletionGenre.name} games — this is your strongest genre.`,
       });
     }
 
@@ -328,7 +322,7 @@ export class LibraryAnalyticsService {
         type: 'tip',
         icon: '🎯',
         title: 'Quick Wins Available',
-        text: `You have ${backlog.quickWins.length} games nearly finished. A few hours could clear several titles.`
+        text: `You have ${backlog.quickWins.length} games nearly finished. A few hours could clear several titles.`,
       });
     }
 
@@ -337,18 +331,19 @@ export class LibraryAnalyticsService {
         type: 'info',
         icon: '📚',
         title: 'Backlog Mountain',
-        text: `Your backlog needs an estimated ${Math.round(backlog.estimatedTotalHours)} hours. Focus on quick wins to build momentum.`
+        text: `Your backlog needs an estimated ${Math.round(backlog.estimatedTotalHours)} hours. Focus on quick wins to build momentum.`,
       });
     }
 
     // Play pattern insights
     if (pattern && pattern.avgSessionLength > 0) {
-      const sessionLabel = pattern.avgSessionLength < 30 ? 'short' : pattern.avgSessionLength < 90 ? 'moderate' : 'long';
+      const sessionLabel =
+        pattern.avgSessionLength < 30 ? 'short' : pattern.avgSessionLength < 90 ? 'moderate' : 'long';
       insights.push({
         type: 'info',
         icon: '⏱️',
         title: 'Session Profile',
-        text: `Your average session is ${pattern.avgSessionLength} minutes (${sessionLabel}). Best played at ${pattern.peakHour}:00 on ${pattern.peakDay}s.`
+        text: `Your average session is ${pattern.avgSessionLength} minutes (${sessionLabel}). Best played at ${pattern.peakHour}:00 on ${pattern.peakDay}s.`,
       });
     }
 
@@ -357,7 +352,7 @@ export class LibraryAnalyticsService {
         type: 'success',
         icon: '🔥',
         title: 'On Fire',
-        text: `You're on a ${pattern.currentStreak}-day gaming streak. Keep it going!`
+        text: `You're on a ${pattern.currentStreak}-day gaming streak. Keep it going!`,
       });
     }
 
@@ -366,7 +361,7 @@ export class LibraryAnalyticsService {
         type: 'tip',
         icon: '🔄',
         title: 'Streak Broken',
-        text: `Your longest streak was ${pattern.longestStreak} days. Time to start a new one?`
+        text: `Your longest streak was ${pattern.longestStreak} days. Time to start a new one?`,
       });
     }
 
@@ -377,7 +372,7 @@ export class LibraryAnalyticsService {
         type: 'tip',
         icon: '⭐',
         title: 'Rate Your Journey',
-        text: `${unrated} games in your library have no rating. Rating games improves recommendations.`
+        text: `${unrated} games in your library have no rating. Rating games improves recommendations.`,
       });
     }
 
@@ -391,7 +386,7 @@ export class LibraryAnalyticsService {
         type: 'success',
         icon: '💎',
         title: 'Hidden Gems Waiting',
-        text: `You rated ${hiddenGems.length} short games 8+ but haven't finished them. Easy wins!`
+        text: `You rated ${hiddenGems.length} short games 8+ but haven't finished them. Easy wins!`,
       });
     }
 
@@ -404,7 +399,7 @@ export class LibraryAnalyticsService {
       backlog: this.getBacklogOptimizer(library),
       matrix: this.getMoodGenreMatrix(library),
       diversity: this.getLibraryDiversityScore(library),
-      insights: this.getPowerInsights(library)
+      insights: this.getPowerInsights(library),
     };
   }
 }

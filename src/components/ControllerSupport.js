@@ -7,28 +7,30 @@ const FOCUSABLE_SELECTOR = [
   'select:not([disabled])',
   'textarea:not([disabled])',
   '[role="button"]:not([aria-disabled="true"])',
-  '[tabindex]:not([tabindex="-1"])'
+  '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
 const isElementVisible = (element) => {
   if (!element || !(element instanceof HTMLElement)) return false;
   const rect = element.getBoundingClientRect();
   const style = window.getComputedStyle(element);
-  return rect.width > 0
-    && rect.height > 0
-    && style.visibility !== 'hidden'
-    && style.display !== 'none'
-    && !element.closest('[aria-hidden="true"], [hidden]');
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    style.visibility !== 'hidden' &&
+    style.display !== 'none' &&
+    !element.closest('[aria-hidden="true"], [hidden]')
+  );
 };
 
-const getFocusableElements = () => Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR))
-  .filter((element) => isElementVisible(element));
+const getFocusableElements = () =>
+  Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => isElementVisible(element));
 
 const getElementCenter = (element) => {
   const rect = element.getBoundingClientRect();
   return {
     x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2
+    y: rect.top + rect.height / 2,
   };
 };
 
@@ -52,7 +54,7 @@ const findDirectionalTarget = (currentElement, direction, focusableElements) => 
         element,
         deltaX,
         deltaY,
-        score: primaryDistance + secondaryDistance * 1.8
+        score: primaryDistance + secondaryDistance * 1.8,
       };
     })
     .filter((candidate) => {
@@ -90,7 +92,11 @@ const activateElement = (element) => {
     return true;
   }
 
-  if (tagName === 'select' || tagName === 'textarea' || (tagName === 'input' && type !== 'button' && type !== 'submit')) {
+  if (
+    tagName === 'select' ||
+    tagName === 'textarea' ||
+    (tagName === 'input' && type !== 'button' && type !== 'submit')
+  ) {
     element.focus();
     return true;
   }
@@ -99,14 +105,17 @@ const activateElement = (element) => {
   return true;
 };
 
-const findCloseTarget = () => document.querySelector([
-  '[aria-label*="close" i]',
-  '[title*="close" i]',
-  '.modal-close',
-  '.close-button',
-  '.game-modal-close',
-  '.dropdown-toggle[aria-expanded="true"]'
-].join(','));
+const findCloseTarget = () =>
+  document.querySelector(
+    [
+      '[aria-label*="close" i]',
+      '[title*="close" i]',
+      '.modal-close',
+      '.close-button',
+      '.game-modal-close',
+      '.dropdown-toggle[aria-expanded="true"]',
+    ].join(',')
+  );
 
 function ControllerSupport({ children, onControllerInput }) {
   const lastInputRef = useRef({});
@@ -115,45 +124,54 @@ function ControllerSupport({ children, onControllerInput }) {
     return typeof document !== 'undefined' && document.body.classList.contains('big-screen-mode');
   }, []);
 
-  const emitControllerInput = useCallback((...args) => {
-    const [action, payload] = args;
+  const emitControllerInput = useCallback(
+    (...args) => {
+      const [action, payload] = args;
 
-    if (!isControllerModeEnabled() && action !== 'connected' && action !== 'disconnected') {
-      return false;
-    }
-
-    if (typeof onControllerInput === 'function') {
-      onControllerInput(...args);
-    }
-
-    const controllerEvent = new CustomEvent('controllerInput', {
-      cancelable: true,
-      detail: {
-        action,
-        payload
+      if (!isControllerModeEnabled() && action !== 'connected' && action !== 'disconnected') {
+        return false;
       }
-    });
 
-    return window.dispatchEvent(controllerEvent);
-  }, [isControllerModeEnabled, onControllerInput]);
+      if (typeof onControllerInput === 'function') {
+        onControllerInput(...args);
+      }
 
-  const emitDebouncedInput = useCallback((action, payload = null, cooldownMs = 180) => {
-    const now = Date.now();
-    const lastInputAt = lastInputRef.current[action] || 0;
-    if (now - lastInputAt < cooldownMs) {
-      return;
-    }
+      const controllerEvent = new CustomEvent('controllerInput', {
+        cancelable: true,
+        detail: {
+          action,
+          payload,
+        },
+      });
 
-    lastInputRef.current[action] = now;
-    emitControllerInput(action, payload);
-  }, [emitControllerInput]);
+      return window.dispatchEvent(controllerEvent);
+    },
+    [isControllerModeEnabled, onControllerInput]
+  );
 
-  const handleControllerNavigation = useCallback((direction) => {
-    if (!isControllerModeEnabled()) return false;
-    const focusableElements = getFocusableElements();
-    const target = findDirectionalTarget(document.activeElement, direction, focusableElements);
-    return focusElement(target);
-  }, [isControllerModeEnabled]);
+  const emitDebouncedInput = useCallback(
+    (action, payload = null, cooldownMs = 180) => {
+      const now = Date.now();
+      const lastInputAt = lastInputRef.current[action] || 0;
+      if (now - lastInputAt < cooldownMs) {
+        return;
+      }
+
+      lastInputRef.current[action] = now;
+      emitControllerInput(action, payload);
+    },
+    [emitControllerInput]
+  );
+
+  const handleControllerNavigation = useCallback(
+    (direction) => {
+      if (!isControllerModeEnabled()) return false;
+      const focusableElements = getFocusableElements();
+      const target = findDirectionalTarget(document.activeElement, direction, focusableElements);
+      return focusElement(target);
+    },
+    [isControllerModeEnabled]
+  );
 
   const handleControllerActivation = useCallback(() => {
     if (!isControllerModeEnabled()) return false;
@@ -179,23 +197,26 @@ function ControllerSupport({ children, onControllerInput }) {
     return false;
   }, [isControllerModeEnabled]);
 
-  const handleGamepadInput = useCallback((gamepad) => {
-    if (!gamepad) return;
+  const handleGamepadInput = useCallback(
+    (gamepad) => {
+      if (!gamepad) return;
 
-    const buttons = gamepad.buttons.map(button => button.pressed);
-    const axes = gamepad.axes.map(axis => Math.abs(axis) > 0.2 ? axis : 0);
+      const buttons = gamepad.buttons.map((button) => button.pressed);
+      const axes = gamepad.axes.map((axis) => (Math.abs(axis) > 0.2 ? axis : 0));
 
-    if (buttons[12] || axes[1] < -0.5) emitDebouncedInput('up');
-    if (buttons[13] || axes[1] > 0.5) emitDebouncedInput('down');
-    if (buttons[14] || axes[0] < -0.5) emitDebouncedInput('left');
-    if (buttons[15] || axes[0] > 0.5) emitDebouncedInput('right');
-    if (axes[3] < -0.45) emitDebouncedInput('scroll_up', null, 120);
-    if (axes[3] > 0.45) emitDebouncedInput('scroll_down', null, 120);
-    if (buttons[0]) emitDebouncedInput('confirm', null, 220);
-    if (buttons[1]) emitDebouncedInput('cancel', null, 220);
-    if (buttons[4] || buttons[6]) emitDebouncedInput('page_previous', null, 220);
-    if (buttons[5] || buttons[7]) emitDebouncedInput('page_next', null, 220);
-  }, [emitDebouncedInput]);
+      if (buttons[12] || axes[1] < -0.5) emitDebouncedInput('up');
+      if (buttons[13] || axes[1] > 0.5) emitDebouncedInput('down');
+      if (buttons[14] || axes[0] < -0.5) emitDebouncedInput('left');
+      if (buttons[15] || axes[0] > 0.5) emitDebouncedInput('right');
+      if (axes[3] < -0.45) emitDebouncedInput('scroll_up', null, 120);
+      if (axes[3] > 0.45) emitDebouncedInput('scroll_down', null, 120);
+      if (buttons[0]) emitDebouncedInput('confirm', null, 220);
+      if (buttons[1]) emitDebouncedInput('cancel', null, 220);
+      if (buttons[4] || buttons[6]) emitDebouncedInput('page_previous', null, 220);
+      if (buttons[5] || buttons[7]) emitDebouncedInput('page_next', null, 220);
+    },
+    [emitDebouncedInput]
+  );
 
   useEffect(() => {
     const handleConnected = (e) => {

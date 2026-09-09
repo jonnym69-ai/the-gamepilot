@@ -10,49 +10,49 @@ const TOUR_STEPS = [
     selector: null,
     emoji: '🛩️',
     title: 'Welcome to GamePilot',
-    body: 'Your local-first gaming librarian. It scans the launchers already on your PC, learns your playstyle, and turns your habits into a persona — with roasts. Nothing ever leaves your machine.'
+    body: 'Your local-first gaming librarian. It scans the launchers already on your PC, learns your playstyle, and turns your habits into a persona — with roasts. Nothing ever leaves your machine.',
   },
   {
     selector: '.nav-search-pill',
     title: 'Search Everything',
-    body: 'Jump to any game or page. Press / anywhere in the app to open the command palette instantly.'
+    body: 'Jump to any game or page. Press / anywhere in the app to open the command palette instantly.',
   },
   {
     selector: 'a[href="#/"]',
     title: 'Home',
-    body: 'Your daily cockpit: the doodle banner greets you by mood and time of day, and your next pick is always front and centre.'
+    body: 'Your daily cockpit: the doodle banner greets you by mood and time of day, and your next pick is always front and centre.',
   },
   {
     selector: 'a[href="#/library"]',
     title: 'Library',
-    body: 'Scan Steam, Epic, GOG, and local folders, then manage, rate, and organise everything you own.'
+    body: 'Scan Steam, Epic, GOG, and local folders, then manage, rate, and organise everything you own.',
   },
   {
     selector: 'a[href="#/recommendations"]',
     title: 'Recommendations',
-    body: 'Picks matched to your moods, session length, and playstyle — pulled from your own library, not a store chart.'
+    body: 'Picks matched to your moods, session length, and playstyle — pulled from your own library, not a store chart.',
   },
   {
     selector: 'a[href="#/stats"]',
     title: 'Stats',
-    body: 'Light local stats that feed your stories and persona. No dashboards for the sake of dashboards.'
+    body: 'Light local stats that feed your stories and persona. No dashboards for the sake of dashboards.',
   },
   {
     selector: 'a[href="#/profile"]',
     title: 'Profile',
-    body: 'Your gaming persona lives here — archetypes, roasts, signature games, and your equipped identity gear.'
+    body: 'Your gaming persona lives here — archetypes, roasts, signature games, and your equipped identity gear.',
   },
   {
     selector: '.dropdown-toggle',
     title: 'More Pages',
-    body: 'Habits, Achievements, Rewards, Year in Review, Hall of Champions, Export Hub, and TV mode live under this menu.'
+    body: 'Habits, Achievements, Rewards, Year in Review, Hall of Champions, Export Hub, and TV mode live under this menu.',
   },
   {
     selector: null,
     emoji: '🏆',
     title: 'Everything Unlocks Through Play',
-    body: 'Sessions earn XP. XP unlocks themes, card styles, profile frames, banners, titles, and badge showcase slots — all stored locally. Replay this tour anytime from Settings → About & Feedback.'
-  }
+    body: 'Sessions earn XP. XP unlocks themes, card styles, profile frames, banners, titles, and badge showcase slots — all stored locally. Replay this tour anytime from Settings → About & Feedback.',
+  },
 ];
 
 const POPOVER_WIDTH = 320;
@@ -136,7 +136,7 @@ const GuidedTour = () => {
       top: rect.top,
       left: rect.left,
       width: rect.width,
-      height: rect.height
+      height: rect.height,
     });
   }, [isActive, step]);
 
@@ -211,13 +211,13 @@ const GuidedTour = () => {
         top: targetRect.top - 6,
         left: targetRect.left - 6,
         width: targetRect.width + 12,
-        height: targetRect.height + 12
+        height: targetRect.height + 12,
       }
     : {
         top: '50%',
         left: '50%',
         width: 0,
-        height: 0
+        height: 0,
       };
 
   // Popover position: below the target if there's room, otherwise above; centered steps sit mid-screen
@@ -226,7 +226,7 @@ const GuidedTour = () => {
     popoverStyle = {
       top: '50%',
       left: '50%',
-      transform: 'translate(-50%, -50%)'
+      transform: 'translate(-50%, -50%)',
     };
   } else {
     const spaceBelow = window.innerHeight - (targetRect.top + targetRect.height);

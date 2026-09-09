@@ -78,18 +78,14 @@ export function buildGameShareData(game = {}, gameStats = {}) {
   const gameId = getGameId(safeGame);
   const launchData = gameId ? GameLaunchTracker.getGameLaunchData(gameId) : null;
 
-  const avgSessionLength = safeStats.averageSessionLength || safeStats.avgSessionLength || launchData?.averageSessionLength || 0;
+  const avgSessionLength =
+    safeStats.averageSessionLength || safeStats.avgSessionLength || launchData?.averageSessionLength || 0;
 
-  const completionStatus = safeGame.completed
-    ? 'Completed'
-    : timePlayed > 0
-      ? 'In Progress'
-      : 'Backlog';
+  const completionStatus = safeGame.completed ? 'Completed' : timePlayed > 0 ? 'In Progress' : 'Backlog';
 
-  const platform = safeGame.platform || safeGame.brandPlatform || (safeGame.launchSources?.[0]?.platform) || null;
-  const genre = Array.isArray(safeGame.genres) && safeGame.genres.length > 0
-    ? safeGame.genres[0]
-    : (safeGame.genre || null);
+  const platform = safeGame.platform || safeGame.brandPlatform || safeGame.launchSources?.[0]?.platform || null;
+  const genre =
+    Array.isArray(safeGame.genres) && safeGame.genres.length > 0 ? safeGame.genres[0] : safeGame.genre || null;
   const mood = safeGame.mood || null;
 
   return {
@@ -197,11 +193,7 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
           {hasRating ? (
             <div className="game-share-rating">
               {Array.from({ length: 10 }).map((_, i) => (
-                <Star
-                  key={i}
-                  size={18}
-                  className={i < Math.round(data.rating) ? 'filled' : 'empty'}
-                />
+                <Star key={i} size={18} className={i < Math.round(data.rating) ? 'filled' : 'empty'} />
               ))}
               <span>{data.rating}/10</span>
             </div>
@@ -309,11 +301,7 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
           )}
         </div>
 
-        {!hasPlaytime && !hasSessions && (
-          <div className="game-share-card-empty">
-            Waiting for first session data...
-          </div>
-        )}
+        {!hasPlaytime && !hasSessions && <div className="game-share-card-empty">Waiting for first session data...</div>}
       </div>
 
       {data.coverUrl && (
@@ -327,7 +315,8 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
       {showSocials && (
         <div className="game-share-card-socials">
           {linksToShow.map((link) => {
-            const platform = SOCIAL_PLATFORMS.find((p) => p.key === link.platform) || SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
+            const platform =
+              SOCIAL_PLATFORMS.find((p) => p.key === link.platform) || SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
             const handle = extractSocialHandle(link.url, platform.key);
             return (
               <div

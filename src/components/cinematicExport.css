@@ -35,7 +35,9 @@
   --cinematic-founder-accent: #fb923c;
   --cinematic-founder-surface: rgba(251, 146, 60, 0.14);
   border-color: var(--cinematic-founder-accent);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 32px var(--cinematic-founder-surface);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.4),
+    0 0 32px var(--cinematic-founder-surface);
 }
 
 .cinematic-export-modal-founder-silver {
@@ -206,7 +208,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.7) 100%);
+  background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
 }
 
 .gradient-preview {
@@ -221,7 +223,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at center, transparent 70%, rgba(255,255,255,0.1) 100%);
+  background: radial-gradient(circle at center, transparent 70%, rgba(255, 255, 255, 0.1) 100%);
 }
 
 .format-option-content {
@@ -326,28 +328,28 @@
     width: 95%;
     max-height: 95vh;
   }
-  
+
   .cinematic-export-content {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .cinematic-export-header,
   .cinematic-export-content,
   .cinematic-export-footer {
     padding: 16px;
   }
-  
+
   .format-options,
   .background-options {
     gap: 8px;
   }
-  
+
   .format-option,
   .background-option {
     padding: 12px;
   }
-  
+
   .canvas-container {
     padding: 16px;
     min-height: 200px;
@@ -358,23 +360,23 @@
   .cinematic-export-header h2 {
     font-size: 1.2em;
   }
-  
+
   .export-section h3 {
     font-size: 1em;
   }
-  
+
   .format-option,
   .background-option {
     padding: 8px;
     gap: 8px;
   }
-  
+
   .format-preview,
   .background-preview {
     width: 30px;
     height: 30px;
   }
-  
+
   .export-button {
     padding: 12px 20px;
     min-width: 150px;

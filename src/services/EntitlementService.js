@@ -11,25 +11,29 @@ const PRODUCT_CATALOG = Object.freeze({
   [SUPPORTER_PRODUCT_ID]: {
     id: SUPPORTER_PRODUCT_ID,
     name: 'GamePilot Supporter Recognition',
-    description: 'Optional local recognition for people who choose to support GamePilot. It does not control feature access.',
+    description:
+      'Optional local recognition for people who choose to support GamePilot. It does not control feature access.',
     type: 'supporter-recognition',
     priceGBP: 0,
     priceUSD: 0,
-    includes: SUPPORTER_FEATURES
-  }
+    includes: SUPPORTER_FEATURES,
+  },
 });
 
 const STORE_UNLOCK_CODES = Object.freeze({
-  'GP-PRO-FOUNDERS-2026': { productId: SUPPORTER_PRODUCT_ID }
+  'GP-PRO-FOUNDERS-2026': { productId: SUPPORTER_PRODUCT_ID },
 });
 
-const normalizeCode = (code) => String(code || '').trim().toUpperCase();
+const normalizeCode = (code) =>
+  String(code || '')
+    .trim()
+    .toUpperCase();
 
 export class EntitlementService {
   static getCatalog() {
     return Object.values(PRODUCT_CATALOG).map((product) => ({
       ...product,
-      unlocked: product.id === SUPPORTER_PRODUCT_ID ? this.isSupporter() : true
+      unlocked: product.id === SUPPORTER_PRODUCT_ID ? this.isSupporter() : true,
     }));
   }
 
@@ -64,21 +68,28 @@ export class EntitlementService {
       productId: SUPPORTER_PRODUCT_ID,
       source,
       code,
-      unlockedAt: entitlements[SUPPORTER_PRODUCT_ID]?.unlockedAt || unlockedAt
+      unlockedAt: entitlements[SUPPORTER_PRODUCT_ID]?.unlockedAt || unlockedAt,
     };
     StorageService.set(ENTITLEMENTS_STORAGE_KEY, entitlements);
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('gamepilot:entitlements-updated', {
-        detail: { productId: SUPPORTER_PRODUCT_ID, productIds: [SUPPORTER_PRODUCT_ID, ...SUPPORTER_FEATURES], source, code }
-      }));
+      window.dispatchEvent(
+        new CustomEvent('gamepilot:entitlements-updated', {
+          detail: {
+            productId: SUPPORTER_PRODUCT_ID,
+            productIds: [SUPPORTER_PRODUCT_ID, ...SUPPORTER_FEATURES],
+            source,
+            code,
+          },
+        })
+      );
     }
 
     return {
       success: true,
       product: PRODUCT_CATALOG[SUPPORTER_PRODUCT_ID],
       productIds: [SUPPORTER_PRODUCT_ID, ...SUPPORTER_FEATURES],
-      message: 'GamePilot supporter recognition saved locally.'
+      message: 'GamePilot supporter recognition saved locally.',
     };
   }
 

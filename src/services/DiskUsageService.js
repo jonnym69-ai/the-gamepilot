@@ -13,7 +13,7 @@ import StorageService from './StorageService';
 
 const CACHE_KEY = 'diskUsageCacheV1';
 const FRESH_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days — installs rarely change size
-const ERROR_TTL_MS = 6 * 60 * 60 * 1000;       // re-try misses after 6h
+const ERROR_TTL_MS = 6 * 60 * 60 * 1000; // re-try misses after 6h
 const SETTINGS_KEY = 'diskUsageScanEnabled';
 
 const inflight = new Map();
@@ -24,12 +24,17 @@ const readCache = () => {
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 };
 
 const writeCache = (cache) => {
-  try { StorageService.set(CACHE_KEY, cache); }
-  catch (err) { console.warn('[DiskUsage] cache write failed:', err); }
+  try {
+    StorageService.set(CACHE_KEY, cache);
+  } catch (err) {
+    console.warn('[DiskUsage] cache write failed:', err);
+  }
 };
 
 // Stable cache key — install path is canonical. Falls back to appid+name so
@@ -99,7 +104,7 @@ class DiskUsageService {
         dirs: 0,
         truncated: false,
         durationMs: 0,
-        fetchedAt: Date.now()
+        fetchedAt: Date.now(),
       };
       const next = { ...readCache(), [key]: entry };
       writeCache(next);
@@ -120,7 +125,7 @@ class DiskUsageService {
               dirs: Number(result.dirs) || 0,
               truncated: Boolean(result.truncated),
               durationMs: Number(result.durationMs) || 0,
-              fetchedAt: Date.now()
+              fetchedAt: Date.now(),
             }
           : { ok: false, error: result?.error || 'unknown', fetchedAt: Date.now() };
         const next = { ...readCache(), [key]: entry };
@@ -158,7 +163,9 @@ class DiskUsageService {
         next[key] = entry;
       }
       if (changed) writeCache(next);
-    } catch { /* swallow */ }
+    } catch {
+      /* swallow */
+    }
   }
 
   // Best-effort bulk warmup — sequential by design because parallel disk
@@ -171,8 +178,11 @@ class DiskUsageService {
     for (const game of queue) {
       const cached = this.getCached(game);
       if (!force && cached && isFresh(cached)) continue;
-      try { await this.measure(game, { force }); }
-      catch { /* swallow; logged inside measure */ }
+      try {
+        await this.measure(game, { force });
+      } catch {
+        /* swallow; logged inside measure */
+      }
       await new Promise((r) => setTimeout(r, 60));
     }
   }
@@ -196,7 +206,7 @@ class DiskUsageService {
   static reclaimScore(game) {
     const entry = this.getCached(game);
     if (!entry || !entry.ok) return 0;
-    const sizeGB = (entry.bytes || 0) / (1024 ** 3);
+    const sizeGB = (entry.bytes || 0) / 1024 ** 3;
     const lastPlayedMs = (() => {
       const lp = game?.last_played;
       if (!lp) return 0;

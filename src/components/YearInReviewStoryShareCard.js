@@ -11,7 +11,10 @@ export function YearInReviewStoryShareCard({ seasonalStory = {}, year, username 
   const hasData = chapters.filter((c) => c.hasData);
 
   return (
-    <div className="yir-story-share-card" style={{ width: YIR_STORY_SHARE_CARD_SIZE_PX, height: YIR_STORY_SHARE_CARD_SIZE_PX }}>
+    <div
+      className="yir-story-share-card"
+      style={{ width: YIR_STORY_SHARE_CARD_SIZE_PX, height: YIR_STORY_SHARE_CARD_SIZE_PX }}
+    >
       <div className="yir-story-share-card-glow" aria-hidden="true" />
       <Gamepad2 className="yir-story-share-watermark" size={320} aria-hidden="true" />
 
@@ -24,14 +27,14 @@ export function YearInReviewStoryShareCard({ seasonalStory = {}, year, username 
         <div className="yir-story-share-card-hero">
           <BookOpen size={48} className="yir-story-share-card-icon" />
           <div>
-            <span className="yir-story-share-card-eyebrow">{username || 'Pilot'} · {year || 'This Year'}</span>
+            <span className="yir-story-share-card-eyebrow">
+              {username || 'Pilot'} · {year || 'This Year'}
+            </span>
             <h2 className="yir-story-share-card-title">The Story of Your Year</h2>
           </div>
         </div>
 
-        {story.arc && (
-          <p className="yir-story-share-card-arc">{story.arc}</p>
-        )}
+        {story.arc && <p className="yir-story-share-card-arc">{story.arc}</p>}
 
         <div className="yir-story-share-card-chapters">
           {chapters.slice(0, 4).map((chapter) => (
@@ -43,12 +46,12 @@ export function YearInReviewStoryShareCard({ seasonalStory = {}, year, username 
               </div>
               <strong>{chapter.headline}</strong>
               {chapter.body && <p className="yir-story-share-card-chapter-body">{chapter.body}</p>}
-              {chapter.pivot && (
-                <p className="yir-story-share-card-chapter-pivot">{chapter.pivot.text}</p>
-              )}
+              {chapter.pivot && <p className="yir-story-share-card-chapter-pivot">{chapter.pivot.text}</p>}
               {chapter.stats && (
                 <div className="yir-story-share-card-chapter-stats">
-                  <span><Clock size={12} /> {chapter.stats.playtimeHours}h</span>
+                  <span>
+                    <Clock size={12} /> {chapter.stats.playtimeHours}h
+                  </span>
                   <span>{chapter.stats.sessions} sessions</span>
                   {chapter.stats.topGame && (
                     <span className="yir-story-share-card-top-game">{chapter.stats.topGame.name}</span>

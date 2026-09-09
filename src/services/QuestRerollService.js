@@ -36,5 +36,5 @@ export const QuestRerollService = {
     }
     writeTokens(current - n);
     return { success: true, spent: n, remaining: current - n };
-  }
+  },
 };

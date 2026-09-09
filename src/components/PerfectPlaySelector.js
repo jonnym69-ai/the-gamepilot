@@ -21,20 +21,12 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
 
   // Toggle mood selection
   const toggleMood = (mood) => {
-    setSelectedMoods(prev =>
-      prev.includes(mood)
-        ? prev.filter(m => m !== mood)
-        : [...prev, mood]
-    );
+    setSelectedMoods((prev) => (prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]));
   };
 
   // Toggle genre selection
   const toggleGenre = (genre) => {
-    setSelectedGenres(prev =>
-      prev.includes(genre)
-        ? prev.filter(g => g !== genre)
-        : [...prev, genre]
-    );
+    setSelectedGenres((prev) => (prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]));
   };
 
   // Get recommendations when selections change
@@ -75,8 +67,8 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
     }
 
     const genres = new Set();
-    selectedMoods.forEach(mood => {
-      getGenresForMood(mood).forEach(genre => genres.add(genre));
+    selectedMoods.forEach((mood) => {
+      getGenresForMood(mood).forEach((genre) => genres.add(genre));
     });
     return genres;
   }, [selectedMoods]);
@@ -93,7 +85,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
         <div className="selector-section">
           <h3>😌 Select Moods ({selectedMoods.length})</h3>
           <div className="mood-grid">
-            {MOODS.map(mood => (
+            {MOODS.map((mood) => (
               <button
                 key={mood}
                 className={`mood-button ${selectedMoods.includes(mood) ? 'selected' : ''}`}
@@ -109,12 +101,10 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
         <div className="selector-section">
           <h3>🎨 Select Genres ({selectedGenres.length})</h3>
           <div className="genre-grid">
-            {GENRES.map(genre => (
+            {GENRES.map((genre) => (
               <button
                 key={genre}
-                className={`genre-button ${
-                  selectedGenres.includes(genre) ? 'selected' : ''
-                } ${
+                className={`genre-button ${selectedGenres.includes(genre) ? 'selected' : ''} ${
                   selectedMoods.length > 0 && !genresForSelectedMoods.has(genre) ? 'disabled' : ''
                 }`}
                 onClick={() => toggleGenre(genre)}
@@ -213,19 +203,28 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
             <div className="familiarity-toggle-buttons">
               <button
                 className={`familiarity-btn ${familiarityBias === 'familiar' ? 'selected' : ''}`}
-                onClick={() => { setFamiliarityBias('familiar'); setFamiliarityBiasState('familiar'); }}
+                onClick={() => {
+                  setFamiliarityBias('familiar');
+                  setFamiliarityBiasState('familiar');
+                }}
               >
                 Familiar
               </button>
               <button
                 className={`familiarity-btn ${familiarityBias === null ? 'selected' : ''}`}
-                onClick={() => { setFamiliarityBias(null); setFamiliarityBiasState(null); }}
+                onClick={() => {
+                  setFamiliarityBias(null);
+                  setFamiliarityBiasState(null);
+                }}
               >
                 Balanced
               </button>
               <button
                 className={`familiarity-btn ${familiarityBias === 'fresh' ? 'selected' : ''}`}
-                onClick={() => { setFamiliarityBias('fresh'); setFamiliarityBiasState('fresh'); }}
+                onClick={() => {
+                  setFamiliarityBias('fresh');
+                  setFamiliarityBiasState('fresh');
+                }}
               >
                 Fresh
               </button>
@@ -237,7 +236,8 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
         {(selectedMoods.length > 0 || selectedGenres.length > 0) && (
           <div className="selector-section results-section">
             <h3>
-              📊 Results: {(recommendationResult?.totalMatches || 0)} game{(recommendationResult?.totalMatches || 0) !== 1 ? 's' : ''} found
+              📊 Results: {recommendationResult?.totalMatches || 0} game
+              {(recommendationResult?.totalMatches || 0) !== 1 ? 's' : ''} found
             </h3>
 
             {matchingGames.length > 0 ? (
@@ -250,9 +250,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                       <div className="game-title">{bestRecommendation.name}</div>
                       <div className="game-meta">
                         <span className="platform">{bestRecommendation.platform}</span>
-                        <span className="plays">
-                          {bestRecommendation.launch_count || 0} plays
-                        </span>
+                        <span className="plays">{bestRecommendation.launch_count || 0} plays</span>
                       </div>
                       <RecommendationReasonChip
                         game={bestRecommendation}
@@ -261,10 +259,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                         timeAvailable={availableMinutes}
                         recommendationType="perfect-play"
                       />
-                      <button
-                        className="select-button"
-                        onClick={() => handleSelectGame(bestRecommendation)}
-                      >
+                      <button className="select-button" onClick={() => handleSelectGame(bestRecommendation)}>
                         Select This Game
                       </button>
                     </div>
@@ -279,28 +274,29 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                       const game = entry.game;
 
                       return (
-                      <div
-                        key={game.appid || game.name || idx}
-                        className={`game-item ${selectedGame?.appid === game.appid ? 'selected' : ''}`}
-                        onClick={() => handleSelectGame(game)}
-                      >
-                        <div className="game-rank">{idx + 1}</div>
-                        <div className="game-info">
-                          <div className="game-name">{game.name}</div>
-                          <div className="game-platform">{game.platform}</div>
-                          <RecommendationReasonChip
-                            game={game}
-                            mood={selectedMoods[0] || null}
-                            genre={selectedGenres[0] || null}
-                            timeAvailable={availableMinutes}
-                            recommendationType="perfect-play"
-                          />
+                        <div
+                          key={game.appid || game.name || idx}
+                          className={`game-item ${selectedGame?.appid === game.appid ? 'selected' : ''}`}
+                          onClick={() => handleSelectGame(game)}
+                        >
+                          <div className="game-rank">{idx + 1}</div>
+                          <div className="game-info">
+                            <div className="game-name">{game.name}</div>
+                            <div className="game-platform">{game.platform}</div>
+                            <RecommendationReasonChip
+                              game={game}
+                              mood={selectedMoods[0] || null}
+                              genre={selectedGenres[0] || null}
+                              timeAvailable={availableMinutes}
+                              recommendationType="perfect-play"
+                            />
+                          </div>
+                          <div className="game-stats">
+                            <span>{game.launch_count || 0} plays</span>
+                          </div>
                         </div>
-                        <div className="game-stats">
-                          <span>{game.launch_count || 0} plays</span>
-                        </div>
-                      </div>
-                    )})}
+                      );
+                    })}
                   </div>
                   {(recommendationResult?.totalMatches || 0) > matchingEntries.length && (
                     <div className="more-games">

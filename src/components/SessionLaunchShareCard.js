@@ -8,12 +8,12 @@ export const SESSION_LAUNCH_SHARE_CARD_SIZE_PX = 1080;
 
 export function buildSessionLaunchShareData(game = {}) {
   const safeGame = game || {};
-  const platform = safeGame.platform || safeGame.brandPlatform || (safeGame.launchSources?.[0]?.platform) || null;
+  const platform = safeGame.platform || safeGame.brandPlatform || safeGame.launchSources?.[0]?.platform || null;
 
   return {
     name: safeGame.name || 'Unknown Game',
     coverUrl: resolveGameArtwork(safeGame, { surface: 'portrait' }),
-    platform
+    platform,
   };
 }
 
@@ -41,9 +41,7 @@ export function SessionLaunchShareCard({ game = {}, watermark = 'gamepilot' }) {
 
         <div className="session-launch-share-card-title-wrap">
           <h2 className="session-launch-share-card-title">{data.name}</h2>
-          {data.platform && (
-            <span className="session-launch-share-card-platform">{data.platform}</span>
-          )}
+          {data.platform && <span className="session-launch-share-card-platform">{data.platform}</span>}
         </div>
 
         <div className="session-launch-share-card-badges">

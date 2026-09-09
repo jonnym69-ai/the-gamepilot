@@ -148,31 +148,31 @@
 }
 
 .event-dot.release {
-  background: #4CAF50;
+  background: #4caf50;
 }
 
 .event-dot.dlc {
-  background: #2196F3;
+  background: #2196f3;
 }
 
 .event-dot.update {
-  background: #FF9800;
+  background: #ff9800;
 }
 
 .event-dot.event {
-  background: #9C27B0;
+  background: #9c27b0;
 }
 
 .event-dot.tournament {
-  background: #F44336;
+  background: #f44336;
 }
 
 .event-dot.sale {
-  background: #FFD700;
+  background: #ffd700;
 }
 
 .event-dot.other {
-  background: #607D8B;
+  background: #607d8b;
 }
 
 .more-events {

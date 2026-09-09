@@ -7,21 +7,24 @@ import './StoryShareCard.css';
 
 export const STORY_SHARE_CARD_SIZE_PX = 1080;
 
-export function StoryShareCard({ stories = [], period = 'weekly', username = 'Pilot', totalPlaytime = 0, topGame = null, showCover = true, watermark = 'gamepilot' }) {
+export function StoryShareCard({
+  stories = [],
+  period = 'weekly',
+  username = 'Pilot',
+  totalPlaytime = 0,
+  topGame = null,
+  showCover = true,
+  watermark = 'gamepilot',
+}) {
   const periodTitle = period === 'weekly' ? 'This Week' : period === 'monthly' ? 'This Month' : 'Story Recap';
-  const coverUrl = showCover && topGame
-    ? (topGame.coverUrl || resolveGameArtwork(topGame, { surface: 'portrait' }))
-    : null;
+  const coverUrl =
+    showCover && topGame ? topGame.coverUrl || resolveGameArtwork(topGame, { surface: 'portrait' }) : null;
 
   return (
     <div className="story-share-card" style={{ width: STORY_SHARE_CARD_SIZE_PX, height: STORY_SHARE_CARD_SIZE_PX }}>
       {coverUrl && (
         <>
-          <div
-            className="story-share-card-cover"
-            style={{ backgroundImage: `url(${coverUrl})` }}
-            aria-hidden="true"
-          />
+          <div className="story-share-card-cover" style={{ backgroundImage: `url(${coverUrl})` }} aria-hidden="true" />
           <div className="story-share-card-cover-overlay" aria-hidden="true" />
         </>
       )}
@@ -56,9 +59,7 @@ export function StoryShareCard({ stories = [], period = 'weekly', username = 'Pi
         </div>
 
         {stories.length === 0 ? (
-          <div className="story-share-card-empty">
-            No gaming stories this period — time to make some memories.
-          </div>
+          <div className="story-share-card-empty">No gaming stories this period — time to make some memories.</div>
         ) : (
           <ul className="story-share-card-list">
             {stories.map((story, index) => (

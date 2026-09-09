@@ -25,8 +25,8 @@ export const PILOT_PERSONAS = Object.freeze([
       banner: 'midnight_arcade',
       title: 'night_owl',
       recommendationPack: 'arcade_signal',
-      gamingLinksLayout: 'arcade_cabinet'
-    }
+      gamingLinksLayout: 'arcade_cabinet',
+    },
   },
   {
     id: 'cozy_explorer',
@@ -41,8 +41,8 @@ export const PILOT_PERSONAS = Object.freeze([
       banner: 'aurora_drift',
       title: 'library_ranger',
       recommendationPack: 'classic_glow',
-      gamingLinksLayout: 'compact_list'
-    }
+      gamingLinksLayout: 'compact_list',
+    },
   },
   {
     id: 'tactical_operator',
@@ -57,8 +57,8 @@ export const PILOT_PERSONAS = Object.freeze([
       banner: 'crimson_arena',
       title: 'session_strategist',
       recommendationPack: 'tactical_hud',
-      gamingLinksLayout: 'magazine_mosaic'
-    }
+      gamingLinksLayout: 'magazine_mosaic',
+    },
   },
   {
     id: 'retro_captain',
@@ -73,8 +73,8 @@ export const PILOT_PERSONAS = Object.freeze([
       banner: 'pilot_sunset',
       title: 'retro_guardian',
       recommendationPack: 'classic_glow',
-      gamingLinksLayout: 'classic_grid'
-    }
+      gamingLinksLayout: 'classic_grid',
+    },
   },
   {
     id: 'champion_pilot',
@@ -89,9 +89,9 @@ export const PILOT_PERSONAS = Object.freeze([
       banner: 'victory_wave',
       title: 'completionist',
       recommendationPack: 'victory_lights',
-      gamingLinksLayout: 'showcase_hero'
-    }
-  }
+      gamingLinksLayout: 'showcase_hero',
+    },
+  },
 ]);
 
 const isThemeUnlocked = (themeId) => {
@@ -123,7 +123,7 @@ export const PersonaService = {
         banner: isCollectionItemUnlocked(banners, persona.equip.banner),
         title: isCollectionItemUnlocked(titles, persona.equip.title),
         recommendationPack: isCollectionItemUnlocked(recPacks, persona.equip.recommendationPack),
-        gamingLinksLayout: isCollectionItemUnlocked(linkLayouts, persona.equip.gamingLinksLayout)
+        gamingLinksLayout: isCollectionItemUnlocked(linkLayouts, persona.equip.gamingLinksLayout),
       };
       const totalParts = Object.keys(checks).length;
       const unlockedParts = Object.values(checks).filter(Boolean).length;
@@ -133,7 +133,7 @@ export const PersonaService = {
         totalParts,
         progressPercent: Math.round((unlockedParts / totalParts) * 100),
         fullyUnlocked: unlockedParts === totalParts,
-        checks
+        checks,
       };
     });
   },
@@ -156,9 +156,11 @@ export const PersonaService = {
     if (persona.checks.theme) {
       try {
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('gamepilot:request-theme', {
-            detail: { themeId: persona.equip.theme }
-          }));
+          window.dispatchEvent(
+            new CustomEvent('gamepilot:request-theme', {
+              detail: { themeId: persona.equip.theme },
+            })
+          );
         }
         applied.push(`theme: ${persona.equip.theme}`);
       } catch {
@@ -214,13 +216,14 @@ export const PersonaService = {
       personaName: persona.name,
       applied,
       skipped,
-      message: applied.length === 0
-        ? `${persona.name}: nothing applied (all components are locked).`
-        : skipped.length === 0
-          ? `${persona.name} fully equipped!`
-          : `${persona.name} equipped (${applied.length}/${applied.length + skipped.length} parts — rest still locked).`
+      message:
+        applied.length === 0
+          ? `${persona.name}: nothing applied (all components are locked).`
+          : skipped.length === 0
+            ? `${persona.name} fully equipped!`
+            : `${persona.name} equipped (${applied.length}/${applied.length + skipped.length} parts — rest still locked).`,
     };
-  }
+  },
 };
 
 export default PersonaService;

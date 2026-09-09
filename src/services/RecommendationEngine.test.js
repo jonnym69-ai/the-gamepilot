@@ -7,22 +7,22 @@ import { invalidateRecommendationWeightsCache } from './RecommendationWeights';
 
 jest.mock('./PersonaPerformanceInsights', () => ({
   PersonaPerformanceInsights: {
-    estimateSessionMinutes: jest.fn(() => null)
-  }
+    estimateSessionMinutes: jest.fn(() => null),
+  },
 }));
 
 jest.mock('./RecommendationExplainer', () => ({
   RecommendationExplainer: {
-    getDetailedExplanation: jest.fn(() => 'mock-explanation')
-  }
+    getDetailedExplanation: jest.fn(() => 'mock-explanation'),
+  },
 }));
 
 jest.mock('../GamingIdentity', () => ({
   GamingIdentity: {
     getProfile: jest.fn(() => null),
     getSignatureGames: jest.fn(() => []),
-    classifyFamiliarity: jest.fn(() => ({ label: 'neutral' }))
-  }
+    classifyFamiliarity: jest.fn(() => ({ label: 'neutral' })),
+  },
 }));
 
 jest.mock('./GamingPersonaService', () => ({
@@ -30,9 +30,9 @@ jest.mock('./GamingPersonaService', () => ({
     getPersona: jest.fn(() => ({ primaryPersona: null, summaryRoast: null })),
     getPrimaryPersona: jest.fn(() => null),
     getAffinityGenres: jest.fn(() => []),
-    gameMatchesPersona: jest.fn(() => false)
+    gameMatchesPersona: jest.fn(() => false),
   },
-  PERSONA_AFFINITY_GENRES: {}
+  PERSONA_AFFINITY_GENRES: {},
 }));
 
 const baseGame = (overrides = {}) => ({
@@ -42,7 +42,7 @@ const baseGame = (overrides = {}) => ({
   time_played: 0,
   launch_count: 0,
   last_played: null,
-  ...overrides
+  ...overrides,
 });
 
 describe('RecommendationEngine', () => {
@@ -90,7 +90,12 @@ describe('RecommendationEngine', () => {
 
     test('replay intent active is preferred over finished', () => {
       const active = RecommendationEngine.scoreGameByBehavior(baseGame({ replayIntent: 'active' }), null, null, null);
-      const finished = RecommendationEngine.scoreGameByBehavior(baseGame({ replayIntent: 'finished' }), null, null, null);
+      const finished = RecommendationEngine.scoreGameByBehavior(
+        baseGame({ replayIntent: 'finished' }),
+        null,
+        null,
+        null
+      );
       expect(active).toBeGreaterThan(finished);
     });
 
@@ -98,10 +103,15 @@ describe('RecommendationEngine', () => {
       StartupPersonalizationService.completeOnboarding({
         selectedMoods: ['Focused'],
         favoriteGenres: ['Strategy'],
-        sessionPreference: 'medium'
+        sessionPreference: 'medium',
       });
       const seeded = RecommendationEngine.scoreGameByBehavior(baseGame(), 'Focused', 'Strategy', null);
-      const unseeded = RecommendationEngine.scoreGameByBehavior(baseGame({ genres: ['Casual'] }), 'Relaxed', 'Casual', null);
+      const unseeded = RecommendationEngine.scoreGameByBehavior(
+        baseGame({ genres: ['Casual'] }),
+        'Relaxed',
+        'Casual',
+        null
+      );
       expect(seeded).toBeGreaterThan(unseeded);
     });
 
@@ -125,7 +135,7 @@ describe('RecommendationEngine', () => {
       expect(RecommendationEngine.normalizeTimeConstraint(75)).toEqual({
         key: null,
         availableMinutes: 75,
-        targetGenres: []
+        targetGenres: [],
       });
     });
 
@@ -158,10 +168,7 @@ describe('RecommendationEngine', () => {
 
   describe('normalizeSelectionList / normalizePerfectPlaySelections', () => {
     test('filters by validator and dedupes', () => {
-      const result = RecommendationEngine.normalizeSelectionList(
-        ['a', 'b', 'a', 'c'],
-        (v) => v !== 'b'
-      );
+      const result = RecommendationEngine.normalizeSelectionList(['a', 'b', 'a', 'c'], (v) => v !== 'b');
       expect(result).toEqual(['a', 'c']);
     });
 
@@ -186,7 +193,7 @@ describe('RecommendationEngine', () => {
         null,
         { appid: '1', name: 'A duplicate by appid' },
         { name: 'B' },
-        { name: 'B' }
+        { name: 'B' },
       ]);
       expect(result).toHaveLength(2);
       expect(result[0].appid).toBe('1');
@@ -220,7 +227,7 @@ describe('RecommendationEngine', () => {
         baseGame({ appid: '1', time_played: 60 }),
         baseGame({ appid: '2', launch_count: 15 }),
         baseGame({ appid: '3', time_played: 10 }),
-        baseGame({ appid: '4' })
+        baseGame({ appid: '4' }),
       ];
       const played = RecommendationEngine.getPlayedGames(library);
       expect(played.map((g) => g.appid)).toEqual(['1', '2', '3']);
@@ -236,7 +243,7 @@ describe('RecommendationEngine', () => {
       const library = [
         baseGame({ appid: '1', time_played: 50, last_played: 1_700_000_000_000 }),
         baseGame({ appid: '2', time_played: 50, last_played: 1_600_000_000_000 }),
-        baseGame({ appid: '3', time_played: 50, last_played: 1_650_000_000_000 })
+        baseGame({ appid: '3', time_played: 50, last_played: 1_650_000_000_000 }),
       ];
       const result = RecommendationEngine.getFallbackRediscoverGames(library, 2);
       expect(result.map((g) => g.appid)).toEqual(['2', '3']);
@@ -258,11 +265,7 @@ describe('RecommendationEngine', () => {
 
     test('drops entries older than the TTL', () => {
       const ancient = Date.now() - 1000 * 60 * 60 * 5; // 5 hours ago
-      RecommendationEngine.persistRecentRecommendations(
-        [{ name: 'StaleGame' }],
-        [],
-        ancient
-      );
+      RecommendationEngine.persistRecentRecommendations([{ name: 'StaleGame' }], [], ancient);
       const { validRecent } = RecommendationEngine.getRecentRecommendationState();
       expect(validRecent.find((e) => e.name === 'StaleGame')).toBeUndefined();
     });
@@ -273,7 +276,7 @@ describe('RecommendationEngine', () => {
       baseGame({ appid: '1', name: 'Strategy Hit', genres: ['Strategy'] }),
       baseGame({ appid: '2', name: 'RPG Epic', genres: ['RPG'] }),
       baseGame({ appid: '3', name: 'Casual Cozy', genres: ['Casual'] }),
-      baseGame({ appid: '4', name: 'Roguelike Rush', genres: ['Roguelike'] })
+      baseGame({ appid: '4', name: 'Roguelike Rush', genres: ['Roguelike'] }),
     ];
 
     test('getPerfectPlayResult returns a payload with entries', () => {
@@ -323,7 +326,7 @@ describe('RecommendationEngine', () => {
     test('Librarian penalizes a recently-played game more than Full does', () => {
       const recent = baseGame({
         last_played: Date.now() - 1000 * 60 * 60 * 24 * 2,
-        time_played: 100
+        time_played: 100,
       });
 
       setMode('librarian');
@@ -380,7 +383,7 @@ describe('RecommendationEngine', () => {
         genres: ['Survival', 'Action'],
         tags: ['Zombies', 'Open World'],
         mood: 'Focused',
-        time_played: 1200
+        time_played: 1200,
       });
       const closeMatch = baseGame({
         appid: 'match',
@@ -388,7 +391,7 @@ describe('RecommendationEngine', () => {
         genres: ['Survival', 'Action'],
         tags: ['Zombies'],
         mood: 'Focused',
-        time_played: 0
+        time_played: 0,
       });
       const weakMatch = baseGame({
         appid: 'weak',
@@ -396,7 +399,7 @@ describe('RecommendationEngine', () => {
         genres: ['Puzzle'],
         tags: ['Relaxing'],
         mood: 'Relaxed',
-        time_played: 0
+        time_played: 0,
       });
 
       const result = RecommendationEngine.getSimilarToGame([reference, weakMatch, closeMatch], reference, 4);
@@ -442,9 +445,30 @@ describe('RecommendationEngine', () => {
       // Played games get replayIntent so they rank above unplayed games in the
       // fallback pipeline, leaving the unplayed novel-genre games as pure
       // exploration candidates rather than top-scoring fallback picks.
-      baseGame({ appid: '1', name: 'RPG Heavy', genres: ['RPG'], time_played: 600, last_played: Date.now() - 1000 * 60 * 60 * 24 * 30, replayIntent: 'active' }),
-      baseGame({ appid: '2', name: 'RPG Lite',  genres: ['RPG'], time_played: 120, last_played: Date.now() - 1000 * 60 * 60 * 24 * 10, replayIntent: 'active' }),
-      baseGame({ appid: '3', name: 'Strategy X', genres: ['Strategy'], time_played: 300, last_played: Date.now() - 1000 * 60 * 60 * 24 * 5, replayIntent: 'active' }),
+      baseGame({
+        appid: '1',
+        name: 'RPG Heavy',
+        genres: ['RPG'],
+        time_played: 600,
+        last_played: Date.now() - 1000 * 60 * 60 * 24 * 30,
+        replayIntent: 'active',
+      }),
+      baseGame({
+        appid: '2',
+        name: 'RPG Lite',
+        genres: ['RPG'],
+        time_played: 120,
+        last_played: Date.now() - 1000 * 60 * 60 * 24 * 10,
+        replayIntent: 'active',
+      }),
+      baseGame({
+        appid: '3',
+        name: 'Strategy X',
+        genres: ['Strategy'],
+        time_played: 300,
+        last_played: Date.now() - 1000 * 60 * 60 * 24 * 5,
+        replayIntent: 'active',
+      }),
       baseGame({ appid: '4', name: 'Puzzle Surprise', genres: ['Puzzle'], time_played: 0, last_played: null }),
       baseGame({ appid: '5', name: 'Action Unplayed', genres: ['Action'], time_played: 0, last_played: null }),
     ];
@@ -521,12 +545,39 @@ describe('RecommendationEngine', () => {
       // User has played huge amounts of Action. A new title that is
       // "Action + Puzzle" should still register as exploration on the Puzzle side.
       const lib = [
-        baseGame({ appid: '1', name: 'Action Grind', genres: ['Action'], time_played: 5000, last_played: Date.now(), replayIntent: 'active' }),
-        baseGame({ appid: '2', name: 'Action Lite',  genres: ['Action'], time_played: 800,  last_played: Date.now(), replayIntent: 'active' }),
-        baseGame({ appid: '3', name: 'Action More',  genres: ['Action'], time_played: 600,  last_played: Date.now(), replayIntent: 'active' }),
+        baseGame({
+          appid: '1',
+          name: 'Action Grind',
+          genres: ['Action'],
+          time_played: 5000,
+          last_played: Date.now(),
+          replayIntent: 'active',
+        }),
+        baseGame({
+          appid: '2',
+          name: 'Action Lite',
+          genres: ['Action'],
+          time_played: 800,
+          last_played: Date.now(),
+          replayIntent: 'active',
+        }),
+        baseGame({
+          appid: '3',
+          name: 'Action More',
+          genres: ['Action'],
+          time_played: 600,
+          last_played: Date.now(),
+          replayIntent: 'active',
+        }),
         // Action listed FIRST — under the old genres[0] logic this would score
         // as fully familiar (Action). Under the fix, the Puzzle angle wins.
-        baseGame({ appid: '4', name: 'Hybrid Discovery', genres: ['Action', 'Puzzle'], time_played: 0, last_played: null }),
+        baseGame({
+          appid: '4',
+          name: 'Hybrid Discovery',
+          genres: ['Action', 'Puzzle'],
+          time_played: 0,
+          last_played: null,
+        }),
       ];
       const result = RecommendationEngine.getPerfectPlayRecommendations(lib, null, null, null, 3);
       expect(result[2].name).toBe('Hybrid Discovery');
@@ -535,11 +586,46 @@ describe('RecommendationEngine', () => {
     test('does not inject an unrunnable game as the exploration pick', () => {
       setMode('full');
       const lib = [
-        baseGame({ appid: '1', name: 'RPG Heavy', genres: ['RPG'], time_played: 600, last_played: Date.now() - 1000 * 60 * 60 * 24 * 30, replayIntent: 'active' }),
-        baseGame({ appid: '2', name: 'RPG Lite',  genres: ['RPG'], time_played: 120, last_played: Date.now() - 1000 * 60 * 60 * 24 * 10, replayIntent: 'active' }),
-        baseGame({ appid: '3', name: 'Strategy X', genres: ['Strategy'], time_played: 300, last_played: Date.now() - 1000 * 60 * 60 * 24 * 5, replayIntent: 'active' }),
-        baseGame({ appid: '4', name: 'Puzzle Surprise', genres: ['Puzzle'], time_played: 0, last_played: null, hardwareCompatibility: 'cannot_run' }),
-        baseGame({ appid: '5', name: 'Action Unplayed', genres: ['Action'], time_played: 0, last_played: null, hardwareCompatibility: 'cannot_run' }),
+        baseGame({
+          appid: '1',
+          name: 'RPG Heavy',
+          genres: ['RPG'],
+          time_played: 600,
+          last_played: Date.now() - 1000 * 60 * 60 * 24 * 30,
+          replayIntent: 'active',
+        }),
+        baseGame({
+          appid: '2',
+          name: 'RPG Lite',
+          genres: ['RPG'],
+          time_played: 120,
+          last_played: Date.now() - 1000 * 60 * 60 * 24 * 10,
+          replayIntent: 'active',
+        }),
+        baseGame({
+          appid: '3',
+          name: 'Strategy X',
+          genres: ['Strategy'],
+          time_played: 300,
+          last_played: Date.now() - 1000 * 60 * 60 * 24 * 5,
+          replayIntent: 'active',
+        }),
+        baseGame({
+          appid: '4',
+          name: 'Puzzle Surprise',
+          genres: ['Puzzle'],
+          time_played: 0,
+          last_played: null,
+          hardwareCompatibility: 'cannot_run',
+        }),
+        baseGame({
+          appid: '5',
+          name: 'Action Unplayed',
+          genres: ['Action'],
+          time_played: 0,
+          last_played: null,
+          hardwareCompatibility: 'cannot_run',
+        }),
       ];
       const result = RecommendationEngine.getPerfectPlayRecommendations(lib, null, null, null, 3);
       const names = result.map((g) => g.name);
@@ -547,6 +633,5 @@ describe('RecommendationEngine', () => {
       expect(names).not.toContain('Puzzle Surprise');
       expect(names).not.toContain('Action Unplayed');
     });
-
   });
 });

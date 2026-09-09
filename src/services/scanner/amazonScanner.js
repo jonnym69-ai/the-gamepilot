@@ -8,7 +8,7 @@ const {
   findBestExecutablePath,
   findExecutableDeep,
   createTrackedDefaults,
-  getActiveDrives
+  getActiveDrives,
 } = require('./scannerUtils');
 
 let getGameGenres;
@@ -20,7 +20,8 @@ try {
     const name = gameName.toLowerCase();
     if (name.includes('shooter') || name.includes('fps') || name.includes('tarkov')) return ['Shooter'];
     if (name.includes('rpg') || name.includes('witcher') || name.includes('elder')) return ['RPG'];
-    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires')) return ['Strategy'];
+    if (name.includes('strategy') || name.includes('civilization') || name.includes('age of empires'))
+      return ['Strategy'];
     if (name.includes('action') || name.includes('far cry') || name.includes('resident evil')) return ['Action'];
     if (name.includes('adventure') || name.includes('tomb raider') || name.includes('zelda')) return ['Adventure'];
     if (name.includes('simulation') || name.includes('sims') || name.includes('cities')) return ['Simulation'];
@@ -62,7 +63,7 @@ const getAmazonInstallPaths = () => {
   const registryRoots = [
     'HKLM\\SOFTWARE\\WOW6432Node\\Amazon Games',
     'HKLM\\SOFTWARE\\Amazon Games',
-    'HKCU\\SOFTWARE\\Amazon Games'
+    'HKCU\\SOFTWARE\\Amazon Games',
   ];
 
   registryRoots.forEach((root) => {
@@ -96,8 +97,14 @@ const parseAmazonGameManifest = (manifestPath) => {
       lines.forEach((line) => {
         const colonIndex = line.indexOf(':');
         if (colonIndex > 0) {
-          const key = line.slice(0, colonIndex).trim().replace(/^["']|["']$/g, '');
-          const value = line.slice(colonIndex + 1).trim().replace(/^["']|["']$/g, '');
+          const key = line
+            .slice(0, colonIndex)
+            .trim()
+            .replace(/^["']|["']$/g, '');
+          const value = line
+            .slice(colonIndex + 1)
+            .trim()
+            .replace(/^["']|["']$/g, '');
           manifest[key] = value;
         }
       });
@@ -115,11 +122,13 @@ const AMAZON_SKIP_TOKENS = [
   'twitch launcher',
   'setup',
   'installer',
-  'redistributable'
+  'redistributable',
 ];
 
 const isExcludedAmazonTitle = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
   if (!normalized) return true;
   return AMAZON_SKIP_TOKENS.some((token) => normalized === token || normalized.includes(token));
 };
@@ -149,10 +158,9 @@ const scanAmazonLibrary = () => {
       if (seenGameNames.has(displayName.toLowerCase())) return;
 
       // Look for Amazon manifest files
-      const manifestFiles = safeReadDir(gamePath).filter((f) =>
-        f.toLowerCase().endsWith('.json') ||
-        f.toLowerCase().endsWith('.manifest') ||
-        f.toLowerCase().endsWith('.amz')
+      const manifestFiles = safeReadDir(gamePath).filter(
+        (f) =>
+          f.toLowerCase().endsWith('.json') || f.toLowerCase().endsWith('.manifest') || f.toLowerCase().endsWith('.amz')
       );
 
       let launchId = folder;
@@ -197,7 +205,7 @@ const scanAmazonLibrary = () => {
         executablePath: executablePath || null,
         installDir: gamePath,
         launchId,
-        ...createTrackedDefaults()
+        ...createTrackedDefaults(),
       });
     });
   });

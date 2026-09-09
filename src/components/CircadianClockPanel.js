@@ -11,7 +11,7 @@ export function CircadianClockPanel({ library = [] }) {
     let totalMinutes = 0;
     let longestSittingMinutes = 0;
     let longestSittingGame = '';
-    
+
     // Time-of-day buckets
     // Night: 00:00 - 05:59
     // Morning: 06:00 - 11:59
@@ -21,7 +21,7 @@ export function CircadianClockPanel({ library = [] }) {
       night: { label: 'Night Owl', hours: '12am - 6am', minutes: 0, icon: Moon, color: '#8b5cf6' },
       morning: { label: 'Early Bird', hours: '6am - 12pm', minutes: 0, icon: Sunrise, color: '#f59e0b' },
       afternoon: { label: 'Day Tripper', hours: '12pm - 6pm', minutes: 0, icon: Sun, color: '#38bdf8' },
-      evening: { label: 'Prime Timer', hours: '6pm - 12am', minutes: 0, icon: Sunset, color: '#ff6b35' }
+      evening: { label: 'Prime Timer', hours: '6pm - 12am', minutes: 0, icon: Sunset, color: '#ff6b35' },
     };
 
     let weekendMinutes = 0;
@@ -86,7 +86,7 @@ export function CircadianClockPanel({ library = [] }) {
       personalityTag,
       weekendPercent,
       weekdayPercent: 100 - weekendPercent,
-      buckets
+      buckets,
     };
   }, [library]);
 
@@ -99,7 +99,16 @@ export function CircadianClockPanel({ library = [] }) {
     );
   }
 
-  const { totalHours, longestSittingHours, longestSittingGame, dominantArchetype, personalityTag, weekendPercent, weekdayPercent, buckets } = analysis;
+  const {
+    totalHours,
+    longestSittingHours,
+    longestSittingGame,
+    dominantArchetype,
+    personalityTag,
+    weekendPercent,
+    weekdayPercent,
+    buckets,
+  } = analysis;
 
   return (
     <div className="circadian-clock-panel">
@@ -110,14 +119,15 @@ export function CircadianClockPanel({ library = [] }) {
         </div>
         <h3 className="circadian-title">{personalityTag}</h3>
         <p className="circadian-subtitle">
-          Your peak window is <strong>{dominantArchetype.label}</strong> ({dominantArchetype.hours}) comprising {analysis.dominantPercent}% of all recorded play.
+          Your peak window is <strong>{dominantArchetype.label}</strong> ({dominantArchetype.hours}) comprising{' '}
+          {analysis.dominantPercent}% of all recorded play.
         </p>
       </div>
 
       <div className="circadian-grid">
         {Object.entries(buckets).map(([key, b]) => {
           const Icon = b.icon;
-          const percent = totalHours > 0 ? Math.round(((b.minutes / 60) / totalHours) * 100) : 0;
+          const percent = totalHours > 0 ? Math.round((b.minutes / 60 / totalHours) * 100) : 0;
           return (
             <div key={key} className="circadian-card" style={{ '--accent-glow': b.color }}>
               <div className="circadian-card-header">
@@ -130,10 +140,7 @@ export function CircadianClockPanel({ library = [] }) {
                 <span className="circadian-card-percent">{percent}%</span>
               </div>
               <div className="circadian-progress-track">
-                <div
-                  className="circadian-progress-fill"
-                  style={{ width: `${percent}%`, backgroundColor: b.color }}
-                />
+                <div className="circadian-progress-fill" style={{ width: `${percent}%`, backgroundColor: b.color }} />
               </div>
             </div>
           );
@@ -154,7 +161,9 @@ export function CircadianClockPanel({ library = [] }) {
           <Award size={18} className="insight-icon cadence" />
           <div className="insight-content">
             <span className="insight-label">Weekly Split</span>
-            <strong className="insight-value">{weekendPercent}% Weekend · {weekdayPercent}% Weekday</strong>
+            <strong className="insight-value">
+              {weekendPercent}% Weekend · {weekdayPercent}% Weekday
+            </strong>
             <span className="insight-meta">
               {weekendPercent > 55 ? 'You save your big adventures for the weekend' : 'Balanced daily gaming cadence'}
             </span>

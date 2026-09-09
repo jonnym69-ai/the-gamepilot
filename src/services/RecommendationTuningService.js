@@ -7,7 +7,7 @@ export const DEFAULT_TUNING = Object.freeze({
   novelty: 0.5,
   diversity: 0.5,
   fatigueWindowHours: 1,
-  explorationEnabled: true
+  explorationEnabled: true,
 });
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -25,9 +25,10 @@ export class RecommendationTuningService {
           novelty: clamp(safeNumber(stored.novelty, DEFAULT_TUNING.novelty), 0, 1),
           diversity: clamp(safeNumber(stored.diversity, DEFAULT_TUNING.diversity), 0, 1),
           fatigueWindowHours: clamp(safeNumber(stored.fatigueWindowHours, DEFAULT_TUNING.fatigueWindowHours), 0, 168),
-          explorationEnabled: stored.explorationEnabled !== undefined
-            ? Boolean(stored.explorationEnabled)
-            : DEFAULT_TUNING.explorationEnabled
+          explorationEnabled:
+            stored.explorationEnabled !== undefined
+              ? Boolean(stored.explorationEnabled)
+              : DEFAULT_TUNING.explorationEnabled,
         };
       }
     } catch (e) {
@@ -41,9 +42,10 @@ export class RecommendationTuningService {
       novelty: clamp(safeNumber(tuning?.novelty, DEFAULT_TUNING.novelty), 0, 1),
       diversity: clamp(safeNumber(tuning?.diversity, DEFAULT_TUNING.diversity), 0, 1),
       fatigueWindowHours: clamp(safeNumber(tuning?.fatigueWindowHours, DEFAULT_TUNING.fatigueWindowHours), 0, 168),
-      explorationEnabled: tuning?.explorationEnabled !== undefined
-        ? Boolean(tuning.explorationEnabled)
-        : DEFAULT_TUNING.explorationEnabled
+      explorationEnabled:
+        tuning?.explorationEnabled !== undefined
+          ? Boolean(tuning.explorationEnabled)
+          : DEFAULT_TUNING.explorationEnabled,
     };
     StorageService.set(STORAGE_KEY, next);
     invalidateRecommendationWeightsCache();
@@ -69,7 +71,7 @@ export class RecommendationTuningService {
       explorationGenreNoveltyWeight: Math.round(10 + novelty * 40),
       explorationUnplayedBonus: Math.round(10 + novelty * 25),
       discoveryDiversityMultiplier: diversity,
-      fatigueWindowHours: tuning.fatigueWindowHours
+      fatigueWindowHours: tuning.fatigueWindowHours,
     };
   }
 

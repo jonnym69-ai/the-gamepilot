@@ -12,10 +12,10 @@ export const EMPTY_LIBRARY_FALLBACK = Object.freeze({
       playtime: 0,
       lastPlayed: null,
       icon: '🧩',
-      description: 'Mind-bending puzzle game with cooperative gameplay'
+      description: 'Mind-bending puzzle game with cooperative gameplay',
     },
     {
-      id: 'sample-2', 
+      id: 'sample-2',
       name: 'Stardew Valley',
       platform: 'Steam',
       genre: 'Simulation',
@@ -23,7 +23,7 @@ export const EMPTY_LIBRARY_FALLBACK = Object.freeze({
       playtime: 0,
       lastPlayed: null,
       icon: '🌾',
-      description: 'Peaceful farming simulation game'
+      description: 'Peaceful farming simulation game',
     },
     {
       id: 'sample-3',
@@ -34,10 +34,10 @@ export const EMPTY_LIBRARY_FALLBACK = Object.freeze({
       playtime: 0,
       lastPlayed: null,
       icon: '🔥',
-      description: 'High-octane first-person shooter'
-    }
+      description: 'High-octane first-person shooter',
+    },
   ],
-  
+
   // Empty state messages
   messages: {
     home: '🎮 Your game library is empty! Start by scanning for games on your system.',
@@ -46,9 +46,9 @@ export const EMPTY_LIBRARY_FALLBACK = Object.freeze({
     achievements: '🏆 No achievements yet. Start playing and unlock your first achievement!',
     yearInReview: '📅 No gaming history for this year. Start building your gaming legacy!',
     performance: '⚡ No games to analyze. Scan your library to see performance recommendations.',
-    challengeBoard: '🎯 No challenges available yet. Build your library to unlock personalized challenges!'
+    challengeBoard: '🎯 No challenges available yet. Build your library to unlock personalized challenges!',
   },
-  
+
   // Default stats for empty library
   defaultStats: {
     totalGames: 0,
@@ -57,45 +57,45 @@ export const EMPTY_LIBRARY_FALLBACK = Object.freeze({
     favoriteGenre: 'None',
     mostPlayedGame: 'None',
     achievementCount: 0,
-    sessionsRecorded: 0
+    sessionsRecorded: 0,
   },
-  
+
   // Default recommendations for empty library
   defaultRecommendations: [
     {
       type: 'scan',
       title: 'Scan Your System',
       description: 'Discover games already installed on your computer',
-      action: 'scan'
+      action: 'scan',
     },
     {
       type: 'browse',
       title: 'Browse Store',
       description: 'Find new games to add to your collection',
-      action: 'browse'
+      action: 'browse',
     },
     {
       type: 'import',
       title: 'Import Library',
       description: 'Import your existing game library from other platforms',
-      action: 'import'
-    }
-  ]
+      action: 'import',
+    },
+  ],
 });
 
 // Helper function to get fallback data for specific components
 export const getEmptyLibraryFallback = (componentName) => {
   const fallback = EMPTY_LIBRARY_FALLBACK;
-  
+
   switch (componentName) {
     case 'Home':
     case 'Library':
       return {
         message: fallback.messages[componentName.toLowerCase()] || fallback.messages.home,
         sampleGames: fallback.sampleGames,
-        recommendations: fallback.defaultRecommendations
+        recommendations: fallback.defaultRecommendations,
       };
-      
+
     case 'Stats':
     case 'Achievements':
     case 'YearInReview':
@@ -104,14 +104,14 @@ export const getEmptyLibraryFallback = (componentName) => {
       return {
         message: fallback.messages[componentName.toLowerCase()] || fallback.messages.home,
         stats: fallback.defaultStats,
-        showSampleData: componentName === 'Performance' // Show sample data for performance testing
+        showSampleData: componentName === 'Performance', // Show sample data for performance testing
       };
-      
+
     default:
       return {
         message: fallback.messages.home,
         sampleGames: fallback.sampleGames,
-        recommendations: fallback.defaultRecommendations
+        recommendations: fallback.defaultRecommendations,
       };
   }
 };
@@ -121,6 +121,6 @@ export const withEmptyLibraryFallback = (library, componentName, callback) => {
   if (!Array.isArray(library) || library.length === 0) {
     return getEmptyLibraryFallback(componentName);
   }
-  
+
   return callback(library);
 };

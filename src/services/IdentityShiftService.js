@@ -76,7 +76,7 @@ export const storeSnapshot = () => {
       topGame: persona?.topGames?.[0]?.name || null,
       sessionPattern: persona?.signals?.sessionPattern || null,
       peakHour: persona?.signals?.peakHour ?? null,
-      totalPlaytime: persona?.signals?.totalPlaytime || 0
+      totalPlaytime: persona?.signals?.totalPlaytime || 0,
     };
 
     snapshots[quarterKey] = snapshot;
@@ -117,7 +117,7 @@ export const detectIdentityShift = () => {
       archetypeLabel: identity?.label || null,
       dominantGenre: persona?.signals?.dominantGenre || null,
       topGame: persona?.topGames?.[0]?.name || null,
-      sessionPattern: persona?.signals?.sessionPattern || null
+      sessionPattern: persona?.signals?.sessionPattern || null,
     };
   } catch {
     return null;
@@ -135,25 +135,31 @@ export const detectIdentityShift = () => {
     shifts.push({
       type: 'archetype',
       from: prevSnapshot.archetypeLabel,
-      to: currentSnapshot.archetypeLabel
+      to: currentSnapshot.archetypeLabel,
     });
   }
 
-  if (prevSnapshot.dominantGenre && currentSnapshot.dominantGenre &&
-      currentSnapshot.dominantGenre !== prevSnapshot.dominantGenre) {
+  if (
+    prevSnapshot.dominantGenre &&
+    currentSnapshot.dominantGenre &&
+    currentSnapshot.dominantGenre !== prevSnapshot.dominantGenre
+  ) {
     shifts.push({
       type: 'genre',
       from: prevSnapshot.dominantGenre,
-      to: currentSnapshot.dominantGenre
+      to: currentSnapshot.dominantGenre,
     });
   }
 
-  if (prevSnapshot.sessionPattern && currentSnapshot.sessionPattern &&
-      currentSnapshot.sessionPattern !== prevSnapshot.sessionPattern) {
+  if (
+    prevSnapshot.sessionPattern &&
+    currentSnapshot.sessionPattern &&
+    currentSnapshot.sessionPattern !== prevSnapshot.sessionPattern
+  ) {
     shifts.push({
       type: 'pattern',
       from: prevSnapshot.sessionPattern,
-      to: currentSnapshot.sessionPattern
+      to: currentSnapshot.sessionPattern,
     });
   }
 
@@ -166,7 +172,7 @@ export const detectIdentityShift = () => {
     fromSnapshot: prevSnapshot,
     toSnapshot: currentSnapshot,
     shifts,
-    roast
+    roast,
   };
 };
 
@@ -184,7 +190,7 @@ const generateShiftRoast = (shifts, fromSnap, toSnap) => {
       `You went from ${archetypeShift.from} to ${archetypeShift.to} this quarter. You changed. We noticed.`,
       `Last quarter you were ${archetypeShift.from}. Now you're ${archetypeShift.to}. What happened?`,
       `Identity shift detected: ${archetypeShift.from} → ${archetypeShift.to}. The transformation is complete.`,
-      `You were ${archetypeShift.from}. Now you're ${archetypeShift.to}. The old you would be concerned.`
+      `You were ${archetypeShift.from}. Now you're ${archetypeShift.to}. The old you would be concerned.`,
     ];
     let roast = roasts[Math.floor(Date.now() / 1000) % roasts.length];
 
@@ -203,10 +209,13 @@ const generateShiftRoast = (shifts, fromSnap, toSnap) => {
       'long->short': 'You used to play in long marathons. Now it is quick bursts. Adulting?',
       'short->long': 'You used to play in short bursts. Now you are marathoning. Free time acquired?',
       'long->medium': 'Marathon sessions became moderate sittings. Restraint noted.',
-      'medium->long': 'Moderate sittings became marathons. Restraint abandoned.'
+      'medium->long': 'Moderate sittings became marathons. Restraint abandoned.',
     };
     const key = `${patternShift.from}->${patternShift.to}`;
-    return patternRoasts[key] || `Your session pattern shifted from ${patternShift.from} to ${patternShift.to}. We see you evolving.`;
+    return (
+      patternRoasts[key] ||
+      `Your session pattern shifted from ${patternShift.from} to ${patternShift.to}. We see you evolving.`
+    );
   }
 
   return 'Your gaming identity shifted this quarter. GamePilot noticed. GamePilot always notices.';
@@ -236,7 +245,7 @@ export const checkIdentityShiftToast = () => {
     message: shift.roast,
     fromLabel: shift.fromSnapshot.archetypeLabel,
     toLabel: shift.toSnapshot.archetypeLabel,
-    quarter: currentQuarter
+    quarter: currentQuarter,
   };
 };
 
@@ -252,7 +261,7 @@ const IdentityShiftService = {
   storeSnapshot,
   detectIdentityShift,
   checkIdentityShiftToast,
-  getSnapshotHistory
+  getSnapshotHistory,
 };
 
 export default IdentityShiftService;

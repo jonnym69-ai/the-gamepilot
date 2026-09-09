@@ -54,7 +54,10 @@ const PersonaEvolutionCard = ({ evolution }) => {
         <Sparkles size={20} />
         <div>
           <strong>Your identity arc will appear here</strong>
-          <p>Finish a few more sessions and GamePilot will map how your taste shifts over time — locally, no data leaves this device.</p>
+          <p>
+            Finish a few more sessions and GamePilot will map how your taste shifts over time — locally, no data leaves
+            this device.
+          </p>
         </div>
       </div>
     );

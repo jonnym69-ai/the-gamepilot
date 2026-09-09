@@ -39,10 +39,7 @@ describe('UserBehaviorProfile', () => {
     });
 
     test('coerces non-array selectionHistory to empty array', () => {
-      StorageService.setString(
-        UserBehaviorProfile.STORAGE_KEY,
-        JSON.stringify({ selectionHistory: 'oops' })
-      );
+      StorageService.setString(UserBehaviorProfile.STORAGE_KEY, JSON.stringify({ selectionHistory: 'oops' }));
       expect(UserBehaviorProfile.getProfile().selectionHistory).toEqual([]);
     });
   });
@@ -55,7 +52,10 @@ describe('UserBehaviorProfile', () => {
       expect(profile.genrePreferences.Strategy.count).toBe(1);
       expect(profile.selectionHistory).toHaveLength(1);
       expect(profile.selectionHistory[0]).toMatchObject({
-        mood: 'Focused', genre: 'Strategy', selectedGameId: 'game-1', timeAvailable: 120
+        mood: 'Focused',
+        genre: 'Strategy',
+        selectedGameId: 'game-1',
+        timeAvailable: 120,
       });
     });
 
@@ -280,7 +280,7 @@ describe('UserBehaviorProfile', () => {
       expect(UserBehaviorProfile.getRecommendationOutcomeSignal('game-1', 'Game 1')).toMatchObject({
         adjustment: 24,
         suppress: false,
-        outcome: 'great-pick'
+        outcome: 'great-pick',
       });
     });
 
@@ -317,7 +317,7 @@ describe('UserBehaviorProfile', () => {
       const score = UserBehaviorProfile.getPersonaAlignmentScore({
         mood: 'Focused',
         genres: ['Strategy'],
-        sessionMinutes: 60
+        sessionMinutes: 60,
       });
       expect(score).toBeGreaterThan(0);
       expect(score).toBeLessThanOrEqual(100);

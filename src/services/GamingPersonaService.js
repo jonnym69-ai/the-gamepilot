@@ -120,21 +120,19 @@ const gatherSignals = (options = {}) => {
   //    all-time view, Year in Review).
   const isAllTime = options.mode === 'all-time';
   const windowDays = Number.isFinite(options.windowDays) ? options.windowDays : null;
-  const recencyHalfLifeDays = Number.isFinite(options.recencyHalfLifeDays) && options.recencyHalfLifeDays > 0
-    ? options.recencyHalfLifeDays
-    : null;
+  const recencyHalfLifeDays =
+    Number.isFinite(options.recencyHalfLifeDays) && options.recencyHalfLifeDays > 0
+      ? options.recencyHalfLifeDays
+      : null;
   // Launcher/utility apps (GOG Galaxy client etc.) are not games — exclude
   // them from persona signals even if a scan let one into the library.
   const library = StorageService.get('library', []).filter((game) => !isNonGameTitle(game));
   const behaviorProfile = UserBehaviorProfile.getProfile();
   const personaSnapshot = UserBehaviorProfile.getPersonaSnapshot();
-  const allSessions = (PlaytimeAutoLogger.getSessionHistory() || [])
-    .filter((s) => !isNonGameTitle(s?.gameName));
+  const allSessions = (PlaytimeAutoLogger.getSessionHistory() || []).filter((s) => !isNonGameTitle(s?.gameName));
 
   // Newest-first ordering shared by the adaptive pool and window filtering.
-  const sortedSessions = [...allSessions].sort(
-    (a, b) => (getSessionStart(b) || 0) - (getSessionStart(a) || 0)
-  );
+  const sortedSessions = [...allSessions].sort((a, b) => (getSessionStart(b) || 0) - (getSessionStart(a) || 0));
 
   // Session pool: all-time = everything; calendar window = sessions inside the
   // window; default recent = the N most recent sessions regardless of age.
@@ -162,16 +160,24 @@ const gatherSignals = (options = {}) => {
       const start = getSessionStart(session);
       if (start === null) return 1;
       const daysAgo = (Date.now() - start) / (24 * 60 * 60 * 1000);
-      return Math.exp(-0.6931471805599453 * daysAgo / halfLifeDays);
+      return Math.exp((-0.6931471805599453 * daysAgo) / halfLifeDays);
     }
     const index = sessionIndexByRef.get(session);
     if (index === undefined) return 1;
-    return Math.exp(-0.6931471805599453 * index / ADAPTIVE_HALF_LIFE_SESSIONS);
+    return Math.exp((-0.6931471805599453 * index) / ADAPTIVE_HALF_LIFE_SESSIONS);
   };
 
   const getSessionDuration = (session) => {
     if (!session) return 0;
-    const raw = session.playtimeMinutes || session.duration || session.durationMinutes || session.playtime || session.actualElapsedMinutes || session.duration_ms || session.elapsedMinutes || 0;
+    const raw =
+      session.playtimeMinutes ||
+      session.duration ||
+      session.durationMinutes ||
+      session.playtime ||
+      session.actualElapsedMinutes ||
+      session.duration_ms ||
+      session.elapsedMinutes ||
+      0;
     const num = Number(raw);
     if (!Number.isFinite(num)) return 0;
     if (raw === session.duration_ms && num > 1000) return num / 60000;
@@ -247,14 +253,17 @@ const gatherSignals = (options = {}) => {
 
   // Manual completion data — only meaningful if the user actually logs it.
   const completedGames = StorageService.get('completedGames', []);
-  const completedCount = (Array.isArray(completedGames) ? completedGames.length : 0)
-    + library.filter((game) => ['finished', 'beaten', 'completed', '100%'].includes(game.replayIntent) || ['finished', 'beaten', 'completed', '100%'].includes(game.completionStatus)).length;
+  const completedCount =
+    (Array.isArray(completedGames) ? completedGames.length : 0) +
+    library.filter(
+      (game) =>
+        ['finished', 'beaten', 'completed', '100%'].includes(game.replayIntent) ||
+        ['finished', 'beaten', 'completed', '100%'].includes(game.completionStatus)
+    ).length;
   const hasCompletionData = completedCount > 0;
   // Real completion rate = completed / games actually played. Far more honest
   // than the mood-picker selectionHistory rate, which is near-zero for everyone.
-  const realCompletionRate = playedGames > 0
-    ? Math.min(100, Math.round((completedCount / playedGames) * 100))
-    : 0;
+  const realCompletionRate = playedGames > 0 ? Math.min(100, Math.round((completedCount / playedGames) * 100)) : 0;
 
   // Release-year profile. In recent mode, weight by recent playtime so the
   // retro-vs-modern signal reflects what the user has actually been playing.
@@ -268,9 +277,9 @@ const gatherSignals = (options = {}) => {
     .filter(Boolean);
   const totalReleaseYearWeight = sum(releaseYearPairs.map((p) => p.weight));
   const avgReleaseYear = releaseYearPairs.length
-    ? (totalReleaseYearWeight > 0
+    ? totalReleaseYearWeight > 0
       ? Math.round(sum(releaseYearPairs.map((p) => p.year * p.weight)) / totalReleaseYearWeight)
-      : Math.round(mean(releaseYearPairs.map((p) => p.year))))
+      : Math.round(mean(releaseYearPairs.map((p) => p.year)))
     : null;
   const releaseYearCoverage = totalGames > 0 ? releaseYearPairs.length / totalGames : 0;
 
@@ -285,7 +294,7 @@ const gatherSignals = (options = {}) => {
       const lifetime = getPlaytime(game);
       const key = normalizeGameKey(game.name || game.title || game.gameName || game.appid);
       const minutes = effectivePlaytime(game);
-      const recentRaw = useRecencyPlaytime ? (recentRawMinutesByGame[key] || 0) : 0;
+      const recentRaw = useRecencyPlaytime ? recentRawMinutesByGame[key] || 0 : 0;
       return { name, minutes, lifetimeMinutes: lifetime, recentMinutes: recentRaw };
     })
     .filter((g) => g && g.minutes > 0);
@@ -313,7 +322,7 @@ const gatherSignals = (options = {}) => {
           name: sessionNameByKey[key] || key,
           minutes: scaleTotal * blendFactor * (recentWeightedTotal > 0 ? minutes / recentWeightedTotal : 0),
           lifetimeMinutes: 0,
-          recentMinutes: recentRawMinutesByGame[key] || 0
+          recentMinutes: recentRawMinutesByGame[key] || 0,
         }))
     : [];
 
@@ -331,15 +340,19 @@ const gatherSignals = (options = {}) => {
   const lastPlayedName = getGameDisplayName(lastPlayedRaw);
   // Fall back to the most recent tracked session if no library game has
   // last_played (e.g. session-only game not in the scanned library).
-  const lastSession = sessions.length > 0
-    ? [...sessions].sort((a, b) => (getSessionStart(b) || 0) - (getSessionStart(a) || 0))[0]
-    : null;
+  const lastSession =
+    sessions.length > 0 ? [...sessions].sort((a, b) => (getSessionStart(b) || 0) - (getSessionStart(a) || 0))[0] : null;
   const lastSessionName = lastSession ? String(lastSession.gameName || lastSession.gameId || '').trim() : null;
-  const lastPlayedGame = lastPlayedRaw && lastPlayedName
-    ? { name: lastPlayedName, minutes: getPlaytime(lastPlayedRaw), last_played: lastPlayedRaw.last_played }
-    : (lastSessionName
-      ? { name: lastSessionName, minutes: getSessionDuration(lastSession), last_played: lastSession.timestamp || null }
-      : null);
+  const lastPlayedGame =
+    lastPlayedRaw && lastPlayedName
+      ? { name: lastPlayedName, minutes: getPlaytime(lastPlayedRaw), last_played: lastPlayedRaw.last_played }
+      : lastSessionName
+        ? {
+            name: lastSessionName,
+            minutes: getSessionDuration(lastSession),
+            last_played: lastSession.timestamp || null,
+          }
+        : null;
 
   // Genre distribution. In recent mode, weight by recent session playtime so
   // the dominant genre reflects current play, not all-time history.
@@ -356,9 +369,8 @@ const gatherSignals = (options = {}) => {
     .sort((a, b) => b[1] - a[1])
     .map(([genre]) => genre);
   const dominantGenre = sortedGenres[0] || null;
-  const dominantGenreShare = totalGenrePlaytime > 0 && dominantGenre
-    ? genrePlaytime[dominantGenre] / totalGenrePlaytime
-    : 0;
+  const dominantGenreShare =
+    totalGenrePlaytime > 0 && dominantGenre ? genrePlaytime[dominantGenre] / totalGenrePlaytime : 0;
 
   // Theme profile — the worlds the player inhabits (zombies, space, horror...)
   // from tags+genres weighted by the same effective playtime as genres. In
@@ -374,15 +386,14 @@ const gatherSignals = (options = {}) => {
     });
   });
   const totalThemePlaytime = sum(Object.values(themePlaytime));
-  const rankedThemes = THEME_DEFINITIONS
-    .map((theme) => ({
-      id: theme.id,
-      label: theme.label,
-      shortName: theme.shortName,
-      roasts: theme.roasts,
-      playtime: themePlaytime[theme.id] || 0,
-      share: totalThemePlaytime > 0 ? (themePlaytime[theme.id] || 0) / totalThemePlaytime : 0
-    }))
+  const rankedThemes = THEME_DEFINITIONS.map((theme) => ({
+    id: theme.id,
+    label: theme.label,
+    shortName: theme.shortName,
+    roasts: theme.roasts,
+    playtime: themePlaytime[theme.id] || 0,
+    share: totalThemePlaytime > 0 ? (themePlaytime[theme.id] || 0) / totalThemePlaytime : 0,
+  }))
     .filter((theme) => theme.playtime > 0)
     .sort((a, b) => b.playtime - a.playtime);
   const dominantTheme = rankedThemes[0] && rankedThemes[0].share >= 0.15 ? rankedThemes[0] : null;
@@ -397,9 +408,8 @@ const gatherSignals = (options = {}) => {
   });
   const totalTaggedGames = library.filter((g) => getTags(g).length > 0).length;
   const indieRatio = totalTaggedGames > 0 ? (tagCounts.indie || 0) / totalTaggedGames : 0;
-  const earlyAccessRatio = totalTaggedGames > 0
-    ? ((tagCounts['early access'] || 0) + (tagCounts['early_access'] || 0)) / totalTaggedGames
-    : 0;
+  const earlyAccessRatio =
+    totalTaggedGames > 0 ? ((tagCounts['early access'] || 0) + (tagCounts['early_access'] || 0)) / totalTaggedGames : 0;
 
   // Developer / publisher concentration
   const devPlaytime = {};
@@ -461,18 +471,14 @@ const gatherSignals = (options = {}) => {
 
   // Completion rate — prefer the real library-based rate over the near-zero
   // selectionHistory rate.
-  const completionRate = hasCompletionData
-    ? realCompletionRate
-    : (personaSnapshot.overallCompletionRate || 0);
+  const completionRate = hasCompletionData ? realCompletionRate : personaSnapshot.overallCompletionRate || 0;
 
   // Session pattern — weighted by recency so recent sessions define the
   // current play cadence.
   let sessionPattern = personaSnapshot.preferredSessionBucket || null;
   let avgSessionLength = personaSnapshot.avgSessionLength || 0;
   if (useRecencyPlaytime) {
-    const durations = sessions
-      .map((s) => getSessionDuration(s) * getRecencyWeight(s))
-      .filter((d) => d > 0);
+    const durations = sessions.map((s) => getSessionDuration(s) * getRecencyWeight(s)).filter((d) => d > 0);
     avgSessionLength = durations.length ? Math.round(mean(durations)) : 0;
     if (avgSessionLength === 0) sessionPattern = null;
     else if (avgSessionLength < 30) sessionPattern = 'short';
@@ -487,13 +493,24 @@ const gatherSignals = (options = {}) => {
     moodPlaytime[mood] = data.totalPlaytime || data.count || 0;
   });
   const totalMoodPlaytime = sum(Object.values(moodPlaytime));
-  const dominantMood = Object.entries(moodPlaytime)
-    .sort((a, b) => b[1] - a[1])
-    .map(([mood]) => mood)[0] || null;
+  const dominantMood =
+    Object.entries(moodPlaytime)
+      .sort((a, b) => b[1] - a[1])
+      .map(([mood]) => mood)[0] || null;
   const socialMoodShare = totalMoodPlaytime > 0 ? (moodPlaytime.Social || 0) / totalMoodPlaytime : 0;
 
   // Challenge score: playtime-weighted hard/difficult/souls-like content
-  const hardTags = ['souls-like', 'soulslike', 'difficult', 'punishing', 'hardcore', 'roguelike', 'roguelite', 'bullet hell', 'metroidvania'];
+  const hardTags = [
+    'souls-like',
+    'soulslike',
+    'difficult',
+    'punishing',
+    'hardcore',
+    'roguelike',
+    'roguelite',
+    'bullet hell',
+    'metroidvania',
+  ];
   const hardGenres = ['fighting', 'action'];
   let challengeScore = 0;
   let hardGameCount = 0;
@@ -512,7 +529,21 @@ const gatherSignals = (options = {}) => {
   const hardGameRatio = totalGames > 0 ? hardGameCount / totalGames : 0;
 
   // Chill score: playtime-weighted cozy/relaxing/wholesome content
-  const chillTags = ['cozy', 'relaxing', 'wholesome', 'farming', 'low-stress', 'low stress', 'slice of life', 'wholesome', 'comfort', 'meditative', 'zen', 'peaceful', 'wholesome horror'];
+  const chillTags = [
+    'cozy',
+    'relaxing',
+    'wholesome',
+    'farming',
+    'low-stress',
+    'low stress',
+    'slice of life',
+    'wholesome',
+    'comfort',
+    'meditative',
+    'zen',
+    'peaceful',
+    'wholesome horror',
+  ];
   const chillGenres = ['casual', 'simulation', 'puzzle', 'management'];
   let chillScore = 0;
   let chillGameCount = 0;
@@ -535,18 +566,30 @@ const gatherSignals = (options = {}) => {
   const chillClusterTier = chillGameRatio >= 0.3 ? 'dominant' : chillGameRatio >= 0.15 ? 'notable' : 'minor';
 
   // Multiplayer / competitive game ratio
-  const multiplayerTags = ['multiplayer', 'pvp', 'competitive', 'online multiplayer', 'mmo', 'moba', 'battle royale', 'team-based'];
+  const multiplayerTags = [
+    'multiplayer',
+    'pvp',
+    'competitive',
+    'online multiplayer',
+    'mmo',
+    'moba',
+    'battle royale',
+    'team-based',
+  ];
   const multiplayerCount = library.filter((game) => {
     const tags = getTags(game);
     return multiplayerTags.some((t) => tags.includes(t));
   }).length;
   const multiplayerRatio = totalGames > 0 ? multiplayerCount / totalGames : 0;
-  const multiplayerPlaytimeShare = totalPlaytime > 0
-    ? library.filter((game) => {
-        const tags = getTags(game);
-        return multiplayerTags.some((t) => tags.includes(t));
-      }).reduce((acc, game) => acc + effectivePlaytime(game), 0) / totalPlaytime
-    : 0;
+  const multiplayerPlaytimeShare =
+    totalPlaytime > 0
+      ? library
+          .filter((game) => {
+            const tags = getTags(game);
+            return multiplayerTags.some((t) => tags.includes(t));
+          })
+          .reduce((acc, game) => acc + effectivePlaytime(game), 0) / totalPlaytime
+      : 0;
 
   // Mod-friendly game ratio (games commonly modded)
   const modFriendlyTags = ['moddable', 'mods', 'steam workshop', 'mod support', 'sandbox', 'open world'];
@@ -574,7 +617,7 @@ const gatherSignals = (options = {}) => {
   const shortSessionRatio = sessions.length > 0 ? shortSessions / sessions.length : 0;
 
   // Replay intensity: how many sessions went to the same top game
-  const topGameSessionCount = topGame ? (gameSessionCounts[normalizeGameKey(topGame.name)] || 0) : 0;
+  const topGameSessionCount = topGame ? gameSessionCounts[normalizeGameKey(topGame.name)] || 0 : 0;
   const topGameSessionRatio = totalSessions > 0 ? topGameSessionCount / totalSessions : 0;
 
   // Platform distribution
@@ -652,7 +695,7 @@ const gatherSignals = (options = {}) => {
     weekendSessionRatio,
     shortSessionRatio,
     topGameSessionRatio,
-    currentYear
+    currentYear,
   };
 };
 
@@ -683,14 +726,14 @@ export const DEFAULT_VOICE = {
     dethroned: '**{GAME}** took over top spot from **{PREVGAME}**.',
     comeback: 'Welcome back into session after a quiet {PERIOD}.',
     genreShift: 'Your focus shifted from **{PREVGENRE}** over to **{GENRE}**.',
-    newRotation: 'Fresh additions to your recent rotation: {FRESH}.'
-  }
+    newRotation: 'Fresh additions to your recent rotation: {FRESH}.',
+  },
 };
 
 const mergeVoice = (overrides = {}) => ({
   ...DEFAULT_VOICE,
   ...overrides,
-  continuity: { ...DEFAULT_VOICE.continuity, ...(overrides.continuity || {}) }
+  continuity: { ...DEFAULT_VOICE.continuity, ...(overrides.continuity || {}) },
 });
 
 // ---------------------------------------------------------------------------
@@ -718,7 +761,7 @@ const ARCHETYPES = [
       'Their Steam wishlist is longer than their playtime log.',
       'Buys games the way other people buy groceries — weekly, impulsively, and mostly shelf-stable.',
       'Has a library that could outlast a nuclear winter. Plays three games.',
-      'The backlog is not a list. It is a lifestyle.'
+      'The backlog is not a list. It is a lifestyle.',
     ],
     contextRoasts: [
       'Owns a whole museum of games, somehow only ever opens {GAME}.',
@@ -727,16 +770,16 @@ const ARCHETYPES = [
       'Could explore a new game every night for a year. Chooses {GAME} instead.',
       'Their library has {HOURS} hours in {GAME} and 0 hours in everything else. The museum is well-curated.',
       'Bought 200 games last sale. Played {GAME}. Again. For the third time.',
-      'The {GENRE} section of their library is thriving. {GAME} is the only one that gets opened.'
+      'The {GENRE} section of their library is thriving. {GAME} is the only one that gets opened.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} digging through the backlog; **{GAME}** ({HOURS}h) surfaced this time.',
       quiet: 'Not even the backlog got touched this {PERIOD}. The pile grows.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The backlog briefly noticed.',
       continuity: {
-        comeback: 'Back from the archive, finally playing something.'
-      }
-    })
+        comeback: 'Back from the archive, finally playing something.',
+      },
+    }),
   },
   {
     id: 'credit_roll_dodger',
@@ -756,12 +799,12 @@ const ARCHETYPES = [
     },
     roasts: [
       'Has seen more title screens than ending credits.',
-      'Excels at starting games. Finishing them is someone else\'s job.',
+      "Excels at starting games. Finishing them is someone else's job.",
       'Their backlog is a graveyard of half-finished masterpieces.',
       'Knows the first two hours of every game. Intimately.',
       'Treats the main menu like a buffet — samples everything, finishes nothing.',
-      'Has never met a game they couldn\'t abandon at the 60% mark.',
-      'Their save files are a museum of good intentions.'
+      "Has never met a game they couldn't abandon at the 60% mark.",
+      'Their save files are a museum of good intentions.',
     ],
     contextRoasts: [
       'Has a library full of possible endings and still keeps crawling back to {GAME}.',
@@ -770,15 +813,15 @@ const ARCHETYPES = [
       'Got 80% through {GAME} and moved on. That last 20% is basically DLC at this point.',
       'Has {HOURS} hours in {GAME} and has never seen the final boss. On purpose.',
       'Started {GAME} three times. Has three save files at the same point. None finished.',
-      'Knows the {GENRE} tutorial by heart. The rest is a mystery.'
+      'Knows the {GENRE} tutorial by heart. The rest is a mystery.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} of starting strong in **{GAME}** ({HOURS}h). The ending remains a mystery.',
       quiet: 'No new starts this {PERIOD}. The half-finished pile stays half-finished.',
       continuity: {
-        comeback: 'Back at the title screen after a quiet {PERIOD}.'
-      }
-    })
+        comeback: 'Back at the title screen after a quiet {PERIOD}.',
+      },
+    }),
   },
   {
     id: 'frame_data_masochist',
@@ -799,8 +842,8 @@ const ARCHETYPES = [
       'Has a PhD in frames. Uses it exclusively to die.',
       'Chooses the hardest difficulty first. Complains the entire time. Reloads anyway.',
       'Their comfort game has a "YOU DIED" screen they see more than the main menu.',
-      'Has beaten the same boss 47 times. It\'s not a challenge anymore. It\'s a relationship.',
-      'Tells people they enjoy "challenging" games. They mean "painful" ones.'
+      "Has beaten the same boss 47 times. It's not a challenge anymore. It's a relationship.",
+      'Tells people they enjoy "challenging" games. They mean "painful" ones.',
     ],
     contextRoasts: [
       'Has {HOURS} hours of controller-gripping rage logged in {GAME}.',
@@ -808,17 +851,17 @@ const ARCHETYPES = [
       'Would rather learn one {GAME} boss pattern than sleep.',
       'Died to the same {GAME} boss 30 times. Says they\'re "learning." The boss disagrees.',
       'Has {HOURS} hours in {GAME}. Most of them are on the death screen.',
-      'Picked the hardest difficulty in {GAME} and now it\'s personal. The game is winning.',
-      'Plays {GENRE} games specifically because they hurt. {GAME} hurts the most.'
+      "Picked the hardest difficulty in {GAME} and now it's personal. The game is winning.",
+      'Plays {GENRE} games specifically because they hurt. {GAME} hurts the most.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} of studying pain in **{GAME}** ({HOURS}h).',
       quiet: 'Even the masochist took a break this {PERIOD}. The bosses will wait.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The suffering was consistent.',
       continuity: {
-        comeback: 'Back on the grind after a quiet {PERIOD}. The pain resumes.'
-      }
-    })
+        comeback: 'Back on the grind after a quiet {PERIOD}. The pain resumes.',
+      },
+    }),
   },
   {
     id: 'spreadsheet_tactician',
@@ -826,7 +869,16 @@ const ARCHETYPES = [
     description: 'Loves systems, strategy, and watching numbers go up.',
     score: (s) => {
       if (!s.dominantGenre) return 0;
-      const simGenres = ['strategy', 'simulation', 'management', 'grand strategy', 'automation', '4x', 'city builder', 'tycoon'];
+      const simGenres = [
+        'strategy',
+        'simulation',
+        'management',
+        'grand strategy',
+        'automation',
+        '4x',
+        'city builder',
+        'tycoon',
+      ];
       const isSimGenre = simGenres.some((g) => s.dominantGenre.includes(g));
       const genreScore = isSimGenre ? s.dominantGenreShare * 70 : 0;
       const sessionScore = s.avgSessionLength > 90 ? 20 : 0;
@@ -839,7 +891,7 @@ const ARCHETYPES = [
       'Has never made a suboptimal choice. Has also never had fun.',
       'Their ideal game is an Excel sheet with a health bar.',
       'Spends more time planning builds than playing them. The plan is the game.',
-      'Once rerolled a character because the starting stats were 2 points off optimal.'
+      'Once rerolled a character because the starting stats were 2 points off optimal.',
     ],
     contextRoasts: [
       'Has a spreadsheet for {GAME}. Possibly several. Colour-coded.',
@@ -848,13 +900,13 @@ const ARCHETYPES = [
       'Has {HOURS} hours in {GAME}. Zero of them were wasted. Fun was not a metric.',
       'Plays {GAME} on autopilot while planning the next build. The build is the real game.',
       'Their {GAME} save has been restarted 12 times for "better starting conditions."',
-      'Knows the exact DPS difference between two {GENRE} builds. Uses neither for fun.'
+      'Knows the exact DPS difference between two {GENRE} builds. Uses neither for fun.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} of optimising systems in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The spreadsheets remain untouched.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The numbers mostly went up.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The numbers mostly went up.',
+    }),
   },
   {
     id: 'story_diver',
@@ -873,26 +925,26 @@ const ARCHETYPES = [
       'Reads every journal entry. Twice. For lore.',
       'Has cried over a video game. Probably this year.',
       'Skips gameplay to get to dialogue. The combat is just loading time between story beats.',
-      'Knows the name of every character\'s pet. Has opinions about them.',
+      "Knows the name of every character's pet. Has opinions about them.",
       'Their favorite game is whichever one made them sob uncontrollably last.',
-      'Reads item descriptions for worldbuilding. Every. Single. One.'
+      'Reads item descriptions for worldbuilding. Every. Single. One.',
     ],
     contextRoasts: [
       'Cried during {GAME}. Would absolutely do it again.',
-      'Knows {GAME}\'s lore better than their own family tree.',
+      "Knows {GAME}'s lore better than their own family tree.",
       'Spent {HOURS} hours in {GAME} just to read every codex entry.',
-      'Has strong opinions about {GAME}\'s ending. Will share them unprompted.',
+      "Has strong opinions about {GAME}'s ending. Will share them unprompted.",
       'Spent {HOURS} hours in {GAME}. Most of it was reading. They regret nothing.',
       'Knows what every NPC in {GAME} does after the credits. Has feelings about it.',
-      'Their {GENRE} shelf is a library of emotional damage. {GAME} caused the most.'
+      'Their {GENRE} shelf is a library of emotional damage. {GAME} caused the most.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} lost in the story of **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The next chapter will have to wait.',
       continuity: {
-        comeback: 'Back to the story after a quiet {PERIOD}.'
-      }
-    })
+        comeback: 'Back to the story after a quiet {PERIOD}.',
+      },
+    }),
   },
   {
     id: 'comfort_replay_junkie',
@@ -911,7 +963,7 @@ const ARCHETYPES = [
       'Has memorised every line of dialogue in their main game. Still finds new ways to play it.',
       'Their "to play" list has one game on it. It\'s the same game.',
       'Tries a new game. Goes back to the comfort game. Every. Single. Time.',
-      'Has a ritual around their main game. It involves snacks, a blanket, and zero new experiences.'
+      'Has a ritual around their main game. It involves snacks, a blanket, and zero new experiences.',
     ],
     contextRoasts: [
       'New games release weekly. {GAME} remains undefeated at {HOURS} hours.',
@@ -920,7 +972,7 @@ const ARCHETYPES = [
       'Bought a new game last week. Played {GAME} instead. The new game is still in its shrink wrap.',
       'Has {HOURS} hours in {GAME}. Could probably speedrun it blindfolded. Chooses not to.',
       'Tells friends they\'re "trying something new." It\'s {GAME}. Again.',
-      'Their {GENRE} comfort zone has a name. It\'s {GAME}. It\'s always {GAME}.'
+      "Their {GENRE} comfort zone has a name. It's {GAME}. It's always {GAME}.",
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} back in the comfort loop with **{GAME}** ({HOURS}h).',
@@ -928,9 +980,9 @@ const ARCHETYPES = [
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged, mostly in the same comfort zone.',
       continuity: {
         streak: '**{GAME}** has held the crown for the {ORDINAL} {PERIOD} running. The comfort loop continues.',
-        comeback: 'Back in the comfort zone after a quiet {PERIOD}.'
-      }
-    })
+        comeback: 'Back in the comfort zone after a quiet {PERIOD}.',
+      },
+    }),
   },
   {
     id: 'unwinder',
@@ -946,12 +998,12 @@ const ARCHETYPES = [
     },
     roasts: [
       'Their ideal evening involves a farm, a cat, and zero consequences.',
-      'Has never met a problem that couldn\'t be solved by watering virtual crops.',
-      'Plays games to relax. Their games are already relaxed. It\'s mutual.',
+      "Has never met a problem that couldn't be solved by watering virtual crops.",
+      "Plays games to relax. Their games are already relaxed. It's mutual.",
       'Knows the exact in-game season for every crop in their library.',
       'Tells friends they\'re "into gaming." They mean Stardew Valley. Again.',
-      'Their backlog is just a list of cozy games they haven\'t pet the animals in yet.',
-      'Has 200 hours in a game where the hardest challenge is a slightly grumpy villager.'
+      "Their backlog is just a list of cozy games they haven't pet the animals in yet.",
+      'Has 200 hours in a game where the hardest challenge is a slightly grumpy villager.',
     ],
     contextRoasts: [
       'Spent {HOURS} hours in {GAME} doing absolutely nothing stressful. On purpose.',
@@ -959,7 +1011,7 @@ const ARCHETYPES = [
       'Has {HOURS} hours in {GAME}. Most of it is rearranging furniture.',
       'Tells people {GAME} is "actually quite deep." It\'s a farming sim. They\'re right.',
       'Their {GENRE} games are all the same vibe: warm, soft, and aggressively non-threatening.',
-      'Plays {GAME} specifically because nothing in it wants to kill them. Unlike the rest of their library.'
+      'Plays {GAME} specifically because nothing in it wants to kill them. Unlike the rest of their library.',
     ],
     voice: mergeVoice({
       periodHook: 'A gentle {PERIOD_NOUN} unwinding with **{GAME}** ({HOURS}h). No stress, no rush.',
@@ -967,9 +1019,9 @@ const ARCHETYPES = [
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged, all of it cozy.',
       continuity: {
         streak: '**{GAME}** remains the comfort pick for the {ORDINAL} {PERIOD} running. The vibe holds.',
-        comeback: 'Back to the cozy corner after a busy {PERIOD}.'
-      }
-    })
+        comeback: 'Back to the cozy corner after a busy {PERIOD}.',
+      },
+    }),
   },
   {
     id: 'indie_curator',
@@ -982,28 +1034,28 @@ const ARCHETYPES = [
       return indieScore + sizeScore;
     },
     roasts: [
-      'If a game has a marketing budget, it\'s already too mainstream.',
+      "If a game has a marketing budget, it's already too mainstream.",
       'Discovers gems before the algorithm does.',
       'Has emotionally supported at least three solo developers.',
       'Knows the name of the person who made the music. Has their Bandcamp.',
       'Their favorite game has 12 reviews on Steam. They wrote one of them.',
       'Can smell a Unity asset flip from a screenshot. Will still play it if it has heart.',
-      'Has a Kickstarter backlog. Considers it patronage, not shopping.'
+      'Has a Kickstarter backlog. Considers it patronage, not shopping.',
     ],
     contextRoasts: [
       'Champions tiny studios, then quietly sinks {HOURS} hours into {GAME}.',
-      'Discovered {GAME} before your favourite streamer did. Won\'t let you forget it.',
+      "Discovered {GAME} before your favourite streamer did. Won't let you forget it.",
       'Their {GENRE} taste is impeccable, and {GAME} is the proof.',
       'Has {HOURS} hours in {GAME}. The dev has 4 Twitter followers. One of them is this player.',
-      'Found {GAME} on itch.io for $3. Has recommended it to everyone they\'ve met since.',
+      "Found {GAME} on itch.io for $3. Has recommended it to everyone they've met since.",
       'Backed {GAME} on Kickstarter. It delivered. They cried. Standard Tuesday.',
-      'Their {GENRE} collection is 90% games with under 500 reviews. {GAME} has 47.'
+      'Their {GENRE} collection is 90% games with under 500 reviews. {GAME} has 47.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} championing indie gems; **{GAME}** ({HOURS}h) led the charge.',
       quiet: 'A quiet {PERIOD}. The indie scene carries on without you.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Underdogs dominated.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Underdogs dominated.',
+    }),
   },
   {
     id: 'franchise_loyalist',
@@ -1019,10 +1071,10 @@ const ARCHETYPES = [
       'Owns every entry. Will defend the bad ones to the grave.',
       'Has a favorite series and a very strong opinion about it.',
       'Brand loyalty is a lifestyle choice.',
-      'Pre-ordered the collector\'s edition. Hasn\'t opened it. Doesn\'t matter.',
+      "Pre-ordered the collector's edition. Hasn't opened it. Doesn't matter.",
       'Knows the lore of their franchise better than the writers do. Has corrections.',
-      'Has a tattoo idea from their favorite series. It\'s only a matter of time.',
-      'Owns three versions of the same game. They are all "different enough."'
+      "Has a tattoo idea from their favorite series. It's only a matter of time.",
+      'Owns three versions of the same game. They are all "different enough."',
     ],
     contextRoasts: [
       'Would marry the {GAME} franchise if the paperwork allowed it.',
@@ -1031,13 +1083,13 @@ const ARCHETYPES = [
       'Has {HOURS} hours in {GAME}. Has {HOURS} hours in the sequel. Has opinions about which is better.',
       'Bought {GAME} on three different platforms. "For the achievements."',
       'Knows every {GENRE} game in the franchise. Including the mobile spinoff. Especially the mobile spinoff.',
-      'Has a {GAME} wiki tab open permanently. It has been open for years.'
+      'Has a {GAME} wiki tab open permanently. It has been open for years.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} staying loyal to **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The franchise waits patiently.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The loyalty remains unmatched.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The loyalty remains unmatched.',
+    }),
   },
   {
     id: 'retro_futurist',
@@ -1046,7 +1098,7 @@ const ARCHETYPES = [
     score: (s) => {
       if (s.releaseYearCoverage < 0.3 || s.avgReleaseYear === null) return 0;
       if (s.avgReleaseYear > 2010) return 0;
-      const ageScore = (2010 - s.avgReleaseYear) / 20 * 70; // 2010 -> 0, 1990 -> 70
+      const ageScore = ((2010 - s.avgReleaseYear) / 20) * 70; // 2010 -> 0, 1990 -> 70
       const coverageScore = Math.min(1, s.releaseYearCoverage) * 30;
       return Math.min(100, ageScore + coverageScore);
     },
@@ -1056,23 +1108,23 @@ const ARCHETYPES = [
       'Has strong opinions about tank controls. Positive ones.',
       'Reads the manual before playing. Keeps the manual.',
       'Their favorite game came on a CD-ROM. They still have the CD-ROM.',
-      'Tells kids today they don\'t know how good they have it. Then goes back to a 1998 classic.',
-      'Has a CRT monitor in storage "for the authenticity."'
+      "Tells kids today they don't know how good they have it. Then goes back to a 1998 classic.",
+      'Has a CRT monitor in storage "for the authenticity."',
     ],
     contextRoasts: [
-      'Swears games peaked around {GAME}\'s era and refuses further discussion.',
+      "Swears games peaked around {GAME}'s era and refuses further discussion.",
       'Has {HOURS} hours in {GAME} and a deep distrust of anything with ray tracing.',
       'Would take {GAME} over any current-year release. Has said so. Loudly.',
       'Has {HOURS} hours in {GAME}. The graphics are "charming." The framerate is "atmospheric."',
       'Plays {GAME} with a fan patch, a texture mod, and a DOS emulator. Calls it "the definitive version."',
       'Tries a modern {GENRE} game. Goes back to {GAME} within the hour.',
-      'Owns {GAME} on three different platforms. The original is still the best. Obviously.'
+      'Owns {GAME} on three different platforms. The original is still the best. Obviously.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} back in the golden era with **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The classics will keep.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Retro soul intact.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Retro soul intact.',
+    }),
   },
   {
     id: 'bleeding_edge',
@@ -1081,33 +1133,33 @@ const ARCHETYPES = [
     score: (s) => {
       if (s.releaseYearCoverage < 0.3 || s.avgReleaseYear === null) return 0;
       if (s.avgReleaseYear < s.currentYear - 4) return 0;
-      const recencyScore = (s.currentYear - s.avgReleaseYear) / 4 * 70;
+      const recencyScore = ((s.currentYear - s.avgReleaseYear) / 4) * 70;
       const coverageScore = Math.min(1, s.releaseYearCoverage) * 30;
       return Math.min(100, recencyScore + coverageScore);
     },
     roasts: [
-      'Owns the future. Still hasn\'t finished last year\'s future.',
+      "Owns the future. Still hasn't finished last year's future.",
       'Day-one patches are part of the experience.',
       'Has a backlog of current-year releases. Impressive and terrifying.',
       'Pre-orders games. Pre-orders the season pass. Pre-orders the disappointment.',
       'Knows every release date for the next 6 months. Has a calendar. It is color-coded.',
       'Plays new games on day one so they can be in the discourse. The discourse is the real game.',
-      'Has paid full price for games that are 40% off two months later. No regrets. Okay, some regrets.'
+      'Has paid full price for games that are 40% off two months later. No regrets. Okay, some regrets.',
     ],
     contextRoasts: [
       'Bought {GAME} on day one. Bugs included. No refund requested.',
       'Has {HOURS} hours in {GAME} and already pre-ordered its sequel.',
       'Lives on the release calendar. {GAME} is just the latest casualty.',
       'Has {HOURS} hours in {GAME}. Half of them were waiting for the day-one patch to download.',
-      'Bought {GAME} at full price. It\'s 60% off now. They\'re not looking at the store page.',
+      "Bought {GAME} at full price. It's 60% off now. They're not looking at the store page.",
       'Finished {GAME} before the review embargo lifted. Has opinions. Many of them.',
-      'Pre-ordered {GAME} for the bonus skin. Doesn\'t use the skin. Doesn\'t regret the pre-order.'
+      "Pre-ordered {GAME} for the bonus skin. Doesn't use the skin. Doesn't regret the pre-order.",
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} on the release frontier with **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The patch notes pile up.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Cutting edge, new scratches.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Cutting edge, new scratches.',
+    }),
   },
   {
     id: 'completionist',
@@ -1122,10 +1174,10 @@ const ARCHETYPES = [
       'Cannot rest until the map is 100% grey.',
       'Achievement unlocked: touched every collectible.',
       'Skips the main quest to 100% the side content first.',
-      'Has 100% on games they didn\'t even enjoy. The checkbox was the point.',
+      "Has 100% on games they didn't even enjoy. The checkbox was the point.",
       'Will replay a game on a harder difficulty just for the achievement. Hates every second.',
       'Their idea of a relaxing evening is cleaning up missable achievements with a guide open.',
-      'Has never left a collectible behind. Has never slept well either.'
+      'Has never left a collectible behind. Has never slept well either.',
     ],
     contextRoasts: [
       'Treats {GAME} like a crime scene: no icon, quest, or collectible leaves unnoticed.',
@@ -1133,14 +1185,14 @@ const ARCHETYPES = [
       '{HOURS} hours in {GAME}, because "probably finished" is not a recognized status.',
       'Cleared every side quest in {GAME} before touching the main story. The story waited.',
       'Has {HOURS} hours in {GAME}. 30 of those were chasing one achievement. They got it.',
-      'Found every hidden item in {GAME}. Without a guide. They don\'t talk about those weekends.',
-      'Their {GAME} completion rate is 100%. Their social life is 0%. Worth it.'
+      "Found every hidden item in {GAME}. Without a guide. They don't talk about those weekends.",
+      'Their {GAME} completion rate is 100%. Their social life is 0%. Worth it.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} of ticking boxes in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The checklist stays unchecked.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Completionism marches on.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Completionism marches on.',
+    }),
   },
   {
     id: 'roamer',
@@ -1163,25 +1215,25 @@ const ARCHETYPES = [
       'Has 200 games with under 2 hours played. Calls it "sampling."',
       'Their gaming diet is like a wine tasting — small sips, nothing finished, slightly dizzy.',
       'Installs a game, plays 90 minutes, uninstalls. Repeats. Calls it "curation."',
-      'Has tried every genre. Mastered none. Has opinions about all of them.'
+      'Has tried every genre. Mastered none. Has opinions about all of them.',
     ],
     contextRoasts: [
       'Has {HOURS} hours in {GAME} and 60 other games gathering dust.',
       'Bounces across the whole library but keeps sneaking back to {GAME}.',
       'Samples every {GENRE} going, then defaults to {GAME} anyway.',
-      'Has 40 minutes in {GAME}. Has 40 minutes in 60 other games. It\'s a pattern.',
-      'Played {GAME} once in 2023. Still thinks about it. Won\'t reinstall it.',
+      "Has 40 minutes in {GAME}. Has 40 minutes in 60 other games. It's a pattern.",
+      "Played {GAME} once in 2023. Still thinks about it. Won't reinstall it.",
       'Tried {GAME} for an hour. It was "fine." Moved on. Will recommend it to others.',
-      'Their {GENRE} phase lasted two weekends. {GAME} was the highlight. The phase is over.'
+      'Their {GENRE} phase lasted two weekends. {GAME} was the highlight. The phase is over.',
     ],
     voice: mergeVoice({
       periodHook: 'You spent {PERIOD} bouncing around, with **{GAME}** ({HOURS}h) leading the tour.',
       quiet: 'A quiet {PERIOD} on the road. No new stops this week.',
       digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. A wide tour of the library.',
       continuity: {
-        streak: '**{GAME}** has held the crown for the {ORDINAL} {PERIOD} running. Even the tourist has a favourite.'
-      }
-    })
+        streak: '**{GAME}** has held the crown for the {ORDINAL} {PERIOD} running. Even the tourist has a favourite.',
+      },
+    }),
   },
   {
     id: 'social_drop_in',
@@ -1190,9 +1242,8 @@ const ARCHETYPES = [
     score: (s) => {
       const socialScore = s.socialMoodShare * 60;
       const coOpTags = ['co-op', 'coop', 'multiplayer', 'online co-op', 'local co-op'];
-      const coOpRatio = s.totalGames > 0
-        ? coOpTags.reduce((acc, tag) => acc + (s.tagCounts[tag] || 0), 0) / s.totalGames
-        : 0;
+      const coOpRatio =
+        s.totalGames > 0 ? coOpTags.reduce((acc, tag) => acc + (s.tagCounts[tag] || 0), 0) / s.totalGames : 0;
       const coOpScore = coOpRatio * 40;
       return socialScore + coOpScore;
     },
@@ -1203,7 +1254,7 @@ const ARCHETYPES = [
       'Sends game invites that expire unanswered. Has stopped noticing.',
       'Their Discord "game night" server has 12 members. Last activity: 8 months ago.',
       'Bought a second controller "just in case." The just-in-case never happened.',
-      'Plays co-op games solo and pretends the AI teammate is their friend. The AI is trying its best.'
+      'Plays co-op games solo and pretends the AI teammate is their friend. The AI is trying its best.',
     ],
     contextRoasts: [
       'Bought {GAME} to play with friends. Plays it solo. Still counts.',
@@ -1212,13 +1263,13 @@ const ARCHETYPES = [
       'Hosted a {GAME} lobby for 3 hours. One person joined. They left after 10 minutes.',
       'Has {HOURS} hours in {GAME}. All of them solo. The co-op was aspirational.',
       'Bought {GAME} on sale because "the squad would love it." The squad did not respond.',
-      'Their {GENRE} collection is 80% co-op games. Their co-op partner count is zero.'
+      'Their {GENRE} collection is 80% co-op games. Their co-op partner count is zero.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} dropping into lobbies with **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The squad is on standby.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The lobby stayed open.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. The lobby stayed open.',
+    }),
   },
   {
     id: 'jank_enjoyer',
@@ -1228,7 +1279,7 @@ const ARCHETYPES = [
       if (s.totalGames < 10) return 0;
       const eaScore = s.earlyAccessRatio * 70;
       const indieScore = s.indieRatio * 20;
-      const lowCompletionScore = (100 - s.completionRate) / 100 * 10;
+      const lowCompletionScore = ((100 - s.completionRate) / 100) * 10;
       return eaScore + indieScore + lowCompletionScore;
     },
     roasts: [
@@ -1238,22 +1289,22 @@ const ARCHETYPES = [
       'Has reported more bugs than the QA team. The dev team knows them by name.',
       'Their favorite review is "janky but charming." They wrote it. Twice.',
       'Chooses Early Access over finished games. The journey is the destination.',
-      'Has a game with 3 positive reviews. Two are theirs. One is the dev.'
+      'Has a game with 3 positive reviews. Two are theirs. One is the dev.',
     ],
     contextRoasts: [
-      'Loves {GAME} specifically because it\'s held together with tape and hope.',
+      "Loves {GAME} specifically because it's held together with tape and hope.",
       'Calls {GAME}\'s bugs "features." And means it.',
       'Put {HOURS} hours into {GAME} while it was still technically broken.',
       'Has {HOURS} hours in {GAME}. The game crashed 12 times. They call it "part of the experience."',
-      'Backed {GAME} in Early Access. It\'s still in Early Access. They\'re still playing it.',
+      "Backed {GAME} in Early Access. It's still in Early Access. They're still playing it.",
       'Found a game-breaking bug in {GAME}. Reported it lovingly. Kept playing.',
-      'Their {GENRE} library is full of 0.3-version games. {GAME} is on 0.7. Practically finished.'
+      'Their {GENRE} library is full of 0.3-version games. {GAME} is on 0.7. Practically finished.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} embracing the jank in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. Even the bugs miss you.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Held together with tape and hope.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Held together with tape and hope.',
+    }),
   },
   {
     id: 'modder',
@@ -1262,7 +1313,7 @@ const ARCHETYPES = [
     score: (s) => {
       if (s.totalGames < 10) return 0;
       const modScore = s.modFriendlyRatio * 60;
-      const sandboxScore = (s.tagCounts['sandbox'] || 0) / Math.max(1, s.totalGames) * 25;
+      const sandboxScore = ((s.tagCounts['sandbox'] || 0) / Math.max(1, s.totalGames)) * 25;
       const concentrationBonus = s.topGameShare > 0.3 ? 15 : 0;
       return modScore + sandboxScore + concentrationBonus;
     },
@@ -1271,9 +1322,9 @@ const ARCHETYPES = [
       'Spends more time in the mod manager than in the game.',
       'Their load order is a carefully balanced house of cards. One wrong mod and it all collapses.',
       'Has more Nexus Mods downloads than actual game hours.',
-      'The game isn\'t finished until the mods make it unrecognizable.',
+      "The game isn't finished until the mods make it unrecognizable.",
       'Treats the Steam Workshop like a buffet. Takes everything. Breaks everything. Fixes it. Repeats.',
-      'Has a mod list longer than the game\'s script. It loads in 20 minutes. They wait every time.'
+      "Has a mod list longer than the game's script. It loads in 20 minutes. They wait every time.",
     ],
     contextRoasts: [
       'Has {HOURS} hours in {GAME}. 180 of those were spent modding it.',
@@ -1282,13 +1333,13 @@ const ARCHETYPES = [
       'Has {HOURS} hours in {GAME}. Has never played it without mods. Not once.',
       'Crashes {GAME} regularly. Blames the mods. Refuses to remove them. The mods are the point.',
       'Has a {GENRE} game with 150 mods. It barely resembles {GAME} anymore. They prefer it that way.',
-      'Reinstalls {GAME} just to try a new modlist. Plays for 2 hours. Goes back to modding.'
+      'Reinstalls {GAME} just to try a new modlist. Plays for 2 hours. Goes back to modding.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} tweaking and modding **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The load order stays untouched.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly in the mod manager.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly in the mod manager.',
+    }),
   },
   {
     id: 'speedrunner',
@@ -1308,22 +1359,22 @@ const ARCHETYPES = [
       'Their gaming setup has a timer bigger than the monitor. The timer is the game.',
       'Has watched the same 10-second clip 200 times to understand one skip.',
       'Plays for 4 minutes, resets, plays for 4 minutes, resets. Calls it a session.',
-      'Their friends think they hate the game. They don\'t. They love it. That\'s the problem.'
+      "Their friends think they hate the game. They don't. They love it. That's the problem.",
     ],
     contextRoasts: [
-      'Has {HOURS} hours in {GAME}. Most sessions lasted under 5 minutes. It\'s about efficiency.',
-      'Resets {GAME} if the first input isn\'t frame-perfect. Has 300 resets this week.',
-      'Knows {GAME} so well they can beat it blindfolded. They\'ve tried. It didn\'t count.',
+      "Has {HOURS} hours in {GAME}. Most sessions lasted under 5 minutes. It's about efficiency.",
+      "Resets {GAME} if the first input isn't frame-perfect. Has 300 resets this week.",
+      "Knows {GAME} so well they can beat it blindfolded. They've tried. It didn't count.",
       'Has {HOURS} hours in {GAME}. Has never watched the ending. Too busy resetting.',
       'Their {GAME} PB is 0.3 seconds faster than last week. This is the greatest achievement of their life.',
       'Plays {GENRE} games specifically for the movement tech. {GAME} has the best tech.',
-      'Can quote {GAME}\'s frame data from memory. Cannot remember what they had for lunch.'
+      "Can quote {GAME}'s frame data from memory. Cannot remember what they had for lunch.",
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} grinding splits in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The timer stays paused.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly resets.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly resets.',
+    }),
   },
   {
     id: 'multiplayer_mainliner',
@@ -1341,9 +1392,9 @@ const ARCHETYPES = [
       'Single-player games are "for when the servers are down." The servers are never down.',
       'Their library has 300 games. They play one. It has a ranked mode.',
       'Buys new games. Plays them for 10 minutes. Goes back to the multiplayer main.',
-      'Knows every map, every meta, every patch note. Hasn\'t touched a story mode in years.',
-      'Their gaming identity is tied to a rank. The rank is Gold. It\'s always Gold.',
-      'Tells people they "play games." They play one game. Singular.'
+      "Knows every map, every meta, every patch note. Hasn't touched a story mode in years.",
+      "Their gaming identity is tied to a rank. The rank is Gold. It's always Gold.",
+      'Tells people they "play games." They play one game. Singular.',
     ],
     contextRoasts: [
       'Has {HOURS} hours in {GAME}. Zero of them are single-player.',
@@ -1352,13 +1403,13 @@ const ARCHETYPES = [
       'Has {HOURS} hours in {GAME}. Knows every map. Has never seen the tutorial.',
       'The {GAME} servers went down for 10 minutes. They stared at the screen. It was the worst 10 minutes of their week.',
       'Plays {GENRE} games exclusively for the ranked mode. {GAME} is their whole personality.',
-      'Has {HOURS} hours in {GAME}. Has never played another game since they installed it.'
+      'Has {HOURS} hours in {GAME}. Has never played another game since they installed it.',
     ],
     voice: mergeVoice({
       periodHook: 'Another {PERIOD_NOUN} grinding matches in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. The lobby emptied out.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. All ranked. All {GAME}.'
-    })
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. All ranked. All {GAME}.',
+    }),
   },
   {
     id: 'weekend_warrior',
@@ -1375,25 +1426,25 @@ const ARCHETYPES = [
       'Monday to Friday is just the loading screen for the weekend.',
       'Has 5 hours of gaming on Saturday and 0 on Tuesday. The pattern is clear.',
       'Their gaming chair gets more use on weekends than their office chair does all week.',
-      'Plans their weekend around game releases. Takes Monday off if it\'s a big one.',
+      "Plans their weekend around game releases. Takes Monday off if it's a big one.",
       'Friday night is when the real week starts. The other 5 days are just obligations.',
       'Their Steam playtime graph looks like a heartbeat — flat, flat, flat, spike, spike, flat.',
-      'Tells people they "game a lot." They mean "on weekends." Which is a lot. For them.'
+      'Tells people they "game a lot." They mean "on weekends." Which is a lot. For them.',
     ],
     contextRoasts: [
       'Has {HOURS} hours in {GAME}. All of them logged between Friday night and Sunday evening.',
-      'Plays {GAME} in 6-hour weekend sessions. Hasn\'t touched it on a Wednesday in months.',
-      'Their {GAME} playtime is a weekend monument. Weekdays don\'t exist in the save file.',
+      "Plays {GAME} in 6-hour weekend sessions. Hasn't touched it on a Wednesday in months.",
+      "Their {GAME} playtime is a weekend monument. Weekdays don't exist in the save file.",
       'Has {HOURS} hours in {GAME}. The timestamps tell a story: Saturday, Saturday, Sunday, Saturday.',
       'Bought {GAME} on a Tuesday. Waited until Saturday to play it. Worth the wait.',
       'Their {GENRE} marathons are a weekend ritual. {GAME} is the anchor. The couch is the throne.',
-      'Plays {GAME} like it\'s a weekend sport. Warm-up Friday. Tournament Saturday. Cool-down Sunday.'
+      "Plays {GAME} like it's a weekend sport. Warm-up Friday. Tournament Saturday. Cool-down Sunday.",
     ],
     voice: mergeVoice({
       periodHook: 'A {PERIOD_NOUN} of weekend campaigns in **{GAME}** ({HOURS}h).',
-      quiet: 'A quiet {PERIOD}. The weekends weren\'t enough.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly weekend marathons.'
-    })
+      quiet: "A quiet {PERIOD}. The weekends weren't enough.",
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Mostly weekend marathons.',
+    }),
   },
   {
     id: 'lunch_break_gamer',
@@ -1401,35 +1452,35 @@ const ARCHETYPES = [
     description: 'Short, sharp sessions. Gaming fits between meetings and sandwiches.',
     score: (s) => {
       if (s.totalSessions < 10) return 0;
-      const shortScore = s.shortSessionRatio > 0.5 ? 55 : (s.shortSessionRatio > 0.3 ? 30 : 0);
+      const shortScore = s.shortSessionRatio > 0.5 ? 55 : s.shortSessionRatio > 0.3 ? 30 : 0;
       const sessionCountScore = Math.min(1, s.totalSessions / 50) * 25;
       const varietyScore = Math.min(1, s.sortedGenres.length / 8) * 20;
       return shortScore + sessionCountScore + varietyScore;
     },
     roasts: [
-      'Gaming sessions shorter than most people\'s coffee breaks.',
+      "Gaming sessions shorter than most people's coffee breaks.",
       'Has 300 sessions. Average length: 22 minutes. The sandwich was 15 of those.',
       'Treats gaming like a smoke break. Quick, satisfying, back to work.',
       'Their ideal game can be paused at any moment. Because it will be paused at any moment.',
       'Has more sessions than hours. Each one is a hit-and-run.',
       'Games in 20-minute bursts. Calls it "efficient." It is efficient.',
-      'Their gaming schedule is built around lunch breaks and commute waits. The backlog is patient.'
+      'Their gaming schedule is built around lunch breaks and commute waits. The backlog is patient.',
     ],
     contextRoasts: [
       'Has {HOURS} hours in {GAME}. Achieved through 400 sessions of 15 minutes each.',
       'Plays {GAME} in 20-minute bursts. Has never seen a loading screen finish naturally.',
-      'Their {GAME} save file has 200 entries. None longer than 30 minutes. It\'s a lifestyle.',
+      "Their {GAME} save file has 200 entries. None longer than 30 minutes. It's a lifestyle.",
       'Has {HOURS} hours in {GAME}. Logged entirely between 12:00 and 12:45. Daily.',
-      'Plays {GAME} like it\'s a mobile game. It\'s not a mobile game. They just treat it like one.',
-      'Their {GENRE} sessions are bite-sized. {GAME} gets 15 minutes. Then it\'s back to the spreadsheet.',
-      'Has {HOURS} hours in {GAME}. It took 600 sessions. Each one ended with "just one more." It was never just one more.'
+      "Plays {GAME} like it's a mobile game. It's not a mobile game. They just treat it like one.",
+      "Their {GENRE} sessions are bite-sized. {GAME} gets 15 minutes. Then it's back to the spreadsheet.",
+      'Has {HOURS} hours in {GAME}. It took 600 sessions. Each one ended with "just one more." It was never just one more.',
     ],
     voice: mergeVoice({
       periodHook: 'A {PERIOD_NOUN} of bite-sized sessions in **{GAME}** ({HOURS}h).',
       quiet: 'A quiet {PERIOD}. Lunch breaks were busy.',
-      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Quick hits, steady pace.'
-    })
-  }
+      digest: '{WEEKS} active {WEEKWORD} · **{HOURS}h** logged. Quick hits, steady pace.',
+    }),
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1453,8 +1504,8 @@ export const THEME_DEFINITIONS = [
     roasts: [
       'Has spent {HOURS} hours barricading windows in {GAME}. The canned-food stockpile is aspirational.',
       'Plays {GAME} like a training manual. The zombie plan is written down somewhere.',
-      'Every {GENRE} game becomes a rehearsal for the end of the world. {GAME} is going well, thanks for asking.'
-    ]
+      'Every {GENRE} game becomes a rehearsal for the end of the world. {GAME} is going well, thanks for asking.',
+    ],
   },
   {
     id: 'horror_junkie',
@@ -1464,8 +1515,8 @@ export const THEME_DEFINITIONS = [
     roasts: [
       'Plays {GAME} with the lights off on purpose. The neighbours have heard things.',
       '{HOURS} hours being scared in {GAME}. Calls it relaxing. It is not relaxing.',
-      'Reads "Warning: disturbing content" as a personal invitation. See: {GAME}.'
-    ]
+      'Reads "Warning: disturbing content" as a personal invitation. See: {GAME}.',
+    ],
   },
   {
     id: 'ashen_masochist',
@@ -1475,8 +1526,8 @@ export const THEME_DEFINITIONS = [
     roasts: [
       'Died four hundred times in {GAME} and counted every one as progress.',
       '"Maybe this boss attempt" — said {HOURS} hours ago, mid-{GAME}.',
-      'Calls {GAME} "fair". The death screen disagrees.'
-    ]
+      'Calls {GAME} "fair". The death screen disagrees.',
+    ],
   },
   {
     id: 'console_cowboy',
@@ -1485,8 +1536,8 @@ export const THEME_DEFINITIONS = [
     tags: ['cyberpunk', 'dystopian', 'hacking', 'neon'],
     roasts: [
       "Lives in {GAME}'s neon rain. Owns no trench coat. Yet.",
-      '{HOURS} hours jacked into {GAME}. Reality has worse lighting.'
-    ]
+      '{HOURS} hours jacked into {GAME}. Reality has worse lighting.',
+    ],
   },
   {
     id: 'starfarer',
@@ -1495,8 +1546,8 @@ export const THEME_DEFINITIONS = [
     tags: ['space sim', 'spaceships', 'space', 'sci-fi'],
     roasts: [
       '{HOURS} hours into {GAME}; the commute now feels disappointingly terrestrial.',
-      'Names every ship in {GAME}. Remembers none of their real-life passwords.'
-    ]
+      'Names every ship in {GAME}. Remembers none of their real-life passwords.',
+    ],
   },
   {
     id: 'dungeon_delver',
@@ -1505,8 +1556,8 @@ export const THEME_DEFINITIONS = [
     tags: ['dark fantasy', 'dungeon crawler', 'fantasy', 'magic', 'dragons', 'medieval'],
     roasts: [
       'Has {HOURS} hours in {GAME} and still reads every item description out loud.',
-      'Carries forty-seven wheels of cheese in {GAME}. Encumbrance is a suggestion.'
-    ]
+      'Carries forty-seven wheels of cheese in {GAME}. Encumbrance is a suggestion.',
+    ],
   },
   {
     id: 'queue_warrior',
@@ -1515,8 +1566,8 @@ export const THEME_DEFINITIONS = [
     tags: ['moba', 'battle royale', 'hero shooter', 'esports', 'competitive'],
     roasts: [
       'Blames the team in {GAME}. The team changes. The losses remain.',
-      '{HOURS} hours in {GAME} ranked. Mentally, still in promos.'
-    ]
+      '{HOURS} hours in {GAME} ranked. Mentally, still in promos.',
+    ],
   },
   {
     id: 'run_addict',
@@ -1525,8 +1576,8 @@ export const THEME_DEFINITIONS = [
     tags: ['roguelike', 'roguelite', 'deckbuilding', 'procedural generation'],
     roasts: [
       '"One more run" of {GAME} has ended exactly zero times.',
-      '{HOURS} hours in {GAME}; the run always dies, the hope never does.'
-    ]
+      '{HOURS} hours in {GAME}; the run always dies, the hope never does.',
+    ],
   },
   {
     id: 'breacher',
@@ -1535,8 +1586,8 @@ export const THEME_DEFINITIONS = [
     tags: ['tactical', 'military', 'fps', 'shooter', 'war'],
     roasts: [
       'Checks corners in {GAME} and, reportedly, in supermarkets.',
-      '{HOURS} hours of {GAME}. Reloads after firing three rounds. Every time.'
-    ]
+      '{HOURS} hours of {GAME}. Reloads after firing three rounds. Every time.',
+    ],
   },
   {
     id: 'homesteader',
@@ -1545,18 +1596,15 @@ export const THEME_DEFINITIONS = [
     tags: ['farming', 'cozy', 'fishing', 'wholesome', 'life sim', 'relaxing'],
     roasts: [
       'The {GAME} crops are watered on a stricter schedule than anything in real life.',
-      '{HOURS} hours of {GAME}. Blood pressure: immaculate.'
-    ]
+      '{HOURS} hours of {GAME}. Blood pressure: immaculate.',
+    ],
   },
   {
     id: 'armchair_general',
     label: 'The Armchair General',
     shortName: 'strategy',
     tags: ['grand strategy', '4x', 'turn-based strategy', 'real time strategy', 'strategy', 'tactics'],
-    roasts: [
-      'One more turn in {GAME}, said {HOURS} hours ago.',
-      'Pauses {GAME} to think. Unpauses to conquer.'
-    ]
+    roasts: ['One more turn in {GAME}, said {HOURS} hours ago.', 'Pauses {GAME} to think. Unpauses to conquer.'],
   },
   {
     id: 'gearhead',
@@ -1565,8 +1613,8 @@ export const THEME_DEFINITIONS = [
     tags: ['racing', 'driving', 'automobile', 'motorsport'],
     roasts: [
       'Brakes later in {GAME} than they ever would in a real car.',
-      '{HOURS} hours chasing tenths in {GAME}. The commute is now "practice".'
-    ]
+      '{HOURS} hours chasing tenths in {GAME}. The commute is now "practice".',
+    ],
   },
   {
     id: 'club_athlete',
@@ -1575,8 +1623,8 @@ export const THEME_DEFINITIONS = [
     tags: ['sports', 'football', 'soccer', 'basketball', 'hockey'],
     roasts: [
       'Manages {GAME} transfers with more care than their own finances.',
-      '{HOURS} hours into {GAME}. Still blames the referee.'
-    ]
+      '{HOURS} hours into {GAME}. Still blames the referee.',
+    ],
   },
   {
     id: 'architect',
@@ -1585,8 +1633,8 @@ export const THEME_DEFINITIONS = [
     tags: ['city builder', 'colony sim', 'automation', 'building', 'crafting'],
     roasts: [
       'The {GAME} layout has a five-year plan. The garage does not.',
-      '{HOURS} hours optimising {GAME}. The factory must grow.'
-    ]
+      '{HOURS} hours optimising {GAME}. The factory must grow.',
+    ],
   },
   {
     id: 'cartographer',
@@ -1595,9 +1643,9 @@ export const THEME_DEFINITIONS = [
     tags: ['open world', 'exploration', 'walking simulator'],
     roasts: [
       'Ignores the {GAME} main quest to see what that mountain does.',
-      '{HOURS} hours in {GAME}, about 3% of it on the actual storyline.'
-    ]
-  }
+      '{HOURS} hours in {GAME}, about 3% of it on the actual storyline.',
+    ],
+  },
 ];
 
 // Behavioral half of the hybrid label, keyed by archetype id.
@@ -1622,7 +1670,7 @@ const BEHAVIOR_PHRASES = {
   weekend_warrior: 'saves it all for Saturday',
   lunch_break_gamer: 'snacks on sessions',
   unwinder: 'unwinds on schedule',
-  night_owl: 'plays after midnight'
+  night_owl: 'plays after midnight',
 };
 
 const SUB_TRAITS = [
@@ -1633,9 +1681,9 @@ const SUB_TRAITS = [
     roasts: [
       'Buys games on sale "just in case."',
       'Their library is a safety net for fictional future boredom.',
-      'Has 400 unplayed games. Buys more anyway. It\'s not a problem. It\'s a collection.',
-      'Their Steam wallet has been drained by more sales than they\'ve had hot dinners.'
-    ]
+      "Has 400 unplayed games. Buys more anyway. It's not a problem. It's a collection.",
+      "Their Steam wallet has been drained by more sales than they've had hot dinners.",
+    ],
   },
   {
     id: 'replay_junkie',
@@ -1645,8 +1693,8 @@ const SUB_TRAITS = [
       'Has replayed the same game more times than most people finish it.',
       'New games are a threat to their comfort loop.',
       'Knows every speedrun skip in their favorite game. Uses none of them. Just likes being there.',
-      'Has more hours in one game than most people have in their entire library.'
-    ]
+      'Has more hours in one game than most people have in their entire library.',
+    ],
   },
   {
     id: 'night_owl',
@@ -1656,8 +1704,8 @@ const SUB_TRAITS = [
       'Does their best gaming after midnight.',
       'The sun is a mild inconvenience.',
       'Has seen more 3 AM loading screens than sunrises.',
-      'Their gaming peak hours overlap with their sleep deficit. Coincidence? No.'
-    ]
+      'Their gaming peak hours overlap with their sleep deficit. Coincidence? No.',
+    ],
   },
   {
     id: 'early_riser',
@@ -1667,8 +1715,8 @@ const SUB_TRAITS = [
       'Gaming before breakfast is a valid morning routine.',
       'The early bird gets the headshot.',
       'Has cleared a dungeon before most people have cleared their inbox.',
-      'Sunrise gaming hits different. They know. They\'ve done it 200 times.'
-    ]
+      "Sunrise gaming hits different. They know. They've done it 200 times.",
+    ],
   },
   {
     id: 'genre_specialist',
@@ -1678,8 +1726,8 @@ const SUB_TRAITS = [
       'Has a very specific type of game. It is GENRE_PLACEHOLDER.',
       'Knows one genre inside and out. Stays there.',
       'Could write a thesis on their favorite genre. Has probably started one.',
-      'Their library has one genre. It has 300 entries. They are happy.'
-    ]
+      'Their library has one genre. It has 300 entries. They are happy.',
+    ],
   },
   {
     id: 'platform_hopper',
@@ -1689,8 +1737,8 @@ const SUB_TRAITS = [
       'Refuses to be locked into one launcher.',
       'Has credentials for every store. Remembers none of them.',
       'Has games spread across 6 launchers. Can find none of them without searching.',
-      'Their game library is a scavenger hunt across every PC store. They are the hunter.'
-    ]
+      'Their game library is a scavenger hunt across every PC store. They are the hunter.',
+    ],
   },
   {
     id: 'early_access_volunteer',
@@ -1699,9 +1747,9 @@ const SUB_TRAITS = [
     roasts: [
       'Pays to beta test. Sometimes twice.',
       'Roadmaps are their favorite genre.',
-      'Has 20 Early Access games. 3 have been released. They\'re still waiting on the other 17.',
-      '"It\'s early access" is their excuse for everything. Bugs. Crashes. Missing features. All of it.'
-    ]
+      "Has 20 Early Access games. 3 have been released. They're still waiting on the other 17.",
+      '"It\'s early access" is their excuse for everything. Bugs. Crashes. Missing features. All of it.',
+    ],
   },
   {
     id: 'patient_gamer',
@@ -1710,9 +1758,9 @@ const SUB_TRAITS = [
     roasts: [
       'Waits for the perfect sale. And then waits some more.',
       'Has no idea what just came out. Plays a 2014 classic instead.',
-      'Avoids day-one hype like it\'s a disease. Catches up 3 years later. Avoids spoilers somehow.',
-      'Their backlog is so old it has games from publishers that no longer exist.'
-    ]
+      "Avoids day-one hype like it's a disease. Catches up 3 years later. Avoids spoilers somehow.",
+      'Their backlog is so old it has games from publishers that no longer exist.',
+    ],
   },
   {
     id: 'day_one_daredevil',
@@ -1721,9 +1769,9 @@ const SUB_TRAITS = [
     roasts: [
       'Buys new releases while they are still warm.',
       'Patch notes are bedtime reading.',
-      'Has pre-ordered 12 games this year. Hasn\'t finished any of them. Hasn\'t regretted it either.',
-      'Knows the exact minute a game unlocks. Has the countdown app to prove it.'
-    ]
+      "Has pre-ordered 12 games this year. Hasn't finished any of them. Hasn't regretted it either.",
+      'Knows the exact minute a game unlocks. Has the countdown app to prove it.',
+    ],
   },
   {
     id: 'indie_devout',
@@ -1733,8 +1781,8 @@ const SUB_TRAITS = [
       'Solo devs have a special place in their heart.',
       'Would rather fund a Kickstarter than read a review.',
       'Has backed 30 Kickstarters. 10 delivered. 5 refunded. 15 are "still in development." They\'re fine with it.',
-      'Knows the difference between a solo dev and a two-person team. Has opinions about which is better.'
-    ]
+      'Knows the difference between a solo dev and a two-person team. Has opinions about which is better.',
+    ],
   },
   {
     id: 'franchise_prisoner',
@@ -1743,9 +1791,9 @@ const SUB_TRAITS = [
     roasts: [
       'Has played every entry. Including the one nobody talks about.',
       'Loyal to a fault. Mostly to a specific publisher.',
-      'Can trace the timeline of their favorite franchise through release dates alone. It\'s a family tree.',
-      'Owns the spinoff. The mobile game. The DLC. The art book. The soundtrack. They don\'t skip.'
-    ]
+      "Can trace the timeline of their favorite franchise through release dates alone. It's a family tree.",
+      "Owns the spinoff. The mobile game. The DLC. The art book. The soundtrack. They don't skip.",
+    ],
   },
   {
     id: 'pain_connoisseur',
@@ -1755,8 +1803,8 @@ const SUB_TRAITS = [
       'Treats brutal games like a spa day.',
       'Collects boss fight replays like vacation photos.',
       'Has a folder of boss fight screenshots. It is organized by difficulty. It is extensive.',
-      'Chooses "hard" mode first. Chooses "very hard" second. Chooses "nightmare" third. Chooses therapy fourth.'
-    ]
+      'Chooses "hard" mode first. Chooses "very hard" second. Chooses "nightmare" third. Chooses therapy fourth.',
+    ],
   },
   {
     id: 'weekend_warrior_trait',
@@ -1766,8 +1814,8 @@ const SUB_TRAITS = [
       'The weekday library is for looking at. The weekend library is for playing.',
       'Has a 5-day cooldown between gaming sessions. It\'s called "having a job."',
       'Their gaming chair collects dust Monday through Friday. Saturday it becomes a throne.',
-      'Plans the weekend game lineup on Wednesday. Executes it perfectly. Ignores all responsibilities.'
-    ]
+      'Plans the weekend game lineup on Wednesday. Executes it perfectly. Ignores all responsibilities.',
+    ],
   },
   {
     id: 'lunch_break_trait',
@@ -1777,19 +1825,19 @@ const SUB_TRAITS = [
       'Can clear a dungeon between the starter and the main course.',
       'Has mastered the art of the 20-minute session. Their boss fears their lunch break.',
       'Gaming in bite-sized chunks. Like tapas, but with more loading screens.',
-      'Their ideal session ends before the microwave beeps. Anything longer is a luxury.'
-    ]
+      'Their ideal session ends before the microwave beeps. Anything longer is a luxury.',
+    ],
   },
   {
     id: 'modder_trait',
     label: 'The Modder',
     condition: (s) => s.totalGames >= 10 && s.modFriendlyRatio > 0.4,
     roasts: [
-      'Has a mod load order longer than most people\'s grocery list.',
+      "Has a mod load order longer than most people's grocery list.",
       'The base game is a rough draft. The mods are the final edit.',
       'Has spent more time in Nexus Mods than in actual games this month.',
-      'Treats every game as a kit. The goal isn\'t to play it — it\'s to rebuild it.'
-    ]
+      "Treats every game as a kit. The goal isn't to play it — it's to rebuild it.",
+    ],
   },
   {
     id: 'sampler',
@@ -1799,8 +1847,8 @@ const SUB_TRAITS = [
       'Has installed 200 games. Played 15. Uninstalled 50. The rest are "for later."',
       'Their library is a tasting menu. Two bites per game. On to the next.',
       'Installs games the way other people bookmark articles — compulsively, and with zero intention of following through.',
-      'Has a 90% unplayed ratio and considers this "curated."'
-    ]
+      'Has a 90% unplayed ratio and considers this "curated."',
+    ],
   },
   {
     id: 'founder_supporter',
@@ -1809,13 +1857,13 @@ const SUB_TRAITS = [
     roasts: [
       'Pays real money for a free app. Has their priorities straight.',
       'Supports local-first development. Their library is safe from the cloud.',
-      'Their wallet did what their backlog couldn\'t: supported something.',
+      "Their wallet did what their backlog couldn't: supported something.",
       'Has a founder badge and zero regrets. The badge is worth more than the backlog.',
-      'Could\'ve bought a coffee. Bought GamePilot a coffee instead. The app runs on it.',
+      "Could've bought a coffee. Bought GamePilot a coffee instead. The app runs on it.",
       'Their tier is higher than their completion rate. No notes.',
-      'Believes in the cockpit enough to fund it. The cockpit believes in them back.'
-    ]
-  }
+      'Believes in the cockpit enough to fund it. The cockpit believes in them back.',
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1881,16 +1929,22 @@ const isUsableGameName = (value) => {
 
 const fillTemplate = (str, signals, game) => {
   if (!str) return str;
-  const primaryGame = (game && isUsableGameName(game.name) && (game.minutes || 0) > 0)
-    ? game
-    : (signals.lastPlayedGame && isUsableGameName(signals.lastPlayedGame.name) && (signals.lastPlayedGame.minutes || 0) > 0)
-      ? signals.lastPlayedGame
-      : (signals.topGame && isUsableGameName(signals.topGame.name) && (signals.topGame.minutes || 0) > 0)
-        ? signals.topGame
-        : null;
+  const primaryGame =
+    game && isUsableGameName(game.name) && (game.minutes || 0) > 0
+      ? game
+      : signals.lastPlayedGame &&
+          isUsableGameName(signals.lastPlayedGame.name) &&
+          (signals.lastPlayedGame.minutes || 0) > 0
+        ? signals.lastPlayedGame
+        : signals.topGame && isUsableGameName(signals.topGame.name) && (signals.topGame.minutes || 0) > 0
+          ? signals.topGame
+          : null;
   const name = isUsableGameName(primaryGame?.name) ? primaryGame.name : 'their main';
-  const second = (signals.topGames || []).find((g) => isUsableGameName(g.name) && g.name !== name)?.name || 'something else';
-  const third = (signals.topGames || []).find((g) => isUsableGameName(g.name) && g.name !== name && g.name !== second)?.name || 'a third option';
+  const second =
+    (signals.topGames || []).find((g) => isUsableGameName(g.name) && g.name !== name)?.name || 'something else';
+  const third =
+    (signals.topGames || []).find((g) => isUsableGameName(g.name) && g.name !== name && g.name !== second)?.name ||
+    'a third option';
   const hoursNum = Number(getDisplayMinutes(primaryGame, signals.mode) || 0);
   const hours = hoursNum > 0 ? formatHours(hoursNum) : 'plenty';
   const genre = signals.dominantGenre || 'games';
@@ -1907,7 +1961,8 @@ const fillTemplate = (str, signals, game) => {
     .replace(/\{DEV\}/g, dev)
     .replace(/\{PUBLISHER\}/g, publisher);
   // Last-resort cleanup if a bad title still slipped through.
-  out = out.replace(/\b0h in Untitled\b/gi, 'a long-running main')
+  out = out
+    .replace(/\b0h in Untitled\b/gi, 'a long-running main')
     .replace(/\bUntitled\b/g, 'their main')
     .replace(/\b0h\b/g, 'plenty');
   return out;
@@ -1921,50 +1976,72 @@ const getRoastStingers = (signals, game) => {
   const stingers = [];
 
   if (secondGame) {
-    stingers.push(`Meanwhile, ${secondGame.name} is waiting in the wings like an understudy who knows it will never get the role.`);
+    stingers.push(
+      `Meanwhile, ${secondGame.name} is waiting in the wings like an understudy who knows it will never get the role.`
+    );
   }
   if (signals.neverPlayedGames >= 10) {
     stingers.push(`${signals.neverPlayedGames} untouched games are currently serving as decorative shelf space.`);
   }
   if (signals.topGameShare >= 0.4 && primaryGame?.name) {
-    stingers.push(`${primaryGame.name} accounts for ${Math.round(signals.topGameShare * 100)}% of the playtime, which is less a preference and more a residency.`);
+    stingers.push(
+      `${primaryGame.name} accounts for ${Math.round(signals.topGameShare * 100)}% of the playtime, which is less a preference and more a residency.`
+    );
   }
   if (signals.totalSessions >= 10) {
     stingers.push(`${Math.round(signals.totalSessions)} sessions later, the evidence is no longer circumstantial.`);
   }
   if (signals.avgSessionLength >= 120) {
-    stingers.push(`The average session lasts ${Math.round(signals.avgSessionLength / 6) / 10} hours, because stopping at a sensible time would ruin the immersion.`);
+    stingers.push(
+      `The average session lasts ${Math.round(signals.avgSessionLength / 6) / 10} hours, because stopping at a sensible time would ruin the immersion.`
+    );
   }
   if (signals.peakHour !== null && (signals.peakHour >= 22 || signals.peakHour <= 4)) {
     const hour = String(signals.peakHour).padStart(2, '0');
     stingers.push(`Peak operating hour: ${hour}:00. Sleep filed a complaint and received no response.`);
   }
   if (signals.topFranchise && signals.topFranchiseShare > 0.3) {
-    stingers.push(`${signals.topFranchise[0]} makes up ${Math.round(signals.topFranchiseShare * 100)}% of the library. Brand loyalty is a full-time commitment.`);
+    stingers.push(
+      `${signals.topFranchise[0]} makes up ${Math.round(signals.topFranchiseShare * 100)}% of the library. Brand loyalty is a full-time commitment.`
+    );
   }
   if (signals.topDev && signals.topDevShare > 0.3) {
-    stingers.push(`${signals.topDev[0]} receives ${Math.round(signals.topDevShare * 100)}% of their playtime. The dev knows them by name.`);
+    stingers.push(
+      `${signals.topDev[0]} receives ${Math.round(signals.topDevShare * 100)}% of their playtime. The dev knows them by name.`
+    );
   }
   if (signals.dominantGenreShare > 0.5 && signals.dominantGenre) {
-    stingers.push(`${Math.round(signals.dominantGenreShare * 100)}% of all playtime is ${signals.dominantGenre}. Variety is overrated, apparently.`);
+    stingers.push(
+      `${Math.round(signals.dominantGenreShare * 100)}% of all playtime is ${signals.dominantGenre}. Variety is overrated, apparently.`
+    );
   }
   if (signals.multiplayerPlaytimeShare > 0.6) {
-    stingers.push(`${Math.round(signals.multiplayerPlaytimeShare * 100)}% of playtime is multiplayer. Single-player games are filing for neglect.`);
+    stingers.push(
+      `${Math.round(signals.multiplayerPlaytimeShare * 100)}% of playtime is multiplayer. Single-player games are filing for neglect.`
+    );
   }
   if (signals.weekendSessionRatio > 0.6) {
-    stingers.push(`${Math.round(signals.weekendSessionRatio * 100)}% of sessions happen on weekends. The weekdays are just a loading screen.`);
+    stingers.push(
+      `${Math.round(signals.weekendSessionRatio * 100)}% of sessions happen on weekends. The weekdays are just a loading screen.`
+    );
   }
   if (signals.shortSessionRatio > 0.5) {
-    stingers.push(`${Math.round(signals.shortSessionRatio * 100)}% of sessions are under 30 minutes. Efficiency is a personality trait.`);
+    stingers.push(
+      `${Math.round(signals.shortSessionRatio * 100)}% of sessions are under 30 minutes. Efficiency is a personality trait.`
+    );
   }
   if (signals.modFriendlyRatio > 0.4) {
-    stingers.push(`${Math.round(signals.modFriendlyRatio * 100)}% of the library is mod-friendly. The base game is just a suggestion.`);
+    stingers.push(
+      `${Math.round(signals.modFriendlyRatio * 100)}% of the library is mod-friendly. The base game is just a suggestion.`
+    );
   }
   if (signals.platformCount >= 4) {
     stingers.push(`Games spread across ${signals.platformCount} platforms. Organization is not a strength.`);
   }
   if (signals.topGameSessionRatio > 0.5 && primaryGame?.name) {
-    stingers.push(`${Math.round(signals.topGameSessionRatio * 100)}% of all sessions go to ${primaryGame.name}. The rest of the library is decorative.`);
+    stingers.push(
+      `${Math.round(signals.topGameSessionRatio * 100)}% of all sessions go to ${primaryGame.name}. The rest of the library is decorative.`
+    );
   }
 
   return stingers;
@@ -1976,7 +2053,8 @@ const buildPersonaEvidence = (archetype, signals, game) => {
   const secondGame = signals.topGames?.find((g) => g.name !== primaryGame?.name);
 
   // Headline: hours in the game that actually anchors this persona.
-  if (primaryGame?.name) evidence.push(`${formatHours(getDisplayMinutes(primaryGame, signals.mode))}h in ${primaryGame.name}`);
+  if (primaryGame?.name)
+    evidence.push(`${formatHours(getDisplayMinutes(primaryGame, signals.mode))}h in ${primaryGame.name}`);
 
   // Archetype-specific proof takes priority over generic stats.
   if ((archetype?.id === 'completionist' || archetype?.id === 'credit_roll_dodger') && signals.hasCompletionData) {
@@ -1984,7 +2062,8 @@ const buildPersonaEvidence = (archetype, signals, game) => {
   }
 
   // Second game gives a two-game snapshot instead of just one data point.
-  if (secondGame?.name) evidence.push(`${formatHours(getDisplayMinutes(secondGame, signals.mode))}h in ${secondGame.name}`);
+  if (secondGame?.name)
+    evidence.push(`${formatHours(getDisplayMinutes(secondGame, signals.mode))}h in ${secondGame.name}`);
 
   // Theme concentration — the world the current rotation lives in.
   if (signals.dominantTheme) {
@@ -2001,7 +2080,9 @@ const buildPersonaEvidence = (archetype, signals, game) => {
 
   // Franchise / developer loyalty.
   if (signals.topFranchise && signals.topFranchiseShare > 0.15) {
-    evidence.push(`${signals.topFranchise[0]} × ${signals.topFranchise[1]} game${signals.topFranchise[1] === 1 ? '' : 's'}`);
+    evidence.push(
+      `${signals.topFranchise[0]} × ${signals.topFranchise[1]} game${signals.topFranchise[1] === 1 ? '' : 's'}`
+    );
   } else if (signals.topDev && signals.topDevShare > 0.25) {
     evidence.push(`${Math.round(signals.topDevShare * 100)}% of playtime from ${signals.topDev[0]}`);
   }
@@ -2061,9 +2142,7 @@ const pickArchetypeRoast = (archetype, signals, seed, game) => {
   // space, horror...) — prefer them whenever a dominant theme is detected.
   const themeRoasts = signals.dominantTheme?.roasts;
   const useContext = targetGame?.name && Array.isArray(archetype.contextRoasts) && archetype.contextRoasts.length;
-  const pool = themeRoasts?.length
-    ? themeRoasts
-    : (useContext ? archetype.contextRoasts : archetype.roasts);
+  const pool = themeRoasts?.length ? themeRoasts : useContext ? archetype.contextRoasts : archetype.roasts;
   const opening = fillTemplate(pickRoast(pool, seed), signals, targetGame);
   const stingers = getRoastStingers(signals, targetGame);
   const stinger = pickRoast(stingers, seed + 7);
@@ -2092,7 +2171,7 @@ export const PERSONA_AFFINITY_GENRES = Object.freeze({
   speedrunner: ['Platformer', 'Action', 'Roguelike', 'Precision Platformer', 'Metroidvania'],
   multiplayer_mainliner: ['FPS', 'MOBA', 'Battle Royale', 'Fighting', 'Hero Shooter', 'Tactical Shooter'],
   weekend_warrior: ['RPG', 'Open World', 'Action-Adventure', 'Strategy', 'Co-op'],
-  lunch_break_gamer: ['Puzzle', 'Roguelike', 'Arcade', 'Card Game', 'Match-3', 'Casual']
+  lunch_break_gamer: ['Puzzle', 'Roguelike', 'Arcade', 'Card Game', 'Match-3', 'Casual'],
 });
 
 export class GamingPersonaService {
@@ -2122,14 +2201,12 @@ export class GamingPersonaService {
     // Score each archetype
     const scoredArchetypes = ARCHETYPES.map((archetype) => ({
       ...archetype,
-      score: clamp(archetype.score(signals), 0, 100)
+      score: clamp(archetype.score(signals), 0, 100),
     })).sort((a, b) => b.score - a.score);
 
     const autoPrimary = scoredArchetypes[0] || null;
     const pinnedId = this.getPinnedPersonaId();
-    const primary = pinnedId
-      ? (scoredArchetypes.find((a) => a.id === pinnedId) || autoPrimary)
-      : autoPrimary;
+    const primary = pinnedId ? scoredArchetypes.find((a) => a.id === pinnedId) || autoPrimary : autoPrimary;
 
     // Determine confidence
     let confidence = 'low';
@@ -2137,24 +2214,26 @@ export class GamingPersonaService {
     else if (primary && primary.score >= 35) confidence = 'medium';
 
     // Gather sub-traits
-    const matchedSubTraits = SUB_TRAITS
-      .map((trait) => {
-        const meta = {};
-        if (trait.id === 'genre_specialist' && signals.dominantGenre) {
-          meta.dominantGenre = signals.dominantGenre;
-        }
-        return { ...trait, meta };
-      })
+    const matchedSubTraits = SUB_TRAITS.map((trait) => {
+      const meta = {};
+      if (trait.id === 'genre_specialist' && signals.dominantGenre) {
+        meta.dominantGenre = signals.dominantGenre;
+      }
+      return { ...trait, meta };
+    })
       .filter((trait) => trait.condition(signals))
       .slice(0, 2);
 
     const baseSeed = customSeed ?? generateSeed(primary, matchedSubTraits);
     // History anchors the persona (topGame); present play can flavor the roast.
-    const roastGame = (signals.topGame && isUsableGameName(signals.topGame.name) && (signals.topGame.minutes || 0) > 0)
-      ? signals.topGame
-      : (signals.lastPlayedGame && isUsableGameName(signals.lastPlayedGame.name) && (signals.lastPlayedGame.minutes || 0) > 0)
-        ? signals.lastPlayedGame
-        : null;
+    const roastGame =
+      signals.topGame && isUsableGameName(signals.topGame.name) && (signals.topGame.minutes || 0) > 0
+        ? signals.topGame
+        : signals.lastPlayedGame &&
+            isUsableGameName(signals.lastPlayedGame.name) &&
+            (signals.lastPlayedGame.minutes || 0) > 0
+          ? signals.lastPlayedGame
+          : null;
     const primaryRoast = pickArchetypeRoast(primary, signals, baseSeed, roastGame);
     const subTraitRoast = buildSubTraitRoast(matchedSubTraits, baseSeed + 1);
     const summaryRoast = formatSummaryRoast(primaryRoast, subTraitRoast);
@@ -2163,7 +2242,7 @@ export class GamingPersonaService {
     const subTraits = matchedSubTraits.map((trait) => ({
       id: trait.id,
       label: trait.label,
-      description: pickRoast(trait.roasts, baseSeed + 2)
+      description: pickRoast(trait.roasts, baseSeed + 2),
     }));
 
     // Theme layer: the dominant world the player inhabits (zombies, space...)
@@ -2171,18 +2250,19 @@ export class GamingPersonaService {
     // replays everything". Behavioral archetype stays as the second half.
     // Secondary theme (if any) surfaces as a sub-trait.
     const theme = signals.dominantTheme || null;
-    const behaviorPhrase = primary ? (BEHAVIOR_PHRASES[primary.id] || 'plays it all') : null;
-    const hybridLabel = primary
-      ? (theme ? `${theme.label} who ${behaviorPhrase}` : primary.label)
-      : null;
+    const behaviorPhrase = primary ? BEHAVIOR_PHRASES[primary.id] || 'plays it all' : null;
+    const hybridLabel = primary ? (theme ? `${theme.label} who ${behaviorPhrase}` : primary.label) : null;
     if (signals.secondaryTheme) {
       subTraits.push({
         id: 'secondary_theme',
         label: `Also dabbles in ${signals.secondaryTheme.shortName}`,
-        description: pickRoast([
-          `A side of ${signals.secondaryTheme.shortName} keeps the rotation interesting.`,
-          `Not the main course, but ${signals.secondaryTheme.shortName} shows up regularly.`
-        ], baseSeed + 3)
+        description: pickRoast(
+          [
+            `A side of ${signals.secondaryTheme.shortName} keeps the rotation interesting.`,
+            `Not the main course, but ${signals.secondaryTheme.shortName} shows up regularly.`,
+          ],
+          baseSeed + 3
+        ),
       });
     }
 
@@ -2199,20 +2279,18 @@ export class GamingPersonaService {
           contextRoasts: primary.contextRoasts || [],
           basedOnGame: roastGame?.name || null,
           evidence: buildPersonaEvidence(primary, signals, roastGame || signals.topGame),
-          voice: primary.voice || DEFAULT_VOICE
+          voice: primary.voice || DEFAULT_VOICE,
         }
       : null;
 
     // Secondary persona: the next-best archetype, roasted through the lens of a
     // DIFFERENT top game. Gives the user an alternate identity to pick from and
     // reflects a broader slice of their playstyle than just their #1 game.
-    const secondaryArchetype = scoredArchetypes.find(
-      (a) => a.id !== primary?.id && a.score > 0
-    ) || null;
-    const secondaryGame = signals.topGames?.find((g) => g.name !== signals.topGame?.name)
-      || signals.topGame
-      || null;
-    const secondaryBehaviorPhrase = secondaryArchetype ? (BEHAVIOR_PHRASES[secondaryArchetype.id] || 'plays it all') : null;
+    const secondaryArchetype = scoredArchetypes.find((a) => a.id !== primary?.id && a.score > 0) || null;
+    const secondaryGame = signals.topGames?.find((g) => g.name !== signals.topGame?.name) || signals.topGame || null;
+    const secondaryBehaviorPhrase = secondaryArchetype
+      ? BEHAVIOR_PHRASES[secondaryArchetype.id] || 'plays it all'
+      : null;
     const secondaryPersona = secondaryArchetype
       ? {
           id: secondaryArchetype.id,
@@ -2226,34 +2304,30 @@ export class GamingPersonaService {
           contextRoasts: secondaryArchetype.contextRoasts || [],
           basedOnGame: secondaryGame?.name || null,
           evidence: buildPersonaEvidence(secondaryArchetype, signals, secondaryGame),
-          voice: secondaryArchetype.voice || DEFAULT_VOICE
+          voice: secondaryArchetype.voice || DEFAULT_VOICE,
         }
       : null;
 
     const allArchetypes = scoredArchetypes.map((a) => ({
       id: a.id,
       label: a.label,
-      score: Math.round(a.score)
+      score: Math.round(a.score),
     }));
 
     const formatHoursRounded = (mins) => {
-    const hours = mins / 60;
-    if (hours >= 100) return Math.round(hours).toString();
-    if (hours >= 10) return hours.toFixed(0);
-    return hours.toFixed(1);
-  };
+      const hours = mins / 60;
+      if (hours >= 100) return Math.round(hours).toString();
+      if (hours >= 10) return hours.toFixed(0);
+      return hours.toFixed(1);
+    };
 
-  const lifetimeGames = signals.lifetimeGames;
-  const windowLabel = windowDays !== null
-    ? `Last ${windowDays} days`
-    : isAllTime
-      ? 'All-time'
-      : 'Current rotation';
-  const contextLine = signals.useRecencyPlaytime
-    ? `${windowLabel}: ${formatHoursRounded(signals.recentTrackedMinutes)}h across ${signals.adaptiveSessionCount} session${signals.adaptiveSessionCount === 1 ? '' : 's'} · All-time: ${formatHoursRounded(signals.lifetimeLibraryPlaytime)}h across ${lifetimeGames} games`
-    : `${windowLabel}: ${formatHoursRounded(signals.totalPlaytime)}h across ${lifetimeGames} games`;
+    const lifetimeGames = signals.lifetimeGames;
+    const windowLabel = windowDays !== null ? `Last ${windowDays} days` : isAllTime ? 'All-time' : 'Current rotation';
+    const contextLine = signals.useRecencyPlaytime
+      ? `${windowLabel}: ${formatHoursRounded(signals.recentTrackedMinutes)}h across ${signals.adaptiveSessionCount} session${signals.adaptiveSessionCount === 1 ? '' : 's'} · All-time: ${formatHoursRounded(signals.lifetimeLibraryPlaytime)}h across ${lifetimeGames} games`
+      : `${windowLabel}: ${formatHoursRounded(signals.totalPlaytime)}h across ${lifetimeGames} games`;
 
-  return {
+    return {
       primaryPersona,
       secondaryPersona,
       subTraits,
@@ -2291,8 +2365,8 @@ export class GamingPersonaService {
         unplayedRatio: Math.round(signals.unplayedRatio * 100),
         neverPlayedGames: signals.neverPlayedGames,
         completedCount: signals.completedCount,
-        hasCompletionData: signals.hasCompletionData
-      }
+        hasCompletionData: signals.hasCompletionData,
+      },
     };
   }
 
@@ -2380,7 +2454,7 @@ export class GamingPersonaService {
     const shortLabel = label ? String(label).replace(/^The\s+/i, '') : null;
     const roast = persona?.summaryRoast || primary?.roast || null;
     const description = primary?.description || null;
-    const affinityGenres = primary?.id ? (PERSONA_AFFINITY_GENRES[primary.id] || []) : [];
+    const affinityGenres = primary?.id ? PERSONA_AFFINITY_GENRES[primary.id] || [] : [];
 
     return {
       label,
@@ -2403,8 +2477,8 @@ export class GamingPersonaService {
       becauseYouAre: shortLabel
         ? `Because you're ${label.startsWith('The ') ? label : `a ${shortLabel}`}`
         : 'Because of how you play',
-      headline: label && roast ? `${label} — ${roast}` : (label || roast || 'Still learning your habits'),
-      raw: persona
+      headline: label && roast ? `${label} — ${roast}` : label || roast || 'Still learning your habits',
+      raw: persona,
     };
   }
 
@@ -2415,15 +2489,14 @@ export class GamingPersonaService {
   }
 
   static gameMatchesPersona(game, personaId = null) {
-    const genres = Array.isArray(game?.genres)
-      ? game.genres.map((g) => String(g).toLowerCase())
-      : [];
-    const tags = Array.isArray(game?.tags)
-      ? game.tags.map((t) => String(t).toLowerCase())
-      : [];
+    const genres = Array.isArray(game?.genres) ? game.genres.map((g) => String(g).toLowerCase()) : [];
+    const tags = Array.isArray(game?.tags) ? game.tags.map((t) => String(t).toLowerCase()) : [];
     const affinity = this.getAffinityGenres(personaId).map((g) => String(g).toLowerCase());
     if (affinity.length === 0) return false;
-    return affinity.some((a) => genres.includes(a) || tags.includes(a) || genres.some((g) => g.includes(a)) || tags.some((t) => t.includes(a)));
+    return affinity.some(
+      (a) =>
+        genres.includes(a) || tags.includes(a) || genres.some((g) => g.includes(a)) || tags.some((t) => t.includes(a))
+    );
   }
 }
 

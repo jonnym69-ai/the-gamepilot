@@ -18,7 +18,7 @@ function GamingStoryCard({ story, onContinue }) {
               className="gaming-story-cover"
               style={{
                 backgroundImage: `url(${game.coverUrl})`,
-                zIndex: topGames.length - index
+                zIndex: topGames.length - index,
               }}
               aria-hidden="true"
             />
@@ -55,11 +55,11 @@ function GamingStoryCard({ story, onContinue }) {
           )}
 
           <p
-          className="gaming-story-narrative"
-          dangerouslySetInnerHTML={{
-            __html: narrative.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-          }}
-        />
+            className="gaming-story-narrative"
+            dangerouslySetInnerHTML={{
+              __html: narrative.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
+            }}
+          />
 
           <div className="gaming-story-note">
             <BookOpen size={14} />

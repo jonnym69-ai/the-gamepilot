@@ -5,20 +5,32 @@ import HybridNavBar from './HybridNavBar';
 let mockPathname = '/';
 let mockLocation = { pathname: '/' };
 
-jest.mock('react-router-dom', () => ({
-  Link: ({ to, className, children, ...props }) => <a href={to} className={className} {...props}>{children}</a>,
-  NavLink: ({ to, end, className, children, ...props }) => {
-    const isActive = end ? mockPathname === to : mockPathname === to || mockPathname.startsWith(`${to}/`);
-    return <a href={to} className={`${className || ''}${isActive ? ' active' : ''}`.trim()} {...props}>{children}</a>;
-  },
-  useLocation: () => mockLocation
-}), { virtual: true });
+jest.mock(
+  'react-router-dom',
+  () => ({
+    Link: ({ to, className, children, ...props }) => (
+      <a href={to} className={className} {...props}>
+        {children}
+      </a>
+    ),
+    NavLink: ({ to, end, className, children, ...props }) => {
+      const isActive = end ? mockPathname === to : mockPathname === to || mockPathname.startsWith(`${to}/`);
+      return (
+        <a href={to} className={`${className || ''}${isActive ? ' active' : ''}`.trim()} {...props}>
+          {children}
+        </a>
+      );
+    },
+    useLocation: () => mockLocation,
+  }),
+  { virtual: true }
+);
 
 jest.mock('../ThemeContext', () => ({
   useTheme: () => ({
     bigScreenMode: false,
-    toggleBigScreenMode: jest.fn()
-  })
+    toggleBigScreenMode: jest.fn(),
+  }),
 }));
 
 const renderNavigation = (route = '/') => {
