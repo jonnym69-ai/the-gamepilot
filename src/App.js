@@ -4,6 +4,7 @@ import './App.css';
 import { ThemeProvider } from './ThemeContext';
 import ControllerSupport from './components/ControllerSupport';
 import ErrorBoundary from './components/ErrorBoundary';
+import RouteErrorBoundary from './components/RouteErrorBoundary';
 import { GameLaunchCoordinatorService } from './services/GameLaunchCoordinatorService';
 import { LibraryScanCoordinatorService } from './services/LibraryScanCoordinatorService';
 import {
@@ -1041,121 +1042,241 @@ function AppContent() {
             <Route
               path="/"
               element={
-                <Home
-                  library={library}
-                  onLaunchGame={handleLaunchGame}
-                  onScan={scanLocalLibrary}
-                  lastPlayedGame={lastPlayedGame}
-                  activeSessions={activeSessions}
-                  endSession={handleEndSession}
-                  mood={filterMood}
-                  time={filterTime}
-                  selectedGenre={filterGenre}
-                  setMood={setFilterMood}
-                  setTime={setFilterTime}
-                  setSelectedGenre={setFilterGenre}
-                  theme={theme}
-                  loading={loading}
-                />
+                <RouteErrorBoundary>
+                  <Home
+                    library={library}
+                    onLaunchGame={handleLaunchGame}
+                    onScan={scanLocalLibrary}
+                    lastPlayedGame={lastPlayedGame}
+                    activeSessions={activeSessions}
+                    endSession={handleEndSession}
+                    mood={filterMood}
+                    time={filterTime}
+                    selectedGenre={filterGenre}
+                    setMood={setFilterMood}
+                    setTime={setFilterTime}
+                    setSelectedGenre={setFilterGenre}
+                    theme={theme}
+                    loading={loading}
+                  />
+                </RouteErrorBoundary>
               }
             />
             <Route
               path="/dashboard"
               element={
-                <Home
-                  mode="dashboard"
-                  library={library}
-                  onLaunchGame={handleLaunchGame}
-                  onScan={scanLocalLibrary}
-                  lastPlayedGame={lastPlayedGame}
-                  activeSessions={activeSessions}
-                  endSession={handleEndSession}
-                  mood={filterMood}
-                  time={filterTime}
-                  selectedGenre={filterGenre}
-                  setMood={setFilterMood}
-                  setTime={setFilterTime}
-                  setSelectedGenre={setFilterGenre}
-                  theme={theme}
-                  loading={loading}
-                />
+                <RouteErrorBoundary>
+                  <Home
+                    mode="dashboard"
+                    library={library}
+                    onLaunchGame={handleLaunchGame}
+                    onScan={scanLocalLibrary}
+                    lastPlayedGame={lastPlayedGame}
+                    activeSessions={activeSessions}
+                    endSession={handleEndSession}
+                    mood={filterMood}
+                    time={filterTime}
+                    selectedGenre={filterGenre}
+                    setMood={setFilterMood}
+                    setTime={setFilterTime}
+                    setSelectedGenre={setFilterGenre}
+                    theme={theme}
+                    loading={loading}
+                  />
+                </RouteErrorBoundary>
               }
             />
             <Route
               path="/library"
               element={
-                <Library
-                  library={library}
-                  setLibrary={setLibrary}
-                  onLibraryUpdated={handleLibraryUpdated}
-                  onLaunchGame={handleLaunchGame}
-                  onScan={scanLocalLibrary}
-                  onScanLibrary={scanLocalLibrary}
-                  scanLocalLibrary={scanLocalLibrary}
-                  onUpdateRating={handleUpdateRating}
-                  onToggleFavorite={handleToggleFavorite}
-                  onRemoveGames={handleRemoveGames}
-                  onUpdateCollections={handleUpdateCollections}
-                  onToggleHidden={handleToggleHidden}
-                  onUpdateCompletion={handleUpdateCompletion}
-                  onUpdateNotes={handleUpdateNotes}
-                  onUpdateCoverArt={handleUpdateCoverArt}
-                  onUpdateMood={handleUpdateMood}
-                  onAddSessionNote={handleAddSessionNote}
-                  onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
-                  loading={loading}
-                />
+                <RouteErrorBoundary>
+                  <Library
+                    library={library}
+                    setLibrary={setLibrary}
+                    onLibraryUpdated={handleLibraryUpdated}
+                    onLaunchGame={handleLaunchGame}
+                    onScan={scanLocalLibrary}
+                    onScanLibrary={scanLocalLibrary}
+                    scanLocalLibrary={scanLocalLibrary}
+                    onUpdateRating={handleUpdateRating}
+                    onToggleFavorite={handleToggleFavorite}
+                    onRemoveGames={handleRemoveGames}
+                    onUpdateCollections={handleUpdateCollections}
+                    onToggleHidden={handleToggleHidden}
+                    onUpdateCompletion={handleUpdateCompletion}
+                    onUpdateNotes={handleUpdateNotes}
+                    onUpdateCoverArt={handleUpdateCoverArt}
+                    onUpdateMood={handleUpdateMood}
+                    onAddSessionNote={handleAddSessionNote}
+                    onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
+                    loading={loading}
+                  />
+                </RouteErrorBoundary>
               }
             />
-            <Route path="/stats" element={<Stats library={library} />} />
-            <Route path="/recent-activity" element={<RecentActivity />} />
+            <Route
+              path="/stats"
+              element={
+                <RouteErrorBoundary>
+                  <Stats library={library} />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/recent-activity"
+              element={
+                <RouteErrorBoundary>
+                  <RecentActivity />
+                </RouteErrorBoundary>
+              }
+            />
             <Route path="/gaming-dna" element={<Navigate to="/profile" replace />} />
-            <Route path="/themes" element={<Themes />} />
-            <Route path="/habits" element={<Habits library={library} />} />
+            <Route
+              path="/themes"
+              element={
+                <RouteErrorBoundary>
+                  <Themes />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/habits"
+              element={
+                <RouteErrorBoundary>
+                  <Habits library={library} />
+                </RouteErrorBoundary>
+              }
+            />
             <Route
               path="/settings"
               element={
-                <Settings
-                  theme={theme}
-                  setTheme={setTheme}
-                  library={library}
-                  dynamicCoverBg={dynamicCoverBg}
-                  setDynamicCoverBg={setDynamicCoverBg}
-                  minimizeOnLaunch={minimizeOnLaunch}
-                  setMinimizeOnLaunch={setMinimizeOnLaunch}
-                />
+                <RouteErrorBoundary>
+                  <Settings
+                    theme={theme}
+                    setTheme={setTheme}
+                    library={library}
+                    dynamicCoverBg={dynamicCoverBg}
+                    setDynamicCoverBg={setDynamicCoverBg}
+                    minimizeOnLaunch={minimizeOnLaunch}
+                    setMinimizeOnLaunch={setMinimizeOnLaunch}
+                  />
+                </RouteErrorBoundary>
               }
             />
-            <Route path="/profile" element={<Profile library={library} />} />
-            <Route path="/year-in-review" element={<YearInReview library={library} />} />
-            <Route path="/timeline" element={<Timeline library={library} />} />
+            <Route
+              path="/profile"
+              element={
+                <RouteErrorBoundary>
+                  <Profile library={library} />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/year-in-review"
+              element={
+                <RouteErrorBoundary>
+                  <YearInReview library={library} />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/timeline"
+              element={
+                <RouteErrorBoundary>
+                  <Timeline library={library} />
+                </RouteErrorBoundary>
+              }
+            />
             <Route
               path="/gaming-links"
-              element={<GamingLinks theme={theme} library={library} onUpdateCoverArt={handleUpdateCoverArt} />}
+              element={
+                <RouteErrorBoundary>
+                  <GamingLinks theme={theme} library={library} onUpdateCoverArt={handleUpdateCoverArt} />
+                </RouteErrorBoundary>
+              }
             />
-            <Route path="/donate" element={<Donate theme={theme} />} />
+            <Route
+              path="/donate"
+              element={
+                <RouteErrorBoundary>
+                  <Donate theme={theme} />
+                </RouteErrorBoundary>
+              }
+            />
             <Route path="/library-intelligence" element={<Navigate to="/recommendations" replace />} />
-            <Route path="/achievements" element={<Achievements theme={theme} />} />
-            <Route path="/export-hub" element={<ExportHub library={library} />} />
+            <Route
+              path="/achievements"
+              element={
+                <RouteErrorBoundary>
+                  <Achievements theme={theme} />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/export-hub"
+              element={
+                <RouteErrorBoundary>
+                  <ExportHub library={library} />
+                </RouteErrorBoundary>
+              }
+            />
             <Route
               path="/storage-manager"
-              element={<StorageManager library={library} onLaunchGame={handleLaunchGame} />}
+              element={
+                <RouteErrorBoundary>
+                  <StorageManager library={library} onLaunchGame={handleLaunchGame} />
+                </RouteErrorBoundary>
+              }
             />
-            <Route path="/performance-cockpit" element={<PerformanceCockpit library={library} />} />
+            <Route
+              path="/performance-cockpit"
+              element={
+                <RouteErrorBoundary>
+                  <PerformanceCockpit library={library} />
+                </RouteErrorBoundary>
+              }
+            />
             <Route
               path="/swipe-deck"
               element={
-                <SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />
+                <RouteErrorBoundary>
+                  <SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />
+                </RouteErrorBoundary>
               }
             />
             <Route
               path="/recommendations"
-              element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />}
+              element={
+                <RouteErrorBoundary>
+                  <Recommendations library={library} onLaunchGame={handleLaunchGame} />
+                </RouteErrorBoundary>
+              }
             />
-            <Route path="/wishlist" element={<WishlistPage library={library} onLaunchGame={handleLaunchGame} />} />
+            <Route
+              path="/wishlist"
+              element={
+                <RouteErrorBoundary>
+                  <WishlistPage library={library} onLaunchGame={handleLaunchGame} />
+                </RouteErrorBoundary>
+              }
+            />
             <Route path="/gamebar" element={<GameBarOverlay />} />
-            <Route path="/rewards" element={<Rewards />} />
-            <Route path="/feedback" element={<Feedback />} />
+            <Route
+              path="/rewards"
+              element={
+                <RouteErrorBoundary>
+                  <Rewards />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/feedback"
+              element={
+                <RouteErrorBoundary>
+                  <Feedback />
+                </RouteErrorBoundary>
+              }
+            />
             <Route path="/startup-questionnaire" element={<StartupQuestionnaireRoute />} />
           </Routes>
         </Suspense>
