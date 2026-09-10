@@ -16,6 +16,7 @@ import {
   Heart,
   Link as LinkIcon,
   Crown,
+  Activity,
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
@@ -130,6 +131,14 @@ function HybridNavBar() {
                 title="Your yearly gaming story arc"
               >
                 <BookOpen size={16} className="dropdown-item-icon" /> Year in Review
+              </Link>
+              <Link
+                to="/recent-activity"
+                className="dropdown-item"
+                onClick={closeDropdown}
+                title="Detailed breakdown of your last X days of play"
+              >
+                <Activity size={16} className="dropdown-item-icon" /> Recent Activity
               </Link>
             </div>
             <div className="dropdown-section">

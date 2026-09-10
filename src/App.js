@@ -56,6 +56,7 @@ const Library = lazy(() => import('./Library'));
 
 // Secondary pages loaded on demand.
 const Stats = lazy(() => import('./Stats'));
+const RecentActivity = lazy(() => import('./RecentActivity'));
 const Settings = lazy(() => import('./Settings'));
 const Profile = lazy(() => import('./Profile'));
 const YearInReview = lazy(() => import('./YearInReview'));
@@ -367,7 +368,12 @@ function AppContent() {
       const endedGame = library.find((g) => g?.name === gameName);
       const genres = endedGame?.genres || [];
       try {
-        HabitTrackerService.recordSession(gameName, sessionResult.playtimeMinutes || 0, genres, getResolvedMood(endedGame));
+        HabitTrackerService.recordSession(
+          gameName,
+          sessionResult.playtimeMinutes || 0,
+          genres,
+          getResolvedMood(endedGame)
+        );
       } catch (habitError) {
         console.error('Habit tracking failed during session end:', habitError);
       }
@@ -1101,6 +1107,7 @@ function AppContent() {
               }
             />
             <Route path="/stats" element={<Stats library={library} />} />
+            <Route path="/recent-activity" element={<RecentActivity />} />
             <Route path="/gaming-dna" element={<Navigate to="/profile" replace />} />
             <Route path="/themes" element={<Themes />} />
             <Route path="/habits" element={<Habits library={library} />} />
