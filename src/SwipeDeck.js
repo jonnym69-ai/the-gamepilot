@@ -264,7 +264,7 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
         saveShortlist(next);
         setShortlist(next);
         UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', currentGame.appid || currentGame.name, {
-          mood: currentGame.mood || null,
+          mood: getResolvedMood(currentGame) || null,
           genre: Array.isArray(currentGame.genres) ? currentGame.genres[0] : null,
           source: 'swipe-deck',
         });
@@ -616,9 +616,10 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
                 {Array.isArray(currentGame.genres) && currentGame.genres.length > 0 && (
                   <span className="swipe-card-genre">{currentGame.genres.filter((g) => g !== 'Unknown')[0] || ''}</span>
                 )}
-                {getResolvedMood(currentGame) && (
-                  <span className="swipe-card-mood">{getResolvedMood(currentGame)}</span>
-                )}
+                {(() => {
+                  const mood = getResolvedMood(currentGame);
+                  return mood ? <span className="swipe-card-mood">{mood}</span> : null;
+                })()}
               </div>
               {currentGame.time_played > 0 && (
                 <div className="swipe-card-playtime">{Math.round(currentGame.time_played / 60)}h played</div>

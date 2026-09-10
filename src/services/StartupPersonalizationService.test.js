@@ -5,6 +5,7 @@ import StorageService from './StorageService';
 describe('StartupPersonalizationService', () => {
   beforeEach(() => {
     localStorage.clear();
+    UserBehaviorProfile.clearProfile();
   });
 
   describe('defaults & getters', () => {

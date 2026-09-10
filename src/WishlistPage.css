@@ -399,6 +399,7 @@
   letter-spacing: 0.5px;
   padding: 3px 8px;
   border-radius: 4px;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 

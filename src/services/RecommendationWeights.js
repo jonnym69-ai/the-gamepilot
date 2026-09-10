@@ -59,6 +59,7 @@ export const DEFAULT_RECOMMENDATION_WEIGHTS = Object.freeze({
 
   // Persona alignment (0-100 contribution multiplied)
   personaAlignmentMultiplier: 0.35,
+  gamingPersonaMatchBonus: 16,
 
   // Gaming Identity direct bonuses
   identityFavoriteMoodBonus: 15,

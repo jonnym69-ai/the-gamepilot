@@ -61,7 +61,6 @@ export class RecommendationTuningService {
   static getWeightOverrides() {
     const tuning = this.getTuning();
     const novelty = tuning.novelty;
-    const diversity = tuning.diversity;
 
     return {
       unplayedBonus: Math.round(5 + novelty * 20),
@@ -70,8 +69,6 @@ export class RecommendationTuningService {
       explorationSlotEnabled: tuning.explorationEnabled ? 1 : 0,
       explorationGenreNoveltyWeight: Math.round(10 + novelty * 40),
       explorationUnplayedBonus: Math.round(10 + novelty * 25),
-      discoveryDiversityMultiplier: diversity,
-      fatigueWindowHours: tuning.fatigueWindowHours,
     };
   }
 

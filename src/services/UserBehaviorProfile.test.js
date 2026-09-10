@@ -4,6 +4,7 @@ import StorageService from './StorageService';
 describe('UserBehaviorProfile', () => {
   beforeEach(() => {
     localStorage.clear();
+    UserBehaviorProfile.clearProfile();
   });
 
   describe('getProfile / hydration', () => {

@@ -32,7 +32,7 @@ import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import WishlistService from './services/WishlistService';
 import StorageService from './services/StorageService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
-import { MOODS, getMoodForGame } from './constants/GenresMoods';
+import { MOODS, getResolvedMood } from './constants/GenresMoods';
 import './Recommendations.css';
 
 function formatPlaytime(minutes) {
@@ -158,8 +158,7 @@ function getMoodMixes(library, identity) {
   const moods = Object.fromEntries(MOODS.map((mood) => [mood, []]));
   library.forEach((game) => {
     if (UserBehaviorProfile.shouldSuppressRecommendation(game?.appid || game?.name, game?.name)) return;
-    const explicitMood = MOODS.find((mood) => mood.toLowerCase() === String(game?.mood || '').toLowerCase());
-    const mood = explicitMood || getMoodForGame(game?.genres);
+    const mood = getResolvedMood(game);
     if (mood && moods[mood]) moods[mood].push(game);
   });
 
@@ -211,7 +210,7 @@ function getRabbitHole(library, identity) {
   if (!seedGame) return null;
 
   const seedGenres = Array.isArray(seedGame.genres) ? seedGame.genres : [];
-  const seedMood = seedGame.mood;
+  const seedMood = getResolvedMood(seedGame);
 
   // Find similar games
   const similar = library
@@ -222,7 +221,8 @@ function getRabbitHole(library, identity) {
       genres.forEach((g) => {
         if (seedGenres.includes(g)) score += 3;
       });
-      if (game.mood && game.mood === seedMood) score += 2;
+      const gameMood = getResolvedMood(game);
+      if (gameMood && gameMood === seedMood) score += 2;
       if (game.platform === seedGame.platform) score += 1;
       return { game, score };
     })
@@ -286,7 +286,7 @@ function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommend
         <span className="rec-row-title">{game.name}</span>
         <span className="rec-row-meta">
           {getPlatformIcon(game.platform)} {game.platform}
-          {game.mood && <> · {game.mood}</>}
+          {getResolvedMood(game) && <> · {getResolvedMood(game)}</>}
           {game.time_played ? <> · {formatPlaytime(game.time_played)}</> : null}
         </span>
         {recommendationType && <RecommendationReasonChip game={game} recommendationType={recommendationType} />}
@@ -340,7 +340,7 @@ function HorizontalGameStrip({ games, onLaunch, onAddToPlaylist, playlist, recom
             </button>
           </div>
           <span className="rec-strip-title">{game.name}</span>
-          {game.mood && <span className="rec-strip-mood">{game.mood}</span>}
+          {getResolvedMood(game) && <span className="rec-strip-mood">{getResolvedMood(game)}</span>}
           {recommendationType && <RecommendationReasonChip game={game} recommendationType={recommendationType} />}
           {onAddToPlaylist && (
             <button
@@ -417,7 +417,7 @@ export default function Recommendations({ library, onLaunchGame }) {
       }
       if (gameId && activeStyle !== 'hub') {
         UserBehaviorProfile.trackRecommendationLaunch(activeStyle, gameId, {
-          mood: game?.mood || null,
+          mood: getResolvedMood(game) || null,
           genre: RecommendationEngine.getPrimaryGenre(game) || null,
           source: 'recommendations-page',
         });
@@ -591,20 +591,24 @@ export default function Recommendations({ library, onLaunchGame }) {
 
   const highMomentum = useMemo(() => {
     if (activeStyle !== 'momentum-picks') return [];
-    return playableLibrary
+    // Precompute adjusted momentum scores to avoid recomputing inside the
+    // sort comparator (O(n log n) comparisons × 2 signal lookups each).
+    const withScores = playableLibrary
       .filter(
         (game) =>
           getMinutesPlayed(game) > 0 &&
           !UserBehaviorProfile.shouldSuppressRecommendation(game?.appid || game?.name, game?.name)
       )
-      .sort(
-        (a, b) =>
-          getMomentumScore(b) +
-          UserBehaviorProfile.getRecommendationOutcomeSignal(b?.appid || b?.name, b?.name).adjustment -
-          (getMomentumScore(a) +
-            UserBehaviorProfile.getRecommendationOutcomeSignal(a?.appid || a?.name, a?.name).adjustment)
-      )
-      .slice(0, 5);
+      .map((game) => ({
+        game,
+        adjustedScore:
+          getMomentumScore(game) +
+          UserBehaviorProfile.getRecommendationOutcomeSignal(game?.appid || game?.name, game?.name).adjustment,
+      }));
+    return withScores
+      .sort((a, b) => b.adjustedScore - a.adjustedScore)
+      .slice(0, 5)
+      .map((entry) => entry.game);
   }, [activeStyle, playableLibrary]);
 
   const untouchedGames = useMemo(() => {

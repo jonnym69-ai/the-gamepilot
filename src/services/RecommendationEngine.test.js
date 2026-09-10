@@ -48,6 +48,7 @@ const baseGame = (overrides = {}) => ({
 describe('RecommendationEngine', () => {
   beforeEach(() => {
     localStorage.clear();
+    UserBehaviorProfile.clearProfile();
     PersonaPerformanceInsights.estimateSessionMinutes.mockReturnValue(null);
     jest.spyOn(Math, 'random').mockReturnValue(0.5);
   });

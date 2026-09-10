@@ -294,6 +294,16 @@ export const isValidMood = (mood) => {
   return MOODS.includes(mood);
 };
 
+// Normalize a mood string to canonical form (title-case matching MOODS).
+// Returns null if the mood doesn't match any canonical mood.
+// e.g. 'relaxed' -> 'Relaxed', 'FOCUSED' -> 'Focused', 'unknown' -> null
+export const canonicalizeMood = (mood) => {
+  if (!mood || typeof mood !== 'string') return null;
+  const lower = mood.trim().toLowerCase();
+  if (!lower) return null;
+  return MOODS.find((m) => m.toLowerCase() === lower) || null;
+};
+
 // Get all genres
 export const getAllGenres = () => GENRES;
 

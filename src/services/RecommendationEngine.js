@@ -16,10 +16,22 @@ import { getBlendedPlaytimeMinutes, isGameUnplayed, NEGLIGIBLE_PLAYTIME_MINUTES 
 const PERSONA_GENRE_MAP = PERSONA_AFFINITY_GENRES;
 
 export { getBlendedPlaytimeMinutes, isGameUnplayed, NEGLIGIBLE_PLAYTIME_MINUTES };
+// eslint-disable-next-line no-use-before-define
+export { invalidateCurrentPlayFocusCache };
 
 const CURRENT_FOCUS_CACHE_TTL_MS = 60 * 1000;
 let _currentFocusCache = null;
 let _currentFocusCacheAt = 0;
+
+/**
+ * Invalidate the current-play-focus cache.  Should be called whenever
+ * session history changes (session end, passive session tracking, etc.)
+ * so that recommendations don't use stale focus data.
+ */
+const invalidateCurrentPlayFocusCache = () => {
+  _currentFocusCache = null;
+  _currentFocusCacheAt = 0;
+};
 
 const normalizeGameKey = (value) =>
   String(value || '')
@@ -451,6 +463,13 @@ export class RecommendationEngine {
       const outcomeSignal = UserBehaviorProfile.getRecommendationOutcomeSignal(gameId, game?.name);
       score += outcomeSignal.adjustment;
 
+      // Explicit thumbs-down feedback penalty
+      const dislikedGames = UserBehaviorProfile.getDislikedGames();
+      const dislikedList = Array.isArray(dislikedGames) ? dislikedGames : [];
+      if (dislikedList.includes(gameId) || dislikedList.includes(game?.name)) {
+        score -= w.dislikedGamePenalty || 40;
+      }
+
       const rating = GameRatingService.getRating(gameId);
       if (rating && typeof rating.value === 'number' && rating.value > 0) {
         const normalized = rating.value / 10;
@@ -851,7 +870,7 @@ export class RecommendationEngine {
         finalRecommendations.push(next);
         seenGames.add(next.name);
         mapGameGenresToValid(next?.genres).forEach((g) => selectedGenres.add(g));
-        if (next?.mood) selectedMoods.add(next.mood);
+        if (next) selectedMoods.add(getResolvedMood(next));
       }
     }
 
@@ -1233,7 +1252,7 @@ export class RecommendationEngine {
     }
 
     return this.buildRecommendationPayload('surprise-me', [selectedGame], {
-      mood: effectiveMood || selectedGame?.mood || null,
+      mood: effectiveMood || getResolvedMood(selectedGame) || null,
       genre: this.getPrimaryGenre(selectedGame),
       timeConstraint,
       availableMinutes,
@@ -1717,7 +1736,7 @@ export class RecommendationEngine {
 
     if (lastPlayedGame) {
       return this.buildRecommendationPayload('continue-playing', [lastPlayedGame], {
-        mood: mood || lastPlayedGame?.mood || null,
+        mood: mood || getResolvedMood(lastPlayedGame) || null,
         genre: this.getPrimaryGenre(lastPlayedGame),
         timeConstraint,
         availableMinutes,
@@ -1747,7 +1766,7 @@ export class RecommendationEngine {
     }
 
     return this.buildRecommendationPayload('continue-playing', [selectedGame], {
-      mood: effectiveMood || selectedGame?.mood || null,
+      mood: effectiveMood || getResolvedMood(selectedGame) || null,
       genre: this.getPrimaryGenre(selectedGame),
       timeConstraint,
       availableMinutes,
@@ -1943,7 +1962,7 @@ export class RecommendationEngine {
     const primaryReason = scored[0]?.reasons?.[0] || `Similar to ${referenceGame?.name || 'your recent games'}`;
 
     return this.buildRecommendationPayload(recommendationType, topPicks, {
-      mood: referenceGame?.mood || null,
+      mood: getResolvedMood(referenceGame) || null,
       genre: this.getPrimaryGenre(referenceGame),
       message: primaryReason,
       usedFallback: false,

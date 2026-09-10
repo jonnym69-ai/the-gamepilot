@@ -306,15 +306,23 @@ const GameModal = ({
   const fetchGameDetails = useCallback(async () => {
     if (!game?.appid || fetchedGameId.current === game.appid) return;
 
+    const controller = new AbortController();
+    const currentAppid = game.appid;
+    fetchedGameId.current = currentAppid;
     setLoading(true);
-    fetchedGameId.current = game.appid;
 
     try {
-      const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${game.appid}&cc=us&l=en`);
+      const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${currentAppid}&cc=us&l=en`, {
+        signal: controller.signal,
+      });
       const data = await response.json();
 
-      if (data?.[game.appid]?.success) {
-        const details = data[game.appid].data;
+      // Guard against stale responses — if the modal switched to a different
+      // game while this fetch was in flight, discard the result.
+      if (fetchedGameId.current !== currentAppid) return;
+
+      if (data?.[currentAppid]?.success) {
+        const details = data[currentAppid].data;
         setGameDetails(details);
         setScreenshots(details.screenshots || []);
 
@@ -322,11 +330,11 @@ const GameModal = ({
         if (details.price_overview) {
           const priceInUSD = parseSteamPrice(details.price_overview.final_formatted);
           const currentCurrency = getCurrentCurrency();
-          storePurchasePrice(game.appid, priceInUSD, currentCurrency);
+          storePurchasePrice(currentAppid, priceInUSD, currentCurrency);
 
           // Call onUpdatePrice with the original price data
           if (onUpdatePrice) {
-            onUpdatePrice(game.appid, details.price_overview);
+            onUpdatePrice(currentAppid, details.price_overview);
           }
         }
       } else {
@@ -334,18 +342,26 @@ const GameModal = ({
         setScreenshots([]);
       }
     } catch (error) {
-      console.error('Failed to fetch game details:', error);
-      setGameDetails(null);
-      setScreenshots([]);
+      if (error?.name !== 'AbortError') {
+        console.error('Failed to fetch game details:', error);
+        setGameDetails(null);
+        setScreenshots([]);
+      }
     } finally {
-      setLoading(false);
+      if (fetchedGameId.current === currentAppid) {
+        setLoading(false);
+      }
     }
+    // Cleanup is handled by the effect below via controller.abort()
+    return () => controller.abort();
   }, [game, onUpdatePrice]);
 
   useEffect(() => {
     if (isOpen && game?.appid && game.appid !== fetchedGameId.current) {
-      fetchGameDetails();
+      const cleanup = fetchGameDetails();
+      return typeof cleanup === 'function' ? cleanup : undefined;
     }
+    return undefined;
   }, [isOpen, game, fetchGameDetails]);
 
   const handleLaunchGame = useCallback(async () => {
@@ -1414,7 +1430,7 @@ const GameModal = ({
                                 'similar-to-game',
                                 recommendedGame.appid || recommendedGame.name,
                                 {
-                                  mood: recommendedGame.mood || null,
+                                  mood: getResolvedMood(recommendedGame) || null,
                                   genre: RecommendationEngine.getPrimaryGenre(recommendedGame) || null,
                                   source: 'game-modal',
                                   referenceGame: game.name,

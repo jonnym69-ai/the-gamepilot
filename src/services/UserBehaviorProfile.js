@@ -6,6 +6,22 @@
 
 import StorageService from './StorageService';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
+import { canonicalizeMood } from '../constants/GenresMoods';
+
+// Lazy import to avoid circular dependency (RecommendationEngine imports UserBehaviorProfile)
+let _invalidateFocusCache = null;
+const invalidateFocusCache = () => {
+  if (!_invalidateFocusCache) {
+    try {
+      // eslint-disable-next-line global-require
+      const { invalidateCurrentPlayFocusCache } = require('./RecommendationEngine');
+      _invalidateFocusCache = invalidateCurrentPlayFocusCache;
+    } catch {
+      _invalidateFocusCache = () => {};
+    }
+  }
+  _invalidateFocusCache();
+};
 
 export const RECOMMENDATION_OUTCOME = Object.freeze({
   GREAT_PICK: 'great-pick',
@@ -136,14 +152,27 @@ const TIME_FILTER_MINUTES = Object.freeze({
 export class UserBehaviorProfile {
   static STORAGE_KEY = 'userBehaviorProfile';
 
+  // Short-lived in-memory cache to avoid repeated localStorage parses during
+  // a single recommendation pass.  Invalidated on saveProfile/clearProfile.
+  static _profileCache = null;
+  static _profileCacheAt = 0;
+  static _profileCacheTTL = 200; // 200ms — just enough for one recommendation pass
+
   /**
    * Initialize or get user behavior profile
    */
   static getProfile() {
+    const now = Date.now();
+    if (this._profileCache && now - this._profileCacheAt < this._profileCacheTTL) {
+      return this._profileCache;
+    }
     const stored = StorageService.getString(this.STORAGE_KEY);
     if (stored) {
       try {
-        return this.hydrateProfile(JSON.parse(stored));
+        const profile = this.hydrateProfile(JSON.parse(stored));
+        this._profileCache = profile;
+        this._profileCacheAt = now;
+        return profile;
       } catch (e) {
         console.error('Failed to parse behavior profile:', e);
         return this.createEmptyProfile();
@@ -154,7 +183,7 @@ export class UserBehaviorProfile {
 
   static hydrateProfile(profile = {}) {
     const defaults = this.createEmptyProfile();
-    return {
+    const raw = {
       ...defaults,
       ...(profile || {}),
       moodPreferences:
@@ -234,6 +263,55 @@ export class UserBehaviorProfile {
       selectionHistory: Array.isArray(profile?.selectionHistory) ? profile.selectionHistory : [],
       lastSyncedSessionTimestamp: profile?.lastSyncedSessionTimestamp || null,
     };
+
+    // Migrate legacy mixed-case mood keys to canonical form
+    return this._migrateMoodKeys(raw);
+  }
+
+  /**
+   * Merge legacy mixed-case mood keys (e.g. "relaxed", "FOCUSED") into
+   * canonical MOODS keys ("Relaxed", "Focused").  This runs on every
+   * hydrateProfile call and is idempotent.
+   */
+  static _migrateMoodKeys(profile) {
+    if (!profile || typeof profile !== 'object') return profile;
+
+    const migrateBucket = (bucket) => {
+      if (!bucket || typeof bucket !== 'object') return bucket;
+      const migrated = {};
+      Object.entries(bucket).forEach(([key, value]) => {
+        const canonical = canonicalizeMood(key);
+        const targetKey = canonical || key;
+        if (migrated[targetKey]) {
+          // Merge into existing canonical bucket
+          const existing = migrated[targetKey];
+          if (typeof existing === 'object' && typeof value === 'object') {
+            Object.keys(value).forEach((subKey) => {
+              existing[subKey] = (existing[subKey] || 0) + (value[subKey] || 0);
+            });
+          } else if (typeof existing === 'number' && typeof value === 'number') {
+            migrated[targetKey] = existing + value;
+          } else {
+            migrated[targetKey] = value;
+          }
+        } else {
+          migrated[targetKey] = value;
+        }
+      });
+      return migrated;
+    };
+
+    profile.moodPreferences = migrateBucket(profile.moodPreferences);
+    if (profile.completionStats?.completedByMood) {
+      profile.completionStats.completedByMood = migrateBucket(profile.completionStats.completedByMood);
+    }
+    if (profile.ratingPreferences) {
+      profile.ratingPreferences.highRatedMoods = migrateBucket(profile.ratingPreferences.highRatedMoods);
+      profile.ratingPreferences.lowRatedMoods = migrateBucket(profile.ratingPreferences.lowRatedMoods);
+      profile.ratingPreferences.wouldReplayMoods = migrateBucket(profile.ratingPreferences.wouldReplayMoods);
+    }
+
+    return profile;
   }
 
   /**
@@ -284,13 +362,14 @@ export class UserBehaviorProfile {
   static trackSelection(mood, genre, timeAvailable, selectedGameId = null, metadata = {}) {
     const profile = this.getProfile();
     const normalizedTimeAvailable = this.normalizeTimeAvailable(timeAvailable);
+    const canonicalMood = canonicalizeMood(mood);
 
     // Track mood preference
-    if (mood) {
-      if (!profile.moodPreferences[mood]) {
-        profile.moodPreferences[mood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
+    if (canonicalMood) {
+      if (!profile.moodPreferences[canonicalMood]) {
+        profile.moodPreferences[canonicalMood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
       }
-      profile.moodPreferences[mood].count += 1;
+      profile.moodPreferences[canonicalMood].count += 1;
     }
 
     // Track genre preference
@@ -451,6 +530,7 @@ export class UserBehaviorProfile {
 
     profile.lastUpdated = new Date().toISOString();
     this.saveProfile(profile);
+    invalidateFocusCache();
     return profile;
   }
 
@@ -592,12 +672,14 @@ export class UserBehaviorProfile {
    */
   static trackCompletion(gameName, mood, genre, playtimeMinutes, gameId = null) {
     const profile = this.getProfile();
+    const canonicalMood = canonicalizeMood(mood);
 
     // Update mood completion
-    if (mood && profile.moodPreferences[mood]) {
-      profile.moodPreferences[mood].completedCount = (profile.moodPreferences[mood].completedCount || 0) + 1;
-      profile.moodPreferences[mood].totalPlaytime =
-        (profile.moodPreferences[mood].totalPlaytime || 0) + playtimeMinutes;
+    if (canonicalMood && profile.moodPreferences[canonicalMood]) {
+      profile.moodPreferences[canonicalMood].completedCount =
+        (profile.moodPreferences[canonicalMood].completedCount || 0) + 1;
+      profile.moodPreferences[canonicalMood].totalPlaytime =
+        (profile.moodPreferences[canonicalMood].totalPlaytime || 0) + playtimeMinutes;
     }
 
     // Update genre completion
@@ -609,8 +691,9 @@ export class UserBehaviorProfile {
 
     // Update completion stats
     profile.completionStats.totalCompleted += 1;
-    if (mood) {
-      profile.completionStats.completedByMood[mood] = (profile.completionStats.completedByMood[mood] || 0) + 1;
+    if (canonicalMood) {
+      profile.completionStats.completedByMood[canonicalMood] =
+        (profile.completionStats.completedByMood[canonicalMood] || 0) + 1;
     }
     if (genre) {
       profile.completionStats.completedByGenre[genre] = (profile.completionStats.completedByGenre[genre] || 0) + 1;
@@ -668,7 +751,7 @@ export class UserBehaviorProfile {
     }
 
     const gameGenres = Array.isArray(genres) ? genres.filter(Boolean) : [];
-    const normalizedMood = mood || null;
+    const normalizedMood = canonicalizeMood(mood) || null;
 
     const updateBucket = (bucket, key, weight) => {
       if (!key) return;
@@ -714,7 +797,7 @@ export class UserBehaviorProfile {
     }
 
     const profile = this.getProfile();
-    const resolvedMood = metadata?.mood || null;
+    const resolvedMood = canonicalizeMood(metadata?.mood) || null;
     const resolvedGenre = metadata?.genre || null;
     const playtimeMinutes = Number(metadata?.playtimeMinutes) || 0;
     const normalizedGameId = metadata?.gameId ? String(metadata.gameId) : null;
@@ -1622,6 +1705,7 @@ export class UserBehaviorProfile {
     }
 
     const profile = this.getProfile();
+    const canonicalMood = canonicalizeMood(mood);
 
     // 1. Track session length patterns (avgSessionLength, preferred buckets, peak hours)
     const totalSessions = profile.playstylePatterns.totalSessionsTracked;
@@ -1643,13 +1727,13 @@ export class UserBehaviorProfile {
     profile.playstylePatterns.totalSessionsTracked += 1;
 
     // 2. Track mood preference from this session
-    if (mood) {
-      if (!profile.moodPreferences[mood]) {
-        profile.moodPreferences[mood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
+    if (canonicalMood) {
+      if (!profile.moodPreferences[canonicalMood]) {
+        profile.moodPreferences[canonicalMood] = { count: 0, totalPlaytime: 0, completedCount: 0 };
       }
-      profile.moodPreferences[mood].count += 1;
-      profile.moodPreferences[mood].totalPlaytime =
-        (profile.moodPreferences[mood].totalPlaytime || 0) + playtimeMinutes;
+      profile.moodPreferences[canonicalMood].count += 1;
+      profile.moodPreferences[canonicalMood].totalPlaytime =
+        (profile.moodPreferences[canonicalMood].totalPlaytime || 0) + playtimeMinutes;
     }
 
     // 3. Track genre preferences from this session
@@ -1677,6 +1761,7 @@ export class UserBehaviorProfile {
     profile.lastUpdated = new Date().toISOString();
     profile.lastSyncedSessionTimestamp = new Date().toISOString();
     this.saveProfile(profile);
+    invalidateFocusCache();
     return profile;
   }
 
@@ -1686,6 +1771,8 @@ export class UserBehaviorProfile {
   static saveProfile(profile) {
     try {
       StorageService.setString(this.STORAGE_KEY, JSON.stringify(profile));
+      this._profileCache = profile;
+      this._profileCacheAt = Date.now();
     } catch (e) {
       console.error('Failed to save behavior profile:', e);
     }
@@ -1696,6 +1783,8 @@ export class UserBehaviorProfile {
    */
   static clearProfile() {
     StorageService.remove(this.STORAGE_KEY);
+    this._profileCache = null;
+    this._profileCacheAt = 0;
   }
 
   /**

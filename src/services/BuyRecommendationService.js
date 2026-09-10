@@ -253,6 +253,29 @@ class BuyRecommendationService {
     }
 
     let filteredOutCount = 0;
+
+    // Hoist invariant lookups out of the per-candidate loop for performance.
+    // These calls hit localStorage / session history and were previously
+    // re-executed for every wishlist item.
+    let cachedFocus = null;
+    try {
+      cachedFocus = RecommendationEngine.getCurrentPlayFocus();
+    } catch {
+      cachedFocus = null;
+    }
+    let cachedPersona = null;
+    try {
+      cachedPersona = GamingIdentity.getProfile().gamingPersona?.primaryPersona || null;
+    } catch {
+      cachedPersona = null;
+    }
+    let cachedRecentIdentity = null;
+    try {
+      cachedRecentIdentity = GamingPersonaService.getPublicIdentity({ windowDays: 14 });
+    } catch {
+      cachedRecentIdentity = null;
+    }
+
     const entries = unowned
       .map((item) => {
         const itemGenres = resolveItemGenres(item);
@@ -364,7 +387,7 @@ class BuyRecommendationService {
         // wishlist items sharing those genres are more relevant right now.
         let focusReason = null;
         try {
-          const focus = RecommendationEngine.getCurrentPlayFocus();
+          const focus = cachedFocus;
           if (focus?.active && focus.genres.length > 0) {
             const focusGenreMatches = genres.filter((g) =>
               focus.genres.some((fg) => fg.toLowerCase() === String(g).toLowerCase())
@@ -383,7 +406,7 @@ class BuyRecommendationService {
         // the persona/roast shown everywhere else in the app.
         let personaReason = null;
         try {
-          const persona = GamingIdentity.getProfile().gamingPersona?.primaryPersona;
+          const persona = cachedPersona;
           if (persona) {
             const affinityGenres = GamingPersonaService.getAffinityGenres(persona.id);
             const personaMatches = genres.filter((g) => affinityGenres.includes(g));
@@ -401,7 +424,7 @@ class BuyRecommendationService {
         // the player's taste (last 14 days), keeping buy recs aligned with
         // whatever "Recent" identity view the player sees on their profile.
         try {
-          const recentIdentity = GamingPersonaService.getPublicIdentity({ windowDays: 14 });
+          const recentIdentity = cachedRecentIdentity;
           const recentGenres = recentIdentity?.affinityGenres || [];
           const recentMatches = genres.filter(
             (g) => recentGenres.includes(g) && !(tasteProfile.topGenres || []).includes(g)
