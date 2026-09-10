@@ -43,7 +43,7 @@ import DiskUsageService from './services/DiskUsageService';
 import { useToast } from './components/Toast';
 import { DataExportService } from './services/DataExportService';
 import HowLongToBeatService, { hltbGameKey } from './services/HowLongToBeatService';
-import { MOODS, getMoodForGame, getMoodScoresForGame } from './constants/GenresMoods';
+import { MOODS, getMoodScoresForGame, getResolvedMood as getResolvedMoodShared } from './constants/GenresMoods';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
 import { FreeGameRadar } from './services/FreeGameRadar';
@@ -63,32 +63,7 @@ const CONTROLLER_NAV_ROUTES = ['/', '/library', '/stats', '/year-in-review', '/p
 const FAVORITES_STORAGE_KEY = 'favorites';
 const RECENTLY_ADDED_WINDOW_DAYS = 14;
 
-const getResolvedMood = (game) => {
-  if (!game || typeof game !== 'object') {
-    return 'Relaxed';
-  }
-
-  // User override always wins
-  if (typeof game.moodOverride === 'string' && game.moodOverride.trim()) {
-    return game.moodOverride.trim();
-  }
-
-  // Always derive mood fresh from current genres + mapping
-  const genres = game.genres || [];
-  if (genres.length > 0) {
-    const derived = getMoodForGame(genres);
-    if (derived) {
-      return derived;
-    }
-  }
-
-  // No genres at all — use stored mood if available, else default
-  if (typeof game.mood === 'string' && game.mood.trim()) {
-    return game.mood.trim();
-  }
-
-  return 'Relaxed';
-};
+const getResolvedMood = (game) => getResolvedMoodShared(game) || 'Relaxed';
 
 const getGameValue = (game) => {
   if (!game || typeof game !== 'object') {
@@ -260,6 +235,7 @@ function Library({
   onUpdateCompletion = NOOP,
   onUpdateNotes = NOOP,
   onUpdateCoverArt = NOOP,
+  onUpdateMood = NOOP,
   onAddSessionNote = NOOP,
   onTogglePlayedElsewhere = NOOP,
   searchQuery = '',
@@ -2475,7 +2451,7 @@ function Library({
                             gameName={game.name}
                             platform={getDisplayPlatform(game)}
                             genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
-                            mood={game.mood}
+                            mood={getResolvedMood(game)}
                             placeholder={getGameArtworkPlaceholder({ game, surface: 'portrait' })}
                             className="library-recent-shelf-art-image"
                           />
@@ -2626,7 +2602,7 @@ function Library({
                       gameName={game.name}
                       platform={getDisplayPlatform(game)}
                       genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
-                      mood={game.mood}
+                      mood={getResolvedMood(game)}
                       placeholder={getGameArtworkPlaceholder({
                         game,
                         surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card',
@@ -2785,6 +2761,7 @@ function Library({
           onUpdateCompletion={onUpdateCompletion}
           onUpdateNotes={onUpdateNotes}
           onUpdateCoverArt={onUpdateCoverArt}
+          onUpdateMood={onUpdateMood}
           onAddSessionNote={onAddSessionNote}
           onTogglePlayedElsewhere={onTogglePlayedElsewhere}
         />

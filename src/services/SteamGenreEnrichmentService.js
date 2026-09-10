@@ -41,10 +41,10 @@ const STEAM_TO_GAMEPILOT_GENRE_MAP = {
  */
 const STEAM_CATEGORY_TO_GENRE_MAP = {
   multiplayer: 'Multiplayer',
-  'co-op': 'Multiplayer',
-  'local co-op': 'Multiplayer',
-  'online co-op': 'Multiplayer',
-  'split screen': 'Multiplayer',
+  'co-op': ['Multiplayer', 'Party'],
+  'local co-op': ['Multiplayer', 'Party'],
+  'online co-op': ['Multiplayer', 'Party'],
+  'split screen': ['Multiplayer', 'Party'],
   'cross-platform multiplayer': 'Multiplayer',
   pvp: 'Multiplayer',
   'online pvp': 'Multiplayer',
@@ -129,7 +129,11 @@ export class SteamGenreEnrichmentService {
       if (!label) return;
       const canonical = STEAM_CATEGORY_TO_GENRE_MAP[label];
       if (canonical) {
-        mapped.add(canonical);
+        if (Array.isArray(canonical)) {
+          canonical.forEach((genre) => mapped.add(genre));
+        } else {
+          mapped.add(canonical);
+        }
       }
     });
     return Array.from(mapped);

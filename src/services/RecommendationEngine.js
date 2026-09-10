@@ -5,7 +5,7 @@ import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
 import { RecommendationExplainer } from './RecommendationExplainer';
 import { getActiveRecommendationWeights, getFamiliarityBias } from './RecommendationWeights';
-import { mapGameGenresToValid, getMoodScoresForGame } from '../constants/GenresMoods';
+import { mapGameGenresToValid, getMoodScoresForGame, getResolvedMood } from '../constants/GenresMoods';
 import { GamingIdentity } from '../GamingIdentity';
 import { RecommendationTuningService } from './RecommendationTuningService';
 import { GameRatingService } from './GameRatingService';
@@ -470,7 +470,11 @@ export class RecommendationEngine {
 
       const gameGenres = mapGameGenresToValid(game?.genres);
       const gameTags = Array.isArray(rating?.tags) ? rating.tags.filter(Boolean) : [];
-      const ratingBoost = UserBehaviorProfile.getRatingPreferenceBoost(game?.mood || null, gameGenres, gameTags);
+      const ratingBoost = UserBehaviorProfile.getRatingPreferenceBoost(
+        getResolvedMood(game) || null,
+        gameGenres,
+        gameTags
+      );
       score += Math.round(ratingBoost * (w.ratingPreferenceMultiplier || 0.25));
     }
 
@@ -642,7 +646,7 @@ export class RecommendationEngine {
 
     return {
       game,
-      mood: mood || game?.mood || null,
+      mood: mood || getResolvedMood(game) || null,
       genre: resolvedGenre,
       estimatedSessionMinutes: PersonaPerformanceInsights.estimateSessionMinutes(game) || null,
       isExploration,
@@ -806,7 +810,7 @@ export class RecommendationEngine {
     const applyDiversityPenalty = (game) => {
       if (diversity <= 0) return 0;
       const gameGenres = mapGameGenresToValid(game?.genres);
-      const gameMood = game?.mood || null;
+      const gameMood = getResolvedMood(game);
       const genreOverlap = gameGenres.filter((g) => selectedGenres.has(g)).length;
       const moodOverlap = gameMood && selectedMoods.has(gameMood) ? 1 : 0;
       return Math.round((genreOverlap * 8 + moodOverlap * 6) * diversity);
@@ -817,7 +821,8 @@ export class RecommendationEngine {
         finalRecommendations.push({ ...game, scorePenalty: applyDiversityPenalty(game) });
         seenGames.add(game.name);
         mapGameGenresToValid(game?.genres).forEach((g) => selectedGenres.add(g));
-        if (game?.mood) selectedMoods.add(game.mood);
+        const resolvedMood = getResolvedMood(game);
+        if (resolvedMood) selectedMoods.add(resolvedMood);
       }
     });
 
@@ -1031,7 +1036,7 @@ export class RecommendationEngine {
               ),
               normalizedTimeConstraint.availableMinutes
             );
-            if (mood && game.mood === mood) {
+            if (mood && getResolvedMood(game) === mood) {
               score += 15;
             }
             return score + Number(game.timeScore || 0);
@@ -1121,7 +1126,7 @@ export class RecommendationEngine {
 
         const preferredGenres =
           matchedGenres.length > 0 ? matchedGenres : matchedMoods.flatMap((mood) => moodGenreLookup[mood] || []);
-        const effectiveMood = matchedMoods[0] || game?.mood || null;
+        const effectiveMood = matchedMoods[0] || getResolvedMood(game) || null;
         const effectiveGenre =
           this.getPrimaryGenre(game, preferredGenres) ||
           matchedGenres[0] ||
@@ -1130,7 +1135,7 @@ export class RecommendationEngine {
         const behaviorScore = this.scoreGameByBehavior(game, effectiveMood, effectiveGenre, availableMinutes);
         const intersectionBonus = matchedMoods.length > 0 && matchedGenres.length > 0 ? 24 : 0;
         const matchScore = matchedMoods.length * 14 + matchedGenres.length * 18 + intersectionBonus;
-        const exactMoodBonus = effectiveMood && game?.mood === effectiveMood ? 8 : 0;
+        const exactMoodBonus = effectiveMood && getResolvedMood(game) === effectiveMood ? 8 : 0;
         const timeFitBonus =
           availableMinutes && estimatedSessionMinutes && estimatedSessionMinutes <= availableMinutes ? 6 : 0;
 
@@ -1198,7 +1203,7 @@ export class RecommendationEngine {
           const match = matchLookup.get(String(game?.appid || game?.name || ''));
 
           return {
-            mood: match?.effectiveMood || validMoods[0] || game?.mood || null,
+            mood: match?.effectiveMood || validMoods[0] || getResolvedMood(game) || null,
             genre: match?.effectiveGenre || this.getPrimaryGenre(game, validGenres),
             metadata: {
               score: match?.score || 0,
@@ -1693,7 +1698,7 @@ export class RecommendationEngine {
         entryContextResolver: (game) => {
           const match = matchLookup.get(String(game?.appid || game?.name || ''));
           return {
-            mood: mood || favoriteMood || game?.mood || null,
+            mood: mood || favoriteMood || getResolvedMood(game) || null,
             genre: this.getPrimaryGenre(game, favoriteGenre ? [favoriteGenre] : []) || null,
             metadata: {
               score: match?.score || 0,
@@ -1831,7 +1836,8 @@ export class RecommendationEngine {
       if (!game) return;
       recentNames.add(game.name);
       mapGameGenresToValid(game?.genres).forEach((g) => recentGenres.add(g));
-      if (game?.mood) recentMoods.add(game.mood);
+      const recentMood = getResolvedMood(game);
+      if (recentMood) recentMoods.add(recentMood);
       this._detectGameThemes(game).forEach((t) => recentThemes.add(t));
       this._getGameTags(game).forEach((t) => recentTags.add(t));
     });
@@ -1858,7 +1864,7 @@ export class RecommendationEngine {
         const gameGenres = mapGameGenresToValid(game?.genres);
         const gameThemes = this._detectGameThemes(game);
         const gameTags = this._getGameTags(game);
-        const gameMood = game?.mood || null;
+        const gameMood = getResolvedMood(game);
 
         let score = 0;
         const reasons = [];

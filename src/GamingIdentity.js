@@ -748,13 +748,15 @@ export class GamingIdentity {
     if (entries.length === 0) return 'None';
 
     if (typeof entries[0][1] === 'number') {
-      return entries.sort(([, a], [, b]) => b - a)[0][0];
+      const topMood = entries.sort(([, a], [, b]) => b - a)[0][0];
+      return topMood ? topMood.charAt(0).toUpperCase() + topMood.slice(1).toLowerCase() : 'None';
     }
 
     const moodCounts = {};
     entries.forEach(([, moods]) => {
       Object.entries(moods || {}).forEach(([mood, count]) => {
-        moodCounts[mood] = (moodCounts[mood] || 0) + Number(count || 0);
+        const titleCased = mood ? mood.charAt(0).toUpperCase() + mood.slice(1).toLowerCase() : mood;
+        moodCounts[titleCased] = (moodCounts[titleCased] || 0) + Number(count || 0);
       });
     });
 

@@ -25,6 +25,7 @@ import { SeasonalRewardService } from './services/SeasonalRewardService';
 import GuidedTour from './components/GuidedTour';
 import CalendarXPService from './services/CalendarXPService';
 import { GameCurationService } from './services/GameCurationService';
+import { getResolvedMood } from './constants/GenresMoods';
 import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import StorageService from './services/StorageService';
@@ -366,7 +367,7 @@ function AppContent() {
       const endedGame = library.find((g) => g?.name === gameName);
       const genres = endedGame?.genres || [];
       try {
-        HabitTrackerService.recordSession(gameName, sessionResult.playtimeMinutes || 0, genres);
+        HabitTrackerService.recordSession(gameName, sessionResult.playtimeMinutes || 0, genres, getResolvedMood(endedGame));
       } catch (habitError) {
         console.error('Habit tracking failed during session end:', habitError);
       }
@@ -898,6 +899,7 @@ function AppContent() {
     handleUpdateCompletion,
     handleUpdateNotes,
     handleUpdateCoverArt,
+    handleUpdateMood,
     handleAddSessionNote,
     handleTogglePlayedElsewhere,
   } = useLibraryCuration({ library, setLibrary, saveLibrary, toastSuccess });
@@ -1091,6 +1093,7 @@ function AppContent() {
                   onUpdateCompletion={handleUpdateCompletion}
                   onUpdateNotes={handleUpdateNotes}
                   onUpdateCoverArt={handleUpdateCoverArt}
+                  onUpdateMood={handleUpdateMood}
                   onAddSessionNote={handleAddSessionNote}
                   onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
                   loading={loading}
@@ -1162,6 +1165,7 @@ function AppContent() {
           onUpdateCompletion={handleUpdateCompletion}
           onUpdateNotes={handleUpdateNotes}
           onUpdateCoverArt={handleUpdateCoverArt}
+          onUpdateMood={handleUpdateMood}
           onAddSessionNote={handleAddSessionNote}
           onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
         />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, X, Star, Tag, Save, Edit3, Trash2 } from 'lucide-react';
 import { CaptainLogService } from '../services/CaptainLogService';
+import { MOODS } from '../constants/GenresMoods';
 import './CaptainLogModal.css';
 
 const QUICK_TAGS = [
@@ -14,7 +15,7 @@ const QUICK_TAGS = [
   'Worth replaying',
 ];
 
-const MOOD_OPTIONS = ['Relaxed', 'Competitive', 'Creative', 'Nostalgic', 'Excited', 'Focused'];
+const MOOD_OPTIONS = MOODS;
 
 export default function CaptainLogModal({
   isOpen,

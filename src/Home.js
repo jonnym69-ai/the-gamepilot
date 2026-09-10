@@ -3,6 +3,7 @@ import NavBar from './NavBar';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { AchievementTracker } from './AchievementSystem';
 import BuyRecommendationService from './services/BuyRecommendationService';
+import { MOODS } from './constants/GenresMoods';
 import WishlistService from './services/WishlistService';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import CollapsibleSection from './components/CollapsibleSection';
@@ -697,7 +698,7 @@ function Home({
   const availableMoods = React.useMemo(() => {
     // Always show all 5 moods regardless of library content
     // This ensures users can select any mood even if no games currently have that mood
-    return ['Relaxed', 'Social', 'Focused', 'Creative', 'Competitive'];
+    return MOODS;
   }, []);
 
   const availableGenres = React.useMemo(() => {

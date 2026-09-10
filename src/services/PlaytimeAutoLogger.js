@@ -7,7 +7,7 @@
 import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { RollingAchievementsTracker } from './RollingAchievementsTracker';
 import { processSessionEnd } from './GamingIdentityEnhancements';
-import { getMoodForGame, mapGameGenresToValid } from '../constants/GenresMoods';
+import { getMoodForGame, mapGameGenresToValid, getResolvedMood } from '../constants/GenresMoods';
 import StorageService from './StorageService';
 import SessionRepository from './SessionRepository';
 
@@ -616,7 +616,7 @@ export class PlaytimeAutoLogger {
 
       // If we have game data, track the selection
       if (game) {
-        UserBehaviorProfile.trackSelection(game.mood, game.genres?.[0], null, game.appid);
+        UserBehaviorProfile.trackSelection(getResolvedMood(game), game.genres?.[0], null, game.appid);
       }
 
       if (sessionStart && (!newLastSync || new Date(sessionStart).getTime() > new Date(newLastSync).getTime())) {
@@ -677,13 +677,13 @@ export class PlaytimeAutoLogger {
     UserBehaviorProfile.trackSessionLength(lastSession.playtimeMinutes);
 
     if (game) {
-      UserBehaviorProfile.trackSelection(game.mood, game.genres?.[0], null, game.appid);
+      UserBehaviorProfile.trackSelection(getResolvedMood(game), game.genres?.[0], null, game.appid);
 
       // If game is completed, track that too
       if (completedGames?.includes(game.appid || game.name)) {
         UserBehaviorProfile.trackCompletion(
           game.name,
-          game.mood,
+          getResolvedMood(game),
           game.genres?.[0],
           lastSession.playtimeMinutes,
           game.appid || game.name

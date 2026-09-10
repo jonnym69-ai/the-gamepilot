@@ -7,6 +7,7 @@ import { GamingIdentity } from './GamingIdentity';
 import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import StorageService from './services/StorageService';
+import { getResolvedMood } from './constants/GenresMoods';
 import './SwipeDeck.css';
 
 const SHORTLIST_KEY = 'swipeDeckShortlist';
@@ -35,7 +36,7 @@ function getWhyThisText(game, identity) {
     const genres = Array.isArray(game?.genres) ? game.genres : [];
     const reasons = [];
 
-    if (id.favoriteMood && game.mood === id.favoriteMood) {
+    if (id.favoriteMood && getResolvedMood(game) === id.favoriteMood) {
       reasons.push(`Matches your ${id.favoriteMood} vibe`);
     }
     if (id.favoriteGenre && genres.includes(id.favoriteGenre)) {
@@ -65,7 +66,7 @@ function buildDeck(library, filters, identity) {
   );
 
   if (filters.mood) {
-    pool = pool.filter((g) => g.mood === filters.mood);
+    pool = pool.filter((g) => getResolvedMood(g) === filters.mood);
   }
   if (filters.genre) {
     pool = pool.filter((g) => Array.isArray(g.genres) && g.genres.includes(filters.genre));
@@ -91,7 +92,7 @@ function buildDeck(library, filters, identity) {
     const genres = Array.isArray(game.genres) ? game.genres : [];
     const id = identity?.identity;
 
-    if (id?.favoriteMood && game.mood === id.favoriteMood) score += 20;
+    if (id?.favoriteMood && getResolvedMood(game) === id.favoriteMood) score += 20;
     if (id?.favoriteGenre && genres.includes(id.favoriteGenre)) score += 15;
     if (id?.archetype) {
       const archetypeGenreMap = {
@@ -191,7 +192,8 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
   const availableMoods = useMemo(() => {
     const moods = new Set();
     library.forEach((g) => {
-      if (g.mood) moods.add(g.mood);
+      const mood = getResolvedMood(g);
+      if (mood) moods.add(mood);
     });
     return Array.from(moods).sort();
   }, [library]);
@@ -225,7 +227,7 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
         saveSwipeHistory(history);
 
         const metadata = {
-          mood: game.mood,
+          mood: getResolvedMood(game),
           genre: Array.isArray(game.genres) ? game.genres[0] : null,
           direction,
           deckType: filters.deckType,
@@ -385,7 +387,7 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
                 <button
                   onClick={() => {
                     UserBehaviorProfile.trackRecommendationLaunch('swipe-deck', game.appid || game.name, {
-                      mood: game.mood || null,
+                      mood: getResolvedMood(game) || null,
                       genre: Array.isArray(game.genres) ? game.genres[0] : null,
                       source: 'swipe-deck-shortlist',
                     });
@@ -614,7 +616,9 @@ export default function SwipeDeck({ library = [], onLaunchGame, onUpdateRating }
                 {Array.isArray(currentGame.genres) && currentGame.genres.length > 0 && (
                   <span className="swipe-card-genre">{currentGame.genres.filter((g) => g !== 'Unknown')[0] || ''}</span>
                 )}
-                {currentGame.mood && <span className="swipe-card-mood">{currentGame.mood}</span>}
+                {getResolvedMood(currentGame) && (
+                  <span className="swipe-card-mood">{getResolvedMood(currentGame)}</span>
+                )}
               </div>
               {currentGame.time_played > 0 && (
                 <div className="swipe-card-playtime">{Math.round(currentGame.time_played / 60)}h played</div>

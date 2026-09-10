@@ -8,7 +8,7 @@ import EmptyState from './components/EmptyState';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import StorageService from './services/StorageService';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
-import { getMoodForGame } from './constants/GenresMoods';
+import { getMoodForGame, getResolvedMood } from './constants/GenresMoods';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import StatsBackbonePanel from './components/StatsBackbonePanel';
 import PlaytimeHeatmap from './components/PlaytimeHeatmap';
@@ -93,10 +93,10 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
       platformCounts[platform] = (platformCounts[platform] || 0) + 1;
     });
 
-    // Mood distribution (derive from genres if stored mood is missing)
+    // Mood distribution (respect manual overrides via getResolvedMood)
     const moodCounts = {};
     safeLibrary.forEach((game) => {
-      const mood = game.mood || getMoodForGame(game.genres);
+      const mood = getResolvedMood(game) || getMoodForGame(game.genres);
       if (!mood) return;
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
     });

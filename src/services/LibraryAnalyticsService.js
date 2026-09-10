@@ -1,5 +1,6 @@
 import { StatsAggregationService } from './StatsAggregationService';
 import HowLongToBeatService from './HowLongToBeatService';
+import { getResolvedMood } from '../constants/GenresMoods';
 
 const getMinutesPlayed = (game) => {
   const direct = Number(game?.time_played || 0);
@@ -27,7 +28,7 @@ const getGenreList = (game) => {
   return [];
 };
 
-const getMood = (game) => game?.mood || game?.detectedMood || null;
+const getMood = (game) => getResolvedMood(game) || game?.detectedMood || null;
 
 export class LibraryAnalyticsService {
   static getPlayPatternAnalysis(library = []) {

@@ -1,4 +1,5 @@
 import SessionRepository from './SessionRepository';
+import { getResolvedMood } from '../constants/GenresMoods';
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
@@ -33,7 +34,7 @@ export const createActiveSessionEntry = (game) => ({
   gameId: game?.appid || game?.name || null,
   metadata: {
     genres: Array.isArray(game?.genres) ? game.genres : [],
-    mood: game?.mood || null,
+    mood: getResolvedMood(game) || null,
     platform: game?.platform || null,
     source: game?.source || null,
     launchType: game?.launchType || null,

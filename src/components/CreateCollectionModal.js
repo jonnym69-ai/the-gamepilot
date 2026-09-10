@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { X, Folder, Save, Trash2 } from 'lucide-react';
 import { UserRuleCollectionService } from '../services/UserRuleCollectionService';
+import { MOODS } from '../constants/GenresMoods';
 import './CreateCollectionModal.css';
 
 const PRESET_COLORS = [
@@ -37,7 +38,7 @@ const GENRE_OPTIONS = [
   'Management',
 ];
 
-const MOOD_OPTIONS = ['Relaxed', 'Competitive', 'Creative', 'Nostalgic', 'Excited', 'Focused'];
+const MOOD_OPTIONS = MOODS;
 const PLATFORM_OPTIONS = [
   'Steam',
   'Epic',

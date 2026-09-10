@@ -26,7 +26,7 @@ import HowLongToBeatService from '../services/HowLongToBeatService';
 import { RecommendationEngine } from '../services/RecommendationEngine';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { getGameArtworkPlaceholder, resolveGameArtwork, fileToCoverDataUri } from '../services/GameArtworkService';
-import { MOODS, getMoodForGame } from '../constants/GenresMoods';
+import { MOODS, getMoodForGame, getResolvedMood } from '../constants/GenresMoods';
 import LazyImage from './LazyImage';
 import { GameShareCard, buildGameShareCaption, buildGameShareData } from './GameShareCard';
 import { SessionLaunchShareCard } from './SessionLaunchShareCard';
@@ -91,6 +91,7 @@ const GameModal = ({
   onUpdateCompletion,
   onUpdateNotes,
   onUpdateCoverArt,
+  onUpdateMood,
   onAddSessionNote,
   onTogglePlayedElsewhere,
   bigScreen = false,
@@ -273,8 +274,9 @@ const GameModal = ({
       setMoodOverride(value);
       if (!game) return;
       GameCurationService.setMoodOverride(game.name, value);
+      if (onUpdateMood) onUpdateMood(game.name, value);
     },
-    [game]
+    [game, onUpdateMood]
   );
 
   const handleCoverFilePicked = useCallback(
@@ -681,7 +683,8 @@ const GameModal = ({
   const genreLabels =
     gameDetails?.genres?.map((entry) => entry.description).filter(Boolean) ||
     (Array.isArray(game.genres) ? game.genres.filter(Boolean) : []);
-  const fallbackOverview = `${game.name} is tracked in your ${platformLabel} library${game.mood ? ` and tagged for ${String(game.mood).toLowerCase()} sessions` : ''}.`;
+  const resolvedMood = getResolvedMood(game);
+  const fallbackOverview = `${game.name} is tracked in your ${platformLabel} library${resolvedMood ? ` and tagged for ${resolvedMood.toLowerCase()} sessions` : ''}.`;
   const playtimeHours = ((game.time_played || 0) / 60).toFixed(1);
   const ratingPercent = Math.max(0, Math.min(100, ((rating || 0) / 10) * 100));
   const formatDateValue = (value) => {
@@ -707,7 +710,7 @@ const GameModal = ({
               <div className="game-modal-title-copy">
                 <h2>{game.name}</h2>
                 <p className="game-modal-subtitle">
-                  {platformLabel} • {playtimeHours}h played{game.mood ? ` • ${game.mood}` : ''}
+                  {platformLabel} • {playtimeHours}h played{resolvedMood ? ` • ${resolvedMood}` : ''}
                 </p>
               </div>
             </div>
@@ -808,7 +811,7 @@ const GameModal = ({
                     </div>
                     <div className="meta-chip-row">
                       <span className="meta-chip">{platformLabel}</span>
-                      {game.mood && <span className="meta-chip">Mood: {game.mood}</span>}
+                      {resolvedMood && <span className="meta-chip">Mood: {resolvedMood}</span>}
                       {genreLabels.slice(0, 4).map((genre) => (
                         <span key={genre} className="meta-chip">
                           {genre}

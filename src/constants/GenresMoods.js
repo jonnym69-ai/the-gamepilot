@@ -220,7 +220,7 @@ const GENRE_SIGNAL_WEIGHT = {
   Indie: 0.3, // Weak Creative signal — wins only when no stronger genre present
   Action: 0.5, // Moderate Focused — common genre, doesn't dominate
   Adventure: 0.5, // Moderate Creative — common genre, doesn't dominate
-  Multiplayer: 0.5, // Moderate — appears in Social and Competitive, context decides
+  Multiplayer: 0.75, // Stronger Social/Competitive signal — co-op and online games
   Shooter: 0.5, // Moderate — appears in Focused and Competitive, context decides
 };
 
@@ -234,6 +234,8 @@ const GENRE_CONTEXT_SUPPRESSION = [
   { ifPresent: ['Multiplayer'], suppress: 'Shooter', fromMood: 'Focused' },
   // Party/coop games (Multiplayer + Party) → Social, not Competitive
   { ifPresent: ['Party'], suppress: 'Multiplayer', fromMood: 'Competitive' },
+  // Party games aren't relaxing — suppress Casual's Relaxed contribution
+  { ifPresent: ['Party'], suppress: 'Casual', fromMood: 'Relaxed' },
 ];
 
 const scoreMoodsFromGenres = (genres) => {
@@ -297,6 +299,30 @@ export const getAllGenres = () => GENRES;
 
 // Get all moods
 export const getAllMoods = () => MOODS;
+
+// Resolve the effective mood for a game, respecting manual overrides.
+// This is the single source of truth for "what mood is this game?"
+// All consumers should use this instead of reading game.mood directly.
+export const getResolvedMood = (game) => {
+  if (!game) return null;
+  // Manual override takes priority
+  if (typeof game.moodOverride === 'string' && game.moodOverride.trim()) {
+    const override = game.moodOverride.trim();
+    if (isValidMood(override)) return override;
+  }
+  // Derive from genres
+  const genres = game.genres || [];
+  if (genres.length > 0) {
+    const derived = getMoodForGame(genres);
+    if (derived) return derived;
+  }
+  // Fall back to stored mood
+  if (typeof game.mood === 'string' && game.mood.trim()) {
+    const stored = game.mood.trim();
+    if (isValidMood(stored)) return stored;
+  }
+  return null;
+};
 
 // Map game genres to valid genres
 export const mapGameGenresToValid = (gameGenres) => {

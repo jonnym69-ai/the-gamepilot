@@ -189,6 +189,21 @@ export default function useLibraryCuration({ library, setLibrary, saveLibrary, t
     [saveLibrary, setLibrary]
   );
 
+  const handleUpdateMood = useCallback(
+    (gameName, mood) => {
+      // setMoodOverride is already called by GameModal; here we just refresh
+      // the live library state so the UI reflects the override immediately.
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary, setLibrary]
+  );
+
   const handleAddSessionNote = useCallback(
     (gameName, text) => {
       GameCurationService.addSessionNote(gameName, text);
@@ -231,6 +246,7 @@ export default function useLibraryCuration({ library, setLibrary, saveLibrary, t
     handleUpdateCompletion,
     handleUpdateNotes,
     handleUpdateCoverArt,
+    handleUpdateMood,
     handleAddSessionNote,
     handleTogglePlayedElsewhere,
   };

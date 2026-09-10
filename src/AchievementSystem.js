@@ -1850,7 +1850,9 @@ export class AchievementTracker {
     if (entries.length === 0) return 'None';
     const moodCounts = {};
     entries.forEach(([mood]) => {
-      moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+      // Normalize to title-case for consistent downstream comparisons
+      const titleCased = mood ? mood.charAt(0).toUpperCase() + mood.slice(1).toLowerCase() : mood;
+      moodCounts[titleCased] = (moodCounts[titleCased] || 0) + 1;
     });
     return Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0][0];
   }
@@ -2270,11 +2272,11 @@ export class AchievementTracker {
     const mostUsedMood = Object.entries(weekStats).sort(([, a], [, b]) => b - a)[0][0];
 
     const moodBadges = {
-      Relaxed: '😌 Chill Champion',
-      Social: '🔥 Social Butterfly',
-      Creative: '🎨 Creative Genius',
-      Focused: '🎯 Focus Master',
-      Competitive: '⚔️ Arena Champion',
+      relaxed: '😌 Chill Champion',
+      social: '🔥 Social Butterfly',
+      creative: '🎨 Creative Genius',
+      focused: '🎯 Focus Master',
+      competitive: '⚔️ Arena Champion',
     };
 
     return {
