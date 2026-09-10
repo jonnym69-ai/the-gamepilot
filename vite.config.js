@@ -50,6 +50,23 @@ export default defineConfig({
     outDir: 'dist/renderer',
     emptyOutDir: true,
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Split large vendor libraries into separate chunks so the main
+          // index bundle doesn't have to load them all upfront.
+          if (id.includes('node_modules')) {
+            if (id.includes('lucide-react')) return 'icons';
+            if (id.includes('recharts') || id.includes('d3-')) return 'charts';
+            if (id.includes('html2canvas')) return 'canvas';
+            if (id.includes('react-router')) return 'router';
+            if (id.includes('react-dom') || id.includes('scheduler')) return 'react-dom';
+            if (id.includes('react/') || id.includes('react\\') || id.includes('/react/')) return 'react';
+          }
+          return undefined;
+        },
+      },
+    },
   },
   define: {
     __APP_VERSION__: JSON.stringify(version),

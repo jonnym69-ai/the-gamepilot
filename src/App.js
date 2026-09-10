@@ -21,9 +21,7 @@ import { SteamGenreEnrichmentService } from './services/SteamGenreEnrichmentServ
 import TrayMenuService from './services/TrayMenuService';
 import { ToastProvider, useToast } from './components/Toast';
 import { AchievementTracker } from './AchievementSystem';
-import SeasonalHideAndSeek from './components/SeasonalHideAndSeek';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
-import GuidedTour from './components/GuidedTour';
 import CalendarXPService from './services/CalendarXPService';
 import { GameCurationService } from './services/GameCurationService';
 import { getResolvedMood } from './constants/GenresMoods';
@@ -41,10 +39,8 @@ import { assignMoodToGame as importedAssignMoodToGame } from './services/MoodAss
 import { resolveGameArtwork } from './services/GameArtworkService';
 import DynamicBackdropService from './services/DynamicBackdropService';
 import CommandPalette from './components/CommandPalette';
-import BigScreenMode from './components/BigScreenMode';
 import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
-import GamingStoryCard from './components/GamingStoryCard';
 import { GamingStoryService } from './services/GamingStoryService';
 import useLibraryFilters from './hooks/useLibraryFilters';
 import useTheme from './hooks/useTheme';
@@ -77,6 +73,12 @@ const GameBarOverlay = lazy(() => import('./components/GameBarOverlay'));
 const Rewards = lazy(() => import('./Rewards'));
 const Feedback = lazy(() => import('./Feedback'));
 const WishlistPage = lazy(() => import('./WishlistPage'));
+
+// Conditionally-rendered UI components loaded on demand.
+const BigScreenMode = lazy(() => import('./components/BigScreenMode'));
+const GamingStoryCard = lazy(() => import('./components/GamingStoryCard'));
+const GuidedTour = lazy(() => import('./components/GuidedTour'));
+const SeasonalHideAndSeek = lazy(() => import('./components/SeasonalHideAndSeek'));
 
 // One-time migration: copy legacy 'gameLibrary' key to prefixed 'gamepilot-library'
 StorageService.migrate();
@@ -918,7 +920,11 @@ function AppContent() {
       <ControllerSupport />
       <CommandPalette />
       <QuickLaunchHotbar library={library} />
-      {gamingStory && <GamingStoryCard story={gamingStory} onContinue={() => setGamingStory(null)} />}
+      {gamingStory && (
+        <Suspense fallback={null}>
+          <GamingStoryCard story={gamingStory} onContinue={() => setGamingStory(null)} />
+        </Suspense>
+      )}
       {loading && (
         <div className="scan-overlay" role="status" aria-live="polite" aria-label="Scanning local game libraries">
           <div className="scan-overlay-card">
@@ -1282,26 +1288,34 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
       {bigScreenMode && (
-        <BigScreenMode
-          library={library}
-          onLaunchGame={handleLaunchGame}
-          activeSessions={activeSessions}
-          onEndSession={handleEndSession}
-          lastPlayedGame={lastPlayedGame}
-          onUpdateRating={handleUpdateRating}
-          onToggleFavorite={handleToggleFavorite}
-          onUpdateCollections={handleUpdateCollections}
-          onToggleHidden={handleToggleHidden}
-          onUpdateCompletion={handleUpdateCompletion}
-          onUpdateNotes={handleUpdateNotes}
-          onUpdateCoverArt={handleUpdateCoverArt}
-          onUpdateMood={handleUpdateMood}
-          onAddSessionNote={handleAddSessionNote}
-          onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
-        />
+        <Suspense fallback={null}>
+          <BigScreenMode
+            library={library}
+            onLaunchGame={handleLaunchGame}
+            activeSessions={activeSessions}
+            onEndSession={handleEndSession}
+            lastPlayedGame={lastPlayedGame}
+            onUpdateRating={handleUpdateRating}
+            onToggleFavorite={handleToggleFavorite}
+            onUpdateCollections={handleUpdateCollections}
+            onToggleHidden={handleToggleHidden}
+            onUpdateCompletion={handleUpdateCompletion}
+            onUpdateNotes={handleUpdateNotes}
+            onUpdateCoverArt={handleUpdateCoverArt}
+            onUpdateMood={handleUpdateMood}
+            onAddSessionNote={handleAddSessionNote}
+            onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
+          />
+        </Suspense>
       )}
-      <SeasonalHideAndSeek />
-      {!loading && <GuidedTour />}
+      <Suspense fallback={null}>
+        <SeasonalHideAndSeek />
+      </Suspense>
+      {!loading && (
+        <Suspense fallback={null}>
+          <GuidedTour />
+        </Suspense>
+      )}
     </div>
   );
 }
