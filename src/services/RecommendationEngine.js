@@ -195,91 +195,127 @@ export class RecommendationEngine {
    */
   static scoreGameByBehavior(game, mood, genre, timeAvailable = null) {
     const w = getActiveRecommendationWeights();
-    let score = w.base;
-
     const estimatedSessionMinutes = PersonaPerformanceInsights.estimateSessionMinutes(game);
     const profile = UserBehaviorProfile.getProfile();
     const startupSeed = StartupPersonalizationService.getSeededRecommendationContext();
     const startupInfluence = UserBehaviorProfile.getStartupInfluenceSummary();
     const normalizedGenres = mapGameGenresToValid(game?.genres);
-
-    // Check if profile has meaningful data
     const hasProfileData =
       profile &&
       ((profile.moodPreferences && Object.keys(profile.moodPreferences).length > 0) ||
         (profile.genrePreferences && Object.keys(profile.genrePreferences).length > 0) ||
         (profile.playstylePatterns && profile.playstylePatterns.avgSessionLength > 0));
 
-    // Mood completion rate bonus
-    if (mood && hasProfileData) {
-      const moodRate = UserBehaviorProfile.getMoodCompletionRate(mood);
-      if (moodRate > w.moodHighRateThreshold) {
-        score += w.moodHighRateBonus;
-      } else if (moodRate > w.moodMediumRateThreshold) {
-        score += w.moodMediumRateBonus;
-      } else if (moodRate > 0) {
-        score += w.moodLowRateBonus;
+    const ctx = {
+      game,
+      mood,
+      genre,
+      timeAvailable,
+      w,
+      profile,
+      hasProfileData,
+      estimatedSessionMinutes,
+      normalizedGenres,
+      startupSeed,
+      startupInfluence,
+    };
+
+    let score = w.base;
+    score += this._scoreMoodCompletion(ctx);
+    score += this._scoreGenreCompletion(ctx);
+    score += this._scoreSessionLengthMatch(ctx);
+    score += this._scoreStartupSeed(ctx);
+    score += this._scoreFocusAndPersona(ctx);
+    score += this._scoreIdentityAlignment(ctx);
+    score += this._scoreDiscoveryAndRecency(ctx);
+    score += this._scoreTimeAvailability(ctx);
+    score += this._scoreReplayIntent(ctx);
+    score += this._scoreFeedbackAndRatings(ctx);
+    score += this._scoreSignatureGameOverlap(ctx);
+    score += this._scoreFamiliarityBias(ctx);
+
+    return Math.max(w.scoreMin, Math.min(w.scoreMax, score));
+  }
+
+  // --- scoreGameByBehavior sub-scorers ---
+
+  static _scoreMoodCompletion({ mood, w, hasProfileData }) {
+    if (!mood || !hasProfileData) return 0;
+    const moodRate = UserBehaviorProfile.getMoodCompletionRate(mood);
+    if (moodRate > w.moodHighRateThreshold) return w.moodHighRateBonus;
+    if (moodRate > w.moodMediumRateThreshold) return w.moodMediumRateBonus;
+    if (moodRate > 0) return w.moodLowRateBonus;
+    return 0;
+  }
+
+  static _scoreGenreCompletion({ genre, w, hasProfileData }) {
+    if (!genre || !hasProfileData) return 0;
+    const genreRate = UserBehaviorProfile.getGenreCompletionRate(genre);
+    if (genreRate > w.genreHighRateThreshold) return w.genreHighRateBonus;
+    if (genreRate > w.genreMediumRateThreshold) return w.genreMediumRateBonus;
+    if (genreRate > 0) return w.genreLowRateBonus;
+    return 0;
+  }
+
+  static _scoreSessionLengthMatch({ w, hasProfileData, profile, estimatedSessionMinutes }) {
+    if (!hasProfileData) return 0;
+    const avgSession = profile.playstylePatterns.avgSessionLength;
+    if (avgSession <= 0 || !estimatedSessionMinutes) return 0;
+    const diff = Math.abs(estimatedSessionMinutes - avgSession) / w.sessionMatchDiffDivisor;
+    if (diff < 1) return w.sessionPerfectMatchBonus;
+    if (diff < 2) return w.sessionCloseMatchBonus;
+    if (diff < 3) return w.sessionNearMatchBonus;
+    return 0;
+  }
+
+  static _scoreStartupSeed({
+    game,
+    mood,
+    genre,
+    w,
+    hasProfileData,
+    estimatedSessionMinutes,
+    normalizedGenres,
+    startupSeed,
+    startupInfluence,
+  }) {
+    if (!startupSeed) return 0;
+    let score = 0;
+    const seedMultiplier = startupInfluence?.active ? startupInfluence.seedWeight : 1;
+
+    if (mood && Array.isArray(startupSeed.moods) && startupSeed.moods.includes(mood)) {
+      const seedMoodBonus = hasProfileData ? w.seedMoodMatchWithProfile : w.seedMoodMatchWithoutProfile;
+      score += Math.round(seedMoodBonus * seedMultiplier);
+    }
+
+    if (genre && Array.isArray(startupSeed.genres) && startupSeed.genres.includes(genre)) {
+      const seedGenreBonus = hasProfileData ? w.seedGenreMatchWithProfile : w.seedGenreMatchWithoutProfile;
+      score += Math.round(seedGenreBonus * seedMultiplier);
+    }
+
+    if (
+      Array.isArray(startupSeed.genres) &&
+      startupSeed.genres.some((seedGenre) => normalizedGenres.includes(seedGenre))
+    ) {
+      const seedOverlapBonus = hasProfileData ? w.seedGenreOverlapWithProfile : w.seedGenreOverlapWithoutProfile;
+      score += Math.round(seedOverlapBonus * seedMultiplier);
+    }
+
+    const preferredMinutes = this.getAvailableMinutes(startupSeed.sessionPreference);
+    if (!hasProfileData && preferredMinutes && estimatedSessionMinutes) {
+      const seedDiff = Math.abs(preferredMinutes - estimatedSessionMinutes);
+      if (seedDiff <= w.seedSessionCloseMaxDiffMin) {
+        score += Math.round(w.seedSessionCloseBonus * seedMultiplier);
+      } else if (seedDiff <= w.seedSessionNearMaxDiffMin) {
+        score += Math.round(w.seedSessionNearBonus * seedMultiplier);
       }
     }
 
-    // Genre completion rate bonus
-    if (genre && hasProfileData) {
-      const genreRate = UserBehaviorProfile.getGenreCompletionRate(genre);
-      if (genreRate > w.genreHighRateThreshold) {
-        score += w.genreHighRateBonus;
-      } else if (genreRate > w.genreMediumRateThreshold) {
-        score += w.genreMediumRateBonus;
-      } else if (genreRate > 0) {
-        score += w.genreLowRateBonus;
-      }
-    }
+    return score;
+  }
 
-    // Session length match bonus
-    if (hasProfileData) {
-      const avgSession = profile.playstylePatterns.avgSessionLength;
-      if (avgSession > 0 && estimatedSessionMinutes) {
-        const diff = Math.abs(estimatedSessionMinutes - avgSession) / w.sessionMatchDiffDivisor;
-        if (diff < 1) {
-          score += w.sessionPerfectMatchBonus;
-        } else if (diff < 2) {
-          score += w.sessionCloseMatchBonus;
-        } else if (diff < 3) {
-          score += w.sessionNearMatchBonus;
-        }
-      }
-    }
-
-    if (startupSeed) {
-      const seedMultiplier = startupInfluence?.active ? startupInfluence.seedWeight : 1;
-
-      if (mood && Array.isArray(startupSeed.moods) && startupSeed.moods.includes(mood)) {
-        const seedMoodBonus = hasProfileData ? w.seedMoodMatchWithProfile : w.seedMoodMatchWithoutProfile;
-        score += Math.round(seedMoodBonus * seedMultiplier);
-      }
-
-      if (genre && Array.isArray(startupSeed.genres) && startupSeed.genres.includes(genre)) {
-        const seedGenreBonus = hasProfileData ? w.seedGenreMatchWithProfile : w.seedGenreMatchWithoutProfile;
-        score += Math.round(seedGenreBonus * seedMultiplier);
-      }
-
-      if (
-        Array.isArray(startupSeed.genres) &&
-        startupSeed.genres.some((seedGenre) => normalizedGenres.includes(seedGenre))
-      ) {
-        const seedOverlapBonus = hasProfileData ? w.seedGenreOverlapWithProfile : w.seedGenreOverlapWithoutProfile;
-        score += Math.round(seedOverlapBonus * seedMultiplier);
-      }
-
-      const preferredMinutes = this.getAvailableMinutes(startupSeed.sessionPreference);
-      if (!hasProfileData && preferredMinutes && estimatedSessionMinutes) {
-        const seedDiff = Math.abs(preferredMinutes - estimatedSessionMinutes);
-        if (seedDiff <= w.seedSessionCloseMaxDiffMin) {
-          score += Math.round(w.seedSessionCloseBonus * seedMultiplier);
-        } else if (seedDiff <= w.seedSessionNearMaxDiffMin) {
-          score += Math.round(w.seedSessionNearBonus * seedMultiplier);
-        }
-      }
-    }
+  static _scoreFocusAndPersona({ game, mood, w, hasProfileData, estimatedSessionMinutes }) {
+    let score = 0;
 
     // Continuous play focus — games played across multiple recent days are
     // the player's current habit, not stale noise.  Detect once per cache TTL.
@@ -319,96 +355,101 @@ export class RecommendationEngine {
       }
     }
 
-    // Gaming Identity archetype & preference bonuses
+    return score;
+  }
+
+  static _scoreIdentityAlignment({ game, mood, w, estimatedSessionMinutes }) {
+    let score = 0;
     try {
       const identity = GamingIdentity.getProfile();
-      if (identity?.identity) {
-        const id = identity.identity;
+      if (!identity?.identity) return 0;
+      const id = identity.identity;
 
-        // Favorite mood match bonus
-        if (mood && id.favoriteMood && mood === id.favoriteMood) {
-          score += w.identityFavoriteMoodBonus || 15;
+      // Favorite mood match bonus
+      if (mood && id.favoriteMood && mood === id.favoriteMood) {
+        score += w.identityFavoriteMoodBonus || 15;
+      }
+
+      // Favorite genre match bonus
+      const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
+      if (id.favoriteGenre && gameGenres.includes(id.favoriteGenre)) {
+        score += w.identityFavoriteGenreBonus || 15;
+      }
+
+      // Playstyle session-length bonus
+      if (id.playStyle && estimatedSessionMinutes) {
+        const playStyle = id.playStyle;
+        if (playStyle === 'Marathon' && estimatedSessionMinutes > 120) {
+          score += w.identityPlaystyleMatchBonus || 10;
+        } else if (playStyle === 'Quick Sessions' && estimatedSessionMinutes <= 60) {
+          score += w.identityPlaystyleMatchBonus || 10;
+        } else if (playStyle === 'Strategic' && estimatedSessionMinutes >= 60 && estimatedSessionMinutes <= 180) {
+          score += w.identityPlaystyleMatchBonus || 10;
+        } else if (
+          playStyle === 'Explorer' &&
+          gameGenres.some((g) => ['Adventure', 'RPG', 'Survival', 'Simulation'].includes(g))
+        ) {
+          score += w.identityPlaystyleMatchBonus || 10;
+        } else if (playStyle === 'Balanced') {
+          score += Math.round((w.identityPlaystyleMatchBonus || 10) / 2);
         }
+      }
 
-        // Favorite genre match bonus
-        const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
-        if (id.favoriteGenre && gameGenres.includes(id.favoriteGenre)) {
-          score += w.identityFavoriteGenreBonus || 15;
+      // Archetype-genre affinity bonus
+      if (id.archetype) {
+        const archetypeGenreMap = {
+          'RPG Connoisseur': ['RPG'],
+          'Strategy Sage': ['Strategy', 'Management'],
+          'Shooter Specialist': ['Shooter', 'FPS', 'Action'],
+          'Adventure Seeker': ['Adventure', 'Exploration'],
+          'Puzzle Master': ['Puzzle', 'Logic'],
+          'Indie Explorer': ['Indie'],
+          'Horror Enthusiast': ['Horror'],
+          'Sports Fanatic': ['Sports', 'Racing'],
+          'Sandbox Architect': ['Simulation', 'Sandbox', 'Survival'],
+          'MOBA Strategist': ['MOBA', 'Strategy'],
+          'Fighting Veteran': ['Fighting'],
+          'MMO Devotee': ['MMO', 'RPG'],
+          'Narrative Lover': ['Adventure', 'RPG', 'Visual Novel'],
+          Completionist: ['RPG', 'Adventure', 'Platformer'],
+        };
+        const affinityGenres = archetypeGenreMap[id.archetype] || [];
+        if (affinityGenres.some((ag) => gameGenres.includes(ag))) {
+          score += w.identityArchetypeMatchBonus || 12;
         }
+      }
 
-        // Playstyle session-length bonus
-        if (id.playStyle && estimatedSessionMinutes) {
-          const playStyle = id.playStyle;
-          if (playStyle === 'Marathon' && estimatedSessionMinutes > 120) {
-            score += w.identityPlaystyleMatchBonus || 10;
-          } else if (playStyle === 'Quick Sessions' && estimatedSessionMinutes <= 60) {
-            score += w.identityPlaystyleMatchBonus || 10;
-          } else if (playStyle === 'Strategic' && estimatedSessionMinutes >= 60 && estimatedSessionMinutes <= 180) {
-            score += w.identityPlaystyleMatchBonus || 10;
-          } else if (
-            playStyle === 'Explorer' &&
-            gameGenres.some((g) => ['Adventure', 'RPG', 'Survival', 'Simulation'].includes(g))
-          ) {
-            score += w.identityPlaystyleMatchBonus || 10;
-          } else if (playStyle === 'Balanced') {
-            score += Math.round((w.identityPlaystyleMatchBonus || 10) / 2);
+      // Roast-persona affinity bonus (canonical map shared with Home / explainers)
+      const personaId =
+        id.gamingPersona?.primaryPersona?.id ||
+        (() => {
+          try {
+            return GamingPersonaService.getPrimaryPersona()?.id;
+          } catch {
+            return null;
           }
-        }
-
-        // Archetype-genre affinity bonus
-        if (id.archetype) {
-          const archetypeGenreMap = {
-            'RPG Connoisseur': ['RPG'],
-            'Strategy Sage': ['Strategy', 'Management'],
-            'Shooter Specialist': ['Shooter', 'FPS', 'Action'],
-            'Adventure Seeker': ['Adventure', 'Exploration'],
-            'Puzzle Master': ['Puzzle', 'Logic'],
-            'Indie Explorer': ['Indie'],
-            'Horror Enthusiast': ['Horror'],
-            'Sports Fanatic': ['Sports', 'Racing'],
-            'Sandbox Architect': ['Simulation', 'Sandbox', 'Survival'],
-            'MOBA Strategist': ['MOBA', 'Strategy'],
-            'Fighting Veteran': ['Fighting'],
-            'MMO Devotee': ['MMO', 'RPG'],
-            'Narrative Lover': ['Adventure', 'RPG', 'Visual Novel'],
-            Completionist: ['RPG', 'Adventure', 'Platformer'],
-          };
-          const affinityGenres = archetypeGenreMap[id.archetype] || [];
-          if (affinityGenres.some((ag) => gameGenres.includes(ag))) {
-            score += w.identityArchetypeMatchBonus || 12;
-          }
-        }
-
-        // Roast-persona affinity bonus (canonical map shared with Home / explainers)
-        const personaId =
-          id.gamingPersona?.primaryPersona?.id ||
-          (() => {
-            try {
-              return GamingPersonaService.getPrimaryPersona()?.id;
-            } catch {
-              return null;
-            }
-          })();
-        if (personaId) {
-          const affinityGenres = PERSONA_GENRE_MAP[personaId] || GamingPersonaService.getAffinityGenres(personaId);
-          const normalizedGameGenres = gameGenres.map((g) => String(g).toLowerCase());
-          const matchCount = affinityGenres.filter((ag) => {
-            const needle = String(ag).toLowerCase();
-            return normalizedGameGenres.some((g) => g === needle || g.includes(needle) || needle.includes(g));
-          }).length;
-          if (matchCount > 0) {
-            score += Math.min(w.gamingPersonaMatchBonus || 16, matchCount * 8);
-          } else if (GamingPersonaService.gameMatchesPersona(game, personaId)) {
-            score += Math.round((w.gamingPersonaMatchBonus || 16) * 0.5);
-          }
+        })();
+      if (personaId) {
+        const affinityGenres = PERSONA_GENRE_MAP[personaId] || GamingPersonaService.getAffinityGenres(personaId);
+        const normalizedGameGenres = gameGenres.map((g) => String(g).toLowerCase());
+        const matchCount = affinityGenres.filter((ag) => {
+          const needle = String(ag).toLowerCase();
+          return normalizedGameGenres.some((g) => g === needle || g.includes(needle) || needle.includes(g));
+        }).length;
+        if (matchCount > 0) {
+          score += Math.min(w.gamingPersonaMatchBonus || 16, matchCount * 8);
+        } else if (GamingPersonaService.gameMatchesPersona(game, personaId)) {
+          score += Math.round((w.gamingPersonaMatchBonus || 16) * 0.5);
         }
       }
     } catch {
       // Identity data optional; ignore errors
     }
+    return score;
+  }
 
-    // Hardware readiness removed from core scoring to keep the main bundle
-    // lightweight. Compatibility checks remain available in Performance Cockpit.
+  static _scoreDiscoveryAndRecency({ game, w }) {
+    let score = 0;
 
     // Unplayed games bonus - encourage discovery (uses blended playtime)
     if (isGameUnplayed(game)) {
@@ -427,78 +468,81 @@ export class RecommendationEngine {
       }
     }
 
-    // Time availability match
-    if (timeAvailable && estimatedSessionMinutes) {
-      if (estimatedSessionMinutes <= timeAvailable) {
-        score += w.timeAvailabilityFitBonus;
-      } else if (estimatedSessionMinutes <= timeAvailable * w.timeAvailabilityAlmostFitMultiplier) {
-        score += w.timeAvailabilityAlmostFitBonus;
-      }
-    }
+    return score;
+  }
 
-    // Replay Intent
-    if (game.replayIntent) {
-      switch (game.replayIntent) {
-        case 'active':
-          score += w.replayIntentActiveBonus;
-          break;
-        case 'soon':
-          score += w.replayIntentSoonBonus;
-          break;
-        case 'endless':
-          score += w.replayIntentEndlessBonus;
-          break;
-        case 'finished':
-          score -= w.replayIntentFinishedPenalty;
-          break;
-        case 'none':
-        default:
-          break;
-      }
+  static _scoreTimeAvailability({ timeAvailable, w, estimatedSessionMinutes }) {
+    if (!timeAvailable || !estimatedSessionMinutes) return 0;
+    if (estimatedSessionMinutes <= timeAvailable) return w.timeAvailabilityFitBonus;
+    if (estimatedSessionMinutes <= timeAvailable * w.timeAvailabilityAlmostFitMultiplier) {
+      return w.timeAvailabilityAlmostFitBonus;
     }
+    return 0;
+  }
 
-    // Explicit feedback from the user (thumbs up/down on specific games)
+  static _scoreReplayIntent({ game, w }) {
+    if (!game.replayIntent) return 0;
+    switch (game.replayIntent) {
+      case 'active':
+        return w.replayIntentActiveBonus;
+      case 'soon':
+        return w.replayIntentSoonBonus;
+      case 'endless':
+        return w.replayIntentEndlessBonus;
+      case 'finished':
+        return -w.replayIntentFinishedPenalty;
+      case 'none':
+      default:
+        return 0;
+    }
+  }
+
+  static _scoreFeedbackAndRatings({ game, w }) {
+    let score = 0;
     const gameId = String(game?.appid || game?.name || '');
-    if (gameId) {
-      const outcomeSignal = UserBehaviorProfile.getRecommendationOutcomeSignal(gameId, game?.name);
-      score += outcomeSignal.adjustment;
+    if (!gameId) return 0;
 
-      // Explicit thumbs-down feedback penalty
-      const dislikedGames = UserBehaviorProfile.getDislikedGames();
-      const dislikedList = Array.isArray(dislikedGames) ? dislikedGames : [];
-      if (dislikedList.includes(gameId) || dislikedList.includes(game?.name)) {
-        score -= w.dislikedGamePenalty || 40;
-      }
+    const outcomeSignal = UserBehaviorProfile.getRecommendationOutcomeSignal(gameId, game?.name);
+    score += outcomeSignal.adjustment;
 
-      const rating = GameRatingService.getRating(gameId);
-      if (rating && typeof rating.value === 'number' && rating.value > 0) {
-        const normalized = rating.value / 10;
-        if (normalized >= 0.8) {
-          score += w.highRatedGameBonus || 18;
-        } else if (normalized >= 0.6) {
-          score += w.likedGameBonus || 12;
-        } else if (normalized <= 0.3) {
-          score -= w.lowRatedGamePenalty || 25;
-        }
-        if (rating.wouldReplay === true) {
-          score += w.wouldReplayBonus || 12;
-        } else if (rating.wouldReplay === false) {
-          score -= w.wouldReplayPenalty || 8;
-        }
-      }
-
-      const gameGenres = mapGameGenresToValid(game?.genres);
-      const gameTags = Array.isArray(rating?.tags) ? rating.tags.filter(Boolean) : [];
-      const ratingBoost = UserBehaviorProfile.getRatingPreferenceBoost(
-        getResolvedMood(game) || null,
-        gameGenres,
-        gameTags
-      );
-      score += Math.round(ratingBoost * (w.ratingPreferenceMultiplier || 0.25));
+    // Explicit thumbs-down feedback penalty
+    const dislikedGames = UserBehaviorProfile.getDislikedGames();
+    const dislikedList = Array.isArray(dislikedGames) ? dislikedGames : [];
+    if (dislikedList.includes(gameId) || dislikedList.includes(game?.name)) {
+      score -= w.dislikedGamePenalty || 40;
     }
 
-    // Signature game genre overlap — games sharing genres with the player's
-    // most-played/rated titles get a taste-anchored boost.
+    const rating = GameRatingService.getRating(gameId);
+    if (rating && typeof rating.value === 'number' && rating.value > 0) {
+      const normalized = rating.value / 10;
+      if (normalized >= 0.8) {
+        score += w.highRatedGameBonus || 18;
+      } else if (normalized >= 0.6) {
+        score += w.likedGameBonus || 12;
+      } else if (normalized <= 0.3) {
+        score -= w.lowRatedGamePenalty || 25;
+      }
+      if (rating.wouldReplay === true) {
+        score += w.wouldReplayBonus || 12;
+      } else if (rating.wouldReplay === false) {
+        score -= w.wouldReplayPenalty || 8;
+      }
+    }
+
+    const gameGenres = mapGameGenresToValid(game?.genres);
+    const gameTags = Array.isArray(rating?.tags) ? rating.tags.filter(Boolean) : [];
+    const ratingBoost = UserBehaviorProfile.getRatingPreferenceBoost(
+      getResolvedMood(game) || null,
+      gameGenres,
+      gameTags
+    );
+    score += Math.round(ratingBoost * (w.ratingPreferenceMultiplier || 0.25));
+
+    return score;
+  }
+
+  static _scoreSignatureGameOverlap({ game }) {
+    let score = 0;
     try {
       const sigGames = GamingIdentity.getSignatureGames(3);
       if (sigGames.length > 0) {
@@ -512,26 +556,27 @@ export class RecommendationEngine {
     } catch {
       /* signature games optional */
     }
+    return score;
+  }
 
-    // Familiarity bias — adjusts score based on whether the user wants
-    // familiar (comfort zone) or fresh (new territory) picks.
+  static _scoreFamiliarityBias({ game, w }) {
+    let score = 0;
     const familiarityBias = getFamiliarityBias();
-    if (familiarityBias) {
-      const classification = GamingIdentity.classifyFamiliarity(game);
-      if (familiarityBias === 'familiar' && classification.label === 'familiar') {
-        score += w.familiarityFamiliarBonus || 12;
-      } else if (familiarityBias === 'fresh' && classification.label === 'fresh') {
-        score += w.familiarityFreshBonus || 12;
-      }
-      // Apply a mild penalty to the opposite side so the bias actually shifts rankings
-      if (familiarityBias === 'familiar' && classification.label === 'fresh') {
-        score -= Math.round((w.familiarityFreshBonus || 12) * 0.5);
-      } else if (familiarityBias === 'fresh' && classification.label === 'familiar') {
-        score -= Math.round((w.familiarityFamiliarBonus || 12) * 0.5);
-      }
-    }
+    if (!familiarityBias) return 0;
 
-    return Math.max(w.scoreMin, Math.min(w.scoreMax, score));
+    const classification = GamingIdentity.classifyFamiliarity(game);
+    if (familiarityBias === 'familiar' && classification.label === 'familiar') {
+      score += w.familiarityFamiliarBonus || 12;
+    } else if (familiarityBias === 'fresh' && classification.label === 'fresh') {
+      score += w.familiarityFreshBonus || 12;
+    }
+    // Apply a mild penalty to the opposite side so the bias actually shifts rankings
+    if (familiarityBias === 'familiar' && classification.label === 'fresh') {
+      score -= Math.round((w.familiarityFreshBonus || 12) * 0.5);
+    } else if (familiarityBias === 'fresh' && classification.label === 'familiar') {
+      score -= Math.round((w.familiarityFamiliarBonus || 12) * 0.5);
+    }
+    return score;
   }
 
   static normalizeTimeConstraint(timeConstraint) {
