@@ -8,7 +8,11 @@ import { HabitTrackerService } from '../services/HabitTrackerService';
 import './DailyDoodleTitle.css';
 
 const DEFAULT_WORDMARK = 'GamePilot';
-const LOGO_SRC = `${process.env.PUBLIC_URL}/gamepilotlogo.png`;
+// Use a relative path so the logo resolves correctly under both the Vite dev
+// server (http://localhost:3000) and Electron production (file://.../index.html).
+// GamePilot uses HashRouter, so the base URL is always index.html regardless of
+// the active route — a relative path works in both environments.
+const LOGO_SRC = './gamepilotlogo.png';
 
 // Special holiday & event doodles that trigger on specific days like Google Doodles
 const SPECIAL_EVENT_DOODLES = [

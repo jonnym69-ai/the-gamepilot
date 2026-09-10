@@ -87,7 +87,7 @@ const buildMarathonStory = (game, period, totalPlaytimeMinutes) => {
 
   const name = getSafeName(game);
   const periodLabel = PERIOD_LABELS[period] || 'period';
-  const percentage = Math.round(share * 100);
+  const percentage = Math.min(100, Math.round(share * 100));
 
   return `${name} claimed ${percentage}% of your ${periodLabel} playtime — a true marathon focus.`;
 };

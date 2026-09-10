@@ -1984,8 +1984,9 @@ const getRoastStingers = (signals, game) => {
     stingers.push(`${signals.neverPlayedGames} untouched games are currently serving as decorative shelf space.`);
   }
   if (signals.topGameShare >= 0.4 && primaryGame?.name) {
+    const sharePct = Math.min(100, Math.round(signals.topGameShare * 100));
     stingers.push(
-      `${primaryGame.name} accounts for ${Math.round(signals.topGameShare * 100)}% of the playtime, which is less a preference and more a residency.`
+      `${primaryGame.name} accounts for ${sharePct}% of the playtime, which is less a preference and more a residency.`
     );
   }
   if (signals.totalSessions >= 10) {
@@ -2002,37 +2003,37 @@ const getRoastStingers = (signals, game) => {
   }
   if (signals.topFranchise && signals.topFranchiseShare > 0.3) {
     stingers.push(
-      `${signals.topFranchise[0]} makes up ${Math.round(signals.topFranchiseShare * 100)}% of the library. Brand loyalty is a full-time commitment.`
+      `${signals.topFranchise[0]} makes up ${Math.min(100, Math.round(signals.topFranchiseShare * 100))}% of the library. Brand loyalty is a full-time commitment.`
     );
   }
   if (signals.topDev && signals.topDevShare > 0.3) {
     stingers.push(
-      `${signals.topDev[0]} receives ${Math.round(signals.topDevShare * 100)}% of their playtime. The dev knows them by name.`
+      `${signals.topDev[0]} receives ${Math.min(100, Math.round(signals.topDevShare * 100))}% of their playtime. The dev knows them by name.`
     );
   }
   if (signals.dominantGenreShare > 0.5 && signals.dominantGenre) {
     stingers.push(
-      `${Math.round(signals.dominantGenreShare * 100)}% of all playtime is ${signals.dominantGenre}. Variety is overrated, apparently.`
+      `${Math.min(100, Math.round(signals.dominantGenreShare * 100))}% of all playtime is ${signals.dominantGenre}. Variety is overrated, apparently.`
     );
   }
   if (signals.multiplayerPlaytimeShare > 0.6) {
     stingers.push(
-      `${Math.round(signals.multiplayerPlaytimeShare * 100)}% of playtime is multiplayer. Single-player games are filing for neglect.`
+      `${Math.min(100, Math.round(signals.multiplayerPlaytimeShare * 100))}% of playtime is multiplayer. Single-player games are filing for neglect.`
     );
   }
   if (signals.weekendSessionRatio > 0.6) {
     stingers.push(
-      `${Math.round(signals.weekendSessionRatio * 100)}% of sessions happen on weekends. The weekdays are just a loading screen.`
+      `${Math.min(100, Math.round(signals.weekendSessionRatio * 100))}% of sessions happen on weekends. The weekdays are just a loading screen.`
     );
   }
   if (signals.shortSessionRatio > 0.5) {
     stingers.push(
-      `${Math.round(signals.shortSessionRatio * 100)}% of sessions are under 30 minutes. Efficiency is a personality trait.`
+      `${Math.min(100, Math.round(signals.shortSessionRatio * 100))}% of sessions are under 30 minutes. Efficiency is a personality trait.`
     );
   }
   if (signals.modFriendlyRatio > 0.4) {
     stingers.push(
-      `${Math.round(signals.modFriendlyRatio * 100)}% of the library is mod-friendly. The base game is just a suggestion.`
+      `${Math.min(100, Math.round(signals.modFriendlyRatio * 100))}% of the library is mod-friendly. The base game is just a suggestion.`
     );
   }
   if (signals.platformCount >= 4) {
@@ -2040,7 +2041,7 @@ const getRoastStingers = (signals, game) => {
   }
   if (signals.topGameSessionRatio > 0.5 && primaryGame?.name) {
     stingers.push(
-      `${Math.round(signals.topGameSessionRatio * 100)}% of all sessions go to ${primaryGame.name}. The rest of the library is decorative.`
+      `${Math.min(100, Math.round(signals.topGameSessionRatio * 100))}% of all sessions go to ${primaryGame.name}. The rest of the library is decorative.`
     );
   }
 
