@@ -8,12 +8,14 @@ Electron + React. Version 1.9.0.
 ```bash
 npm run format:check          # Prettier formatting check
 npx eslint src --max-warnings 0   # ESLint (zero warnings allowed)
-npx react-scripts test --watchAll=false --ci   # Jest tests (345 tests, 24 suites)
-npm run build                 # Production renderer build
+npx jest --ci                 # Jest tests (345 tests, 24 suites)
+npm run build                 # Production renderer build (Vite)
 npm run lint:css              # Stylelint (non-blocking, reports duplicate selectors)
+npm run typecheck             # TypeScript type check (tsc --noEmit)
 ```
 
-All four of format:check, eslint, test, and build must pass before committing.
+All of format:check, eslint, test, and build must pass before committing.
+The typecheck command is optional for JS-only changes.
 
 ## Architecture
 
@@ -46,9 +48,10 @@ All four of format:check, eslint, test, and build must pass before committing.
 - `sessionDatabase.js` — SessionDatabase class.
 - `public/preload.js` — context-isolated preload script.
 
-### Renderer (React)
+### Renderer (React + Vite)
 
 - `src/App.js` — main component (1173 lines). Wires together hooks and routes.
+- `src/index.jsx` — Vite entry point. Renders `<App />` in React StrictMode.
 - `src/hooks/` — custom hooks extracted from App.js:
   - `useLibraryFilters.js` — mood/time/genre filter state.
   - `useTheme.js` — theme + big-screen-mode state and body-class effects.
@@ -68,11 +71,31 @@ All four of format:check, eslint, test, and build must pass before committing.
 
 ### Build and packaging
 
-- `react-app-rewired` wraps `react-scripts` for custom webpack config.
-- `config-overrides.js` — webpack overrides (DefinePlugin for `__APP_VERSION__`).
+- **Vite** is the renderer build system (`vite.config.js`).
+  - `@vitejs/plugin-react` handles React JSX/refresh.
+  - `vite-plugin-node-polyfills` polyfills Node built-ins (path, os, process,
+    stream, crypto, url, util, buffer, http, https) for browser-compatible
+    scanner/utility code shared with the Electron main process.
+  - A custom `jsx-in-js` pre-plugin transforms JSX in `.js` files (CRA
+    convention) before Vite's build-import-analysis runs.
+  - `__APP_VERSION__` is defined via Vite `define` from `package.json`.
+  - `process.env.PUBLIC_URL` is defined as empty string for CRA compatibility.
+  - Build output: `dist/renderer/` (consumed by electron-builder).
+- **Jest** is standalone (`jest.config.js` + `babel.config.js`), no longer
+  depends on `react-scripts test`.
+  - Babel presets: `@babel/preset-env`, `@babel/preset-react`,
+    `@babel/preset-typescript`.
+  - CSS imports mocked via `identity-obj-proxy`.
+  - Static asset imports mocked via `src/__mocks__/fileMock.js`.
+  - `__APP_VERSION__` defined in Jest globals from `package.json`.
+- **TypeScript** is set up incrementally (`tsconfig.json` with `allowJs: true`).
+  New `.ts`/`.tsx` files can be added alongside existing `.js`/`.jsx` files.
+  No existing files have been converted.
 - `electron-builder` packages the app. The `files` list in `package.json`
-  includes `electron.js`, `logger.js`, `electron/**/*`, and `discordPresence.js`.
-- Version source of truth: `package.json` → `__APP_VERSION__` DefinePlugin.
+  includes `dist/renderer/**/*`, `electron.js`, `logger.js`, `electron/**/*`,
+  and `discordPresence.js`.
+- Version source of truth: `package.json` → `__APP_VERSION__` (Vite define +
+  Jest globals).
 
 ### CI
 
@@ -97,5 +120,9 @@ All four of format:check, eslint, test, and build must pass before committing.
 - 91 duplicate CSS selectors across 89 CSS files (Stylelint reports, not yet fixed).
 - `App.js` still has ~1173 lines; further hook extraction possible (session
   lifecycle, still-playing prompts, library loading).
-- CRA/react-scripts 5.0.1 is the build system; Vite migration is planned (Tier 3.1).
-- Session history uses localStorage; IndexedDB migration planned (Tier 3.3).
+- Session history uses localStorage; IndexedDB migration was evaluated and
+  deferred — the dual-write system (localStorage + SQLite) works and the
+  migration risk outweighs the benefit at current scale.
+- `react-scripts` and `react-app-rewired` remain in `package.json`
+  dependencies for the `eslint-config-react-app` preset; they can be removed
+  once ESLint is reconfigured with standalone plugins.
