@@ -4678,3 +4678,20 @@
   border-radius: 12px;
   padding: 12px 20px;
 }
+
+.home-wishlist-footer-link {
+  text-align: right;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.home-wishlist-footer-link a {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #888);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.home-wishlist-footer-link a:hover {
+  color: var(--accent-color, #ff6b35);
+}

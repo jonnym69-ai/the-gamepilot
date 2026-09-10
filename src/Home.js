@@ -1587,6 +1587,11 @@ function Home({
             defaultOpen={false}
           >
             <WishlistSection library={library} platformIcons={platformIcons} onLaunchGame={onLaunchGame} />
+            <div className="home-wishlist-footer-link">
+              <a href="#/wishlist" title="Open the full wishlist page with similar-game discovery">
+                View full wishlist &rarr;
+              </a>
+            </div>
           </CollapsibleSection>
         </>
       ) : (
@@ -1799,6 +1804,11 @@ function Home({
             compact
           >
             <WishlistSection library={library} platformIcons={platformIcons} onLaunchGame={onLaunchGame} />
+            <div className="home-wishlist-footer-link">
+              <a href="#/wishlist" title="Open the full wishlist page with similar-game discovery">
+                View full wishlist &rarr;
+              </a>
+            </div>
           </HomeSection>
         </>
       )}

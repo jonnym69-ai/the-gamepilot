@@ -140,6 +140,14 @@ function HybridNavBar() {
               >
                 <Activity size={16} className="dropdown-item-icon" /> Recent Activity
               </Link>
+              <Link
+                to="/wishlist"
+                className="dropdown-item"
+                onClick={closeDropdown}
+                title="Track games you want and discover similar ones"
+              >
+                <Gift size={16} className="dropdown-item-icon" /> Wishlist
+              </Link>
             </div>
             <div className="dropdown-section">
               <div className="dropdown-section-title">Progression</div>

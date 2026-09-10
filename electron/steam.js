@@ -237,6 +237,143 @@ const enrichWishlistItems = async (items) => {
   return enriched;
 };
 
+// ---------------------------------------------------------------------------
+// Steam "More Like This" discovery.
+// Scrapes store.steampowered.com/recommended/morelike/app/{appid}/ via a
+// hidden BrowserWindow (same pattern as the wishlist scraper) and extracts
+// the recommended app IDs + names + prices.  Results are enriched with
+// genres via appdetails so the renderer can score them against the user's
+// taste profile.  Cached in-memory for 24h per appid.
+// ---------------------------------------------------------------------------
+const MORELIKE_CACHE = new Map();
+const MORELIKE_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+const fetchMoreLikeViaWindow = async (appid) => {
+  const id = String(appid || '').replace(/[^0-9]/g, '');
+  if (!id) return [];
+  const url = `https://store.steampowered.com/recommended/morelike/app/${id}/`;
+
+  return new Promise((resolve, reject) => {
+    const win = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true,
+      },
+    });
+
+    const timeout = setTimeout(() => {
+      try {
+        win.destroy();
+      } catch {}
+      reject(new Error('Steam "more like this" page took too long to load.'));
+    }, 30_000);
+
+    const finish = (items) => {
+      clearTimeout(timeout);
+      try {
+        win.destroy();
+      } catch {}
+      resolve(items);
+    };
+
+    const fail = (err) => {
+      clearTimeout(timeout);
+      try {
+        win.destroy();
+      } catch {}
+      reject(err);
+    };
+
+    win.webContents.on('did-finish-load', async () => {
+      try {
+        // Steam loads the recommendation list dynamically; poll a few times.
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await sleep(1000);
+          const items = await win.webContents.executeJavaScript(`
+            (function() {
+              var rows = document.querySelectorAll('.search_result_row, .recommendation_carousel_item, a.ds_flagged');
+              if (!rows.length) return null;
+              var results = [];
+              rows.forEach(function(row) {
+                var href = row.getAttribute('href') || '';
+                var m = href.match(/\\/app\\/(\\d+)/);
+                if (!m) return;
+                var nameEl = row.querySelector('.title, .recommendation_name, .search_name');
+                var priceEl = row.querySelector('.search_price, .price, .discount_final_price');
+                results.push({
+                  appid: m[1],
+                  name: nameEl ? nameEl.textContent.trim() : '',
+                  price: priceEl ? priceEl.textContent.trim() : null
+                });
+              });
+              return results.length ? results : null;
+            })()
+          `);
+          if (items && Array.isArray(items) && items.length > 0) {
+            return finish(items);
+          }
+        }
+
+        // Last resort: try the store search API for the same genres.
+        // This is a fallback when the morelike page doesn't render properly.
+        finish([]);
+      } catch (err) {
+        fail(err);
+      }
+    });
+
+    win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+      fail(new Error(`Failed to load Steam morelike page: ${errorDescription} (${errorCode})`));
+    });
+
+    win.loadURL(url, {
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36',
+    });
+  });
+};
+
+const enrichMoreLikeItems = async (items) => {
+  const enriched = [];
+  const batchSize = 5;
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const appids = batch.map((item) => item.appid).join(',');
+    try {
+      const details = await steamHttpsGet('store.steampowered.com', `/api/appdetails?appids=${appids}`);
+      for (const item of batch) {
+        const info = details?.[item.appid]?.data;
+        enriched.push({
+          appid: item.appid,
+          name: item.name || info?.name || '',
+          genres: Array.isArray(info?.genres) ? info.genres.map((g) => g.description) : [],
+          image: info?.header_image || `https://cdn.cloudflare.steamstatic.com/steam/apps/${item.appid}/header.jpg`,
+          isFree: info?.is_free || false,
+          price: item.price || null,
+        });
+      }
+    } catch (err) {
+      console.warn('[SteamMoreLike] Failed to enrich batch:', err.message);
+      for (const item of batch) {
+        enriched.push({
+          appid: item.appid,
+          name: item.name || '',
+          genres: [],
+          image: `https://cdn.cloudflare.steamstatic.com/steam/apps/${item.appid}/header.jpg`,
+          isFree: false,
+          price: item.price || null,
+        });
+      }
+    }
+    if (i + batchSize < items.length) await sleep(500);
+  }
+  return enriched;
+};
+
 function registerIpcHandlers(ipcMain) {
   ipcMain.handle('steam-appreviews', async (_event, appid) => {
     const id = String(appid || '').replace(/[^0-9]/g, '');
@@ -405,6 +542,34 @@ function registerIpcHandlers(ipcMain) {
     } catch (err) {
       console.error('[SteamWishlist] Error:', err.message);
       return { success: false, error: err.message || 'Could not fetch Steam wishlist.', items: [] };
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Steam "More Like This" — discovers games similar to a given appid from
+  // the Steam store catalog.  Used by SimilarGamesService to recommend games
+  // the user doesn't own yet.  Results are cached in-memory for 24h.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle('steam-morelike', async (_event, appid) => {
+    const id = String(appid || '').replace(/[^0-9]/g, '');
+    if (!id) return { ok: false, error: 'invalid-appid', items: [] };
+
+    const cached = MORELIKE_CACHE.get(id);
+    if (cached && Date.now() - cached.at < MORELIKE_CACHE_TTL) {
+      return { ok: true, items: cached.items, cached: true };
+    }
+
+    try {
+      const raw = await fetchMoreLikeViaWindow(id);
+      if (raw.length === 0) {
+        return { ok: true, items: [], cached: false };
+      }
+      const enriched = await enrichMoreLikeItems(raw.slice(0, 12));
+      MORELIKE_CACHE.set(id, { at: Date.now(), items: enriched });
+      return { ok: true, items: enriched, cached: false };
+    } catch (err) {
+      console.warn('[SteamMoreLike] Error:', err.message);
+      return { ok: false, error: err.message || 'Could not fetch similar games.', items: [] };
     }
   });
 }

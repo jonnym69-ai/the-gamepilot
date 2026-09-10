@@ -21,6 +21,7 @@ const electronAPI = {
   steamPersonalAchievementsPreflight: (payload) => ipcRenderer.invoke('steam-personal-achievements-preflight', payload),
   steamNews: (payload) => ipcRenderer.invoke('steam-news', payload),
   steamWishlist: (steamId) => ipcRenderer.invoke('steam-wishlist', steamId),
+  steamMoreLike: (appid) => ipcRenderer.invoke('steam-morelike', appid),
   diskFolderSize: (payload) => ipcRenderer.invoke('disk-folder-size', payload),
   saveLocationStatus: (payload) => ipcRenderer.invoke('save-location-status', payload),
   openSaveLocation: (payload) => ipcRenderer.invoke('open-save-location', payload),

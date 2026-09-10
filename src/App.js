@@ -75,6 +75,7 @@ const Recommendations = lazy(() => import('./Recommendations'));
 const GameBarOverlay = lazy(() => import('./components/GameBarOverlay'));
 const Rewards = lazy(() => import('./Rewards'));
 const Feedback = lazy(() => import('./Feedback'));
+const WishlistPage = lazy(() => import('./WishlistPage'));
 
 // One-time migration: copy legacy 'gameLibrary' key to prefixed 'gamepilot-library'
 StorageService.migrate();
@@ -1151,6 +1152,7 @@ function AppContent() {
               path="/recommendations"
               element={<Recommendations library={library} onLaunchGame={handleLaunchGame} />}
             />
+            <Route path="/wishlist" element={<WishlistPage library={library} onLaunchGame={handleLaunchGame} />} />
             <Route path="/gamebar" element={<GameBarOverlay />} />
             <Route path="/rewards" element={<Rewards />} />
             <Route path="/feedback" element={<Feedback />} />
