@@ -40,7 +40,7 @@ function createGameBarOverlayWindow() {
   gameBarWindow.loadURL(
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000/#/gamebar'
-      : `file://${path.join(__dirname, '..', './build/index.html')}#/gamebar`
+      : `file://${path.join(__dirname, '..', 'dist', 'renderer', 'index.html')}#/gamebar`
   );
 
   gameBarWindow.once('ready-to-show', () => {
@@ -77,7 +77,7 @@ function createWindow(deps = {}) {
     mainWindow.loadURL(
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000'
-        : `file://${path.join(__dirname, '..', './build/index.html')}`
+        : `file://${path.join(__dirname, '..', 'dist', 'renderer', 'index.html')}`
     );
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {

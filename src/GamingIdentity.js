@@ -3,7 +3,7 @@ import { AchievementTracker } from './AchievementSystem';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
-import { getEnhancedIdentity } from './services/GamingIdentityEnhancements';
+import { getEnhancedIdentity, GenreArchetypes } from './services/GamingIdentityEnhancements';
 import { GameRatingService } from './services/GameRatingService';
 import StorageService from './services/StorageService';
 import { getGameGenres } from './GameGenreDatabase';
@@ -242,7 +242,6 @@ export class GamingIdentity {
     const primaryPersona = gamingPersona?.primaryPersona;
     const personaLabel = primaryPersona?.label || behaviorLabel;
 
-    const { GenreArchetypes } = require('./services/GamingIdentityEnhancements');
     const genreStats = dominantGenre && dominantGenre !== 'None' ? { [dominantGenre]: stats.totalPlayTime || 0 } : {};
     const archetype = GenreArchetypes.getArchetype(genreStats, stats);
 

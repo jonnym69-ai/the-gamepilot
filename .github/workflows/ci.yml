@@ -42,7 +42,7 @@ jobs:
         continue-on-error: true
 
       - name: Run tests
-        run: npx react-scripts test --watchAll=false --ci
+        run: npx jest --ci
 
       - name: Build renderer
         run: npm run build
