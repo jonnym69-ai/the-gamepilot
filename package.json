@@ -44,7 +44,8 @@
     "format": "prettier --write \"src/**/*.{js,jsx,css,json}\" \"*.js\" \"vite.config.js\" \"jest.config.js\" \"babel.config.js\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,css,json}\" \"*.js\" \"vite.config.js\" \"jest.config.js\" \"babel.config.js\"",
     "lint:css": "stylelint \"src/**/*.css\"",
-    "lint:css:fix": "stylelint --fix \"src/**/*.css\""
+    "lint:css:fix": "stylelint --fix \"src/**/*.css\"",
+    "typecheck": "tsc --noEmit"
   },
   "eslintConfig": {
     "extends": [
@@ -71,6 +72,7 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.4",
     "@babel/preset-react": "^7.24.7",
+    "@babel/preset-typescript": "^7.24.7",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -89,6 +91,7 @@
     "stylelint": "^16.9.0",
     "stylelint-config-standard": "^36.0.1",
     "stylelint-no-unsupported-browser-features": "^8.0.1",
+    "typescript": "^5.5.4",
     "vite": "^5.4.8",
     "vite-plugin-node-polyfills": "^0.22.0",
     "wait-on": "^9.0.4"

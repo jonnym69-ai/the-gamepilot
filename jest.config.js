@@ -1,13 +1,13 @@
 module.exports = {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
-  testMatch: ['<rootDir>/src/**/*.test.js', '<rootDir>/src/**/*.test.jsx'],
+  testMatch: ['<rootDir>/src/**/*.test.{js,jsx,ts,tsx}'],
   transform: {
-    '^.+\\.(js|jsx)$': 'babel-jest',
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
   transformIgnorePatterns: [
     // Transform ES modules in node_modules that are used by tests.
-    '[/\\\\]node_modules[/\\\\](?!.*node-polyfills).+\\.(js|jsx)$',
+    '[/\\\\]node_modules[/\\\\](?!.*node-polyfills).+\\.(js|jsx|ts|tsx)$',
   ],
   moduleNameMapper: {
     // Mock CSS imports so Jest doesn't try to parse them.
@@ -20,6 +20,6 @@ module.exports = {
   globals: {
     __APP_VERSION__: require('./package.json').version,
   },
-  collectCoverageFrom: ['src/**/*.{js,jsx}', '!src/**/*.test.{js,jsx}', '!src/**/*.stories.{js,jsx}'],
+  collectCoverageFrom: ['src/**/*.{js,jsx,ts,tsx}', '!src/**/*.test.{js,jsx,ts,tsx}'],
   watchPlugins: [],
 };
