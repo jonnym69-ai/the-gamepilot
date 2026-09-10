@@ -19,6 +19,7 @@ import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import './Home.css';
 import './LibraryValue.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
+import DailyParadox from './components/DailyParadox';
 import LazyImage from './components/LazyImage';
 import WishlistSection from './components/WishlistSection';
 import NostalgiaCard from './components/NostalgiaCard';
@@ -1379,6 +1380,9 @@ function Home({
         <p className="scan-description">
           Automatically finds Steam, Epic, Game Pass, Rockstar, Battle.net, EA, Ubisoft, and GOG games
         </p>
+
+        {/* Daily Paradox */}
+        <DailyParadox />
 
         {/* Launcher Status */}
         <div className="launcher-status">
