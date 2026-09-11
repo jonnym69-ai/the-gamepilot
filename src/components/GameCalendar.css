@@ -343,8 +343,7 @@
 }
 
 .form-group input,
-.form-group select,
-.form-group textarea {
+.form-group select {
   width: 100%;
   padding: 10px 12px;
   background: var(--input-bg);
@@ -365,6 +364,15 @@
 }
 
 .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  font-family: inherit;
   resize: vertical;
   min-height: 60px;
 }
@@ -377,8 +385,7 @@
   border-top: 1px solid var(--border-color);
 }
 
-.btn-cancel,
-.btn-add {
+.btn-cancel {
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: 500;
@@ -388,9 +395,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.btn-cancel {
   background: var(--button-bg);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
@@ -401,6 +405,15 @@
 }
 
 .btn-add {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background: var(--accent-color);
   color: white;
 }

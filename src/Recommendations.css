@@ -307,8 +307,7 @@
   text-overflow: ellipsis;
 }
 
-.rec-row-action,
-.rec-row-launch {
+.rec-row-action {
   height: 34px;
   border-radius: 10px;
   border: none;
@@ -321,9 +320,6 @@
   font-size: 0.8rem;
   font-weight: 600;
   transition: all 0.15s ease;
-}
-
-.rec-row-action {
   background: var(--card-bg, rgba(255, 255, 255, 0.06));
   color: var(--text-secondary, #94a3b8);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
@@ -347,6 +343,18 @@
 }
 
 .rec-row-launch {
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: #fff;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);

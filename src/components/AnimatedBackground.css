@@ -37,9 +37,7 @@
   height: 100%;
 }
 
-.rain-drop,
-.snow-flake,
-.star-particle {
+.rain-drop {
   position: absolute;
   top: -10%;
   width: 2px;
@@ -48,22 +46,30 @@
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   opacity: 0.75;
-}
-
-.rain-drop {
   animation-name: rain-fall;
 }
 
 .snow-flake {
+  position: absolute;
+  top: -10%;
   width: 5px;
   height: 5px;
   border-radius: 50%;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  opacity: 0.75;
   animation-name: snow-fall;
 }
 
 .star-particle {
+  position: absolute;
+  top: -10%;
   width: 3px;
   height: 60px;
+  border-radius: 999px;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  opacity: 0.75;
   animation-name: star-warp;
 }
 

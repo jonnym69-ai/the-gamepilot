@@ -320,8 +320,7 @@
   margin-top: 30px;
 }
 
-.save-button,
-.cancel-button {
+.save-button {
   padding: 12px 24px;
   border: none;
   border-radius: 25px;
@@ -334,9 +333,6 @@
   gap: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.save-button {
   background: linear-gradient(135deg, #28a745, #4caf50);
   color: white;
   box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
@@ -354,8 +350,19 @@
 }
 
 .cancel-button {
-  background: transparent;
+  padding: 12px 24px;
   border: 2px solid var(--text);
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: transparent;
   color: var(--text);
 }
 
@@ -464,8 +471,7 @@
   pointer-events: none;
 }
 
-.profile-identity-banner-copy,
-.profile-identity-banner-meta {
+.profile-identity-banner-copy {
   position: relative;
   z-index: 1;
   display: flex;
@@ -494,8 +500,12 @@
 }
 
 .profile-identity-banner-meta {
-  align-items: flex-end;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  align-items: flex-end;
 }
 
 .profile-identity-banner-meta span {
@@ -1884,20 +1894,25 @@
 }
 
 .stat-label {
-  font-size: 0.9rem;
-  color: var(--text);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
   opacity: 0.7;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 10px;
   font-weight: 600;
+  margin: 0;
+  display: block;
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: var(--accent-primary, #ff6b35);
+  color: var(--accent-primary);
   line-height: 1;
+  margin: 0 0 4px 0;
+  display: block;
+  margin-bottom: 4px;
 }
 
 /* Profile Customization Styles */
@@ -2464,10 +2479,10 @@
 .most-played-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: var(--card);
-  border: 2px solid var(--border);
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
   border-radius: 12px;
   transition: all 0.3s ease;
 }
@@ -2476,6 +2491,7 @@
   border-color: var(--accent-primary, #ff6b35);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .most-played-rank {
@@ -2760,19 +2776,6 @@
   letter-spacing: 0.5px;
 }
 
-.stat-value {
-  margin: 0 0 4px 0;
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--accent-primary, #ff6b35);
-}
-
-.stat-label {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-secondary, #8892b0);
-}
-
 /* No playtime data message */
 .no-playtime-data {
   text-align: center;
@@ -2929,11 +2932,6 @@
   opacity: 0.7;
 }
 
-.stat-value {
-  font-weight: 700;
-  color: var(--accent-primary, #ff6b35);
-}
-
 .completion-bar {
   width: 100%;
   height: 8px;
@@ -3015,22 +3013,6 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
-}
-
-.most-played-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 15px;
-  transition: all 0.3s ease;
-}
-
-.most-played-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--accent-primary, #ff6b35);
 }
 
 .rank-badge {
@@ -3220,24 +3202,8 @@ body.big-screen-mode .profile-section.selected {
   border-color: rgba(245, 183, 0, 0.3);
 }
 
-.stat-value {
-  display: block;
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--accent-primary);
-  margin-bottom: 4px;
-}
-
 .stat-card.bonus .stat-value {
   color: #f5b700;
-}
-
-.stat-label {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 /* Recommended Collection */

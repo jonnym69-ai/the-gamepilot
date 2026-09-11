@@ -317,8 +317,7 @@
 }
 
 .swipe-card-platform,
-.swipe-card-genre,
-.swipe-card-mood {
+.swipe-card-genre {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 10px;
@@ -328,7 +327,12 @@
 }
 
 .swipe-card-mood {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
   background: rgba(197, 138, 249, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-color: rgba(197, 138, 249, 0.2);
   color: #c58af9;
 }
@@ -498,8 +502,7 @@
   margin-top: 8px;
 }
 
-.swipe-restart-btn,
-.swipe-back-home-btn {
+.swipe-restart-btn {
   padding: 12px 20px;
   border-radius: 12px;
   border: none;
@@ -509,6 +512,8 @@
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
+  background: linear-gradient(135deg, #8ab4f8, #c58af9);
+  color: white;
 }
 
 .swipe-restart-btn:focus-visible,
@@ -517,14 +522,17 @@
   outline-offset: 2px;
 }
 
-.swipe-restart-btn {
-  background: linear-gradient(135deg, #8ab4f8, #c58af9);
-  color: white;
-}
-
 .swipe-back-home-btn {
-  background: rgba(255, 255, 255, 0.08);
+  padding: 12px 20px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 

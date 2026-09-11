@@ -935,6 +935,18 @@
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  justify-content: center;
+  flex: 1 1 220px;
 }
 
 .save-rating-button.dirty {
@@ -961,13 +973,26 @@
 }
 
 .launch-button {
-  background: linear-gradient(135deg, var(--accent-primary, #ff6b35) 0%, var(--accent-secondary, #ff8c42) 100%);
-  color: #fff;
+  background: var(--button-bg);
+  color: var(--button-text);
   box-shadow:
     0 6px 18px rgba(255, 107, 53, 0.35),
     0 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  justify-content: center;
+  flex: 1 1 220px;
 }
 
 .launch-button::before {
@@ -984,10 +1009,9 @@
 }
 
 .launch-button:hover {
-  transform: translateY(-3px);
-  box-shadow:
-    0 10px 24px rgba(255, 107, 53, 0.45),
-    0 4px 8px rgba(0, 0, 0, 0.25);
+  background: var(--button-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   filter: brightness(1.08);
 }
 
@@ -996,25 +1020,50 @@
 }
 
 .store-button {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: #1e40af;
+  color: white;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  justify-content: center;
+  flex: 1 1 220px;
 }
 
 .store-button:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: #1d4ed8;
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .wishlist-button {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  color: var(--text);
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  justify-content: center;
+  flex: 1 1 220px;
 }
 
 .wishlist-button.wishlisted {
-  color: #f43f5e;
-  background: rgba(244, 63, 94, 0.1);
+  color: white;
+  background: #ef4444;
   border-color: rgba(244, 63, 94, 0.3) !important;
 }
 
@@ -1022,16 +1071,29 @@
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   transform: translateY(-2px);
+  border-color: var(--button-bg);
 }
 
 .wishlist-button.wishlisted:hover {
-  background: rgba(244, 63, 94, 0.15);
+  background: #dc2626;
 }
 
 .share-btn {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  justify-content: center;
+  flex: 1 1 220px;
 }
 
 .share-btn:hover {
@@ -1043,6 +1105,18 @@
   background: rgba(248, 113, 113, 0.1);
   color: #fca5a5;
   border: 1px solid rgba(248, 113, 113, 0.35) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  justify-content: center;
+  flex: 1 1 220px;
 }
 
 .uninstall-modal-button:hover {
@@ -1163,71 +1237,6 @@
   background: var(--card);
   flex-shrink: 0;
   justify-content: flex-end;
-}
-
-.launch-button,
-.store-button,
-.wishlist-button,
-.save-rating-button,
-.share-btn,
-.uninstall-modal-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  justify-content: center;
-  flex: 1 1 220px;
-}
-
-.launch-button {
-  background: var(--button-bg);
-  color: var(--button-text);
-}
-
-.launch-button:hover {
-  background: var(--button-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.store-button {
-  background: #1e40af;
-  color: white;
-}
-
-.store-button:hover {
-  background: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.wishlist-button {
-  background: transparent;
-  color: var(--text);
-  border: 2px solid var(--card-border);
-}
-
-.wishlist-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--button-bg);
-  transform: translateY(-2px);
-}
-
-.wishlist-button.wishlisted {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
-}
-
-.wishlist-button.wishlisted:hover {
-  background: #dc2626;
 }
 
 @media (max-width: 1080px) {

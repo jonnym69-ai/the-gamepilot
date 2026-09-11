@@ -192,7 +192,7 @@
   color: var(--text-color);
   font-weight: 700;
   cursor: pointer;
-  transition: var(--transition-base, 0.25s ease);
+  transition: all 0.2s ease;
 }
 
 .year-review-actions button:focus-visible {
@@ -201,9 +201,9 @@
 }
 
 .year-review-actions button:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: scale(1.05);
   border-color: var(--accent-color);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .year-review-actions button:disabled {
@@ -272,6 +272,9 @@
   background: linear-gradient(165deg, var(--card-bg), var(--input-bg));
   border: 1px solid var(--card-border);
   box-shadow: 0 18px 35px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .summary-card-title {
@@ -446,15 +449,13 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
 }
-.year-review-year-champion-stats strong,
-.year-review-year-champion-stats span {
-  display: block;
-}
 .year-review-year-champion-stats strong {
+  display: block;
   color: var(--header-text, var(--text-color));
   font-size: 1rem;
 }
 .year-review-year-champion-stats span {
+  display: block;
   margin-top: 2px;
   color: var(--text-color);
   font-size: 0.64rem;
@@ -500,25 +501,29 @@
 .year-review-month-copy {
   padding: 9px 10px 11px;
 }
-.year-review-month-copy strong,
-.year-review-month-copy span,
-.year-review-month-copy small {
+.year-review-month-copy strong {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.year-review-month-copy strong {
   color: var(--header-text, var(--text-color));
   font-size: 0.78rem;
 }
 .year-review-month-copy span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-top: 4px;
   color: var(--text-color);
   font-size: 0.65rem;
   opacity: 0.65;
 }
 .year-review-month-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-top: 2px;
   color: var(--text-color);
   font-size: 0.59rem;
@@ -719,8 +724,7 @@
   gap: 12px;
 }
 
-.top-game-row,
-.achievement-highlight-row {
+.top-game-row {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -729,6 +733,9 @@
   border-radius: 16px;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .top-game-rank {
@@ -835,6 +842,9 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: var(--card-bg);
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .mix-columns li span {
@@ -846,6 +856,7 @@
 .progression-group-row {
   display: grid;
   gap: 8px;
+  transition: background-color 0.2s ease;
 }
 
 @media (max-width: 1080px) {
@@ -939,12 +950,6 @@
 }
 
 /* Hover States */
-.year-review-summary-card {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
 .year-review-summary-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.32);
@@ -968,27 +973,20 @@
   opacity: 0.9;
 }
 
-.year-review-actions button {
-  transition: all 0.2s ease;
-}
-
-.year-review-actions button:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.top-game-row {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
 .top-game-row:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.24);
 }
 
 .achievement-highlight-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -999,18 +997,8 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.24);
 }
 
-.progression-group-row {
-  transition: background-color 0.2s ease;
-}
-
 .progression-group-row:hover {
   background: rgba(255, 255, 255, 0.05);
-}
-
-.mix-columns li {
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease;
 }
 
 .mix-columns li:hover {

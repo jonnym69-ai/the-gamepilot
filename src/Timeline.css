@@ -210,9 +210,7 @@
   pointer-events: none;
   background: linear-gradient(to bottom, rgba(4, 8, 18, 0.16) 0%, transparent 34%, rgba(4, 8, 18, 0.78) 100%);
 }
-.timeline-cover-period,
-.timeline-cover-live,
-.timeline-cover-hours {
+.timeline-cover-period {
   position: absolute;
   z-index: 2;
   display: inline-flex;
@@ -222,8 +220,6 @@
   font-weight: 700;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-}
-.timeline-cover-period {
   top: 10px;
   left: 10px;
   max-width: calc(100% - 20px);
@@ -235,6 +231,15 @@
   white-space: nowrap;
 }
 .timeline-cover-live {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  font-weight: 700;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   top: 42px;
   left: 10px;
   padding: 4px 8px;
@@ -245,6 +250,15 @@
   letter-spacing: 0.05em;
 }
 .timeline-cover-hours {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  font-weight: 700;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   left: 10px;
   bottom: 10px;
   padding: 5px 8px;
@@ -276,25 +290,25 @@
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.045);
 }
-.timeline-cover-stats strong,
+.timeline-cover-stats strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text, #f8fafc);
+  font-size: 0.72rem;
+}
 .timeline-cover-stats span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.timeline-cover-stats strong {
-  color: var(--text, #f8fafc);
-  font-size: 0.72rem;
-}
-.timeline-cover-stats span {
   margin-top: 2px;
   color: var(--text, #f8fafc);
   font-size: 0.55rem;
   opacity: 0.45;
 }
-.timeline-cover-longest-date,
-.timeline-cover-period-total {
+.timeline-cover-longest-date {
   margin-top: 7px;
   color: var(--text, #f8fafc);
   font-size: 0.61rem;
@@ -302,6 +316,11 @@
   opacity: 0.46;
 }
 .timeline-cover-period-total {
+  margin-top: 7px;
+  color: var(--text, #f8fafc);
+  font-size: 0.61rem;
+  line-height: 1.35;
+  opacity: 0.46;
   padding-top: 7px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -406,13 +425,15 @@
 .timeline-share-champion-cover img,
 .timeline-share-collection-card > div img,
 .timeline-share-month-card > div img,
-.timeline-share-year-winner > div img,
-.timeline-share-cover-fallback {
+.timeline-share-year-winner > div img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 .timeline-share-cover-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -443,14 +464,12 @@
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.07);
 }
-.timeline-share-stat-grid strong,
-.timeline-share-stat-grid span {
-  display: block;
-}
 .timeline-share-stat-grid strong {
+  display: block;
   font-size: 23px;
 }
 .timeline-share-stat-grid span {
+  display: block;
   margin-top: 3px;
   color: rgba(255, 255, 255, 0.58);
   font-size: 13px;
@@ -469,8 +488,7 @@
   min-height: 1080px;
   padding: 64px;
 }
-.timeline-share-collection > h2,
-.timeline-share-year-board > h2 {
+.timeline-share-collection > h2 {
   margin: 25px 0 5px;
   font-size: 54px;
 }
@@ -499,20 +517,13 @@
   overflow: hidden;
 }
 .timeline-share-collection-card > span,
-.timeline-share-collection-card > strong,
-.timeline-share-collection-card > small,
-.timeline-share-month-card > span,
-.timeline-share-month-card > strong,
-.timeline-share-month-card > small {
+.timeline-share-month-card > span {
   display: block;
   margin-left: 12px;
   margin-right: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.timeline-share-collection-card > span,
-.timeline-share-month-card > span {
   margin-top: 11px;
   color: #93c5fd;
   font-size: 12px;
@@ -521,11 +532,23 @@
 }
 .timeline-share-collection-card > strong,
 .timeline-share-month-card > strong {
+  display: block;
+  margin-left: 12px;
+  margin-right: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-top: 5px;
   font-size: 16px;
 }
 .timeline-share-collection-card > small,
 .timeline-share-month-card > small {
+  display: block;
+  margin-left: 12px;
+  margin-right: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-top: 4px;
   margin-bottom: 13px;
   color: rgba(255, 255, 255, 0.54);
@@ -542,6 +565,8 @@
   padding: 64px;
 }
 .timeline-share-year-board > h2 {
+  margin: 25px 0 5px;
+  font-size: 54px;
   margin-bottom: 24px;
 }
 .timeline-share-year-winner {

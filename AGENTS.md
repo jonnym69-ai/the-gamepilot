@@ -8,7 +8,7 @@ Electron + React. Version 1.9.0.
 ```bash
 npm run format:check          # Prettier formatting check
 npx eslint src --max-warnings 0   # ESLint (zero warnings allowed)
-npx jest --ci                 # Jest tests (345 tests, 24 suites)
+npx jest --ci                 # Jest tests (432 tests, 33 suites)
 npm run build                 # Production renderer build (Vite)
 npm run lint:css              # Stylelint (non-blocking, reports duplicate selectors)
 npm run typecheck             # TypeScript type check (tsc --noEmit)
@@ -50,14 +50,25 @@ The typecheck command is optional for JS-only changes.
 
 ### Renderer (React + Vite)
 
-- `src/App.js` — main component (1173 lines). Wires together hooks and routes.
+- `src/App.js` — main component (608 lines). Wires together hooks and routes.
+  Route elements are wrapped with `RouteErrorBoundary` for per-page failure
+  isolation; a top-level `ErrorBoundary` remains as a last-resort fallback.
 - `src/index.jsx` — Vite entry point. Renders `<App />` in React StrictMode.
-- `src/hooks/` — custom hooks extracted from App.js:
+- `src/hooks/` — custom hooks extracted from App.js (13 hooks):
   - `useLibraryFilters.js` — mood/time/genre filter state.
   - `useTheme.js` — theme + big-screen-mode state and body-class effects.
   - `useGlobalInput.js` — keyboard shortcuts, easter-egg keys, controller nav.
   - `useLibraryCuration.js` — all 10 game curation callbacks.
   - `useInterfacePreferences.js` — interface preference subscription.
+  - `useLibraryLoading.js` — initial library load + saveLibrary callback.
+  - `useLibraryScanner.js` — scan process + loading state.
+  - `useGamingStory.js` — story card state + show/dismiss.
+  - `useSessionLifecycle.js` — session start/end/recovery/heartbeat/shutdown.
+  - `useGameLaunching.js` — handleLaunchGame + launch event listener.
+  - `useStillPlayingPrompt.js` — 15-min prompt + deadlines + escape key.
+  - `useSessionNotifications.js` — roast/rivalry/streak/identity toasts + rec prompt.
+  - `useDynamicBackdrop.js` — cover-art + animated backdrop CSS effects.
+  - `useSeasonalFeatures.js` — calendar rewards + seasonal play tracking.
 - `src/services/` — service modules (library scanning, playtime tracking, etc.).
 - `src/components/` — React components.
 
@@ -81,6 +92,9 @@ The typecheck command is optional for JS-only changes.
   - `__APP_VERSION__` is defined via Vite `define` from `package.json`.
   - `process.env.PUBLIC_URL` is defined as empty string for CRA compatibility.
   - Build output: `dist/renderer/` (consumed by electron-builder).
+  - Vendor libraries are split into separate chunks via `manualChunks`:
+    `react-dom`, `react`, `router`, `icons` (lucide-react), `canvas`
+    (html2canvas), `charts` (recharts/d3). Main index chunk is ~574 KB.
 - **Jest** is standalone (`jest.config.js` + `babel.config.js`), no longer
   depends on `react-scripts test`.
   - Babel presets: `@babel/preset-env`, `@babel/preset-react`,
@@ -103,7 +117,8 @@ The typecheck command is optional for JS-only changes.
 
 1. ESLint (blocking)
 2. Prettier format check (blocking)
-3. Stylelint (non-blocking — 91 pre-existing duplicate-selector issues)
+3. Stylelint (non-blocking — duplicate-selector issues resolved; a few
+   pre-existing non-duplicate errors remain)
 4. Jest tests (blocking)
 5. Production build (blocking)
 
@@ -117,9 +132,13 @@ The typecheck command is optional for JS-only changes.
 
 ## Known technical debt
 
-- 91 duplicate CSS selectors across 89 CSS files (Stylelint reports, not yet fixed).
-- `App.js` still has ~1173 lines; further hook extraction possible (session
-  lifecycle, still-playing prompts, library loading).
+- A handful of pre-existing Stylelint errors remain (1
+  `declaration-block-no-shorthand-property-overrides` in `App.css`, 4
+  `no-unknown-animations` in `Home.css`/`cinematicExport.css`/
+  `DailyDoodleTitle.css`). Duplicate selectors have been consolidated.
+- Main index chunk is ~576 KB, still above the 500 KB Vite warning
+  threshold. Further reduction would require lazy-loading services, which is
+  more invasive.
 - Session history uses localStorage; IndexedDB migration was evaluated and
   deferred — the dual-write system (localStorage + SQLite) works and the
   migration risk outweighs the benefit at current scale.

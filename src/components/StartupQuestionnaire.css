@@ -33,7 +33,20 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.startup-questionnaire-kicker,
+.startup-questionnaire-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 107, 53, 0.14);
+  color: #ff9a5a;
+}
+
 .startup-founder-pill {
   display: inline-flex;
   align-items: center;
@@ -44,14 +57,6 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.startup-questionnaire-kicker {
-  background: rgba(255, 107, 53, 0.14);
-  color: #ff9a5a;
-}
-
-.startup-founder-pill {
   margin-top: 14px;
   background: rgba(250, 204, 21, 0.14);
   color: #fde68a;

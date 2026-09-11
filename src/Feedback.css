@@ -325,15 +325,12 @@
   transition:
     opacity 0.12s ease,
     transform 0.1s ease;
+  background: #000;
+  color: #fff;
 }
 
 .feedback-copy {
   background: var(--accent-primary, #7c5cff);
-  color: #fff;
-}
-
-.feedback-x {
-  background: #000;
   color: #fff;
 }
 

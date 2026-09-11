@@ -351,6 +351,9 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 18px;
+  transition:
+    border-color var(--transition-base, 0.25s ease),
+    box-shadow var(--transition-base, 0.25s ease);
 }
 .gl-cover-game {
   display: flex;
@@ -393,9 +396,15 @@
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
+  transition:
+    transform var(--transition-fast, 0.15s ease),
+    border-color var(--transition-fast, 0.15s ease),
+    background-color var(--transition-fast, 0.15s ease);
 }
 .gl-cover-search-btn:hover {
   border-color: var(--button-primary-bg);
+  transform: translateY(-1px);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 .gl-cover-set {
   display: flex;
@@ -407,8 +416,7 @@
   flex: 1;
   padding: 9px 12px;
 }
-.gl-cover-set-btn,
-.gl-cover-upload-btn {
+.gl-cover-set-btn {
   padding: 9px 16px;
   border-radius: 8px;
   font-size: 13px;
@@ -416,6 +424,11 @@
   cursor: pointer;
 }
 .gl-cover-upload-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
   position: relative;
   overflow: hidden;
 }
@@ -429,22 +442,6 @@
   color: #ff6b6b;
 }
 
-/* ===== Polish pass ===== */
-.gl-cover-search-btn {
-  transition:
-    transform var(--transition-fast, 0.15s ease),
-    border-color var(--transition-fast, 0.15s ease),
-    background-color var(--transition-fast, 0.15s ease);
-}
-.gl-cover-search-btn:hover {
-  transform: translateY(-1px);
-  background-color: rgba(255, 255, 255, 0.08);
-}
-.gl-cover-row {
-  transition:
-    border-color var(--transition-base, 0.25s ease),
-    box-shadow var(--transition-base, 0.25s ease);
-}
 .gl-cover-row:hover {
   border-color: rgba(255, 255, 255, 0.16);
   box-shadow: var(--elevation-2, 0 12px 32px rgba(0, 0, 0, 0.18));
