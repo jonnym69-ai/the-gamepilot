@@ -272,6 +272,39 @@ body.reduced-motion .empty-library-scan-spinner {
   transform: none;
 }
 
+/* ShareMenu triggers sit in the same toolbar — match the export-button
+   treatment so the panel reads as one control set. */
+.library-control-panel .share-menu-trigger {
+  padding: 8px 14px;
+  min-height: 36px;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text, #f8fafc);
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.library-control-panel .share-menu-trigger:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.library-control-panel .share-menu-trigger:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+.library-control-panel .share-menu-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .library-control-panel .library-share-period-select {
   min-width: 140px;
   padding: 8px 12px;

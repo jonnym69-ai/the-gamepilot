@@ -267,11 +267,11 @@ export default function CommandPalette() {
         </div>
         <div className="command-palette-footer">
           <span>
-            <kbd>\u2191</kbd>
-            <kbd>\u2193</kbd> navigate
+            <kbd>{'\u2191'}</kbd>
+            <kbd>{'\u2193'}</kbd> navigate
           </span>
           <span>
-            <kbd>\u21b5</kbd> select
+            <kbd>{'\u21b5'}</kbd> select
           </span>
           <span>
             <kbd>/</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd> toggle

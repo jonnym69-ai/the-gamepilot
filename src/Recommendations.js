@@ -1011,9 +1011,7 @@ export default function Recommendations({ library, onLaunchGame }) {
         )}
       </div>
       <div className="rec-top-nav-title">
-        {activeStyle === 'hub'
-          ? 'Recommendations'
-          : recommendationStyles.find((s) => s.id === activeStyle)?.title || ''}
+        {activeStyle === 'hub' ? '' : recommendationStyles.find((s) => s.id === activeStyle)?.title || ''}
       </div>
       <div className="rec-top-nav-right" />
     </div>

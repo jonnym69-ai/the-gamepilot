@@ -83,10 +83,18 @@ const GuidedTour = () => {
       return undefined;
     }
 
-    startTimerRef.current = setTimeout(() => {
+    const tryStart = () => {
+      // Don't stack the tour on top of an open dialog (e.g. the first-run
+      // getting-started modal) — poll until the UI is clear.
+      if (document.querySelector('.modal-overlay, [role="dialog"]')) {
+        startTimerRef.current = setTimeout(tryStart, 1500);
+        return;
+      }
       setStepIndex(0);
       setIsActive(true);
-    }, 700);
+    };
+
+    startTimerRef.current = setTimeout(tryStart, 700);
 
     return () => {
       if (startTimerRef.current) {

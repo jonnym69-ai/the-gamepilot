@@ -46,6 +46,16 @@ export default defineConfig({
     }),
   ],
   base: './',
+  optimizeDeps: {
+    // Only scan the real entry point — otherwise the dep optimizer crawls
+    // every .html file in the repo (build/, public/, dist/).
+    entries: ['index.html'],
+    esbuildOptions: {
+      // CRA convention allows JSX in .js files; esbuild must parse them as
+      // JSX during dependency scanning, matching the jsx-in-js plugin.
+      loader: { '.js': 'jsx' },
+    },
+  },
   build: {
     outDir: 'dist/renderer',
     emptyOutDir: true,
