@@ -2699,3 +2699,9 @@
     padding: 10px 8px;
   }
 }
+
+/* GamePilot Pro */
+.settings-edition-summary p {
+  line-height: 1.6;
+  margin: 12px 0;
+}

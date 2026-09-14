@@ -16,6 +16,7 @@ import {
   Info,
   MessageSquarePlus,
   Compass,
+  Crown,
 } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
@@ -24,6 +25,7 @@ import NavBar from './NavBar';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import CollapsibleSection from './components/CollapsibleSection';
 import { isElectronRuntime, waitForElectronAPI } from './services/ElectronBridge';
+import EntitlementService from './services/EntitlementService';
 import StorageService from './services/StorageService';
 import HowLongToBeatService from './services/HowLongToBeatService';
 import PCGamingWikiService from './services/PCGamingWikiService';
@@ -1430,6 +1432,28 @@ function Settings({
                 <BackupRestoreDashboard />
               </CollapsibleSection>
 
+              {/* GamePilot Pro Section */}
+              <CollapsibleSection
+                title="GamePilot Editions"
+                subtitle="Free to keep using. Pro adds deeper tools."
+                badge={EntitlementService.isPro() ? 'Pro installed' : 'Free installed'}
+                icon={<Crown size={18} />}
+                className="settings-folder"
+              >
+                <div className="settings-section settings-edition-summary">
+                  <h2>{EntitlementService.getEditionName()}</h2>
+                  <p>
+                    Eras, game-earned titles, rewards and manual backups are included in both editions. Pro adds
+                    cinematic exports, Library Reclaimer and the advanced recommendation tuner.
+                  </p>
+                  <p>Separate installers, shared local data, no license-key activation.</p>
+                  <button type="button" className="data-button export" onClick={() => navigate('/editions')}>
+                    <Crown size={16} />
+                    {EntitlementService.isPro() ? 'Compare editions' : 'Explore Pro'}
+                  </button>
+                </div>
+              </CollapsibleSection>
+
               {/* Support Section */}
               <CollapsibleSection
                 title="Support GamePilot"
@@ -1557,8 +1581,8 @@ function Settings({
           <div className="settings-section-wrapper">
             <div className="settings-folder-content">
               <CollapsibleSection
-                title="Recommendation Engine Tuner"
-                subtitle="Fine-tune how GamePilot scores and ranks game recommendations."
+                title="Recommendation Controls"
+                subtitle="Choose your recommendation style. Pro adds detailed scoring weights."
                 icon={<SlidersHorizontal size={18} />}
                 className="settings-folder power-tools-folder"
               >

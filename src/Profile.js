@@ -169,6 +169,11 @@ const Profile = ({ theme, library = [] }) => {
     setRewardSummary(ProgressionUnlockService.getRewardCatalogSummary());
   }, []);
 
+  useEffect(() => {
+    window.addEventListener('gamepilot:profile-updated', refreshRewardCatalog);
+    return () => window.removeEventListener('gamepilot:profile-updated', refreshRewardCatalog);
+  }, [refreshRewardCatalog]);
+
   const generateIdentityShareCardBlob = useCallback(async () => {
     if (!identityShareCardRef.current) return null;
     setIsCapturingIdentity(true);
@@ -1133,7 +1138,7 @@ const Profile = ({ theme, library = [] }) => {
                   cursor: 'pointer',
                 }}
               >
-                <ImageIcon size={16} /> Cinematic Poster
+                <ImageIcon size={16} /> Cinematic Poster (Pro)
               </button>
               <button
                 className="action-btn"

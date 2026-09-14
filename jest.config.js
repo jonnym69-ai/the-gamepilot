@@ -19,6 +19,7 @@ module.exports = {
   // Define __APP_VERSION__ so appVersion.js doesn't need require().
   globals: {
     __APP_VERSION__: require('./package.json').version,
+    __APP_EDITION__: 'free',
   },
   collectCoverageFrom: ['src/**/*.{js,jsx,ts,tsx}', '!src/**/*.test.{js,jsx,ts,tsx}'],
   watchPlugins: [],

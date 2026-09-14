@@ -65,7 +65,15 @@ function HybridNavBar() {
   };
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" aria-label="Main navigation">
+      <Link to="/" className="navbar-brand" aria-label="GamePilot home">
+        <span className="navbar-brand-mark" aria-hidden="true">
+          G
+        </span>
+        <span className="navbar-brand-name">
+          Game<span>Pilot</span>
+        </span>
+      </Link>
       <div className="navbar-primary">
         <button
           type="button"
@@ -177,7 +185,7 @@ function HybridNavBar() {
                 to="/storage-manager"
                 className="dropdown-item"
                 onClick={closeDropdown}
-                title="Manage and reclaim storage"
+                title="Library Reclaimer — included in GamePilot Pro"
               >
                 <Database size={16} className="dropdown-item-icon" /> Storage Manager
               </Link>

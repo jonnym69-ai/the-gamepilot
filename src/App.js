@@ -5,6 +5,7 @@ import { ThemeProvider } from './ThemeContext';
 import ControllerSupport from './components/ControllerSupport';
 import ErrorBoundary from './components/ErrorBoundary';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
+import { EditionComparison } from './components/ProGate';
 import { normalizeLibraryData } from './services/LibraryDataService';
 import TrayMenuService from './services/TrayMenuService';
 import { ToastProvider, useToast } from './components/Toast';
@@ -574,6 +575,14 @@ function AppContent() {
               element={
                 <RouteErrorBoundary>
                   <WishlistPage library={library} onLaunchGame={handleLaunchGame} />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/editions"
+              element={
+                <RouteErrorBoundary>
+                  <EditionComparison />
                 </RouteErrorBoundary>
               }
             />

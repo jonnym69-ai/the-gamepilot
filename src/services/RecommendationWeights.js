@@ -183,12 +183,16 @@ let _cachedWeights = null;
 
 export function getActiveRecommendationWeights() {
   const mode = StorageService.get('experienceMode', null);
+  const tuning = StorageService.get('recommendationTuningWeights', null);
   const custom = StorageService.get('customRecommendationWeights', null);
-  const cacheKey = `${mode || 'null'}|${custom ? JSON.stringify(custom) : 'null'}`;
+  const cacheKey = JSON.stringify([mode, tuning, custom]);
   if (cacheKey !== _cachedMode) {
     _cachedMode = cacheKey;
-    const base = getRecommendationWeights(mode);
-    _cachedWeights = custom && typeof custom === 'object' ? { ...base, ...custom } : base;
+    _cachedWeights = {
+      ...getRecommendationWeights(mode),
+      ...(tuning && typeof tuning === 'object' && !Array.isArray(tuning) ? tuning : {}),
+      ...(custom && typeof custom === 'object' && !Array.isArray(custom) ? custom : {}),
+    };
   }
   return _cachedWeights;
 }

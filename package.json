@@ -31,16 +31,23 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "vite build",
+    "start:pro": "vite --mode pro",
+    "build": "vite build --mode free",
+    "build:free": "vite build --mode free",
+    "build:pro": "vite build --mode pro",
     "test": "jest",
     "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron": ".\\node_modules\\.bin\\electron.cmd .",
     "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && set ELECTRON_ENABLE_RELOADER=true&& .\\node_modules\\.bin\\electron.cmd .\"",
     "electron-dev-win": "concurrently \"npm start\" \"wait-on http://localhost:3001 && set ELECTRON_ENABLE_RELOADER=true&& electron .\"",
-    "build-electron": "npm run build && electron-builder",
-    "build-electron-win": "npm run build && electron-builder --win",
-    "build-electron-mac": "npm run build && electron-builder --mac",
-    "build-electron-linux": "npm run build && electron-builder --linux",
+    "build-electron": "node build-edition.js free",
+    "build-electron-win": "node build-edition.js free win",
+    "build-electron-win-free": "node build-edition.js free win",
+    "build-electron-win-pro": "node build-edition.js pro win",
+    "build-electron-mac": "node build-edition.js free mac",
+    "build-electron-mac-pro": "node build-edition.js pro mac",
+    "build-electron-linux": "node build-edition.js free linux",
+    "build-electron-linux-pro": "node build-edition.js pro linux",
     "format": "prettier --write \"src/**/*.{js,jsx,css,json}\" \"*.js\" \"vite.config.js\" \"jest.config.js\" \"babel.config.js\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,css,json}\" \"*.js\" \"vite.config.js\" \"jest.config.js\" \"babel.config.js\"",
     "lint:css": "stylelint \"src/**/*.css\"",
@@ -53,7 +60,8 @@
       "react-app/jest"
     ],
     "globals": {
-      "__APP_VERSION__": "readonly"
+      "__APP_VERSION__": "readonly",
+      "__APP_EDITION__": "readonly"
     }
   },
   "browserslist": {

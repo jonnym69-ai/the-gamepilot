@@ -48,13 +48,13 @@ export class RecommendationTuningService {
           : DEFAULT_TUNING.explorationEnabled,
     };
     StorageService.set(STORAGE_KEY, next);
-    invalidateRecommendationWeightsCache();
+    this.applyTuningToWeights();
     return next;
   }
 
   static resetTuning() {
     StorageService.set(STORAGE_KEY, { ...DEFAULT_TUNING });
-    invalidateRecommendationWeightsCache();
+    this.applyTuningToWeights();
     return { ...DEFAULT_TUNING };
   }
 
@@ -74,7 +74,7 @@ export class RecommendationTuningService {
 
   static applyTuningToWeights() {
     const overrides = this.getWeightOverrides();
-    StorageService.set('customRecommendationWeights', overrides);
+    StorageService.set('recommendationTuningWeights', overrides);
     invalidateRecommendationWeightsCache();
     return overrides;
   }

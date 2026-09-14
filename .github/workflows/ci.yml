@@ -44,5 +44,8 @@ jobs:
       - name: Run tests
         run: npx jest --ci
 
-      - name: Build renderer
-        run: npm run build
+      - name: Build Free renderer
+        run: npm run build:free
+
+      - name: Build Pro renderer (verification only)
+        run: npm run build:pro

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { SlidersHorizontal, RotateCcw, Save, Info } from 'lucide-react';
 import { DEFAULT_RECOMMENDATION_WEIGHTS, getRecommendationWeights } from '../services/RecommendationWeights';
 import StorageService from '../services/StorageService';
+import ProGate from './ProGate';
 import './RecommendationTunerPanel.css';
 
 const WEIGHT_CATEGORIES = [
@@ -68,6 +69,14 @@ const WEIGHT_CATEGORIES = [
 ];
 
 export default function RecommendationTunerPanel() {
+  return (
+    <ProGate feature="recommendation-tuner">
+      <RecommendationTunerContent />
+    </ProGate>
+  );
+}
+
+function RecommendationTunerContent() {
   const [weights, setWeights] = useState(() => {
     const saved = StorageService.get('customRecommendationWeights', null);
     const mode = StorageService.get('experienceMode', null);

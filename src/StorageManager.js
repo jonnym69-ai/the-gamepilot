@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import NavBar from './NavBar';
+import ProGate from './components/ProGate';
+import EntitlementService from './services/EntitlementService';
 import {
   HardDrive,
   RefreshCw,
@@ -449,4 +451,12 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   );
 }
 
-export default StorageManager;
+export default function StorageManagerPage(props) {
+  if (EntitlementService.hasFeature('storage-manager')) return <StorageManager {...props} />;
+  return (
+    <div className="storage-manager-page">
+      <NavBar />
+      <ProGate feature="storage-manager" />
+    </div>
+  );
+}

@@ -129,13 +129,21 @@ The typecheck command is optional for JS-only changes.
 - Commits follow conventional commits (`feat:`, `fix:`, `refactor:`, `chore:`).
 - `.git-blame-ignore-revs` references the mass-formatting commit `a35095f`.
 - No secrets in client bundle. API keys go in Netlify functions or Electron main.
+- Theme text tokens are `--text-primary` / `--text-color`; Home defines a local
+  `--text` alias. `--bg-primary` may contain a gradient, so do not use it as a
+  color argument to `color-mix()`. New mixed-color tokens should have basic
+  color fallbacks, with `color-mix()` overrides inside `@supports`.
+- For renderer visual checks, `npm start -- --host 127.0.0.1` serves port 3000.
+  Test themes through the theme UI or by setting `gamepilot-theme` in an isolated
+  browser context before reload; dispatching `themeChange` alone does not update
+  ThemeContext's CSS variables.
 
 ## Known technical debt
 
-- A handful of pre-existing Stylelint errors remain (1
-  `declaration-block-no-shorthand-property-overrides` in `App.css`, 4
-  `no-unknown-animations` in `Home.css`/`cinematicExport.css`/
-  `DailyDoodleTitle.css`). Duplicate selectors have been consolidated.
+- Five pre-existing Stylelint errors remain: shorthand overrides in `Profile.css`
+  and `Settings.css`, and three `no-unknown-animations` findings in
+  `cinematicExport.css` / `DailyDoodleTitle.css`. `App.css`, `Home.css`, and
+  `LibrarianHubCarousel.css` pass targeted Stylelint checks.
 - Main index chunk is ~576 KB, still above the 500 KB Vite warning
   threshold. Further reduction would require lazy-loading services, which is
   more invasive.
@@ -145,3 +153,14 @@ The typecheck command is optional for JS-only changes.
 - `react-scripts` and `react-app-rewired` remain in `package.json`
   dependencies for the `eslint-config-react-app` preset; they can be removed
   once ESLint is reconfigured with standalone plugins.
+
+## Free / Pro edition builds
+
+- `EntitlementService` now resolves edition access from Vite's `__APP_EDITION__`, not local license keys or supporter state. Free is the default; only the exact `pro` build mode enables Pro.
+- Pro capabilities are `cinematic-export`, `storage-manager` (Library Reclaimer), and `recommendation-tuner`. Current eras, signature titles, earned rewards, personal-data exports and manual save backup/restore remain Free. Existing saved recommendation weights are preserved and honoured in both editions; only the detailed editor is gated. Basic tuning writes `recommendationTuningWeights`, not `customRecommendationWeights`; explicit custom weights take precedence over basic tuning and presets.
+- `npm run build:free` writes `dist/renderer/`; `npm run build:pro` writes `dist/renderer-pro/`. Both contain `edition.json` with the edition and version. `npm start` defaults to Free; `npm run start:pro` previews Pro. Stop all preview servers before packaging.
+- `npm run build-electron-win-free` and `npm run build-electron-win-pro` use `build-edition.js`. The existing `build-electron-win` command defaults to Free. The helper rebuilds and checks the edition/version before packaging; it always sets `publish: 'never'`.
+- Installer outputs are `~/gamepilot-dist/free/` and `~/gamepilot-dist/pro/`, outside the watched repository. Both keep appId `com.gamepilot.app`, productName `GamePilot`, the existing `GamePilot` userData folder, and packaged renderer path `dist/renderer/index.html`. Do not change those identities independently or add edition-dependent storage prefixes. Installers replace each other, not side by side.
+- Regression checks: `npx jest src/services/EntitlementService.test.js src/components/ProGate.test.js src/buildEdition.test.js --ci`. These cover both editions, direct feature entries, stored-data preservation and packaging config; they do not replace a real installer upgrade/downgrade smoke test.
+- `/editions` is the local comparison page. Sales remain disabled until checkout, pricing, paid update delivery and early-user arrangements are agreed. Never publish Pro artifacts to the public Free release feed as part of routine CI.
+- Jest setup supplies Node's TextEncoder/TextDecoder for tests using the real React Router in jsdom.

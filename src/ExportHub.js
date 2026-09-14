@@ -370,7 +370,7 @@ function ExportHub({ library = [], theme }) {
               title="Open the cinematic poster generator for a stylized share image"
             >
               <ImageIcon size={16} />
-              <span>Open Cinematic Poster</span>
+              <span>Cinematic Poster (Pro)</span>
             </button>
           </div>
         </section>

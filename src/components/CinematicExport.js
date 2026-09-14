@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Crown, Download, X, Image, Palette } from 'lucide-react';
 import { AchievementTracker } from '../AchievementSystem';
 import StorageService from '../services/StorageService';
+import EntitlementService from '../services/EntitlementService';
+import ProGate from './ProGate';
 import './cinematicExport.css';
 
 const SUPPORT_TIER_WEIGHT = {
@@ -364,4 +366,22 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
   );
 };
 
-export default CinematicExport;
+export default function CinematicExportEntry(props) {
+  if (!props.isOpen) return null;
+  if (EntitlementService.hasFeature('cinematic-export')) return <CinematicExport {...props} />;
+  return (
+    <div className="cinematic-export-overlay">
+      <section className="cinematic-export-modal" role="dialog" aria-modal="true" aria-label="Cinematic exports">
+        <div className="cinematic-export-header">
+          <h2>Cinematic exports</h2>
+          <button type="button" className="close-button" onClick={props.onClose} aria-label="Close cinematic exports">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="cinematic-export-content">
+          <ProGate feature="cinematic-export" />
+        </div>
+      </section>
+    </div>
+  );
+}
