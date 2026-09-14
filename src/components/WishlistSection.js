@@ -1,4 +1,5 @@
 import React from 'react';
+import './WishlistSection.css';
 import LazyImage from './LazyImage';
 import EmptyState from './EmptyState';
 import { resolveGameArtwork, getGameArtworkPlaceholder } from '../services/GameArtworkService';

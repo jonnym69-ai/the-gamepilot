@@ -1,6 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import NavBar from './NavBar';
-import { ExternalLink, Plus, Trash2, RotateCcw, ImageOff, Upload } from 'lucide-react';
+import {
+  ExternalLink,
+  Plus,
+  Trash2,
+  RotateCcw,
+  ImageOff,
+  Upload,
+  Store,
+  Users,
+  Tv,
+  Newspaper,
+  Wrench,
+  Link2,
+} from 'lucide-react';
 import StorageService from './services/StorageService';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { hasMissingCoverArt, fileToCoverDataUri } from './services/GameArtworkService';
@@ -28,6 +41,7 @@ const CATEGORY_COLORS = {
   Other: '#6b7280',
 };
 
+const CATEGORY_ICONS = { Store, Community: Users, Streaming: Tv, News: Newspaper, Tools: Wrench, Other: Link2 };
 const NOOP = () => {};
 
 // External search destinations for the Cover Art Rescue portal. GamePilot never
@@ -117,12 +131,13 @@ function GamingLinks({ theme = 'dark', library = [], onUpdateCoverArt = NOOP }) 
   );
 
   const [links, setLinks] = useState([]);
+  const [linksLoaded, setLinksLoaded] = useState(false);
   const [newLink, setNewLink] = useState({ name: '', url: '', category: 'Store' });
 
   // Load links from localStorage on component mount
   useEffect(() => {
     try {
-      const savedLinks = StorageService.get('gamingLinks', []);
+      const savedLinks = StorageService.get('gamingLinks', null);
       if (savedLinks && Array.isArray(savedLinks)) {
         setLinks(savedLinks);
       } else {
@@ -133,18 +148,19 @@ function GamingLinks({ theme = 'dark', library = [], onUpdateCoverArt = NOOP }) 
       console.error('Error loading gaming links:', error);
       setLinks(defaultLinks);
     }
+    setLinksLoaded(true);
   }, [defaultLinks]);
 
   // Save links to localStorage whenever links change
   useEffect(() => {
-    if (links.length > 0) {
+    if (linksLoaded) {
       try {
         StorageService.set('gamingLinks', links);
       } catch (error) {
         console.error('Error saving gaming links:', error);
       }
     }
-  }, [links]);
+  }, [links, linksLoaded]);
 
   const addLink = () => {
     if (newLink.name && newLink.url) {
@@ -273,6 +289,13 @@ function GamingLinks({ theme = 'dark', library = [], onUpdateCoverArt = NOOP }) 
                 className="gl-category-badge"
                 style={{ backgroundColor: CATEGORY_COLORS[category] || CATEGORY_COLORS.Other }}
               >
+                {featureId === 'category_icons' &&
+                  React.createElement(CATEGORY_ICONS[category] || Link2, {
+                    size: 16,
+                    className: 'gl-category-icon',
+                    'data-testid': 'category-icon',
+                    'aria-hidden': true,
+                  })}
                 {category}
               </span>
               <span className="gl-category-count">
@@ -288,6 +311,7 @@ function GamingLinks({ theme = 'dark', library = [], onUpdateCoverArt = NOOP }) 
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`gl-link-card${layoutId === 'hero' && linkIdx === 0 ? ' gl-hero' : ''}`}
+                  data-category={category}
                 >
                   <img
                     src={getFaviconUrl(link.url)}

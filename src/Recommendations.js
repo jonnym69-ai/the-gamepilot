@@ -34,6 +34,8 @@ import StorageService from './services/StorageService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { MOODS, getResolvedMood } from './constants/GenresMoods';
 import './Recommendations.css';
+import useRewardPresentation from './hooks/useRewardPresentation';
+import './RewardPresentation.css';
 
 function formatPlaytime(minutes) {
   const safe = Math.max(0, Math.round(Number(minutes) || 0));
@@ -361,6 +363,7 @@ function HorizontalGameStrip({ games, onLaunch, onAddToPlaylist, playlist, recom
 /* ──────────────── Main Component ──────────────── */
 
 export default function Recommendations({ library, onLaunchGame }) {
+  const rewardPresentation = useRewardPresentation();
   const navigate = useNavigate();
   const [activeStyle, setActiveStyle] = useState('hub');
   const [playlist, setPlaylist] = useState(() => loadPlaylist());
@@ -1018,7 +1021,11 @@ export default function Recommendations({ library, onLaunchGame }) {
   );
 
   return (
-    <div className="recommendations-page">
+    <div
+      data-testid="recommendations-page"
+      className={`recommendations-page ${rewardPresentation.className}`}
+      style={rewardPresentation.style}
+    >
       <NavBar />
       {renderTopNav()}
       <div className="rec-content">

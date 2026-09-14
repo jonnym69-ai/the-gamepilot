@@ -56,6 +56,7 @@ import { formatPrice } from './CurrencyConverter';
 import { formatPlaytime } from './utils/formatPlaytime';
 import useInterfacePreferences from './hooks/useInterfacePreferences';
 import './Library.css';
+import useRewardPresentation from './hooks/useRewardPresentation';
 
 const getFavoriteGameKey = (game) => game?.appid || game?.app_id || game?.steamAppId || game?.name;
 const NOOP = () => {};
@@ -1650,7 +1651,7 @@ function Library({
   }, [handleControllerInput]);
 
   // UI Presentation Logic
-  const rewardPresentationCustomization = ProgressionUnlockService.getRewardPresentationCustomization?.() || {};
+  const { customization: rewardPresentationCustomization } = useRewardPresentation();
   const libraryPresentationRewards = ProgressionUnlockService.getLibraryPresentationVariants?.() || [];
   const selectedLibraryPresentation =
     libraryPresentationRewards.find(
@@ -1771,6 +1772,7 @@ function Library({
 
   return (
     <div
+      data-testid="library-page"
       className={`App ${theme} library-page library-presentation-${libraryPresentationId} library-card-style-${libraryCardStyle}`}
       style={libraryRootStyle}
     >

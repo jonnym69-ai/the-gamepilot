@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock(
@@ -165,6 +165,17 @@ describe('Library Component', () => {
   const renderLibrary = async (overrides = {}) => {
     return render(<Library {...defaultProps} {...overrides} />);
   };
+
+  test('refreshes equipped presentation without remounting the Library', async () => {
+    const { ProgressionUnlockService } = require('./services/ProgressionUnlockService');
+    await renderLibrary();
+    ProgressionUnlockService.getRewardPresentationCustomization.mockReturnValueOnce({
+      selectedLibraryVariant: 'classic_shelf',
+      selectedCardStyle: 'neon',
+    });
+    act(() => window.dispatchEvent(new CustomEvent('gamepilot:reward-presentation-updated')));
+    expect(screen.getByTestId('library-page')).toHaveClass('library-card-style-neon');
+  });
 
   test('renders library with games', async () => {
     await renderLibrary();

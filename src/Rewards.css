@@ -12,6 +12,50 @@
   margin: 0 auto;
 }
 
+.rewards-view-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.rewards-view-link:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+.reward-library-preview-compact_matrix .reward-library-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.reward-library-preview-compact_matrix .reward-library-card {
+  min-height: 35px;
+  grid-column: auto;
+}
+
+.reward-library-preview-spotlight_showcase .reward-library-grid {
+  grid-template-columns: 1fr;
+}
+
+.reward-library-preview-spotlight_showcase .reward-library-card:not(:first-child) {
+  display: none;
+}
+
+.reward-library-preview-spotlight_showcase .reward-library-card:first-child {
+  min-height: 110px;
+}
+
+.reward-library-preview-intel_panels .reward-library-card {
+  border-radius: 2px;
+  border: 1px solid #7ddc84;
+  background: repeating-linear-gradient(0deg, rgba(125, 220, 132, 0.12) 0 4px, transparent 4px 12px);
+}
+
 /* Header */
 .rewards-header {
   display: flex;

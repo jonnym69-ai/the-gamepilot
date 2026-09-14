@@ -40,6 +40,13 @@ const renderNavigation = (route = '/') => {
 };
 
 describe('HybridNavBar', () => {
+  test('provides a named navigation landmark and a branded home link', () => {
+    renderNavigation('/library');
+
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'GamePilot home' }).getAttribute('href')).toBe('/');
+  });
+
   test('marks the current primary route as active', () => {
     renderNavigation('/library');
 

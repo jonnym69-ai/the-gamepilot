@@ -382,16 +382,22 @@ body.big-screen-mode .controller-focus-scope {
 
 /* THEME-AWARE NAVBAR */
 .navbar {
-  background: color-mix(in srgb, var(--nav-bg) 72%, transparent) !important;
-  padding: 0 var(--space-lg) !important;
+  --nav-surface: var(--nav-bg);
+  --nav-divider: rgba(128, 128, 128, 0.2);
+  --nav-control-border: rgba(128, 128, 128, 0.3);
+  --nav-control-bg: rgba(128, 128, 128, 0.06);
+  --nav-control-hover: rgba(128, 128, 128, 0.12);
+  --nav-active-bg: rgba(255, 107, 53, 0.1);
+  --nav-scrollbar: rgba(128, 128, 128, 0.45);
+  background: var(--nav-surface) !important;
+  padding: 0 var(--page-inline-padding) !important;
+  box-sizing: border-box;
   display: flex !important;
-  justify-content: center !important;
+  justify-content: space-between !important;
   align-items: center !important;
-  gap: 6px !important;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06),
-    0 4px 24px rgba(0, 0, 0, 0.3) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  gap: 20px !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
+  border-bottom: 1px solid var(--nav-divider) !important;
   position: sticky !important;
   top: 0;
   z-index: 9999 !important;
@@ -404,21 +410,67 @@ body.big-screen-mode .controller-focus-scope {
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent) !important;
 }
 
+@supports (color: color-mix(in srgb, black, white)) {
+  .navbar {
+    --nav-surface: color-mix(in srgb, var(--nav-bg) 72%, transparent);
+    --nav-divider: color-mix(in srgb, var(--nav-text) 10%, transparent);
+    --nav-control-border: color-mix(in srgb, var(--nav-text) 15%, transparent);
+    --nav-control-bg: color-mix(in srgb, var(--nav-text) 4%, transparent);
+    --nav-control-hover: color-mix(in srgb, var(--nav-text) 8%, transparent);
+    --nav-active-bg: color-mix(in srgb, var(--accent-primary, #ff6b35) 10%, transparent);
+    --nav-scrollbar: color-mix(in srgb, var(--nav-text) 25%, transparent);
+  }
+}
+
 /* Primary navigation section */
 .navbar-primary {
   display: flex !important;
   gap: 2px !important;
   align-items: center !important;
+  min-width: 0;
   padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.045);
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.1);
+}
+
+.navbar .navbar-brand {
+  flex-shrink: 0;
+  gap: 10px;
+  padding: 4px 0 !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.navbar-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--button-primary-bg, #ff6b35);
+  color: var(--button-primary-text, #fff);
+  font-size: 1.15rem;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.navbar-brand-name {
+  font-size: 1.1rem;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}
+
+.navbar-brand-name > span {
+  color: var(--accent-primary, #ff6b35);
+}
+
+.navbar :is(a, button):focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 3px;
 }
 
 /* Dropdown section */
 .navbar-dropdown {
   position: relative !important;
-  margin-left: auto !important;
+  flex-shrink: 0;
 }
 
 /* Dropdown toggle button */
@@ -543,13 +595,11 @@ body.big-screen-mode .controller-focus-scope {
 
 .navbar a.active,
 .navbar .nav-link.active {
-  background-color: rgba(255, 107, 53, 0.12) !important;
-  color: var(--button-primary-bg, #ff6b35) !important;
+  background-color: var(--nav-active-bg) !important;
+  color: var(--accent-primary, #ff6b35) !important;
   opacity: 1 !important;
   font-weight: 600 !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 107, 53, 0.18),
-    0 8px 20px rgba(0, 0, 0, 0.14) !important;
+  box-shadow: none !important;
 }
 
 .navbar a.active::after,
@@ -571,10 +621,10 @@ body.big-screen-mode .controller-focus-scope {
   gap: 8px;
   padding: 6px 10px 6px 12px;
   margin-right: 6px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(15, 23, 42, 0.55);
-  color: var(--text-color, #e5e7eb);
+  border-radius: 9px;
+  border: 1px solid var(--nav-control-border);
+  background: var(--nav-control-bg);
+  color: var(--nav-text);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -585,13 +635,12 @@ body.big-screen-mode .controller-focus-scope {
 }
 
 .nav-search-pill:hover {
-  background: rgba(168, 85, 247, 0.18);
-  border-color: rgba(168, 85, 247, 0.55);
-  transform: translateY(-1px);
+  background: var(--nav-control-hover);
+  border-color: var(--accent-primary, #ff6b35);
 }
 
 .nav-search-pill:focus-visible {
-  outline: 2px solid rgba(168, 85, 247, 0.85);
+  outline: 2px solid var(--accent-primary, #ff6b35);
   outline-offset: 2px;
 }
 
@@ -613,7 +662,7 @@ body.big-screen-mode .controller-focus-scope {
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--nav-text);
 }
 
 @media (max-width: 720px) {
@@ -977,8 +1026,20 @@ button:focus-visible {
 }
 
 .App.light .navbar a.active {
-  color: var(--button-primary-text) !important;
-  box-shadow: 0 12px 24px rgba(228, 91, 23, 0.3) !important;
+  color: var(--nav-text) !important;
+  box-shadow: none !important;
+}
+
+.App.light .nav-search-pill {
+  background: var(--nav-control-bg);
+  color: var(--nav-text);
+  border-color: var(--nav-control-border);
+  box-shadow: none;
+}
+
+.App.light .nav-search-pill:hover {
+  background: var(--nav-control-hover);
+  border-color: var(--accent-primary, #ff6b35);
 }
 
 .App.light .achievement-card,
@@ -1642,7 +1703,6 @@ a:hover {
 .App.noir input[type='submit']:hover {
   background: #000000 !important;
   color: #ffffff !important;
-  border-color: #ffffff !important;
   transform: translateY(1px) !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
   border: 2px solid #ffffff !important;
@@ -3691,15 +3751,36 @@ body.compact-mode .empty-library-header p {
   .navbar {
     justify-content: space-between !important;
     padding-inline: 12px !important;
+    gap: 10px !important;
+  }
+
+  .navbar-brand-name {
+    display: none;
   }
 
   .navbar-primary {
-    max-width: calc(100vw - 92px);
+    flex: 1;
     overflow-x: auto;
   }
 
   .navbar-primary::-webkit-scrollbar {
-    display: none;
+    height: 6px;
+  }
+
+  .navbar-primary::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .navbar-primary::-webkit-scrollbar-thumb {
+    background: var(--nav-scrollbar);
+    border-radius: 4px;
+  }
+
+  @supports (scrollbar-width: thin) and (scrollbar-color: gray transparent) {
+    .navbar-primary {
+      scrollbar-width: thin;
+      scrollbar-color: var(--nav-scrollbar) transparent;
+    }
   }
 
   .navbar a,
@@ -3714,8 +3795,17 @@ body.compact-mode .empty-library-header p {
   }
 
   .nav-search-pill-kbd,
-  .navbar-primary .nav-link:nth-of-type(n + 4) {
+  .navbar-dropdown .dropdown-toggle > span {
     display: none;
+  }
+
+  .navbar-primary .nav-link,
+  .nav-search-pill {
+    flex-shrink: 0;
+  }
+
+  .navbar .navbar-brand {
+    padding-inline: 0 !important;
   }
 
   .modal-content {

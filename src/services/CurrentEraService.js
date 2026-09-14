@@ -135,6 +135,9 @@ const buildSnapshot = (sessions, library, now, windowDays) => {
   const dominantGenreShare =
     totalGenreMinutes > 0 && dominantGenre ? genrePlaytime[dominantGenre] / totalGenreMinutes : 0;
 
+  const dominantGame = topGames[0] || null;
+  const dominantGameShare = totalMinutes > 0 && dominantGame ? dominantGame.minutes / totalMinutes : 0;
+
   const avgSessionLength = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
 
   const sessionBucket =
@@ -150,6 +153,8 @@ const buildSnapshot = (sessions, library, now, windowDays) => {
     topGames,
     dominantGenre,
     dominantGenreShare,
+    dominantGame,
+    dominantGameShare,
     genreMix: sortedGenres.slice(0, 4).map(([genre, minutes]) => ({ genre, minutes: Math.round(minutes) })),
   };
 };
@@ -159,10 +164,15 @@ const nameEra = (snapshot) => {
     return { name: 'The Quiet Season', flavor: 'the games are waiting' };
   }
   const genre = snapshot.dominantGenre || '';
+  const topGame = snapshot.topGames[0]?.name;
+  // One game holding most of the window is its own era — "The Zomboid Era"
+  // says more about the player than the genre it happened to be.
+  if (snapshot.dominantGameShare >= 0.6 && snapshot.dominantGame?.minutes >= 600 && topGame) {
+    return { name: `The ${topGame} Era`, flavor: 'one game above all', gameDominated: true };
+  }
   const theme = ERA_THEMES.find((t) => t.match.some((m) => genre.includes(m)));
   if (theme) return { name: theme.name, flavor: theme.flavor };
-  const topGame = snapshot.topGames[0]?.name;
-  if (topGame) return { name: `The ${topGame} Era`, flavor: 'one game above all' };
+  if (topGame) return { name: `The ${topGame} Era`, flavor: 'one game above all', gameDominated: true };
   return { name: 'The Wandering Era', flavor: 'a bit of everything' };
 };
 
@@ -245,9 +255,16 @@ export class CurrentEraService {
       }
     }
 
+    const currentEraEntry = eraHistory[eraHistory.length - 1];
+    const eraSince = currentEraEntry && currentEraEntry.signature === signature ? currentEraEntry.since : now;
+
     return {
       name: theme.name,
       flavor: theme.flavor,
+      gameDominated: theme.gameDominated === true,
+      topGame: current.topGames[0]?.name || null,
+      dominantGameShare: current.dominantGameShare,
+      dayCount: Math.max(1, Math.floor((now - eraSince) / DAY_MS) + 1),
       snapshot: current,
       previousSnapshot: previous,
       drift,

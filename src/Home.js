@@ -7,7 +7,17 @@ import { MOODS } from './constants/GenresMoods';
 import WishlistService from './services/WishlistService';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import CollapsibleSection from './components/CollapsibleSection';
-import { Library, SlidersHorizontal, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronDown,
+  Clock3,
+  Library,
+  ScanLine,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { BacklogCoachService } from './services/BacklogCoachService';
 import { GamingIdentity } from './GamingIdentity';
@@ -18,6 +28,9 @@ import { PLATFORM_ICONS, PLATFORM_COLORS } from './constants/PlatformConstants';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import './Home.css';
 import './LibraryValue.css';
+import useRewardPresentation from './hooks/useRewardPresentation';
+import HomeLayoutContent from './components/HomeLayoutContent';
+import './RewardPresentation.css';
 import DailyDoodleTitle from './components/DailyDoodleTitle';
 import DailyParadox from './components/DailyParadox';
 import LazyImage from './components/LazyImage';
@@ -139,6 +152,7 @@ function Home({
   activeSessions = {},
   endSession = () => {},
 }) {
+  const rewardPresentation = useRewardPresentation();
   const isDashboard = mode === 'dashboard';
   const [username, setUsername] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('Ready to find your perfect play?');
@@ -1339,67 +1353,119 @@ function Home({
   };
 
   return (
-    <div className={`home-page ${theme} ${homeLayoutClass}`} style={homeRootStyle}>
+    <div
+      className={`home-page ${theme} ${homeLayoutClass} ${rewardPresentation.className}`}
+      style={{ ...homeRootStyle, ...rewardPresentation.style }}
+    >
       <NavBar />
 
       <MilestoneToast milestones={activeMilestones} onDismiss={() => setActiveMilestones([])} />
 
       {/* Hero Section */}
       <div className="home-hero">
-        <DailyDoodleTitle
-          username={username}
-          welcomeMessage={username ? welcomeMessage : ''}
-          profilePic={profilePic}
-          themeId={theme}
-        />
-        <p className="home-subtitle">
-          {username
-            ? 'Your gaming librarian — building a persona from your play and pointing you to your next session'
-            : 'Your gaming librarian — scan your libraries, build your persona, get roasted, find your next game'}
-        </p>
+        <div className="home-welcome-grid">
+          <div className="home-welcome-copy">
+            <p className="home-welcome-eyebrow">
+              <span className="home-welcome-dot" aria-hidden="true" />
+              {username ? `Welcome back, ${username}` : 'Your personal gaming space'}
+            </p>
+            <h1 className="home-welcome-title">
+              Less browsing.
+              <span>More playing.</span>
+            </h1>
+            <p className="home-subtitle">Your games, your next favourite, your story. All together in one place.</p>
 
-        <p className="home-hero-summary">
-          {launcherSummary.totalGames > 0
-            ? `${launcherSummary.totalGames} game${launcherSummary.totalGames === 1 ? '' : 's'} tracked across ${launcherSummary.detectedLauncherCount} platform${launcherSummary.detectedLauncherCount === 1 ? '' : 's'} in your current library.`
-            : 'Scan your local installs to build a cleaner launcher overview and unlock guided Home picks.'}
-        </p>
+            <p className="home-hero-summary">
+              {launcherSummary.totalGames > 0
+                ? `${launcherSummary.totalGames} game${launcherSummary.totalGames === 1 ? '' : 's'} across ${launcherSummary.detectedLauncherCount} platform${launcherSummary.detectedLauncherCount === 1 ? '' : 's'}. Pick up where you left off, or find something new.`
+                : 'Bring your installed games together and discover what deserves your next session.'}
+            </p>
 
-        {/* Scan Button */}
-        <button
-          onClick={() => {
-            if (onScan) {
-              onScan();
-            }
-          }}
-          disabled={loading}
-          className={`scan-button ${loading ? 'loading' : ''}`}
-        >
-          {loading ? <span>Scanning...</span> : <span>Scan Local Games</span>}
-        </button>
+            {/* Scan Button */}
+            <div className="home-welcome-actions">
+              <button
+                onClick={() => {
+                  if (onScan) {
+                    onScan();
+                  }
+                }}
+                disabled={loading}
+                className={`scan-button ${loading ? 'loading' : ''}`}
+              >
+                <ScanLine size={18} aria-hidden="true" />
+                {loading ? <span>Scanning...</span> : <span>Scan Local Games</span>}
+              </button>
+              <Link to="/library" className="home-library-link">
+                Browse library <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </div>
 
-        <p className="scan-description">
-          Automatically finds Steam, Epic, Game Pass, Rockstar, Battle.net, EA, Ubisoft, and GOG games
-        </p>
+            <p className="scan-description">
+              <ShieldCheck size={15} aria-hidden="true" />
+              Local-first. No account needed. Your library stays yours.
+            </p>
+          </div>
+          <div className="home-welcome-companion">
+            <div className="home-companion-heading">
+              <Sparkles size={15} aria-hidden="true" />
+              <span>A little more you, every day</span>
+            </div>
+            <DailyDoodleTitle
+              username={username}
+              welcomeMessage={username ? welcomeMessage : ''}
+              profilePic={profilePic}
+              themeId={theme}
+            />
+            {/* Daily Paradox */}
+            <DailyParadox />
+          </div>
+        </div>
 
-        {/* Daily Paradox */}
-        <DailyParadox />
+        <dl className="home-library-pulse" aria-label="Your library at a glance">
+          <div>
+            <dt>
+              <Library size={16} aria-hidden="true" /> In your library
+            </dt>
+            <dd>
+              {launcherSummary.totalGames.toLocaleString()}{' '}
+              <span>{launcherSummary.totalGames === 1 ? 'game' : 'games'}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <Clock3 size={16} aria-hidden="true" /> Played this week
+            </dt>
+            <dd>
+              {weeklyPlaytimeHours}
+              <span> hours</span>
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <Sparkles size={16} aria-hidden="true" /> Your rotation
+            </dt>
+            <dd>
+              {recentLibraryActivity}
+              <span> recent {recentLibraryActivity === 1 ? 'game' : 'games'}</span>
+            </dd>
+          </div>
+        </dl>
 
         {/* Launcher Status */}
-        <div className="launcher-status">
-          <div className="launcher-status-header">
-            <div>
-              <h4 className="launcher-status-title">Launcher Overview</h4>
-              <p className="launcher-status-copy">
-                {launcherSummary.totalGames > 0
-                  ? `Showing the platforms currently represented in your merged library.`
-                  : 'After your first scan, this strip shows where your library lives.'}
-              </p>
-            </div>
-            <div className="launcher-status-pill">
+        <details className="launcher-status">
+          <summary className="launcher-status-header">
+            <span className="launcher-status-title">Launcher overview</span>
+            <span className="launcher-status-pill">
               <span>Detected</span>
               <strong>{launcherSummary.detectedLauncherCount}</strong>
-            </div>
-          </div>
+              <ChevronDown size={16} aria-hidden="true" />
+            </span>
+          </summary>
+          <p className="launcher-status-copy">
+            {launcherSummary.totalGames > 0
+              ? 'Showing the platforms currently represented in your merged library.'
+              : 'After your first scan, this strip shows where your library lives.'}
+          </p>
           <div className="launcher-grid">
             {launcherSummary.launchers.map((launcher) => (
               <div
@@ -1413,7 +1479,7 @@ function Home({
               </div>
             ))}
           </div>
-        </div>
+        </details>
       </div>
 
       {welcomeBackVisible && welcomeBackData && (
@@ -1440,7 +1506,7 @@ function Home({
       </div>
 
       {isDashboard ? (
-        <>
+        <HomeLayoutContent layoutId={homeLayoutId}>
           <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
 
           {similarToRecentShelf}
@@ -1450,7 +1516,7 @@ function Home({
             subtitle="Guided shelves and playstyle picks."
             badge={`${library?.length || 0} games`}
             icon={<Library size={18} />}
-            className="home-guided-section"
+            className="home-guided-section home-library-section"
             defaultOpen
           >
             <HomeGuidedContent
@@ -1593,9 +1659,9 @@ function Home({
               </a>
             </div>
           </CollapsibleSection>
-        </>
+        </HomeLayoutContent>
       ) : (
-        <>
+        <HomeLayoutContent layoutId={homeLayoutId}>
           <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
 
           {similarToRecentShelf}
@@ -1612,6 +1678,7 @@ function Home({
           />
 
           <HomeSection
+            className="home-library-section"
             eyebrow="Your Library"
             title="Library Today"
             copy="Start with a few thoughtful shelves instead of a blank choice."
@@ -1662,6 +1729,7 @@ function Home({
           </HomeSection>
 
           <HomeSection
+            className="home-persona-section"
             eyebrow="Who You Are"
             title="Your Gaming Persona"
             copy="Built from what you're playing right now — then roasted. This is what powers your recommendations."
@@ -1810,7 +1878,7 @@ function Home({
               </a>
             </div>
           </HomeSection>
-        </>
+        </HomeLayoutContent>
       )}
 
       <GettingStartedModal

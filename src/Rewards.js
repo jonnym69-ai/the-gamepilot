@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import NavBar from './NavBar';
+import { Link } from 'react-router-dom';
 import { useToast } from './components/Toast';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { PersonaService } from './services/PersonaService';
@@ -8,6 +9,7 @@ import { SeasonalHideAndSeekService } from './services/SeasonalHideAndSeekServic
 import { AchievementTracker } from './AchievementSystem';
 import {
   Gamepad2,
+  ArrowRight,
   Library,
   LayoutGrid,
   Zap,
@@ -33,6 +35,17 @@ const handleRewardCardKeyDown = (event, unlocked, onSelect) => {
   onSelect();
 };
 
+const SECTION_DESTINATIONS = {
+  profileIdentity: ['/profile', 'View your profile'],
+  personas: ['/profile', 'View your equipped identity'],
+  cardStyles: ['/library', 'View cards in your library'],
+  libraryView: ['/library', 'View your library layout'],
+  homeLayout: ['/', 'View your Home layout'],
+  recommendationStyle: ['/recommendations', 'View recommendation styling'],
+  gamingLinks: ['/gaming-links', 'View your Gaming Links'],
+  logoAnimation: ['/', 'View your Home logo animation'],
+};
+
 const SECTION_HELP = {
   profileIdentity: 'Equip your profile frame, banner, and title, and pin achievement badges to your showcase.',
   personas: 'One-click identity presets that equip a matching theme, frame, banner, and title together.',
@@ -40,7 +53,8 @@ const SECTION_HELP = {
   cardStyles: 'Change how game cards look across Home, Library, and recommendations.',
   libraryView: 'Adjust the density and layout of your Library grid.',
   homeLayout: 'Choose which panels appear on your Home page and in what order.',
-  recommendationStyle: 'Tune how recommendations are ranked and presented for your playstyle.',
+  recommendationStyle:
+    'Change recommendation card borders, glows, badges, and buttons. These cosmetic styles do not change ranking.',
   gamingLinks: 'Enable and arrange the quick-launch gaming links panel.',
   logoAnimation: 'Pick the animated glow treatment for your avatar bubble in the Home hero banner.',
 };
@@ -293,7 +307,7 @@ const ProfileIdentityPanel = ({
             tabIndex={title.unlocked ? 0 : -1}
             aria-disabled={!title.unlocked}
             aria-pressed={selectedTitleId === title.id}
-            aria-label={`${title.name}${title.unlocked ? '' : `, locked until ${title.requiredXP?.toLocaleString() || 0} XP`}`}
+            aria-label={`${title.name}${title.unlocked ? '' : `, locked — ${title.unlockHint || `${title.requiredXP?.toLocaleString() || 0} XP required`}`}`}
           >
             <div className="rewards-identity-preview">
               <div className={`rewards-title-pill ${selectedTitleId === title.id ? 'equipped' : ''}`}>{title.name}</div>
@@ -305,7 +319,7 @@ const ProfileIdentityPanel = ({
               {!title.unlocked && (
                 <div className="reward-locked-overlay">
                   <div className="reward-lock-icon">🔒</div>
-                  <span>Unlocks at {title.requiredXP?.toLocaleString()} XP</span>
+                  <span>{title.unlockHint || `Unlocks at ${title.requiredXP?.toLocaleString()} XP`}</span>
                 </div>
               )}
             </div>
@@ -384,7 +398,7 @@ const LibraryViewPanel = ({ variants, selectedId, onSelect }) => (
           aria-label={`${variant.name}${variant.unlocked ? '' : `, locked until ${variant.requiredXP?.toLocaleString() || 0} XP`}`}
         >
           <div
-            className="reward-library-preview"
+            className={`reward-library-preview reward-library-preview-${variant.id}`}
             style={{
               position: 'relative',
               overflow: 'hidden',
@@ -1566,7 +1580,14 @@ function Rewards() {
           </div>
 
           {/* Main Content */}
-          <div className="rewards-content">{renderPanel()}</div>
+          <div className="rewards-content">
+            {SECTION_DESTINATIONS[activeSection] && (
+              <Link className="rewards-view-link" to={SECTION_DESTINATIONS[activeSection][0]}>
+                {SECTION_DESTINATIONS[activeSection][1]} <ArrowRight size={16} />
+              </Link>
+            )}
+            {renderPanel()}
+          </div>
         </div>
       </div>
     </div>

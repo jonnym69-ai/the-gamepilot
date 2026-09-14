@@ -4,6 +4,7 @@ import LazyImage from './LazyImage';
 import { GamingIdentity } from '../GamingIdentity';
 import GamingPersonaService from '../services/GamingPersonaService';
 import CurrentEraService from '../services/CurrentEraService';
+import SignatureTitleService from '../services/SignatureTitleService';
 import { resolveGameArtworkBundle } from '../services/GameArtworkService';
 import { StartupPersonalizationService } from '../services/StartupPersonalizationService';
 import { isGameUnplayed } from '../services/RecommendationEngine';
@@ -158,27 +159,58 @@ export function CurrentEraCard() {
     }
   }, []);
 
+  const signatureTitle = React.useMemo(() => {
+    try {
+      return SignatureTitleService.getTitleForGame(era?.topGame);
+    } catch {
+      return null;
+    }
+  }, [era?.topGame]);
+
   if (!era || !era.snapshot || era.snapshot.totalMinutes <= 0) return null;
 
   const hours = (era.snapshot.totalMinutes / 60).toFixed(1);
   const topGames = (era.snapshot.topGames || []).slice(0, 3);
   const driftNotes = era.drift?.hasDrift ? era.drift.notes.slice(0, 2) : [];
+  const sharePercent = era.gameDominated && era.dominantGameShare ? Math.round(era.dominantGameShare * 100) : null;
 
   return (
     <div className="results-section">
       <div className="result-card identity-card">
         <div className="identity-title-row">
           <h3 className="result-title">Current Era</h3>
-          <span className="identity-confidence-badge is-growing">Last {era.snapshot.windowDays} days</span>
+          <span className="identity-confidence-badge is-growing">
+            Day {era.dayCount || 1} · last {era.snapshot.windowDays} days
+          </span>
         </div>
         <div className="identity-body">
           <div className="identity-header">
             <span className="identity-label">{era.name}</span>
             <p className="identity-description" style={{ opacity: 0.75, marginBottom: 6 }}>
-              {era.flavor} · {hours}h across {era.snapshot.topGames.length} game
-              {era.snapshot.topGames.length !== 1 ? 's' : ''}
-              {era.snapshot.avgSessionLength > 0 ? ` · ~${era.snapshot.avgSessionLength}m sessions` : ''}
+              {era.flavor}
+              {sharePercent && era.topGame ? ` — ${era.topGame} is ${sharePercent}% of this era` : ''}
             </p>
+          </div>
+          {signatureTitle && (
+            <p className="identity-description era-signature-line">
+              Signature title earned: <strong>{signatureTitle.name}</strong>
+            </p>
+          )}
+          <div className="identity-metrics">
+            <div className="identity-metric">
+              <span className="identity-metric-label">Era hours</span>
+              <span className="identity-metric-value">{hours}h</span>
+            </div>
+            <div className="identity-metric">
+              <span className="identity-metric-label">Sessions</span>
+              <span className="identity-metric-value">{era.snapshot.rawSessionCount || 0}</span>
+            </div>
+            {era.snapshot.avgSessionLength > 0 && (
+              <div className="identity-metric">
+                <span className="identity-metric-label">Avg session</span>
+                <span className="identity-metric-value">~{era.snapshot.avgSessionLength}m</span>
+              </div>
+            )}
           </div>
           {topGames.length > 0 && (
             <div className="identity-tags">

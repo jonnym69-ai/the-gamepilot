@@ -1,6 +1,7 @@
 import moodThemes from '../themes/moodThemes.json';
 import { AchievementTracker } from '../AchievementSystem';
 import StorageService from './StorageService';
+import SignatureTitleService from './SignatureTitleService';
 
 const tuneProgressionRequirement = (requiredXP) => {
   if (requiredXP <= 0) return 0;
@@ -1178,7 +1179,10 @@ export class ProgressionUnlockService {
 
   static getProfileTitles() {
     const currentXP = this.getTotalXP();
-    return PROFILE_TITLE_UNLOCKS.map((reward) => buildSequentialRewardMeta('Title', reward, currentXP));
+    return [
+      ...PROFILE_TITLE_UNLOCKS.map((reward) => buildSequentialRewardMeta('Title', reward, currentXP)),
+      ...SignatureTitleService.getSignatureTitles(),
+    ];
   }
 
   static getShowcaseSlots() {
@@ -1255,6 +1259,9 @@ export class ProgressionUnlockService {
     };
 
     StorageService.set(PROFILE_CUSTOMIZATION_STORAGE_KEY, sanitizedCustomization);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('gamepilot:profile-updated', { detail: sanitizedCustomization }));
+    }
     return sanitizedCustomization;
   }
 
@@ -1296,7 +1303,10 @@ export class ProgressionUnlockService {
       return { success: false, message: 'Profile title not found.' };
     }
     if (!title.unlocked) {
-      return { success: false, message: `${title.name} unlocks at ${title.requiredXP.toLocaleString()} XP.` };
+      return {
+        success: false,
+        message: title.unlockHint || `${title.name} unlocks at ${title.requiredXP.toLocaleString()} XP.`,
+      };
     }
 
     return {
