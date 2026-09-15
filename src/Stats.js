@@ -21,6 +21,8 @@ import { useToast } from './components/Toast';
 import ShareMenu from './components/ShareMenu';
 import { HabitsShareCard } from './components/HabitsShareCard';
 import StatsDrivenStory from './components/StatsDrivenStory';
+import YearComparisonCard from './components/YearComparisonCard';
+import ProGate from './components/ProGate';
 import './Stats.css';
 
 const formatRelativeTime = (timestamp) => {
@@ -396,6 +398,17 @@ function Stats({ library = [], getPlayStyleInsights, theme = 'dark', currency = 
             selectedPeriod={selectedPeriod}
             onSelectPeriod={setSelectedPeriod}
           />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Year over Year"
+          subtitle="This year so far against the same stretch last year."
+          icon={<TrendingUp size={18} />}
+          className="stats-section"
+        >
+          <ProGate feature="year-over-year">
+            <YearComparisonCard library={safeLibrary} />
+          </ProGate>
         </CollapsibleSection>
 
         <CollapsibleSection

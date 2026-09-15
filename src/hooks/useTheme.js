@@ -8,8 +8,14 @@
 
 import { useEffect, useState } from 'react';
 import moodThemes from '../themes/moodThemes.json';
+import proThemes from '../themes/proThemes.json';
 
-const VALID_THEME_IDS = new Set(['light', 'dark', ...moodThemes.map((themeConfig) => themeConfig?.id).filter(Boolean)]);
+const VALID_THEME_IDS = new Set([
+  'light',
+  'dark',
+  ...moodThemes.map((themeConfig) => themeConfig?.id).filter(Boolean),
+  ...proThemes.map((themeConfig) => themeConfig?.id).filter(Boolean),
+]);
 
 const resolveThemeClassName = (themeId) => {
   const normalizedThemeId = typeof themeId === 'string' ? themeId.trim() : '';

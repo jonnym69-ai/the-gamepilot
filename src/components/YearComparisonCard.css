@@ -1,0 +1,90 @@
+.year-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.year-comparison-caption {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.year-comparison-headers,
+.year-comparison-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.year-comparison-headers {
+  order: -1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+.year-comparison-headers span,
+.year-comparison-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.year-comparison-row {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+}
+
+.year-comparison-label {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.year-comparison-value {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.year-comparison-value.is-previous {
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.year-comparison-delta {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.year-comparison-delta.is-up {
+  color: #4ade80;
+  opacity: 1;
+}
+
+.year-comparison-delta.is-down {
+  color: #f87171;
+  opacity: 1;
+}
+
+.year-comparison-topgames p {
+  margin: 4px 0;
+  font-size: 0.88rem;
+}
+
+.year-comparison-note {
+  opacity: 0.65;
+  font-style: italic;
+}
+
+.year-comparison-empty {
+  padding: 12px;
+  text-align: center;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}

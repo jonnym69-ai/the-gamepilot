@@ -1,0 +1,71 @@
+[
+  {
+    "id": "ember",
+    "name": "Ember",
+    "description": "The GamePilot signature — smouldering orange on near-black, made for late sessions.",
+    "proOnly": true,
+    "palette": {
+      "background": "linear-gradient(160deg, #120b08 0%, #1c100a 35%, #241209 70%, #170b06 100%)",
+      "surface": "rgba(36, 22, 14, 0.92)",
+      "primary": "#ff8c1a",
+      "secondary": "#b3541e",
+      "text": "#f5e9dd",
+      "accent": "#ffb347",
+      "card": "rgba(46, 27, 16, 0.82)",
+      "hover": "rgba(255, 140, 26, 0.18)",
+      "buttonText": "#1a1207"
+    },
+    "effects": {
+      "vignette": 0.08,
+      "grain": 0.02,
+      "bloom": 0.12,
+      "shadow": "0 6px 24px rgba(255, 140, 26, 0.18)"
+    }
+  },
+  {
+    "id": "aurora",
+    "name": "Aurora",
+    "description": "Northern lights — deep indigo fading into teal and violet.",
+    "proOnly": true,
+    "palette": {
+      "background": "linear-gradient(155deg, #070b1e 0%, #0d1b3a 30%, #123a4a 60%, #1b1540 100%)",
+      "surface": "rgba(16, 26, 52, 0.9)",
+      "primary": "#4fd1c5",
+      "secondary": "#3b4a8f",
+      "text": "#e6f2f5",
+      "accent": "#a78bfa",
+      "card": "rgba(22, 34, 64, 0.8)",
+      "hover": "rgba(79, 209, 197, 0.16)",
+      "buttonText": "#08222b"
+    },
+    "effects": {
+      "vignette": 0.07,
+      "grain": 0.015,
+      "bloom": 0.14,
+      "shadow": "0 6px 24px rgba(79, 209, 197, 0.16)"
+    }
+  },
+  {
+    "id": "onyx",
+    "name": "Onyx",
+    "description": "Minimal black and brushed gold — quiet, sharp, deliberate.",
+    "proOnly": true,
+    "palette": {
+      "background": "linear-gradient(180deg, #0a0a0c 0%, #101014 55%, #0a0a0c 100%)",
+      "surface": "rgba(22, 22, 27, 0.92)",
+      "primary": "#d4af6a",
+      "secondary": "#4a4a55",
+      "text": "#ece8e1",
+      "accent": "#e8c987",
+      "card": "rgba(28, 28, 34, 0.82)",
+      "hover": "rgba(212, 175, 106, 0.14)",
+      "buttonText": "#1a150c"
+    },
+    "effects": {
+      "vignette": 0.09,
+      "grain": 0.01,
+      "bloom": 0.05,
+      "shadow": "0 6px 22px rgba(0, 0, 0, 0.45)"
+    }
+  }
+]

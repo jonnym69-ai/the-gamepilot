@@ -37,8 +37,15 @@ afterEach(() => {
 });
 
 describe('build-time editions', () => {
-  test('only the three agreed capabilities belong to Pro', () => {
-    expect(Object.keys(PRO_FEATURES).sort()).toEqual(['cinematic-export', 'recommendation-tuner', 'storage-manager']);
+  test('only the agreed capabilities belong to Pro', () => {
+    expect(Object.keys(PRO_FEATURES).sort()).toEqual([
+      'cinematic-export',
+      'era-archive',
+      'pro-themes',
+      'recommendation-tuner',
+      'storage-manager',
+      'year-over-year',
+    ]);
   });
 
   test.each(['free', 'pro'])('%s includes all Free features', (edition) => {

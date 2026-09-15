@@ -68,6 +68,8 @@ import {
   RecentSessionsSummary,
   CurrentChampionCard,
 } from './components/IdentityWidgets';
+import EraArchiveCard from './components/EraArchiveCard';
+import ProGate from './components/ProGate';
 import RivalryBanner from './components/RivalryBanner';
 import StreakBadge from './components/StreakBadge';
 import GettingStartedModal from './components/GettingStartedModal';
@@ -1737,6 +1739,9 @@ function Home({
           >
             <RecentSessionsSummary />
             <CurrentEraCard />
+            <ProGate feature="era-archive" compact>
+              <EraArchiveCard />
+            </ProGate>
             <CurrentChampionCard library={safeLibrary} />
             <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
             <BecauseYouAreSection

@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import moodThemes from './themes/moodThemes.json';
+import proThemes from './themes/proThemes.json';
 import { AchievementTracker } from './AchievementSystem';
 import StorageService from './services/StorageService';
 import InterfacePreferencesService from './services/InterfacePreferencesService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
+import EntitlementService from './services/EntitlementService';
+
+const ALL_THEME_DEFS = [...moodThemes, ...proThemes];
+const isProOnlyTheme = (themeId) => proThemes.some((theme) => theme?.id === themeId);
+const canUseTheme = (themeId) => !isProOnlyTheme(themeId) || EntitlementService.isPro();
 
 // Helper function to determine if text should be white or based on theme color
 const getContrastColor = (bgColor) => {
@@ -250,13 +256,13 @@ export const ThemeProvider = ({ children }) => {
       dark: { name: 'Dark', id: 'dark' },
     };
 
-    // Add mood themes
-    moodThemes.forEach((theme) => {
+    // Add mood + Pro themes
+    ALL_THEME_DEFS.forEach((theme) => {
       allThemes[theme.id] = { name: theme.name, id: theme.id };
     });
 
-    // Validate saved theme
-    if (savedTheme && allThemes[savedTheme]) {
+    // Validate saved theme — Pro themes resolve to dark in a Free build.
+    if (savedTheme && allThemes[savedTheme] && canUseTheme(savedTheme)) {
       return savedTheme;
     }
 
@@ -337,12 +343,13 @@ export const ThemeProvider = ({ children }) => {
       dark: { name: 'Dark', id: 'dark' },
     };
 
-    // Add mood themes
-    moodThemes.forEach((theme) => {
+    // Add mood + Pro themes
+    ALL_THEME_DEFS.forEach((theme) => {
       themes[theme.id] = {
         name: theme.name,
         id: theme.id,
         patreonExclusive: isPatreonTheme(theme.id),
+        proOnly: isProOnlyTheme(theme.id),
       };
     });
 
@@ -356,8 +363,8 @@ export const ThemeProvider = ({ children }) => {
       dark: { name: 'Dark', id: 'dark' },
     };
 
-    // Add mood themes
-    moodThemes.forEach((theme) => {
+    // Add mood + Pro themes
+    ALL_THEME_DEFS.forEach((theme) => {
       themes[theme.id] = { name: theme.name, id: theme.id };
     });
 
@@ -494,8 +501,8 @@ export const ThemeProvider = ({ children }) => {
     const isBuilderActive = StorageService.getString('themeBuilderActive') === 'true';
     if (isBuilderActive) return;
 
-    // Apply CSS variables based on theme
-    const moodTheme = moodThemes.find((t) => t.id === currentTheme);
+    // Apply CSS variables based on theme — Pro-only themes never apply in Free.
+    const moodTheme = ALL_THEME_DEFS.find((t) => t.id === currentTheme && canUseTheme(t.id));
     if (moodTheme) {
       const cssVars = convertMoodThemeToCSS(moodTheme);
       Object.entries(cssVars).forEach(([key, value]) => {
@@ -562,8 +569,11 @@ export const ThemeProvider = ({ children }) => {
   }, [autoTheme]);
 
   useEffect(() => {
-    const activeTheme = moodThemes.find((theme) => theme.id === currentTheme);
-    if (isPatreonTheme(activeTheme?.id) && !hasFounderAccess()) {
+    const activeTheme = ALL_THEME_DEFS.find((theme) => theme.id === currentTheme);
+    const locked =
+      (isPatreonTheme(activeTheme?.id) && !hasFounderAccess()) ||
+      (isProOnlyTheme(activeTheme?.id) && !EntitlementService.isPro());
+    if (locked) {
       setCurrentTheme('dark');
       StorageService.setString('theme', 'dark');
     }
@@ -582,8 +592,9 @@ export const ThemeProvider = ({ children }) => {
       if (!themeId) return;
       const allThemes = getAvailableThemes();
       if (!allThemes[themeId]) return;
-      const meta = moodThemes.find((theme) => theme.id === themeId);
+      const meta = ALL_THEME_DEFS.find((theme) => theme.id === themeId);
       if (isPatreonTheme(meta?.id) && !hasFounderAccess()) return;
+      if (isProOnlyTheme(meta?.id) && !EntitlementService.isPro()) return;
       setCurrentTheme(themeId);
       StorageService.setString('theme', themeId);
     };
@@ -621,8 +632,11 @@ export const ThemeProvider = ({ children }) => {
     setTheme: (themeId) => {
       const allThemes = getAvailableThemes();
       if (allThemes[themeId]) {
-        const selectedTheme = moodThemes.find((theme) => theme.id === themeId);
+        const selectedTheme = ALL_THEME_DEFS.find((theme) => theme.id === themeId);
         if (isPatreonTheme(selectedTheme?.id) && !hasFounderAccess()) {
+          return false;
+        }
+        if (isProOnlyTheme(selectedTheme?.id) && !EntitlementService.isPro()) {
           return false;
         }
         setCurrentTheme(themeId);
@@ -640,7 +654,8 @@ export const ThemeProvider = ({ children }) => {
     getCurrentTheme: () => getAvailableThemes()[currentTheme] || { name: 'Dark' },
     availableThemes: getAvailableThemes(),
     moodThemes,
-    getThemeMeta: (themeId) => moodThemes.find((theme) => theme.id === themeId),
+    proThemes,
+    getThemeMeta: (themeId) => ALL_THEME_DEFS.find((theme) => theme.id === themeId),
     getFounderTier: () => AchievementTracker.getPatreonBoostProfile().tier || null,
     validatePatreonCode,
     selectThemesWithCredits,

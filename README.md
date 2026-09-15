@@ -142,9 +142,12 @@ Two editions are built from the same codebase. The Free/Pro split is in developm
 
 **GamePilot Pro — More control and richer visual exports.** Includes everything in Free, plus:
 
+- Era archive: every past era you have lived through, dated and ranked — not just the current one.
+- Year over year: this year so far against the same stretch of last year — hours, sessions, days, games and top title.
 - Cinematic exports: poster, square-card and wide-banner formats with background controls.
 - Library Reclaimer: compare installed sizes and last-played dates to decide what to remove.
 - Advanced recommendation tuner: edit detailed scoring weights, beyond the normal Free recommendation controls.
+- Pro theme collection: exclusive Ember, Aurora and Onyx themes.
 
 Pro is planned as a separate one-time paid download, not an in-app license-key unlock. There are no activation requests or online edition checks. Price, included updates, paid-download delivery and complimentary early-user claims must be finalised before sales open. Existing supporter recognition remains separate from the edition.
 

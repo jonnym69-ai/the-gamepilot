@@ -40,6 +40,18 @@ export const PRO_FEATURES = Object.freeze({
     label: 'Advanced recommendation tuner',
     description: 'Edit detailed scoring weights for mood, time fit, discovery and replay preferences.',
   },
+  'era-archive': {
+    label: 'Era archive',
+    description: 'Every era you have lived through, dated and ranked — not just the current one.',
+  },
+  'year-over-year': {
+    label: 'Year-over-year history',
+    description: 'Compare this year with the same stretch last year — hours, sessions, games and your top title.',
+  },
+  'pro-themes': {
+    label: 'Pro theme collection',
+    description: 'Exclusive themes only available in GamePilot Pro.',
+  },
 });
 
 const PRODUCT_CATALOG = Object.freeze({
@@ -53,7 +65,8 @@ const PRODUCT_CATALOG = Object.freeze({
   [PRO_PRODUCT_ID]: {
     id: PRO_PRODUCT_ID,
     name: 'GamePilot Pro',
-    description: 'A separate edition with cinematic exports, Library Reclaimer and advanced recommendation controls.',
+    description:
+      'A separate edition with cinematic exports, Library Reclaimer, advanced recommendation controls, the era archive, year-over-year history and exclusive themes.',
     type: 'edition',
     includes: Object.keys(PRO_FEATURES),
   },

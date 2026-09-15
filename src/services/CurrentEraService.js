@@ -272,6 +272,38 @@ export class CurrentEraService {
     };
   }
 
+  /**
+   * Past eras with start/end dates, newest first. Each recorded history entry
+   * ends when the next signature takes over; the entry matching the current
+   * era signature is excluded (it is the live era, not an archive record).
+   */
+  static getEraArchive() {
+    try {
+      const era = CurrentEraService.getCurrentEra();
+      const history = Array.isArray(era?.history) ? era.history : [];
+      if (history.length < 2) return [];
+
+      const archive = [];
+      for (let i = 0; i < history.length - 1; i += 1) {
+        const entry = history[i];
+        const next = history[i + 1];
+        if (!entry?.since || !next?.since) continue;
+        const days = Math.max(1, Math.round((next.since - entry.since) / DAY_MS));
+        archive.push({
+          name: entry.name,
+          genre: entry.genre || null,
+          topGame: entry.topGame || null,
+          startedAt: entry.since,
+          endedAt: next.since,
+          days,
+        });
+      }
+      return archive.reverse();
+    } catch {
+      return [];
+    }
+  }
+
   static getEraTagline() {
     try {
       const era = CurrentEraService.getCurrentEra();
