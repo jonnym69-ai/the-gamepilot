@@ -69,6 +69,7 @@ import {
   CurrentChampionCard,
 } from './components/IdentityWidgets';
 import EraArchiveCard from './components/EraArchiveCard';
+import PlayNextCard from './components/PlayNextCard';
 import ProGate from './components/ProGate';
 import RivalryBanner from './components/RivalryBanner';
 import StreakBadge from './components/StreakBadge';
@@ -1382,6 +1383,8 @@ function Home({
                 ? `${launcherSummary.totalGames} game${launcherSummary.totalGames === 1 ? '' : 's'} across ${launcherSummary.detectedLauncherCount} platform${launcherSummary.detectedLauncherCount === 1 ? '' : 's'}. Pick up where you left off, or find something new.`
                 : 'Bring your installed games together and discover what deserves your next session.'}
             </p>
+
+            <PlayNextCard library={library} onLaunchGame={onLaunchGame} />
 
             {/* Scan Button */}
             <div className="home-welcome-actions">
