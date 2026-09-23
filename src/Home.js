@@ -31,8 +31,7 @@ import './LibraryValue.css';
 import useRewardPresentation from './hooks/useRewardPresentation';
 import HomeLayoutContent from './components/HomeLayoutContent';
 import './RewardPresentation.css';
-import DailyDoodleTitle from './components/DailyDoodleTitle';
-import DailyParadox from './components/DailyParadox';
+import HomeTodayTabs from './components/HomeTodayTabs';
 import LazyImage from './components/LazyImage';
 import WishlistSection from './components/WishlistSection';
 import NostalgiaCard from './components/NostalgiaCard';
@@ -69,8 +68,6 @@ import {
   CurrentChampionCard,
 } from './components/IdentityWidgets';
 import EraArchiveCard from './components/EraArchiveCard';
-import PlayNextCard from './components/PlayNextCard';
-import DailySpotlightCard from './components/DailySpotlightCard';
 import ProGate from './components/ProGate';
 import RivalryBanner from './components/RivalryBanner';
 import StreakBadge from './components/StreakBadge';
@@ -1385,8 +1382,6 @@ function Home({
                 : 'Bring your installed games together and discover what deserves your next session.'}
             </p>
 
-            <PlayNextCard library={library} onLaunchGame={onLaunchGame} />
-
             {/* Scan Button */}
             <div className="home-welcome-actions">
               <button
@@ -1412,22 +1407,14 @@ function Home({
             </p>
           </div>
           <div className="home-welcome-companion">
-            <DailySpotlightCard library={library} />
-            <details className="home-daily-extras" open={launcherSummary.totalGames === 0 ? true : undefined}>
-              <summary className="home-companion-heading">
-                <Sparkles size={15} aria-hidden="true" />
-                <span>Your daily doodle &amp; paradox</span>
-                <ChevronDown size={15} aria-hidden="true" />
-              </summary>
-              <DailyDoodleTitle
-                username={username}
-                welcomeMessage={username ? welcomeMessage : ''}
-                profilePic={profilePic}
-                themeId={theme}
-              />
-              {/* Daily Paradox */}
-              <DailyParadox />
-            </details>
+            <HomeTodayTabs
+              library={library}
+              onLaunchGame={onLaunchGame}
+              username={username}
+              welcomeMessage={username ? welcomeMessage : ''}
+              profilePic={profilePic}
+              themeId={theme}
+            />
           </div>
         </div>
 
