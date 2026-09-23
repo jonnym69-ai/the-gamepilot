@@ -157,6 +157,20 @@
   letter-spacing: 0.06em;
 }
 
+.home-daily-extras {
+  margin-top: 12px;
+}
+
+.home-daily-extras > summary {
+  cursor: pointer;
+  padding: 10px 0;
+}
+
+.home-daily-extras > summary:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
 .home-welcome-companion .doodle-shell {
   flex-direction: column;
   align-items: flex-start;

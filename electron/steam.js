@@ -374,7 +374,60 @@ const enrichMoreLikeItems = async (items) => {
   return enriched;
 };
 
+const spotlightCache = new Map();
+const spotlightInflight = new Map();
+const spotlightText = (value) => (typeof value === 'string' ? value.trim().slice(0, 160) : '');
+const spotlightList = (value) => (Array.isArray(value) ? value.map(spotlightText).filter(Boolean).slice(0, 5) : []);
+
+const fetchSpotlight = async (id) => {
+  const [storeResult, playerResult] = await Promise.allSettled([
+    steamHttpsGet('store.steampowered.com', `/api/appdetails?appids=${id}&l=english`),
+    steamHttpsGet('api.steampowered.com', `/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`),
+  ]);
+  const fetchedAt = Date.now();
+  const app = storeResult.status === 'fulfilled' ? storeResult.value?.[id] : null;
+  const data =
+    app?.success === true && app.data?.type === 'game' && String(app.data.steam_appid) === id ? app.data : null;
+  const score = data?.metacritic?.score;
+  const store = data
+    ? {
+        releaseDate: spotlightText(data.release_date?.date),
+        comingSoon: data.release_date?.coming_soon === true,
+        developers: spotlightList(data.developers),
+        publishers: spotlightList(data.publishers),
+        genres: spotlightList(Array.isArray(data.genres) ? data.genres.map((genre) => genre?.description) : []),
+        metacritic: Number.isInteger(score) && score > 0 && score <= 100 ? score : null,
+        fetchedAt,
+      }
+    : null;
+  const response = playerResult.status === 'fulfilled' ? playerResult.value?.response : null;
+  const count = response?.player_count;
+  const players = response?.result === 1 && Number.isSafeInteger(count) && count >= 0 ? { count, fetchedAt } : null;
+  return { ok: Boolean(store || players), store, players };
+};
+
 function registerIpcHandlers(ipcMain) {
+  ipcMain.handle('steam-spotlight', async (_event, appid) => {
+    const id = typeof appid === 'string' || typeof appid === 'number' ? String(appid) : '';
+    if (!/^[1-9]\d{0,9}$/.test(id) || Number(id) > 4294967295) return { ok: false, error: 'invalid-appid' };
+    const cached = spotlightCache.get(id);
+    if (cached && Date.now() < cached.expiresAt) return cached.result;
+    if (spotlightInflight.has(id)) return spotlightInflight.get(id);
+    const request = fetchSpotlight(id)
+      .then((result) => {
+        spotlightCache.delete(id);
+        spotlightCache.set(id, {
+          result,
+          expiresAt: Date.now() + (result.store && result.players ? 86400000 : 3600000),
+        });
+        if (spotlightCache.size > 64) spotlightCache.delete(spotlightCache.keys().next().value);
+        return result;
+      })
+      .finally(() => spotlightInflight.delete(id));
+    spotlightInflight.set(id, request);
+    return request;
+  });
+
   ipcMain.handle('steam-appreviews', async (_event, appid) => {
     const id = String(appid || '').replace(/[^0-9]/g, '');
     if (!id) return { ok: false, error: 'invalid-appid' };

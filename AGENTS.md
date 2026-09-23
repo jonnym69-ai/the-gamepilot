@@ -164,3 +164,10 @@ The typecheck command is optional for JS-only changes.
 - Regression checks: `npx jest src/services/EntitlementService.test.js src/components/ProGate.test.js src/buildEdition.test.js --ci`. These cover both editions, direct feature entries, stored-data preservation and packaging config; they do not replace a real installer upgrade/downgrade smoke test.
 - `/editions` is the local comparison page. Sales remain disabled until checkout, pricing, paid update delivery and early-user arrangements are agreed. Never publish Pro artifacts to the public Free release feed as part of routine CI.
 - Jest setup supplies Node's TextEncoder/TextDecoder for tests using the real React Router in jsdom.
+
+## Daily Spotlight
+
+- `DailySpotlightService` selects a library game by the preferred calendar timezone and persists the day's identity. `DailySpotlightCard` occupies Home's companion area; the existing doodle/paradox remain in a disclosure below it. Spotlight is Free and does not launch games.
+- Online facts are opt-in via the card (`dailySpotlightOnlineEnabled`). `steam-spotlight` IPC accepts only a validated numeric Steam AppID; it fetches store details and concurrent players independently through `electron/net.js`. No renderer fetch, API key, sales estimates or non-Steam name matching is used.
+- `dailySpotlightFactsV1` retains up to 64 cached games. Normal refresh is 24 hours, retry backoff is one hour, and failed sources retain their last successful timestamp. Cached player counts must never be labelled live. Artwork follows the existing library artwork loader, independently of the online-facts switch.
+- Regression checks: `npx jest src/services/DailySpotlightService.test.js src/services/SteamSpotlightBridge.test.js src/components/DailySpotlightCard.test.js --ci`. Bridge tests mock Electron networking; live endpoint checks and renderer tests are not substitutes for a packaged-desktop smoke test.

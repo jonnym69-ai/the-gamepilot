@@ -69,6 +69,7 @@ A gaming identity that learns your habits, recommendations that explain *why*, a
 - Track playtime, completion status, and personal ratings
 - Organize games by mood, genre, and platform
 - Export library data in multiple formats
+- Today's Spotlight (Free): a daily rotating library game with artwork and your playtime. Optional Steam facts add release details, developers, genres, available Metacritic scores and timestamped concurrent-player snapshots. Online facts are off by default; cached facts remain available offline. Non-Steam games use saved library metadata, not guessed sales figures.
 
 ### 📊 Stats & Year in Review
 

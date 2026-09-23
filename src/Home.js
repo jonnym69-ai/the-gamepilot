@@ -70,6 +70,7 @@ import {
 } from './components/IdentityWidgets';
 import EraArchiveCard from './components/EraArchiveCard';
 import PlayNextCard from './components/PlayNextCard';
+import DailySpotlightCard from './components/DailySpotlightCard';
 import ProGate from './components/ProGate';
 import RivalryBanner from './components/RivalryBanner';
 import StreakBadge from './components/StreakBadge';
@@ -1411,18 +1412,22 @@ function Home({
             </p>
           </div>
           <div className="home-welcome-companion">
-            <div className="home-companion-heading">
-              <Sparkles size={15} aria-hidden="true" />
-              <span>A little more you, every day</span>
-            </div>
-            <DailyDoodleTitle
-              username={username}
-              welcomeMessage={username ? welcomeMessage : ''}
-              profilePic={profilePic}
-              themeId={theme}
-            />
-            {/* Daily Paradox */}
-            <DailyParadox />
+            <DailySpotlightCard library={library} />
+            <details className="home-daily-extras" open={launcherSummary.totalGames === 0 ? true : undefined}>
+              <summary className="home-companion-heading">
+                <Sparkles size={15} aria-hidden="true" />
+                <span>Your daily doodle &amp; paradox</span>
+                <ChevronDown size={15} aria-hidden="true" />
+              </summary>
+              <DailyDoodleTitle
+                username={username}
+                welcomeMessage={username ? welcomeMessage : ''}
+                profilePic={profilePic}
+                themeId={theme}
+              />
+              {/* Daily Paradox */}
+              <DailyParadox />
+            </details>
           </div>
         </div>
 
