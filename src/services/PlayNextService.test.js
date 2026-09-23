@@ -121,6 +121,15 @@ describe('PlayNextService.getPlayNext', () => {
     expect(result.alternates).toHaveLength(1);
   });
 
+  test.each([
+    [{ summary: 'A familiar survival pick.', fullExplanation: 'Long explanation' }, 'A familiar survival pick.'],
+    [{ fullExplanation: 'A fit for your recent sessions.' }, 'A fit for your recent sessions.'],
+    [{ reasons: [] }, 'A strong fit for how you play right now.'],
+  ])('converts structured engine explanations to renderable text', (explanation, expected) => {
+    RecommendationEngine.getPerfectPlayResult.mockReturnValue({ entries: [entry('Hades', explanation)] });
+    expect(PlayNextService.getPlayNext(library).primary.reason).toBe(expected);
+  });
+
   test('returns null when nothing is resumable and the engine has no picks', () => {
     PlaytimeAutoLogger.getSessionHistory.mockReturnValue([sessionAt(10 * DAYS, 'Not Installed')]);
     expect(PlayNextService.getPlayNext(library)).toBeNull();

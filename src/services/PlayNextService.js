@@ -71,7 +71,10 @@ export class PlayNextService {
     const result = RecommendationEngine.getPerfectPlayResult(games, null, null, null, PICK_COUNT);
     const toChoice = (entry) => ({
       game: entry.game,
-      reason: entry.explanation || 'A strong fit for how you play right now.',
+      reason:
+        [entry.explanation, entry.explanation?.summary, entry.explanation?.fullExplanation].find(
+          (value) => typeof value === 'string' && value.trim()
+        ) || 'A strong fit for how you play right now.',
       detail: entry.estimatedSessionMinutes ? `~${Math.round(entry.estimatedSessionMinutes)}m typical session` : null,
     });
     const entries = (result?.entries || [])
