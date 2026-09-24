@@ -57,6 +57,18 @@
   line-height: 1.2;
 }
 
+.daily-spotlight-blurb {
+  margin: 8px 0 0;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #aab4c4);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .daily-spotlight-intro {
   margin: 8px 0 14px;
   font-size: 0.85rem;

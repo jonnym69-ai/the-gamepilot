@@ -1488,19 +1488,27 @@ function Home({
         />
       )}
 
-      <div className="home-engagement-widgets">
-        <RivalryBanner />
+      <CollapsibleSection
+        title="This week"
+        subtitle="Streaks, rivalries, recaps and nudges from your library."
+        icon={<Sparkles size={18} />}
+        className="home-widgets-section"
+        defaultOpen
+      >
+        <div className="home-engagement-widgets">
+          <RivalryBanner />
 
-        <StreakBadge />
+          <StreakBadge />
 
-        <NostalgiaCard library={library} />
-        <PatchNotesBadge library={library} />
-        <WeeklyRecapNudge />
+          <NostalgiaCard library={library} />
+          <PatchNotesBadge library={library} />
+          <WeeklyRecapNudge />
 
-        <WeeklyDigestCard library={library} />
+          <WeeklyDigestCard library={library} />
 
-        <SmartNudgeCard library={library} onLaunchGame={onLaunchGame} />
-      </div>
+          <SmartNudgeCard library={library} onLaunchGame={onLaunchGame} />
+        </div>
+      </CollapsibleSection>
 
       {isDashboard ? (
         <HomeLayoutContent layoutId={homeLayoutId}>

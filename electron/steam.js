@@ -377,6 +377,7 @@ const enrichMoreLikeItems = async (items) => {
 const spotlightCache = new Map();
 const spotlightInflight = new Map();
 const spotlightText = (value) => (typeof value === 'string' ? value.trim().slice(0, 160) : '');
+const spotlightDescription = (value) => (typeof value === 'string' ? value.trim().slice(0, 320) : '');
 const spotlightList = (value) => (Array.isArray(value) ? value.map(spotlightText).filter(Boolean).slice(0, 5) : []);
 
 const fetchSpotlight = async (id) => {
@@ -392,6 +393,7 @@ const fetchSpotlight = async (id) => {
   const store = data
     ? {
         releaseDate: spotlightText(data.release_date?.date),
+        shortDescription: spotlightDescription(data.short_description),
         comingSoon: data.release_date?.coming_soon === true,
         developers: spotlightList(data.developers),
         publishers: spotlightList(data.publishers),

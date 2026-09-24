@@ -8,6 +8,7 @@ import LazyImage from './LazyImage';
 import './DailySpotlightCard.css';
 
 const text = (value) => (typeof value === 'string' ? value.trim().slice(0, 160) : '');
+const blurb = (value) => (typeof value === 'string' ? value.trim().slice(0, 320) : '');
 const names = (value) =>
   (Array.isArray(value) ? value : [value])
     .map((entry) => text(typeof entry === 'object' && entry ? entry.name || entry.description : entry))
@@ -100,6 +101,7 @@ function SpotlightDetails({ game, day }) {
       <div className="daily-spotlight-body">
         <p className="daily-spotlight-eyebrow">From your library · daily discovery</p>
         <h3>{gameName}</h3>
+        {store?.shortDescription && <p className="daily-spotlight-blurb">{blurb(store.shortDescription)}</p>}
         {rows.length > 0 && (
           <dl className="daily-spotlight-facts">
             {rows.map(([label, value]) => (
