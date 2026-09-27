@@ -123,24 +123,31 @@ class SteamPublicService {
 
     const reviewsApi = window.electronAPI?.steamAppReviews;
     const achApi = window.electronAPI?.steamGlobalAchievements;
+    const playersApi = window.electronAPI?.steamPlayerCount;
     if (!reviewsApi || !achApi) return cached || null;
 
     const promise = (async () => {
       try {
-        // Fire both in parallel — they're independent and small.
-        const [reviewsRes, achRes] = await Promise.all([
+        // Fire all three in parallel — they're independent and small.
+        const [reviewsRes, achRes, playersRes] = await Promise.all([
           reviewsApi(appid).catch((err) => ({ ok: false, error: err.message })),
           achApi(appid).catch((err) => ({ ok: false, error: err.message })),
+          playersApi ? playersApi(appid).catch(() => ({ ok: false })) : Promise.resolve({ ok: false }),
         ]);
         const reviews = buildReviewBlock(reviewsRes);
         const achievements = buildAchievementBlock(achRes);
-        const found = Boolean(reviews || achievements);
+        const players =
+          playersRes?.ok && Number.isSafeInteger(playersRes.count) && playersRes.count >= 0
+            ? { count: playersRes.count, fetchedAt: playersRes.fetchedAt || Date.now() }
+            : null;
+        const found = Boolean(reviews || achievements || players);
         const entry = {
           found,
           fetchedAt: Date.now(),
           appid,
           reviews,
           achievements,
+          players,
           communityUrl: `https://steamcommunity.com/app/${appid}`,
           achievementsUrl: achievements ? `https://steamcommunity.com/stats/${appid}/achievements` : null,
         };

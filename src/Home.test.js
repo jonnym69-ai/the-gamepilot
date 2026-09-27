@@ -112,10 +112,11 @@ test('Discover leads with rediscovery and Epic offers without fetching them on T
   expect(screen.queryByRole('heading', { name: 'Epic Free Games' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('link', { name: 'Discover', exact: true }));
   expect(screen.getByRole('heading', { name: 'Epic Free Games' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: "Can't decide?" })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Rediscover your library' })).toBeInTheDocument();
   expect(FreeGameRadar.getEpicRadar).toHaveBeenCalledTimes(1);
   const main = within(screen.getByRole('main'));
-  expect(main.getAllByRole('heading')[0]).toHaveTextContent('Rediscover your library');
+  expect(main.getAllByRole('heading')[0]).toHaveTextContent("Can't decide?");
   fireEvent.click(screen.getByRole('link', { name: 'Activity', exact: true }));
   expect(screen.queryByRole('heading', { name: 'Epic Free Games' })).not.toBeInTheDocument();
 });

@@ -445,6 +445,30 @@ const fetchStoreDetails = async (id) => {
   return request;
 };
 
+const playerCountCache = new Map();
+const playerCountInflight = new Map();
+const PLAYER_COUNT_TTL_MS = 300000;
+
+const fetchPlayerCount = async (id) => {
+  const cached = playerCountCache.get(id);
+  if (cached && Date.now() < cached.expiresAt) return cached.data;
+  if (playerCountInflight.has(id)) return playerCountInflight.get(id);
+  const request = steamHttpsGet('api.steampowered.com', `/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`)
+    .then((value) => {
+      const response = value?.response;
+      const count = response?.player_count;
+      const data =
+        response?.result === 1 && Number.isSafeInteger(count) && count >= 0 ? { count, fetchedAt: Date.now() } : null;
+      playerCountCache.delete(id);
+      playerCountCache.set(id, { data, expiresAt: Date.now() + PLAYER_COUNT_TTL_MS });
+      if (playerCountCache.size > 128) playerCountCache.delete(playerCountCache.keys().next().value);
+      return data;
+    })
+    .finally(() => playerCountInflight.delete(id));
+  playerCountInflight.set(id, request);
+  return request;
+};
+
 const spotlightCache = new Map();
 const spotlightInflight = new Map();
 const spotlightText = (value) => (typeof value === 'string' ? value.trim().slice(0, 160) : '');
@@ -452,10 +476,7 @@ const spotlightDescription = (value) => (typeof value === 'string' ? value.trim(
 const spotlightList = (value) => (Array.isArray(value) ? value.map(spotlightText).filter(Boolean).slice(0, 5) : []);
 
 const fetchSpotlight = async (id) => {
-  const [storeResult, playerResult] = await Promise.allSettled([
-    fetchStoreDetails(id),
-    steamHttpsGet('api.steampowered.com', `/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`),
-  ]);
+  const [storeResult, playerResult] = await Promise.allSettled([fetchStoreDetails(id), fetchPlayerCount(id)]);
   const fetchedAt = Date.now();
   const data = storeResult.status === 'fulfilled' ? storeResult.value : null;
   const score = data?.metacritic?.score;
@@ -472,9 +493,8 @@ const fetchSpotlight = async (id) => {
         fetchedAt: data.fetchedAt,
       }
     : null;
-  const response = playerResult.status === 'fulfilled' ? playerResult.value?.response : null;
-  const count = response?.player_count;
-  const players = response?.result === 1 && Number.isSafeInteger(count) && count >= 0 ? { count, fetchedAt } : null;
+  const players =
+    playerResult.status === 'fulfilled' && playerResult.value ? { count: playerResult.value.count, fetchedAt } : null;
   return { ok: Boolean(store || players), store, players };
 };
 
@@ -488,6 +508,18 @@ function registerIpcHandlers(ipcMain) {
     } catch (error) {
       console.warn('[SteamStore] appdetails failed:', error.message);
       return { ok: false, error: 'store-unavailable' };
+    }
+  });
+
+  ipcMain.handle('steam-player-count', async (_event, appid) => {
+    const id = validAppId(appid);
+    if (!id) return { ok: false, error: 'invalid-appid' };
+    try {
+      const data = await fetchPlayerCount(id);
+      return data ? { ok: true, ...data } : { ok: false, error: 'players-unavailable' };
+    } catch (error) {
+      console.warn('[SteamStore] player count failed:', error.message);
+      return { ok: false, error: 'players-unavailable' };
     }
   });
 

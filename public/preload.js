@@ -22,6 +22,7 @@ const electronAPI = {
   steamNews: (payload) => ipcRenderer.invoke('steam-news', payload),
   steamSpotlight: (appid) => ipcRenderer.invoke('steam-spotlight', appid),
   steamStoreDetails: (appid) => ipcRenderer.invoke('steam-store-details', appid),
+  steamPlayerCount: (appid) => ipcRenderer.invoke('steam-player-count', appid),
   epicFreeGames: () => ipcRenderer.invoke('epic-free-games'),
   steamWishlist: (steamId) => ipcRenderer.invoke('steam-wishlist', steamId),
   steamMoreLike: (appid) => ipcRenderer.invoke('steam-morelike', appid),

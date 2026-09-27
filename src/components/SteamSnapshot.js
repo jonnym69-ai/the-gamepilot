@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ThumbsUp, Trophy, ExternalLink, Loader2 } from 'lucide-react';
+import { ThumbsUp, Trophy, ExternalLink, Loader2, Users } from 'lucide-react';
 import SteamPublicService from '../services/SteamPublicService';
 import './SteamSnapshot.css';
 
@@ -90,7 +90,7 @@ const SteamSnapshot = ({ game }) => {
     return null; // Nothing meaningful to show; stay quiet.
   }
 
-  const { reviews, achievements, communityUrl, achievementsUrl } = entry;
+  const { reviews, achievements, players, communityUrl, achievementsUrl } = entry;
   const tone = reviews ? reviewTone(reviews.positivePct) : 'meh';
 
   return (
@@ -113,6 +113,26 @@ const SteamSnapshot = ({ game }) => {
             {formatCount(reviews.totalPositive)} up
             <span className="steam-snapshot-divider">·</span>
             {formatCount(reviews.totalNegative)} down
+          </div>
+        </div>
+      )}
+
+      {players && (
+        <div className="steam-snapshot-players">
+          <Users size={14} aria-hidden="true" />
+          <div>
+            <div className="steam-snapshot-players-line">
+              <strong>{players.count.toLocaleString()}</strong> playing on Steam
+            </div>
+            <div className="steam-snapshot-players-meta">
+              as of{' '}
+              {new Date(players.fetchedAt).toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
+            </div>
           </div>
         </div>
       )}

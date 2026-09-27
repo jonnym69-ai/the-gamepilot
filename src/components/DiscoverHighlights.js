@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useState } from 'react';
 import { Gift, ExternalLink, RefreshCw } from 'lucide-react';
 import DailySpotlightCard from './DailySpotlightCard';
+import DiscoverQuickPicks from './DiscoverQuickPicks';
 import LazyImage from './LazyImage';
 import { FreeGameRadar, getEpicOfferState } from '../services/FreeGameRadar';
 import { openExternalUrl } from '../services/ElectronBridge';
@@ -156,6 +157,7 @@ export default function DiscoverHighlights({ library, onLaunchGame, activeSessio
   };
   return (
     <div className="discover-highlights">
+      <DiscoverQuickPicks library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
       <DailySpotlightCard library={library} rediscovery onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
       {visible ? (
         <EpicOffers onHide={() => setRadarVisible(false)} />

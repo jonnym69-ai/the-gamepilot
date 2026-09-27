@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import DiscoverHighlights from './DiscoverHighlights';
 import { FreeGameRadar } from '../services/FreeGameRadar';
 import { openExternalUrl } from '../services/ElectronBridge';
@@ -104,7 +104,8 @@ test('rediscovery uses a separate spotlight and preserves its launch callback', 
   expect(screen.getByRole('heading', { name: 'Rediscover your library' })).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: "Today's Spotlight" })).not.toBeInTheDocument();
   expect(screen.getByText(/No playtime recorded here yet/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: /^Play / }));
+  const rediscovery = screen.getByRole('region', { name: 'Rediscover your library' });
+  fireEvent.click(within(rediscovery).getByRole('button', { name: /^Play / }));
   expect(launch).toHaveBeenCalledWith(expect.objectContaining({ platform: 'Local' }));
   expect(FreeGameRadar.getEpicRadar).not.toHaveBeenCalled();
 });

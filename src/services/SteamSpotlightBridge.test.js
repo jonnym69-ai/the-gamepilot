@@ -5,6 +5,7 @@ const { httpsRequest } = require('../../electron/net');
 const { registerIpcHandlers } = require('../../electron/steam');
 let handler;
 let storeHandler;
+let playersHandler;
 
 const respond = (data) => Promise.resolve({ status: 200, body: JSON.stringify(data) });
 const details = (appid) => ({
@@ -28,6 +29,7 @@ beforeEach(() => {
     handle: (name, fn) => {
       if (name === 'steam-spotlight') handler = fn;
       if (name === 'steam-store-details') storeHandler = fn;
+      if (name === 'steam-player-count') playersHandler = fn;
     },
   });
 });
@@ -154,6 +156,34 @@ test('omits invalid player counts and non-game store responses', async () => {
     respond(url.includes('appdetails') ? data : { response: { result: 1, player_count: null } })
   );
   expect(await handler(null, '9999992')).toEqual({ ok: false, store: null, players: null });
+});
+
+test.each(['', null, {}, '12?url=evil', '../108600', '-1', '0', '4294967296'])(
+  'rejects invalid player-count appid %p without a request',
+  async (appid) => {
+    expect(await playersHandler(null, appid)).toEqual({ ok: false, error: 'invalid-appid' });
+    expect(httpsRequest).not.toHaveBeenCalled();
+  }
+);
+
+test('player count returns a timestamped snapshot and caches briefly', async () => {
+  httpsRequest.mockImplementation((url) =>
+    url.includes('GetNumberOfCurrentPlayers')
+      ? respond({ response: { result: 1, player_count: 42137 } })
+      : Promise.reject(new Error('unexpected request'))
+  );
+  const first = await playersHandler(null, '570');
+  expect(first).toEqual({ ok: true, count: 42137, fetchedAt: expect.any(Number) });
+  expect(httpsRequest).toHaveBeenCalledTimes(1);
+  expect(await playersHandler(null, '570')).toEqual(first);
+  expect(httpsRequest).toHaveBeenCalledTimes(1);
+});
+
+test('player count stays honest on malformed or failed responses', async () => {
+  httpsRequest.mockResolvedValueOnce(await respond({ response: { result: 2, player_count: 40 } }));
+  expect(await playersHandler(null, '571')).toEqual({ ok: false, error: 'players-unavailable' });
+  httpsRequest.mockRejectedValueOnce(new Error('timeout'));
+  expect(await playersHandler(null, '572')).toEqual({ ok: false, error: 'players-unavailable' });
 });
 
 test('rejects mismatched store identity and failed player result', async () => {
