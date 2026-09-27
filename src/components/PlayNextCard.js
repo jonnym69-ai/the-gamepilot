@@ -18,7 +18,7 @@ const getTimeEyebrow = () => {
  * Resume mode leads with the last-played game; pick mode leads with the
  * recommendation engine's top choice. "Another" cycles the alternates.
  */
-export default function PlayNextCard({ library, onLaunchGame }) {
+export default function PlayNextCard({ library, onLaunchGame, emptyFallback = null }) {
   const [pickOffset, setPickOffset] = useState(0);
 
   const suggestion = useMemo(() => {
@@ -29,7 +29,7 @@ export default function PlayNextCard({ library, onLaunchGame }) {
     }
   }, [library]);
 
-  if (!suggestion?.primary?.game) return null;
+  if (!suggestion?.primary?.game) return emptyFallback;
 
   const choices = [suggestion.primary, ...(suggestion.alternates || [])];
   const current = choices[pickOffset % choices.length];

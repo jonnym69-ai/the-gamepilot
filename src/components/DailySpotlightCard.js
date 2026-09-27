@@ -20,13 +20,14 @@ const checkedAt = (value) => {
   return Number.isFinite(value) && value > 0 && !Number.isNaN(date.getTime()) ? date.toLocaleString() : '';
 };
 
-function SpotlightDetails({ game, day }) {
+function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunchGame }) {
   const id = useId();
   const appid = DailySpotlightService.getSteamAppId(game);
   const [enabled, setEnabled] = useState(() => DailySpotlightService.isEnabled());
   const [facts, setFacts] = useState(() => DailySpotlightService.getCached(game));
   const [status, setStatus] = useState('');
   const [refresh, setRefresh] = useState(0);
+  const [currentScreenshot, setCurrentScreenshot] = useState(0);
 
   useEffect(() => {
     const onOnline = () => setRefresh((value) => value + 1);
@@ -50,9 +51,11 @@ function SpotlightDetails({ game, day }) {
       setFacts(result);
       const latest = Math.max(result?.store?.fetchedAt || 0, result?.players?.fetchedAt || 0);
       setStatus(
-        latest > 0
+        result?.store && latest > 0
           ? 'Showing saved facts with source timestamps.'
-          : 'Online facts are unavailable. Your library details are still here.'
+          : latest > 0
+            ? 'Steam store description and screenshots are unavailable. Showing the saved player snapshot.'
+            : 'Online facts are unavailable. Your library details are still here.'
       );
     });
     return () => {
@@ -87,21 +90,62 @@ function SpotlightDetails({ game, day }) {
     { surface: 'wide', fallbackSurface: 'hero' }
   );
   const showPlayers = Number.isSafeInteger(players?.count) && players.count >= 0 && checkedAt(players.fetchedAt);
+  const screenshots =
+    enabled && Array.isArray(store?.screenshots)
+      ? store.screenshots.filter((image) => image?.path_full && image?.path_thumbnail).slice(0, 4)
+      : [];
+  const selectedIndex = currentScreenshot < screenshots.length ? currentScreenshot : 0;
+  const screenshot = screenshots[selectedIndex];
 
   return (
     <section className="daily-spotlight" aria-labelledby={`${id}-heading`}>
       <header className="daily-spotlight-heading">
         <BookOpen size={17} aria-hidden="true" />
-        <h2 id={`${id}-heading`}>Today's Spotlight</h2>
+        <h2 id={`${id}-heading`}>{rediscovery ? 'Rediscover your library' : "Today's Spotlight"}</h2>
         <time dateTime={day}>{day}</time>
       </header>
-      <div className="daily-spotlight-art">
-        <LazyImage src={artwork} fallbackSrc={fallbackSrc} placeholder={placeholder} alt={`${gameName} artwork`} />
+      <div className={`daily-spotlight-art${screenshot ? ' daily-spotlight-art--screenshot' : ''}`}>
+        <LazyImage
+          src={screenshot?.path_full || artwork}
+          fallbackSrc={screenshot ? artwork : fallbackSrc}
+          placeholder={placeholder}
+          alt={screenshot ? `${gameName} screenshot ${selectedIndex + 1}` : `${gameName} artwork`}
+        />
       </div>
+      {screenshots.length > 0 && (
+        <div className="daily-spotlight-gallery">
+          <p aria-live="polite">
+            Steam screenshots · {selectedIndex + 1} / {screenshots.length}
+          </p>
+          {screenshots.length > 1 && (
+            <div className="daily-spotlight-thumbnails" role="group" aria-label={`${gameName} screenshots`}>
+              {screenshots.map((image, index) => (
+                <button
+                  key={`${image.path_full}-${index}`}
+                  type="button"
+                  aria-label={`Show ${gameName} screenshot ${index + 1}`}
+                  aria-pressed={index === selectedIndex}
+                  onClick={() => setCurrentScreenshot(index)}
+                >
+                  <LazyImage src={image.path_thumbnail} placeholder={placeholder} alt="" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <div className="daily-spotlight-body">
-        <p className="daily-spotlight-eyebrow">From your library · daily discovery</p>
+        <p className="daily-spotlight-eyebrow">
+          {rediscovery ? 'Already yours · worth another look' : 'From your library · daily discovery'}
+        </p>
         <h3>{gameName}</h3>
+        {reason && <p className="daily-spotlight-intro">{reason}</p>}
         {store?.shortDescription && <p className="daily-spotlight-blurb">{blurb(store.shortDescription)}</p>}
+        {rediscovery && onLaunchGame && (
+          <button className="discover-launch" type="button" onClick={() => onLaunchGame(game)}>
+            Play {gameName}
+          </button>
+        )}
         {rows.length > 0 && (
           <dl className="daily-spotlight-facts">
             {rows.map(([label, value]) => (
@@ -157,7 +201,8 @@ function SpotlightDetails({ game, day }) {
           <summary>About these facts &amp; privacy</summary>
           <p>
             Off by default. When enabled, Spotlight sends only the featured game's public app ID to Steam. No account,
-            play history or full library is sent. Artwork uses the same loading as your library.
+            play history or full library is sent. Screenshots load from Steam's image servers while enabled; image files
+            may need a connection. Library artwork uses the same loading as your library.
           </p>
           <p>
             Facts are saved locally and normally refreshed once a day. Missing facts are omitted. Release dates refer to
@@ -180,9 +225,10 @@ function SpotlightDetails({ game, day }) {
   );
 }
 
-export default function DailySpotlightCard({ library }) {
+export default function DailySpotlightCard({ library, rediscovery = false, onLaunchGame, activeSessions }) {
   const [day, setDay] = useState(() => getDateKey());
   const [game, setGame] = useState(null);
+  const [reason, setReason] = useState('');
   useEffect(() => {
     const updateDay = () => setDay(getDateKey());
     const timer = window.setInterval(updateDay, 60000);
@@ -195,7 +241,26 @@ export default function DailySpotlightCard({ library }) {
     };
   }, []);
   useEffect(() => {
-    setGame(DailySpotlightService.selectGame(library));
-  }, [library, day]);
-  return game ? <SpotlightDetails key={DailySpotlightService.getKey(game)} game={game} day={day} /> : null;
+    const selection = rediscovery ? DailySpotlightService.selectRediscovery(library, new Date(), activeSessions) : null;
+    setGame(rediscovery ? selection?.game || null : DailySpotlightService.selectGame(library));
+    setReason(selection?.reason || '');
+  }, [library, day, rediscovery, activeSessions]);
+  if (!game)
+    return rediscovery ? (
+      <section className="daily-spotlight discover-empty">
+        <h2>Rediscover your library</h2>
+        <p>No overlooked pick right now. Scan more games or explore the mood and time filters below.</p>
+        <p>We leave out today's Spotlight, recent sessions, running games and titles you've hidden or finished.</p>
+      </section>
+    ) : null;
+  return (
+    <SpotlightDetails
+      key={DailySpotlightService.getKey(game)}
+      game={game}
+      day={day}
+      rediscovery={rediscovery}
+      reason={reason}
+      onLaunchGame={onLaunchGame}
+    />
+  );
 }

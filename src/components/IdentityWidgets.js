@@ -40,7 +40,7 @@ function formatRelativeTime(timestamp) {
   return `${Math.floor(diffD / 7)}w ago`;
 }
 
-export function RecentSessionsSummary() {
+export function RecentSessionsSummary({ compact = false }) {
   const data = React.useMemo(() => {
     try {
       const history = SessionRepository.getSessionHistory();
@@ -107,7 +107,22 @@ export function RecentSessionsSummary() {
     }
   }, []);
 
-  if (!data) return null;
+  if (!data) return compact ? <p>No sessions recorded yet. Your story grows as you play.</p> : null;
+
+  if (compact) {
+    return (
+      <div className="home-story-session">
+        <span>Last recorded session</span>
+        <p>
+          <strong>{data.lastGame || 'Unknown game'}</strong>
+        </p>
+        <span>
+          {data.lastDuration ? `${data.lastDuration} · ` : ''}
+          {data.lastTimeAgo}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="results-section">
@@ -150,7 +165,7 @@ export function RecentSessionsSummary() {
   );
 }
 
-export function CurrentEraCard() {
+export function CurrentEraCard({ compact = false }) {
   const era = React.useMemo(() => {
     try {
       return CurrentEraService.getCurrentEra();
@@ -167,7 +182,24 @@ export function CurrentEraCard() {
     }
   }, [era?.topGame]);
 
-  if (!era || !era.snapshot || era.snapshot.totalMinutes <= 0) return null;
+  if (!era || !era.snapshot || era.snapshot.totalMinutes <= 0) {
+    return compact ? <p>Your next era is taking shape. Record a few sessions to reveal it.</p> : null;
+  }
+
+  if (compact) {
+    return (
+      <div className="home-story-era">
+        <span>Current era · Day {era.dayCount || 1}</span>
+        <h3>{era.name}</h3>
+        <p>{era.flavor}</p>
+        {signatureTitle && (
+          <p>
+            Signature title: <strong>{signatureTitle.name}</strong>
+          </p>
+        )}
+      </div>
+    );
+  }
 
   const hours = (era.snapshot.totalMinutes / 60).toFixed(1);
   const topGames = (era.snapshot.topGames || []).slice(0, 3);

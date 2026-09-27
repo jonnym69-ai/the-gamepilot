@@ -83,6 +83,32 @@ test.each([
   expect(screen.getByRole('main')).toHaveTextContent('Restored');
 });
 
+test.each(['mission_control', 'focus_finder', 'dashboard_split', 'streamer_overlay', 'arcade_cabinet'])(
+  '%s keeps explicitly selected Home views accessible without mounting other sections',
+  (layoutId) => {
+    const hiddenMount = jest.fn(() => <div>Hidden recommendation</div>);
+    const HiddenRecommendation = hiddenMount;
+    const { rerender } = render(
+      <HomeLayoutContent layoutId={layoutId} view="identity">
+        <HiddenRecommendation className="home-tools-section" />
+        <section className="home-persona-section">Era archive</section>
+        <section className="home-wishlist-section">Wishlist details</section>
+      </HomeLayoutContent>
+    );
+    expect(screen.getByRole('main')).toHaveTextContent('Era archive');
+    expect(screen.queryByText('Wishlist details')).not.toBeInTheDocument();
+    expect(hiddenMount).not.toHaveBeenCalled();
+    rerender(
+      <HomeLayoutContent layoutId={layoutId} view="wishlist">
+        <section className="home-persona-section">Era archive</section>
+        <section className="home-wishlist-section">Wishlist details</section>
+      </HomeLayoutContent>
+    );
+    expect(screen.getByRole('main')).toHaveTextContent('Wishlist details');
+    expect(screen.queryByText('Era archive')).not.toBeInTheDocument();
+  }
+);
+
 test('Rewards Home layout cards equip using the keyboard and link to the affected page', () => {
   render(<Rewards />);
   fireEvent.click(screen.getByRole('button', { name: /Home Layout/ }));

@@ -17,6 +17,7 @@ import {
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
 import { openExternalUrl } from '../services/ElectronBridge';
+import { getSteamAppId, getSteamStoreDetails } from '../services/SteamStoreService';
 import { LocalShareService } from '../services/LocalShareService';
 import ProfileService from '../services/ProfileService';
 import { GameCurationService } from '../services/GameCurationService';
@@ -99,6 +100,13 @@ const GameModal = ({
   const { success: toastSuccess, error: toastError } = useToast();
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
+  const [detailsRetry, setDetailsRetry] = useState(0);
+  const steamAppid = getSteamAppId(game);
+  const priceCallbackRef = useRef(onUpdatePrice);
+  useEffect(() => {
+    priceCallbackRef.current = onUpdatePrice;
+  }, [onUpdatePrice]);
   const [screenshots, setScreenshots] = useState([]);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
   const [showUninstall, setShowUninstall] = useState(false);
@@ -216,25 +224,13 @@ const GameModal = ({
   }, [game, rating, replayIntent, wouldReplay, tags]);
 
   useEffect(() => {
-    if (!game) {
-      setGameDetails(null);
-      setScreenshots([]);
-      setCurrentScreenshot(0);
-      fetchedGameId.current = null;
-      return;
-    }
-
+    setGameDetails(null);
+    setScreenshots([]);
     setCurrentScreenshot(0);
-    if (!game.appid) {
-      setGameDetails(null);
-      setScreenshots([]);
-      setLoading(false);
-      fetchedGameId.current = null;
-    } else if (game.appid !== fetchedGameId.current) {
-      setGameDetails(null);
-      setScreenshots([]);
-    }
-  }, [game]);
+    setDetailsError('');
+    setLoading(false);
+    fetchedGameId.current = null;
+  }, [steamAppid]);
 
   const handleCompletionChange = useCallback(
     (status) => {
@@ -303,26 +299,21 @@ const GameModal = ({
     setSessionNoteText('');
   }, [game, onAddSessionNote, sessionNoteText]);
 
-  const fetchGameDetails = useCallback(async () => {
-    if (!game?.appid || fetchedGameId.current === game.appid) return;
+  const fetchGameDetails = useCallback(() => {
+    if (!steamAppid) return undefined;
 
     const controller = new AbortController();
-    const currentAppid = game.appid;
+    const currentAppid = steamAppid;
     fetchedGameId.current = currentAppid;
     setLoading(true);
+    setDetailsError('');
 
-    try {
-      const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${currentAppid}&cc=us&l=en`, {
-        signal: controller.signal,
-      });
-      const data = await response.json();
+    getSteamStoreDetails(currentAppid)
+      .then((details) => {
+        // Guard against stale responses — if the modal switched to a different
+        // game while this fetch was in flight, discard the result.
+        if (controller.signal.aborted || fetchedGameId.current !== currentAppid) return;
 
-      // Guard against stale responses — if the modal switched to a different
-      // game while this fetch was in flight, discard the result.
-      if (fetchedGameId.current !== currentAppid) return;
-
-      if (data?.[currentAppid]?.success) {
-        const details = data[currentAppid].data;
         setGameDetails(details);
         setScreenshots(details.screenshots || []);
 
@@ -333,36 +324,26 @@ const GameModal = ({
           storePurchasePrice(currentAppid, priceInUSD, currentCurrency);
 
           // Call onUpdatePrice with the original price data
-          if (onUpdatePrice) {
-            onUpdatePrice(currentAppid, details.price_overview);
+          if (priceCallbackRef.current) {
+            priceCallbackRef.current(currentAppid, details.price_overview);
           }
         }
-      } else {
-        setGameDetails(null);
-        setScreenshots([]);
-      }
-    } catch (error) {
-      if (error?.name !== 'AbortError') {
-        console.error('Failed to fetch game details:', error);
-        setGameDetails(null);
-        setScreenshots([]);
-      }
-    } finally {
-      if (fetchedGameId.current === currentAppid) {
-        setLoading(false);
-      }
-    }
+      })
+      .catch((error) => {
+        if (controller.signal.aborted || fetchedGameId.current !== currentAppid) return;
+        setDetailsError(error.message || 'Steam store details are temporarily unavailable.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted && fetchedGameId.current === currentAppid) setLoading(false);
+      });
     // Cleanup is handled by the effect below via controller.abort()
     return () => controller.abort();
-  }, [game, onUpdatePrice]);
+  }, [steamAppid]);
 
   useEffect(() => {
-    if (isOpen && game?.appid && game.appid !== fetchedGameId.current) {
-      const cleanup = fetchGameDetails();
-      return typeof cleanup === 'function' ? cleanup : undefined;
-    }
+    if (isOpen && steamAppid) return fetchGameDetails();
     return undefined;
-  }, [isOpen, game, fetchGameDetails]);
+  }, [isOpen, steamAppid, fetchGameDetails, detailsRetry]);
 
   const handleLaunchGame = useCallback(async () => {
     if (!game) return;
@@ -793,6 +774,14 @@ const GameModal = ({
                     )}
                   </div>
 
+                  {detailsError && (
+                    <div className="game-info-panel" role="status">
+                      <p>{detailsError} Your library details are still available.</p>
+                      <button type="button" onClick={() => setDetailsRetry((value) => value + 1)}>
+                        Retry Steam details
+                      </button>
+                    </div>
+                  )}
                   <div className="game-info-panel">
                     <h3>Overview</h3>
                     {gameDetails?.short_description ? (

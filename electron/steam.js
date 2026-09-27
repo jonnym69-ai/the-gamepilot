@@ -374,6 +374,77 @@ const enrichMoreLikeItems = async (items) => {
   return enriched;
 };
 
+const storeDetailsCache = new Map();
+const storeDetailsInflight = new Map();
+const validAppId = (appid) => {
+  const id = typeof appid === 'string' || typeof appid === 'number' ? String(appid) : '';
+  return /^[1-9]\d{0,9}$/.test(id) && Number(id) <= 4294967295 ? id : null;
+};
+const steamImageUrl = (value) => {
+  if (typeof value !== 'string' || value.length > 2048) return '';
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      (url.hostname === 'steamstatic.com' ||
+        url.hostname.endsWith('.steamstatic.com') ||
+        url.hostname === 'steamcdn-a.akamaihd.net')
+      ? value
+      : '';
+  } catch {
+    return '';
+  }
+};
+const fetchStoreDetails = async (id) => {
+  const cached = storeDetailsCache.get(id);
+  if (cached && Date.now() < cached.expiresAt) return cached.data;
+  if (storeDetailsInflight.has(id)) return storeDetailsInflight.get(id);
+  const request = steamHttpsGet('store.steampowered.com', `/api/appdetails?appids=${id}&cc=us&l=english`)
+    .then((response) => {
+      const app =
+        response && typeof response === 'object' && !Array.isArray(response)
+          ? Object.values(response).find(
+              (entry) => entry?.success === true && entry.data?.type === 'game' && String(entry.data.steam_appid) === id
+            )
+          : null;
+      if (!app) return null;
+      const source = app.data;
+      const data = {
+        type: 'game',
+        steam_appid: Number(id),
+        fetchedAt: Date.now(),
+        name: spotlightText(source.name),
+        short_description: spotlightDescription(source.short_description),
+        release_date: {
+          date: spotlightText(source.release_date?.date),
+          coming_soon: source.release_date?.coming_soon === true,
+        },
+        developers: spotlightList(source.developers),
+        publishers: spotlightList(source.publishers),
+        genres: spotlightList(Array.isArray(source.genres) ? source.genres.map((genre) => genre?.description) : []).map(
+          (description) => ({ description })
+        ),
+        metacritic: { score: source.metacritic?.score },
+        price_overview: source.price_overview || null,
+        screenshots: (Array.isArray(source.screenshots) ? source.screenshots : [])
+          .map((image) => ({
+            path_full: steamImageUrl(image?.path_full),
+            path_thumbnail: steamImageUrl(image?.path_thumbnail),
+          }))
+          .filter((image) => image.path_full && image.path_thumbnail)
+          .slice(0, 8),
+      };
+      storeDetailsCache.delete(id);
+      storeDetailsCache.set(id, { data, expiresAt: Date.now() + 86400000 });
+      if (storeDetailsCache.size > 64) storeDetailsCache.delete(storeDetailsCache.keys().next().value);
+      return data;
+    })
+    .finally(() => storeDetailsInflight.delete(id));
+  storeDetailsInflight.set(id, request);
+  return request;
+};
+
 const spotlightCache = new Map();
 const spotlightInflight = new Map();
 const spotlightText = (value) => (typeof value === 'string' ? value.trim().slice(0, 160) : '');
@@ -382,24 +453,23 @@ const spotlightList = (value) => (Array.isArray(value) ? value.map(spotlightText
 
 const fetchSpotlight = async (id) => {
   const [storeResult, playerResult] = await Promise.allSettled([
-    steamHttpsGet('store.steampowered.com', `/api/appdetails?appids=${id}&l=english`),
+    fetchStoreDetails(id),
     steamHttpsGet('api.steampowered.com', `/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`),
   ]);
   const fetchedAt = Date.now();
-  const app = storeResult.status === 'fulfilled' ? storeResult.value?.[id] : null;
-  const data =
-    app?.success === true && app.data?.type === 'game' && String(app.data.steam_appid) === id ? app.data : null;
+  const data = storeResult.status === 'fulfilled' ? storeResult.value : null;
   const score = data?.metacritic?.score;
   const store = data
     ? {
         releaseDate: spotlightText(data.release_date?.date),
         shortDescription: spotlightDescription(data.short_description),
+        screenshots: data.screenshots.slice(0, 4),
         comingSoon: data.release_date?.coming_soon === true,
         developers: spotlightList(data.developers),
         publishers: spotlightList(data.publishers),
         genres: spotlightList(Array.isArray(data.genres) ? data.genres.map((genre) => genre?.description) : []),
         metacritic: Number.isInteger(score) && score > 0 && score <= 100 ? score : null,
-        fetchedAt,
+        fetchedAt: data.fetchedAt,
       }
     : null;
   const response = playerResult.status === 'fulfilled' ? playerResult.value?.response : null;
@@ -409,9 +479,21 @@ const fetchSpotlight = async (id) => {
 };
 
 function registerIpcHandlers(ipcMain) {
+  ipcMain.handle('steam-store-details', async (_event, appid) => {
+    const id = validAppId(appid);
+    if (!id) return { ok: false, error: 'invalid-appid' };
+    try {
+      const data = await fetchStoreDetails(id);
+      return data ? { ok: true, data } : { ok: false, error: 'store-unavailable' };
+    } catch (error) {
+      console.warn('[SteamStore] appdetails failed:', error.message);
+      return { ok: false, error: 'store-unavailable' };
+    }
+  });
+
   ipcMain.handle('steam-spotlight', async (_event, appid) => {
-    const id = typeof appid === 'string' || typeof appid === 'number' ? String(appid) : '';
-    if (!/^[1-9]\d{0,9}$/.test(id) || Number(id) > 4294967295) return { ok: false, error: 'invalid-appid' };
+    const id = validAppId(appid);
+    if (!id) return { ok: false, error: 'invalid-appid' };
     const cached = spotlightCache.get(id);
     if (cached && Date.now() < cached.expiresAt) return cached.result;
     if (spotlightInflight.has(id)) return spotlightInflight.get(id);

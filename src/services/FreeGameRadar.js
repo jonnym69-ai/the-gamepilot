@@ -1,7 +1,14 @@
 import StorageService from './StorageService';
 
-const EPIC_FEED_URL =
-  'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US';
+const EPIC_CACHE_KEY = 'epicFreeGameRadarCacheV1';
+let epicInflight = null;
+
+export const getEpicOfferState = (game, now = Date.now()) => {
+  const start = Date.parse(game?.startDate);
+  const end = Date.parse(game?.endDate);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end <= now) return 'expired';
+  return start > now ? 'upcoming' : 'available';
+};
 const EPIC_FREE_GAMES_URL = 'https://store.epicgames.com/free-games';
 const STEAM_FEATURED_URL = 'https://store.steampowered.com/api/featuredcategories/';
 const GOG_FREEBIES_URL = 'https://www.gog.com/games/ajax/filtered?priceRange=0,0&discounted=true&page=1';
@@ -16,21 +23,23 @@ const isMysteryGame = (element = {}) => {
 
 const normalizeEpicGames = (elements = []) => {
   return elements
-    .filter((element) => {
-      const price = element?.price?.totalPrice;
-      const promotions = element?.promotions;
-      if (!price || !promotions) return false;
-      const isFree = price.discountPrice === 0;
-      const hasFreePromo = promotions?.promotionalOffers?.some((group) =>
-        group.promotionalOffers?.some((offer) => offer.discountSetting?.discountPercentage === 0)
-      );
-      return isFree || hasFreePromo;
-    })
+    .filter((element) => element?.id && typeof element.title === 'string')
     .map((element) => {
-      const offer =
-        element?.promotions?.promotionalOffers?.[0]?.promotionalOffers?.[0] ||
-        element?.promotions?.upcomingPromotionalOffers?.[0]?.promotionalOffers?.[0];
+      const groups = [
+        ...(Array.isArray(element.promotions?.promotionalOffers) ? element.promotions.promotionalOffers : []),
+        ...(Array.isArray(element.promotions?.upcomingPromotionalOffers)
+          ? element.promotions.upcomingPromotionalOffers
+          : []),
+      ];
+      const offer = groups
+        .flatMap((group) => (Array.isArray(group?.promotionalOffers) ? group.promotionalOffers : []))
+        .filter((item) => item?.discountSetting?.discountPercentage === 0 && getEpicOfferState(item) !== 'expired')
+        .sort((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate))[0];
+      if (!offer) return null;
       const mysteryGame = isMysteryGame(element);
+      const mappings = element.catalogNs?.mappings || element.offerMappings;
+      const mapping = Array.isArray(mappings) ? mappings.find((item) => item?.pageSlug) : null;
+      const slug = String(mapping?.pageSlug || element.productSlug || '').replace(/\/home$/, '');
 
       return {
         id: `epic-${element.id}`,
@@ -41,8 +50,8 @@ const normalizeEpicGames = (elements = []) => {
           element.keyImages?.[0]?.url ||
           '',
         url:
-          !mysteryGame && element.productSlug
-            ? `https://store.epicgames.com/p/${element.productSlug}`
+          !mysteryGame && /^[a-z0-9][a-z0-9-]*$/i.test(slug)
+            ? `https://store.epicgames.com/p/${slug}`
             : EPIC_FREE_GAMES_URL,
         isMysteryGame: mysteryGame,
         startDate: offer?.startDate,
@@ -50,20 +59,13 @@ const normalizeEpicGames = (elements = []) => {
         source: 'Epic',
         platformIcon: '🎮',
       };
-    });
+    })
+    .filter(Boolean)
+    .sort((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate));
 };
 
-const fetchEpicFreeGames = async () => {
-  try {
-    const response = await fetch(EPIC_FEED_URL);
-    if (!response.ok) return [];
-    const data = await response.json();
-    const elements = data?.data?.Catalog?.searchStore?.elements || [];
-    return normalizeEpicGames(elements);
-  } catch {
-    return [];
-  }
-};
+const fetchEpicFreeGames = async (forceRefresh) =>
+  (await FreeGameRadar.getEpicRadar({ forceRefresh })).games.filter((game) => getEpicOfferState(game) === 'available');
 
 const normalizeSteamFreeGame = (item, type = 'free-to-play') => {
   const id = item.id || item.appid || item.steam_appid;
@@ -172,6 +174,35 @@ const fetchGOGFreeGames = async () => {
 };
 
 export const FreeGameRadar = {
+  async getEpicRadar({ forceRefresh = false } = {}) {
+    const cached = StorageService.get(EPIC_CACHE_KEY, null);
+    const validCache = Array.isArray(cached?.games) && Number.isFinite(cached?.checkedAt);
+    const games = validCache ? cached.games.filter((game) => getEpicOfferState(game) !== 'expired') : [];
+    const age = Date.now() - cached?.checkedAt;
+    if (!forceRefresh && validCache && age >= 0 && age < CACHE_TTL) {
+      return { games, checkedAt: cached.checkedAt, stale: false, error: '' };
+    }
+    if (epicInflight) return epicInflight;
+    epicInflight = Promise.resolve()
+      .then(async () => {
+        const api = typeof window !== 'undefined' && window.electronAPI?.epicFreeGames;
+        try {
+          if (!api) throw new Error('Live Epic offers are available in the desktop app.');
+          const result = await api();
+          if (!result?.ok || !Array.isArray(result.elements)) throw new Error('Epic offers could not be refreshed.');
+          const next = { games: normalizeEpicGames(result.elements), checkedAt: Date.now() };
+          StorageService.set(EPIC_CACHE_KEY, next);
+          return { ...next, stale: false, error: '' };
+        } catch (error) {
+          return { games, checkedAt: validCache ? cached.checkedAt : null, stale: true, error: error.message };
+        }
+      })
+      .finally(() => {
+        epicInflight = null;
+      });
+    return epicInflight;
+  },
+
   async getFreeGames({ forceRefresh = false } = {}) {
     const cached = StorageService.get(CACHE_KEY, null);
     const now = Date.now();
@@ -181,7 +212,7 @@ export const FreeGameRadar = {
     }
 
     const [epicGames, steamGames, gogGames] = await Promise.all([
-      fetchEpicFreeGames(),
+      fetchEpicFreeGames(forceRefresh),
       fetchSteamFreeGames(),
       fetchGOGFreeGames(),
     ]);

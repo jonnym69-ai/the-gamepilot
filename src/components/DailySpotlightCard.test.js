@@ -56,6 +56,48 @@ test('opt-in shows sourced store facts and timestamped zero players rather than 
   expect(DailySpotlightService.isEnabled()).toBe(true);
 });
 
+test('shows the Steam blurb and a manual screenshot gallery only while online facts are enabled', async () => {
+  const screenshots = [1, 2, 3, 4].map((index) => ({
+    path_full: `https://shared.akamai.steamstatic.com/ss_${index}.jpg`,
+    path_thumbnail: `https://shared.akamai.steamstatic.com/ss_${index}.thumb.jpg`,
+  }));
+  window.electronAPI.steamSpotlight.mockResolvedValue({
+    ok: true,
+    store: { shortDescription: 'Survive the apocalypse.', screenshots, fetchedAt: Date.now() },
+  });
+  render(<DailySpotlightCard library={[game]} />);
+  expect(screen.queryByRole('button', { name: /show.*screenshot/i })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('checkbox', { name: /online Steam facts/i }));
+  expect(await screen.findByText('Survive the apocalypse.')).toBeInTheDocument();
+  expect(screen.getByAltText('Project Zomboid screenshot 1')).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /show.*screenshot/i })).toHaveLength(4);
+  fireEvent.click(screen.getByRole('button', { name: 'Show Project Zomboid screenshot 3' }));
+  expect(screen.getByAltText('Project Zomboid screenshot 3')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Show Project Zomboid screenshot 3' })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  );
+  fireEvent.click(screen.getByRole('checkbox', { name: /online Steam facts/i }));
+  expect(screen.queryByRole('button', { name: /show.*screenshot/i })).not.toBeInTheDocument();
+  expect(screen.getByAltText('Project Zomboid artwork')).toBeInTheDocument();
+  expect(screen.getByText('Survive the apocalypse.')).toBeInTheDocument();
+});
+
+test('keeps library artwork when Steam has no screenshots and explains partial data', async () => {
+  DailySpotlightService.setEnabled(true);
+  window.electronAPI.steamSpotlight.mockResolvedValue({
+    ok: true,
+    players: { count: 12, fetchedAt: Date.now() },
+    store: null,
+  });
+  render(<DailySpotlightCard library={[game]} />);
+  await waitFor(() =>
+    expect(screen.getByRole('status')).toHaveTextContent(/store description and screenshots are unavailable/i)
+  );
+  expect(screen.getByAltText('Project Zomboid artwork')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /show.*screenshot/i })).not.toBeInTheDocument();
+});
+
 test('non-Steam games use saved metadata without pretending it comes from Steam', () => {
   render(
     <DailySpotlightCard

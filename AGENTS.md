@@ -165,9 +165,18 @@ The typecheck command is optional for JS-only changes.
 - `/editions` is the local comparison page. Sales remain disabled until checkout, pricing, paid update delivery and early-user arrangements are agreed. Never publish Pro artifacts to the public Free release feed as part of routine CI.
 - Jest setup supplies Node's TextEncoder/TextDecoder for tests using the real React Router in jsdom.
 
+## Home navigation
+
+- `/` opens the focused Today view (`HomeDailyOverview`): Play Next, Spotlight, compact era/last-session summary, and active-session end controls. Empty libraries show scan-first onboarding.
+- `/?view=discover|activity|identity|wishlist` opens explicit, bookmarkable Home sections. `HomeLayoutContent` only mounts the selected section group; explicit views remain accessible in all reward layouts, including Focus Finder and Streamer Overlay. Without a view, its original layout filtering/order is retained for Dashboard.
+- `/dashboard` preserves the full guided dashboard, challenges and legacy Today tabs. Home's footer links to it. Preserve the existing session-feedback and onboarding flows when changing Home.
+- Regression checks: `npx jest src/Home.test.js src/RewardEffects.test.js --ci`. They cover launch/end-session callbacks, empty states, view navigation/back/remount, Dashboard and layout-preset access.
+
 ## Daily Spotlight
 
-- `DailySpotlightService` selects a library game by the preferred calendar timezone and persists the day's identity. `DailySpotlightCard` occupies Home's companion area; the existing doodle/paradox remain in a disclosure below it. Spotlight is Free and does not launch games.
+- `DailySpotlightService` selects a library game by the preferred calendar timezone and persists the day's identity. `DailySpotlightCard` appears beside Play Next on Home's Today view; the doodle/paradox remain available in Identity and the Dashboard Today tabs. Spotlight is Free and does not launch games.
 - Online facts are opt-in via the card (`dailySpotlightOnlineEnabled`). `steam-spotlight` IPC accepts only a validated numeric Steam AppID; it fetches store details and concurrent players independently through `electron/net.js`. No renderer fetch, API key, sales estimates or non-Steam name matching is used.
 - `dailySpotlightFactsV1` retains up to 64 cached games. Normal refresh is 24 hours, retry backoff is one hour, and failed sources retain their last successful timestamp. Cached player counts must never be labelled live. Artwork follows the existing library artwork loader, independently of the online-facts switch.
-- Regression checks: `npx jest src/services/DailySpotlightService.test.js src/services/SteamSpotlightBridge.test.js src/components/DailySpotlightCard.test.js --ci`. Bridge tests mock Electron networking; live endpoint checks and renderer tests are not substitutes for a packaged-desktop smoke test.
+- Steam `appdetails` can return a game's correct data under a different outer response key (observed for Blasphemous, Hades and Dota 2). Resolve only successful game entries whose internal `data.steam_appid` matches the requested ID; never accept the first entry blindly. `steam-store-details` and Spotlight share this main-process lookup, a bounded success cache and in-flight deduplication. GameModal uses the desktop bridge, not a direct renderer fetch, and offers retry on failure.
+- Spotlight includes up to four manually selected Steam screenshots under the existing online-facts opt-in. Disabling it hides the remote gallery; saved text facts remain visible. Screenshot URLs are restricted to HTTPS Steam image hosts. Cached metadata does not guarantee image files are available offline. Facts cache schema version 2 refreshes pre-fix entries once without deleting saved facts.
+- Regression checks: `npx jest src/services/DailySpotlightService.test.js src/services/SteamSpotlightBridge.test.js src/components/DailySpotlightCard.test.js src/components/GameModal.test.js --ci`. Bridge tests mock Electron networking; live endpoint checks and renderer tests are not substitutes for a packaged-desktop smoke test.
