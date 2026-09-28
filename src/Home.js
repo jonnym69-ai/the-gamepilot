@@ -1362,6 +1362,11 @@ function Home({
       defaultOpen
     >
       <div className="home-engagement-widgets">
+        {weeklyHabitStats.sessions === 0 && streaks.current === 0 && streaks.longest === 0 && (
+          <p className="home-engagement-empty">
+            Nothing to report yet — play a few games and streaks, rivalries and recaps will appear here.
+          </p>
+        )}
         <RivalryBanner />
         <StreakBadge />
         <NostalgiaCard library={library} />
@@ -1714,6 +1719,7 @@ function Home({
                 <Link to="/year-in-review">Year in Review</Link>
               </nav>
               <RecentSessionsSummary />
+              <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
               {engagementSection}
             </div>
 
@@ -1802,7 +1808,6 @@ function Home({
                 <EraArchiveCard />
               </ProGate>
               <CurrentChampionCard library={safeLibrary} />
-              <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
               <BecauseYouAreSection
                 library={library}
                 platformIcons={PLATFORM_ICONS}
@@ -1943,6 +1948,7 @@ function Home({
               title="Buy Next"
               subtitle="Purchase recommendations from your wishlist."
               className="home-buy-next-section"
+              defaultOpen
             >
               {renderBuyRecommendations()}
             </CollapsibleSection>

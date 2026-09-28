@@ -168,6 +168,13 @@ test('a new player sees honest story placeholders rather than invented progress'
   expect(screen.getByText(/No sessions recorded yet/)).toBeInTheDocument();
 });
 
+test('Activity view explains empty states instead of showing a blank stack', () => {
+  SessionRepository.getSessionHistory.mockReturnValue([]);
+  setup({}, '/?view=activity');
+  expect(screen.getByText(/No sessions recorded yet/)).toBeInTheDocument();
+  expect(screen.getByText(/Nothing to report yet — play a few games/)).toBeInTheDocument();
+});
+
 test('active sessions can still be ended directly from Today', () => {
   const endSession = jest.fn();
   setup({ activeSessions: { Hades: { startTime: Date.now() } }, endSession });

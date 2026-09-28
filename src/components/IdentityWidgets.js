@@ -107,7 +107,21 @@ export function RecentSessionsSummary({ compact = false }) {
     }
   }, []);
 
-  if (!data) return compact ? <p>No sessions recorded yet. Your story grows as you play.</p> : null;
+  if (!data) {
+    if (compact) return <p>No sessions recorded yet. Your story grows as you play.</p>;
+    return (
+      <div className="results-section">
+        <div className="result-card recent-sessions-card">
+          <h3 className="result-title">Recent Activity</h3>
+          <div className="recent-sessions-body">
+            <p>
+              No sessions recorded yet. Launch a game and GamePilot tracks it here — this card fills in as you play.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (compact) {
     return (
