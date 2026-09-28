@@ -1,7 +1,9 @@
 import StorageService from './StorageService';
 
 const EPIC_CACHE_KEY = 'epicFreeGameRadarCacheV1';
+const GAMERPOWER_CACHE_KEY = 'gamerpowerRadarCacheV1';
 let epicInflight = null;
+let giveawayInflight = null;
 
 export const getEpicOfferState = (game, now = Date.now()) => {
   const start = Date.parse(game?.startDate);
@@ -173,7 +175,82 @@ const fetchGOGFreeGames = async () => {
   }
 };
 
+// GamerPower titles arrive as "Name (Platform)\nGiveaway" — strip the wrapper.
+const cleanGiveawayTitle = (title = '') =>
+  String(title)
+    .replace(/\s*Giveaway\s*$/i, '')
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .trim();
+
+const giveawayPlatformLabel = (platforms = '') => {
+  const tokens = String(platforms)
+    .split(',')
+    .map((token) => token.trim())
+    .filter((token) => token && token !== 'PC');
+  return tokens.join(', ') || 'PC';
+};
+
+const normalizeGiveaway = (item) => {
+  const id = item?.id;
+  if (!id || item?.status !== 'Active' || item?.type !== 'Game') return null;
+  // Epic has a dedicated feed with official store URLs and artwork — skip its
+  // listings here so the two radars don't show the same giveaway twice.
+  const platforms = String(item.platforms || '');
+  if (platforms.includes('Epic Games Store')) return null;
+  const url = item.open_giveaway_url || item.gamerpower_url;
+  const endDate = Date.parse(item.end_date);
+  return {
+    id: `gp-${id}`,
+    title: cleanGiveawayTitle(item.title) || 'Untitled giveaway',
+    description: String(item.description || '').trim(),
+    image: /^https?:\/\//i.test(item.thumbnail || '') ? item.thumbnail : '',
+    url: /^https?:\/\//i.test(url || '') ? url : '',
+    worth: typeof item.worth === 'string' && item.worth !== 'N/A' ? item.worth : '',
+    endDate: Number.isFinite(endDate) ? new Date(endDate).toISOString() : null,
+    platform: giveawayPlatformLabel(platforms),
+    source: 'GamerPower',
+  };
+};
+
 export const FreeGameRadar = {
+  async getGiveaways({ forceRefresh = false } = {}) {
+    const cached = StorageService.get(GAMERPOWER_CACHE_KEY, null);
+    const validCache = Array.isArray(cached?.games) && Number.isFinite(cached?.checkedAt);
+    const age = Date.now() - cached?.checkedAt;
+    if (!forceRefresh && validCache && age >= 0 && age < CACHE_TTL) {
+      return { games: cached.games, checkedAt: cached.checkedAt, stale: false, error: '' };
+    }
+    if (giveawayInflight) return giveawayInflight;
+    giveawayInflight = Promise.resolve()
+      .then(async () => {
+        const api = typeof window !== 'undefined' && window.electronAPI?.giveawayFeed;
+        try {
+          if (!api) throw new Error('Giveaway listings are available in the desktop app.');
+          const result = await api();
+          if (!result?.ok || !Array.isArray(result.giveaways)) {
+            throw new Error('Giveaway listings could not be refreshed.');
+          }
+          const next = {
+            games: result.giveaways.map(normalizeGiveaway).filter(Boolean).slice(0, 24),
+            checkedAt: Date.now(),
+          };
+          StorageService.set(GAMERPOWER_CACHE_KEY, next);
+          return { ...next, stale: false, error: '' };
+        } catch (error) {
+          return {
+            games: validCache ? cached.games : [],
+            checkedAt: validCache ? cached.checkedAt : null,
+            stale: true,
+            error: error.message,
+          };
+        }
+      })
+      .finally(() => {
+        giveawayInflight = null;
+      });
+    return giveawayInflight;
+  },
+
   async getEpicRadar({ forceRefresh = false } = {}) {
     const cached = StorageService.get(EPIC_CACHE_KEY, null);
     const validCache = Array.isArray(cached?.games) && Number.isFinite(cached?.checkedAt);

@@ -149,6 +149,113 @@ function EpicOffers({ onHide }) {
   );
 }
 
+function GiveawayFeed() {
+  const id = useId();
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refresh, setRefresh] = useState(0);
+  const [linkError, setLinkError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    FreeGameRadar.getGiveaways({ forceRefresh: refresh > 0 })
+      .then((value) => {
+        if (active) setResult(value);
+      })
+      .catch(() => {
+        if (active) setResult({ games: [], stale: true, error: 'Giveaway listings are temporarily unavailable.' });
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [refresh]);
+
+  const openOffer = async (url) => {
+    setLinkError('');
+    try {
+      await openExternalUrl(url);
+    } catch {
+      setLinkError('Could not open the giveaway page. Please try again.');
+    }
+  };
+  const games = Array.isArray(result?.games) ? result.games : [];
+  return (
+    <section className="discover-epic-radar discover-giveaway-feed" aria-labelledby={`${id}-heading`}>
+      <header className="discover-radar-header">
+        <div>
+          <p className="discover-kicker">
+            <Gift size={15} aria-hidden="true" /> Something new, everywhere else
+          </p>
+          <h2 id={`${id}-heading`}>More free games</h2>
+          <p>Free-to-keep giveaways on Steam, GOG, itch.io and more.</p>
+        </div>
+        <div className="discover-radar-controls">
+          <button
+            type="button"
+            onClick={() => setRefresh((value) => value + 1)}
+            disabled={loading}
+            aria-label="Refresh giveaway listings"
+          >
+            <RefreshCw size={15} aria-hidden="true" /> Refresh
+          </button>
+        </div>
+      </header>
+      <p className="discover-radar-status" role="status">
+        {loading
+          ? 'Checking giveaway listings…'
+          : result?.error ||
+            (games.length ? 'Free-to-keep offers tracked by GamerPower.' : 'No active giveaways returned right now.')}
+        {result?.stale && result?.checkedAt ? ' Showing saved listings; verify availability.' : ''}
+      </p>
+      <div className="discover-free-offers">
+        {games.slice(0, 6).map((game) => (
+          <article key={game.id} className="discover-free-offer">
+            {game.image && <LazyImage src={game.image} alt={`${game.title} artwork`} />}
+            <div>
+              <span className="discover-offer-badge">
+                {result?.stale ? 'Last seen free' : 'Free to keep'} · {game.platform}
+              </span>
+              <h3>{game.title}</h3>
+              {game.description && <p className="discover-offer-description">{game.description}</p>}
+              <p className="discover-offer-date">
+                {game.endDate ? (
+                  <>
+                    Offer ends <time dateTime={game.endDate}>{dateLabel(game.endDate)}</time>
+                  </>
+                ) : (
+                  'No listed end date — verify on the store page.'
+                )}
+                {game.worth ? ` · was ${game.worth}` : ''}
+              </p>
+              {game.url && (
+                <button
+                  type="button"
+                  onClick={() => openOffer(game.url)}
+                  aria-label={`View the ${game.title} giveaway`}
+                >
+                  {result?.stale ? 'Check giveaway' : 'View giveaway'} <ExternalLink size={14} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+      {linkError && <p role="alert">{linkError}</p>}
+      <footer className="discover-radar-footer">
+        <p>Source: GamerPower giveaway feed. Confirm the price on the store page before claiming.</p>
+        <p>
+          {result?.checkedAt ? `Last checked ${dateLabel(result.checkedAt)}. ` : ''}Refreshes hourly while visible. This
+          public feed does not send your library or play history.
+        </p>
+      </footer>
+    </section>
+  );
+}
+
 export default function DiscoverHighlights({ library, onLaunchGame, activeSessions }) {
   const [visible, setVisible] = useState(() => StorageService.get(VISIBLE_KEY, true) !== false);
   const setRadarVisible = (value) => {
@@ -160,13 +267,16 @@ export default function DiscoverHighlights({ library, onLaunchGame, activeSessio
       <DiscoverQuickPicks library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
       <DailySpotlightCard library={library} rediscovery onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
       {visible ? (
-        <EpicOffers onHide={() => setRadarVisible(false)} />
+        <>
+          <EpicOffers onHide={() => setRadarVisible(false)} />
+          <GiveawayFeed />
+        </>
       ) : (
         <section className="discover-epic-radar discover-empty">
-          <h2>Epic Free Games</h2>
-          <p>The radar is hidden. Show it to load Epic's public giveaways feed.</p>
+          <h2>Free games radar</h2>
+          <p>The radar is hidden. Show it to load the public Epic and giveaway feeds.</p>
           <button type="button" onClick={() => setRadarVisible(true)}>
-            Show Epic radar
+            Show free games radar
           </button>
         </section>
       )}

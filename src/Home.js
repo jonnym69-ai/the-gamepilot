@@ -42,6 +42,7 @@ import NostalgiaCard from './components/NostalgiaCard';
 import PatchNotesBadge from './components/PatchNotesBadge';
 import EnergyVibePicker from './components/EnergyVibePicker';
 import LibrarianHubCarousel from './components/LibrarianHubCarousel';
+import RecentlyPlayedShelf from './components/RecentlyPlayedShelf';
 import WeeklyRecapNudge from './components/WeeklyRecapNudge';
 import WeeklyDigestCard from './components/WeeklyDigestCard';
 import MilestoneToast from './components/MilestoneToast';
@@ -1200,9 +1201,26 @@ function Home({
         {entries.map((entry) => {
           const game = entry.game || {};
           const meta = entry.meta || {};
-          const price = meta.wishlistItem?.currentPrice;
+          const item = meta.wishlistItem || {};
+          const price = item.currentPrice;
+          const gameForArt = {
+            ...game,
+            appid: game.appid || game.app_id || game.steamAppId || item.steamAppID,
+          };
+          const artwork =
+            resolveGameArtwork(gameForArt, { surface: 'wide' }) ||
+            (item.thumb && /^https?:\/\//i.test(item.thumb) ? item.thumb : '');
+          const artPlaceholder = getGameArtworkPlaceholder({ game: gameForArt, surface: 'wide' });
           return (
             <article key={entry.id || game.name} className="discovery-card">
+              <div className="discovery-card-art">
+                <LazyImage
+                  src={artwork || artPlaceholder}
+                  alt={game.name}
+                  placeholder={artPlaceholder}
+                  className="discovery-card-image"
+                />
+              </div>
               <div className="discovery-card-badge">
                 <span>{meta.buyScore || 0}% match</span>
               </div>
@@ -1718,6 +1736,7 @@ function Home({
                 <Link to="/habits">Habits</Link>
                 <Link to="/year-in-review">Year in Review</Link>
               </nav>
+              <RecentlyPlayedShelf library={library} onLaunchGame={onLaunchGame} />
               <RecentSessionsSummary />
               <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
               {engagementSection}

@@ -33,6 +33,23 @@ beforeEach(() => {
     checkedAt: NOW,
     stale: false,
   });
+  jest.spyOn(FreeGameRadar, 'getGiveaways').mockResolvedValue({
+    games: [
+      {
+        id: 'gp-1',
+        title: 'Cool Giveaway',
+        description: 'Free on another store.',
+        image: 'https://www.gamerpower.com/offers/1/x.jpg',
+        url: 'https://www.gamerpower.com/open/cool-giveaway',
+        worth: '$19.99',
+        endDate: '2026-10-05T23:59:00.000Z',
+        platform: 'Steam',
+        source: 'GamerPower',
+      },
+    ],
+    checkedAt: NOW,
+    stale: false,
+  });
 });
 afterEach(() => {
   jest.restoreAllMocks();
@@ -59,9 +76,11 @@ test('hiding the radar is persistent and stops requests until it is shown again'
   fireEvent.click(screen.getByRole('button', { name: 'Hide radar' }));
   unmount();
   FreeGameRadar.getEpicRadar.mockClear();
+  FreeGameRadar.getGiveaways.mockClear();
   render(<DiscoverHighlights library={[]} />);
   expect(FreeGameRadar.getEpicRadar).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'Show Epic radar' }));
+  expect(FreeGameRadar.getGiveaways).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Show free games radar' }));
   await screen.findByText('Free Adventure');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
   expect(FreeGameRadar.getEpicRadar).toHaveBeenCalledTimes(1);
@@ -77,7 +96,8 @@ test('shows stale data honestly and supports a manual retry', async () => {
   render(<DiscoverHighlights library={[]} />);
   expect(await screen.findByText('Last seen free')).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
-  expect(screen.getByRole('status')).toHaveTextContent(/verify availability/i);
+  const epicRadar = screen.getByRole('region', { name: 'Epic Free Games' });
+  expect(within(epicRadar).getByRole('status')).toHaveTextContent(/verify availability/i);
   fireEvent.click(screen.getByRole('button', { name: 'Refresh Epic offers' }));
   expect(await screen.findByText('Free to keep')).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
@@ -108,4 +128,25 @@ test('rediscovery uses a separate spotlight and preserves its launch callback', 
   fireEvent.click(within(rediscovery).getByRole('button', { name: /^Play / }));
   expect(launch).toHaveBeenCalledWith(expect.objectContaining({ platform: 'Local' }));
   expect(FreeGameRadar.getEpicRadar).not.toHaveBeenCalled();
+});
+
+test('shows cross-platform giveaways with honest dates and opens them only on request', async () => {
+  render(<DiscoverHighlights library={[]} />);
+  expect(await screen.findByText('Cool Giveaway')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'More free games' })).toBeInTheDocument();
+  expect(screen.getByText(/Free to keep · Steam/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'View the Cool Giveaway giveaway' }));
+  expect(openExternalUrl).toHaveBeenCalledWith('https://www.gamerpower.com/open/cool-giveaway');
+});
+
+test('giveaway feed reports failures honestly without breaking the Epic radar', async () => {
+  FreeGameRadar.getGiveaways.mockResolvedValue({
+    games: [],
+    checkedAt: null,
+    stale: true,
+    error: 'Giveaway listings are temporarily unavailable.',
+  });
+  render(<DiscoverHighlights library={[]} />);
+  expect(await screen.findByText('Free Adventure')).toBeInTheDocument();
+  expect(await screen.findByText(/Giveaway listings are temporarily unavailable/)).toBeInTheDocument();
 });

@@ -11,7 +11,10 @@ import WishlistService from './services/WishlistService';
 
 jest.mock('./services/FreeGameRadar', () => ({
   ...jest.requireActual('./services/FreeGameRadar'),
-  FreeGameRadar: { getEpicRadar: jest.fn(() => new Promise(() => {})) },
+  FreeGameRadar: {
+    getEpicRadar: jest.fn(() => new Promise(() => {})),
+    getGiveaways: jest.fn(() => new Promise(() => {})),
+  },
 }));
 jest.mock('./NavBar', () => () => null);
 jest.mock('./components/LazyImage', () => ({ alt }) => <img alt={alt} />);

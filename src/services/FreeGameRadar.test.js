@@ -91,3 +91,57 @@ test('reports desktop-only availability and tolerates malformed saved caches', a
   expect(result.games).toEqual([]);
   expect(result.error).toMatch(/desktop app/i);
 });
+
+const giveaway = (id, platforms = 'PC, Steam', extra = {}) => ({
+  id,
+  title: `Cool Game ${id} (Steam)\nGiveaway`,
+  description: 'A free thing.',
+  thumbnail: 'https://www.gamerpower.com/offers/1/x.jpg',
+  open_giveaway_url: `https://www.gamerpower.com/open/game-${id}`,
+  type: 'Game',
+  status: 'Active',
+  platforms,
+  worth: '$19.99',
+  end_date: '2026-10-01 23:59:00',
+  ...extra,
+});
+
+test('normalizes GamerPower giveaways and excludes platforms covered by the Epic feed', async () => {
+  window.electronAPI.giveawayFeed = jest.fn().mockResolvedValue({
+    ok: true,
+    giveaways: [
+      giveaway(1),
+      giveaway(2, 'PC, Epic Games Store'),
+      giveaway(3, 'PC, DRM-Free', { end_date: 'N/A', worth: 'N/A' }),
+      giveaway(4, 'PC', { status: 'Expired' }),
+      giveaway(5, 'PC', { type: 'DLC' }),
+    ],
+  });
+  const result = await FreeGameRadar.getGiveaways();
+  expect(result.stale).toBe(false);
+  expect(result.games).toHaveLength(2);
+  expect(result.games[0]).toMatchObject({
+    id: 'gp-1',
+    title: 'Cool Game 1',
+    platform: 'Steam',
+    worth: '$19.99',
+    url: 'https://www.gamerpower.com/open/game-1',
+  });
+  expect(Date.parse(result.games[0].endDate)).not.toBeNaN();
+  expect(result.games[1].platform).toBe('DRM-Free');
+  expect(result.games[1].endDate).toBeNull();
+  expect(result.games[1].worth).toBe('');
+});
+
+test('giveaway feed caches results and falls back to stale data without a bridge', async () => {
+  window.electronAPI.giveawayFeed = jest.fn().mockResolvedValue({ ok: true, giveaways: [giveaway(1)] });
+  await Promise.all([FreeGameRadar.getGiveaways(), FreeGameRadar.getGiveaways()]);
+  await FreeGameRadar.getGiveaways();
+  expect(window.electronAPI.giveawayFeed).toHaveBeenCalledTimes(1);
+  delete window.electronAPI;
+  jest.setSystemTime(NOW + 7200000);
+  const stale = await FreeGameRadar.getGiveaways();
+  expect(stale.stale).toBe(true);
+  expect(stale.games).toHaveLength(1);
+  expect(stale.error).toMatch(/desktop app/i);
+});

@@ -305,6 +305,10 @@
   margin-top: 16px;
 }
 
+.discover-giveaway-feed {
+  grid-column: 1 / -1;
+}
+
 .discover-empty {
   padding: 24px;
   line-height: 1.6;
