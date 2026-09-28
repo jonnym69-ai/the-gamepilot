@@ -3,6 +3,7 @@ import { Coffee, Crosshair, Palette, Play, Swords, Users } from 'lucide-react';
 import LazyImage from './LazyImage';
 import { MOODS } from '../constants/GenresMoods';
 import { RecommendationEngine } from '../services/RecommendationEngine';
+import SteamPublicService from '../services/SteamPublicService';
 import StorageService from '../services/StorageService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from '../services/GameArtworkService';
 
@@ -42,6 +43,12 @@ const sessionLabel = (minutes) => {
   return value < 120 ? `~${value} min` : `~${Math.round(value / 60)}h`;
 };
 
+const compactCount = (n) => {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return String(n);
+};
+
 export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeSessions = {} }) {
   const [{ mood, time }, setSelection] = useState(readSaved);
 
@@ -49,9 +56,10 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
     StorageService.set(STORAGE_KEY, { mood, time });
   }, [mood, time]);
 
+  const runningKey = JSON.stringify(Object.keys(activeSessions || {}));
   const running = useMemo(
-    () => new Set(Object.keys(activeSessions || {}).map((name) => String(name).trim().toLowerCase())),
-    [activeSessions]
+    () => new Set(JSON.parse(runningKey).map((name) => String(name).trim().toLowerCase())),
+    [runningKey]
   );
 
   const result = useMemo(() => {
@@ -63,6 +71,27 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
     );
     return entries.length > 0 ? { ...payload, entries } : null;
   }, [library, mood, time, running]);
+
+  const [playerCounts, setPlayerCounts] = useState({});
+
+  useEffect(() => {
+    const picks = (result?.entries || []).map((entry) => SteamPublicService.appIdOf(entry.game)).filter(Boolean);
+    if (picks.length === 0 || !window.electronAPI?.steamPlayerCount) return undefined;
+    let cancelled = false;
+    Promise.all(
+      picks.map(async (appid) => [appid, await SteamPublicService.getPlayerCount({ platform: 'steam', appid })])
+    ).then((rows) => {
+      if (cancelled) return;
+      const next = {};
+      rows.forEach(([appid, value]) => {
+        if (value) next[appid] = value;
+      });
+      setPlayerCounts(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [result]);
 
   const pick = (patch) => setSelection((current) => ({ ...current, ...patch }));
 
@@ -116,6 +145,8 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
             const placeholder = getGameArtworkPlaceholder(game);
             const reason = reasonOf(entry);
             const length = sessionLabel(entry.estimatedSessionMinutes);
+            const appid = SteamPublicService.appIdOf(game);
+            const playing = appid ? playerCounts[appid] : null;
             return (
               <article key={game.appid || game.id || game.name} className="discover-quick-pick-card">
                 <div className="discover-quick-pick-art">
@@ -130,7 +161,22 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
                 <div className="discover-quick-pick-details">
                   <h3>{game.name}</h3>
                   {reason && <p className="discover-quick-pick-reason">{reason}</p>}
-                  <p className="discover-quick-pick-meta">{[entry.mood, length].filter(Boolean).join(' · ')}</p>
+                  <p className="discover-quick-pick-meta">
+                    {[entry.mood, length].filter(Boolean).join(' · ')}
+                    {playing && (
+                      <span
+                        className="discover-quick-pick-players"
+                        title={`Steam player count · as of ${new Date(playing.fetchedAt).toLocaleString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}`}
+                      >
+                        {(entry.mood || length ? ' · ' : '') + compactCount(playing.count)} playing
+                      </span>
+                    )}
+                  </p>
                   <button
                     type="button"
                     className="discover-quick-pick-play"

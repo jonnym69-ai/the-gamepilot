@@ -12,6 +12,9 @@ const CACHE_KEY = 'steamSnapshotCacheV1';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PENDING_TTL_MS = 6 * 60 * 60 * 1000;
 const SETTINGS_KEY = 'steamSnapshotEnabled';
+// A player count is only worth surfacing as "playing" while it is recent.
+// Matches the main-process player-count cache TTL.
+const PLAYERS_FRESH_MS = 5 * 60 * 1000;
 
 const inflight = new Map();
 
@@ -109,6 +112,30 @@ class SteamPublicService {
     const appid = getAppId(game);
     if (!appid) return null;
     return readCache()[appid] || null;
+  }
+
+  static appIdOf(game) {
+    return getAppId(game);
+  }
+
+  // Lightweight player-count lookup for compact surfaces (quick-pick chips).
+  // Reuses a very recent count from the snapshot cache, otherwise asks the
+  // main process directly (which has its own 5-minute cache and dedup).
+  // Returns { count, fetchedAt } or null — callers must not label it "live".
+  static async getPlayerCount(game) {
+    const appid = getAppId(game);
+    if (!appid || !this.isEnabled()) return null;
+    const cached = this.getCached(game)?.players;
+    if (cached && Number.isSafeInteger(cached.count) && Date.now() - cached.fetchedAt < PLAYERS_FRESH_MS) {
+      return { count: cached.count, fetchedAt: cached.fetchedAt };
+    }
+    const api = window.electronAPI?.steamPlayerCount;
+    if (!api) return null;
+    const res = await api(appid).catch(() => null);
+    if (res?.ok && Number.isSafeInteger(res.count) && res.count >= 0) {
+      return { count: res.count, fetchedAt: res.fetchedAt || Date.now() };
+    }
+    return null;
   }
 
   static async getSnapshot(game, { force = false } = {}) {

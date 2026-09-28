@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import DiscoverQuickPicks from './DiscoverQuickPicks';
 import { RecommendationEngine } from '../services/RecommendationEngine';
+import SteamPublicService from '../services/SteamPublicService';
 
 jest.mock('./LazyImage', () => ({ alt }) => <img alt={alt} />);
 
@@ -26,7 +27,10 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  delete window.electronAPI;
+  jest.restoreAllMocks();
+});
 
 test('shows three engine picks immediately, before any mood is chosen', () => {
   render(<DiscoverQuickPicks library={library} />);
@@ -76,4 +80,29 @@ test('string explanations still render and empty libraries get a scan prompt', (
   RecommendationEngine.getPerfectPlayResult.mockReturnValue({ entries: [] });
   rerender(<DiscoverQuickPicks library={[]} />);
   expect(screen.getByText(/Scan your library/)).toBeInTheDocument();
+});
+
+test('shows current Steam player counts on picks, timestamped and never labelled live', async () => {
+  window.electronAPI = {
+    steamPlayerCount: jest.fn(async (appid) => ({
+      ok: appid !== '3',
+      count: appid === '1' ? 42137 : 800,
+      fetchedAt: 1790500000000,
+    })),
+  };
+  render(<DiscoverQuickPicks library={library} />);
+  expect(await screen.findByText(/42k playing/)).toBeInTheDocument();
+  expect(screen.getByText(/800 playing/)).toBeInTheDocument();
+  expect(screen.getByText(/42k playing/)).toHaveAttribute('title', expect.stringContaining('as of'));
+  expect(screen.queryByText(/live/i)).not.toBeInTheDocument();
+});
+
+test('skips player counts entirely when Steam public data is disabled', async () => {
+  SteamPublicService.setEnabled(false);
+  const api = jest.fn();
+  window.electronAPI = { steamPlayerCount: api };
+  render(<DiscoverQuickPicks library={library} />);
+  expect(await screen.findByRole('button', { name: 'Play Hades' })).toBeInTheDocument();
+  expect(api).not.toHaveBeenCalled();
+  expect(screen.queryByText(/playing/)).not.toBeInTheDocument();
 });
