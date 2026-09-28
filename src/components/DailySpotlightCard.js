@@ -87,7 +87,7 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
     minutes > 0 ? `${(minutes / 60).toLocaleString(undefined, { maximumFractionDigits: 1 })}h` : 'No playtime recorded';
   const { artwork, fallbackSrc, placeholder } = resolveGameArtworkBundle(
     { ...game, appid, app_id: null, steamAppId: null },
-    { surface: 'wide', fallbackSurface: 'hero' }
+    { surface: 'portrait', fallbackSurface: 'hero' }
   );
   const showPlayers = Number.isSafeInteger(players?.count) && players.count >= 0 && checkedAt(players.fetchedAt);
   const screenshots =
@@ -104,16 +104,26 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
         <h2 id={`${id}-heading`}>{rediscovery ? 'Rediscover your library' : "Today's Spotlight"}</h2>
         <time dateTime={day}>{day}</time>
       </header>
-      <div className={`daily-spotlight-art${screenshot ? ' daily-spotlight-art--screenshot' : ''}`}>
+      <div
+        className="daily-spotlight-art"
+        style={artwork ? { '--spotlight-backdrop': `url("${artwork}")` } : undefined}
+      >
         <LazyImage
-          src={screenshot?.path_full || artwork}
-          fallbackSrc={screenshot ? artwork : fallbackSrc}
+          src={artwork || placeholder}
+          fallbackSrc={artwork ? fallbackSrc : undefined}
           placeholder={placeholder}
-          alt={screenshot ? `${gameName} screenshot ${selectedIndex + 1}` : `${gameName} artwork`}
+          alt={`${gameName} artwork`}
         />
       </div>
       {screenshots.length > 0 && (
         <div className="daily-spotlight-gallery">
+          <div className="daily-spotlight-screenshot">
+            <LazyImage
+              src={screenshot.path_full}
+              placeholder={placeholder}
+              alt={`${gameName} screenshot ${selectedIndex + 1}`}
+            />
+          </div>
           <p aria-live="polite">
             Steam screenshots · {selectedIndex + 1} / {screenshots.length}
           </p>

@@ -62,10 +62,12 @@ export default function FreeToPlayEssentials({ library = [], onLaunchGame, activ
           .map((entry) => {
             const game = installedMatch(entry, library);
             const isRunning = game && running.has(normalized(game.name));
-            const artwork = entry.image || resolveGameArtwork({ appid: entry.steamAppId }, { surface: 'wide' });
+            const artwork = entry.steamAppId
+              ? resolveGameArtwork({ appid: entry.steamAppId }, { surface: 'portrait' })
+              : entry.image;
             const placeholder = getGameArtworkPlaceholder({
               game: entry,
-              surface: 'wide',
+              surface: 'portrait',
               icon: entry.name.slice(0, 2).toUpperCase(),
             });
             return (

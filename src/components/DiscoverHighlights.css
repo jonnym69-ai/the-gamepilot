@@ -75,7 +75,7 @@
 
 .discover-quick-pick-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 340px));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 260px));
   gap: 14px;
 }
 
@@ -88,9 +88,14 @@
   background: var(--bg-secondary, #18212e);
 }
 
-.discover-quick-pick-art,
+.discover-quick-pick-art {
+  aspect-ratio: 2 / 3;
+  background: var(--bg-secondary, #10161f);
+}
+
 .discover-quick-pick-art .lazy-image-container {
-  height: 140px;
+  width: 100%;
+  height: 100%;
 }
 
 .discover-quick-pick-art img {
@@ -364,7 +369,7 @@
 
 .discover-essential-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 300px));
   gap: 14px;
   margin: 16px 0;
 }
