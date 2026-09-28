@@ -1,4 +1,5 @@
 import StorageService from './StorageService';
+import SteamPublicService from './SteamPublicService';
 import { normalizeGenres } from '../constants/GenresMoods';
 
 /**
@@ -148,17 +149,31 @@ export class SteamGenreEnrichmentService {
     if (cache[appId]?.genres) {
       return cache[appId].genres;
     }
+    // Same opt-in as Steam Snapshot: disabling public-data lookups stops
+    // genre enrichment too. Cached genres still apply.
+    if (!SteamPublicService.isEnabled()) return [];
 
     try {
-      const response = await fetch(
-        `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=genres,categories`
-      );
-      const data = await response.json();
-      const appData = data?.[appId];
-      if (!appData?.success) return [];
-
-      const steamGenres = appData?.data?.genres || [];
-      const steamCategories = appData?.data?.categories || [];
+      let steamGenres = [];
+      let steamCategories = [];
+      const bridge = window.electronAPI?.steamStoreDetails;
+      if (bridge) {
+        // Packaged app: CORS blocks renderer fetches, so go through the
+        // main-process bridge (which also resolves the correct inner app id).
+        const res = await bridge(appId).catch(() => null);
+        if (!res?.ok) return [];
+        steamGenres = res.data?.genres || [];
+        steamCategories = res.data?.categories || [];
+      } else {
+        const response = await fetch(
+          `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=genres,categories`
+        );
+        const data = await response.json();
+        const appData = data?.[appId];
+        if (!appData?.success) return [];
+        steamGenres = appData?.data?.genres || [];
+        steamCategories = appData?.data?.categories || [];
+      }
       const mappedGenres = this.mapSteamGenres(steamGenres);
       const mappedCategories = this.mapSteamCategories(steamCategories);
       const combined = [...new Set([...mappedGenres, ...mappedCategories])];

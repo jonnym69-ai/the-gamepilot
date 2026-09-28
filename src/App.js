@@ -92,7 +92,7 @@ function AppContent() {
   const [lastPlayedGame, setLastPlayedGame] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(
-    () => StorageService.getString('minimizeOnLaunch') === 'true'
+    () => StorageService.getString('minimizeOnLaunch') !== 'false'
   );
   const { success: toastSuccess, roast: toastRoast } = useToast();
 

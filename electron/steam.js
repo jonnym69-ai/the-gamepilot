@@ -425,6 +425,11 @@ const fetchStoreDetails = async (id) => {
         genres: spotlightList(Array.isArray(source.genres) ? source.genres.map((genre) => genre?.description) : []).map(
           (description) => ({ description })
         ),
+        categories: (Array.isArray(source.categories) ? source.categories : [])
+          .map((category) => spotlightText(category?.description))
+          .filter(Boolean)
+          .slice(0, 40)
+          .map((description) => ({ description })),
         metacritic: { score: source.metacritic?.score },
         price_overview: source.price_overview || null,
         screenshots: (Array.isArray(source.screenshots) ? source.screenshots : [])

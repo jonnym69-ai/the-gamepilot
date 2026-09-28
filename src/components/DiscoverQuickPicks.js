@@ -100,7 +100,7 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
       <header className="discover-quick-picks-header">
         <div>
           <h2 id="discover-quick-picks-heading">Can't decide?</h2>
-          <p>Three picks, scored by how you actually play. Steer them with a mood or time.</p>
+          <p>Up to three picks, scored by how you actually play. Steer them with a mood or time.</p>
         </div>
       </header>
 
