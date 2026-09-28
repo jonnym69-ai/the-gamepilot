@@ -9,6 +9,14 @@
   align-items: start;
 }
 
+.discover-highlights > .daily-spotlight {
+  grid-column: 1 / -1;
+}
+
+.discover-radar-header > .discover-pick-pill {
+  align-self: flex-start;
+}
+
 .discover-quick-picks {
   grid-column: 1 / -1;
   min-width: 0;
@@ -146,6 +154,29 @@
   font: inherit;
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+.discover-pick-dismiss {
+  margin: 6px 0 0 8px;
+  padding: 7px;
+  min-height: 34px;
+  border: 1px solid var(--border-color, #646464);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary, #e8eaf0);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.discover-skipped-picks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #aab4c4);
 }
 
 .discover-quick-pick-empty {
@@ -305,8 +336,66 @@
   margin-top: 16px;
 }
 
-.discover-giveaway-feed {
+.discover-external {
   grid-column: 1 / -1;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border-color, #646464);
+  border-radius: 18px;
+  background: var(--card-bg, #18212e);
+  color: var(--text-primary, #e8eaf0);
+  overflow-wrap: anywhere;
+}
+
+.discover-category-controls,
+.discover-essential-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.discover-giveaway-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.discover-essential-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.discover-essential-cards .discover-quick-pick-details {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.discover-essential-cards h4 {
+  font-size: 1rem;
+  margin: 6px 0;
+}
+
+.discover-essential-cards .discover-essential-actions {
+  margin: auto 0 0;
+  padding-top: 10px;
+}
+
+.discover-essential-moods {
+  font-size: 0.75rem;
+  margin: 0;
+  color: var(--accent-color, #ff8c1a);
+}
+
+.discover-catalogue-note {
+  color: var(--text-secondary, #aab4c4);
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 .discover-empty {
@@ -316,6 +405,29 @@
 
 .discover-empty h2 {
   font-size: 1.1rem;
+}
+
+@media (min-width: 700px) {
+  .discover-highlights > .daily-spotlight {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1fr);
+  }
+
+  .discover-highlights .daily-spotlight-heading,
+  .discover-highlights .daily-spotlight-gallery {
+    grid-column: 1 / -1;
+  }
+
+  .discover-highlights .daily-spotlight-art {
+    height: 100%;
+    min-height: 180px;
+    grid-row: 2;
+  }
+
+  .discover-highlights .daily-spotlight-body {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }
 
 @media (max-width: 900px) {

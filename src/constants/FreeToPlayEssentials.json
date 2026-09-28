@@ -1,0 +1,123 @@
+[
+  {
+    "id": "counter-strike-2",
+    "name": "Counter-Strike 2",
+    "platform": "Steam",
+    "steamAppId": "730",
+    "moods": ["Competitive", "Focused"],
+    "description": "Tactical rounds where careful aim, team communication and a single life matter.",
+    "costNote": "In-game purchases; Prime Status is a paid upgrade.",
+    "url": "https://store.steampowered.com/app/730/CounterStrike_2/"
+  },
+  {
+    "id": "dota-2",
+    "name": "Dota 2",
+    "platform": "Steam",
+    "steamAppId": "570",
+    "moods": ["Competitive", "Focused"],
+    "description": "Deep five-on-five strategy with a large hero roster and matches that need your attention.",
+    "costNote": "All heroes are free; cosmetics and an optional subscription are sold separately.",
+    "url": "https://store.steampowered.com/app/570/Dota_2/"
+  },
+  {
+    "id": "team-fortress-2",
+    "name": "Team Fortress 2",
+    "platform": "Steam",
+    "steamAppId": "440",
+    "moods": ["Social", "Competitive"],
+    "description": "Class-based team shooting with distinct roles, playful maps and plenty of chaos.",
+    "costNote": "In-game purchases; free accounts have some communication and trading restrictions.",
+    "url": "https://store.steampowered.com/app/440/Team_Fortress_2/"
+  },
+  {
+    "id": "overwatch",
+    "name": "Overwatch",
+    "aliases": ["Overwatch 2"],
+    "platform": "Battle.net",
+    "moods": ["Social", "Competitive"],
+    "description": "Hero-based team battles built around combining abilities and switching roles.",
+    "costNote": "In-game purchases; some additional content is sold separately.",
+    "url": "https://us.shop.battle.net/en-us/product/overwatch",
+    "image": "https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440c/blt45586c965db08717/6823abc24dee72d806fff5e2/OpenGraph.jpg"
+  },
+  {
+    "id": "hearthstone",
+    "name": "Hearthstone",
+    "platform": "Battle.net",
+    "moods": ["Focused", "Competitive"],
+    "description": "Turn-based card duels for when you want to plan combinations rather than test your reflexes.",
+    "costNote": "Cards can be earned through play; card packs and other in-game purchases are available.",
+    "url": "https://us.shop.battle.net/en-us/product/hearthstone",
+    "image": "https://d39zum0jwvcigt.cloudfront.net/_next/static/images/default-475d770302527dbab7708dca2af05afd.jpg"
+  },
+  {
+    "id": "diablo-immortal",
+    "name": "Diablo Immortal",
+    "platform": "Battle.net",
+    "moods": ["Social", "Focused"],
+    "description": "Action-RPG dungeon runs, loot hunting and co-op encounters in the Diablo world.",
+    "costNote": "Includes purchases that affect character progression, not just cosmetics.",
+    "url": "https://diabloimmortal.blizzard.com/en-us",
+    "image": "https://blz-contentstack-images.akamaized.net/v3/assets/blt9c12f249ac15c7ec/blt47deaa9e2be4b752/6a1f4beaeb54a6907d694fb8/DI_Warlock_OG-Image@2x_enUS.jpg"
+  },
+  {
+    "id": "fortnite",
+    "name": "Fortnite",
+    "platform": "Epic",
+    "moods": ["Social", "Creative", "Competitive"],
+    "description": "Battle royale with friends, or explore and create player-made experiences.",
+    "costNote": "In-game purchases; Save the World is a separate paid experience.",
+    "url": "https://store.epicgames.com/en-US/p/fortnite",
+    "image": "https://cdn2.unrealengine.com/fnbr-c5s5-s32-clayplug-webcarousel-1920x1080-1920x1080-c70c5063acf4.jpg"
+  },
+  {
+    "id": "rocket-league",
+    "name": "Rocket League",
+    "platform": "Epic",
+    "moods": ["Social", "Competitive"],
+    "description": "Car football with short matches and a high skill ceiling for aerial shots and teamwork.",
+    "costNote": "Cosmetics and passes are sold separately. New PC players get it through Epic.",
+    "url": "https://store.epicgames.com/en-US/p/rocket-league",
+    "image": "https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg"
+  },
+  {
+    "id": "fall-guys",
+    "name": "Fall Guys",
+    "platform": "Epic",
+    "moods": ["Social", "Creative"],
+    "description": "Obstacle-course party rounds, with a course builder for making your own challenges.",
+    "costNote": "Cosmetics and passes are sold separately.",
+    "url": "https://www.fallguys.com/",
+    "image": "https://cdn2.unrealengine.com/fg-10-3-evg-keyart-withlogo-1920x1080-11-1920x1080-198587253bf0.png"
+  },
+  {
+    "id": "league-of-legends",
+    "name": "League of Legends",
+    "platform": "Riot",
+    "moods": ["Competitive", "Social"],
+    "description": "Five-on-five lane battles where team roles, map awareness and practice pay off.",
+    "costNote": "Champions can be earned or purchased; cosmetics are also sold.",
+    "url": "https://www.leagueoflegends.com/en-us/",
+    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/565197caf987af4e4da307df6e2b235a28714736-837x469.jpg"
+  },
+  {
+    "id": "valorant",
+    "name": "VALORANT",
+    "platform": "Riot",
+    "moods": ["Competitive", "Focused"],
+    "description": "Tactical team shooting that combines precise gunplay with agent abilities.",
+    "costNote": "Agents can be earned or purchased; cosmetics are also sold. Requires Riot Vanguard.",
+    "url": "https://playvalorant.com/en-us/",
+    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76-128x128.png"
+  },
+  {
+    "id": "teamfight-tactics",
+    "name": "Teamfight Tactics",
+    "platform": "Riot",
+    "moods": ["Focused", "Competitive"],
+    "description": "Draft a team, arrange your board and adapt your strategy while the battles play out automatically.",
+    "costNote": "Cosmetics and passes are sold separately. On PC, it uses the League of Legends client.",
+    "url": "https://teamfighttactics.leagueoflegends.com/en-us/",
+    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/d63adacd93e313c1e61bbeb2eb37d8c4ca85848d-1920x1080.jpg"
+  }
+]

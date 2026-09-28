@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Coffee, Crosshair, Palette, Play, Swords, Users } from 'lucide-react';
 import LazyImage from './LazyImage';
 import { MOODS } from '../constants/GenresMoods';
@@ -8,6 +8,9 @@ import StorageService from '../services/StorageService';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from '../services/GameArtworkService';
 
 const STORAGE_KEY = 'discoverQuickPicksV1';
+const gameKey = (game) =>
+  `${String(game.platform || '').toLowerCase()}:${game.appid || game.id || String(game.name).trim().toLowerCase()}`;
+const EMPTY_DISMISSALS = { keys: [], slots: [], context: null };
 const MOOD_ICONS = {
   Relaxed: Coffee,
   Social: Users,
@@ -62,15 +65,57 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
     [runningKey]
   );
 
+  const [dismissals, setDismissals] = useState(EMPTY_DISMISSALS);
+  const context = useMemo(() => ({ library, mood, time, running }), [library, mood, time, running]);
   const result = useMemo(() => {
-    const games = Array.isArray(library) ? library.filter((game) => game?.name) : [];
-    if (games.length === 0) return null;
-    const payload = RecommendationEngine.getPerfectPlayResult(games, mood || null, null, time || null, 3);
-    const entries = (payload?.entries || []).filter(
-      (entry) => entry?.game && !running.has(String(entry.game.name).trim().toLowerCase())
-    );
-    return entries.length > 0 ? { ...payload, entries } : null;
-  }, [library, mood, time, running]);
+    const games = Array.isArray(library)
+      ? library.filter(
+          (game) =>
+            game?.name &&
+            !running.has(String(game.name).trim().toLowerCase()) &&
+            !dismissals.keys.includes(gameKey(game))
+        )
+      : [];
+    const eligible = new Set(games.map(gameKey));
+    const slots = dismissals.context === context ? dismissals.slots : [];
+    const retained = slots.map((entry) => (entry && eligible.has(gameKey(entry.game)) ? entry : null));
+    const seen = new Set(retained.filter(Boolean).map((entry) => gameKey(entry.game)));
+    const candidates = games.filter((game) => !seen.has(gameKey(game)));
+    const count = 3 - seen.size;
+    const payload =
+      candidates.length && count > 0
+        ? RecommendationEngine.getPerfectPlayResult(candidates, mood || null, null, time || null, count)
+        : null;
+    const replacements = (payload?.entries || []).filter((entry) => {
+      if (!entry?.game?.name) return false;
+      const key = gameKey(entry.game);
+      if (!eligible.has(key) || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const entries = retained.map((entry) => entry || replacements.shift()).filter(Boolean);
+    entries.push(...replacements.slice(0, 3 - entries.length));
+    return entries.length ? { entries } : null;
+  }, [library, mood, time, running, dismissals, context]);
+
+  const cardActions = useRef([]);
+  const resetButton = useRef(null);
+  const pendingFocus = useRef(null);
+  useEffect(() => {
+    if (pendingFocus.current === null) return;
+    const index = Math.min(pendingFocus.current, (result?.entries.length || 0) - 1);
+    (index >= 0 ? cardActions.current[index] : resetButton.current)?.focus();
+    pendingFocus.current = null;
+  }, [result]);
+
+  const dismiss = (game, index) => {
+    pendingFocus.current = index;
+    setDismissals((current) => ({
+      keys: [...new Set([...current.keys, gameKey(game)])],
+      slots: result.entries.map((entry) => (gameKey(entry.game) === gameKey(game) ? null : entry)),
+      context,
+    }));
+  };
 
   const [playerCounts, setPlayerCounts] = useState({});
 
@@ -137,9 +182,25 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
         </div>
       </div>
 
+      {dismissals.keys.length > 0 && (
+        <div className="discover-skipped-picks">
+          <p role="status">{dismissals.keys.length} skipped for this visit. Your taste profile is unchanged.</p>
+          <button
+            type="button"
+            ref={resetButton}
+            className="discover-pick-pill"
+            onClick={() => {
+              pendingFocus.current = 0;
+              setDismissals(EMPTY_DISMISSALS);
+            }}
+          >
+            Reset skipped picks
+          </button>
+        </div>
+      )}
       {result ? (
         <div className="discover-quick-pick-cards">
-          {result.entries.map((entry) => {
+          {result.entries.map((entry, index) => {
             const game = entry.game;
             const artwork = resolveGameArtwork(game);
             const placeholder = getGameArtworkPlaceholder(game);
@@ -185,6 +246,17 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
                   >
                     <Play size={14} aria-hidden="true" /> Play
                   </button>
+                  <button
+                    type="button"
+                    className="discover-pick-dismiss"
+                    aria-label={`Not this one: ${game.name}`}
+                    ref={(button) => {
+                      cardActions.current[index] = button;
+                    }}
+                    onClick={() => dismiss(game, index)}
+                  >
+                    Not this one
+                  </button>
                 </div>
               </article>
             );
@@ -192,7 +264,11 @@ export default function DiscoverQuickPicks({ library = [], onLaunchGame, activeS
         </div>
       ) : (
         <p className="discover-quick-pick-empty">
-          Scan your library and GamePilot will put three picks here — no filters needed.
+          {!Array.isArray(library) || library.length === 0
+            ? 'Scan your library and GamePilot will put up to three picks here — no filters needed.'
+            : dismissals.keys.length > 0
+              ? 'No more picks for these filters. Reset skipped picks or try another mood or session length.'
+              : 'No picks available right now. Try another mood or session length; running games are left out.'}
         </p>
       )}
     </section>

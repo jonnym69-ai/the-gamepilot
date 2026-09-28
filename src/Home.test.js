@@ -31,6 +31,7 @@ const game = { name: 'Hades', platform: 'Steam', appid: 1145360, time_played: 12
 beforeEach(() => {
   localStorage.clear();
   FreeGameRadar.getEpicRadar.mockClear();
+  FreeGameRadar.getGiveaways.mockClear();
   localStorage.setItem('gettingStartedPreferences', JSON.stringify({ hasSeen: true }));
   jest.spyOn(PlayNextService, 'getPlayNext').mockReturnValue({
     mode: 'pick',
@@ -112,6 +113,8 @@ test('manual views preserve deeper features and browser back navigation', () => 
 test('Discover leads with rediscovery and Epic offers without fetching them on Today', () => {
   setup();
   expect(FreeGameRadar.getEpicRadar).not.toHaveBeenCalled();
+  expect(FreeGameRadar.getGiveaways).not.toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: 'Free-to-play essentials' })).not.toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Epic Free Games' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('link', { name: 'Discover', exact: true }));
   expect(screen.getByRole('heading', { name: 'Epic Free Games' })).toBeInTheDocument();

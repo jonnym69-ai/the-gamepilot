@@ -139,6 +139,38 @@ test('shows cross-platform giveaways with honest dates and opens them only on re
   expect(openExternalUrl).toHaveBeenCalledWith('https://www.gamerpower.com/open/cool-giveaway');
 });
 
+test('external discovery shows one category at a time and stops giveaway timers on essentials', async () => {
+  render(<DiscoverHighlights library={[]} />);
+  await screen.findByText('Free Adventure');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Free-to-play essentials' }));
+  expect(screen.getByRole('heading', { name: 'Selected free-to-play games' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Epic Free Games' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Cool Giveaway')).not.toBeInTheDocument();
+  FreeGameRadar.getEpicRadar.mockClear();
+  FreeGameRadar.getGiveaways.mockClear();
+  act(() => jest.advanceTimersByTime(3600000));
+  expect(FreeGameRadar.getEpicRadar).not.toHaveBeenCalled();
+  expect(FreeGameRadar.getGiveaways).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Hide radar' }));
+  expect(screen.queryByRole('heading', { name: 'Selected free-to-play games' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Show free games radar' }));
+  expect(screen.getByRole('heading', { name: 'Selected free-to-play games' })).toBeInTheDocument();
+  expect(FreeGameRadar.getGiveaways).not.toHaveBeenCalled();
+});
+
+test('giveaway cache wording matches on-open and manual refresh behaviour', async () => {
+  render(<DiscoverHighlights library={[]} />);
+  await screen.findByText('Cool Giveaway');
+  const giveaways = within(screen.getByRole('region', { name: 'More free games' }));
+  expect(giveaways.getByText(/Checks when opened/)).toBeInTheDocument();
+  expect(giveaways.queryByText(/Refreshes hourly while visible/)).not.toBeInTheDocument();
+  await waitFor(() => expect(giveaways.getByRole('button', { name: 'Refresh giveaway listings' })).toBeEnabled());
+  fireEvent.click(giveaways.getByRole('button', { name: 'Refresh giveaway listings' }));
+  await waitFor(() => expect(giveaways.getByRole('button', { name: 'Refresh giveaway listings' })).toBeEnabled());
+  expect(FreeGameRadar.getGiveaways).toHaveBeenLastCalledWith({ forceRefresh: true });
+});
+
 test('giveaway feed reports failures honestly without breaking the Epic radar', async () => {
   FreeGameRadar.getGiveaways.mockResolvedValue({
     games: [],

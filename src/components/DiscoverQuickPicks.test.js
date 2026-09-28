@@ -72,7 +72,7 @@ test('launch buttons hand the game object through and running games are hidden',
 
 test('string explanations still render and empty libraries get a scan prompt', () => {
   RecommendationEngine.getPerfectPlayResult.mockReturnValue({
-    entries: [entry('Hades', { explanation: 'Because you like Action' })],
+    entries: [entry('Hades', { game: library[0], explanation: 'Because you like Action' })],
   });
   const { rerender } = render(<DiscoverQuickPicks library={library} />);
   expect(screen.getByText('Because you like Action')).toBeInTheDocument();
@@ -80,6 +80,57 @@ test('string explanations still render and empty libraries get a scan prompt', (
   RecommendationEngine.getPerfectPlayResult.mockReturnValue({ entries: [] });
   rerender(<DiscoverQuickPicks library={[]} />);
   expect(screen.getByText(/Scan your library/)).toBeInTheDocument();
+});
+
+test('skipping replaces only that card, keeps filters and does not teach a dislike', () => {
+  const games = [...library, { name: 'Fourth', appid: 4, platform: 'Steam' }];
+  RecommendationEngine.getPerfectPlayResult.mockImplementation((candidates, mood, genre, time, count) => ({
+    entries: candidates.slice(0, count).map((game) => entry(game.name, { game })),
+  }));
+  render(<DiscoverQuickPicks library={games} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Focused' }));
+  fireEvent.click(screen.getByRole('button', { name: '~30 min' }));
+  const saved = { ...localStorage };
+  fireEvent.click(screen.getByRole('button', { name: 'Not this one: Terraria' }));
+  expect(screen.getAllByRole('button', { name: /^Play / }).map((button) => button.getAttribute('aria-label'))).toEqual([
+    'Play Hades',
+    'Play Fourth',
+    'Play Zomboid',
+  ]);
+  expect(screen.getByRole('button', { name: 'Not this one: Fourth' })).toHaveFocus();
+  expect(screen.getByRole('button', { name: 'Focused' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: '~30 min' })).toHaveAttribute('aria-pressed', 'true');
+  expect(RecommendationEngine.getPerfectPlayResult).toHaveBeenLastCalledWith([games[3]], 'Focused', null, 'quick', 1);
+  expect({ ...localStorage }).toEqual(saved);
+  fireEvent.click(screen.getByRole('button', { name: 'Relaxed' }));
+  expect(screen.queryByRole('button', { name: 'Play Terraria' })).not.toBeInTheDocument();
+});
+
+test('skips last for this visit, with an honest exhausted state and reset', () => {
+  RecommendationEngine.getPerfectPlayResult.mockImplementation((candidates, mood, genre, time, count) => ({
+    entries: candidates.slice(0, count).map((game) => entry(game.name, { game })),
+  }));
+  const { unmount } = render(<DiscoverQuickPicks library={library} />);
+  for (const game of library) fireEvent.click(screen.getByRole('button', { name: `Not this one: ${game.name}` }));
+  expect(screen.getByText(/No more picks for these filters/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Reset skipped picks' })).toHaveFocus();
+  expect(screen.queryByText(/Scan your library/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Reset skipped picks' }));
+  expect(screen.getAllByRole('button', { name: /^Play / })).toHaveLength(3);
+  fireEvent.click(screen.getByRole('button', { name: 'Not this one: Hades' }));
+  unmount();
+  render(<DiscoverQuickPicks library={library} />);
+  expect(screen.getByRole('button', { name: 'Play Hades' })).toBeInTheDocument();
+});
+
+test('running games are excluded before scoring so they do not consume a pick', () => {
+  const games = [...library, { name: 'Fourth', appid: 4, platform: 'Steam' }];
+  RecommendationEngine.getPerfectPlayResult.mockImplementation((candidates, mood, genre, time, count) => ({
+    entries: candidates.slice(0, count).map((game) => entry(game.name, { game })),
+  }));
+  render(<DiscoverQuickPicks library={games} activeSessions={{ Hades: {} }} />);
+  expect(screen.getAllByRole('button', { name: /^Play / })).toHaveLength(3);
+  expect(screen.queryByRole('button', { name: 'Play Hades' })).not.toBeInTheDocument();
 });
 
 test('shows current Steam player counts on picks, timestamped and never labelled live', async () => {

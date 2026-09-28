@@ -2,6 +2,7 @@ import React, { useEffect, useId, useState } from 'react';
 import { Gift, ExternalLink, RefreshCw } from 'lucide-react';
 import DailySpotlightCard from './DailySpotlightCard';
 import DiscoverQuickPicks from './DiscoverQuickPicks';
+import FreeToPlayEssentials from './FreeToPlayEssentials';
 import LazyImage from './LazyImage';
 import { FreeGameRadar, getEpicOfferState } from '../services/FreeGameRadar';
 import { openExternalUrl } from '../services/ElectronBridge';
@@ -18,7 +19,7 @@ const dateLabel = (value) =>
     minute: '2-digit',
   });
 
-function EpicOffers({ onHide }) {
+function EpicOffers() {
   const id = useId();
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,9 +86,6 @@ function EpicOffers({ onHide }) {
             aria-label="Refresh Epic offers"
           >
             <RefreshCw size={15} aria-hidden="true" /> Refresh
-          </button>
-          <button type="button" onClick={onHide}>
-            Hide radar
           </button>
         </div>
       </header>
@@ -246,10 +244,11 @@ function GiveawayFeed() {
       </div>
       {linkError && <p role="alert">{linkError}</p>}
       <footer className="discover-radar-footer">
-        <p>Source: GamerPower giveaway feed. Confirm the price on the store page before claiming.</p>
+        <p>Source: GamerPower giveaway feed. Confirm the price and any claim requirements on the store page.</p>
         <p>
-          {result?.checkedAt ? `Last checked ${dateLabel(result.checkedAt)}. ` : ''}Refreshes hourly while visible. This
-          public feed does not send your library or play history.
+          {result?.checkedAt ? `Last checked ${dateLabel(result.checkedAt)}. ` : ''}Checks when opened; saved listings
+          are reused for up to an hour. Use Refresh to check again. This public feed does not send your library or play
+          history.
         </p>
       </footer>
     </section>
@@ -257,7 +256,9 @@ function GiveawayFeed() {
 }
 
 export default function DiscoverHighlights({ library, onLaunchGame, activeSessions }) {
+  const id = useId();
   const [visible, setVisible] = useState(() => StorageService.get(VISIBLE_KEY, true) !== false);
+  const [category, setCategory] = useState('giveaways');
   const setRadarVisible = (value) => {
     StorageService.set(VISIBLE_KEY, value);
     setVisible(value);
@@ -266,20 +267,59 @@ export default function DiscoverHighlights({ library, onLaunchGame, activeSessio
     <div className="discover-highlights">
       <DiscoverQuickPicks library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
       <DailySpotlightCard library={library} rediscovery onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
-      {visible ? (
-        <>
-          <EpicOffers onHide={() => setRadarVisible(false)} />
-          <GiveawayFeed />
-        </>
-      ) : (
-        <section className="discover-epic-radar discover-empty">
-          <h2>Free games radar</h2>
-          <p>The radar is hidden. Show it to load the public Epic and giveaway feeds.</p>
-          <button type="button" onClick={() => setRadarVisible(true)}>
-            Show free games radar
+      <section className="discover-external" aria-labelledby={`${id}-external-heading`}>
+        <header className="discover-radar-header">
+          <div>
+            <h2 id={`${id}-external-heading`}>Explore something new</h2>
+            <p>Optional extras after your own-library picks: claim a giveaway or try a free-to-play game.</p>
+          </div>
+          <button
+            type="button"
+            className="discover-pick-pill"
+            aria-expanded={visible}
+            aria-controls={`${id}-external-content`}
+            onClick={() => setRadarVisible(!visible)}
+          >
+            {visible ? 'Hide radar' : 'Show free games radar'}
           </button>
-        </section>
-      )}
+        </header>
+        <div id={`${id}-external-content`}>
+          {visible ? (
+            <>
+              <div className="discover-category-controls" role="group" aria-label="Free game discovery">
+                <button
+                  type="button"
+                  className="discover-pick-pill"
+                  aria-pressed={category === 'giveaways'}
+                  onClick={() => setCategory('giveaways')}
+                >
+                  Limited-time giveaways
+                </button>
+                <button
+                  type="button"
+                  className="discover-pick-pill"
+                  aria-pressed={category === 'essentials'}
+                  onClick={() => setCategory('essentials')}
+                >
+                  Free-to-play essentials
+                </button>
+              </div>
+              {category === 'giveaways' ? (
+                <div className="discover-giveaway-panels">
+                  <EpicOffers />
+                  <GiveawayFeed />
+                </div>
+              ) : (
+                <FreeToPlayEssentials library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
+              )}
+            </>
+          ) : (
+            <p className="discover-catalogue-note">
+              The radar is hidden. Public feeds and curated game artwork will not load until shown.
+            </p>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
