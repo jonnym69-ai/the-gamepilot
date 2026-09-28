@@ -3809,7 +3809,7 @@
 }
 
 .discovery-skeleton-card {
-  height: 220px;
+  height: 460px;
   background: linear-gradient(145deg, var(--card-bg), var(--input-bg));
   border: 1px solid var(--card-border);
   border-radius: 20px;
@@ -3966,7 +3966,7 @@
 
 .discovery-card-art {
   margin: -22px -22px 14px;
-  aspect-ratio: 616 / 353;
+  aspect-ratio: 2 / 3;
   border-radius: 19px 19px 0 0;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.04);

@@ -1197,7 +1197,7 @@ function Home({
     }
 
     return (
-      <div className="discovery-grid">
+      <div className="discovery-cards">
         {entries.map((entry) => {
           const game = entry.game || {};
           const meta = entry.meta || {};
@@ -1208,9 +1208,9 @@ function Home({
             appid: game.appid || game.app_id || game.steamAppId || item.steamAppID,
           };
           const artwork =
-            resolveGameArtwork(gameForArt, { surface: 'wide' }) ||
+            resolveGameArtwork(gameForArt, { surface: 'portrait' }) ||
             (item.thumb && /^https?:\/\//i.test(item.thumb) ? item.thumb : '');
-          const artPlaceholder = getGameArtworkPlaceholder({ game: gameForArt, surface: 'wide' });
+          const artPlaceholder = getGameArtworkPlaceholder({ game: gameForArt, surface: 'portrait' });
           return (
             <article key={entry.id || game.name} className="discovery-card">
               <div className="discovery-card-art">
