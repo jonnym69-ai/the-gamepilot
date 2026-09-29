@@ -1,0 +1,1192 @@
+{
+  "01-03": [
+    { "year": 1997, "event": "Diablo released in North America, kicking off Blizzard's dungeon-crawling ARPG series." }
+  ],
+  "01-04": [{ "year": 2001, "event": "RuneScape launched, becoming one of the longest-running browser MMORPGs." }],
+  "01-11": [
+    {
+      "year": 2005,
+      "event": "Resident Evil 4 launched in North America, reinventing survival horror with its over-the-shoulder camera."
+    }
+  ],
+  "01-15": [
+    {
+      "year": 1991,
+      "event": "Epic Games was founded (as Potomac Computer Systems), later creating Unreal and Fortnite."
+    },
+    { "year": 2013, "event": "DmC: Devil May Cry rebooted Capcom's demon-hunting series." }
+  ],
+  "01-17": [
+    { "year": 2025, "event": "Dynasty Warriors: Origins launched, rebooting the musou formula for a new generation." }
+  ],
+  "01-18": [
+    { "year": 2019, "event": "Ace Combat 7: Skies Unknown brought the dogfighting series to modern consoles." },
+    { "year": 2024, "event": "Prince of Persia: The Lost Crown revived the series as a Metroidvania." }
+  ],
+  "01-19": [{ "year": 2024, "event": "Palworld entered early access and became a viral overnight hit." }],
+  "01-20": [
+    { "year": 2021, "event": "Hitman 3 closed IO Interactive's World of Assassination trilogy." },
+    { "year": 2023, "event": "Fire Emblem Engage released on Nintendo Switch." }
+  ],
+  "01-21": [
+    { "year": 1998, "event": "Resident Evil 2 launched in North America, expanding Raccoon City's nightmare." },
+    {
+      "year": 1999,
+      "event": "Super Smash Bros. released in Japan on Nintendo 64, starting the crossover fighting series."
+    }
+  ],
+  "01-22": [
+    { "year": 2008, "event": "Burnout Paradise took the crash-happy racing series open-world." },
+    { "year": 2013, "event": "Ni no Kuni: Wrath of the White Witch launched in North America." }
+  ],
+  "01-23": [{ "year": 2018, "event": "Subnautica left early access, becoming a landmark underwater survival game." }],
+  "01-24": [
+    { "year": 2017, "event": "Resident Evil 7 launched, returning the series to first-person horror." },
+    { "year": 2023, "event": "Forspoken released for PS5 and PC." }
+  ],
+  "01-25": [
+    { "year": 2018, "event": "Celeste launched, a precision platformer praised for its difficulty and story." },
+    { "year": 2019, "event": "Resident Evil 2 remake released, setting a new bar for remakes." },
+    { "year": 2023, "event": "Hi-Fi Rush shadow-dropped, a surprise rhythm-action hit from Tango Gameworks." }
+  ],
+  "01-26": [
+    { "year": 2010, "event": "Mass Effect 2 launched, widely considered the series' peak." },
+    { "year": 2016, "event": "The Witness released, Jonathan Blow's island of line puzzles." },
+    { "year": 2018, "event": "Monster Hunter: World brought the series to a global audience." },
+    { "year": 2024, "event": "Tekken 8 launched on modern consoles and PC." }
+  ],
+  "01-27": [
+    { "year": 2015, "event": "Dying Light combined parkour and zombie survival." },
+    { "year": 2023, "event": "Dead Space remake rebuilt the sci-fi horror classic." }
+  ],
+  "01-28": [
+    { "year": 2022, "event": "Pokémon Legends: Arceus reinvented the series with open-zone catching." },
+    { "year": 2025, "event": "Eternal Strands launched, a fantasy adventure built around physics magic." }
+  ],
+  "01-29": [{ "year": 2019, "event": "Kingdom Hearts III finally arrived after years of anticipation." }],
+  "01-30": [
+    { "year": 2003, "event": "Disgaea: Hour of Darkness debuted in Japan, spawning the cult strategy RPG series." }
+  ],
+  "01-31": [
+    { "year": 1997, "event": "Final Fantasy VII launched in Japan, becoming one of the most influential RPGs ever." },
+    { "year": 2008, "event": "Super Smash Bros. Brawl released in Japan." }
+  ],
+  "02-01": [
+    { "year": 1991, "event": "id Software was founded, the studio behind Wolfenstein 3D, Doom and Quake." },
+    { "year": 2024, "event": "Granblue Fantasy: Relink brought the mobile RPG's world to consoles." }
+  ],
+  "02-02": [
+    { "year": 2021, "event": "Valheim sailed into early access and sold millions in weeks." },
+    { "year": 2024, "event": "Persona 3 Reload remade the beloved JRPG for modern platforms." }
+  ],
+  "02-04": [
+    { "year": 2000, "event": "The Sims launched, creating the life-simulation genre." },
+    { "year": 2019, "event": "Apex Legends surprise-launched, a free-to-play Titanfall-universe battle royale." },
+    { "year": 2022, "event": "Dying Light 2 released." },
+    { "year": 2025, "event": "Kingdom Come: Deliverance II launched to acclaim." }
+  ],
+  "02-05": [
+    { "year": 2009, "event": "Demon's Souls released in Japan, quietly starting the Souls era." },
+    { "year": 2013, "event": "Dead Space 3 launched." }
+  ],
+  "02-06": [{ "year": 2018, "event": "Shadow of the Colossus remade the PS2 classic for PS4." }],
+  "02-07": [{ "year": 2017, "event": "Nioh launched, Team Ninja's samurai take on the Souls formula." }],
+  "02-08": [
+    { "year": 2022, "event": "Sifu released, a stylish martial arts brawler with an aging mechanic." },
+    { "year": 2024, "event": "Helldivers 2 launched and became a surprise co-op phenomenon." }
+  ],
+  "02-09": [{ "year": 2010, "event": "BioShock 2 returned players to Rapture." }],
+  "02-10": [{ "year": 2023, "event": "Hogwarts Legacy opened Hogwarts as an open-world RPG." }],
+  "02-11": [
+    { "year": 2021, "event": "Little Nightmares II released its eerie sequel." },
+    { "year": 2025, "event": "Sid Meier's Civilization VII launched." }
+  ],
+  "02-12": [{ "year": 2021, "event": "Super Mario 3D World + Bowser's Fury brought the Wii U favourite to Switch." }],
+  "02-13": [
+    { "year": 2014, "event": "Donkey Kong Country: Tropical Freeze shipped on Wii U." },
+    { "year": 2015, "event": "Monster Hunter 4 Ultimate released in the West." }
+  ],
+  "02-14": [
+    { "year": 2005, "event": "YouTube was founded — it would go on to change how games are shared and marketed." }
+  ],
+  "02-15": [{ "year": 2019, "event": "Metro Exodus took the post-apocalyptic series semi-open-world." }],
+  "02-16": [{ "year": 2016, "event": "Street Fighter V launched." }],
+  "02-17": [{ "year": 2023, "event": "Wild Hearts released, EA and Koei Tecmo's monster-hunting rival." }],
+  "02-18": [
+    { "year": 2022, "event": "Horizon Forbidden West continued Aloy's journey." },
+    { "year": 2025, "event": "Avowed launched, Obsidian's first-person fantasy RPG." }
+  ],
+  "02-19": [{ "year": 2013, "event": "Crysis 3 closed the nanosuit trilogy." }],
+  "02-20": [
+    { "year": 2007, "event": "Crackdown let agents level a city with superpowers." },
+    { "year": 2024, "event": "Balatro launched, a poker roguelike that became a sleeper hit." }
+  ],
+  "02-21": [
+    { "year": 1986, "event": "The Legend of Zelda debuted in Japan, inventing open-ended adventure." },
+    { "year": 1993, "event": "Star Fox flew onto the Super Famicom with polygonal Arwing battles." },
+    { "year": 2023, "event": "Atomic Heart launched." }
+  ],
+  "02-22": [{ "year": 2012, "event": "PlayStation Vita launched in North America and Europe." }],
+  "02-23": [
+    { "year": 2010, "event": "Heavy Rain brought Quantic Dream's interactive drama to PS3." },
+    { "year": 2017, "event": "Nier: Automata launched, an action RPG praised for its storytelling." },
+    { "year": 2023, "event": "Sons of the Forest entered early access." }
+  ],
+  "02-24": [
+    { "year": 2017, "event": "Hollow Knight released, an indie Metroidvania that became a modern classic." },
+    { "year": 2023, "event": "Octopath Traveler II continued the HD-2D series." }
+  ],
+  "02-25": [
+    { "year": 2022, "event": "Elden Ring launched, FromSoftware's open-world landmark." },
+    { "year": 2022, "event": "The Steam Deck shipped to players, putting PC gaming in their hands." }
+  ],
+  "02-26": [
+    { "year": 2009, "event": "Killzone 2 launched on PS3." },
+    { "year": 2011, "event": "Nintendo 3DS released in Japan, bringing glasses-free 3D handheld gaming." },
+    { "year": 2016, "event": "Stardew Valley launched — one developer's farming sim became a phenomenon." }
+  ],
+  "02-27": [
+    {
+      "year": 1996,
+      "event": "Pokémon Red and Green released in Japan — the start of the biggest media franchise in history."
+    },
+    { "year": 2018, "event": "Into the Breach delivered turn-based tactics in perfect miniature." }
+  ],
+  "02-28": [
+    { "year": 1994, "event": "Insomniac Games was founded, later creating Spyro, Ratchet & Clank and Spider-Man." },
+    { "year": 2017, "event": "Horizon Zero Dawn introduced Aloy and her machine-filled world." },
+    { "year": 2025, "event": "Monster Hunter Wilds launched." }
+  ],
+  "02-29": [{ "year": 2024, "event": "Final Fantasy VII Rebirth continued the remake trilogy." }],
+  "03-03": [
+    { "year": 2017, "event": "Nintendo Switch launched worldwide alongside Breath of the Wild." },
+    { "year": 2023, "event": "Wo Long: Fallen Dynasty released." }
+  ],
+  "03-04": [
+    { "year": 2000, "event": "PlayStation 2 launched in Japan — it became the best-selling console ever." },
+    { "year": 2022, "event": "Gran Turismo 7 and Triangle Strategy both arrived." }
+  ],
+  "03-05": [
+    { "year": 2009, "event": "Resident Evil 5 launched." },
+    { "year": 2013, "event": "Tomb Raider rebooted Lara Croft's origin story." }
+  ],
+  "03-06": [
+    { "year": 2012, "event": "Mass Effect 3 concluded Commander Shepard's trilogy." },
+    { "year": 2025, "event": "Split Fiction released, Hazelight's co-op follow-up to It Takes Two." }
+  ],
+  "03-07": [{ "year": 2017, "event": "Ghost Recon Wildlands took the tactical series open-world." }],
+  "03-08": [
+    { "year": 2016, "event": "The Division launched, Ubisoft's loot-shooter take on a fallen New York." },
+    { "year": 2019, "event": "Devil May Cry 5 brought stylish action back to form." }
+  ],
+  "03-10": [
+    { "year": 1995, "event": "Panzer Dragoon soared onto the Sega Saturn." },
+    { "year": 2015, "event": "Cities: Skylines became the city-builder genre's new benchmark." }
+  ],
+  "03-11": [
+    { "year": 1995, "event": "Chrono Trigger released in Japan — often called the greatest JRPG ever made." },
+    {
+      "year": 2014,
+      "event": "Titanfall dropped mechs and pilots into multiplayer shooters; Hearthstone also officially launched."
+    }
+  ],
+  "03-13": [
+    { "year": 2007, "event": "God of War II concluded Kratos' PS2-era rampage." },
+    { "year": 2012, "event": "Journey released, a wordless co-op pilgrimage that won critical acclaim." },
+    { "year": 2020, "event": "Nioh 2 launched." }
+  ],
+  "03-15": [{ "year": 2019, "event": "The Division 2 moved the loot shooter to Washington, D.C." }],
+  "03-16": [{ "year": 2010, "event": "God of War III brought Kratos to Mount Olympus on PS3." }],
+  "03-18": [
+    { "year": 2014, "event": "Metal Gear Solid V: Ground Zeroes teased The Phantom Pain." },
+    { "year": 2022, "event": "Stranger of Paradise: Final Fantasy Origin launched." }
+  ],
+  "03-20": [
+    { "year": 2006, "event": "The Elder Scrolls IV: Oblivion opened Cyrodiil to millions." },
+    { "year": 2018, "event": "Sea of Thieves set sail." },
+    {
+      "year": 2020,
+      "event": "Doom Eternal and Animal Crossing: New Horizons both launched — a legendary release pairing."
+    },
+    { "year": 2025, "event": "Assassin's Creed Shadows finally took the series to feudal Japan." }
+  ],
+  "03-21": [
+    { "year": 1969, "event": "Konami was founded, later creating Castlevania, Metal Gear and Silent Hill." },
+    { "year": 1999, "event": "Pokémon Snap let players photograph Pokémon on rails on N64." },
+    { "year": 2001, "event": "Game Boy Advance launched in Japan." },
+    { "year": 2017, "event": "Mass Effect: Andromeda shipped." }
+  ],
+  "03-22": [
+    { "year": 1996, "event": "Resident Evil launched in Japan, naming the survival horror genre." },
+    { "year": 2005, "event": "God of War introduced Kratos on PS2." },
+    { "year": 2019, "event": "Sekiro: Shadows Die Twice reinvented the Souls formula." },
+    { "year": 2024, "event": "Dragon's Dogma 2 and Rise of the Ronin both launched." }
+  ],
+  "03-23": [
+    { "year": 2004, "event": "Far Cry debuted on PC, kickstarting the open-world shooter series." },
+    { "year": 2010, "event": "Just Cause 2 unleashed its physics playground." },
+    { "year": 2017, "event": "PUBG entered early access and ignited the battle royale craze." }
+  ],
+  "03-24": [
+    { "year": 2005, "event": "PlayStation Portable launched in North America." },
+    { "year": 2015, "event": "Bloodborne took the Souls formula gothic." },
+    { "year": 2023, "event": "Resident Evil 4 remake modernised the classic." }
+  ],
+  "03-25": [
+    { "year": 2021, "event": "Monster Hunter Rise launched on Switch." },
+    { "year": 2022, "event": "Kirby and the Forgotten Land and Ghostwire: Tokyo both released." }
+  ],
+  "03-26": [
+    { "year": 2013, "event": "BioShock Infinite launched, taking the series to the floating city of Columbia." },
+    { "year": 2015, "event": "Pillars of Eternity revived isometric CRPGs." },
+    { "year": 2021, "event": "It Takes Two raised the bar for co-op design." }
+  ],
+  "03-27": [
+    { "year": 2011, "event": "Nintendo 3DS launched in North America." },
+    { "year": 2018, "event": "Far Cry 5 took the series to rural Montana." },
+    { "year": 2025, "event": "Atomfall released its British post-disaster mystery." }
+  ],
+  "03-28": [
+    { "year": 1986, "event": "Ubisoft was founded in France." },
+    { "year": 2002, "event": "Kingdom Hearts blended Disney and Final Fantasy into one RPG." },
+    { "year": 2016, "event": "The first consumer Oculus Rift shipped, starting the modern VR era." }
+  ],
+  "03-31": [
+    { "year": 1998, "event": "StarCraft launched, defining the RTS esport for a generation." },
+    { "year": 2020, "event": "Persona 5 Royal expanded the acclaimed JRPG worldwide." }
+  ],
+  "04-01": [{ "year": 1976, "event": "Apple was founded — the App Store would later reshape mobile gaming." }],
+  "04-02": [{ "year": 1994, "event": "Final Fantasy VI released in Japan, still ranked among the series' best." }],
+  "04-03": [
+    { "year": 2018, "event": "Minit gave players an adventure lived sixty seconds at a time." },
+    { "year": 2020, "event": "Resident Evil 3 remake launched." }
+  ],
+  "04-04": [
+    { "year": 1975, "event": "Microsoft was founded." },
+    { "year": 2014, "event": "The Elder Scrolls Online launched." },
+    { "year": 2017, "event": "Persona 5 released worldwide, earning 'stylish' a permanent place in JRPG vocabulary." }
+  ],
+  "04-05": [
+    { "year": 1993, "event": "NVIDIA was founded, later powering the GPU era of gaming." },
+    { "year": 2016, "event": "Quantum Break mixed game and live-action show; HTC Vive also began shipping." }
+  ],
+  "04-08": [{ "year": 2025, "event": "South of Midnight released, Compulsion's Southern Gothic adventure." }],
+  "04-10": [
+    { "year": 2008, "event": "Mario Kart Wii launched in Japan." },
+    { "year": 2020, "event": "Final Fantasy VII Remake reimagined the classic on PS4." }
+  ],
+  "04-11": [{ "year": 2017, "event": "Bayonetta finally arrived on PC, uncapped at last." }],
+  "04-12": [
+    { "year": 2012, "event": "Candy Crush Saga launched, becoming a mobile juggernaut." },
+    { "year": 2016, "event": "Ratchet & Clank rebooted the duo for PS4; Dark Souls III also launched worldwide." }
+  ],
+  "04-13": [{ "year": 2012, "event": "Fez rotated its way into indie history." }],
+  "04-14": [
+    { "year": 2001, "event": "Animal Crossing debuted in Japan on N64." },
+    { "year": 2015, "event": "GTA V finally arrived on PC; Mortal Kombat X also launched." }
+  ],
+  "04-16": [{ "year": 2019, "event": "World War Z brought four-player co-op zombie swarms." }],
+  "04-18": [
+    { "year": 2012, "event": "Trials Evolution went big on its physics-motorcycle formula." },
+    { "year": 2023, "event": "Minecraft Legends tried to turn the sandbox into a strategy game." }
+  ],
+  "04-19": [
+    { "year": 2005, "event": "Psychonauts launched — a cult classic years ahead of its time." },
+    { "year": 2011, "event": "Portal 2 expanded Aperture's story with co-op and Cave Johnson." }
+  ],
+  "04-20": [
+    { "year": 1990, "event": "Fire Emblem: Shadow Dragon and the Blade of Light debuted in Japan." },
+    { "year": 2006, "event": "Ōkami painted its way onto PS2." },
+    { "year": 2018, "event": "God of War reinvented Kratos as a father on PS4." }
+  ],
+  "04-21": [
+    { "year": 1989, "event": "Game Boy launched in Japan — Tetris in your pocket changed gaming forever." },
+    { "year": 2005, "event": "Nintendogs made puppy-sitting a system-seller on DS." },
+    { "year": 2023, "event": "Dead Island 2 finally shipped after a decade in development." }
+  ],
+  "04-22": [{ "year": 2025, "event": "The Elder Scrolls IV: Oblivion Remastered shadow-dropped." }],
+  "04-23": [{ "year": 2021, "event": "Nier Replicant ver.1.22474487139... remade the cult prequel." }],
+  "04-24": [
+    { "year": 2012, "event": "The Walking Dead episode one launched Telltale's acclaimed season." },
+    { "year": 2025, "event": "Clair Obscur: Expedition 33 launched to widespread acclaim." }
+  ],
+  "04-26": [
+    { "year": 2005, "event": "Guild Wars launched its no-subscription MMORPG." },
+    { "year": 2024, "event": "Stellar Blade and Manor Lords both arrived." }
+  ],
+  "04-27": [
+    { "year": 1992, "event": "Kirby's Dream Land floated onto Game Boy." },
+    { "year": 2000, "event": "The Legend of Zelda: Majora's Mask turned the countdown darker." }
+  ],
+  "04-28": [
+    { "year": 2017, "event": "Mario Kart 8 Deluxe became the Switch's evergreen best-seller." },
+    { "year": 2023, "event": "Star Wars Jedi: Survivor continued Cal Kestis' story." }
+  ],
+  "04-29": [
+    { "year": 2008, "event": "Grand Theft Auto IV brought Liberty City to HD." },
+    { "year": 2022, "event": "Nintendo Switch Sports revived the motion-controlled favourite." }
+  ],
+  "04-30": [
+    { "year": 2020, "event": "Streets of Rage 4 resurrected the beat-'em-up." },
+    { "year": 2021, "event": "Returnal and New Pokémon Snap both released." }
+  ],
+  "05-01": [{ "year": 2002, "event": "The Elder Scrolls III: Morrowind opened Vvardenfell's alien landscape." }],
+  "05-03": [{ "year": 2016, "event": "Battleborn launched from Gearbox." }],
+  "05-05": [
+    { "year": 1992, "event": "Wolfenstein 3D released, popularising the first-person shooter." },
+    { "year": 2017, "event": "Prey reimagined the immersive sim aboard Talos I." }
+  ],
+  "05-06": [
+    { "year": 2003, "event": "EVE Online launched, growing gaming's most player-driven universe." },
+    { "year": 2024, "event": "Hades II entered early access." }
+  ],
+  "05-07": [
+    { "year": 1946, "event": "Sony was founded in Tokyo." },
+    { "year": 2021, "event": "Resident Evil Village continued Ethan Winters' story." }
+  ],
+  "05-09": [{ "year": 2024, "event": "Animal Well hid secrets in every pixel of its puzzle Metroidvania." }],
+  "05-10": [
+    { "year": 2016, "event": "Uncharted 4 gave Nathan Drake his send-off." },
+    { "year": 2017, "event": "Dead Cells entered early access." }
+  ],
+  "05-11": [
+    {
+      "year": 1995,
+      "event": "The first E3 opened in Los Angeles — and Sega surprise-launched the Saturn the same day."
+    }
+  ],
+  "05-12": [{ "year": 2023, "event": "The Legend of Zelda: Tears of the Kingdom rebuilt Hyrule vertically." }],
+  "05-13": [{ "year": 2016, "event": "Doom rebooted the franchise with relentless momentum-driven combat." }],
+  "05-14": [
+    { "year": 2010, "event": "Alan Wake brought a writer's thriller to Xbox 360." },
+    { "year": 2013, "event": "Metro: Last Light continued the Moscow Metro saga." },
+    { "year": 2019, "event": "Rage 2 painted the apocalypse pink." },
+    { "year": 2021, "event": "Mass Effect Legendary Edition remastered the trilogy." }
+  ],
+  "05-15": [
+    { "year": 2006, "event": "New Super Mario Bros. revived 2D Mario on DS." },
+    { "year": 2012, "event": "Diablo III and Max Payne 3 both launched." },
+    { "year": 2025, "event": "Doom: The Dark Ages gave the Slayer a medieval arsenal." }
+  ],
+  "05-16": [
+    { "year": 2011, "event": "Terraria dug into 2D sandbox crafting." },
+    { "year": 2024, "event": "Ghost of Tsushima arrived on PC." }
+  ],
+  "05-17": [
+    { "year": 2009, "event": "Minecraft was first released to the public as an early alpha." },
+    { "year": 2011, "event": "The Witcher 2 and L.A. Noire both launched." },
+    { "year": 2022, "event": "V Rising entered early access." }
+  ],
+  "05-18": [
+    { "year": 2010, "event": "Red Dead Redemption rode into the West." },
+    { "year": 2021, "event": "Days Gone arrived on PC." }
+  ],
+  "05-19": [
+    { "year": 2005, "event": "Brain Age kicked off the DS brain-training craze." },
+    { "year": 2015, "event": "The Witcher 3 launched, setting a new standard for open-world RPGs." }
+  ],
+  "05-20": [{ "year": 2014, "event": "Wolfenstein: The New Order rebooted the FPS grandfather." }],
+  "05-21": [
+    { "year": 2019, "event": "Oculus Quest shipped, making VR standalone for the first time." },
+    { "year": 2024, "event": "Senua's Saga: Hellblade II released." }
+  ],
+  "05-22": [
+    { "year": 1980, "event": "Pac-Man debuted in Japanese arcades — gaming's first true mascot." },
+    { "year": 2000, "event": "Perfect Dark arrived on Nintendo 64." },
+    { "year": 2012, "event": "Dragon's Dogma unleashed its pawn-powered adventure." }
+  ],
+  "05-23": [
+    { "year": 2019, "event": "Total War: Three Kingdoms brought the strategy series to China." },
+    { "year": 2024, "event": "Paper Mario: The Thousand-Year Door returned on Switch." }
+  ],
+  "05-24": [
+    { "year": 2012, "event": "Subway Surfers began its endless run." },
+    { "year": 2013, "event": "Flappy Bird quietly launched — months before it broke the internet." },
+    { "year": 2016, "event": "Overwatch launched, Blizzard's hero shooter redefining teamplay." }
+  ],
+  "05-25": [
+    { "year": 2018, "event": "Detroit: Become Human explored androids and choice." },
+    { "year": 2021, "event": "Biomutant released its furry post-apocalypse." }
+  ],
+  "05-26": [
+    { "year": 2009, "event": "inFamous gave players superhero electricity." },
+    { "year": 2022, "event": "Sniper Elite 5 released." }
+  ],
+  "05-27": [
+    { "year": 1982, "event": "Electronic Arts was founded." },
+    { "year": 1986, "event": "Dragon Quest debuted in Japan, creating the JRPG template." },
+    { "year": 2014, "event": "Watch Dogs launched, Ubisoft's hacking open-world." }
+  ],
+  "05-28": [
+    { "year": 2015, "event": "Splatoon inked its way onto Wii U." },
+    { "year": 2024, "event": "MultiVersus launched out of beta." }
+  ],
+  "05-29": [{ "year": 2014, "event": "Mario Kart 8 raced onto Wii U." }],
+  "05-31": [
+    { "year": 2016, "event": "The Witcher 3's Blood and Wine expansion delivered a legendary send-off." },
+    { "year": 2025, "event": "Elden Ring Nightreign brought co-op roguelike runs to the Lands Between." }
+  ],
+  "06-01": [{ "year": 1955, "event": "Namco was founded — the company behind Pac-Man, Tekken and Dark Souls." }],
+  "06-02": [
+    { "year": 2009, "event": "The Sims 3 opened the neighbourhood up." },
+    { "year": 2017, "event": "Tekken 7 finally came home from arcades." },
+    { "year": 2020, "event": "Valorant launched, Riot's tactical shooter." },
+    { "year": 2023, "event": "Street Fighter 6 revitalised the genre." }
+  ],
+  "06-03": [{ "year": 1960, "event": "Sega was founded (as Service Games Japan)." }],
+  "06-04": [{ "year": 2024, "event": "Destiny 2: The Final Shape closed a ten-year saga." }],
+  "06-05": [
+    {
+      "year": 1995,
+      "event": "EarthBound released in North America — 'this game stinks' marketing aside, it became a classic."
+    },
+    { "year": 2020, "event": "Command & Conquer Remastered Collection restored the RTS icons." },
+    { "year": 2025, "event": "Nintendo Switch 2 launched worldwide." }
+  ],
+  "06-06": [
+    { "year": 1984, "event": "Tetris was created by Alexey Pajitnov — the most-ported game ever." },
+    { "year": 1993, "event": "Link's Awakening packed a whole Zelda adventure onto Game Boy." },
+    { "year": 2011, "event": "Twitch spun out of Justin.tv, turning game streaming into an industry." },
+    { "year": 2023, "event": "Diablo IV launched." }
+  ],
+  "06-07": [{ "year": 2016, "event": "Mirror's Edge Catalyst reopened Faith's city." }],
+  "06-09": [
+    { "year": 2009, "event": "Prototype unleashed shape-shifting chaos." },
+    { "year": 2013, "event": "Animal Crossing: New Leaf turned players into mayors." }
+  ],
+  "06-10": [
+    { "year": 2010, "event": "Xenoblade Chronicles opened its titan-top world in Japan." },
+    { "year": 2025, "event": "Dune: Awakening launched on Arrakis." }
+  ],
+  "06-11": [
+    { "year": 1983, "event": "Capcom was founded." },
+    { "year": 2021, "event": "Ratchet & Clank: Rift Apart and Guilty Gear Strive both launched." }
+  ],
+  "06-12": [{ "year": 2008, "event": "Metal Gear Solid 4 wrapped Solid Snake's story on PS3." }],
+  "06-14": [{ "year": 2013, "event": "The Last of Us launched, redefining narrative expectations for the medium." }],
+  "06-15": [{ "year": 2018, "event": "Among Us released — two years before it became a global phenomenon." }],
+  "06-16": [
+    { "year": 2017, "event": "ARMS stretched the Switch's fighting roster." },
+    { "year": 2020, "event": "Desperados III revived real-time stealth tactics." },
+    { "year": 2022, "event": "Neon White and TMNT: Shredder's Revenge both dropped." }
+  ],
+  "06-18": [{ "year": 2019, "event": "Bloodstained: Ritual of the Night carried on the Castlevania lineage." }],
+  "06-19": [
+    { "year": 1983, "event": "Dragon's Lair brought cartoon visuals to arcades." },
+    { "year": 1999, "event": "Counter-Strike released its first beta — a mod that reshaped multiplayer." },
+    { "year": 2020, "event": "The Last of Us Part II launched." }
+  ],
+  "06-21": [
+    { "year": 2019, "event": "Crash Team Racing Nitro-Fueled rebuilt the kart racer." },
+    { "year": 2024, "event": "Elden Ring: Shadow of the Erdtree arrived." }
+  ],
+  "06-22": [
+    { "year": 1996, "event": "Quake brought true 3D to shooters and online deathmatch to the masses." },
+    { "year": 2023, "event": "Final Fantasy XVI launched on PS5." }
+  ],
+  "06-23": [
+    { "year": 1991, "event": "Sonic the Hedgehog sprinted onto Sega Genesis." },
+    { "year": 1996, "event": "Super Mario 64 shipped with the Nintendo 64 in Japan, inventing 3D platforming." },
+    { "year": 2015, "event": "Batman: Arkham Knight closed Rocksteady's trilogy." }
+  ],
+  "06-25": [
+    { "year": 2014, "event": "Valiant Hearts told a First World War story through puzzles." },
+    { "year": 2021, "event": "Scarlet Nexus and Mario Golf: Super Rush both launched." }
+  ],
+  "06-26": [
+    { "year": 2000, "event": "Deus Ex asked what kind of future you'd choose." },
+    { "year": 2003, "event": "Viewtiful Joe turned cel-shading into gameplay." },
+    { "year": 2014, "event": "Shovel Knight proved indie could feel like an NES lost classic." },
+    { "year": 2025, "event": "Death Stranding 2 released." }
+  ],
+  "06-27": [
+    { "year": 1972, "event": "Atari was founded by Nolan Bushnell — the first great video game company." },
+    { "year": 2013, "event": "Rogue Legacy made death part of the family tree." }
+  ],
+  "06-28": [{ "year": 2019, "event": "Valve Index shipped to early adopters." }],
+  "06-29": [
+    { "year": 2000, "event": "Diablo II consumed a summer; Jet Set Radio also debuted in Japan the same day." },
+    { "year": 2016, "event": "Inside delivered a haunting follow-up to Limbo." }
+  ],
+  "06-30": [
+    { "year": 2014, "event": "Divinity: Original Sin launched Larian's comeback." },
+    { "year": 2017, "event": "Crash Bandicoot N. Sane Trilogy remade the PS1 trio." },
+    { "year": 2022, "event": "Monster Hunter Rise: Sunbreak expanded the hunt." }
+  ],
+  "07-02": [
+    { "year": 2002, "event": "Warcraft III: Reign of Chaos brought hero units and a legendary editor to the RTS." },
+    { "year": 2019, "event": "Final Fantasy XIV: Shadowbringers arrived, often called the best MMO expansion." },
+    { "year": 2024, "event": "The First Descendant launched." }
+  ],
+  "07-05": [{ "year": 1950, "event": "Bandai was founded — later merging with Namco to form Bandai Namco." }],
+  "07-06": [
+    { "year": 2016, "event": "Pokémon GO sent millions outside to catch 'em all — the biggest mobile launch ever." }
+  ],
+  "07-09": [
+    { "year": 1981, "event": "Donkey Kong hit arcades, introducing Mario (then 'Jumpman')." },
+    { "year": 2013, "event": "Dota 2 officially launched out of beta." }
+  ],
+  "07-10": [{ "year": 2008, "event": "The App Store opened, turning the phone into a gaming platform." }],
+  "07-11": [{ "year": 2025, "event": "Tony Hawk's Pro Skater 3 + 4 remade the sequels." }],
+  "07-13": [
+    { "year": 2013, "event": "Pikmin 3 sprouted on Wii U." },
+    { "year": 2018, "event": "Octopath Traveler introduced the HD-2D look on Switch." }
+  ],
+  "07-14": [
+    { "year": 1983, "event": "Mario Bros. debuted in arcades — the first game titled for Mario." },
+    { "year": 1998, "event": "F-Zero X brought 60fps futuristic racing to N64." },
+    { "year": 2023, "event": "Exoprimal launched." }
+  ],
+  "07-15": [
+    { "year": 1983, "event": "The Famicom and Sega SG-1000 both launched in Japan on the same day." },
+    { "year": 2003, "event": "Star Wars: Knights of the Old Republic set a new bar for choice-driven RPGs." }
+  ],
+  "07-16": [{ "year": 2021, "event": "The Legend of Zelda: Skyward Sword HD brought the Wii title to Switch." }],
+  "07-17": [
+    { "year": 2020, "event": "Ghost of Tsushima rode onto PS4." },
+    { "year": 2025, "event": "Donkey Kong Bananza smashed onto Switch 2." }
+  ],
+  "07-18": [
+    { "year": 2024, "event": "Flintlock: The Siege of Dawn released." },
+    { "year": 2025, "event": "Shadow Labyrinth turned Pac-Man into a Metroidvania." }
+  ],
+  "07-19": [
+    { "year": 2002, "event": "Super Mario Sunshine cleaned up Isle Delfino." },
+    { "year": 2022, "event": "Stray let everyone play as the cat." }
+  ],
+  "07-20": [{ "year": 2021, "event": "Death's Door delivered a compact crow-sized adventure." }],
+  "07-21": [
+    { "year": 2010, "event": "Limbo descended into its monochromatic nightmare." },
+    { "year": 2017, "event": "Splatoon 2 inked up the Switch." },
+    { "year": 2023, "event": "Pikmin 4 launched." }
+  ],
+  "07-23": [{ "year": 2020, "event": "Carrion flipped the horror script — you play the monster." }],
+  "07-24": [{ "year": 2025, "event": "Wuchang: Fallen Feathers launched." }],
+  "07-25": [
+    { "year": 2003, "event": "F-Zero GX hit ludicrous speeds on GameCube." },
+    { "year": 2017, "event": "Fortnite's Save the World and Pyre both released." },
+    { "year": 2023, "event": "Remnant II expanded the gunplay Souls-like." }
+  ],
+  "07-26": [
+    { "year": 2011, "event": "Catherine mixed romance drama with block puzzles." },
+    { "year": 2019, "event": "Fire Emblem: Three Houses and Wolfenstein: Youngblood both launched." }
+  ],
+  "07-27": [
+    { "year": 1989, "event": "Mother released in Japan, starting the EarthBound saga." },
+    { "year": 2010, "event": "StarCraft II finally arrived after twelve years." },
+    { "year": 2021, "event": "NEO: The World Ends with You returned to Shibuya." }
+  ],
+  "07-28": [{ "year": 2020, "event": "Destroy All Humans! remade the alien invasion satire." }],
+  "07-29": [{ "year": 2022, "event": "Xenoblade Chronicles 3 launched." }],
+  "08-01": [
+    { "year": 2012, "event": "Oculus Rift's Kickstarter opened, reigniting consumer VR." },
+    { "year": 2024, "event": "World of Goo 2 finally followed up the indie classic." }
+  ],
+  "08-02": [{ "year": 1991, "event": "Streets of Rage brought side-scrolling brawls to Genesis." }],
+  "08-03": [{ "year": 2023, "event": "Baldur's Gate 3 launched and swept nearly every award." }],
+  "08-04": [
+    { "year": 2011, "event": "Temple Run started the endless-runner mobile craze." },
+    { "year": 2015, "event": "Rare Replay packed thirty Rare games into one collection." },
+    { "year": 2020, "event": "Fall Guys stumbled onto every screen at once." }
+  ],
+  "08-06": [
+    { "year": 1986, "event": "Metroid debuted in Japan, hiding one of gaming's most famous twists." },
+    { "year": 2019, "event": "Age of Wonders: Planetfall took the 4X series to space." }
+  ],
+  "08-07": [{ "year": 2018, "event": "Dead Cells hit 1.0, becoming a roguelike benchmark." }],
+  "08-08": [{ "year": 2025, "event": "Mafia: The Old Country took the series to Sicily." }],
+  "08-09": [
+    { "year": 2016, "event": "No Man's Sky launched — and began one of gaming's great redemption arcs." },
+    { "year": 2022, "event": "Two Point Campus opened enrollment." }
+  ],
+  "08-10": [{ "year": 2023, "event": "Atlas Fallen surfed its sand-covered world." }],
+  "08-11": [
+    { "year": 1999, "event": "System Shock 2 blended FPS and RPG into an immersive-sim landmark." },
+    { "year": 2000, "event": "Paper Mario folded the plumber flat in Japan." },
+    { "year": 2022, "event": "Cult of the Lamb converted the masses." }
+  ],
+  "08-13": [{ "year": 2013, "event": "Payday 2 turned heisting into a co-op staple." }],
+  "08-14": [
+    { "year": 1989, "event": "Sega Genesis launched in North America — 'Genesis does what Nintendon't.'" },
+    { "year": 2012, "event": "Sleeping Dogs and Darksiders II both released." }
+  ],
+  "08-15": [
+    { "year": 1987, "event": "Metroid reached North America." },
+    { "year": 2017, "event": "Sonic Mania proved fans could out-Sonic Sega." }
+  ],
+  "08-17": [{ "year": 2021, "event": "Humankind challenged Civilization's 4X throne." }],
+  "08-18": [{ "year": 2022, "event": "Thymesia unleashed plague-driven combat." }],
+  "08-20": [
+    { "year": 2013, "event": "Saints Row IV and Splinter Cell: Blacklist both launched." },
+    { "year": 2024, "event": "Black Myth: Wukong became a record-breaking hit from China." }
+  ],
+  "08-21": [
+    { "year": 2007, "event": "BioShock took players under the sea to Rapture." },
+    { "year": 2012, "event": "Counter-Strike: Global Offensive launched." },
+    { "year": 2018, "event": "Guacamelee! 2 luchadored its way back." }
+  ],
+  "08-22": [
+    { "year": 2017, "event": "Uncharted: The Lost Legacy led with Chloe and Nadine." },
+    { "year": 2023, "event": "Fort Solis delivered a cinematic Mars thriller." }
+  ],
+  "08-23": [
+    { "year": 1991, "event": "Super Nintendo launched in North America, packed with Super Mario World." },
+    { "year": 2011, "event": "Deus Ex: Human Revolution revived the immersive-sim classic." },
+    { "year": 2022, "event": "Saints Row rebooted the over-the-top series." }
+  ],
+  "08-24": [
+    { "year": 1995, "event": "Windows 95 launched, dragging PC gaming mainstream." },
+    { "year": 1996, "event": "Valve was founded — it would reshape PC gaming with Half-Life and Steam." },
+    { "year": 2023, "event": "Blasphemous 2 returned to Cvstodia." }
+  ],
+  "08-25": [
+    { "year": 1997, "event": "GoldenEye 007 turned the N64 into a four-player phenomenon." },
+    { "year": 2009, "event": "Batman: Arkham Asylum finally made a great Batman game." },
+    { "year": 2015, "event": "Until Dawn made horror choices matter; Gears of War: Ultimate Edition also shipped." },
+    { "year": 2021, "event": "Psychonauts 2 arrived after sixteen years." },
+    { "year": 2023, "event": "Armored Core VI revived FromSoftware's mech series." }
+  ],
+  "08-26": [{ "year": 2022, "event": "Soul Hackers 2 launched." }],
+  "08-27": [
+    { "year": 1994, "event": "EarthBound (Mother 2) debuted in Japan." },
+    { "year": 2002, "event": "SOCOM: U.S. Navy SEALs brought tactical shooting online on PS2." },
+    { "year": 2007, "event": "Metroid Prime 3 finished the trilogy on Wii." },
+    { "year": 2019, "event": "Control bent reality inside the Oldest House." },
+    { "year": 2021, "event": "No More Heroes III closed Travis Touchdown's saga." }
+  ],
+  "08-28": [
+    { "year": 2020, "event": "Wasteland 3 went post-apocalyptic in Colorado." },
+    { "year": 2025, "event": "Metal Gear Solid Delta: Snake Eater remade the classic." }
+  ],
+  "08-29": [
+    { "year": 2023, "event": "Sea of Stars launched its retro-inspired RPG." },
+    { "year": 2025, "event": "Lost Soul Aside finally released." }
+  ],
+  "08-30": [
+    { "year": 2019, "event": "Astral Chain chained anime action to the Switch." },
+    { "year": 2022, "event": "Immortality told its story through lost film reels." },
+    { "year": 2024, "event": "Star Wars Outlaws opened the galaxy's underworld." }
+  ],
+  "08-31": [
+    { "year": 1999, "event": "NVIDIA launched the GeForce 256, marketed as the world's first GPU." },
+    { "year": 2017, "event": "Life is Strange: Before the Storm rewound the series." }
+  ],
+  "09-01": [
+    { "year": 2006, "event": "Roblox opened to the public." },
+    { "year": 2008, "event": "GOG.com launched, built on DRM-free classic games." },
+    { "year": 2015, "event": "Metal Gear Solid V: The Phantom Pain closed the Snake saga." },
+    { "year": 2020, "event": "Crusader Kings III made medieval scheming accessible." }
+  ],
+  "09-02": [{ "year": 2022, "event": "The Last of Us Part I rebuilt the original for PS5." }],
+  "09-03": [
+    { "year": 1998, "event": "Metal Gear Solid brought cinematic stealth to PlayStation." },
+    { "year": 2013, "event": "Diablo III came to consoles." }
+  ],
+  "09-04": [
+    { "year": 2018, "event": "Dragon Quest XI reached Western audiences." },
+    { "year": 2020, "event": "Marvel's Avengers assembled." },
+    { "year": 2025, "event": "Hollow Knight: Silksong finally released after years of anticipation." }
+  ],
+  "09-06": [
+    { "year": 2017, "event": "Destiny 2 launched." },
+    { "year": 2023, "event": "Starfield opened Bethesda's first new universe in decades." },
+    { "year": 2024, "event": "Astro Bot launched, a joy-filled platformer tribute to PlayStation." }
+  ],
+  "09-07": [{ "year": 2018, "event": "Marvel's Spider-Man swung onto PS4." }],
+  "09-08": [
+    { "year": 2010, "event": "Amnesia: The Dark Descent set the modern horror standard — you can't fight back." }
+  ],
+  "09-09": [
+    { "year": 1999, "event": "Dreamcast launched in North America on 9/9/99 — Sega's brilliant, doomed swan song." },
+    { "year": 2014, "event": "Destiny began Bungie's post-Halo universe." },
+    { "year": 2024, "event": "Warhammer 40,000: Space Marine 2 purged the Tyranids." }
+  ],
+  "09-10": [
+    { "year": 1998, "event": "Spyro the Dragon first flew on PlayStation." },
+    { "year": 2015, "event": "Super Mario Maker handed level design to everyone." },
+    { "year": 2021, "event": "Life is Strange: True Colors launched." }
+  ],
+  "09-11": [{ "year": 1977, "event": "The Atari 2600 went on sale — the console that brought arcades home." }],
+  "09-12": [
+    { "year": 1998, "event": "Pokémon Yellow: Pikachu Edition released in Japan." },
+    { "year": 2003, "event": "Steam launched — quietly at first, then it ran the whole PC games industry." },
+    { "year": 2025, "event": "Borderlands 4 launched." }
+  ],
+  "09-13": [
+    { "year": 1985, "event": "Super Mario Bros. released in Japan, reviving the entire games industry." },
+    { "year": 2014, "event": "Super Smash Bros. for Nintendo 3DS took the fight portable." },
+    { "year": 2019, "event": "Borderlands 3 shipped a billion more guns." }
+  ],
+  "09-14": [
+    { "year": 2001, "event": "GameCube launched in Japan." },
+    { "year": 2010, "event": "Halo: Reach told Noble Team's last stand." },
+    { "year": 2017, "event": "Divinity: Original Sin II perfected the systemic RPG." },
+    { "year": 2021, "event": "Deathloop rewound an island on repeat." },
+    { "year": 2023, "event": "The Crew Motorfest opened Hawaii to drivers." }
+  ],
+  "09-15": [
+    { "year": 2015, "event": "Undertale and Destiny: The Taken King both launched." },
+    { "year": 2016, "event": "Persona 5 released in Japan." }
+  ],
+  "09-17": [
+    { "year": 2013, "event": "Grand Theft Auto V launched — still selling a decade later." },
+    { "year": 2020, "event": "Hades hit 1.0, Supergiant's masterpiece roguelike." },
+    { "year": 2024, "event": "The Plucky Squire hopped between pages and reality." }
+  ],
+  "09-18": [
+    { "year": 2012, "event": "Borderlands 2 perfected the looter-shooter loop." },
+    { "year": 2020, "event": "Phasmophobia and Super Mario 3D All-Stars both arrived." },
+    { "year": 2025, "event": "Dying Light: The Beast released." }
+  ],
+  "09-19": [
+    { "year": 2023, "event": "Mortal Kombat 1 rebooted the timeline." },
+    { "year": 2023, "event": "Lies of P brought Pinocchio to a Souls-like nightmare." }
+  ],
+  "09-20": [
+    { "year": 1984, "event": "Elite opened a wireframe galaxy on the BBC Micro." },
+    { "year": 2011, "event": "Gears of War 3 ended the Delta Squad trilogy." },
+    { "year": 2019, "event": "The Legend of Zelda: Link's Awakening remade the Game Boy classic." }
+  ],
+  "09-21": [
+    { "year": 2010, "event": "Civilization V went hexagonal." },
+    { "year": 2017, "event": "SteamWorld Dig 2 drilled deeper than anyone expected." },
+    { "year": 2021, "event": "Kena: Bridge of Spirits launched." }
+  ],
+  "09-22": [
+    { "year": 2011, "event": "Dark Souls released in Japan — prepare to die, and to restart a genre." },
+    { "year": 2015, "event": "SOMA asked what it means to be human under the ocean." },
+    { "year": 2022, "event": "Session carved out a skateboarding sim niche." }
+  ],
+  "09-23": [
+    { "year": 1889, "event": "Nintendo was founded in Kyoto — as a playing-card company, 96 years before the NES." }
+  ],
+  "09-24": [
+    { "year": 1993, "event": "Myst invited players to a quiet island that sold millions." },
+    { "year": 2001, "event": "Ico and Silent Hill 2 both released — a legendary day for atmosphere." },
+    { "year": 2021, "event": "Lost Judgment returned to Kamurocho." }
+  ],
+  "09-25": [
+    { "year": 2007, "event": "Halo 3 finished the fight." },
+    { "year": 2025, "event": "Silent Hill f and Hades II's full release both arrived." }
+  ],
+  "09-26": [
+    { "year": 1986, "event": "Castlevania whipped onto the Famicom Disk System." },
+    { "year": 2017, "event": "Fortnite Battle Royale launched — and changed gaming's business model forever." },
+    { "year": 2023, "event": "Cyberpunk 2077: Phantom Liberty completed its redemption arc." },
+    { "year": 2024, "event": "The Legend of Zelda: Echoes of Wisdom finally made Zelda playable." }
+  ],
+  "09-27": [
+    { "year": 2022, "event": "Grounded left early access." },
+    { "year": 2023, "event": "Counter-Strike 2 replaced CS:GO overnight." },
+    { "year": 2019, "event": "Code Vein launched its anime vampires." },
+    { "year": 2017, "event": "Golf Story proved RPG golf was a great idea." }
+  ],
+  "09-28": [
+    { "year": 2011, "event": "The Binding of Isaac crawled out of its basement." },
+    { "year": 2020, "event": "Genshin Impact launched worldwide, a free-to-play juggernaut." }
+  ],
+  "09-29": [
+    { "year": 1996, "event": "Nintendo 64 launched in North America — Super Mario 64 redefined 3D gaming overnight." },
+    { "year": 2017, "event": "Cuphead launched, animating boss fights like a 1930s cartoon." },
+    { "year": 2023, "event": "EA Sports FC 24 kicked off the post-FIFA era; Cocoon also released." }
+  ],
+  "09-30": [
+    { "year": 1994, "event": "Doom II: Hell on Earth doubled down on the formula." },
+    { "year": 1995, "event": "DirectX shipped, becoming the backbone of Windows gaming." },
+    { "year": 2014, "event": "Middle-earth: Shadow of Mordor introduced the Nemesis system." },
+    { "year": 2022, "event": "FIFA 23 closed out the EA Sports FIFA name." }
+  ],
+  "10-01": [
+    { "year": 1979, "event": "Activision was founded — the first independent console game publisher." },
+    { "year": 2020, "event": "Super Mario Bros. 35 turned the original into a battle royale." }
+  ],
+  "10-02": [
+    { "year": 2018, "event": "Mega Man 11 launched." },
+    { "year": 2020, "event": "Star Wars: Squadrons and Crash Bandicoot 4 both released." },
+    { "year": 2025, "event": "Ghost of Yōtei rode onto PS5." }
+  ],
+  "10-04": [
+    { "year": 2011, "event": "Dark Souls reached Western players — the genre had a new name." },
+    { "year": 2022, "event": "Overwatch 2 launched, going free-to-play." }
+  ],
+  "10-05": [
+    { "year": 2018, "event": "Assassin's Creed Odyssey sailed the Aegean." },
+    { "year": 2023, "event": "Assassin's Creed Mirage went back to basics in Baghdad." }
+  ],
+  "10-07": [
+    { "year": 2014, "event": "Alien: Isolation made the Xenomorph terrifying again." },
+    { "year": 2016, "event": "Mafia III took the series to New Bordeaux." },
+    { "year": 2021, "event": "Far Cry 6 brought revolution to Yara." }
+  ],
+  "10-08": [
+    { "year": 2001, "event": "Ico's hand-holding journey began on PS2." },
+    { "year": 2021, "event": "Metroid Dread ended a 19-year wait for a new 2D entry." },
+    { "year": 2024, "event": "Silent Hill 2 remake returned to the fog." }
+  ],
+  "10-09": [
+    {
+      "year": 2012,
+      "event": "XCOM: Enemy Unknown and Dishonored both launched — a great day for tactics and stealth."
+    },
+    { "year": 2015, "event": "Uncharted: The Nathan Drake Collection gathered the trilogy." }
+  ],
+  "10-10": [
+    {
+      "year": 2007,
+      "event": "The Orange Box shipped — Half-Life 2: Episode Two, Portal and Team Fortress 2 in one package."
+    },
+    { "year": 2017, "event": "Middle-earth: Shadow of War expanded the Nemesis system." },
+    { "year": 2023, "event": "Forza Motorsport rebooted the track racer." },
+    { "year": 2025, "event": "Battlefield 6 launched." }
+  ],
+  "10-11": [{ "year": 2024, "event": "Metaphor: ReFantazio launched, Atlus' new fantasy RPG." }],
+  "10-12": [
+    { "year": 2008, "event": "Richard Garriott flew to the ISS — the game developer who literally reached space." },
+    { "year": 2013, "event": "Pokémon X and Y brought the series to 3D worldwide." },
+    { "year": 2018, "event": "Call of Duty: Black Ops 4 launched." },
+    { "year": 2021, "event": "Back 4 Blood reunited the Left 4 Dead spirit." }
+  ],
+  "10-13": [
+    { "year": 2009, "event": "Uncharted 2: Among Thieves set a new action-adventure standard." },
+    { "year": 2016, "event": "PlayStation VR and Shadow Warrior 2 both launched." },
+    { "year": 2023, "event": "Lords of the Fallen rebooted." }
+  ],
+  "10-14": [
+    { "year": 2008, "event": "Dead Space carved up the USG Ishimura." },
+    { "year": 2014, "event": "The Evil Within brought survival horror's master back." }
+  ],
+  "10-15": [
+    { "year": 1997, "event": "Age of Empires began building empires in real time." },
+    { "year": 2019, "event": "Disco Elysium redefined what an RPG could be — no combat, all heart." }
+  ],
+  "10-16": [{ "year": 2007, "event": "Puzzle Quest mashed up Bejeweled and RPGs." }],
+  "10-17": [
+    { "year": 2017, "event": "Gran Turismo Sport launched." },
+    { "year": 2024, "event": "Super Mario Party Jamboree rolled out." },
+    { "year": 2025, "event": "Keeper released, Double Fine's wordless lighthouse journey." }
+  ],
+  "10-18": [
+    { "year": 1958, "event": "Tennis for Two debuted at Brookhaven — often called the first video game." },
+    { "year": 1985, "event": "The NES launched in North America, rescuing the industry from the crash." },
+    { "year": 2005, "event": "Quake 4 and Shadow of the Colossus both released." },
+    { "year": 2018, "event": "Return of the Obra Dinn turned deduction into art." }
+  ],
+  "10-19": [
+    {
+      "year": 1972,
+      "event": "Stanford hosted the 'Intergalactic Spacewar Olympics' — the first recorded esports tournament."
+    },
+    { "year": 2010, "event": "Fallout: New Vegas sent couriers into the Mojave." },
+    { "year": 2018, "event": "Soulcalibur VI launched." }
+  ],
+  "10-20": [
+    { "year": 2009, "event": "Borderlands introduced the looter-shooter." },
+    { "year": 2022, "event": "Mario + Rabbids Sparks of Hope and Vampire Survivors 1.0 both arrived." },
+    { "year": 2023, "event": "Super Mario Bros. Wonder brought the Elephant Fruit." }
+  ],
+  "10-21": [
+    { "year": 1998, "event": "Game Boy Color launched in Japan." },
+    { "year": 2008, "event": "Fable II and Far Cry 2 both released." },
+    { "year": 2016, "event": "Battlefield 1 went back to the Great War." },
+    { "year": 2021, "event": "Gotham Knights launched." },
+    { "year": 2025, "event": "Ninja Gaiden 4 returned." }
+  ],
+  "10-22": [
+    {
+      "year": 2001,
+      "event": "Grand Theft Auto III opened Liberty City in 3D — open-world gaming changed permanently."
+    },
+    { "year": 2008, "event": "Android Market opened, seeding mobile gaming's other giant." }
+  ],
+  "10-23": [
+    { "year": 1988, "event": "Super Mario Bros. 3 released in Japan — still argued as the best 2D platformer." },
+    { "year": 2013, "event": "Path of Exile left beta for free-to-play ARPG fame." },
+    { "year": 2023, "event": "Lethal Company entered early access." }
+  ],
+  "10-24": [
+    { "year": 2005, "event": "Club Penguin opened its igloos." },
+    { "year": 2014, "event": "Bayonetta 2 arrived on Wii U." },
+    { "year": 2023, "event": "Cities: Skylines II launched." }
+  ],
+  "10-25": [
+    { "year": 2005, "event": "Call of Duty 2 and Civilization IV both released." },
+    { "year": 2019, "event": "Call of Duty: Modern Warfare and The Outer Worlds both launched." },
+    { "year": 2024, "event": "Call of Duty: Black Ops 6 and Sonic x Shadow Generations both shipped." }
+  ],
+  "10-26": [
+    { "year": 2000, "event": "PlayStation 2 launched in North America." },
+    { "year": 2001, "event": "Pikmin sprouted on GameCube in Japan." },
+    { "year": 2004, "event": "Grand Theft Auto: San Andreas opened an entire state." },
+    { "year": 2010, "event": "Fable III launched." },
+    { "year": 2018, "event": "Red Dead Redemption 2 delivered Rockstar's western epic." },
+    { "year": 2021, "event": "Guardians of the Galaxy surprised everyone with a great story." }
+  ],
+  "10-27": [
+    { "year": 2002, "event": "Grand Theft Auto: Vice City hit the neon 80s." },
+    { "year": 2008, "event": "LittleBigPlanet handed creation to players." },
+    { "year": 2009, "event": "League of Legends launched — it would become the biggest esport on earth." },
+    { "year": 2015, "event": "Halo 5: Guardians shipped." },
+    {
+      "year": 2017,
+      "event": "Super Mario Odyssey, Wolfenstein II and Assassin's Creed Origins all launched the same day."
+    },
+    { "year": 2023, "event": "Alan Wake 2 emerged from the Dark Place after thirteen years." }
+  ],
+  "10-28": [
+    { "year": 2008, "event": "Fallout 3 brought the wasteland to a new generation; Guitar Hero III also launched." },
+    { "year": 2014, "event": "Sunset Overdrive turned grinding into movement." },
+    { "year": 2016, "event": "Titanfall 2 shipped its beloved campaign." },
+    { "year": 2021, "event": "Age of Empires IV resurrected the RTS king." },
+    { "year": 2022, "event": "Call of Duty: Modern Warfare II and Bayonetta 3 both released." }
+  ],
+  "10-29": [
+    { "year": 1988, "event": "The Mega Drive launched in Japan." },
+    { "year": 2003, "event": "Call of Duty released — Medal of Honor's creators struck out on their own." },
+    { "year": 2009, "event": "Bayonetta debuted in Japan." },
+    { "year": 2013, "event": "Battlefield 4 and Assassin's Creed IV: Black Flag both launched." },
+    { "year": 2024, "event": "Life is Strange: Double Exposure returned to Max Caulfield." }
+  ],
+  "10-30": [
+    { "year": 1998, "event": "Grim Fandango mixed film noir with the Day of the Dead." },
+    { "year": 2012, "event": "Assassin's Creed III sailed into the American Revolution." },
+    { "year": 2025, "event": "Arc Raiders deployed extraction shooters' slickest run yet." }
+  ],
+  "10-31": [
+    { "year": 1997, "event": "Riven continued the Myst saga." },
+    { "year": 2019, "event": "Luigi's Mansion 3 haunted the Switch." },
+    { "year": 2024, "event": "Dragon Age: The Veilguard and Horizon Zero Dawn Remastered both arrived." }
+  ],
+  "11-01": [
+    { "year": 2007, "event": "Super Mario Galaxy launched in Japan, taking the plumber to space." },
+    { "year": 2011, "event": "Uncharted 3: Drake's Deception launched." }
+  ],
+  "11-02": [{ "year": 2023, "event": "RoboCop: Rogue City let fans be the law in Old Detroit." }],
+  "11-03": [
+    { "year": 2009, "event": "Dragon Age: Origins revived the party-based RPG." },
+    { "year": 2011, "event": "Super Mario 3D Land made 3D Mario work on a handheld." },
+    { "year": 2017, "event": "Call of Duty: WWII returned to the roots." }
+  ],
+  "11-04": [
+    { "year": 2008, "event": "Resistance 2 launched on PS3." },
+    { "year": 2014, "event": "Call of Duty: Advanced Warfare went exosuit." },
+    { "year": 2016, "event": "Call of Duty: Infinite Warfare went to space." }
+  ],
+  "11-05": [
+    { "year": 2007, "event": "Call of Duty 4: Modern Warfare rewrote the FPS rulebook." },
+    { "year": 2013, "event": "Call of Duty: Ghosts launched." }
+  ],
+  "11-06": [
+    { "year": 2003, "event": "Prince of Persia: The Sands of Time made rewinding cool." },
+    { "year": 2012, "event": "Halo 4 began the Reclaimer saga." }
+  ],
+  "11-07": [
+    { "year": 2003, "event": "Mario Kart: Double Dash!! doubled up drivers on GameCube." },
+    { "year": 2006, "event": "Gears of War invented the cover-shooter era." },
+    { "year": 2008, "event": "Gears of War 2 launched." },
+    { "year": 2024, "event": "Mario & Luigi: Brothership sailed onto Switch." }
+  ],
+  "11-08": [
+    { "year": 2000, "event": "Counter-Strike hit retail — a mod that became an institution." },
+    { "year": 2011, "event": "Call of Duty: Modern Warfare 3 closed the trilogy." },
+    { "year": 2019, "event": "Death Stranding divided opinion like no other game." },
+    { "year": 2022, "event": "Sonic Frontiers put Sonic in an open zone." },
+    { "year": 2024, "event": "Slitterhead released." }
+  ],
+  "11-09": [
+    { "year": 2004, "event": "Halo 2 launched, bringing console shooters properly online." },
+    { "year": 2010, "event": "Call of Duty: Black Ops launched." },
+    { "year": 2021, "event": "Forza Horizon 5 opened Mexico." },
+    { "year": 2022, "event": "God of War Ragnarök ended the Norse saga." }
+  ],
+  "11-10": [
+    { "year": 2009, "event": "Call of Duty: Modern Warfare 2 launched amid controversy and record sales." },
+    { "year": 2015, "event": "Fallout 4 and Rise of the Tomb Raider shared a massive release day." },
+    { "year": 2020, "event": "Xbox Series X|S and Assassin's Creed Valhalla both launched." },
+    { "year": 2023, "event": "Call of Duty: Modern Warfare III shipped." }
+  ],
+  "11-11": [
+    { "year": 2006, "event": "PlayStation 3 launched in Japan." },
+    { "year": 2008, "event": "Mirror's Edge ran its first rooftops." },
+    { "year": 2011, "event": "The Elder Scrolls V: Skyrim launched on 11/11/11 — and never left." },
+    { "year": 2021, "event": "Shin Megami Tensei V and the GTA trilogy remaster both released." }
+  ],
+  "11-12": [
+    { "year": 2009, "event": "New Super Mario Bros. Wii brought four-player chaos." },
+    { "year": 2020, "event": "PlayStation 5 launched alongside Demon's Souls and Spider-Man: Miles Morales." }
+  ],
+  "11-13": [
+    { "year": 2001, "event": "Metal Gear Solid 2 subverted every expectation." },
+    { "year": 2007, "event": "Assassin's Creed and Crysis both launched." },
+    { "year": 2018, "event": "Hitman 2 and Spyro Reignited Trilogy both shipped." },
+    { "year": 2020, "event": "Call of Duty: Black Ops Cold War released." }
+  ],
+  "11-14": [
+    { "year": 1996, "event": "Mario Kart 64 drifted onto shelves in Japan." },
+    { "year": 2018, "event": "Fallout 76 launched online." },
+    { "year": 2024, "event": "Lego Horizon Adventures rebuilt Aloy in bricks." },
+    { "year": 2025, "event": "Call of Duty: Black Ops 7 launched." }
+  ],
+  "11-15": [
+    { "year": 1999, "event": "Neopets opened to the public." },
+    { "year": 2001, "event": "Xbox and Halo: Combat Evolved both launched — the start of Microsoft's gaming empire." },
+    { "year": 2002, "event": "Xbox Live switched on, bringing broadband multiplayer to consoles." },
+    { "year": 2004, "event": "Metroid Prime 2: Echoes launched." },
+    { "year": 2011, "event": "Saints Row: The Third and Assassin's Creed Revelations both released." },
+    { "year": 2013, "event": "PlayStation 4 launched in North America." },
+    { "year": 2017, "event": "Star Wars Battlefront II and Slay the Spire (early access) both arrived." },
+    { "year": 2019, "event": "Pokémon Sword and Shield and Star Wars Jedi: Fallen Order both launched." },
+    { "year": 2021, "event": "Halo Infinite's multiplayer surprise-released." }
+  ],
+  "11-16": [
+    { "year": 1993, "event": "Sony Computer Entertainment was founded — the PlayStation company." },
+    { "year": 2004, "event": "Half-Life 2 finally arrived, physics puzzles and all." },
+    { "year": 2018, "event": "Pokémon: Let's Go, Pikachu! and Let's Go, Eevee! launched on Switch." }
+  ],
+  "11-17": [
+    { "year": 2002, "event": "Metroid Prime proved first-person could still feel like Metroid." },
+    { "year": 2004, "event": "Metal Gear Solid 3 took Snake into the jungle." },
+    { "year": 2006, "event": "PlayStation 3 launched in North America." },
+    { "year": 2009, "event": "Left 4 Dead 2 and Assassin's Creed II both launched — an all-time release day." },
+    { "year": 2015, "event": "Star Wars Battlefront rebooted." },
+    { "year": 2017, "event": "Star Wars Battlefront II shipped." },
+    { "year": 2023, "event": "Super Mario RPG and Persona 5 Tactica both returned." }
+  ],
+  "11-18": [
+    { "year": 2001, "event": "GameCube launched in North America." },
+    { "year": 2008, "event": "Left 4 Dead taught co-op shooters fear." },
+    { "year": 2011, "event": "Minecraft hit 1.0; Skyward Sword also launched." },
+    { "year": 2012, "event": "Wii U launched in North America." },
+    { "year": 2014, "event": "Dragon Age: Inquisition and Far Cry 4 both released." },
+    { "year": 2022, "event": "Pokémon Scarlet and Violet opened Paldea." }
+  ],
+  "11-19": [
+    { "year": 1998, "event": "Half-Life launched — storytelling in shooters was never the same." },
+    { "year": 2006, "event": "Wii launched in North America with Wii Sports." },
+    { "year": 2007, "event": "Uncharted: Drake's Fortune introduced Nathan Drake." },
+    { "year": 2021, "event": "Battlefield 2042 and Pokémon Brilliant Diamond/Shining Pearl both released." },
+    { "year": 2024, "event": "Microsoft Flight Simulator 2024 took off." }
+  ],
+  "11-20": [
+    { "year": 2000, "event": "Banjo-Tooie reunited the bear and bird." },
+    { "year": 2007, "event": "Mass Effect and Rock Band both launched." },
+    { "year": 2024, "event": "S.T.A.L.K.E.R. 2 finally reached the Zone." }
+  ],
+  "11-21": [
+    { "year": 1990, "event": "Super Mario World and F-Zero launched with the Super Famicom." },
+    { "year": 1991, "event": "A Link to the Past set the Zelda gold standard." },
+    { "year": 1992, "event": "Sonic the Hedgehog 2 introduced Tails and the spin dash." },
+    { "year": 1998, "event": "Ocarina of Time arrived — routinely called the greatest game ever made." },
+    { "year": 1999, "event": "Pokémon Gold and Silver expanded the world." },
+    { "year": 2001, "event": "Super Smash Bros. Melee launched with the GameCube." },
+    { "year": 2004, "event": "Nintendo DS launched in North America." },
+    { "year": 2010, "event": "Donkey Kong Country Returns barrel-rolled onto Wii." },
+    { "year": 2013, "event": "Super Mario 3D World and Zelda: A Link Between Worlds both released." }
+  ],
+  "11-22": [
+    { "year": 1994, "event": "Sega Saturn launched in Japan." },
+    { "year": 2005, "event": "Xbox 360 launched in North America." },
+    { "year": 2013, "event": "Xbox One and Dead Rising 3 launched; A Link Between Worlds also arrived in the West." }
+  ],
+  "11-23": [
+    { "year": 2004, "event": "World of Warcraft opened Azeroth — fifteen years later, people still live there." }
+  ],
+  "11-24": [{ "year": 2010, "event": "Gran Turismo 5 finally shipped." }],
+  "11-27": [
+    { "year": 1998, "event": "Dreamcast launched in Japan." },
+    { "year": 2018, "event": "Darksiders III unleashed Fury." }
+  ],
+  "11-29": [
+    { "year": 1972, "event": "Pong hit arcades — the game that started an industry." },
+    { "year": 2012, "event": "Far Cry 3 asked about the definition of insanity." },
+    { "year": 2016, "event": "Final Fantasy XV finally arrived after a decade." }
+  ],
+  "11-30": [{ "year": 1999, "event": "Unreal Tournament launched against Quake III Arena." }],
+  "12-01": [
+    { "year": 2006, "event": "Wii launched in Japan." },
+    { "year": 2011, "event": "Mario Kart 7 glided onto 3DS." },
+    { "year": 2015, "event": "Just Cause 3 and Rainbow Six Siege both launched." },
+    { "year": 2017, "event": "Xenoblade Chronicles 2 opened Alrest." },
+    { "year": 2020, "event": "Twin Mirror released." }
+  ],
+  "12-02": [
+    { "year": 1999, "event": "Quake III Arena went pure multiplayer." },
+    { "year": 2021, "event": "Solar Ash skated across the Ultravoid." },
+    { "year": 2022, "event": "The Callisto Protocol, Midnight Suns and Need for Speed Unbound all launched." }
+  ],
+  "12-03": [
+    { "year": 1994, "event": "PlayStation launched in Japan — Sony's console era began." },
+    { "year": 2001, "event": "Jak and Daxter showed what seamless PS2 worlds could do." },
+    { "year": 2019, "event": "Halo: Reach joined the Master Chief Collection on PC." }
+  ],
+  "12-04": [
+    { "year": 2015, "event": "Xenoblade Chronicles X opened Mira." },
+    { "year": 2023, "event": "The first GTA VI trailer dropped and broke the internet." },
+    { "year": 2025, "event": "Metroid Prime 4: Beyond finally released." }
+  ],
+  "12-05": [
+    { "year": 2014, "event": "Captain Toad: Treasure Tracker puzzled onto Wii U in the West." },
+    { "year": 2024, "event": "Fantasian Neo Dimension brought Mistwalker's RPG to consoles." }
+  ],
+  "12-06": [
+    { "year": 2016, "event": "The Last Guardian and Dead Rising 4 both released." },
+    { "year": 2018, "event": "The Epic Games Store opened, taking on Steam's monopoly." },
+    { "year": 2024, "event": "Marvel Rivals launched." }
+  ],
+  "12-07": [
+    { "year": 2018, "event": "Super Smash Bros. Ultimate assembled everyone, literally." },
+    { "year": 2023, "event": "The Finals and Avatar: Frontiers of Pandora both launched." }
+  ],
+  "12-08": [
+    { "year": 2021, "event": "Halo Infinite's campaign arrived." },
+    { "year": 2022, "event": "Chained Echoes delivered a retro JRPG love letter." }
+  ],
+  "12-09": [
+    { "year": 1997, "event": "Quake II turned the series toward Strogg war." },
+    { "year": 2024, "event": "Indiana Jones and the Great Circle whipped up a first-person adventure." }
+  ],
+  "12-10": [
+    { "year": 1993, "event": "Doom released as shareware — and basically invented the FPS as we know it." },
+    { "year": 2009, "event": "Angry Birds launched on iOS." },
+    { "year": 2019, "event": "MechWarrior 5 returned to the Inner Sphere." },
+    { "year": 2020, "event": "Cyberpunk 2077 launched — rough start, legendary comeback." }
+  ],
+  "12-11": [
+    { "year": 2014, "event": "The Talos Principle posed its AI riddles." },
+    { "year": 2020, "event": "Medal of Honor: Above and Beyond brought the series to VR." }
+  ],
+  "12-12": [
+    { "year": 2004, "event": "PlayStation Portable launched in Japan." },
+    { "year": 2019, "event": "Detroit: Become Human arrived on PC." }
+  ],
+  "12-13": [
+    { "year": 2002, "event": "The Legend of Zelda: The Wind Waker sailed onto GameCube in Japan." },
+    { "year": 2018, "event": "Gris painted grief in watercolour." },
+    { "year": 2022, "event": "Crisis Core: Final Fantasy VII Reunion and High on Life both released." }
+  ],
+  "12-14": [
+    {
+      "year": 1948,
+      "event": "The 'Cathode-Ray Tube Amusement Device' patent was filed — arguably the earliest video game."
+    },
+    { "year": 1996, "event": "Mario Kart 64 launched in Japan." },
+    { "year": 2018, "event": "Below finally surfaced." },
+    { "year": 2023, "event": "House Flipper 2 opened for renovations." }
+  ],
+  "12-16": [{ "year": 2014, "event": "Elite Dangerous launched its full release." }],
+  "12-17": [
+    { "year": 1987, "event": "Mega Man debuted on the Famicom." },
+    { "year": 2011, "event": "PlayStation Vita launched in Japan." },
+    { "year": 2019, "event": "Wattam brought Keita Takahashi's friendship chaos." },
+    { "year": 2021, "event": "Vampire Survivors entered early access." }
+  ],
+  "12-18": [
+    { "year": 1987, "event": "Final Fantasy debuted on the Famicom — Square's last gamble." },
+    { "year": 1998, "event": "Mario Party started ending friendships in Japan." }
+  ],
+  "12-20": [
+    { "year": 1987, "event": "Phantasy Star pushed sci-fi RPGs on the Master System." },
+    { "year": 2017, "event": "PUBG hit 1.0 after dominating the year." }
+  ],
+  "12-23": [{ "year": 1997, "event": "Gran Turismo launched in Japan — 'the real driving simulator.'" }],
+  "12-29": [{ "year": 1999, "event": "Shenmue opened its meticulously detailed Yokosuka on Dreamcast." }]
+}

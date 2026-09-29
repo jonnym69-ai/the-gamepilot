@@ -188,3 +188,9 @@ The typecheck command is optional for JS-only changes.
 - `src/constants/FreeToPlayEssentials.json` is a bundled, manually maintained selection (three games per platform), not a live ranking. Review official links, publisher artwork and purchase caveats when updating it. Do not mix trials, subscriptions or temporary giveaways into the catalogue. Artwork is remote with local placeholders; catalogue browsing itself needs no API or account connection.
 - Essentials launches pass the original library object to the existing callback only after an exact platform/ID or explicit-name match with installation evidence. Do not infer one installed game from another sharing its launcher (e.g. League of Legends versus Teamfight Tactics).
 - Regression checks: `npx jest src/components/DiscoverQuickPicks.test.js src/components/DiscoverHighlights.test.js src/components/FreeToPlayEssentials.test.js src/Home.test.js --ci`.
+
+## On this day in gaming
+
+- `src/constants/GamingHistory.json` is a bundled, manually maintained calendar of real gaming events keyed `MM-DD`; each entry carries `year` and `event`. It is not a live feed — verify dates against reliable sources when adding entries.
+- `OnThisDayService` returns the exact day's events, otherwise the nearest covered day within ±3 (earlier dates preferred on ties), capped at three events. `OnThisDayCard` sits at the bottom of Today's "Your story" column, labelled "On this day in gaming" or "This week in gaming", and hides when nothing is nearby. Fully local — no network calls.
+- Regression checks: `npx jest src/services/OnThisDayService.test.js src/components/OnThisDayCard.test.js src/Home.test.js --ci`.

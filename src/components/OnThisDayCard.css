@@ -1,0 +1,54 @@
+.on-this-day {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--home-line);
+  border-radius: 14px;
+  background: var(--home-hover-bg);
+}
+
+.on-this-day-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--home-accent);
+}
+
+.on-this-day-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.on-this-day-date {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--home-muted);
+}
+
+.on-this-day-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.on-this-day-events li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--home-muted);
+}
+
+.on-this-day-events strong {
+  flex-shrink: 0;
+  min-width: 36px;
+  font-size: 0.8rem;
+  color: var(--home-accent);
+}

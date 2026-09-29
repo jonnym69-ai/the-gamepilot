@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ScanLine } from 'lucide-react';
 import PlayNextCard from './PlayNextCard';
 import DailySpotlightCard from './DailySpotlightCard';
+import OnThisDayCard from './OnThisDayCard';
 import { CurrentEraCard, RecentSessionsSummary } from './IdentityWidgets';
 import './HomeDailyOverview.css';
 
@@ -104,6 +105,7 @@ export default function HomeDailyOverview({ library, onLaunchGame, activeSession
             <Link to="/?view=activity" className="home-daily-text-link">
               View activity and recaps <ArrowRight size={15} aria-hidden="true" />
             </Link>
+            <OnThisDayCard />
           </section>
         </>
       ) : (
