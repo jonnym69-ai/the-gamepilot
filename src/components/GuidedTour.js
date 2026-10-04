@@ -19,8 +19,8 @@ const TOUR_STEPS = [
   },
   {
     selector: 'a[href="#/"]',
-    title: 'Home',
-    body: 'Your daily cockpit: the doodle banner greets you by mood and time of day, and your next pick is always front and centre.',
+    title: 'Home — Your Daily Cockpit',
+    body: 'The doodle greets you by mood and time of day, the Today strip tracks your check-in streak and week, and Play Next is always front and centre. The Discover tab next to it handles giveaways and seasonal picks.',
   },
   {
     selector: 'a[href="#/library"]',

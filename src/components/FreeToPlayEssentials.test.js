@@ -9,15 +9,17 @@ jest.mock('../services/ElectronBridge', () => ({ openExternalUrl: jest.fn().mock
 
 afterEach(() => jest.clearAllMocks());
 
-test('starts with three curated Steam games and switches platform without fetching a catalogue', () => {
+test('starts with curated Steam games and switches platform without fetching a catalogue', () => {
   render(<FreeToPlayEssentials />);
-  expect(screen.getAllByRole('article')).toHaveLength(3);
+  expect(screen.getAllByRole('article')).toHaveLength(catalogue.filter((game) => game.platform === 'Steam').length);
   expect(screen.getByRole('heading', { name: 'Counter-Strike 2' })).toBeInTheDocument();
   expect(screen.getByText(/Prime Status is a paid upgrade/)).toBeInTheDocument();
   expect(screen.getByText(/not a live ranking/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Battle.net' }));
   expect(screen.getByRole('button', { name: 'Battle.net' })).toHaveAttribute('aria-pressed', 'true');
-  expect(screen.getAllByRole('article')).toHaveLength(3);
+  expect(screen.getAllByRole('article')).toHaveLength(
+    catalogue.filter((game) => game.platform === 'Battle.net').length
+  );
   expect(screen.getByRole('heading', { name: 'Hearthstone' })).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Counter-Strike 2' })).not.toBeInTheDocument();
   expect(openExternalUrl).not.toHaveBeenCalled();
@@ -78,15 +80,22 @@ test('catalogue is bounded, uses official HTTPS pages, and labels every game wit
     'store.steampowered.com',
     'us.shop.battle.net',
     'diabloimmortal.blizzard.com',
+    'www.callofduty.com',
+    'starcraft2.blizzard.com',
     'store.epicgames.com',
     'www.fallguys.com',
+    'genshin.hoyoverse.com',
+    'zenless.hoyoverse.com',
     'www.leagueoflegends.com',
     'playvalorant.com',
     'teamfighttactics.leagueoflegends.com',
+    '2xko.riotgames.com',
+    'playruneterra.com',
   ]);
   expect(new Set(catalogue.map((game) => game.id)).size).toBe(catalogue.length);
   for (const platform of new Set(catalogue.map((game) => game.platform))) {
-    expect(catalogue.filter((game) => game.platform === platform)).toHaveLength(3);
+    expect(catalogue.filter((game) => game.platform === platform).length).toBeGreaterThanOrEqual(3);
+    expect(catalogue.filter((game) => game.platform === platform).length).toBeLessThanOrEqual(6);
   }
   for (const game of catalogue) {
     const url = new URL(game.url);

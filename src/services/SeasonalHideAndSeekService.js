@@ -1,5 +1,6 @@
 import StorageService from './StorageService';
 import { isEasterActive } from './SeasonalRewardService';
+import { AchievementTracker } from '../AchievementSystem';
 
 const HIDE_SEEK_KEY = 'seasonalHideAndSeek';
 
@@ -107,8 +108,15 @@ export const SeasonalHideAndSeekService = {
 
     data[eventId].found.push(itemId);
 
-    if (data[eventId].found.length >= event.totalItems) {
+    if (data[eventId].found.length >= event.totalItems && !data[eventId].completed) {
       data[eventId].completed = true;
+      if (typeof AchievementTracker?.grantXP === 'function') {
+        AchievementTracker.grantXP('seasonal_hide_seek', event.xpReward, {
+          eventId,
+          eventName: event.name,
+          reward: event.rewardName,
+        });
+      }
     }
 
     saveStored(data);

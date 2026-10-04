@@ -30,6 +30,26 @@
     "url": "https://store.steampowered.com/app/440/Team_Fortress_2/"
   },
   {
+    "id": "apex-legends",
+    "name": "Apex Legends",
+    "platform": "Steam",
+    "steamAppId": "1170070",
+    "moods": ["Competitive", "Social"],
+    "description": "Squad-based battle royale with hero abilities, fast movement and quick matches.",
+    "costNote": "Legends can be earned or purchased; cosmetics and passes are sold separately.",
+    "url": "https://store.steampowered.com/app/1170070/Apex_Legends/"
+  },
+  {
+    "id": "warframe",
+    "name": "Warframe",
+    "platform": "Steam",
+    "steamAppId": "230410",
+    "moods": ["Focused", "Creative"],
+    "description": "Co-op sci-fi action with fast parkour combat and a huge craftable arsenal.",
+    "costNote": "Almost everything can be earned through play; cosmetics and convenience items are sold.",
+    "url": "https://store.steampowered.com/app/230410/Warframe/"
+  },
+  {
     "id": "overwatch",
     "name": "Overwatch",
     "aliases": ["Overwatch 2"],
@@ -38,7 +58,7 @@
     "description": "Hero-based team battles built around combining abilities and switching roles.",
     "costNote": "In-game purchases; some additional content is sold separately.",
     "url": "https://us.shop.battle.net/en-us/product/overwatch",
-    "image": "https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440c/blt45586c965db08717/6823abc24dee72d806fff5e2/OpenGraph.jpg"
+    "image": "https://cdn.akamai.steamstatic.com/steam/apps/2357570/library_600x900.jpg"
   },
   {
     "id": "hearthstone",
@@ -48,7 +68,7 @@
     "description": "Turn-based card duels for when you want to plan combinations rather than test your reflexes.",
     "costNote": "Cards can be earned through play; card packs and other in-game purchases are available.",
     "url": "https://us.shop.battle.net/en-us/product/hearthstone",
-    "image": "https://d39zum0jwvcigt.cloudfront.net/_next/static/images/default-475d770302527dbab7708dca2af05afd.jpg"
+    "image": "https://blz-contentstack-images.akamaized.net/v3/assets/bltc965041283bac56c/blt2a00940d7f28339b/64bea585e26c5443e04bc2a4/Masthead.png"
   },
   {
     "id": "diablo-immortal",
@@ -59,6 +79,26 @@
     "costNote": "Includes purchases that affect character progression, not just cosmetics.",
     "url": "https://diabloimmortal.blizzard.com/en-us",
     "image": "https://blz-contentstack-images.akamaized.net/v3/assets/blt9c12f249ac15c7ec/blt47deaa9e2be4b752/6a1f4beaeb54a6907d694fb8/DI_Warlock_OG-Image@2x_enUS.jpg"
+  },
+  {
+    "id": "call-of-duty-warzone",
+    "name": "Call of Duty: Warzone",
+    "platform": "Battle.net",
+    "moods": ["Competitive", "Focused"],
+    "description": "Large-scale battle royale and Resurgence modes built on Call of Duty gunplay.",
+    "costNote": "In-game purchases; battle passes and cosmetics are sold separately.",
+    "url": "https://www.callofduty.com/warzone",
+    "image": "https://cdn.akamai.steamstatic.com/steam/apps/1962663/library_600x900.jpg"
+  },
+  {
+    "id": "starcraft-ii",
+    "name": "StarCraft II",
+    "platform": "Battle.net",
+    "moods": ["Focused", "Competitive"],
+    "description": "Classic real-time strategy with a free multiplayer ladder, co-op and the first campaign.",
+    "costNote": "Ranked, co-op and the Wings of Liberty campaign are free; later campaigns are paid.",
+    "url": "https://starcraft2.blizzard.com/en-us/",
+    "image": "https://blz-contentstack-images.akamaized.net/v3/assets/blt9c12f249ac15c7ec/bltbe2068a317e02d9f/6966bac0fb2fd910dbda4a26/og_image.webp"
   },
   {
     "id": "fortnite",
@@ -78,7 +118,7 @@
     "description": "Car football with short matches and a high skill ceiling for aerial shots and teamwork.",
     "costNote": "Cosmetics and passes are sold separately. New PC players get it through Epic.",
     "url": "https://store.epicgames.com/en-US/p/rocket-league",
-    "image": "https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg"
+    "image": "https://cdn.akamai.steamstatic.com/steam/apps/252950/library_600x900.jpg"
   },
   {
     "id": "fall-guys",
@@ -89,6 +129,26 @@
     "costNote": "Cosmetics and passes are sold separately.",
     "url": "https://www.fallguys.com/",
     "image": "https://cdn2.unrealengine.com/fg-10-3-evg-keyart-withlogo-1920x1080-11-1920x1080-198587253bf0.png"
+  },
+  {
+    "id": "genshin-impact",
+    "name": "Genshin Impact",
+    "platform": "Epic",
+    "moods": ["Focused", "Creative"],
+    "description": "Open-world action RPG with elemental party combat, exploration and regular new regions.",
+    "costNote": "Characters and weapons come from optional gacha pulls; the story and world are playable free.",
+    "url": "https://genshin.hoyoverse.com/en/",
+    "image": "https://cdn1.epicgames.com/spt-assets/99dc46c68ea14324964a856d18dcac5b/genshin-impact-hqdph.jpg"
+  },
+  {
+    "id": "zenless-zone-zero",
+    "name": "Zenless Zone Zero",
+    "platform": "Epic",
+    "moods": ["Focused", "Creative"],
+    "description": "Stylish urban action with rapid swap-based combat and roguelike Hollow runs.",
+    "costNote": "Agents come from optional gacha pulls; the main story and events are playable free.",
+    "url": "https://zenless.hoyoverse.com/en-us/",
+    "image": "https://fastcdn.hoyoverse.com/mi18n/nap_global/m20260825hy6h8swqv4/upload/736bac9d3d30580d780679cccf833745_2751676283033630192.jpg"
   },
   {
     "id": "league-of-legends",
@@ -108,7 +168,7 @@
     "description": "Tactical team shooting that combines precise gunplay with agent abilities.",
     "costNote": "Agents can be earned or purchased; cosmetics are also sold. Requires Riot Vanguard.",
     "url": "https://playvalorant.com/en-us/",
-    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76-128x128.png"
+    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/1d1a219a5cb25d15b6e9fe2d4a4d2b83d41f0a8f-1920x1080.jpg"
   },
   {
     "id": "teamfight-tactics",
@@ -119,5 +179,25 @@
     "costNote": "Cosmetics and passes are sold separately. On PC, it uses the League of Legends client.",
     "url": "https://teamfighttactics.leagueoflegends.com/en-us/",
     "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/d63adacd93e313c1e61bbeb2eb37d8c4ca85848d-1920x1080.jpg"
+  },
+  {
+    "id": "2xko",
+    "name": "2XKO",
+    "platform": "Riot",
+    "moods": ["Competitive", "Social"],
+    "description": "Tag-team fighting set in Runeterra, playable solo or as a duo with a friend.",
+    "costNote": "Champions can be earned or purchased; cosmetics are sold separately.",
+    "url": "https://2xko.riotgames.com/en-us/",
+    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/0d8da14d9cc0c69376e8fb42cc6344276bf937ad-1200x600.jpg"
+  },
+  {
+    "id": "legends-of-runeterra",
+    "name": "Legends of Runeterra",
+    "platform": "Riot",
+    "moods": ["Focused", "Competitive"],
+    "description": "League-universe card battler built around interactive turns and champion level-ups.",
+    "costNote": "Cards can be earned through play; cosmetics are sold. In maintenance mode but still playable.",
+    "url": "https://playruneterra.com/en-us/",
+    "image": "https://playruneterra.com/assets/ccc9b55ec5fec88d1a616e7dec4795282a3aba52/static/image/share-image.jpg"
   }
 ]

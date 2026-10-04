@@ -3,6 +3,7 @@ import { Gift, ExternalLink, RefreshCw } from 'lucide-react';
 import DailySpotlightCard from './DailySpotlightCard';
 import DiscoverQuickPicks from './DiscoverQuickPicks';
 import FreeToPlayEssentials from './FreeToPlayEssentials';
+import SeasonalShelf from './SeasonalShelf';
 import LazyImage from './LazyImage';
 import { FreeGameRadar, getEpicOfferState } from '../services/FreeGameRadar';
 import { openExternalUrl } from '../services/ElectronBridge';
@@ -11,6 +12,22 @@ import './DiscoverHighlights.css';
 
 const EPIC_URL = 'https://store.epicgames.com/free-games';
 const VISIBLE_KEY = 'discoverEpicRadarVisible';
+const GIVEAWAY_SEEN_KEY = 'giveawaySeenIdsV1';
+
+// First-ever visit records a baseline silently so the badge only ever reports
+// genuinely new giveaways from the user's second visit onwards.
+const diffNewGiveaways = (ids) => {
+  try {
+    const seen = StorageService.get(GIVEAWAY_SEEN_KEY, null);
+    const isBaseline = !Array.isArray(seen);
+    const seenSet = new Set(Array.isArray(seen) ? seen : []);
+    const newCount = isBaseline ? 0 : ids.filter((id) => !seenSet.has(id)).length;
+    StorageService.set(GIVEAWAY_SEEN_KEY, [...new Set([...seenSet, ...ids])].slice(-400));
+    return newCount;
+  } catch {
+    return 0;
+  }
+};
 const dateLabel = (value) =>
   new Date(value).toLocaleString(undefined, {
     month: 'short',
@@ -153,13 +170,17 @@ function GiveawayFeed() {
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
   const [linkError, setLinkError] = useState('');
+  const [newSinceLastVisit, setNewSinceLastVisit] = useState(0);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     FreeGameRadar.getGiveaways({ forceRefresh: refresh > 0 })
       .then((value) => {
-        if (active) setResult(value);
+        if (!active) return;
+        setResult(value);
+        const ids = (Array.isArray(value?.games) ? value.games : []).map((game) => game.id).filter(Boolean);
+        setNewSinceLastVisit(ids.length ? diffNewGiveaways(ids) : 0);
       })
       .catch(() => {
         if (active) setResult({ games: [], stale: true, error: 'Giveaway listings are temporarily unavailable.' });
@@ -190,6 +211,11 @@ function GiveawayFeed() {
           </p>
           <h2 id={`${id}-heading`}>More free games</h2>
           <p>Free-to-keep giveaways on Steam, GOG, itch.io and more.</p>
+          {newSinceLastVisit > 0 && (
+            <p className="discover-new-badge" role="status">
+              {newSinceLastVisit} new since your last visit
+            </p>
+          )}
         </div>
         <div className="discover-radar-controls">
           <button
@@ -267,6 +293,7 @@ export default function DiscoverHighlights({ library, onLaunchGame, activeSessio
     <div className="discover-highlights">
       <DiscoverQuickPicks library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
       <DailySpotlightCard library={library} rediscovery onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
+      <SeasonalShelf library={library} onLaunchGame={onLaunchGame} />
       <section className="discover-external" aria-labelledby={`${id}-external-heading`}>
         <header className="discover-radar-header">
           <div>

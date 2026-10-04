@@ -4,6 +4,24 @@ import './SeasonalHideAndSeek.css';
 
 const STORAGE_DISMISS_KEY = 'seasonalHideAndSeekDismissed';
 
+// Deterministic hash → 0..1 so each hidden item keeps a stable spot between
+// renders (re-computing positions from Date.now() made them jump around).
+const hashUnit = (seed) => {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 4294967295;
+};
+
+// Items are kept inside the top ~70% and left ~78% of the viewport so they
+// never spawn underneath the tracker badge pinned bottom-right.
+const itemPosition = (seed) => ({
+  left: `${(4 + hashUnit(`${seed}:x`) * 74).toFixed(2)}%`,
+  top: `${(8 + hashUnit(`${seed}:y`) * 62).toFixed(2)}%`,
+});
+
 const SeasonalHideAndSeek = () => {
   const [showCelebration, setShowCelebration] = useState(null);
   const [dismissed, setDismissed] = useState(() => {
@@ -20,18 +38,17 @@ const SeasonalHideAndSeek = () => {
   });
 
   const activeEvent = useMemo(() => SeasonalHideAndSeekService.getActiveEvent(), []);
-  const progress = useMemo(() => {
-    if (!activeEvent) return null;
-    return SeasonalHideAndSeekService.getProgress(activeEvent.id);
-  }, [activeEvent]);
+  const [progress, setProgress] = useState(() =>
+    activeEvent ? SeasonalHideAndSeekService.getProgress(activeEvent.id) : null
+  );
 
   const handleFindItem = useCallback(
     (itemId) => {
       if (!activeEvent) return;
       const result = SeasonalHideAndSeekService.findItem(activeEvent.id, itemId);
-      if (!result) return;
+      if (!result || result.alreadyFound) return;
 
-      if (result.alreadyFound) return;
+      setProgress(SeasonalHideAndSeekService.getProgress(activeEvent.id));
 
       if (result.justCompleted) {
         setShowCelebration({ type: 'complete', eventName: activeEvent.name, reward: activeEvent.rewardName });
@@ -73,8 +90,7 @@ const SeasonalHideAndSeek = () => {
       {!allFound &&
         Array.from({ length: activeEvent.totalItems }, (_, i) => i).map((i) => {
           const itemId = `${activeEvent.id}-item-${i}`;
-          const isFound = progress.found.includes(itemId);
-          if (isFound) return null;
+          if (progress.found.includes(itemId)) return null;
 
           return (
             <button
@@ -85,8 +101,7 @@ const SeasonalHideAndSeek = () => {
               title={`You found a hidden ${activeEvent.itemName}!`}
               style={{
                 position: 'fixed',
-                left: `${5 + ((i * 17 + ((Date.now() / 1000) % 7)) % 90)}%`,
-                top: `${8 + ((i * 23 + ((Date.now() / 1000) % 11)) % 80)}%`,
+                ...itemPosition(`${activeEvent.id}-${new Date().getFullYear()}-item-${i}`),
                 zIndex: 9999,
               }}
             >

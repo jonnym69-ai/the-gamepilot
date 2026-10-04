@@ -1431,6 +1431,10 @@ function Home({
           onLaunchGame={onLaunchGame}
           activeSessions={activeSessions}
           endSession={endSession}
+          username={username}
+          welcomeMessage={welcomeMessage}
+          profilePic={profilePic}
+          themeId={theme}
         />
       )}
 

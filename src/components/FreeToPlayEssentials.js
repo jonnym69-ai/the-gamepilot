@@ -37,8 +37,8 @@ export default function FreeToPlayEssentials({ library = [], onLaunchGame, activ
     <section aria-labelledby={`${id}-heading`} className="discover-essentials">
       <h3 id={`${id}-heading`}>Selected free-to-play games</h3>
       <p className="discover-catalogue-note">
-        Three starting points per platform, not a live ranking or an exclusive catalogue. These are free-to-play games,
-        not limited-time giveaways. Accounts and internet access are required.
+        A small hand-picked set per platform, not a live ranking or an exclusive catalogue. These are free-to-play
+        games, not limited-time giveaways. Accounts and internet access are required.
       </p>
       <div className="discover-quick-pick-row" role="group" aria-label="Free-to-play platforms">
         {platforms.map((value) => (
@@ -72,7 +72,10 @@ export default function FreeToPlayEssentials({ library = [], onLaunchGame, activ
             });
             return (
               <article key={entry.id} className="discover-quick-pick-card">
-                <div className="discover-quick-pick-art">
+                <div
+                  className="discover-quick-pick-art"
+                  style={artwork ? { '--art-fill': `url("${artwork}")` } : undefined}
+                >
                   <LazyImage
                     src={artwork}
                     alt={`${entry.name} artwork`}

@@ -171,6 +171,45 @@ test('giveaway cache wording matches on-open and manual refresh behaviour', asyn
   expect(FreeGameRadar.getGiveaways).toHaveBeenLastCalledWith({ forceRefresh: true });
 });
 
+test('giveaway badge counts new listings since the previous visit without nagging on first run', async () => {
+  const { unmount } = render(<DiscoverHighlights library={[]} />);
+  await screen.findByText('Cool Giveaway');
+  expect(screen.queryByText(/new since your last visit/)).not.toBeInTheDocument();
+  unmount();
+
+  FreeGameRadar.getGiveaways.mockResolvedValue({
+    games: [
+      {
+        id: 'gp-1',
+        title: 'Cool Giveaway',
+        description: 'Free on another store.',
+        image: '',
+        url: 'https://www.gamerpower.com/open/cool-giveaway',
+        worth: '',
+        endDate: '2026-10-05T23:59:00.000Z',
+        platform: 'Steam',
+        source: 'GamerPower',
+      },
+      {
+        id: 'gp-2',
+        title: 'Fresh Drop',
+        description: 'A new one.',
+        image: '',
+        url: 'https://www.gamerpower.com/open/fresh-drop',
+        worth: '',
+        endDate: '2026-10-06T23:59:00.000Z',
+        platform: 'Steam',
+        source: 'GamerPower',
+      },
+    ],
+    checkedAt: NOW,
+    stale: false,
+  });
+
+  render(<DiscoverHighlights library={[]} />);
+  expect(await screen.findByText('1 new since your last visit')).toBeInTheDocument();
+});
+
 test('giveaway feed reports failures honestly without breaking the Epic radar', async () => {
   FreeGameRadar.getGiveaways.mockResolvedValue({
     games: [],

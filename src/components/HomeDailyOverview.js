@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ScanLine } from 'lucide-react';
 import PlayNextCard from './PlayNextCard';
 import DailySpotlightCard from './DailySpotlightCard';
+import DailyDoodleTitle from './DailyDoodleTitle';
 import OnThisDayCard from './OnThisDayCard';
+import TodayStrip from './TodayStrip';
 import { CurrentEraCard, RecentSessionsSummary } from './IdentityWidgets';
 import './HomeDailyOverview.css';
 
@@ -60,12 +62,30 @@ export function HomeViewNavigation({ view, username, libraryCount, onScan, loadi
   );
 }
 
-export default function HomeDailyOverview({ library, onLaunchGame, activeSessions = {}, endSession }) {
+export default function HomeDailyOverview({
+  library,
+  onLaunchGame,
+  activeSessions = {},
+  endSession,
+  username,
+  welcomeMessage,
+  profilePic,
+  themeId,
+}) {
   const hasLibrary = Array.isArray(library) && library.length > 0;
   return (
     <main className="home-daily-overview" aria-label="Today">
+      <div className="home-daily-doodle">
+        <DailyDoodleTitle
+          username={username}
+          welcomeMessage={username ? welcomeMessage : ''}
+          profilePic={profilePic}
+          themeId={themeId}
+        />
+      </div>
       {hasLibrary ? (
         <>
+          <TodayStrip />
           <section className="home-daily-play" aria-labelledby="home-play-heading">
             <p className="home-daily-eyebrow">Ready when you are</p>
             <h2 id="home-play-heading">Play Next</h2>
