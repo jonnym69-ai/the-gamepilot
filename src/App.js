@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from './ThemeContext';
 import ControllerSupport from './components/ControllerSupport';
@@ -42,13 +42,11 @@ const YearInReview = lazy(() => import('./YearInReview'));
 const Timeline = lazy(() => import('./Timeline'));
 
 const GamingLinks = lazy(() => import('./GamingLinks'));
-const StartupQuestionnaire = lazy(() => import('./components/StartupQuestionnaire'));
 const Themes = lazy(() => import('./Themes'));
 const Habits = lazy(() => import('./Habits'));
 const Achievements = lazy(() => import('./Achievements'));
 const ExportHub = lazy(() => import('./ExportHub'));
 const StorageManager = lazy(() => import('./StorageManager'));
-const PerformanceCockpit = lazy(() => import('./PerformanceCockpit'));
 const SwipeDeck = lazy(() => import('./SwipeDeck'));
 const Recommendations = lazy(() => import('./Recommendations'));
 const GameBarOverlay = lazy(() => import('./components/GameBarOverlay'));
@@ -74,13 +72,6 @@ export default function App() {
         </HashRouter>
       </ToastProvider>
     </ThemeProvider>
-  );
-}
-
-function StartupQuestionnaireRoute() {
-  const navigate = useNavigate();
-  return (
-    <StartupQuestionnaire isOpen founderTier={false} onComplete={() => navigate('/')} onSkip={() => navigate('/')} />
   );
 }
 
@@ -538,14 +529,6 @@ function AppContent() {
               }
             />
             <Route
-              path="/performance-cockpit"
-              element={
-                <RouteErrorBoundary>
-                  <PerformanceCockpit library={library} />
-                </RouteErrorBoundary>
-              }
-            />
-            <Route
               path="/swipe-deck"
               element={
                 <RouteErrorBoundary>
@@ -586,7 +569,6 @@ function AppContent() {
                 </RouteErrorBoundary>
               }
             />
-            <Route path="/startup-questionnaire" element={<StartupQuestionnaireRoute />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

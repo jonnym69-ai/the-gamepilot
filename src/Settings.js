@@ -38,6 +38,7 @@ import { LocalShareService } from './services/LocalShareService';
 import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
 import BackupRestoreDashboard from './components/BackupRestoreDashboard';
+import SystemSpecsCard from './components/SystemSpecsCard';
 import DiscordPresenceService from './services/DiscordPresenceService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { APP_VERSION } from './appVersion';
@@ -1503,6 +1504,17 @@ function Settings({
                         </button>
                       </div>
                     </div>
+
+                    <div
+                      className="setting-item"
+                      style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}
+                    >
+                      <label>Your System</label>
+                      <p className="setting-description">
+                        Detected hardware — useful when reporting bugs or checking a game's stated requirements.
+                      </p>
+                      <SystemSpecsCard />
+                    </div>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1514,7 +1526,7 @@ function Settings({
             <div className="settings-folder-content">
               <CollapsibleSection
                 title="Recommendation Controls"
-                subtitle="Choose your recommendation style. Pro adds detailed scoring weights."
+                subtitle="Choose your recommendation style and detailed scoring weights."
                 icon={<SlidersHorizontal size={18} />}
                 className="settings-folder power-tools-folder"
               >

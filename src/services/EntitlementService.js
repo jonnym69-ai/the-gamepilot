@@ -21,7 +21,6 @@ export const FREE_FEATURES = Object.freeze({
   'discord-presence': { label: 'Discord Rich Presence' },
   'year-in-review': { label: 'Year in Review' },
   'habits-insights': { label: 'Habits and goals' },
-  'performance-cockpit': { label: 'Performance Cockpit' },
   'big-screen-mode': { label: 'Big Screen Mode and Game Bar' },
   'uninstall-planner': { label: 'Individual game uninstall and save-safety tools' },
   customisation: { label: 'Themes, Gaming Links and accessibility controls' },
