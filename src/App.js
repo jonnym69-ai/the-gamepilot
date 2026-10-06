@@ -5,7 +5,6 @@ import { ThemeProvider } from './ThemeContext';
 import ControllerSupport from './components/ControllerSupport';
 import ErrorBoundary from './components/ErrorBoundary';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
-import { EditionComparison } from './components/ProGate';
 import { normalizeLibraryData } from './services/LibraryDataService';
 import TrayMenuService from './services/TrayMenuService';
 import { ToastProvider, useToast } from './components/Toast';
@@ -41,7 +40,7 @@ const Settings = lazy(() => import('./Settings'));
 const Profile = lazy(() => import('./Profile'));
 const YearInReview = lazy(() => import('./YearInReview'));
 const Timeline = lazy(() => import('./Timeline'));
-const Donate = lazy(() => import('./Donate'));
+
 const GamingLinks = lazy(() => import('./GamingLinks'));
 const StartupQuestionnaire = lazy(() => import('./components/StartupQuestionnaire'));
 const Themes = lazy(() => import('./Themes'));
@@ -513,14 +512,6 @@ function AppContent() {
                 </RouteErrorBoundary>
               }
             />
-            <Route
-              path="/donate"
-              element={
-                <RouteErrorBoundary>
-                  <Donate theme={theme} />
-                </RouteErrorBoundary>
-              }
-            />
             <Route path="/library-intelligence" element={<Navigate to="/recommendations" replace />} />
             <Route
               path="/achievements"
@@ -575,14 +566,6 @@ function AppContent() {
               element={
                 <RouteErrorBoundary>
                   <WishlistPage library={library} onLaunchGame={handleLaunchGame} />
-                </RouteErrorBoundary>
-              }
-            />
-            <Route
-              path="/editions"
-              element={
-                <RouteErrorBoundary>
-                  <EditionComparison />
                 </RouteErrorBoundary>
               }
             />

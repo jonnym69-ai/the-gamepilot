@@ -1,11 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
 import { useTheme } from './ThemeContext';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { SeasonalRewardService } from './services/SeasonalRewardService';
 import StorageService from './services/StorageService';
-import EntitlementService from './services/EntitlementService';
 import moodThemes from './themes/moodThemes.json';
 import proThemes from './themes/proThemes.json';
 import './Home.css';
@@ -81,8 +79,6 @@ const previewStyle = (preview) => ({
 
 function Themes() {
   const { currentTheme, setTheme, availableThemes } = useTheme();
-  const navigate = useNavigate();
-  const isPro = EntitlementService.isPro();
 
   const [autoSeasonal, setAutoSeasonal] = useState(() => {
     return StorageService.getString('autoSeasonalTheme') !== 'false';
@@ -301,21 +297,14 @@ function Themes() {
       </section>
 
       <section style={sectionStyle}>
-        <h2 style={{ marginTop: 0 }}>Pro Collection</h2>
-        <p style={{ opacity: 0.75, marginTop: '-8px' }}>
-          Exclusive to GamePilot Pro.{' '}
-          {isPro ? 'All included — pick one and apply it.' : 'Preview them here; apply them in the Pro edition.'}
-        </p>
+        <h2 style={{ marginTop: 0 }}>Signature Collection</h2>
+        <p style={{ opacity: 0.75, marginTop: '-8px' }}>Premium looks — all included, pick one and apply it.</p>
         <div style={gridStyle}>
           {proThemes.map((theme) => {
             const isCurrent = currentTheme === theme.id;
             const preview = `linear-gradient(135deg, ${theme.palette?.primary || '#ff8c1a'}, ${theme.palette?.accent || '#ffb347'})`;
             return (
-              <div
-                key={theme.id}
-                style={cardStyle}
-                className={`theme-gallery-card ${isCurrent ? 'active' : ''} ${isPro ? '' : 'locked'}`}
-              >
+              <div key={theme.id} style={cardStyle} className={`theme-gallery-card ${isCurrent ? 'active' : ''}`}>
                 <div style={previewStyle(preview)} className="theme-gallery-preview" />
                 <div
                   style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}
@@ -325,19 +314,15 @@ function Themes() {
                     <p style={{ margin: 0, opacity: 0.75, fontSize: '0.92rem' }}>{theme.description}</p>
                   </div>
                   <div className="theme-gallery-badges">
-                    <span className="confidence-badge theme-gallery-badge">Pro</span>
                     {isCurrent && <span className="confidence-badge theme-gallery-badge active">Active</span>}
                   </div>
                 </div>
-                <p className={`theme-gallery-status ${isPro ? 'unlocked' : 'locked'}`}>
-                  {isPro ? 'Included in Pro' : 'GamePilot Pro only'}
-                </p>
                 <button
-                  className={`action-button primary theme-gallery-action ${isPro ? '' : 'locked'}`}
+                  className="action-button primary theme-gallery-action"
                   disabled={isCurrent}
-                  onClick={() => (isPro ? setTheme(theme.id) : navigate('/editions'))}
+                  onClick={() => setTheme(theme.id)}
                 >
-                  {isCurrent ? 'Currently Active' : isPro ? 'Apply Theme' : 'Explore Pro'}
+                  {isCurrent ? 'Currently Active' : 'Apply Theme'}
                 </button>
               </div>
             );

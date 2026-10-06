@@ -13,7 +13,6 @@ import {
   Gift,
   Database,
   Download,
-  Heart,
   Link as LinkIcon,
   Crown,
   Activity,
@@ -23,7 +22,7 @@ import { useTheme } from '../ThemeContext';
 // Primary nav: Home · Library · Recs · Stats · Profile · Settings
 // More menu: Year in Review, Habits, Achievements, Rewards,
 // Storage Manager, Export Hub,
-// Feedback, Donate, Gaming Links, Themes, TV Mode
+// Feedback, Gaming Links, Themes, TV Mode
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -185,7 +184,7 @@ function HybridNavBar() {
                 to="/storage-manager"
                 className="dropdown-item"
                 onClick={closeDropdown}
-                title="Library Reclaimer — included in GamePilot Pro"
+                title="Compare installed game sizes and reclaim disk space"
               >
                 <Database size={16} className="dropdown-item-icon" /> Storage Manager
               </Link>
@@ -207,9 +206,6 @@ function HybridNavBar() {
                 title="Suggest features and share feedback"
               >
                 <MessageSquarePlus size={16} className="dropdown-item-icon" /> Feedback
-              </Link>
-              <Link to="/donate" className="dropdown-item" onClick={closeDropdown} title="Support GamePilot">
-                <Heart size={16} className="dropdown-item-icon" /> Donate
               </Link>
               <Link
                 to="/gaming-links"

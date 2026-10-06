@@ -83,12 +83,15 @@ const normalizeCode = (code) =>
 const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
 export class EntitlementService {
+  // Single-edition model: everything ships unlocked in every build. The
+  // edition answer stays 'pro' so dormant call-sites (ProGate, pro themes)
+  // keep passing without surgery — nothing is gated anymore.
   static getEdition() {
-    return typeof __APP_EDITION__ !== 'undefined' && __APP_EDITION__ === 'pro' ? 'pro' : 'free';
+    return 'pro';
   }
 
   static getEditionName() {
-    return this.isPro() ? 'GamePilot Pro' : 'GamePilot Free';
+    return 'GamePilot';
   }
 
   static isPro() {

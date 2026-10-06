@@ -33,7 +33,7 @@ const jsxInJsPlugin = {
 // Vite configuration for the GamePilot renderer.
 // The Electron main process files (electron.js, electron/**, etc.) are
 // CommonJS and run natively in Electron — they are NOT bundled by Vite.
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   plugins: [
     {
       name: 'gamepilot-edition',
@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => ({
         this.emitFile({
           type: 'asset',
           fileName: 'edition.json',
-          source: JSON.stringify({ edition: mode === 'pro' ? 'pro' : 'free', version }),
+          source: JSON.stringify({ edition: 'standard', version }),
         });
       },
     },
@@ -67,7 +67,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    outDir: mode === 'pro' ? 'dist/renderer-pro' : 'dist/renderer',
+    outDir: 'dist/renderer',
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
@@ -90,7 +90,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     __APP_VERSION__: JSON.stringify(version),
-    __APP_EDITION__: JSON.stringify(mode === 'pro' ? 'pro' : 'free'),
+    __APP_EDITION__: JSON.stringify('standard'),
     'process.env.PUBLIC_URL': JSON.stringify(''),
   },
   resolve: {

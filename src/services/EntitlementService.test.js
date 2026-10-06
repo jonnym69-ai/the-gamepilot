@@ -28,16 +28,11 @@ jest.mock('./StorageService', () => {
 
 beforeEach(() => {
   StorageService._store.clear();
-  global.__APP_EDITION__ = 'free';
   jest.restoreAllMocks();
 });
 
-afterEach(() => {
-  global.__APP_EDITION__ = 'free';
-});
-
-describe('build-time editions', () => {
-  test('only the agreed capabilities belong to Pro', () => {
+describe('single-edition build', () => {
+  test('the catalogue still names the formerly-Pro capabilities', () => {
     expect(Object.keys(PRO_FEATURES).sort()).toEqual([
       'cinematic-export',
       'era-archive',
@@ -48,88 +43,70 @@ describe('build-time editions', () => {
     ]);
   });
 
-  test.each(['free', 'pro'])('%s includes all Free features', (edition) => {
-    global.__APP_EDITION__ = edition;
-    expect(EntitlementService.getEdition()).toBe(edition);
-    Object.keys(FREE_FEATURES).forEach((feature) => {
-      expect(EntitlementService.hasFeature(feature)).toBe(true);
-    });
-    [
-      'eras',
-      'signature-titles',
-      'save-backup',
-      'share-cards',
-      'year-in-review',
-      'discord-presence',
-      'big-screen-mode',
-      'performance-cockpit',
-      'habits-insights',
-    ].forEach((feature) => {
-      expect(EntitlementService.hasFeature(feature)).toBe(true);
-    });
-  });
+  test.each(['free', 'pro', 'standard', '', 'invalid', undefined])(
+    'every feature is unlocked regardless of the build stamp %s',
+    (edition) => {
+      global.__APP_EDITION__ = edition;
+      expect(EntitlementService.getEdition()).toBe('pro');
+      expect(EntitlementService.isPro()).toBe(true);
+      expect(EntitlementService.getEditionName()).toBe('GamePilot');
+      [...Object.keys(FREE_FEATURES), ...Object.keys(PRO_FEATURES)].forEach((feature) => {
+        expect(EntitlementService.hasFeature(feature)).toBe(true);
+      });
+    }
+  );
 
-  test.each(['free', 'pro'])('%s access comes from the build, not local entitlements', (edition) => {
-    global.__APP_EDITION__ = edition;
+  test('access is unconditional — stored entitlements neither grant nor revoke it', () => {
+    expect(EntitlementService.isPro()).toBe(true);
     StorageService.set('storeEntitlements', { [PRO_PRODUCT_ID]: { source: 'local-code' } });
     StorageService.set('proLicense', { source: 'local-code' });
-    expect(EntitlementService.isPro()).toBe(edition === 'pro');
+    expect(EntitlementService.isPro()).toBe(true);
     Object.keys(PRO_FEATURES).forEach((feature) => {
-      expect(EntitlementService.hasFeature(feature)).toBe(edition === 'pro');
+      expect(EntitlementService.hasFeature(feature)).toBe(true);
     });
     StorageService._store.clear();
-    expect(EntitlementService.isPro()).toBe(edition === 'pro');
+    expect(EntitlementService.isPro()).toBe(true);
+    expect(EntitlementService.hasEntitlement(PRO_PRODUCT_ID)).toBe(true);
   });
 
-  test.each(['', 'PRO', 'invalid', undefined])('unknown edition %s fails closed to Free', (edition) => {
-    global.__APP_EDITION__ = edition;
-    expect(EntitlementService.getEdition()).toBe('free');
-    expect(EntitlementService.isPro()).toBe(false);
-  });
-
-  test.each(['free', 'pro'])('unknown features fail closed in %s', (edition) => {
-    global.__APP_EDITION__ = edition;
+  test('unknown features fail closed', () => {
     expect(EntitlementService.hasFeature('not-a-feature')).toBe(false);
     expect(EntitlementService.hasFeature('toString')).toBe(false);
     expect(EntitlementService.hasEntitlement(null)).toBe(false);
   });
 
-  test('activation and deactivation APIs are removed', () => {
+  test('activation and deactivation APIs remain absent; Pro codes are rejected', () => {
     expect(EntitlementService.activateLicense).toBeUndefined();
     expect(EntitlementService.deactivateLicense).toBeUndefined();
     expect(EntitlementService.unlockProduct(PRO_PRODUCT_ID).success).toBe(false);
     expect(EntitlementService.redeemCode('GP-PRO-TEST-2026').success).toBe(false);
   });
 
-  test('switching Free to Pro to Free does not modify any saved data', () => {
+  test('entitlement reads never modify saved data', () => {
     StorageService.set('library', [{ name: 'Project Zomboid', time_played: 2400 }]);
     StorageService.set('customRecommendationWeights', { unplayedBonus: 42 });
     StorageService.set('saveBackupHistoryV1', [{ backupPath: 'local-backup' }]);
     StorageService.set('storeEntitlements', { [SUPPORTER_PRODUCT_ID]: { source: 'store-code' } });
     const before = Array.from(StorageService._store.entries());
-    ['free', 'pro', 'free'].forEach((edition) => {
-      global.__APP_EDITION__ = edition;
-      EntitlementService.getCatalog();
-      Object.keys(PRO_FEATURES).forEach((feature) => EntitlementService.hasFeature(feature));
-      expect(EntitlementService.isSupporter()).toBe(true);
-      expect(Array.from(StorageService._store.entries())).toEqual(before);
-    });
+    EntitlementService.getCatalog();
+    Object.keys(PRO_FEATURES).forEach((feature) => EntitlementService.hasFeature(feature));
+    expect(EntitlementService.isSupporter()).toBe(true);
+    expect(Array.from(StorageService._store.entries())).toEqual(before);
   });
 });
 
-describe('supporter recognition', () => {
-  test('founder recognition remains independent of the edition', () => {
+describe('supporter recognition (dormant plumbing)', () => {
+  test('founder codes still record recognition without affecting edition access', () => {
     const first = EntitlementService.redeemCode('GP-PRO-FOUNDERS-2026');
     expect(first.success).toBe(true);
     expect(EntitlementService.isSupporter()).toBe(true);
-    expect(EntitlementService.isPro()).toBe(false);
+    expect(EntitlementService.isPro()).toBe(true);
     expect(EntitlementService.redeemCode('GP-PRO-FOUNDERS-2026').success).toBe(false);
   });
 
-  test('recognizes legacy founders without granting Pro', () => {
+  test('recognizes legacy founders', () => {
     StorageService.set('userFounders', [{ code: 'legacy-recognition' }]);
     expect(EntitlementService.isSupporter()).toBe(true);
-    expect(EntitlementService.isPro()).toBe(false);
   });
 
   test('emits a recognition update without including codes', () => {

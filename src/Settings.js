@@ -8,7 +8,6 @@ import {
   Trash2,
   Save,
   AlertCircle,
-  Heart,
   Keyboard,
   Eye,
   SlidersHorizontal,
@@ -16,7 +15,6 @@ import {
   Info,
   MessageSquarePlus,
   Compass,
-  Crown,
 } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import { useToast } from './components/Toast';
@@ -25,7 +23,6 @@ import NavBar from './NavBar';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import CollapsibleSection from './components/CollapsibleSection';
 import { isElectronRuntime, waitForElectronAPI } from './services/ElectronBridge';
-import EntitlementService from './services/EntitlementService';
 import StorageService from './services/StorageService';
 import HowLongToBeatService from './services/HowLongToBeatService';
 import PCGamingWikiService from './services/PCGamingWikiService';
@@ -1430,71 +1427,6 @@ function Settings({
                 defaultOpen={false}
               >
                 <BackupRestoreDashboard />
-              </CollapsibleSection>
-
-              {/* GamePilot Pro Section */}
-              <CollapsibleSection
-                title="GamePilot Editions"
-                subtitle="Free to keep using. Pro adds deeper tools."
-                badge={EntitlementService.isPro() ? 'Pro installed' : 'Free installed'}
-                icon={<Crown size={18} />}
-                className="settings-folder"
-              >
-                <div className="settings-section settings-edition-summary">
-                  <h2>{EntitlementService.getEditionName()}</h2>
-                  <p>
-                    Eras, game-earned titles, rewards and manual backups are included in both editions. Pro adds
-                    cinematic exports, Library Reclaimer and the advanced recommendation tuner.
-                  </p>
-                  <p>Separate installers, shared local data, no license-key activation.</p>
-                  <button type="button" className="data-button export" onClick={() => navigate('/editions')}>
-                    <Crown size={16} />
-                    {EntitlementService.isPro() ? 'Compare editions' : 'Explore Pro'}
-                  </button>
-                </div>
-              </CollapsibleSection>
-
-              {/* Support Section */}
-              <CollapsibleSection
-                title="Support GamePilot"
-                subtitle="Optional donations help keep development going."
-                badge="Donate"
-                icon={<Heart size={18} />}
-                className="settings-folder"
-              >
-                <div className="settings-section">
-                  <div className="section-header">
-                    <Heart size={20} />
-                    <h2>Support GamePilot</h2>
-                  </div>
-                  <div className="patreon-section">
-                    <p>
-                      GamePilot is free and local-first. If you want to support development, visit the Founders Lounge
-                      for patron options and founder perks.
-                    </p>
-                    <button
-                      onClick={() => navigate('/donate')}
-                      className="patreon-button"
-                      style={{
-                        backgroundColor: '#ff424d',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        padding: '12px 24px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        fontSize: '16px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginTop: '12px',
-                      }}
-                    >
-                      <Heart size={16} />
-                      Open Founders Lounge
-                    </button>
-                  </div>
-                </div>
               </CollapsibleSection>
 
               {/* About & Feedback Section */}
