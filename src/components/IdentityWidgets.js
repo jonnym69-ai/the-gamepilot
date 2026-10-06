@@ -203,9 +203,12 @@ export function CurrentEraCard({ compact = false }) {
   if (compact) {
     return (
       <div className="home-story-era">
-        <span>Current era · Day {era.dayCount || 1}</span>
+        <span>Current era · {era.estimated ? 'Estimated' : `Day ${era.dayCount || 1}`}</span>
         <h3>{era.name}</h3>
-        <p>{era.flavor}</p>
+        <p>
+          {era.flavor}
+          {era.estimated ? ' — estimated from your imported play history' : ''}
+        </p>
         {signatureTitle && (
           <p>
             Signature title: <strong>{signatureTitle.name}</strong>
@@ -226,7 +229,9 @@ export function CurrentEraCard({ compact = false }) {
         <div className="identity-title-row">
           <h3 className="result-title">Current Era</h3>
           <span className="identity-confidence-badge is-growing">
-            Day {era.dayCount || 1} · last {era.snapshot.windowDays} days
+            {era.estimated
+              ? 'Estimated · imported play history'
+              : `Day ${era.dayCount || 1} · last ${era.snapshot.windowDays} days`}
           </span>
         </div>
         <div className="identity-body">
@@ -243,14 +248,18 @@ export function CurrentEraCard({ compact = false }) {
             </p>
           )}
           <div className="identity-metrics">
-            <div className="identity-metric">
-              <span className="identity-metric-label">Era hours</span>
-              <span className="identity-metric-value">{hours}h</span>
-            </div>
-            <div className="identity-metric">
-              <span className="identity-metric-label">Sessions</span>
-              <span className="identity-metric-value">{era.snapshot.rawSessionCount || 0}</span>
-            </div>
+            {!era.estimated && (
+              <>
+                <div className="identity-metric">
+                  <span className="identity-metric-label">Era hours</span>
+                  <span className="identity-metric-value">{hours}h</span>
+                </div>
+                <div className="identity-metric">
+                  <span className="identity-metric-label">Sessions</span>
+                  <span className="identity-metric-value">{era.snapshot.rawSessionCount || 0}</span>
+                </div>
+              </>
+            )}
             {era.snapshot.avgSessionLength > 0 && (
               <div className="identity-metric">
                 <span className="identity-metric-label">Avg session</span>
@@ -266,6 +275,11 @@ export function CurrentEraCard({ compact = false }) {
                 </span>
               ))}
             </div>
+          )}
+          {era.estimated && (
+            <p className="identity-provisional-note" style={{ marginTop: 8 }}>
+              Estimated from your imported launcher playtime — tracked sessions will replace this.
+            </p>
           )}
           {driftNotes.length > 0 && (
             <p className="identity-provisional-note" style={{ marginTop: 8 }}>

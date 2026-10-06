@@ -91,6 +91,7 @@ export class PlayNextService {
         const era = CurrentEraService.getCurrentEra();
         if (
           era?.gameDominated &&
+          !era?.estimated &&
           era?.topGame &&
           normalizeKey(era.topGame) === normalizeKey(resumeGame.name || resumeGame.title)
         ) {

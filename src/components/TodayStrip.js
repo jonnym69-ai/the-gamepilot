@@ -128,7 +128,7 @@ export default function TodayStrip() {
         <Link to="/?view=identity" className="today-strip-item">
           <span>
             <strong>{era.name}</strong>
-            Day {era.dayCount}
+            {era.estimated ? 'Estimated from library' : `Day ${era.dayCount}`}
           </span>
         </Link>
       )}

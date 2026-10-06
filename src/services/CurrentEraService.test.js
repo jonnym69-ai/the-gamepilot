@@ -86,3 +86,100 @@ describe('CurrentEraService.getEraArchive', () => {
     expect(CurrentEraService.getEraArchive()).toEqual([]);
   });
 });
+
+describe('CurrentEraService.getCurrentEra imported-playtime estimate', () => {
+  const importedLibrary = (games) => StorageService.set('library', games);
+
+  test('estimates an era from imported playtime when no sessions are tracked', () => {
+    importedLibrary([
+      {
+        name: 'Project Zomboid',
+        importedPlaytimeMinutes: 4800,
+        last_played: Date.now() - 2 * DAY_MS,
+        genres: ['Survival'],
+      },
+    ]);
+
+    const era = CurrentEraService.getCurrentEra();
+
+    expect(era.estimated).toBe(true);
+    expect(era.name).toBe('The Project Zomboid Era');
+    expect(era.dayCount).toBeNull();
+    expect(era.snapshot.estimated).toBe(true);
+    expect(era.snapshot.rawSessionCount).toBe(0);
+  });
+
+  test('does not write estimated eras into era history', () => {
+    importedLibrary([
+      { name: 'Project Zomboid', importedPlaytimeMinutes: 4800, last_played: Date.now(), genres: ['Survival'] },
+    ]);
+
+    CurrentEraService.getCurrentEra();
+
+    expect(StorageService.get('currentEraHistory', [])).toEqual([]);
+    expect(CurrentEraService.getEraArchive()).toEqual([]);
+  });
+
+  test('real sessions take precedence over the imported estimate', () => {
+    importedLibrary([
+      { name: 'Project Zomboid', importedPlaytimeMinutes: 4800, last_played: Date.now(), genres: ['Survival'] },
+    ]);
+    PlaytimeAutoLogger.getSessionHistory.mockReturnValue([
+      {
+        sessionId: 's1',
+        gameName: 'Hollow Knight',
+        startTime: new Date(Date.now() - DAY_MS).toISOString(),
+        playtimeMinutes: 180,
+      },
+    ]);
+    StorageService.set('library', [
+      { name: 'Project Zomboid', importedPlaytimeMinutes: 4800, last_played: Date.now(), genres: ['Survival'] },
+      {
+        name: 'Hollow Knight',
+        importedPlaytimeMinutes: 2000,
+        last_played: Date.now() - DAY_MS,
+        genres: ['Metroidvania'],
+      },
+    ]);
+
+    const era = CurrentEraService.getCurrentEra();
+
+    expect(era.estimated).toBe(false);
+    expect(era.snapshot.rawSessionCount).toBe(1);
+  });
+
+  test('falls back to a quiet season when imported playtime is all stale', () => {
+    importedLibrary([
+      {
+        name: 'Project Zomboid',
+        importedPlaytimeMinutes: 4800,
+        last_played: Date.now() - 90 * DAY_MS,
+        genres: ['Survival'],
+      },
+    ]);
+
+    const era = CurrentEraService.getCurrentEra();
+
+    expect(era.estimated).toBe(false);
+    expect(era.snapshot.totalMinutes).toBe(0);
+  });
+
+  test('ignores imported playtime with no last-played date', () => {
+    importedLibrary([{ name: 'Project Zomboid', importedPlaytimeMinutes: 4800, genres: ['Survival'] }]);
+
+    const era = CurrentEraService.getCurrentEra();
+
+    expect(era.estimated).toBe(false);
+  });
+
+  test('labels the estimated era tagline honestly without fake windowed hours', () => {
+    importedLibrary([
+      { name: 'Project Zomboid', importedPlaytimeMinutes: 4800, last_played: Date.now(), genres: ['Survival'] },
+    ]);
+
+    const tagline = CurrentEraService.getEraTagline();
+
+    expect(tagline).toContain('estimated from imported playtime');
+    expect(tagline).not.toMatch(/h in the last/);
+  });
+});

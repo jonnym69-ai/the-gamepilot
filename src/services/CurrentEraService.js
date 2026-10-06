@@ -1,9 +1,14 @@
 import StorageService from './StorageService';
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
+import { isNonGameTitle } from './gameClassification';
 
 const ERA_WINDOW_DAYS = 30;
 const PREVIOUS_WINDOW_DAYS = 30;
 const HALF_LIFE_DAYS = 14;
+// For imported launcher playtime, "current era" is estimated from how recently
+// each game was last played — a game touched today outweighs one untouched for
+// a month, with a 10-day recency half-life on top of lifetime minutes.
+const ESTIMATED_ERA_HALF_LIFE_DAYS = 10;
 const ERA_HISTORY_KEY = 'currentEraHistory';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -159,6 +164,87 @@ const buildSnapshot = (sessions, library, now, windowDays) => {
   };
 };
 
+const getImportedMinutes = (game) => {
+  const candidates = [game?.importedPlaytimeMinutes, game?.playtimeForever, game?.totalPlaytime];
+  return candidates.reduce((max, raw) => {
+    const n = Number(raw);
+    return Number.isFinite(n) ? Math.max(max, n) : max;
+  }, 0);
+};
+
+const getLastPlayedMs = (game) => {
+  const raw = game?.last_played || game?.lastPlayed || game?.lastPlayedMs;
+  if (!raw) return null;
+  const t = typeof raw === 'number' ? raw : new Date(raw).getTime();
+  return Number.isFinite(t) && t > 0 ? t : null;
+};
+
+/**
+ * Snapshot built from imported launcher playtime (Steam/GOG totals + last
+ * played dates) instead of tracked sessions. Used only when the real session
+ * window is empty so a fresh install can still show a meaningful era. Values
+ * are recency-weighted estimates, never written to era history — tracked
+ * sessions replace the estimate as they accumulate.
+ */
+const buildImportedEstimate = (library, now, windowDays) => {
+  const cutoff = now - windowDays * DAY_MS;
+  const playtimeByGame = {};
+  const displayByKey = {};
+  const genrePlaytime = {};
+  let totalMinutes = 0;
+
+  (Array.isArray(library) ? library : []).forEach((game) => {
+    if (!game || isNonGameTitle(game.name || game.title)) return;
+    const lastPlayedMs = getLastPlayedMs(game);
+    if (!lastPlayedMs || lastPlayedMs < cutoff || lastPlayedMs > now) return;
+    const minutes = getImportedMinutes(game);
+    if (minutes <= 0) return;
+    const key = normalizeKey(game.name || game.title);
+    if (!key) return;
+    const daysAgo = (now - lastPlayedMs) / DAY_MS;
+    const weighted = minutes * Math.exp((-0.6931471805599453 * daysAgo) / ESTIMATED_ERA_HALF_LIFE_DAYS);
+    if (weighted <= 0) return;
+    playtimeByGame[key] = (playtimeByGame[key] || 0) + weighted;
+    displayByKey[key] = game.name || game.title;
+    totalMinutes += weighted;
+    getGameGenres(game).forEach((genre) => {
+      genrePlaytime[genre] = (genrePlaytime[genre] || 0) + weighted;
+    });
+  });
+
+  if (totalMinutes <= 0) return null;
+
+  const topGames = Object.entries(playtimeByGame)
+    .map(([key, minutes]) => ({ name: displayByKey[key] || key, minutes }))
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, 5);
+
+  const sortedGenres = Object.entries(genrePlaytime).sort((a, b) => b[1] - a[1]);
+  const dominantGenre = sortedGenres[0]?.[0] || null;
+  const totalGenreMinutes = sortedGenres.reduce((acc, [, v]) => acc + v, 0);
+  const dominantGenreShare =
+    totalGenreMinutes > 0 && dominantGenre ? genrePlaytime[dominantGenre] / totalGenreMinutes : 0;
+
+  const dominantGame = topGames[0] || null;
+  const dominantGameShare = totalMinutes > 0 && dominantGame ? dominantGame.minutes / totalMinutes : 0;
+
+  return {
+    windowDays,
+    estimated: true,
+    totalMinutes: Math.round(totalMinutes),
+    sessionCount: 0,
+    rawSessionCount: 0,
+    avgSessionLength: 0,
+    sessionBucket: null,
+    topGames,
+    dominantGenre,
+    dominantGenreShare,
+    dominantGame,
+    dominantGameShare,
+    genreMix: sortedGenres.slice(0, 4).map(([genre, minutes]) => ({ genre, minutes: Math.round(minutes) })),
+  };
+};
+
 const nameEra = (snapshot) => {
   if (!snapshot || snapshot.totalMinutes <= 0) {
     return { name: 'The Quiet Season', flavor: 'the games are waiting' };
@@ -228,16 +314,23 @@ export class CurrentEraService {
 
     const current = buildSnapshot(sessions, library, now, ERA_WINDOW_DAYS);
     const previous = buildSnapshot(sessions, library, now - ERA_WINDOW_DAYS * DAY_MS, PREVIOUS_WINDOW_DAYS);
+    const estimated = current.totalMinutes <= 0 ? buildImportedEstimate(library, now, ERA_WINDOW_DAYS) : null;
+    const effectiveCurrent = estimated || current;
 
-    const theme = nameEra(current);
-    const drift = detectDrift(current, previous);
+    const theme = nameEra(effectiveCurrent);
+    const drift = estimated
+      ? {
+          hasDrift: false,
+          notes: ['Estimated from imported launcher playtime — tracked sessions will sharpen this.'],
+        }
+      : detectDrift(effectiveCurrent, previous);
 
     const history = StorageService.get(ERA_HISTORY_KEY, []);
-    const signature = `${theme.name}|${current.dominantGenre || 'none'}|${current.topGames[0]?.name || 'none'}`;
+    const signature = `${theme.name}|${effectiveCurrent.dominantGenre || 'none'}|${effectiveCurrent.topGames[0]?.name || 'none'}`;
     const lastEntry = Array.isArray(history) ? history[history.length - 1] : null;
 
     let eraHistory = Array.isArray(history) ? history : [];
-    if (current.totalMinutes > 0 && (!lastEntry || lastEntry.signature !== signature)) {
+    if (!estimated && effectiveCurrent.totalMinutes > 0 && (!lastEntry || lastEntry.signature !== signature)) {
       eraHistory = [
         ...eraHistory.slice(-9),
         {
@@ -262,10 +355,11 @@ export class CurrentEraService {
       name: theme.name,
       flavor: theme.flavor,
       gameDominated: theme.gameDominated === true,
-      topGame: current.topGames[0]?.name || null,
-      dominantGameShare: current.dominantGameShare,
-      dayCount: Math.max(1, Math.floor((now - eraSince) / DAY_MS) + 1),
-      snapshot: current,
+      estimated: Boolean(estimated),
+      topGame: effectiveCurrent.topGames[0]?.name || null,
+      dominantGameShare: effectiveCurrent.dominantGameShare,
+      dayCount: estimated ? null : Math.max(1, Math.floor((now - eraSince) / DAY_MS) + 1),
+      snapshot: effectiveCurrent,
       previousSnapshot: previous,
       drift,
       history: eraHistory,
@@ -308,11 +402,14 @@ export class CurrentEraService {
     try {
       const era = CurrentEraService.getCurrentEra();
       if (!era || !era.snapshot || era.snapshot.totalMinutes <= 0) return null;
-      const hours = (era.snapshot.totalMinutes / 60).toFixed(1);
       const topGame = era.snapshot.topGames[0]?.name;
       const parts = [`${era.name}`];
       if (topGame) parts.push(`lately led by ${topGame}`);
-      parts.push(`${hours}h in the last ${era.snapshot.windowDays} days`);
+      if (era.estimated) {
+        parts.push('estimated from imported playtime');
+      } else {
+        parts.push(`${(era.snapshot.totalMinutes / 60).toFixed(1)}h in the last ${era.snapshot.windowDays} days`);
+      }
       return parts.join(' · ');
     } catch {
       return null;
