@@ -4,6 +4,7 @@ import { normalizeLibraryData, getMostRecentlyPlayedGame } from '../services/Lib
 import { PlaytimeEnrichmentService } from '../services/PlaytimeEnrichmentService';
 import { SteamGenreEnrichmentService } from '../services/SteamGenreEnrichmentService';
 import { GameCurationService } from '../services/GameCurationService';
+import IgdbArtworkService from '../services/IgdbArtworkService';
 import WishlistService from '../services/WishlistService';
 
 /**
@@ -49,23 +50,38 @@ export default function useLibraryLoading({ setLibrary, setLastPlayedGame }) {
           setLastPlayedGame(mostRecentlyPlayedGame);
         }
 
+        let workingLibrary = normalizedLibrary;
+
         // Background Steam genre enrichment for games with generic Story-driven fallback
         try {
-          const genreEnriched = await SteamGenreEnrichmentService.runBackgroundEnrichment(normalizedLibrary);
-          if (genreEnriched && JSON.stringify(genreEnriched) !== JSON.stringify(normalizedLibrary)) {
-            const reNormalized = normalizeLibraryData(genreEnriched);
-            setLibrary(reNormalized);
-            StorageService.set('library', reNormalized);
+          const genreEnriched = await SteamGenreEnrichmentService.runBackgroundEnrichment(workingLibrary);
+          if (genreEnriched && JSON.stringify(genreEnriched) !== JSON.stringify(workingLibrary)) {
+            workingLibrary = normalizeLibraryData(genreEnriched);
+            setLibrary(workingLibrary);
+            StorageService.set('library', workingLibrary);
           }
         } catch (genreErr) {
           console.warn('Steam genre enrichment skipped:', genreErr.message);
         }
 
-        if (JSON.stringify(parsedLibrary) !== JSON.stringify(normalizedLibrary)) {
-          StorageService.set('library', normalizedLibrary);
+        // Opt-in IGDB cover lookup for games with no artwork source (mainly
+        // non-Steam titles). Results cache on-device; misses retry weekly.
+        try {
+          const coverEnriched = await IgdbArtworkService.enrichLibraryCovers(workingLibrary);
+          if (coverEnriched) {
+            workingLibrary = coverEnriched;
+            setLibrary(workingLibrary);
+            StorageService.set('library', workingLibrary);
+          }
+        } catch (coverErr) {
+          console.warn('IGDB cover enrichment skipped:', coverErr.message);
         }
 
-        WishlistService.removeOwnedItems(normalizedLibrary);
+        if (JSON.stringify(parsedLibrary) !== JSON.stringify(workingLibrary)) {
+          StorageService.set('library', workingLibrary);
+        }
+
+        WishlistService.removeOwnedItems(workingLibrary);
       } catch (error) {
         console.error('Error loading saved library:', error);
       } finally {

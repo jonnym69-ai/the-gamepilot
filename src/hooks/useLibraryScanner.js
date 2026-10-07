@@ -3,6 +3,7 @@ import { useToast } from '../components/Toast';
 import { LibraryScanCoordinatorService } from '../services/LibraryScanCoordinatorService';
 import { PlaytimeEnrichmentService } from '../services/PlaytimeEnrichmentService';
 import { GameCurationService } from '../services/GameCurationService';
+import IgdbArtworkService from '../services/IgdbArtworkService';
 import StorageService from '../services/StorageService';
 import { assignMoodToGame as importedAssignMoodToGame } from '../services/MoodAssignmentService';
 
@@ -74,6 +75,19 @@ export default function useLibraryScanner({ library, setLibrary, saveLibrary, sh
       const curatedMerged = GameCurationService.enrichLibrary(enrichedMerged);
       setLibrary(curatedMerged);
       saveLibrary(curatedMerged);
+
+      // Fill covers for non-Steam games in the background (opt-in IGDB lookup).
+      // Only re-saves if covers actually changed; never blocks the scan result.
+      if (IgdbArtworkService.isEnabled()) {
+        IgdbArtworkService.enrichLibraryCovers(curatedMerged)
+          .then((updated) => {
+            if (updated) {
+              setLibrary(updated);
+              saveLibrary(updated);
+            }
+          })
+          .catch(() => {});
+      }
 
       showFirstStory(curatedMerged);
 

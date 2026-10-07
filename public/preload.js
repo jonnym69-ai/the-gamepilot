@@ -27,6 +27,7 @@ const electronAPI = {
   giveawayFeed: () => ipcRenderer.invoke('giveaway-feed'),
   steamWishlist: (steamId) => ipcRenderer.invoke('steam-wishlist', steamId),
   steamFriends: (steamId) => ipcRenderer.invoke('steam-friends', steamId),
+  igdbLookup: (name) => ipcRenderer.invoke('igdb-lookup', name),
   steamMoreLike: (appid) => ipcRenderer.invoke('steam-morelike', appid),
   diskFolderSize: (payload) => ipcRenderer.invoke('disk-folder-size', payload),
   saveLocationStatus: (payload) => ipcRenderer.invoke('save-location-status', payload),

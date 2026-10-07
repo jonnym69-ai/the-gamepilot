@@ -218,3 +218,10 @@ The typecheck command is optional for JS-only changes.
 - The function validates a 17-digit Steam64 ID, caps at 200 friends, batches `GetPlayerSummaries` at 100 IDs, and returns trimmed fields (name, avatar, `personastate`, current game, appid). 401/403 from `GetFriendList` maps to a "friends list is private" message — missing presence must never be presented as "offline".
 - Presence is read-only public Steam data, cached 60s in the main process and service layer. A friend's current game offers "Play your copy" only when its appid matches a Steam game in the local library via `getSteamAppId`.
 - Regression checks: `npx jest src/services/SteamFriendsService.test.js src/components/FriendsPlayingCard.test.js --ci`. Live presence needs the Netlify function deployed with `STEAM_API_KEY` set — Jest mocks the bridge and cannot verify the relay end-to-end.
+
+## IGDB artwork enrichment
+
+- `IgdbArtworkService` fills `coverImage` on games that resolve to no artwork (non-Steam titles), using official IGDB covers. Opt-in via Settings ("IGDB Cover Art Lookup", off by default); it runs on library load and after scans, never blocks the scan result, and never overwrites `coverArtOverride`.
+- Credentials stay server-side: renderer → `igdb-lookup` IPC → `electron/igdb.js` → `https://gamepilot.netlify.app/api/getIgdbGame` → `netlify/functions/getIgdbGame.js` → `api.igdb.com` (Twitch `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` env vars; the function fetches and caches an OAuth token itself).
+- Only the game name is sent. Lookups are cached on-device (`igdbArtworkCacheV1`): hits for 30 days, misses for 7 days; calls are throttled to ~2.5/s. The `enrichLibraryCovers` result is a new array (or null) — persist via `saveLibrary`/`StorageService`.
+- Regression checks: `npx jest src/services/IgdbArtworkService.test.js --ci`. Env-var changes require a `netlify deploy --prod` before functions see them.

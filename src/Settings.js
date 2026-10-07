@@ -33,6 +33,7 @@ import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
 import SteamFriendsService from './services/SteamFriendsService';
+import IgdbArtworkService from './services/IgdbArtworkService';
 import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
 import { LocalShareService } from './services/LocalShareService';
@@ -74,6 +75,7 @@ function Settings({
   const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
   const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
+  const [igdbArtworkEnabled, setIgdbArtworkEnabled] = useState(() => IgdbArtworkService.isEnabled());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
   const [startupLaunchSupported, setStartupLaunchSupported] = useState(false);
@@ -1231,6 +1233,33 @@ function Settings({
                           />
                         </div>
                       )}
+                    </div>
+
+                    <div className="setting-item">
+                      <label>IGDB Cover Art Lookup</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={igdbArtworkEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setIgdbArtworkEnabled(next);
+                            IgdbArtworkService.setEnabled(next);
+                            success(
+                              next
+                                ? 'IGDB lookup enabled. Covers are fetched after your next library scan.'
+                                : 'IGDB lookup disabled.'
+                            );
+                          }}
+                          id="igdb-artwork-enabled"
+                        />
+                        <label htmlFor="igdb-artwork-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Off by default. After a library scan, games with no artwork (usually non-Steam titles) are
+                        looked up on IGDB by name and given official cover art. Only the game's name is sent — no
+                        playtime, account, or library data. Results are cached on-device for 30 days.
+                      </p>
                     </div>
 
                     <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>System</h4>
