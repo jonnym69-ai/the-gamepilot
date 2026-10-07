@@ -169,74 +169,92 @@ const fetchSteamWishlistViaWindow = async (steamId) => {
 };
 
 const fetchSteamWishlistDirect = async (steamId) => {
-  const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
-  if (!cleanId) return [];
-  const baseUrl = `https://store.steampowered.com/wishlist/profiles/${cleanId}/wishlistdata/`;
-  const res = await httpsRequest(`${baseUrl}?p=0`, null, {
-    'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 GamePilot/1.4',
-    Accept: 'application/json, text/html',
-    Referer: `https://store.steampowered.com/wishlist/profiles/${cleanId}/`,
-  });
-  if (res.status !== 200) throw new Error(`steam-wishlist-http-${res.status}`);
-  const body = res.body || '';
-  if (body.trim().startsWith('<')) {
-    const fromHtml = parseWishlistFromHtml(body);
-    if (fromHtml) return fromHtml;
-    const isPrivate = /private|sign in|login|agecheck|denied|not available/i.test(body);
-    throw new Error(
-      isPrivate
-        ? 'Steam returned a web page instead of the wishlist. Make sure your Steam profile and wishlist are public.'
-        : 'Steam returned an unexpected HTML page. The wishlist may be private or temporarily unavailable.'
-    );
+  const res = await httpsRequest(
+    `https://api.steampowered.com/IWishlistService/GetWishlist/v1/?steamid=${steamId}`,
+    null,
+    { Accept: 'application/json' }
+  );
+  const header = res.headers?.['x-eresult'];
+  const result = Number(Array.isArray(header) ? header[0] : header);
+  if (res.status === 401 || res.status === 403 || result === 15) {
+    throw new Error('Steam denied access to this wishlist. Check that it is public in Steam privacy settings.');
   }
-  const raw = JSON.parse(body);
-  if (!raw || typeof raw !== 'object') return [];
-  return Object.entries(raw)
-    .map(([appid, item]) => ({
-      appid: String(appid),
-      name: item?.name || '',
-    }))
-    .filter((item) => item.name);
+  if (res.status === 429 || result === 84) {
+    throw new Error('Steam is rate limiting wishlist requests. Please try again later.');
+  }
+  if (res.status !== 200) throw new Error(`Steam wishlist service is unavailable (HTTP ${res.status}).`);
+  if (header !== undefined && result !== 1) {
+    throw new Error('Steam could not return this wishlist. Please try again later.');
+  }
+  let response;
+  try {
+    response = JSON.parse(res.body)?.response;
+  } catch {
+    throw new Error('Steam returned an unexpected wishlist response. Please try again later.');
+  }
+  if (!response || typeof response !== 'object' || Array.isArray(response)) {
+    throw new Error('Steam returned an invalid wishlist response. Please try again later.');
+  }
+  if (response.items === undefined && result === 1) return [];
+  if (!Array.isArray(response.items) || response.items.some((item) => !validAppId(item?.appid))) {
+    throw new Error('Steam returned invalid wishlist items. Please try again later.');
+  }
+  return [...new Set(response.items.map((item) => String(item.appid)))].map((appid) => ({ appid }));
 };
 
 const fetchSteamWishlist = async (steamId) => {
   try {
-    const items = await fetchSteamWishlistViaWindow(steamId);
-    console.log('[SteamWishlist] BrowserWindow fetch returned', items.length, 'item(s)');
-    return items;
-  } catch (windowErr) {
-    console.warn('[SteamWishlist] BrowserWindow fetch failed:', windowErr.message);
-    console.log('[SteamWishlist] Falling back to direct fetch');
-    return fetchSteamWishlistDirect(steamId);
+    return await fetchSteamWishlistDirect(steamId);
+  } catch (error) {
+    if (!error.message.includes('(HTTP 404)')) throw error;
+    console.warn('[SteamWishlist] Wishlist API unavailable; trying the legacy page.');
+    return fetchSteamWishlistViaWindow(steamId);
   }
 };
 
+const wishlistDetailsCache = new Map();
 const enrichWishlistItems = async (items) => {
   const enriched = [];
-  const batchSize = 5;
+  const batchSize = 3;
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
-    const appids = batch.map((item) => item.appid).join(',');
-    try {
-      const details = await steamHttpsGet('store.steampowered.com', `/api/appdetails?appids=${appids}`);
-      for (const item of batch) {
-        const info = details?.[item.appid]?.data;
-        enriched.push({
-          appid: item.appid,
-          name: item.name,
-          genres: Array.isArray(info?.genres) ? info.genres.map((g) => g.description) : [],
-          image: info?.header_image || null,
-          isFree: info?.is_free || false,
-        });
-      }
-    } catch (err) {
-      console.warn('[SteamWishlist] Failed to enrich wishlist batch:', err.message);
-      for (const item of batch) {
-        enriched.push({ appid: item.appid, name: item.name, genres: [], image: null, isFree: false });
-      }
-    }
-    if (i + batchSize < items.length) await sleep(500);
+    let throttled = false;
+    let requested = false;
+    const results = await Promise.all(
+      batch.map(async (item) => {
+        const cached = wishlistDetailsCache.get(item.appid);
+        if (cached && Date.now() < cached.expiresAt) return cached.data;
+        try {
+          requested = true;
+          const details = await steamHttpsGet(
+            'store.steampowered.com',
+            `/api/appdetails?appids=${item.appid}&cc=us&l=english`
+          );
+          const info = Object.values(details || {}).find(
+            (entry) => entry?.success === true && String(entry.data?.steam_appid) === item.appid
+          )?.data;
+          const name = typeof info?.name === 'string' ? info.name.trim() : item.name;
+          if (!name) return null;
+          const data = {
+            appid: item.appid,
+            name,
+            genres: Array.isArray(info?.genres) ? info.genres.map((g) => g.description).filter(Boolean) : [],
+            image: steamImageUrl(info?.header_image) || null,
+            isFree: info?.is_free === true,
+          };
+          if (wishlistDetailsCache.size >= 2000) wishlistDetailsCache.delete(wishlistDetailsCache.keys().next().value);
+          wishlistDetailsCache.set(item.appid, { data, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+          return data;
+        } catch (err) {
+          if (/steam-http-(429|403)/.test(err.message)) throttled = true;
+          console.warn('[SteamWishlist] Failed to fetch game details:', err.message);
+          return null;
+        }
+      })
+    );
+    enriched.push(...results.filter(Boolean));
+    if (throttled) break;
+    if (requested && i + batchSize < items.length) await sleep(1500);
   }
   return enriched;
 };
@@ -705,18 +723,23 @@ function registerIpcHandlers(ipcMain) {
   // ---------------------------------------------------------------------------
   ipcMain.handle('steam-wishlist', async (_event, steamId) => {
     try {
-      const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
-      if (!cleanId) {
+      const cleanId = typeof steamId === 'string' ? steamId.trim() : '';
+      if (!/^\d{17}$/.test(cleanId)) {
         return { success: false, error: 'A valid Steam64 ID is required.', items: [] };
       }
-      console.log('[SteamWishlist] Fetching wishlist for', cleanId);
       const items = await fetchSteamWishlist(cleanId);
-      if (items.length === 0) {
-        return { success: true, count: 0, items: [], error: null };
-      }
       const enriched = await enrichWishlistItems(items);
-      console.log(`[SteamWishlist] Enriched ${enriched.length} item(s)`);
-      return { success: true, count: enriched.length, items: enriched, error: null };
+      if (items.length && !enriched.length) {
+        throw new Error('Steam returned your wishlist, but game details are unavailable. Please try again later.');
+      }
+      return {
+        success: true,
+        count: enriched.length,
+        totalFetched: items.length,
+        skippedCount: items.length - enriched.length,
+        items: enriched,
+        error: null,
+      };
     } catch (err) {
       console.error('[SteamWishlist] Error:', err.message);
       return { success: false, error: err.message || 'Could not fetch Steam wishlist.', items: [] };

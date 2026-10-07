@@ -1,5 +1,6 @@
 import WishlistService from './WishlistService';
 import StorageService from './StorageService';
+import SteamWishlistService from './SteamWishlistService';
 
 jest.mock('./StorageService', () => {
   const store = new Map();
@@ -54,5 +55,56 @@ describe('WishlistService alert summary', () => {
     const result = WishlistService.removeOwnedItems([{ name: 'Portal 2', platform: 'steam' }]);
     expect(result.removed).toBe(1);
     expect(WishlistService.getWishlist()).toHaveLength(1);
+  });
+});
+
+describe('Steam wishlist import', () => {
+  let originalAPI;
+
+  beforeEach(() => {
+    originalAPI = window.electronAPI;
+    window.electronAPI = { steamWishlist: jest.fn() };
+    SteamWishlistService.setEnabled(true);
+    SteamWishlistService.setSteamId('76561198042965266');
+  });
+
+  afterEach(() => {
+    window.electronAPI = originalAPI;
+  });
+
+  it('preserves local games and reports partial imports without marking them fresh for 24 hours', async () => {
+    WishlistService.addGame({ name: 'Celeste' });
+    WishlistService.setThreshold('Celeste', 8);
+    window.electronAPI.steamWishlist.mockResolvedValue({
+      success: true,
+      totalFetched: 3,
+      skippedCount: 1,
+      items: [
+        { name: 'Celeste', appid: '504230' },
+        { name: 'Hades', appid: '1145360' },
+      ],
+    });
+    const result = await SteamWishlistService.sync();
+    expect(result).toMatchObject({ success: true, count: 1, totalFetched: 3, skippedCount: 1 });
+    expect(SteamWishlistService.getLastResult()).toEqual(result);
+    expect(SteamWishlistService.getLastSyncAt()).toBeNull();
+    expect(WishlistService.getWishlist()).toHaveLength(2);
+    expect(WishlistService.getWishlist().find((item) => item.name === 'Celeste').threshold).toBe(8);
+  });
+
+  it('respects the stale guard after a complete import', async () => {
+    window.electronAPI.steamWishlist.mockResolvedValue({ success: true, items: [{ name: 'Hades', appid: '1145360' }] });
+    await SteamWishlistService.sync();
+    await SteamWishlistService.refreshIfStale();
+    expect(window.electronAPI.steamWishlist).toHaveBeenCalledTimes(1);
+    expect(SteamWishlistService.getLastSyncAt()).toEqual(expect.any(Number));
+  });
+
+  it('keeps existing wishlist entries on fetch failure', async () => {
+    WishlistService.addGame({ name: 'Celeste' });
+    window.electronAPI.steamWishlist.mockResolvedValue({ success: false, error: 'Steam is unavailable.', items: [] });
+    expect(await SteamWishlistService.sync()).toMatchObject({ success: false, error: 'Steam is unavailable.' });
+    expect(WishlistService.getWishlist()).toHaveLength(1);
+    expect(SteamWishlistService.getLastSyncAt()).toBeNull();
   });
 });

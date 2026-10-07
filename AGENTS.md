@@ -226,6 +226,13 @@ The typecheck command is optional for JS-only changes.
 - Only the game name is sent. Lookups are cached on-device (`igdbArtworkCacheV1`): hits for 30 days, misses for 7 days; calls are throttled to ~2.5/s. The `enrichLibraryCovers` result is a new array (or null) — persist via `saveLibrary`/`StorageService`.
 - Regression checks: `npx jest src/services/IgdbArtworkService.test.js --ci`. Env-var changes require a `netlify deploy --prod` before functions see them.
 
+## Steam wishlist import
+
+- `steam-wishlist` IPC uses Steam's anonymous `IWishlistService/GetWishlist/v1` endpoint directly through `electron/net.js`, not Netlify. The obsolete `/wishlistdata/` endpoint redirects to the store homepage; its sign-in text is not evidence of a private wishlist. The legacy HTML scraper is only a 404 fallback, not the primary path (the older comment in `electron/steam.js` describes the former implementation).
+- The service returns AppIDs only. Fetch `appdetails` per AppID (multi-ID full-detail calls can return null), match internal `steam_appid`, and allow DLC. Enrichment has three concurrent requests, a 1.5-second pause between uncached batches, a bounded 24-hour in-memory cache, and stops subsequent batches on rate limiting. Missing names must never become fake game titles or silent successful empty imports.
+- Check Steam's `x-eresult` header: access denied can arrive as HTTP 200 with an empty response. Distinguish confirmed empty, denied access, rate limiting and malformed/unavailable data. Partial imports preserve local entries and report skipped details in Settings; they do not set the successful 24-hour sync timestamp.
+- Regression checks: `npx jest src/services/SteamWishlistBridge.test.js src/services/WishlistService.test.js --ci`. Live HTTP checks verified the old redirect, the new public wishlist response and access-denied headers; installed apps require a rebuilt installer and a real Sync Now smoke test.
+
 ## Wishlist deals and alerts
 
 - Wishlist pricing uses CheapShark (`/games?title=` then `/games?id=` for deals + `cheapestPriceEver`), fetched directly from the renderer — CheapShark allows CORS, no key, no relay. Prices cache 24h in `wishlistPriceCacheV1`; `refreshIfStale` is the only scheduled entry point (kicked from `HomeDailyOverview` mount and the wishlist page).

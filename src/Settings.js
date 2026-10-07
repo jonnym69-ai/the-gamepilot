@@ -1180,6 +1180,9 @@ function Settings({
                               {steamWishlistLastResult.success
                                 ? `Last sync: ${steamWishlistLastResult.count} new game${steamWishlistLastResult.count === 1 ? '' : 's'} added from ${steamWishlistLastResult.totalFetched} fetched.`
                                 : `Last sync failed: ${steamWishlistLastResult.error}`}
+                              {steamWishlistLastResult.success &&
+                                steamWishlistLastResult.skippedCount > 0 &&
+                                ` ${steamWishlistLastResult.skippedCount} could not be imported because Steam game details were unavailable. Try Sync Now again later.`}
                             </p>
                           )}
                         </div>

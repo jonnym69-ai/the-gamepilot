@@ -137,11 +137,12 @@ class SteamWishlistService {
     const summary = {
       success: true,
       count: addedCount,
-      totalFetched: result.items.length,
+      totalFetched: result.totalFetched ?? result.items.length,
+      skippedCount: result.skippedCount || 0,
       error: null,
       fetchedAt: Date.now(),
     };
-    StorageService.set(LAST_SYNC_KEY, Date.now());
+    StorageService.set(LAST_SYNC_KEY, summary.skippedCount ? null : Date.now());
     StorageService.set(SYNC_RESULT_KEY, summary);
     return summary;
   }
