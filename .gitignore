@@ -56,3 +56,6 @@ yarn-error.log*
 GamePilot-*.AppImage
 *.AppImage
 
+
+# Local Netlify folder
+.netlify
