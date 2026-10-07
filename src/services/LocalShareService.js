@@ -112,6 +112,7 @@ export class LocalShareService {
     try {
       const payloadJson = JSON.stringify({
         content: normalizedText || '',
+        allowed_mentions: { parse: [] },
         username: 'GamePilot',
         avatar_url: 'https://raw.githubusercontent.com/jonnym69-ai/the-gamepilot/main/public/gamepilotlogo.png',
       });
@@ -166,10 +167,9 @@ export class LocalShareService {
   }
 
   static getSupportedChannels() {
-    return Object.entries(SHARE_CHANNELS).map(([id, config]) => ({
-      id,
-      label: config.label,
-    }));
+    return Object.entries(SHARE_CHANNELS)
+      .filter(([id]) => id !== 'email' || !window.electronAPI)
+      .map(([id, config]) => ({ id, label: config.label }));
   }
 
   static buildYearInReviewShareText(snapshot = {}, selectedYear = new Date().getFullYear()) {
@@ -277,14 +277,19 @@ export class LocalShareService {
       return { success: false, message: 'Share text is empty.' };
     }
 
-    const config = SHARE_CHANNELS[channel];
+    const config = Object.prototype.hasOwnProperty.call(SHARE_CHANNELS, channel) ? SHARE_CHANNELS[channel] : null;
     if (!config) {
       return { success: false, message: `Unsupported share channel: ${channel}` };
     }
 
     try {
       const url = config.buildUrl(normalizedText);
-      await openExternalUrl(url);
+      if ((await openExternalUrl(url)) === false) {
+        return {
+          success: false,
+          message: 'Could not open the sharing app. Save the image or copy the caption instead.',
+        };
+      }
       return { success: true, channel, label: config.label, url };
     } catch (error) {
       return {
@@ -310,8 +315,7 @@ export class LocalShareService {
       return { ...result, imageStaged: false };
     }
 
-    const canWriteClipboard =
-      typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function';
+    const canWriteClipboard = LocalShareService.canCopyImage();
 
     if (imageBlob && !canWriteClipboard) {
       return { success: false, message: 'Clipboard image sharing is not supported on this device.' };
@@ -327,7 +331,9 @@ export class LocalShareService {
         }
         items.push(new ClipboardItem(clipboardItemData));
       } else if (normalizedText) {
-        await LocalShareService.copyTextToClipboard(normalizedText);
+        if (!(await LocalShareService.copyTextToClipboard(normalizedText))) {
+          return { success: false, message: 'Could not copy the caption. Try downloading it instead.' };
+        }
       }
 
       if (items.length > 0) {
@@ -335,7 +341,12 @@ export class LocalShareService {
       }
 
       const url = SHARE_CHANNELS.discord.buildUrl(normalizedText);
-      await openExternalUrl(url);
+      if ((await openExternalUrl(url)) === false) {
+        return {
+          success: false,
+          message: 'Could not open the sharing app. Save the image or copy the caption instead.',
+        };
+      }
       return { success: true, channel: 'discord', label: 'Discord', url, imageStaged: Boolean(imageBlob) };
     } catch (error) {
       return {
@@ -353,8 +364,7 @@ export class LocalShareService {
       return { success: false, message: 'Nothing to share to Messenger.' };
     }
 
-    const canWriteClipboard =
-      typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function';
+    const canWriteClipboard = LocalShareService.canCopyImage();
 
     if (imageBlob && !canWriteClipboard) {
       return { success: false, message: 'Clipboard image sharing is not supported on this device.' };
@@ -370,7 +380,9 @@ export class LocalShareService {
         }
         items.push(new ClipboardItem(clipboardItemData));
       } else if (normalizedText) {
-        await LocalShareService.copyTextToClipboard(normalizedText);
+        if (!(await LocalShareService.copyTextToClipboard(normalizedText))) {
+          return { success: false, message: 'Could not copy the caption. Try downloading it instead.' };
+        }
       }
 
       if (items.length > 0) {
@@ -378,7 +390,12 @@ export class LocalShareService {
       }
 
       const url = SHARE_CHANNELS.messenger.buildUrl(normalizedText);
-      await openExternalUrl(url);
+      if ((await openExternalUrl(url)) === false) {
+        return {
+          success: false,
+          message: 'Could not open the sharing app. Save the image or copy the caption instead.',
+        };
+      }
       return { success: true, channel: 'messenger', label: 'Messenger', url, imageStaged: Boolean(imageBlob) };
     } catch (error) {
       return {
@@ -405,6 +422,9 @@ export class LocalShareService {
       if (files.length > 0) {
         payload.files = files;
       }
+      if (typeof navigator.canShare === 'function' && !navigator.canShare(payload)) {
+        return { success: false, message: 'This device cannot share these files. Save the image instead.' };
+      }
       await navigator.share(payload);
       return { success: true };
     } catch (error) {
@@ -416,7 +436,11 @@ export class LocalShareService {
   }
 
   static canCopyImage() {
-    return typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function';
+    return (
+      typeof navigator !== 'undefined' &&
+      typeof ClipboardItem !== 'undefined' &&
+      typeof navigator.clipboard?.write === 'function'
+    );
   }
 
   static async copyImageToClipboard(blob, filename = 'gamepilot-share.png') {
@@ -487,7 +511,7 @@ export class LocalShareService {
     let steamMinutes = 0;
     let mostPlayed = [];
     let sessionCount = 0;
-    let gameCount = safeLibrary.length;
+    let gameCount = validPeriod === 'all' ? safeLibrary.length : 0;
     let steamGameCount = 0;
 
     if (validPeriod !== 'all') {
@@ -507,7 +531,7 @@ export class LocalShareService {
       }
     }
 
-    if (validPeriod === 'all' || totalMinutes === 0) {
+    if (validPeriod === 'all') {
       const safeMinutes = (game) => {
         const value = Number(game?.time_played ?? game?.playtime ?? 0);
         return Number.isFinite(value) ? value : 0;

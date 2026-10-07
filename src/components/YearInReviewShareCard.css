@@ -74,10 +74,7 @@
   font-size: 26px;
   font-weight: 800;
   letter-spacing: 5px;
-  background: linear-gradient(135deg, #f5b700, #ff9d2e);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #f5b700;
 }
 
 .yir-share-card-year {
@@ -138,10 +135,7 @@
   font-size: 132px;
   font-weight: 800;
   line-height: 0.95;
-  background: linear-gradient(135deg, #ffffff 0%, #f5b700 90%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #ffe08a;
   letter-spacing: -3px;
 }
 

@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useCallback } from 'react';
+import React, { useMemo, useRef, useCallback, useState } from 'react';
+import { LocalShareService } from '../services/LocalShareService';
 import { User, Download, Share2, Trophy, Clock, Gamepad2, BarChart3, Sparkles, Zap } from 'lucide-react';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
@@ -15,6 +16,7 @@ const StatPill = ({ icon: Icon, label, value }) => (
 
 const GamerIdentityCard = ({ library = [], className = '' }) => {
   const cardRef = useRef(null);
+  const [shareStatus, setShareStatus] = useState('');
 
   const identity = useMemo(() => {
     if (!Array.isArray(library)) {
@@ -171,12 +173,11 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
     }
   }, [identity]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (!identity) return;
     const text = `My GamePilot Identity: ${identity.label}\n${identity.totalGames} games · ${identity.totalHours} hours · ${identity.totalSessions} sessions\n#GamePilot`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).catch(() => {});
-    }
+    const copied = await LocalShareService.copyTextToClipboard(text);
+    setShareStatus(copied ? 'Summary copied.' : 'Could not copy the summary. Try exporting the image.');
   }, [identity]);
 
   if (!identity) {
@@ -205,6 +206,7 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
         </div>
       </div>
 
+      {shareStatus && <p role="status">{shareStatus}</p>}
       <div className="gamer-card-identity">
         <div className="gamer-avatar">
           <User size={32} />

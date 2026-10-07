@@ -27,7 +27,7 @@ export function buildLibraryShareData(library = [], username = 'Pilot', period =
   let steamMinutes = 0;
   let mostPlayed = [];
   let sessionCount = 0;
-  let gameCount = safeLibrary.length;
+  let gameCount = validPeriod === 'all' ? safeLibrary.length : 0;
   let steamGameCount = 0;
 
   try {
@@ -56,7 +56,7 @@ export function buildLibraryShareData(library = [], username = 'Pilot', period =
     console.warn('Failed to compute period recap, falling back to all-time:', error);
   }
 
-  if (validPeriod === 'all' || totalMinutes === 0) {
+  if (validPeriod === 'all') {
     totalMinutes = safeLibrary.reduce((sum, game) => sum + resolvePlaytime(game), 0);
     if (validPeriod === 'all') {
       const steamGames = safeLibrary.filter(
@@ -130,6 +130,7 @@ export function LibraryShareCard({
   visibleStats = null,
   showCover = true,
   watermark = 'gamepilot',
+  label = null,
 }) {
   const data = buildLibraryShareData(library, username, period);
   const showSessions = data.sessionCount > 0;
@@ -175,12 +176,12 @@ export function LibraryShareCard({
 
       <div className="library-share-card-header">
         <span className="library-share-card-brand">GAMEPILOT</span>
-        <span className="library-share-card-tag">{PERIOD_LABELS[data.period] || 'Library Recap'}</span>
+        <span className="library-share-card-tag">{label || PERIOD_LABELS[data.period] || 'Library Recap'}</span>
       </div>
 
       <div className="library-share-card-body">
         <span className="library-share-card-eyebrow">
-          {data.username || 'Pilot'} · {PERIOD_LABELS[data.period] || 'My Ultimate Library'}
+          {data.username || 'Pilot'} · {label || PERIOD_LABELS[data.period] || 'My Ultimate Library'}
         </span>
 
         <div className="library-share-card-headline">

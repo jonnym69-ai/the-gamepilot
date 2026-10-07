@@ -58,6 +58,13 @@ test('recommendation tuner mounts its editor and saves weights', () => {
 });
 
 test('cinematic export renders its real format and export controls', () => {
+  jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    fillRect: jest.fn(),
+    drawImage: jest.fn(),
+    fillText: jest.fn(),
+    createLinearGradient: () => ({ addColorStop: jest.fn() }),
+    createRadialGradient: () => ({ addColorStop: jest.fn() }),
+  });
   renderInRouter(<CinematicExport isOpen library={[]} onClose={jest.fn()} />);
   expect(screen.getByRole('button', { name: /Vertical Poster/ })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Export Cinematic Card' })).toBeEnabled();

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
+import { LocalShareService } from '../services/LocalShareService';
 import { Crown, Download, X, Image, Palette } from 'lucide-react';
 import { AchievementTracker } from '../AchievementSystem';
 import StorageService from '../services/StorageService';
@@ -25,6 +26,10 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
   const canvasRef = useRef(null);
   const [cardFormat, setCardFormat] = useState('vertical');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const previewReady = useRef(false);
+  const renderVersion = useRef(0);
+
   const [backgroundStyle, setBackgroundStyle] = useState('blurred');
   const founderProfile = (() => {
     const savedUsername = StorageService.getString('profileUsername', '');
@@ -43,7 +48,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
   })();
 
   // Get theme colors
-  const getThemeColors = () => {
+  const getThemeColors = useCallback(() => {
     const root = document.documentElement;
     const style = getComputedStyle(root);
 
@@ -63,64 +68,80 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
               ? '#cbd5e1'
               : '#fb923c',
     };
-  };
+  }, [founderProfile.tier]);
 
   // Generate blurred background from game covers
-  const generateBlurredBackground = (ctx, width, height, colors) => {
-    // Sample game covers for background
-    const sampleGames = library.slice(0, Math.min(8, library.length));
-
-    if (sampleGames.length === 0) {
-      // Fallback to gradient
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, colors.background);
-      gradient.addColorStop(1, colors.secondary);
-      ctx.fillStyle = gradient;
+  const generateBlurredBackground = useCallback(
+    async (ctx, width, height, colors) => {
+      ctx.fillStyle = colors.background;
       ctx.fillRect(0, 0, width, height);
-      return;
-    }
+      // Sample game covers for background
+      const sampleGames = library.slice(0, Math.min(8, library.length));
 
-    // Create mosaic of game covers
-    const tileSize = Math.max(width, height) / 4;
-    let x = 0,
-      y = 0;
-
-    sampleGames.forEach((game, index) => {
-      if (game && game.iconUrl) {
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          ctx.globalAlpha = 0.3;
-          ctx.drawImage(img, x, y, tileSize, tileSize);
-
-          // Add vignette overlay
-          const vignette = ctx.createRadialGradient(
-            width / 2,
-            height / 2,
-            0,
-            width / 2,
-            height / 2,
-            Math.max(width, height) / 2
-          );
-          vignette.addColorStop(0, 'rgba(0,0,0,0)');
-          vignette.addColorStop(1, 'rgba(0,0,0,0.7)');
-          ctx.globalAlpha = 1;
-          ctx.fillStyle = vignette;
-          ctx.fillRect(0, 0, width, height);
-        };
-        img.src = game.iconUrl;
+      if (sampleGames.length === 0) {
+        // Fallback to gradient
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, colors.background);
+        gradient.addColorStop(1, colors.secondary);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        return;
       }
 
-      x += tileSize;
-      if (x >= width) {
-        x = 0;
-        y += tileSize;
+      // Create mosaic of game covers
+      const tileSize = Math.max(width, height) / 4;
+      let x = 0,
+        y = 0;
+
+      for (const game of sampleGames) {
+        if (game && game.iconUrl) {
+          const img = new window.Image();
+          img.crossOrigin = 'anonymous';
+          const loaded = await new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve(false), 3000);
+            img.onload = () => {
+              clearTimeout(timeout);
+              resolve(true);
+            };
+            img.onerror = () => {
+              clearTimeout(timeout);
+              resolve(false);
+            };
+            img.src = game.iconUrl;
+          });
+          if (loaded) {
+            ctx.globalAlpha = 0.3;
+            ctx.drawImage(img, x, y, tileSize, tileSize);
+
+            // Add vignette overlay
+            const vignette = ctx.createRadialGradient(
+              width / 2,
+              height / 2,
+              0,
+              width / 2,
+              height / 2,
+              Math.max(width, height) / 2
+            );
+            vignette.addColorStop(0, 'rgba(0,0,0,0)');
+            vignette.addColorStop(1, 'rgba(0,0,0,0.7)');
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = vignette;
+            ctx.fillRect(0, 0, width, height);
+          }
+        }
+
+        x += tileSize;
+        if (x >= width) {
+          x = 0;
+          y += tileSize;
+        }
       }
-    });
-  };
+    },
+    [library]
+  );
 
   // Generate gradient background
-  const generateGradientBackground = (ctx, width, height, colors) => {
+  const generateGradientBackground = useCallback((ctx, width, height, colors) => {
     const gradient = ctx.createLinearGradient(0, 0, width, height);
     gradient.addColorStop(0, colors.background);
     gradient.addColorStop(0.5, colors.secondary);
@@ -138,11 +159,12 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
-  };
+  }, []);
 
   // Draw cinematic card
-  const drawCinematicCard = () => {
-    const canvas = canvasRef.current;
+  const drawCinematicCard = useCallback(async () => {
+    const version = renderVersion.current;
+    const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const colors = getThemeColors();
 
@@ -167,7 +189,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
 
     // Generate background
     if (backgroundStyle === 'blurred') {
-      generateBlurredBackground(ctx, width, height, colors);
+      await generateBlurredBackground(ctx, width, height, colors);
     } else {
       generateGradientBackground(ctx, width, height, colors);
     }
@@ -240,26 +262,58 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
       ctx.lineWidth = 3;
       ctx.strokeRect(40, 40, width - 80, height - 80);
     }
-  };
+    if (version === renderVersion.current && canvasRef.current) {
+      canvasRef.current.width = width;
+      canvasRef.current.height = height;
+      canvasRef.current.getContext('2d').drawImage(canvas, 0, 0);
+    }
+  }, [
+    cardFormat,
+    backgroundStyle,
+    library,
+    founderProfile.isFounder,
+    founderProfile.name,
+    founderProfile.tier,
+    getThemeColors,
+    generateBlurredBackground,
+    generateGradientBackground,
+  ]);
+
+  useEffect(() => {
+    const version = ++renderVersion.current;
+    previewReady.current = false;
+    setExportError('');
+    drawCinematicCard()
+      .then(() => {
+        if (version === renderVersion.current) previewReady.current = true;
+      })
+      .catch(() => {
+        if (version === renderVersion.current) setExportError('Could not render this poster. Try the theme gradient.');
+      });
+    return () => {
+      renderVersion.current += 1;
+    };
+  }, [drawCinematicCard]);
 
   // Export as image
-  const exportAsImage = () => {
+  const exportAsImage = async () => {
+    if (!previewReady.current) {
+      setExportError('The preview is still loading. Please try again when it appears.');
+      return;
+    }
     setIsGenerating(true);
-
-    setTimeout(() => {
-      drawCinematicCard();
-
-      const canvas = canvasRef.current;
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `gamepilot-cinematic-${cardFormat}-${new Date().toISOString().split('T')[0]}.png`;
-        link.click();
-        URL.revokeObjectURL(url);
-        setIsGenerating(false);
-      }, 'image/png');
-    }, 100);
+    setExportError('');
+    try {
+      const result = await LocalShareService.downloadImageFromCanvas(
+        canvasRef.current,
+        `gamepilot-cinematic-${cardFormat}-${new Date().toISOString().split('T')[0]}.png`
+      );
+      if (!result.success) setExportError(result.message);
+    } catch {
+      setExportError('Could not save the poster. Try the theme gradient.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -355,6 +409,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
           </div>
         </div>
 
+        {exportError && <p role="alert">{exportError}</p>}
         <div className="cinematic-export-footer">
           <button className="export-button primary" onClick={exportAsImage} disabled={isGenerating}>
             <Download size={18} />

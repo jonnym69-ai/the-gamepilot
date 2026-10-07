@@ -92,6 +92,7 @@ export function ShareMenu({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [showMorePlatforms, setShowMorePlatforms] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
   const [editingCaption, setEditingCaption] = useState('');
@@ -121,7 +122,7 @@ export function ShareMenu({
   const handleCopyText = async () => {
     const baseText = buildCaption ? buildCaption() : null;
     const success = await onCopyText(baseText ? getShareText(baseText) : null);
-    if (success) {
+    if (success === true || success?.success === true) {
       setCopied('text');
       setTimeout(() => setCopied((current) => (current === 'text' ? null : current)), 2000);
     }
@@ -130,7 +131,7 @@ export function ShareMenu({
 
   const handleCopyImage = async () => {
     const success = await onCopyImage();
-    if (success) {
+    if (success === true || success?.success === true) {
       setCopied('image');
       setTimeout(() => setCopied((current) => (current === 'image' ? null : current)), 2000);
     }
@@ -186,6 +187,12 @@ export function ShareMenu({
     };
 
     const handleClose = () => setIsOpen(false);
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
     const handleScroll = (event) => {
       if (isInsideMenu(event.target)) {
         return;
@@ -195,15 +202,14 @@ export function ShareMenu({
 
     if (isOpen) {
       document.addEventListener('click', handleClickOutside);
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') setIsOpen(false);
-      });
+      document.addEventListener('keydown', handleKeyDown);
       window.addEventListener('scroll', handleScroll, true);
       window.addEventListener('resize', handleClose);
     }
 
     return () => {
       document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleClose);
     };
@@ -224,7 +230,15 @@ export function ShareMenu({
         aria-expanded={isOpen}
       >
         <Share2 size={16} />
-        <span>{disabled ? 'Preparing...' : triggerLabel}</span>
+        <span>
+          {disabled
+            ? 'Preparing...'
+            : copied === 'image'
+              ? 'Image copied'
+              : copied === 'text'
+                ? 'Caption copied'
+                : triggerLabel}
+        </span>
       </button>
 
       {isOpen &&
@@ -246,7 +260,7 @@ export function ShareMenu({
                   <Download size={16} />
                   <span>Save share image</span>
                 </button>
-                {canCopyImage && (
+                {canCopyImage && onCopyImage && (
                   <button type="button" role="menuitem" onClick={handleCopyImage}>
                     {copied === 'image' ? <Check size={16} /> : <Copy size={16} />}
                     <span>{copied === 'image' ? 'Image copied' : 'Copy image'}</span>
@@ -291,8 +305,11 @@ export function ShareMenu({
             )}
 
             <div className="share-menu-group">
-              <span className="share-menu-label">Platforms</span>
-              {ORDER.filter((channelId) => SUPPORTED_IDS.has(channelId)).map((channelId) => {
+              <span className="share-menu-label">Open a sharing app</span>
+              {ORDER.filter(
+                (channelId) =>
+                  SUPPORTED_IDS.has(channelId) && (showMorePlatforms || ['discord', 'x', 'bluesky'].includes(channelId))
+              ).map((channelId) => {
                 const config = SUPPORTED_CHANNELS.find((channel) => channel.id === channelId);
                 if (!config) return null;
                 const Icon = PLATFORM_ICONS[channelId] || Monitor;
@@ -320,9 +337,13 @@ export function ShareMenu({
                   </button>
                 );
               })}
+              <button type="button" role="menuitem" onClick={() => setShowMorePlatforms((value) => !value)}>
+                <Share2 size={16} />
+                <span>{showMorePlatforms ? 'Fewer apps' : 'More apps'}</span>
+              </button>
             </div>
 
-            {canNativeShare && (
+            {canNativeShare && onNativeShare && (
               <div className="share-menu-group">
                 <span className="share-menu-label">Device</span>
                 <button
@@ -347,17 +368,15 @@ export function ShareMenu({
         onClose={() => setEditingChannel(null)}
         channel={editingChannel}
         caption={editingCaption}
-        onShare={(text) => {
+        onShare={async (text) => {
           const channelId = editingChannel?.id;
           if (channelId === 'discord' && onShareToDiscord) {
-            onShareToDiscord(text);
-          } else if (channelId === 'messenger' && onShareToMessenger) {
-            onShareToMessenger(text);
-          } else if (onShareText) {
-            onShareText(channelId, text);
+            return onShareToDiscord(text);
           }
-          setEditingChannel(null);
-          close();
+          if (channelId === 'messenger' && onShareToMessenger) {
+            return onShareToMessenger(text);
+          }
+          return onShareText?.(channelId, text);
         }}
       />
 

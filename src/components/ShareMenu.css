@@ -100,6 +100,11 @@
   text-align: left;
 }
 
+.share-menu-group button:focus-visible {
+  outline: 2px solid var(--accent-color, #a78bfa);
+  outline-offset: -2px;
+}
+
 .share-menu-group button:hover {
   background: rgba(255, 255, 255, 0.06);
 }

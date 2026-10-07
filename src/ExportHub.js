@@ -10,16 +10,11 @@ import { DataExportService } from './services/DataExportService';
 import { DataManager } from './DataManager';
 import { LocalShareService } from './services/LocalShareService';
 import { ProfileService } from './services/ProfileService';
-import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
+
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { LibraryShareCard, LIBRARY_SHARE_CARD_SIZE_PX } from './components/LibraryShareCard';
 import { ShareCaptionDialog } from './components/ShareCaptionDialog';
 import './ExportHub.css';
-
-const getFallbackLibrary = () => {
-  const fallback = getEmptyLibraryFallback('Home');
-  return Array.isArray(fallback?.sampleGames) ? fallback.sampleGames : [];
-};
 
 function ExportHub({ library = [], theme }) {
   const { success, error } = useToast();
@@ -47,10 +42,7 @@ function ExportHub({ library = [], theme }) {
   });
 
   const rewardSummary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
-  const safeLibrary = useMemo(
-    () => (Array.isArray(library) && library.length > 0 ? library : getFallbackLibrary()),
-    [library]
-  );
+  const safeLibrary = useMemo(() => (Array.isArray(library) ? library : []), [library]);
   const backupSummary = useMemo(() => DataExportService.getBackupSummary(library || []), [library]);
   const filteredLibrary = useMemo(
     () => DataExportService.applyExportFilters(safeLibrary, exportOptions),
@@ -294,7 +286,8 @@ function ExportHub({ library = [], theme }) {
           <h2>Full Backup</h2>
           <p>
             Save or restore your complete local GamePilot profile, including library curation, progression, rewards,
-            settings, and usage history.
+            settings, and usage history. Backups are private recovery files, not social share files; do not post them
+            publicly.
           </p>
           <div className="export-hub-btn-row">
             <button
@@ -370,7 +363,7 @@ function ExportHub({ library = [], theme }) {
               title="Open the cinematic poster generator for a stylized share image"
             >
               <ImageIcon size={16} />
-              <span>Cinematic Poster (Pro)</span>
+              <span>Cinematic Poster</span>
             </button>
           </div>
         </section>
@@ -380,7 +373,10 @@ function ExportHub({ library = [], theme }) {
             <Filter size={18} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
             Export Filters
           </h2>
-          <p>Slice and dice your library before exporting. Filters unlock free as you earn XP.</p>
+          <p>
+            Choose games by last-played date. Images show those games' lifetime totals, not hours played within the date
+            range. Filters unlock as you earn XP.
+          </p>
           <div className="export-hub-filter-row">
             <label className="export-hub-filter-label">
               <span>Date range</span>
@@ -509,7 +505,8 @@ function ExportHub({ library = [], theme }) {
         <LibraryShareCard
           library={filteredLibrary}
           username={username}
-          period={exportOptions.dateRange}
+          period="all"
+          label="Filtered library · lifetime totals"
           theme={recapCustomization.palette}
           visibleStats={recapCustomization.visibleStats}
         />

@@ -9,6 +9,19 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
   const [includeImages, setIncludeImages] = useState(true);
   const [includeTime, setIncludeTime] = useState(true);
   const [selectedPage, setSelectedPage] = useState('library');
+  const [isExporting, setIsExporting] = useState(false);
+  const escapeHTML = (value) =>
+    String(value ?? '').replace(
+      /[&<>"']/g,
+      (char) =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        })[char]
+    );
 
   useEffect(() => {
     if (!isOpen) {
@@ -26,6 +39,7 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
   }, [isOpen, onClose]);
 
   const formatTime = (minutes) => {
+    minutes = Number.isFinite(Number(minutes)) ? Math.max(0, Number(minutes)) : 0;
     if (!minutes || minutes === 0) return 'Never played';
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
@@ -56,7 +70,7 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               <span class="stat-label">Total Games</span>
             </div>
             <div class="stat">
-              <span class="stat-number">${library.reduce((sum, game) => sum + (game.time_played || 0), 0)}</span>
+              <span class="stat-number">${escapeHTML(library.reduce((sum, game) => sum + (Number(game.time_played) || 0), 0))}</span>
               <span class="stat-label">Total Minutes</span>
             </div>
             <div class="stat">
@@ -74,20 +88,20 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
                 includeImages && game.iconUrl
                   ? `
                 <div class="game-image">
-                  <img src="${game.iconUrl}" alt="${game.name}" />
+                  <img src="${escapeHTML(game.iconUrl)}" alt="${escapeHTML(game.name)}" />
                 </div>
               `
                   : ''
               }
               <div class="game-details">
-                <h3>${game.name}</h3>
+                <h3>${escapeHTML(game.name)}</h3>
                 <div class="game-meta">
-                  <span class="platform-tag">${game.platform || 'Unknown'}</span>
-                  ${game.mood ? `<span class="mood-tag">${game.mood}</span>` : ''}
+                  <span class="platform-tag">${escapeHTML(game.platform || 'Unknown')}</span>
+                  ${game.mood ? `<span class="mood-tag">${escapeHTML(game.mood)}</span>` : ''}
                   ${
                     game.genres && game.genres.length > 0
                       ? `
-                    <span class="genre-tag">${game.genres[0]}</span>
+                    <span class="genre-tag">${escapeHTML(game.genres[0])}</span>
                   `
                       : ''
                   }
@@ -106,7 +120,7 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
                   game.launch_count
                     ? `
                   <div class="game-launches">
-                    <span>Launched ${game.launch_count} times</span>
+                    <span>Launched ${escapeHTML(game.launch_count)} times</span>
                   </div>
                 `
                     : ''
@@ -149,6 +163,8 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
   };
 
   const exportToImage = async (format) => {
+    if (isExporting) return;
+    setIsExporting(true);
     // Create a temporary div to render the HTML content
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = generateLibraryHTML();
@@ -166,29 +182,26 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
         backgroundColor: '#ffffff',
         scale: 2, // Higher resolution
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
       });
 
       // Convert canvas to blob
-      canvas.toBlob(
-        (blob) => {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `gamepilot-${selectedPage}-${layout}-${new Date().toISOString().split('T')[0]}.${format.toLowerCase()}`;
-          link.click();
-          URL.revokeObjectURL(url);
-          onClose();
-        },
-        `image/${format.toLowerCase()}`,
-        0.95
-      );
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, `image/${format.toLowerCase()}`, 0.95));
+      if (!blob) throw new Error('Image could not be generated');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `gamepilot-${selectedPage}-${layout}-${new Date().toISOString().split('T')[0]}.${format.toLowerCase()}`;
+      link.click();
+      URL.revokeObjectURL(url);
+      onClose();
     } catch (error) {
       console.error('Image export failed:', error);
       alert('Failed to export image. Please try again.');
     } finally {
       // Clean up temporary element
       document.body.removeChild(tempDiv);
+      setIsExporting(false);
     }
   };
 
@@ -240,21 +253,24 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
               </button>
               <button
                 className={`page-option ${selectedPage === 'stats' ? 'active' : ''}`}
-                onClick={() => setSelectedPage('stats')}
+                disabled
+                title="Use the share cards on Stats for a stats export"
               >
                 <Trophy size={16} />
                 Stats
               </button>
               <button
                 className={`page-option ${selectedPage === 'profile' ? 'active' : ''}`}
-                onClick={() => setSelectedPage('profile')}
+                disabled
+                title="Use the identity and story share cards on Profile"
               >
                 <User size={16} />
                 Profile
               </button>
               <button
                 className={`page-option ${selectedPage === 'home' ? 'active' : ''}`}
-                onClick={() => setSelectedPage('home')}
+                disabled
+                title="Use the champion share card on Home"
               >
                 <Home size={16} />
                 Home
@@ -351,7 +367,7 @@ const ExportModal = ({ library, theme, isOpen, onClose }) => {
         </div>
 
         <div className="export-modal-footer">
-          <button className="export-button primary" onClick={handleExport}>
+          <button className="export-button primary" onClick={handleExport} disabled={isExporting || !library.length}>
             <Download size={18} />
             Export {selectedPage.charAt(0).toUpperCase() + selectedPage.slice(1)}
           </button>
