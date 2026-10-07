@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ScanLine } from 'lucide-react';
 import PlayNextCard from './PlayNextCard';
+import FriendsPlayingCard from './FriendsPlayingCard';
 import DailySpotlightCard from './DailySpotlightCard';
 import DailyDoodleTitle from './DailyDoodleTitle';
 import OnThisDayCard from './OnThisDayCard';
@@ -110,6 +111,7 @@ export default function HomeDailyOverview({
               </div>
             )}
           </section>
+          <FriendsPlayingCard library={library} onLaunchGame={onLaunchGame} />
           <div className="home-daily-spotlight">
             <DailySpotlightCard library={library} />
           </div>

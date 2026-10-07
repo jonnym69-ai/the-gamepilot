@@ -1,6 +1,10 @@
 const { BrowserWindow } = require('electron');
 const { httpsRequest } = require('./net');
 
+const STEAM_FRIENDS_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamFriends';
+const FRIENDS_CACHE = new Map();
+const FRIENDS_CACHE_TTL_MS = 60000;
+
 const steamHttpsGet = async (hostname, pathname) => {
   const res = await httpsRequest(`https://${hostname}${pathname}`, null, {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GamePilot/1.4',
@@ -716,6 +720,43 @@ function registerIpcHandlers(ipcMain) {
     } catch (err) {
       console.error('[SteamWishlist] Error:', err.message);
       return { success: false, error: err.message || 'Could not fetch Steam wishlist.', items: [] };
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Steam Friends presence. Calls the GamePilot Netlify relay
+  // (/.netlify/functions/getSteamFriends via the /api redirect) so the Steam
+  // Web API key stays server-side and never ships in the client bundle.
+  // Returns trimmed presence data: name, avatar, state and current game.
+  // Cached in-memory for 60s per steamid to bound Steam API usage.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle('steam-friends', async (_event, steamId) => {
+    const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
+    if (!/^\d{17}$/.test(cleanId)) return { ok: false, error: 'invalid-steamid' };
+
+    const cached = FRIENDS_CACHE.get(cleanId);
+    if (cached && Date.now() < cached.expiresAt) return { ok: true, ...cached.data, cached: true };
+
+    try {
+      const res = await httpsRequest(`${STEAM_FRIENDS_RELAY_URL}?steamid=${cleanId}`, null, {
+        'User-Agent': 'GamePilot/1.9',
+        Accept: 'application/json',
+      });
+      if (res.status === 403) return { ok: false, error: 'friends-list-private' };
+      if (res.status !== 200) return { ok: false, error: 'friends-unavailable' };
+      const data = JSON.parse(res.body || '{}');
+      if (!Array.isArray(data?.friends)) return { ok: false, error: 'friends-unavailable' };
+      const result = {
+        friends: data.friends.slice(0, 200),
+        fetchedAt: Number(data.fetchedAt) || Date.now(),
+      };
+      FRIENDS_CACHE.delete(cleanId);
+      FRIENDS_CACHE.set(cleanId, { data: result, expiresAt: Date.now() + FRIENDS_CACHE_TTL_MS });
+      if (FRIENDS_CACHE.size > 8) FRIENDS_CACHE.delete(FRIENDS_CACHE.keys().next().value);
+      return { ok: true, ...result };
+    } catch (error) {
+      console.warn('[SteamFriends] relay request failed:', error.message);
+      return { ok: false, error: 'friends-unavailable' };
     }
   });
 

@@ -1,0 +1,134 @@
+.friends-playing {
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.friends-playing-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.friends-playing-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.friends-playing-refresh {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+}
+
+.friends-playing-refresh:hover:not(:disabled) {
+  color: var(--text-primary, #fff);
+}
+
+.friends-playing-refresh:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.friends-playing-refresh .spinning {
+  animation: friends-playing-spin 0.9s linear infinite;
+}
+
+@keyframes friends-playing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.friends-playing-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.friends-playing-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.friends-playing-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.friends-playing-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent, #5b8def);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.friends-playing-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.friends-playing-text strong {
+  color: var(--text-primary, #fff);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-playing-text span {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.65));
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-playing-launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--accent, #5b8def);
+  background: transparent;
+  color: var(--accent, #5b8def);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.friends-playing-launch:hover {
+  background: var(--accent, #5b8def);
+  color: #fff;
+}
+
+.friends-playing-note,
+.friends-playing-footnote {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}

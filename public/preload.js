@@ -26,6 +26,7 @@ const electronAPI = {
   epicFreeGames: () => ipcRenderer.invoke('epic-free-games'),
   giveawayFeed: () => ipcRenderer.invoke('giveaway-feed'),
   steamWishlist: (steamId) => ipcRenderer.invoke('steam-wishlist', steamId),
+  steamFriends: (steamId) => ipcRenderer.invoke('steam-friends', steamId),
   steamMoreLike: (appid) => ipcRenderer.invoke('steam-morelike', appid),
   diskFolderSize: (payload) => ipcRenderer.invoke('disk-folder-size', payload),
   saveLocationStatus: (payload) => ipcRenderer.invoke('save-location-status', payload),

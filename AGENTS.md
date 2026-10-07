@@ -197,8 +197,24 @@ The typecheck command is optional for JS-only changes.
 - Essentials launches pass the original library object to the existing callback only after an exact platform/ID or explicit-name match with installation evidence. Do not infer one installed game from another sharing its launcher (e.g. League of Legends versus Teamfight Tactics).
 - Regression checks: `npx jest src/components/DiscoverQuickPicks.test.js src/components/DiscoverHighlights.test.js src/components/FreeToPlayEssentials.test.js src/Home.test.js --ci`.
 
+## Sharing and export verification
+
+- Share images use html2canvas. Avoid gradient-clipped/transparent text in card CSS: it renders as solid rectangles in PNGs. Verify exported pixels, not only the live DOM. Identity, Story and Year in Review use solid export-safe title colours.
+- Weekly/monthly library cards and captions must never substitute lifetime totals when the selected period has no sessions. Export Hub date filters select games by last-played date; its filtered image shows lifetime totals for those games, not period activity. Empty libraries must not export sample games as user data.
+- Sharing-app intents do not upload images. Save/copy image is the portable path; clipboard support and external-open failures must be checked. Discord webhooks post directly and require explicit disclosure in the caption dialog; mention parsing is disabled. Backups are private recovery files, not social share files.
+- Cinematic posters load cover art before compositing text, render previews offscreen, and export the completed preview. Showcase Export is library-only; its other page choices are disabled with directions to dedicated share cards.
+- Regression checks: `npx jest src/services/LocalShareService.test.js src/components/ShareMenu.test.js src/components/ShareCaptionDialog.test.js src/components/ExportModal.test.js src/components/ProGate.test.js --ci`. Browser PNG checks do not verify authenticated social posting or packaged Electron clipboard behaviour.
+
 ## On this day in gaming
 
 - `src/constants/GamingHistory.json` is a bundled, manually maintained calendar of real gaming events keyed `MM-DD`; each entry carries `year` and `event`. It is not a live feed — verify dates against reliable sources when adding entries.
 - `OnThisDayService` returns the exact day's events, otherwise the nearest covered day within ±3 (earlier dates preferred on ties), capped at three events. `OnThisDayCard` sits at the bottom of Today's "Your story" column, labelled "On this day in gaming" or "This week in gaming", and hides when nothing is nearby. Fully local — no network calls.
 - Regression checks: `npx jest src/services/OnThisDayService.test.js src/components/OnThisDayCard.test.js src/Home.test.js --ci`.
+
+## Steam friends presence
+
+- `FriendsPlayingCard` on Today is opt-in via Settings ("Steam Friends Presence", off by default) and reuses the `steamWishlistId` Steam64 ID. It hides entirely when disabled or unconfigured.
+- The Steam Web API key stays server-side: renderer → `steam-friends` IPC → `electron/steam.js` → `https://gamepilot.netlify.app/api/getSteamFriends` → `netlify/functions/getSteamFriends.js` → `api.steampowered.com` (`STEAM_API_KEY` env var). No renderer fetch, no key in the client bundle.
+- The function validates a 17-digit Steam64 ID, caps at 200 friends, batches `GetPlayerSummaries` at 100 IDs, and returns trimmed fields (name, avatar, `personastate`, current game, appid). 401/403 from `GetFriendList` maps to a "friends list is private" message — missing presence must never be presented as "offline".
+- Presence is read-only public Steam data, cached 60s in the main process and service layer. A friend's current game offers "Play your copy" only when its appid matches a Steam game in the local library via `getSteamAppId`.
+- Regression checks: `npx jest src/services/SteamFriendsService.test.js src/components/FriendsPlayingCard.test.js --ci`. Live presence needs the Netlify function deployed with `STEAM_API_KEY` set — Jest mocks the bridge and cannot verify the relay end-to-end.

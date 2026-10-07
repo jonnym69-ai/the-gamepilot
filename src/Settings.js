@@ -32,6 +32,7 @@ import DiskUsageService from './services/DiskUsageService';
 import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
+import SteamFriendsService from './services/SteamFriendsService';
 import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
 import { LocalShareService } from './services/LocalShareService';
@@ -72,6 +73,7 @@ function Settings({
   const [steamId, setSteamId] = useState(() => SteamWishlistService.getSteamId());
   const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
+  const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
   const [startupLaunchSupported, setStartupLaunchSupported] = useState(false);
@@ -1178,6 +1180,55 @@ function Settings({
                                 : `Last sync failed: ${steamWishlistLastResult.error}`}
                             </p>
                           )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Steam Friends Presence</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={steamFriendsEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setSteamFriendsEnabled(next);
+                            SteamFriendsService.setEnabled(next);
+                            success(`Steam friends presence ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="steam-friends-enabled"
+                        />
+                        <label htmlFor="steam-friends-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Off by default. Shows which of your Steam friends are online and what they're playing on the
+                        Today page. Uses the same Steam64 ID as wishlist import and requires your Steam friends list to
+                        be public. Presence is read-only — GamePilot never changes your Steam status or messages anyone.
+                      </p>
+                      {steamFriendsEnabled && (
+                        <div style={{ marginTop: '12px' }}>
+                          <input
+                            type="text"
+                            placeholder="Paste your Steam64 ID or profile URL..."
+                            value={steamId}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              setSteamId(next);
+                              SteamFriendsService.setSteamId(next);
+                            }}
+                            onBlur={() => {
+                              setSteamId(SteamFriendsService.getSteamId());
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border)',
+                              background: 'var(--bg)',
+                              color: 'var(--text)',
+                              boxSizing: 'border-box',
+                            }}
+                          />
                         </div>
                       )}
                     </div>
