@@ -6,6 +6,7 @@ import CalendarXPService from '../services/CalendarXPService';
 import SessionRepository from '../services/SessionRepository';
 import CurrentEraService from '../services/CurrentEraService';
 import { SeasonalHideAndSeekService } from '../services/SeasonalHideAndSeekService';
+import WishlistService from '../services/WishlistService';
 
 jest.mock('../services/CalendarXPService', () => ({
   __esModule: true,
@@ -22,6 +23,10 @@ jest.mock('../services/CurrentEraService', () => ({
 jest.mock('../services/SeasonalHideAndSeekService', () => ({
   __esModule: true,
   SeasonalHideAndSeekService: { getActiveProgress: jest.fn() },
+}));
+jest.mock('../services/WishlistService', () => ({
+  __esModule: true,
+  default: { isEnabled: jest.fn(() => true), getAlertSummary: jest.fn(() => ({ count: 0 })) },
 }));
 
 const renderStrip = () =>
@@ -43,6 +48,7 @@ beforeEach(() => {
   SessionRepository.getSessionHistory.mockReturnValue([]);
   CurrentEraService.getCurrentEra.mockReturnValue(null);
   SeasonalHideAndSeekService.getActiveProgress.mockReturnValue(null);
+  WishlistService.getAlertSummary.mockReturnValue({ count: 0 });
 });
 
 test('offers a check-in that grants XP and shows the running streak', () => {
@@ -96,4 +102,21 @@ test('teases the daily paradox with a link to the identity view', () => {
   renderStrip();
   const teaser = screen.getByRole('link', { name: /Today's paradox/ });
   expect(teaser).toHaveAttribute('href', '/?view=identity');
+});
+
+test('shows wishlist deal alerts and re-reads on the alerts event', () => {
+  WishlistService.getAlertSummary.mockReturnValue({ count: 2 });
+  renderStrip();
+  const link = screen.getByRole('link', { name: /2 wishlist price alerts/ });
+  expect(link).toHaveAttribute('href', '/wishlist');
+
+  WishlistService.getAlertSummary.mockReturnValue({ count: 5 });
+  fireEvent(window, new CustomEvent('gamepilot:wishlist-alerts'));
+  expect(screen.getByRole('link', { name: /5 wishlist price alerts/ })).toBeInTheDocument();
+});
+
+test('hides the deals chip when alerts are zero or wishlist is disabled', () => {
+  WishlistService.getAlertSummary.mockReturnValue({ count: 0 });
+  renderStrip();
+  expect(screen.queryByRole('link', { name: /wishlist price alert/ })).not.toBeInTheDocument();
 });

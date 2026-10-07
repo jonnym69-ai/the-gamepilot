@@ -1,7 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarCheck, Flame } from 'lucide-react';
+import { ArrowRight, CalendarCheck, Flame, Tag } from 'lucide-react';
 import CalendarXPService from '../services/CalendarXPService';
+import WishlistService from '../services/WishlistService';
 import SessionRepository from '../services/SessionRepository';
 import CurrentEraService from '../services/CurrentEraService';
 import { SeasonalHideAndSeekService } from '../services/SeasonalHideAndSeekService';
@@ -69,6 +70,16 @@ const getParadox = () => {
   }
 };
 
+const getWishlistAlerts = () => {
+  try {
+    if (!WishlistService.isEnabled()) return 0;
+    const summary = WishlistService.getAlertSummary();
+    return Number(summary?.count) || 0;
+  } catch {
+    return 0;
+  }
+};
+
 /**
  * A compact "today at a glance" strip for the Home Today view: check-in
  * streak, this week's play, current era, the active hide-and-seek event and a
@@ -76,10 +87,17 @@ const getParadox = () => {
  */
 export default function TodayStrip() {
   const [calendar, setCalendar] = useState(getCalendarStatus);
+  const [wishlistAlerts, setWishlistAlerts] = useState(getWishlistAlerts);
   const week = useMemo(getWeekSummary, []);
   const era = useMemo(getEra, []);
   const hunt = useMemo(() => SeasonalHideAndSeekService.getActiveProgress(), []);
   const paradox = useMemo(getParadox, []);
+
+  useEffect(() => {
+    const refresh = () => setWishlistAlerts(getWishlistAlerts());
+    window.addEventListener('gamepilot:wishlist-alerts', refresh);
+    return () => window.removeEventListener('gamepilot:wishlist-alerts', refresh);
+  }, []);
 
   const handleCheckin = useCallback(() => {
     const result = CalendarXPService.processDailyCheckin();
@@ -129,6 +147,22 @@ export default function TodayStrip() {
           <span>
             <strong>{era.name}</strong>
             {era.estimated ? 'Estimated from library' : `Day ${era.dayCount}`}
+          </span>
+        </Link>
+      )}
+
+      {wishlistAlerts > 0 && (
+        <Link
+          to="/wishlist"
+          className="today-strip-item"
+          aria-label={`${wishlistAlerts} wishlist price alert${wishlistAlerts === 1 ? '' : 's'}`}
+        >
+          <Tag size={15} aria-hidden="true" />
+          <span>
+            <strong>
+              {wishlistAlerts} deal{wishlistAlerts === 1 ? '' : 's'}
+            </strong>
+            Wishlist alerts
           </span>
         </Link>
       )}

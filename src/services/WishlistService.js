@@ -115,6 +115,11 @@ const readAlertSummary = () => {
 const writeAlertSummary = (summary) => {
   try {
     StorageService.set(ALERTS_KEY, summary);
+    // Let glanceable surfaces (TodayStrip) react when background price checks
+    // finish — the summary is local cache, not a live fetch.
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('gamepilot:wishlist-alerts'));
+    }
   } catch (err) {
     console.warn('[Wishlist] alert summary write failed:', err);
   }

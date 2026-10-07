@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ScanLine } from 'lucide-react';
 import PlayNextCard from './PlayNextCard';
@@ -8,6 +8,7 @@ import DailyDoodleTitle from './DailyDoodleTitle';
 import OnThisDayCard from './OnThisDayCard';
 import TodayStrip from './TodayStrip';
 import { CurrentEraCard, RecentSessionsSummary } from './IdentityWidgets';
+import WishlistService from '../services/WishlistService';
 import './HomeDailyOverview.css';
 
 export const HOME_VIEWS = ['today', 'discover', 'activity', 'identity', 'wishlist'];
@@ -74,6 +75,15 @@ export default function HomeDailyOverview({
   themeId,
 }) {
   const hasLibrary = Array.isArray(library) && library.length > 0;
+
+  // Kick a background wishlist price check on Today mounts — refreshIfStale
+  // self-guards on the wishlist toggle and its 24h cache, so this is a no-op
+  // when disabled or fresh. When it lands, the TodayStrip deals chip updates
+  // via the gamepilot:wishlist-alerts event.
+  useEffect(() => {
+    WishlistService.refreshIfStale()?.catch?.(() => {});
+  }, []);
+
   return (
     <main className="home-daily-overview" aria-label="Today">
       <div className="home-daily-doodle">

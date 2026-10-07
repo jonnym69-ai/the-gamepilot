@@ -446,6 +446,12 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
             const artwork = artworkForItem(item);
             const currentPrice = item.currentPrice;
             const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;
+            const discount = currentPrice ? Math.round(Number(currentPrice.cut) || 0) : 0;
+            const isHistoricLow =
+              currentPrice &&
+              item.historicalLow &&
+              Number.isFinite(Number(item.historicalLow.price)) &&
+              Number(currentPrice.price) <= Number(item.historicalLow.price);
             return (
               <div key={item.name} className={`wishlist-card ${hasDrop ? 'wishlist-card--drop' : ''}`}>
                 <div className="wishlist-card-art">
@@ -466,13 +472,20 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                   </div>
                   {currentPrice ? (
                     <div className="wishlist-card-price">
-                      <span className="wishlist-price-current">{formatPrice(currentPrice.price, currency)}</span>
+                      <span className="wishlist-price-current">
+                        {Number(currentPrice.price) === 0 ? 'Free' : formatPrice(currentPrice.price, currency)}
+                      </span>
+                      {discount > 0 && Number(currentPrice.retail) > Number(currentPrice.price) && (
+                        <span className="wishlist-price-retail">{formatPrice(currentPrice.retail, currency)}</span>
+                      )}
+                      {discount > 0 && <span className="wishlist-price-cut">-{discount}%</span>}
                       {currentPrice.store && <span className="wishlist-price-store">{currentPrice.store}</span>}
                     </div>
                   ) : (
                     <span className="wishlist-price-unavailable">Price unavailable</span>
                   )}
                   {hasDrop && <span className="wishlist-drop-badge">Price drop!</span>}
+                  {isHistoricLow && <span className="wishlist-historic-badge">Historic low</span>}
                   <div className="wishlist-card-actions">
                     <label className="wishlist-threshold-label">
                       Alert at:
@@ -490,6 +503,16 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                       <button className="wishlist-launch-btn" onClick={() => onLaunchGame(game)}>
                         Launch
                       </button>
+                    )}
+                    {currentPrice?.dealID && (
+                      <a
+                        className="wishlist-deal-link"
+                        href={`https://www.cheapshark.com/redirect?dealID=${encodeURIComponent(currentPrice.dealID)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View deal
+                      </a>
                     )}
                     <button className="wishlist-remove-btn" onClick={() => handleRemove(item.name)}>
                       Remove

@@ -225,3 +225,10 @@ The typecheck command is optional for JS-only changes.
 - Credentials stay server-side: renderer → `igdb-lookup` IPC → `electron/igdb.js` → `https://gamepilot.netlify.app/api/getIgdbGame` → `netlify/functions/getIgdbGame.js` → `api.igdb.com` (Twitch `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` env vars; the function fetches and caches an OAuth token itself).
 - Only the game name is sent. Lookups are cached on-device (`igdbArtworkCacheV1`): hits for 30 days, misses for 7 days; calls are throttled to ~2.5/s. The `enrichLibraryCovers` result is a new array (or null) — persist via `saveLibrary`/`StorageService`.
 - Regression checks: `npx jest src/services/IgdbArtworkService.test.js --ci`. Env-var changes require a `netlify deploy --prod` before functions see them.
+
+## Wishlist deals and alerts
+
+- Wishlist pricing uses CheapShark (`/games?title=` then `/games?id=` for deals + `cheapestPriceEver`), fetched directly from the renderer — CheapShark allows CORS, no key, no relay. Prices cache 24h in `wishlistPriceCacheV1`; `refreshIfStale` is the only scheduled entry point (kicked from `HomeDailyOverview` mount and the wishlist page).
+- Cards render the full price picture: current price (or Free), retail strikethrough, discount %, store name, Price drop / Historic low badges, and a View deal link via `cheapshark.com/redirect?dealID=`. The per-item threshold is the user's alert price.
+- `wishlistAlertSummaryV1` is the local deal count; every write dispatches `gamepilot:wishlist-alerts`, which TodayStrip listens to for its "N deals" chip. Never fetch prices synchronously in the strip — read the summary only.
+- Regression checks: `npx jest src/services/WishlistService.test.js src/components/TodayStrip.test.js --ci`.
