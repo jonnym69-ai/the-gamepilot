@@ -2,8 +2,11 @@ const { BrowserWindow } = require('electron');
 const { httpsRequest } = require('./net');
 
 const STEAM_FRIENDS_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamFriends';
+const STEAM_PROFILE_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamProfile';
 const FRIENDS_CACHE = new Map();
 const FRIENDS_CACHE_TTL_MS = 60000;
+const PROFILE_CACHE = new Map();
+const PROFILE_CACHE_TTL_MS = 5 * 60000;
 
 const steamHttpsGet = async (hostname, pathname) => {
   const res = await httpsRequest(`https://${hostname}${pathname}`, null, {
@@ -780,6 +783,38 @@ function registerIpcHandlers(ipcMain) {
     } catch (error) {
       console.warn('[SteamFriends] relay request failed:', error.message);
       return { ok: false, error: 'friends-unavailable' };
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Steam Profile identity. Same relay pattern as friends — GetPlayerSummaries
+  // + GetBadges server-side, trimmed public fields only. Level/badge fields are
+  // null when the profile's game details are private; that is not an error.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle('steam-profile', async (_event, steamId) => {
+    const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
+    if (!/^\d{17}$/.test(cleanId)) return { ok: false, error: 'invalid-steamid' };
+
+    const cached = PROFILE_CACHE.get(cleanId);
+    if (cached && Date.now() < cached.expiresAt) return { ok: true, ...cached.data, cached: true };
+
+    try {
+      const res = await httpsRequest(`${STEAM_PROFILE_RELAY_URL}?steamid=${cleanId}`, null, {
+        'User-Agent': 'GamePilot/1.9',
+        Accept: 'application/json',
+      });
+      if (res.status === 404) return { ok: false, error: 'profile-not-found' };
+      if (res.status !== 200) return { ok: false, error: 'profile-unavailable' };
+      const data = JSON.parse(res.body || '{}');
+      if (!data?.profile || typeof data.profile !== 'object') return { ok: false, error: 'profile-unavailable' };
+      const result = { profile: data.profile, fetchedAt: Number(data.fetchedAt) || Date.now() };
+      PROFILE_CACHE.delete(cleanId);
+      PROFILE_CACHE.set(cleanId, { data: result, expiresAt: Date.now() + PROFILE_CACHE_TTL_MS });
+      if (PROFILE_CACHE.size > 8) PROFILE_CACHE.delete(PROFILE_CACHE.keys().next().value);
+      return { ok: true, ...result };
+    } catch (error) {
+      console.warn('[SteamProfile] relay request failed:', error.message);
+      return { ok: false, error: 'profile-unavailable' };
     }
   });
 

@@ -219,6 +219,13 @@ The typecheck command is optional for JS-only changes.
 - Presence is read-only public Steam data, cached 60s in the main process and service layer. A friend's current game offers "Play your copy" only when its appid matches a Steam game in the local library via `getSteamAppId`.
 - Regression checks: `npx jest src/services/SteamFriendsService.test.js src/components/FriendsPlayingCard.test.js --ci`. Live presence needs the Netlify function deployed with `STEAM_API_KEY` set — Jest mocks the bridge and cannot verify the relay end-to-end.
 
+## Steam profile card
+
+- `SteamProfileCard` on Profile is opt-in via Settings ("Steam Profile Card", off by default) and reuses the `steamWishlistId` Steam64 ID. It hides entirely when disabled, unconfigured, or still loading.
+- Same relay pattern: `steam-profile` IPC → `electron/steam.js` (5 min cache) → `api/getSteamProfile` → `netlify/functions/getSteamProfile.js` → `GetPlayerSummaries` + `GetBadges`. GetBadges supplies level/xp/badge-count in one call; private game details return null stats, not an error — the card renders name/avatar with a "limited profile" tag.
+- The function only returns trimmed fields and validates avatar/profile URLs against `steamstatic.com`/`steamcommunity.com` hosts. Renderer caches 6 h and discards profiles older than 24 h.
+- Regression checks: `npx jest src/services/SteamProfileService.test.js src/services/SteamProfileBridge.test.js src/components/SteamProfileCard.test.js --ci`. Bridge tests must use distinct Steam64 IDs per network case — the handler's in-memory cache persists across tests in the same module instance.
+
 ## IGDB artwork enrichment
 
 - `IgdbArtworkService` fills `coverImage` on games that resolve to no artwork (non-Steam titles), using official IGDB covers. Opt-in via Settings ("IGDB Cover Art Lookup", off by default); it runs on library load and after scans, never blocks the scan result, and never overwrites `coverArtOverride`.

@@ -27,6 +27,7 @@ import CollapsibleSection from './components/CollapsibleSection';
 import StorageService from './services/StorageService';
 import SessionRepository from './services/SessionRepository';
 import ProfileService, { SOCIAL_PLATFORMS } from './services/ProfileService';
+import SteamProfileCard from './components/SteamProfileCard';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
@@ -1432,6 +1433,8 @@ const Profile = ({ theme, library = [] }) => {
                   <div className="welcome-message-display">
                     <p>"{welcomeMessage}"</p>
                   </div>
+
+                  <SteamProfileCard />
 
                   {displayedPersona && (
                     <div className="gaming-persona-card">

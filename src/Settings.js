@@ -33,6 +33,7 @@ import WishlistService from './services/WishlistService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
 import SteamFriendsService from './services/SteamFriendsService';
+import SteamProfileService from './services/SteamProfileService';
 import IgdbArtworkService from './services/IgdbArtworkService';
 import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
@@ -74,6 +75,7 @@ function Settings({
   const [steamId, setSteamId] = useState(() => SteamWishlistService.getSteamId());
   const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
+  const [steamProfileEnabled, setSteamProfileEnabled] = useState(() => SteamProfileService.isEnabled());
   const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
   const [igdbArtworkEnabled, setIgdbArtworkEnabled] = useState(() => IgdbArtworkService.isEnabled());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
@@ -1236,6 +1238,29 @@ function Settings({
                           />
                         </div>
                       )}
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Steam Profile Card</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={steamProfileEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setSteamProfileEnabled(next);
+                            SteamProfileService.setEnabled(next);
+                            success(`Steam profile card ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="steam-profile-enabled"
+                        />
+                        <label htmlFor="steam-profile-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Off by default. Shows your Steam persona name, avatar, level, badge count and join date on the
+                        Profile page. Uses the same Steam64 ID as wishlist import. Only public Steam profile data is
+                        read — nothing is posted or changed.
+                      </p>
                     </div>
 
                     <div className="setting-item">
