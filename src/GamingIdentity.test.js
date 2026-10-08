@@ -15,6 +15,7 @@ jest.mock('./AchievementSystem', () => ({
     getXPStats: jest.fn(),
     getPatreonBoostProfile: jest.fn(() => ({ multiplier: 1, tier: null, code: null })),
   },
+  ACHIEVEMENTS: jest.requireActual('./AchievementSystem').ACHIEVEMENTS,
 }));
 
 jest.mock('./services/StatsAggregationService', () => ({
@@ -125,5 +126,47 @@ describe('GamingIdentity', () => {
     expect(typeof resetValue).toBe('string');
     expect(new Date(resetValue).toString()).not.toBe('Invalid Date');
     expect(StorageService.getString('joinDate')).toBe(resetValue);
+  });
+
+  test('getAchievedBadges resolves real names and icons from the achievement catalog', () => {
+    AchievementTracker.getUnlockedAchievements.mockReturnValue(['hour_100', 'collector_5']);
+
+    const badges = GamingIdentity.getAchievedBadges();
+    const byId = Object.fromEntries(badges.map((badge) => [badge.id, badge]));
+
+    expect(byId.hour_100.name).toBe('Hundred Hours');
+    expect(byId.hour_100.icon).toBe('💯');
+    expect(byId.collector_5.name).toBe('Small Shelf');
+    expect(byId.collector_5.icon).toBe('📚');
+  });
+
+  test('getAchievedBadges humanizes unknown IDs instead of repeating "Achievement"', () => {
+    AchievementTracker.getUnlockedAchievements.mockReturnValue(['quest_streak_7']);
+
+    const badges = GamingIdentity.getAchievedBadges();
+
+    expect(badges[0].name).toBe('Quest Streak 7');
+    expect(badges[0].icon).toBe('🏆');
+  });
+
+  test('detectTasteClusters does not label survival sandbox games as narrative RPGs', () => {
+    const clusters = GamingIdentity.detectTasteClusters([
+      { name: 'Rust', genres: ['Action', 'Adventure', 'Indie', 'RPG', 'Massively Multiplayer'] },
+      { name: 'Terraria', genres: ['Action', 'Adventure', 'Indie', 'RPG', 'Sandbox'] },
+      { name: 'Project Zomboid', genres: ['Indie', 'RPG', 'Early Access'] },
+    ]);
+
+    expect(clusters.find((cluster) => cluster.id === 'story-rpg')).toBeUndefined();
+  });
+
+  test('detectTasteClusters still groups genuine story RPGs', () => {
+    const clusters = GamingIdentity.detectTasteClusters([
+      { name: 'The Witcher 3', genres: ['RPG'] },
+      { name: "Baldur's Gate 3", genres: ['RPG', 'Adventure'] },
+    ]);
+
+    expect(clusters.find((cluster) => cluster.id === 'story-rpg')).toEqual(
+      expect.objectContaining({ label: 'Narrative RPG Voyager', matchCount: 2 })
+    );
   });
 });

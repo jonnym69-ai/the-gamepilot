@@ -1,5 +1,5 @@
 // GamingIdentity.js - Enhanced Gaming Identity System
-import { AchievementTracker } from './AchievementSystem';
+import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
@@ -21,6 +21,20 @@ let _statsCacheTime = 0;
 let _signatureGamesCache = null;
 let _signatureGamesCacheTime = 0;
 const CACHE_TTL_MS = 500;
+
+// Flat lookup over the ACHIEVEMENTS catalog so badge chips show real
+// names/icons instead of the legacy six-entry map.
+const ACHIEVEMENT_LOOKUP = (() => {
+  const lookup = {};
+  Object.values(ACHIEVEMENTS || {}).forEach((category) => {
+    (Array.isArray(category) ? category : []).forEach((entry) => {
+      if (entry && entry.id) lookup[entry.id] = entry;
+    });
+  });
+  return lookup;
+})();
+
+const getAchievementCatalogEntry = (achievementId) => ACHIEVEMENT_LOOKUP[achievementId] || null;
 
 export class GamingIdentity {
   static getProfile() {
@@ -426,8 +440,7 @@ export class GamingIdentity {
           /\b(the witcher|cyberpunk|baldur.?s gate|mass effect|dragon age|disco elysium|the outer worlds|fallout|skyrim|oblivion|pillars of eternity|tyranny|torment|elex|greedfall)\b/i.test(
             game.name
           ) ||
-          ((game.genres || []).includes('RPG') &&
-            (game.genres || []).some((g) => /story|narrative|adventure/i.test(g))),
+          ((game.genres || []).includes('RPG') && (game.genres || []).some((g) => /story|narrative/i.test(g))),
       },
       {
         id: 'competitive-shooter',
@@ -437,8 +450,7 @@ export class GamingIdentity {
           /\b(counter.strike|csgo|cs2|valorant|rainbow six|siege|apex|overwatch|call of duty|pubg|fortnite|warzone|escape from tarkov|hunt showdown)\b/i.test(
             game.name
           ) ||
-          ((game.genres || []).includes('Shooter') &&
-            (game.genres || []).some((g) => /competitive|multiplayer|fps/i.test(g))),
+          ((game.genres || []).includes('Shooter') && (game.genres || []).some((g) => /competitive|fps/i.test(g))),
       },
       {
         id: 'strategy-tactics',
@@ -457,7 +469,7 @@ export class GamingIdentity {
           /\b(stardew valley|animal crossing|minecraft|terraria|spiritfarer|cozy grove|coral island|fields of mistria|dragon quest builders)\b/i.test(
             game.name
           ) ||
-          ((game.genres || []).includes('Sandbox') && (game.genres || []).some((g) => /casual|relaxed|indie/i.test(g))),
+          ((game.genres || []).includes('Sandbox') && (game.genres || []).some((g) => /casual|relaxed|cozy/i.test(g))),
       },
       {
         id: 'horror-immersion',
@@ -690,27 +702,17 @@ export class GamingIdentity {
 
   // Helper functions
   static getAchievementIcon(achievementId) {
-    const icons = {
-      first_game: '🎮',
-      collector_5: '📚',
-      hour_1: '⏱️',
-      relaxed_5: '😌',
-      perfect_play_1: '✨',
-      platform_diverse: '🔄',
-    };
-    return icons[achievementId] || '🏆';
+    return getAchievementCatalogEntry(achievementId)?.icon || '🏆';
   }
 
   static getAchievementName(achievementId) {
-    const names = {
-      first_game: 'First Steps',
-      collector_5: 'Collector',
-      hour_1: 'Quick Session',
-      relaxed_5: 'Chill Master',
-      perfect_play_1: 'Perfect Start',
-      platform_diverse: 'Platform Diverse',
-    };
-    return names[achievementId] || 'Achievement';
+    const catalogName = getAchievementCatalogEntry(achievementId)?.name;
+    if (catalogName) return catalogName;
+    const humanized = String(achievementId || '')
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return humanized || 'Achievement';
   }
 
   static getPlatformIcon(platform) {

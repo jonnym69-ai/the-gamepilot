@@ -28,6 +28,7 @@ import StorageService from './services/StorageService';
 import SessionRepository from './services/SessionRepository';
 import ProfileService, { SOCIAL_PLATFORMS } from './services/ProfileService';
 import SteamProfileCard from './components/SteamProfileCard';
+import SteamProfileService from './services/SteamProfileService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
@@ -150,6 +151,7 @@ const Profile = ({ theme, library = [] }) => {
   const [founderTier, setFounderTier] = useState(null);
   const [username, setUsername] = useState('');
   const [profilePic, setProfilePic] = useState('');
+  const [steamAvatar, setSteamAvatar] = useState(null);
   const [welcomeMessage, setWelcomeMessage] = useState('Ready to find your perfect play?');
   const [isEditing, setIsEditing] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -908,6 +910,21 @@ const Profile = ({ theme, library = [] }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeLibrary, refreshRewardCatalog]);
 
+  // Reuse the Steam profile card's avatar as the header image when the
+  // feature is on and the user hasn't chosen a custom picture.
+  useEffect(() => {
+    let cancelled = false;
+    if (!SteamProfileService.isEnabled()) return undefined;
+    SteamProfileService.fetchProfile().then((result) => {
+      if (!cancelled && result?.profile?.avatar) {
+        setSteamAvatar(result.profile.avatar);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Re-voice the current period story when the user switches persona variant
   // or window, so the weekly/monthly recap stays aligned with the card.
   useEffect(() => {
@@ -1139,7 +1156,7 @@ const Profile = ({ theme, library = [] }) => {
                   cursor: 'pointer',
                 }}
               >
-                <ImageIcon size={16} /> Cinematic Poster (Pro)
+                <ImageIcon size={16} /> Cinematic Poster
               </button>
               <button
                 className="action-btn"
@@ -1180,8 +1197,8 @@ const Profile = ({ theme, library = [] }) => {
                     : undefined
                 }
               >
-                {profilePic ? (
-                  <img src={profilePic} alt="Profile" className="profile-picture" />
+                {profilePic || steamAvatar ? (
+                  <img src={profilePic || steamAvatar} alt="Profile" className="profile-picture" />
                 ) : (
                   <div className="profile-picture-placeholder">
                     <User size={48} />
@@ -1221,25 +1238,18 @@ const Profile = ({ theme, library = [] }) => {
                 style={selectedProfileBanner ? { background: selectedProfileBanner.preview } : undefined}
               >
                 <div className="profile-identity-banner-copy">
-                  <span className="profile-identity-label">
-                    {isFounder ? 'Founder Identity Banner' : 'Equipped Banner'}
-                  </span>
+                  <span className="profile-identity-label">Equipped Banner</span>
                   <strong>{selectedProfileBanner?.name || 'Pilot Sunset'}</strong>
-                  <p>
-                    {isFounder && founderTier
-                      ? `${founderTier} Founder • ${selectedProfileTitle?.name || 'Rookie Pilot'}`
-                      : selectedProfileTitle?.name || 'Rookie Pilot'}
-                  </p>
+                  <p>{selectedProfileTitle?.name || 'Rookie Pilot'}</p>
                 </div>
                 <div className="profile-identity-banner-meta">
-                  {isFounder && founderTier && <span>{founderTier} Founder Lounge</span>}
                   <span>{selectedProfileFrame?.name || 'Starter Halo'}</span>
                   <span>
                     {unlockedShowcaseSlotCount} showcase slot{unlockedShowcaseSlotCount === 1 ? '' : 's'}
                   </span>
                   <span className="profile-achievement-badge">
                     <Trophy size={14} />
-                    {achievementSummary.unlocked} / {achievementSummary.total} badges
+                    {achievementSummary.unlocked} / {achievementSummary.total} achievements
                   </span>
                 </div>
               </div>
@@ -1420,9 +1430,9 @@ const Profile = ({ theme, library = [] }) => {
                       </div>
                     )}
                     {isFounder && (
-                      <div className={`founder-badge ${founderTier.toLowerCase()}`}>
+                      <div className={`founder-badge ${(founderTier || '').toLowerCase()}`}>
                         <Crown size={16} />
-                        <span>{founderTier} Founder</span>
+                        <span>Founding Supporter</span>
                       </div>
                     )}
                     <button onClick={handleEdit} className="edit-button">
@@ -1641,7 +1651,6 @@ const Profile = ({ theme, library = [] }) => {
                   )}
 
                   <div className="profile-equipped-meta">
-                    {isFounder && founderTier && <span>Founder Status: {founderTier} Lounge</span>}
                     <span>Frame: {selectedProfileFrame?.name || 'Starter Halo'}</span>
                     <span>Banner: {selectedProfileBanner?.name || 'Pilot Sunset'}</span>
                   </div>
@@ -1691,11 +1700,13 @@ const Profile = ({ theme, library = [] }) => {
                           <span className="profile-showcase-chip-points">+{achievement.points} XP</span>
                         </div>
                       ))}
-                      {Array.from({ length: emptyShowcaseSlots }).map((_, index) => (
-                        <div key={`empty-showcase-${index}`} className="profile-showcase-chip empty">
-                          <span>Empty showcase slot</span>
+                      {emptyShowcaseSlots > 0 && (
+                        <div className="profile-showcase-chip empty">
+                          <span>
+                            +{emptyShowcaseSlots} open slot{emptyShowcaseSlots === 1 ? '' : 's'}
+                          </span>
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>
@@ -1750,14 +1761,12 @@ const Profile = ({ theme, library = [] }) => {
                 {isFounder && founderTier && (
                   <div className={`founder-plaque founder-plaque-${founderTier.toLowerCase()}`}>
                     <div>
-                      <span className="trait-label">Founder Plaque</span>
-                      <strong>{founderTier} Founder Lounge Member</strong>
+                      <span className="trait-label">Supporter Plaque</span>
+                      <strong>Founding Supporter</strong>
                       <p className="identity-description">
-                        Your supporter identity now carries premium profile, recap, and export presentation throughout
-                        GamePilot.
+                        Thanks for backing GamePilot early — your banner, frame, and showcase extras stay equipped.
                       </p>
                     </div>
-                    <span className="founder-plaque-badge">Founding Supporter</span>
                   </div>
                 )}
                 {startupPersonalization?.completed && (
@@ -1983,7 +1992,7 @@ const Profile = ({ theme, library = [] }) => {
             <CollapsibleSection
               title="Taste Clusters"
               subtitle="Emergent patterns from your play history that go beyond single-genre tags."
-              badge={`${gamingIdentity.tasteClusters.length} clusters`}
+              badge={`${gamingIdentity.tasteClusters.length} cluster${gamingIdentity.tasteClusters.length === 1 ? '' : 's'}`}
               defaultOpen={false}
               icon={<Target size={18} />}
               className={getSectionClass(1)}
