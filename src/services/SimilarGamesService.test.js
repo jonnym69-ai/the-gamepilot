@@ -165,6 +165,26 @@ describe('SimilarGamesService', () => {
       expect(matches.length).toBe(1);
     });
 
+    it('prefers stored wishlist artwork over the guessed CDN header', async () => {
+      const WishlistService = require('../services/WishlistService').default;
+      WishlistService.getWishlist.mockReturnValue([
+        { name: 'Stored Art RPG', genres: ['RPG'], steamAppID: '3681010', thumb: 'https://example.com/real.jpg' },
+        { name: 'Guessed Art RPG', genres: ['RPG'], steamAppID: '999' },
+      ]);
+
+      const result = await SimilarGamesService.getSimilarRecommendations({
+        mode: 'custom',
+        library: [],
+        referenceGame: { name: 'My RPG', genres: ['RPG'] },
+        useCache: false,
+      });
+
+      const stored = result.entries.find((e) => e.name === 'Stored Art RPG');
+      const guessed = result.entries.find((e) => e.name === 'Guessed Art RPG');
+      expect(stored.image).toBe('https://example.com/real.jpg');
+      expect(guessed.image).toBe('https://cdn.cloudflare.steamstatic.com/steam/apps/999/header.jpg');
+    });
+
     it('clamps display scores to 0-100', async () => {
       const WishlistService = require('../services/WishlistService').default;
       WishlistService.getWishlist.mockReturnValue([

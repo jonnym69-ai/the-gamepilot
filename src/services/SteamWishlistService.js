@@ -134,6 +134,24 @@ class SteamWishlistService {
       addedCount += 1;
     }
 
+    // Entries added before artwork persisted (or added manually) still match
+    // by name/appid — repair their missing fields so cards can render art.
+    const byName = new Map(result.items.map((item) => [(item.name || '').toLowerCase(), item]));
+    const byAppid = new Map(result.items.map((item) => [String(item.appid || ''), item]));
+    for (const entry of WishlistService.getWishlist()) {
+      const incoming =
+        byName.get((entry.name || '').toLowerCase()) ||
+        byAppid.get(String(entry.steamAppID || '')) ||
+        byAppid.get(String(entry.appid || ''));
+      if (!incoming) continue;
+      WishlistService.backfillGame(entry.name, {
+        thumb: incoming.image || null,
+        steamAppID: incoming.appid ? String(incoming.appid) : null,
+        appid: incoming.appid || null,
+        genres: Array.isArray(incoming.genres) ? incoming.genres : null,
+      });
+    }
+
     const summary = {
       success: true,
       count: addedCount,

@@ -219,7 +219,7 @@ class WishlistService {
       platform: game.platform || '',
       appid: game.appid || '',
       steamAppID: steamAppID || '',
-      thumb: game.thumb || '',
+      thumb: game.thumb || game.image || '',
       genres: Array.isArray(resolvedGenres) ? resolvedGenres : [],
       addedAt: Date.now(),
       threshold: typeof threshold === 'number' ? threshold : null,
@@ -282,6 +282,40 @@ class WishlistService {
     const key = slug(gameName);
     const items = readWishlist().map((item) => (item.key === key ? { ...item, notes } : item));
     writeWishlist(items);
+  }
+
+  /**
+   * Fill empty fields on an existing wishlist entry (artwork, Steam ID,
+   * genres) without overwriting anything the user or an earlier import set.
+   * Returns true when an entry was updated.
+   */
+  static backfillGame(gameName, patch = {}) {
+    const key = slug(gameName);
+    if (!key || !patch || typeof patch !== 'object') return false;
+    let updated = false;
+    const items = readWishlist().map((item) => {
+      if (item.key !== key) return item;
+      const next = { ...item };
+      if (!next.thumb && patch.thumb) next.thumb = patch.thumb;
+      if (!next.steamAppID && patch.steamAppID) next.steamAppID = patch.steamAppID;
+      if (!next.appid && patch.appid) next.appid = patch.appid;
+      if (
+        (!Array.isArray(next.genres) || next.genres.length === 0) &&
+        Array.isArray(patch.genres) &&
+        patch.genres.length
+      ) {
+        next.genres = patch.genres;
+      }
+      const changed =
+        next.thumb !== item.thumb ||
+        next.steamAppID !== item.steamAppID ||
+        next.appid !== item.appid ||
+        next.genres !== item.genres;
+      updated = updated || changed;
+      return changed ? next : item;
+    });
+    if (updated) writeWishlist(items);
+    return updated;
   }
 
   static getCachedPrice(gameName) {

@@ -369,9 +369,13 @@ const SIMILAR_GAMES_SERVICE = {
           appid: steamAppId || '',
           name: item.name,
           genres: item.genres || [],
-          image: steamAppId
-            ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/header.jpg`
-            : item.thumb || null,
+          // Prefer the artwork captured at import/search time — the guessed
+          // CDN path 404s on newer app IDs whose headers live under hashed
+          // store_item_assets paths.
+          image:
+            item.thumb ||
+            item.image ||
+            (steamAppId ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/header.jpg` : null),
           isFree: false,
           price: item.currentPrice?.priceFormatted || null,
           source: 'wishlist',

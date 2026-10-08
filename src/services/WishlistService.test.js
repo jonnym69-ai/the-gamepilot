@@ -100,6 +100,27 @@ describe('Steam wishlist import', () => {
     expect(SteamWishlistService.getLastSyncAt()).toEqual(expect.any(Number));
   });
 
+  it('persists imported artwork as thumb and backfills entries that missed it', async () => {
+    WishlistService.addGame({ name: 'Nioh 3' }); // pre-existing entry with no art
+    window.electronAPI.steamWishlist.mockResolvedValue({
+      success: true,
+      items: [
+        {
+          name: 'Nioh 3',
+          appid: '3681010',
+          image: 'https://shared.akamai.steamstatic.com/nioh3.jpg',
+          genres: ['Action'],
+        },
+        { name: 'Hades', appid: '1145360', image: 'https://shared.akamai.steamstatic.com/hades.jpg' },
+      ],
+    });
+    await SteamWishlistService.sync();
+    const items = WishlistService.getWishlist();
+    expect(items.find((i) => i.name === 'Nioh 3').thumb).toBe('https://shared.akamai.steamstatic.com/nioh3.jpg');
+    expect(items.find((i) => i.name === 'Nioh 3').steamAppID).toBe('3681010');
+    expect(items.find((i) => i.name === 'Hades').thumb).toBe('https://shared.akamai.steamstatic.com/hades.jpg');
+  });
+
   it('keeps existing wishlist entries on fetch failure', async () => {
     WishlistService.addGame({ name: 'Celeste' });
     window.electronAPI.steamWishlist.mockResolvedValue({ success: false, error: 'Steam is unavailable.', items: [] });
