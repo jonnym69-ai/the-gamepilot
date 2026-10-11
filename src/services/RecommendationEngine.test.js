@@ -167,6 +167,34 @@ describe('RecommendationEngine', () => {
     });
   });
 
+  describe('Perfect Play picker selections', () => {
+    test('supports time alone and still enforces the session estimate', () => {
+      const short = baseGame({ name: 'Short session', appid: 'short' });
+      const long = baseGame({ name: 'Long session', appid: 'long' });
+      PersonaPerformanceInsights.estimateSessionMinutes.mockImplementation((game) => (game === long ? 90 : 20));
+      const result = RecommendationEngine.getPerfectPlaySelectionResult([short, long], [], [], 30, 3);
+      expect(result.games).toEqual([short]);
+      expect(result.primaryGame).toBe(short);
+      expect(RecommendationEngine.getPerfectPlaySelectionResult([short], [], [], null, 3).games).toEqual([]);
+    });
+
+    test('does not require genres for a time-only choice and excludes hidden or deferred games', () => {
+      const available = baseGame({ name: 'No genre data', appid: 'available', genres: [] });
+      const deferred = baseGame({ name: 'Deferred', appid: 'deferred' });
+      UserBehaviorProfile.trackRecommendationLaunch('perfect-play', deferred.appid);
+      UserBehaviorProfile.trackRecommendationOutcome(deferred.appid, 'not-now', { gameName: deferred.name });
+      PersonaPerformanceInsights.estimateSessionMinutes.mockReturnValue(20);
+      const result = RecommendationEngine.getPerfectPlaySelectionResult(
+        [available, deferred, baseGame({ appid: 'hidden', hidden: true }), null],
+        [],
+        [],
+        30,
+        3
+      );
+      expect(result.games).toEqual([available]);
+    });
+  });
+
   describe('normalizeSelectionList / normalizePerfectPlaySelections', () => {
     test('filters by validator and dedupes', () => {
       const result = RecommendationEngine.normalizeSelectionList(['a', 'b', 'a', 'c'], (v) => v !== 'b');

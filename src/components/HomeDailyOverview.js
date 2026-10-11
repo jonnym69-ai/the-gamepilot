@@ -121,7 +121,6 @@ export default function HomeDailyOverview({
               </div>
             )}
           </section>
-          <FriendsPlayingCard library={library} onLaunchGame={onLaunchGame} />
           <div className="home-daily-spotlight">
             <DailySpotlightCard library={library} />
           </div>
@@ -137,6 +136,7 @@ export default function HomeDailyOverview({
             <Link to="/?view=activity" className="home-daily-text-link">
               View activity and recaps <ArrowRight size={15} aria-hidden="true" />
             </Link>
+            <FriendsPlayingCard library={library} onLaunchGame={onLaunchGame} />
             <OnThisDayCard />
           </section>
         </>

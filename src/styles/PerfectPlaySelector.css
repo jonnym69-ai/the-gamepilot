@@ -30,7 +30,34 @@
 .selector-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
+}
+
+.selector-section.selector-advanced {
+  display: block;
+}
+
+.selector-advanced > summary {
+  cursor: pointer;
+  padding: 12px 0;
+  color: var(--text-primary);
+}
+
+.selector-advanced[open] > *:not(summary) {
+  margin-top: 16px;
+}
+
+.perfect-play-selector button:focus-visible,
+.selector-advanced > summary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+.perfect-play-selector button.game-item {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
 }
 
 /* Selector Section */

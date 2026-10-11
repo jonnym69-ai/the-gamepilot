@@ -125,3 +125,42 @@ describe('AchievementSystem curated catalog', () => {
     expect(themes).toContain('fantasy');
   });
 });
+
+describe('bonus XP ledger', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  test('grantXP records a bounded history and latest award', () => {
+    for (let index = 0; index < 55; index += 1) {
+      AchievementTracker.grantXP('daily_checkin', 10);
+    }
+
+    const stats = AchievementTracker.getBonusRewardStats();
+    expect(stats.totalXP).toBe(550);
+    expect(stats.awards).toBe(55);
+    expect(stats.history).toHaveLength(50);
+    expect(stats.lastAward.source).toBe('daily_checkin');
+    expect(stats.history.at(-1).xp).toBe(10);
+  });
+
+  test('library welcome XP is granted once for new users with games', () => {
+    expect(AchievementTracker.grantLibraryWelcomeXP(0).granted).toBe(false);
+
+    const first = AchievementTracker.grantLibraryWelcomeXP(12);
+    expect(first).toEqual({ granted: true, xp: 250 });
+
+    const stats = AchievementTracker.getBonusRewardStats();
+    expect(stats.lastAward.source).toBe('library_founded');
+    expect(stats.welcomed).toBe(true);
+
+    expect(AchievementTracker.grantLibraryWelcomeXP(12).granted).toBe(false);
+    expect(AchievementTracker.getBonusRewardStats().totalXP).toBe(250);
+  });
+
+  test('library welcome XP skips established users', () => {
+    AchievementTracker.grantXP('daily_checkin', 600);
+    expect(AchievementTracker.grantLibraryWelcomeXP(50).granted).toBe(false);
+    expect(AchievementTracker.getBonusRewardStats().welcomed).toBe(false);
+  });
+});

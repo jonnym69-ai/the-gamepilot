@@ -47,7 +47,6 @@ const Habits = lazy(() => import('./Habits'));
 const Achievements = lazy(() => import('./Achievements'));
 const ExportHub = lazy(() => import('./ExportHub'));
 const StorageManager = lazy(() => import('./StorageManager'));
-const SwipeDeck = lazy(() => import('./SwipeDeck'));
 const Recommendations = lazy(() => import('./Recommendations'));
 const GameBarOverlay = lazy(() => import('./components/GameBarOverlay'));
 const Rewards = lazy(() => import('./Rewards'));
@@ -528,14 +527,7 @@ function AppContent() {
                 </RouteErrorBoundary>
               }
             />
-            <Route
-              path="/swipe-deck"
-              element={
-                <RouteErrorBoundary>
-                  <SwipeDeck library={library} onLaunchGame={handleLaunchGame} onUpdateRating={handleUpdateRating} />
-                </RouteErrorBoundary>
-              }
-            />
+            <Route path="/swipe-deck" element={<Navigate to="/recommendations" replace />} />
             <Route
               path="/recommendations"
               element={

@@ -1,4 +1,13 @@
-.reward-presentation :is(.rec-style-card, .rec-game-row, .rec-strip-card, .rec-momentum-card, .recommendation-card) {
+.reward-presentation
+  :is(
+    .rec-style-card,
+    .rec-game-row,
+    .rec-strip-card,
+    .rec-momentum-card,
+    .recommendation-card,
+    .home-daily-play,
+    .daily-spotlight
+  ) {
   border-color: var(--recommendation-accent);
   border-radius: var(--recommendation-radius);
   box-shadow: 0 4px 18px var(--recommendation-glow);
@@ -11,7 +20,15 @@
 }
 
 .reward-presentation
-  :is(.rec-row-launch, .rec-strip-play, .rec-momentum-launch, .rec-action-btn, .action-button.primary) {
+  :is(
+    .rec-row-launch,
+    .rec-strip-play,
+    .rec-momentum-launch,
+    .rec-action-btn,
+    .action-button.primary,
+    .play-next-play,
+    .perfect-play-selector .select-button
+  ) {
   background: var(--recommendation-accent);
   color: #111827;
   border-color: var(--recommendation-accent);
@@ -31,7 +48,9 @@
     .rec-game-row,
     .rec-strip-card,
     .rec-seed-card,
-    .rec-momentum-card
+    .rec-momentum-card,
+    .home-daily-play,
+    .daily-spotlight
   ) {
   border: var(--reward-card-border) !important;
   border-radius: var(--reward-card-radius) !important;
@@ -41,16 +60,34 @@
   backdrop-filter: var(--reward-card-blur);
 }
 
-.reward-card-style-retro :is(.home-shelf-card, .home-backlog-game-card, .game-card, .rec-game-row, .rec-strip-card) {
+.reward-card-style-retro
+  :is(
+    .home-shelf-card,
+    .home-backlog-game-card,
+    .game-card,
+    .rec-game-row,
+    .rec-strip-card,
+    .home-daily-play,
+    .daily-spotlight
+  ) {
   font-family: 'Courier New', monospace;
 }
 
-.reward-card-style-neon :is(.home-shelf-card, .game-card, .rec-game-row, .rec-strip-card):hover {
+.reward-card-style-neon
+  :is(.home-shelf-card, .game-card, .rec-game-row, .rec-strip-card, .home-daily-play, .daily-spotlight):hover {
   filter: brightness(1.12);
 }
 
 .reward-card-style-holographic
-  :is(.home-shelf-card, .home-backlog-game-card, .game-card, .rec-game-row, .rec-strip-card) {
+  :is(
+    .home-shelf-card,
+    .home-backlog-game-card,
+    .game-card,
+    .rec-game-row,
+    .rec-strip-card,
+    .home-daily-play,
+    .daily-spotlight
+  ) {
   background-size: 200% 200% !important;
   animation: reward-holographic-shift 6s ease infinite;
 }
@@ -66,7 +103,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reward-presentation :is(.home-shelf-card, .home-backlog-game-card, .game-card, .rec-game-row, .rec-strip-card) {
+  .reward-presentation
+    :is(
+      .home-shelf-card,
+      .home-backlog-game-card,
+      .game-card,
+      .rec-game-row,
+      .rec-strip-card,
+      .home-daily-play,
+      .daily-spotlight
+    ) {
     animation: none !important;
   }
 }

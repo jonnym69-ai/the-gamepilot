@@ -31,7 +31,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
 
   // Get recommendations when selections change
   const recommendationResult = useMemo(() => {
-    if (selectedMoods.length === 0 && selectedGenres.length === 0) {
+    if (selectedMoods.length === 0 && selectedGenres.length === 0 && availableMinutes === null) {
       return null;
     }
 
@@ -41,7 +41,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
       selectedMoods,
       selectedGenres,
       availableMinutes,
-      10
+      3
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [library, selectedMoods, selectedGenres, availableMinutes, tuning, familiarityBias]);
@@ -98,7 +98,8 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
         </div>
 
         {/* Genres Section */}
-        <div className="selector-section">
+        <details className="selector-section selector-advanced">
+          <summary>Filter by genre ({selectedGenres.length} selected)</summary>
           <h3>🎨 Select Genres ({selectedGenres.length})</h3>
           <div className="genre-grid">
             {GENRES.map((genre) => (
@@ -114,7 +115,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
               </button>
             ))}
           </div>
-        </div>
+        </details>
 
         {/* Time Selection */}
         <div className="selector-section">
@@ -150,7 +151,8 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
         </div>
 
         {/* Tuning Controls */}
-        <div className="selector-section tuning-section">
+        <details className="selector-section tuning-section selector-advanced">
+          <summary>Fine-tune recommendations</summary>
           <h3>🎚️ Recommendation Tuning</h3>
           <div className="tuning-controls">
             <div className="tuning-control">
@@ -230,10 +232,10 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
               </button>
             </div>
           </div>
-        </div>
+        </details>
 
         {/* Results Section */}
-        {(selectedMoods.length > 0 || selectedGenres.length > 0) && (
+        {(selectedMoods.length > 0 || selectedGenres.length > 0 || availableMinutes !== null) && (
           <div className="selector-section results-section">
             <h3>
               📊 Results: {recommendationResult?.totalMatches || 0} game
@@ -260,7 +262,7 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                         recommendationType="perfect-play"
                       />
                       <button className="select-button" onClick={() => handleSelectGame(bestRecommendation)}>
-                        Select This Game
+                        Play Now
                       </button>
                     </div>
                   </div>
@@ -268,35 +270,39 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
 
                 {/* All Matching Games */}
                 <div className="all-recommendations">
-                  <h4>All Matching Games</h4>
+                  {matchingEntries.length > 1 && <h4>Other picks</h4>}
                   <div className="games-list">
-                    {matchingEntries.map((entry, idx) => {
-                      const game = entry.game;
+                    {matchingEntries
+                      .filter((entry) => entry.game !== bestRecommendation)
+                      .map((entry, idx) => {
+                        const game = entry.game;
 
-                      return (
-                        <div
-                          key={game.appid || game.name || idx}
-                          className={`game-item ${selectedGame?.appid === game.appid ? 'selected' : ''}`}
-                          onClick={() => handleSelectGame(game)}
-                        >
-                          <div className="game-rank">{idx + 1}</div>
-                          <div className="game-info">
-                            <div className="game-name">{game.name}</div>
-                            <div className="game-platform">{game.platform}</div>
-                            <RecommendationReasonChip
-                              game={game}
-                              mood={selectedMoods[0] || null}
-                              genre={selectedGenres[0] || null}
-                              timeAvailable={availableMinutes}
-                              recommendationType="perfect-play"
-                            />
-                          </div>
-                          <div className="game-stats">
-                            <span>{game.launch_count || 0} plays</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        return (
+                          <button
+                            type="button"
+                            key={game.appid || game.name || idx}
+                            className={`game-item ${selectedGame === game ? 'selected' : ''}`}
+                            aria-label={`Play ${game.name}`}
+                            onClick={() => handleSelectGame(game)}
+                          >
+                            <div className="game-rank">{idx + 1}</div>
+                            <div className="game-info">
+                              <div className="game-name">{game.name}</div>
+                              <div className="game-platform">{game.platform}</div>
+                              <RecommendationReasonChip
+                                game={game}
+                                mood={selectedMoods[0] || null}
+                                genre={selectedGenres[0] || null}
+                                timeAvailable={availableMinutes}
+                                recommendationType="perfect-play"
+                              />
+                            </div>
+                            <div className="game-stats">
+                              <span>{game.launch_count || 0} plays</span>
+                            </div>
+                          </button>
+                        );
+                      })}
                   </div>
                   {(recommendationResult?.totalMatches || 0) > matchingEntries.length && (
                     <div className="more-games">
@@ -315,9 +321,9 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
         )}
 
         {/* Empty State */}
-        {selectedMoods.length === 0 && selectedGenres.length === 0 && (
+        {selectedMoods.length === 0 && selectedGenres.length === 0 && availableMinutes === null && (
           <div className="empty-state">
-            <p>Select moods and/or genres to get started</p>
+            <p>Pick a mood or the time you have to get started.</p>
           </div>
         )}
       </div>

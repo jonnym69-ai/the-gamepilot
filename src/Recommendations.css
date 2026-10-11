@@ -96,6 +96,35 @@
   line-height: 1.5;
 }
 
+.rec-alternatives {
+  margin: 24px 0;
+}
+
+.rec-alternatives-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rec-alternatives-toggle[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+.rec-alternatives-toggle:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
 /* ─── Style Cards Grid ─── */
 .rec-styles-grid {
   display: grid;

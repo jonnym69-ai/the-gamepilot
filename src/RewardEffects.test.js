@@ -3,12 +3,17 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Recommendations from './Recommendations';
 import GamingLinks from './GamingLinks';
-import HomeLayoutContent from './components/HomeLayoutContent';
+import HomeLayoutContent, { getTodayLayoutStyle } from './components/HomeLayoutContent';
 import Rewards from './Rewards';
 import StorageService from './services/StorageService';
+import { AchievementTracker } from './AchievementSystem';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import HowLongToBeatService from './services/HowLongToBeatService';
+import { RecommendationEngine } from './services/RecommendationEngine';
+import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 
 jest.mock('./NavBar', () => () => null);
+jest.mock('./components/LazyImage', () => ({ alt }) => <img alt={alt} />);
 jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
   Link: ({ to, children, ...props }) => (
@@ -118,6 +123,51 @@ test('Rewards Home layout cards equip using the keyboard and link to the affecte
   expect(screen.getByRole('link', { name: 'View your Home layout' })).toHaveAttribute('href', '/');
 });
 
+test('Rewards totals include card styles, animations and showcase slots without counting gameplay titles as XP steps', () => {
+  ProgressionUnlockService.getTotalXP.mockReturnValue(0);
+  const summary = ProgressionUnlockService.getRewardCatalogSummary();
+  expect(summary.totalCounts.total).toBeGreaterThan(0);
+  expect(summary.unlockedCounts.total).toBeGreaterThan(0);
+  expect(summary.totalCounts.cardStyles).toBe(ProgressionUnlockService.getCardStyles().length);
+  expect(summary.totalCounts.logoAnimations).toBe(ProgressionUnlockService.getLogoAnimations().length);
+  expect(summary.totalCounts.showcaseSlots).toBe(ProgressionUnlockService.getShowcaseSlots().length);
+  expect(summary.totalCounts.total).toBe(
+    Object.entries(summary.totalCounts).reduce((sum, [key, value]) => sum + (key === 'total' ? 0 : value), 0)
+  );
+  expect(summary.unlockedCounts.total).toBe(
+    Object.entries(summary.unlockedCounts).reduce((sum, [key, value]) => sum + (key === 'total' ? 0 : value), 0)
+  );
+  expect(summary.nextUnlock.remainingXP).toBeGreaterThan(0);
+  expect(summary.upcomingUnlocks.some((reward) => reward.signature)).toBe(false);
+  render(<Rewards />);
+  expect(screen.getByText(`${summary.unlockedCounts.total}/${summary.totalCounts.total}`)).toBeInTheDocument();
+  expect(screen.queryByText('0 XP left')).not.toBeInTheDocument();
+});
+
+test('Rewards shows where XP comes from, including the latest bonus award', () => {
+  AchievementTracker.grantXP('daily_checkin', 75, { streak: 2 });
+  render(<Rewards />);
+  const sources = screen.getByTestId('rewards-xp-sources');
+  for (const label of ['hours played', 'sessions & habits', 'launches', 'check-ins & events']) {
+    expect(sources).toHaveTextContent(label);
+  }
+  expect(sources).toHaveTextContent('Latest: +75 Daily check-in');
+});
+
+test('Home reward previews use the same layout definitions as Today', () => {
+  render(<Rewards />);
+  fireEvent.click(screen.getByRole('button', { name: /Home Layout/ }));
+  const layouts = ProgressionUnlockService.getHomeLayoutVariants();
+  expect(new Set(layouts.map((layout) => JSON.stringify(getTodayLayoutStyle(layout.id)))).size).toBe(5);
+  for (const layout of layouts) {
+    const card = screen.getByRole('button', { name: layout.name, exact: true });
+    expect(screen.getByRole('img', { name: `${layout.name} Today preview` })).toHaveStyle(
+      getTodayLayoutStyle(layout.id)
+    );
+    expect(card).toHaveTextContent('Today · Discover · Activity · Identity · Wishlist');
+  }
+});
+
 test.each([
   ['getProfileFrames', 'selectProfileFrame', 'selectedFrame'],
   ['getProfileBanners', 'selectProfileBanner', 'selectedBanner'],
@@ -170,6 +220,122 @@ test('Gaming Links provides defaults on first use and Category Icons has a visib
   expect(screen.getAllByTestId('category-icon').length).toBeGreaterThan(0);
   act(() => ProgressionUnlockService.selectGamingLinksFeatures('basic_hover'));
   expect(screen.queryByTestId('category-icon')).not.toBeInTheDocument();
+});
+
+test('Recommendations leads with the picker and preserves hidden swipe data', () => {
+  const shortlist = [{ name: 'Saved game', appid: 123 }];
+  StorageService.set('swipeDeckShortlist', shortlist);
+  StorageService.set('swipeDeckHistory', { '2026-10-01': [123] });
+  render(<Recommendations library={shortlist} onLaunchGame={jest.fn()} />);
+  expect(screen.getByRole('heading', { name: /Perfect Play/ })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Identity Picks/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /More ways to choose/ }));
+  expect(screen.getByRole('button', { name: /Identity Picks/ })).toBeInTheDocument();
+  expect(screen.queryByText('Swipe Deck')).not.toBeInTheDocument();
+  expect(StorageService.get('swipeDeckShortlist')).toEqual(shortlist);
+  expect(StorageService.get('swipeDeckHistory')).toEqual({ '2026-10-01': [123] });
+});
+
+const openRecommendationStyle = (name) => {
+  fireEvent.click(screen.getByRole('button', { name: /More ways to choose/ }));
+  fireEvent.click(screen.getByRole('button', { name }));
+};
+
+test('Untouched Shelf uses the shared unplayed classification and offers launch', () => {
+  const unplayed = { name: 'New adventure', appid: 1, time_played: 2 };
+  const launch = jest.fn();
+  render(
+    <Recommendations
+      library={[
+        unplayed,
+        { name: 'Steam veteran', appid: 2, importedPlaytimeMinutes: 600 },
+        { name: 'Played elsewhere', appid: 3, playedElsewhere: true },
+        { name: 'Hidden game', appid: 4, hidden: true },
+      ]}
+      onLaunchGame={launch}
+    />
+  );
+  openRecommendationStyle(/Untouched Shelf/);
+  expect(screen.queryByText('Steam veteran')).not.toBeInTheDocument();
+  expect(screen.queryByText('Played elsewhere')).not.toBeInTheDocument();
+  expect(screen.queryByText('Hidden game')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Launch New adventure' }));
+  expect(launch).toHaveBeenCalledWith(unplayed);
+});
+
+test('Momentum includes imported hours', () => {
+  render(<Recommendations library={[{ name: 'Imported game', importedPlaytimeMinutes: 600 }]} />);
+  openRecommendationStyle(/Momentum Picks/);
+  expect(screen.getByText('Imported game')).toBeInTheDocument();
+  expect(screen.getByText(/10h/)).toBeInTheDocument();
+});
+
+test('Short game suggestions require a known short completion estimate, not low playtime', () => {
+  jest.spyOn(HowLongToBeatService, 'getEstimate').mockImplementation((game) => {
+    const hours = { 'Short story': 1.5, 'Long RPG': 80, 'Invalid estimate': -1 }[game.name];
+    return hours === undefined ? null : { mainStory: hours };
+  });
+  render(
+    <Recommendations
+      library={[
+        { name: 'Short story' },
+        { name: 'Long RPG', time_played: 60 },
+        { name: 'Unknown length', time_played: 30 },
+        { name: 'Invalid estimate' },
+      ]}
+    />
+  );
+  openRecommendationStyle(/Session Playlist/);
+  expect(screen.getByText('Short story')).toBeInTheDocument();
+  expect(screen.queryByText('Long RPG')).not.toBeInTheDocument();
+  expect(screen.queryByText('Unknown length')).not.toBeInTheDocument();
+  expect(screen.queryByText('Invalid estimate')).not.toBeInTheDocument();
+});
+
+test('Recommendation results are rendered once and launch the original game', () => {
+  const game = { name: 'One clear pick', appid: 123 };
+  jest.spyOn(RecommendationEngine, 'getRediscoverResult').mockReturnValue({ games: [game] });
+  const launch = jest.fn();
+  render(<Recommendations library={[game]} onLaunchGame={launch} />);
+  openRecommendationStyle(/Rediscover/);
+  expect(screen.getAllByText(game.name)).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: `Launch ${game.name}` }));
+  expect(launch).toHaveBeenCalledWith(game);
+});
+
+test('The main picker records Perfect Play launch attribution', () => {
+  const game = { name: 'Focused pick', appid: 456, genres: ['Strategy'] };
+  jest.spyOn(RecommendationEngine, 'getPerfectPlaySelectionResult').mockReturnValue({
+    games: [game],
+    primaryGame: game,
+    totalMatches: 1,
+    entries: [],
+  });
+  const tracking = jest.spyOn(UserBehaviorProfile, 'trackRecommendationLaunch');
+  const launch = jest.fn();
+  render(<Recommendations library={[game]} onLaunchGame={launch} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Focused', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: /Play Now/ }));
+  expect(launch).toHaveBeenCalledWith(game);
+  expect(tracking).toHaveBeenCalledWith('perfect-play', 456, expect.any(Object));
+});
+
+test('The picker accepts time alone and displays each suggested game once', () => {
+  const game = { name: 'Quick pick', appid: 456 };
+  const alternate = { name: 'Another pick', appid: 789 };
+  const select = jest.spyOn(RecommendationEngine, 'getPerfectPlaySelectionResult').mockReturnValue({
+    games: [game, alternate],
+    primaryGame: game,
+    totalMatches: 2,
+    entries: [{ game }, { game: alternate }],
+  });
+  const launch = jest.fn();
+  render(<Recommendations library={[game, alternate]} onLaunchGame={launch} />);
+  fireEvent.click(screen.getByRole('button', { name: '30 min' }));
+  expect(select).toHaveBeenCalledWith([game, alternate], [], [], 30, 3);
+  expect(screen.getAllByText('Quick pick')).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Play Another pick' }));
+  expect(launch).toHaveBeenCalledWith(alternate);
 });
 
 test('clearing Gaming Links stays empty after remounting', () => {

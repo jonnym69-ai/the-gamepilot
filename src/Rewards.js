@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import NavBar from './NavBar';
+import { getTodayLayoutStyle } from './components/HomeLayoutContent';
 import { Link } from 'react-router-dom';
 import { useToast } from './components/Toast';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
@@ -35,6 +36,23 @@ const handleRewardCardKeyDown = (event, unlocked, onSelect) => {
   onSelect();
 };
 
+const XP_SOURCE_LABELS = {
+  daily_checkin: 'Daily check-in',
+  birthday_bonus: 'Birthday bonus',
+  christmas_bonus: 'Holiday bonus',
+  anniversary: 'Anniversary',
+  seasonal_event: 'Seasonal event',
+  seasonal_hide_seek: 'Hide & seek',
+  goal_completion: 'Goal completed',
+  library_founded: 'Library founded',
+};
+
+const humanizeXPSource = (source) =>
+  XP_SOURCE_LABELS[source] ||
+  String(source || 'Bonus reward')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 const SECTION_DESTINATIONS = {
   profileIdentity: ['/profile', 'View your profile'],
   personas: ['/profile', 'View your equipped identity'],
@@ -52,7 +70,7 @@ const SECTION_HELP = {
   specialEvents: 'Birthday, holiday, and seasonal events — active events grant XP and challenges.',
   cardStyles: 'Change how game cards look across Home, Library, and recommendations.',
   libraryView: 'Adjust the density and layout of your Library grid.',
-  homeLayout: 'Choose which panels appear on your Home page and in what order.',
+  homeLayout: 'Change Today’s arrangement and Home’s spacing. Every Home tab stays available.',
   recommendationStyle:
     'Change recommendation card borders, glows, badges, and buttons. These cosmetic styles do not change ranking.',
   gamingLinks: 'Enable and arrange the quick-launch gaming links panel.',
@@ -446,8 +464,8 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
     <div className="rewards-panel-header">
       <h2>Home Layout</h2>
       <p>
-        Alternate layouts for the Home dashboard — changes hero size, spacing, widget visibility, and content
-        arrangement.
+        Choose an arrangement for Today. The previews show the desktop layout; smaller windows stack the panels.
+        Discover, Activity, Identity and Wishlist stay available in every layout.
       </p>
     </div>
     <div className="rewards-card-grid">
@@ -464,8 +482,11 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
           aria-label={`${layout.name}${layout.unlocked ? '' : `, locked until ${layout.requiredXP?.toLocaleString() || 0} XP`}`}
         >
           <div
-            className="reward-home-preview"
+            className={`reward-home-preview reward-home-preview-${layout.id}`}
+            role="img"
+            aria-label={`${layout.name} Today preview`}
             style={{
+              ...getTodayLayoutStyle(layout.id),
               position: 'relative',
               overflow: 'hidden',
               padding: '30px 20px',
@@ -474,62 +495,14 @@ const HomeLayoutPanel = ({ layouts, selectedId, onSelect }) => (
               border: selectedId === layout.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
             }}
           >
-            {layout.id === 'focus_finder' || layout.id === 'streamer_overlay' ? (
-              <>
-                <div className="reward-home-hero" style={{ height: '28px', marginBottom: '10px' }} />
-                <div className="reward-home-row" style={{ marginBottom: '6px' }}>
-                  <div className="reward-home-widget reward-home-widget-large" style={{ height: '40px' }} />
-                </div>
-                <div className="reward-home-row reward-home-row-small">
-                  <div className="reward-home-widget" style={{ height: '24px' }} />
-                  <div className="reward-home-widget" style={{ height: '24px' }} />
-                </div>
-              </>
-            ) : layout.id === 'dashboard_split' ? (
-              <>
-                <div className="reward-home-hero" style={{ height: '36px', marginBottom: '12px' }} />
-                <div className="reward-home-row" style={{ gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div className="reward-home-widget reward-home-widget-large" style={{ height: '50px' }} />
-                  <div className="reward-home-widget" style={{ height: '50px' }} />
-                </div>
-                <div className="reward-home-row reward-home-row-small" style={{ marginTop: '8px' }}>
-                  <div className="reward-home-widget" style={{ height: '24px' }} />
-                  <div className="reward-home-widget" style={{ height: '24px' }} />
-                </div>
-              </>
-            ) : layout.id === 'arcade_cabinet' ? (
-              <>
-                <div
-                  className="reward-home-hero"
-                  style={{ height: '52px', marginBottom: '16px', border: '2px solid rgba(255, 107, 53, 0.3)' }}
-                />
-                <div className="reward-home-row" style={{ marginBottom: '10px' }}>
-                  <div
-                    className="reward-home-widget reward-home-widget-large"
-                    style={{ height: '56px', borderRadius: '14px' }}
-                  />
-                  <div className="reward-home-widget" style={{ height: '56px', borderRadius: '14px' }} />
-                </div>
-                <div className="reward-home-row reward-home-row-small">
-                  <div className="reward-home-widget" style={{ height: '32px', borderRadius: '14px' }} />
-                  <div className="reward-home-widget" style={{ height: '32px', borderRadius: '14px' }} />
-                  <div className="reward-home-widget" style={{ height: '32px', borderRadius: '14px' }} />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="reward-home-hero" />
-                <div className="reward-home-row">
-                  <div className="reward-home-widget reward-home-widget-large" />
-                  <div className="reward-home-widget" />
-                </div>
-                <div className="reward-home-row reward-home-row-small">
-                  <div className="reward-home-widget" />
-                  <div className="reward-home-widget" />
-                  <div className="reward-home-widget" />
-                </div>
-              </>
-            )}
+            <div className="reward-home-tabs">Today · Discover · Activity · Identity · Wishlist</div>
+            <div className="reward-home-today">
+              <span style={{ gridArea: 'doodle' }}>Daily Doodle</span>
+              <span style={{ gridArea: 'strip' }}>Today at a glance</span>
+              <span style={{ gridArea: 'play' }}>Play Next</span>
+              <span style={{ gridArea: 'spotlight' }}>Spotlight</span>
+              <span style={{ gridArea: 'story' }}>Your story</span>
+            </div>
             {selectedId === layout.id && (
               <div className="reward-active-badge" style={{ position: 'absolute', top: '10px', right: '10px' }}>
                 <Check size={14} />
@@ -1110,6 +1083,8 @@ function Rewards() {
   const [profileCatalog, setProfileCatalog] = useState(() => ProgressionUnlockService.getProfileRewardCatalog());
 
   const summary = useMemo(() => ProgressionUnlockService.getRewardCatalogSummary(), []);
+  const xpStats = useMemo(() => AchievementTracker.getXPStats(), []);
+  const lastXPAward = useMemo(() => AchievementTracker.getBonusRewardStats()?.lastAward || null, []);
   const nextUnlockPath = summary?.upcomingUnlocks || [];
   const roadmapUnlocks = summary?.nextUnlock ? nextUnlockPath.slice(1) : nextUnlockPath;
   const resolvedSelectedCardStyle = useMemo(() => {
@@ -1497,6 +1472,26 @@ function Rewards() {
           </div>
         </div>
 
+        <div className="rewards-xp-sources" data-testid="rewards-xp-sources">
+          <span className="rewards-xp-source">
+            <strong>{(xpStats?.playtimeXP ?? 0).toLocaleString()}</strong> hours played
+          </span>
+          <span className="rewards-xp-source">
+            <strong>{(xpStats?.habitXP ?? 0).toLocaleString()}</strong> sessions &amp; habits
+          </span>
+          <span className="rewards-xp-source">
+            <strong>{(xpStats?.launchXP ?? 0).toLocaleString()}</strong> launches
+          </span>
+          <span className="rewards-xp-source">
+            <strong>{(xpStats?.bonusRewardXP ?? 0).toLocaleString()}</strong> check-ins &amp; events
+          </span>
+          {lastXPAward && (
+            <span className="rewards-xp-source rewards-xp-latest">
+              Latest: +{lastXPAward.xp.toLocaleString()} {humanizeXPSource(lastXPAward.source)}
+            </span>
+          )}
+        </div>
+
         {summary?.nextUnlock && (
           <div className="rewards-roadmap-card">
             <div className="rewards-roadmap-header">
@@ -1504,6 +1499,7 @@ function Rewards() {
                 <span className="rewards-roadmap-kicker">Unlock Path</span>
                 <h2>{summary.nextUnlock.name}</h2>
                 <p>{summary.nextUnlock.description}</p>
+                <p>Gameplay titles have their own requirements in Profile Identity.</p>
               </div>
               <div className="rewards-roadmap-badges">
                 <span className="rewards-roadmap-badge">{summary.nextUnlock.category}</span>

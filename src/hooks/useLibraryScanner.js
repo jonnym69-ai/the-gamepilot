@@ -5,6 +5,7 @@ import { PlaytimeEnrichmentService } from '../services/PlaytimeEnrichmentService
 import { GameCurationService } from '../services/GameCurationService';
 import IgdbArtworkService from '../services/IgdbArtworkService';
 import StorageService from '../services/StorageService';
+import { AchievementTracker } from '../AchievementSystem';
 import { assignMoodToGame as importedAssignMoodToGame } from '../services/MoodAssignmentService';
 
 /**
@@ -106,6 +107,11 @@ export default function useLibraryScanner({ library, setLibrary, saveLibrary, sh
         );
       } else {
         toastSuccess(`Library scan complete: ${curatedMerged.length} games found.`);
+      }
+
+      const welcome = AchievementTracker.grantLibraryWelcomeXP(curatedMerged.length);
+      if (welcome?.granted) {
+        toastSuccess(`Welcome aboard: +${welcome.xp} XP for building your library — the rest is earned by playing.`);
       }
     } catch (err) {
       console.error(' Error during scan:', err);

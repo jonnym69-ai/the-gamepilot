@@ -1201,10 +1201,16 @@ export class AchievementTracker {
       const stored = StorageService.get('bonusRewardStats', {});
       const totalXP = Math.max(0, Math.round(Number(stored?.totalXP) || 0));
       const awards = Math.max(0, Math.round(Number(stored?.awards) || 0));
-      return { totalXP, awards };
+      return {
+        totalXP,
+        awards,
+        lastAward: stored?.lastAward || null,
+        history: Array.isArray(stored?.history) ? stored.history : [],
+        welcomed: stored?.welcomed === true,
+      };
     } catch (error) {
       console.warn('Error reading bonus reward stats, resetting to defaults:', error);
-      return { totalXP: 0, awards: 0 };
+      return { totalXP: 0, awards: 0, lastAward: null, history: [], welcomed: false };
     }
   }
 
@@ -1229,19 +1235,39 @@ export class AchievementTracker {
     }
 
     const stats = this.getBonusRewardStats();
+    const award = {
+      source,
+      xp: rewardXP,
+      awardedAt: new Date().toISOString(),
+      metadata,
+    };
     const updatedStats = {
       totalXP: stats.totalXP + rewardXP,
       awards: stats.awards + 1,
-      lastAward: {
-        source,
-        xp: rewardXP,
-        awardedAt: new Date().toISOString(),
-        metadata,
-      },
+      lastAward: award,
+      history: [...stats.history, award].slice(-50),
+      welcomed: stats.welcomed,
     };
 
     StorageService.set('bonusRewardStats', updatedStats);
     return updatedStats;
+  }
+
+  static grantLibraryWelcomeXP(gameCount = 0) {
+    try {
+      const stats = this.getBonusRewardStats();
+      const gameTotal = Math.max(0, Math.round(Number(gameCount) || 0));
+      if (stats.welcomed || gameTotal <= 0 || this.getXPStats().totalXP >= 500) {
+        return { granted: false, xp: 0 };
+      }
+
+      const updated = this.grantXP('library_founded', 250, { gameCount: gameTotal });
+      StorageService.set('bonusRewardStats', { ...updated, welcomed: true });
+      return { granted: true, xp: 250 };
+    } catch (error) {
+      console.warn('Welcome XP grant skipped:', error);
+      return { granted: false, xp: 0 };
+    }
   }
 
   static getUniqueGamesPlayedCount() {

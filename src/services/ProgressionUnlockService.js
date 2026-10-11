@@ -573,7 +573,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
   {
     id: 'mission_control',
     name: 'Mission Control',
-    description: 'The default command layout with a full hero and filter stack.',
+    description: 'Play Next and your story beside Spotlight, with the Daily Doodle and Today strip above.',
     requiredXP: 0,
     rewardType: 'utility',
     preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(255, 140, 66, 0.16))',
@@ -581,7 +581,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
   {
     id: 'focus_finder',
     name: 'Focus Finder',
-    description: 'A tighter home layout that prioritizes recommendation inputs.',
+    description: 'A narrow, single-column Today with full-size cards. All Home tabs stay available.',
     requiredXP: 1100,
     rewardType: 'utility',
     preview: 'linear-gradient(135deg, rgba(61, 217, 255, 0.15), rgba(99, 102, 241, 0.26))',
@@ -589,7 +589,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
   {
     id: 'dashboard_split',
     name: 'Dashboard Split',
-    description: 'A two-column mission view for active recommendation sessions.',
+    description: 'Equal-width Play Next and Spotlight columns, with your story across the full width below.',
     requiredXP: 4600,
     rewardType: 'utility',
     preview: 'linear-gradient(135deg, rgba(245, 183, 0, 0.18), rgba(255, 107, 53, 0.24))',
@@ -597,7 +597,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
   {
     id: 'streamer_overlay',
     name: 'Streamer Overlay',
-    description: 'Ultra-compact single-column layout that keeps the focus on what you are playing now.',
+    description: 'A compact single-column Today with smaller Play Next art and tighter panels. No tabs are hidden.',
     requiredXP: 8000,
     rewardType: 'utility',
     preview: 'linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(59, 130, 246, 0.22))',
@@ -605,7 +605,7 @@ const HOME_LAYOUT_UNLOCKS = tuneRewardCollection([
   {
     id: 'arcade_cabinet',
     name: 'Arcade Cabinet',
-    description: 'Bold, spacious retro styling with chunkier sections and neon hero glow.',
+    description: 'The two-column Today with roomier panels and bold borders, plus extra spacing across Home.',
     requiredXP: 12000,
     rewardType: 'utility',
     preview: 'linear-gradient(135deg, rgba(255, 107, 53, 0.28), rgba(240, 147, 251, 0.18))',
@@ -1754,7 +1754,11 @@ export class ProgressionUnlockService {
     const gamingLinks = this.getGamingLinksFeatures();
     const gamingLinksLayouts = this.getGamingLinksLayouts();
     const exportFilters = this.getExportFilters();
+    const cardStyles = this.getCardStyles();
+    const logoAnimations = this.getLogoAnimations();
     const rewardPool = [
+      ...cardStyles.map((reward) => ({ ...reward, category: 'Card Style' })),
+      ...logoAnimations.map((reward) => ({ ...reward, category: 'Logo Animation' })),
       ...themes.map((reward) => ({ ...reward, category: 'Theme' })),
       ...frames.map((reward) => ({ ...reward, category: 'Frame' })),
       ...banners.map((reward) => ({ ...reward, category: 'Banner' })),
@@ -1776,7 +1780,11 @@ export class ProgressionUnlockService {
       })),
     ];
 
-    const sortedUpcomingUnlocks = buildSequencedUnlockTrack(rewardPool, currentXP, 5);
+    const sortedUpcomingUnlocks = buildSequencedUnlockTrack(
+      rewardPool.filter((reward) => !reward.signature),
+      currentXP,
+      5
+    );
 
     const nextUnlock = sortedUpcomingUnlocks[0] || null;
 
@@ -1784,6 +1792,10 @@ export class ProgressionUnlockService {
       xp: currentXP,
       level: this.getLevel(),
       unlockedCounts: {
+        total: getUnlockedRewardCount(rewardPool),
+        cardStyles: getUnlockedRewardCount(cardStyles),
+        logoAnimations: getUnlockedRewardCount(logoAnimations),
+        showcaseSlots: getUnlockedRewardCount(showcaseSlots),
         themes: themes.filter((reward) => reward.unlocked).length,
         frames: frames.filter((reward) => reward.unlocked).length,
         banners: banners.filter((reward) => reward.unlocked).length,
@@ -1796,6 +1808,10 @@ export class ProgressionUnlockService {
         exportFilters: exportFilters.filter((reward) => reward.unlocked).length,
       },
       totalCounts: {
+        total: rewardPool.length,
+        cardStyles: cardStyles.length,
+        logoAnimations: logoAnimations.length,
+        showcaseSlots: showcaseSlots.length,
         themes: themes.length,
         frames: frames.length,
         banners: banners.length,
@@ -1814,6 +1830,8 @@ export class ProgressionUnlockService {
         },
         cosmetics: {
           unlocked:
+            getUnlockedRewardCount(cardStyles) +
+            getUnlockedRewardCount(logoAnimations) +
             getUnlockedRewardCount(frames) +
             getUnlockedRewardCount(banners) +
             getUnlockedRewardCount(titles) +
@@ -1821,6 +1839,8 @@ export class ProgressionUnlockService {
             getUnlockedRewardCount(gamingLinks) +
             getUnlockedRewardCount(gamingLinksLayouts),
           total:
+            cardStyles.length +
+            logoAnimations.length +
             frames.length +
             banners.length +
             titles.length +

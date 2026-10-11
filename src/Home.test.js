@@ -8,6 +8,8 @@ import CurrentEraService from './services/CurrentEraService';
 import SessionRepository from './services/SessionRepository';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import WishlistService from './services/WishlistService';
+import { ProgressionUnlockService } from './services/ProgressionUnlockService';
+import { getTodayLayoutStyle } from './components/HomeLayoutContent';
 
 jest.mock('./services/FreeGameRadar', () => ({
   ...jest.requireActual('./services/FreeGameRadar'),
@@ -180,6 +182,27 @@ test('Activity view explains empty states instead of showing a blank stack', () 
   expect(screen.getByText(/No sessions recorded yet/)).toBeInTheDocument();
   expect(screen.getByText(/Nothing to report yet — play a few games/)).toBeInTheDocument();
 });
+
+test.each(['mission_control', 'focus_finder', 'dashboard_split', 'streamer_overlay', 'arcade_cabinet'])(
+  '%s applies the Today layout and preserves every Home tab and session control',
+  (layout) => {
+    jest.spyOn(ProgressionUnlockService, 'getTotalXP').mockReturnValue(1000000);
+    ProgressionUnlockService.selectHomeLayoutVariant(layout);
+    const endSession = jest.fn();
+    setup({ activeSessions: { Hades: { startTime: Date.now() } }, endSession });
+    expect(screen.getByTestId('home-page')).toHaveStyle(getTodayLayoutStyle(layout));
+    expect(screen.getByRole('heading', { name: 'Play Next' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: "Today's Spotlight" })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your story' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'End session' }));
+    expect(endSession).toHaveBeenCalledWith('Hades');
+    const navigation = within(screen.getByRole('navigation', { name: 'Home sections' }));
+    for (const view of ['Discover', 'Activity', 'Identity', 'Wishlist', 'Today']) {
+      fireEvent.click(navigation.getByRole('link', { name: view, exact: true }));
+      expect(navigation.getByRole('link', { name: view, exact: true })).toHaveAttribute('aria-current', 'page');
+    }
+  }
+);
 
 test('active sessions can still be ended directly from Today', () => {
   const endSession = jest.fn();

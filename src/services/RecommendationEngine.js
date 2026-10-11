@@ -1149,20 +1149,27 @@ export class RecommendationEngine {
     }
 
     const { validMoods, validGenres } = this.normalizePerfectPlaySelections(selectedMoods, selectedGenres);
-    if (validMoods.length === 0 && validGenres.length === 0) {
+    const availableMinutes = this.getAvailableMinutes(timeConstraint);
+    if (validMoods.length === 0 && validGenres.length === 0 && !availableMinutes) {
       return [];
     }
 
-    const availableMinutes = this.getAvailableMinutes(timeConstraint);
     const moodGenreLookup = validMoods.reduce((accumulator, mood) => {
       accumulator[mood] = GenreMoodMapper.getGenresForMood(mood);
       return accumulator;
     }, {});
 
     return library
+      .filter(
+        (game) =>
+          game &&
+          !game.hidden &&
+          !game.isHidden &&
+          !UserBehaviorProfile.shouldSuppressRecommendation(game.appid || game.name, game.name)
+      )
       .map((game) => {
         const normalizedGenres = GenreMoodMapper.cleanGameGenres(game);
-        if (normalizedGenres.length === 0) {
+        if (normalizedGenres.length === 0 && (validMoods.length > 0 || validGenres.length > 0)) {
           return null;
         }
 

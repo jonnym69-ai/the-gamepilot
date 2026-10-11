@@ -29,6 +29,9 @@ export default function useSessionNotifications() {
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
       const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      const xpEarned = Math.max(0, Math.round(Number(detail?.xpEarned) || 0));
+      const xpSuffix = xpEarned > 0 ? ` · +${xpEarned} XP` : '';
+      const sessionSavedMessage = `Session saved: +${timeString} to ${detail.gameName}${xpSuffix}`;
 
       // Generate personality-driven roast toast for real sessions
       const personalityEnabled = StorageService.getString('personalityToastsEnabled', 'true') === 'true';
@@ -36,15 +39,15 @@ export default function useSessionNotifications() {
         try {
           const roast = generateSessionRoast(detail);
           if (roast?.message) {
-            toastRoast(roast.message, 6000);
+            toastRoast(`${roast.message}${xpSuffix}`, 6000);
           } else {
-            toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+            toastSuccess(sessionSavedMessage, 5000);
           }
         } catch {
-          toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+          toastSuccess(sessionSavedMessage, 5000);
         }
       } else {
-        toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
+        toastSuccess(sessionSavedMessage, 5000);
       }
 
       // Check for active rivalry (throttled to once per day inside the service)

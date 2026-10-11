@@ -31,6 +31,17 @@ const incrementPlaytimeBucket = (bucket, key, minutes) => ({
   [key]: normalizeTrackedNumber(bucket?.[key]) + normalizeTrackedNumber(minutes),
 });
 
+const getSessionXPSnapshot = () => {
+  try {
+    return {
+      habit: Number(HabitTrackerService.getHabitXP()?.total) || 0,
+      bonus: Number(AchievementTracker.getBonusRewardStats()?.totalXP) || 0,
+    };
+  } catch {
+    return { habit: 0, bonus: 0 };
+  }
+};
+
 /**
  * Manages the full session lifecycle — starting, ending, recovering,
  * and tracking active game sessions.
@@ -75,6 +86,7 @@ export default function useSessionLifecycle({
         return null;
       }
 
+      const xpSnapshotBefore = getSessionXPSnapshot();
       const sessionResult = PlaytimeAutoLogger.endSession(gameName, sessionMetadata);
       if (!sessionResult) {
         return null;
@@ -95,6 +107,17 @@ export default function useSessionLifecycle({
 
       AchievementTracker.recordSessionDurationAchievements(sessionResult.playtimeMinutes || 0);
       AchievementTracker.checkAndUnlockAchievements();
+
+      const xpSnapshotAfter = getSessionXPSnapshot();
+      // Session minutes always earn 0.5 XP/min (see getXPStats); the habit and
+      // bonus deltas capture the session, first-session-of-day, streak and any
+      // goal-completion XP this session triggered.
+      const xpEarned = Math.max(
+        0,
+        Math.round(normalizeTrackedNumber(sessionResult.playtimeMinutes) * 0.5) +
+          (xpSnapshotAfter.habit - xpSnapshotBefore.habit) +
+          (xpSnapshotAfter.bonus - xpSnapshotBefore.bonus)
+      );
 
       let endedGameSnapshot = null;
 
@@ -161,6 +184,7 @@ export default function useSessionLifecycle({
               ? endedGameSnapshot.genres.find((genre) => genre && genre !== 'Unknown') || null
               : null,
             playtimeMinutes: normalizeTrackedNumber(sessionResult.playtimeMinutes),
+            xpEarned,
             endTime: sessionResult.endTime || Date.now(),
             recommendationType: recommendationLaunch?.recommendationType || null,
             recommendationSource: recommendationLaunch?.source || null,

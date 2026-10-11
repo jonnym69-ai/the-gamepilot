@@ -33,7 +33,7 @@ import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import './Home.css';
 import './LibraryValue.css';
 import useRewardPresentation from './hooks/useRewardPresentation';
-import HomeLayoutContent from './components/HomeLayoutContent';
+import HomeLayoutContent, { getTodayLayoutStyle } from './components/HomeLayoutContent';
 import './RewardPresentation.css';
 import HomeTodayTabs from './components/HomeTodayTabs';
 import LazyImage from './components/LazyImage';
@@ -1400,6 +1400,7 @@ function Home({
   const homeLayoutClass = `home-layout-${homeLayoutId}`;
 
   const homeRootStyle = {
+    ...getTodayLayoutStyle(homeLayoutId),
     '--home-hero-padding': homeLayoutPreset.heroPadding,
     '--home-hero-subtitle-size': homeLayoutPreset.heroSubtitleSize,
     '--home-section-gap': homeLayoutPreset.sectionGap,
@@ -1409,6 +1410,7 @@ function Home({
 
   return (
     <div
+      data-testid="home-page"
       className={`home-page ${isDashboard ? '' : 'home-daily-page'} ${theme} ${homeLayoutClass} ${rewardPresentation.className}`}
       style={{ ...homeRootStyle, ...rewardPresentation.style }}
     >

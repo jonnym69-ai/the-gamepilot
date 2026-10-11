@@ -7,7 +7,6 @@ import {
   Shuffle,
   RotateCcw,
   Compass,
-  Heart,
   Target,
   Music,
   ListMusic,
@@ -31,6 +30,8 @@ import { RecommendationReasonChip } from './components/RecommendationReasonChip'
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import WishlistService from './services/WishlistService';
 import StorageService from './services/StorageService';
+import HowLongToBeatService from './services/HowLongToBeatService';
+import { getBlendedPlaytimeMinutes, isGameUnplayed } from './services/gameClassification';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
 import { MOODS, getResolvedMood } from './constants/GenresMoods';
 import './Recommendations.css';
@@ -51,11 +52,7 @@ function formatPlaytime(minutes) {
 const getGameId = (game) =>
   String(game?.appid || game?.app_id || game?.steamAppId || game?.launchId || game?.name || '');
 
-const getMinutesPlayed = (game) => {
-  const direct = Number(game?.time_played || 0);
-  const nested = Number(game?.playtime?.total || 0);
-  return Math.max(Number.isFinite(direct) ? direct : 0, Number.isFinite(nested) ? nested : 0);
-};
+const getMinutesPlayed = getBlendedPlaytimeMinutes;
 
 const formatHours = (minutes) => {
   const hours = Math.round((Number(minutes || 0) / 60) * 10) / 10;
@@ -247,9 +244,8 @@ function getSessionPlaylistCandidates(library, identity) {
   // Short games or games with low playtime
   return library.filter((g) => {
     if (UserBehaviorProfile.shouldSuppressRecommendation(g?.appid || g?.name, g?.name)) return false;
-    const hltb = g.hltb?.main || g.hltb?.mainExtra || 0;
-    const played = g.time_played || 0;
-    return (hltb > 0 && hltb <= 120) || (played > 0 && played <= 120);
+    const hours = Number(HowLongToBeatService.getEstimate(g)?.mainStory);
+    return Number.isFinite(hours) && hours > 0 && hours <= 2;
   });
 }
 
@@ -289,7 +285,7 @@ function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommend
         <span className="rec-row-meta">
           {getPlatformIcon(game.platform)} {game.platform}
           {getResolvedMood(game) && <> · {getResolvedMood(game)}</>}
-          {game.time_played ? <> · {formatPlaytime(game.time_played)}</> : null}
+          {getMinutesPlayed(game) > 0 ? <> · {formatPlaytime(getMinutesPlayed(game))}</> : null}
         </span>
         {recommendationType && <RecommendationReasonChip game={game} recommendationType={recommendationType} />}
       </div>
@@ -366,15 +362,16 @@ export default function Recommendations({ library, onLaunchGame }) {
   const rewardPresentation = useRewardPresentation();
   const navigate = useNavigate();
   const [activeStyle, setActiveStyle] = useState('hub');
+  const [showAlternatives, setShowAlternatives] = useState(false);
   const [playlist, setPlaylist] = useState(() => loadPlaylist());
-  const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
+  const safeLibrary = useMemo(
+    () => (Array.isArray(library) ? library.filter((game) => game?.name && !game.hidden && !game.isHidden) : []),
+    [library]
+  );
 
   const playableLibrary = useMemo(
-    () =>
-      Array.isArray(library)
-        ? library.filter((game) => game && game.name).sort((a, b) => String(a.name).localeCompare(String(b.name)))
-        : [],
-    [library]
+    () => [...safeLibrary].sort((a, b) => String(a.name).localeCompare(String(b.name))),
+    [safeLibrary]
   );
 
   const defaultSelections = useMemo(() => playableLibrary.slice(0, 2).map(getGameId), [playableLibrary]);
@@ -409,17 +406,18 @@ export default function Recommendations({ library, onLaunchGame }) {
   const handleLaunch = useCallback(
     (game) => {
       const gameId = game?.appid || game?.name;
+      const recommendationType = activeStyle === 'hub' ? 'perfect-play' : activeStyle;
       const achievementFeature = {
         'perfect-play': 'perfect_play',
         'surprise-me': 'surprise',
         rediscover: 'rediscover',
-      }[activeStyle];
+      }[recommendationType];
       if (achievementFeature) {
         AchievementTracker.logGameplayFeature(achievementFeature);
         AchievementTracker.checkAndUnlockAchievements();
       }
-      if (gameId && activeStyle !== 'hub') {
-        UserBehaviorProfile.trackRecommendationLaunch(activeStyle, gameId, {
+      if (gameId) {
+        UserBehaviorProfile.trackRecommendationLaunch(recommendationType, gameId, {
           mood: getResolvedMood(game) || null,
           genre: RecommendationEngine.getPrimaryGenre(game) || null,
           source: 'recommendations-page',
@@ -490,13 +488,7 @@ export default function Recommendations({ library, onLaunchGame }) {
         icon: ListMusic,
         color: '#6366f1',
       },
-      {
-        id: 'swipe-deck',
-        title: 'Swipe Deck',
-        description: 'Tinder-style quick sorting',
-        icon: Heart,
-        color: '#ec4899',
-      },
+
       {
         id: 'game-comparison',
         title: 'Game Comparison',
@@ -514,7 +506,7 @@ export default function Recommendations({ library, onLaunchGame }) {
       {
         id: 'untouched-shelf',
         title: 'Untouched Shelf',
-        description: 'Games with zero playtime',
+        description: 'Games you have barely or never played',
         icon: Gamepad2,
         color: '#9b59b6',
       },
@@ -619,7 +611,7 @@ export default function Recommendations({ library, onLaunchGame }) {
     return playableLibrary
       .filter(
         (game) =>
-          getMinutesPlayed(game) === 0 &&
+          isGameUnplayed(game) &&
           !UserBehaviorProfile.shouldSuppressRecommendation(game?.appid || game?.name, game?.name)
       )
       .slice(0, 6);
@@ -629,25 +621,30 @@ export default function Recommendations({ library, onLaunchGame }) {
     <>
       <div className="rec-hub-header">
         <h1>Recommendations</h1>
-        <p>Discover your next favorite game</p>
+        <p>Pick a mood and the time you have. Choose from games you already own.</p>
       </div>
 
-      <div className="rec-styles-grid">
-        {recommendationStyles.map((style) => (
-          <StyleCard
-            key={style.id}
-            {...style}
-            isActive={false}
-            onClick={() => {
-              if (style.id === 'swipe-deck') {
-                navigate('/swipe-deck');
-              } else {
-                setActiveStyle(style.id);
-              }
-            }}
-          />
-        ))}
-      </div>
+      <PerfectPlaySelector library={safeLibrary} onGameSelected={handleLaunch} />
+      <section className="rec-alternatives" aria-label="Alternative ways to choose">
+        <button
+          type="button"
+          className="rec-alternatives-toggle"
+          aria-expanded={showAlternatives}
+          aria-controls="rec-alternative-styles"
+          onClick={() => setShowAlternatives((open) => !open)}
+        >
+          More ways to choose <ChevronRight size={18} aria-hidden="true" />
+        </button>
+        {showAlternatives && (
+          <div className="rec-styles-grid" id="rec-alternative-styles">
+            {recommendationStyles
+              .filter((style) => style.id !== 'perfect-play')
+              .map((style) => (
+                <StyleCard key={style.id} {...style} isActive={false} onClick={() => setActiveStyle(style.id)} />
+              ))}
+          </div>
+        )}
+      </section>
 
       {playlist.length > 0 && (
         <div className="rec-playlist-mini">
@@ -715,13 +712,6 @@ export default function Recommendations({ library, onLaunchGame }) {
     return (
       <>
         {payload.message && <p className="rec-payload-message">{payload.message}</p>}
-        <HorizontalGameStrip
-          games={payload.games}
-          onLaunch={handleLaunch}
-          onAddToPlaylist={activeStyle === 'session-playlist' ? addToPlaylist : undefined}
-          playlist={playlist}
-          recommendationType={recommendationType}
-        />
         {renderGameList(payload.games, recommendationType)}
       </>
     );
@@ -793,9 +783,16 @@ export default function Recommendations({ library, onLaunchGame }) {
         <h3 className="rec-candidates-title">
           <Target size={18} /> Suggested Short Games
         </h3>
+        <p className="rec-payload-message">
+          Main-story estimates of two hours or less, from saved HowLongToBeat data. These are completion estimates, not
+          a guarantee of session length.
+        </p>
         {candidates.length === 0 ? (
           <div className="rec-empty">
-            <p>No short-session games found in your library.</p>
+            <p>
+              No known short games yet. Look up completion times in a game's details, or try Perfect Play for a timed
+              session.
+            </p>
           </div>
         ) : (
           renderGameList(candidates)
@@ -946,21 +943,18 @@ export default function Recommendations({ library, onLaunchGame }) {
       return (
         <div className="rec-empty">
           <Gamepad2 size={48} />
-          <p>No untouched games found — every game in your library has some playtime.</p>
+          <p>
+            No unplayed picks available right now. Played-elsewhere flags and recommendation feedback are respected.
+          </p>
         </div>
       );
     }
     return (
       <>
-        <p className="rec-payload-message">Games in your library with no recorded playtime yet.</p>
-        <div className="rec-untouched-grid">
-          {untouchedGames.map((game) => (
-            <span className="rec-untouched-chip" key={getGameId(game)}>
-              <Gamepad2 size={14} />
-              {game.name}
-            </span>
-          ))}
-        </div>
+        <p className="rec-payload-message">
+          Games with less than five minutes recorded, excluding games marked played elsewhere or launched repeatedly.
+        </p>
+        {renderGameList(untouchedGames)}
       </>
     );
   };
@@ -1008,7 +1002,7 @@ export default function Recommendations({ library, onLaunchGame }) {
           <Home size={18} />
         </button>
         {activeStyle !== 'hub' && (
-          <button className="rec-nav-back-btn" onClick={() => setActiveStyle('hub')} title="Back to hub">
+          <button className="rec-nav-back-btn" onClick={() => setActiveStyle('hub')} title="Back to picker">
             <ArrowLeft size={18} />
           </button>
         )}
@@ -1128,7 +1122,7 @@ export default function Recommendations({ library, onLaunchGame }) {
 
         {activeStyle === 'untouched-shelf' && (
           <>
-            {renderStyleHeader('Untouched Shelf', 'Games with zero playtime')}
+            {renderStyleHeader('Untouched Shelf', 'Games you have barely or never played')}
             {renderUntouchedShelf()}
           </>
         )}

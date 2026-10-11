@@ -247,3 +247,11 @@ The typecheck command is optional for JS-only changes.
 - Cards render the full price picture: current price (or Free), retail strikethrough, discount %, store name, Price drop / Historic low badges, and a View deal link via `cheapshark.com/redirect?dealID=`. The per-item threshold is the user's alert price.
 - `wishlistAlertSummaryV1` is the local deal count; every write dispatches `gamepilot:wishlist-alerts`, which TodayStrip listens to for its "N deals" chip. Never fetch prices synchronously in the strip — read the summary only.
 - Regression checks: `npx jest src/services/WishlistService.test.js src/components/TodayStrip.test.js --ci`.
+
+## Recommendations and Home rewards
+
+- Recommendations opens directly into Perfect Play (up to three picks). Genre filters, tuning and alternative modes are secondary disclosures. `/swipe-deck` redirects to `/recommendations`; the dormant component and `swipeDeckShortlist` / `swipeDeckHistory` data remain untouched. Do not restore casual swipe-to-14-day-suppression behaviour.
+- Recommendations uses `getBlendedPlaytimeMinutes` and `isGameUnplayed` for imported playtime and played-elsewhere consistency. Session Playlist's short-game suggestions use cached `HowLongToBeatService.getEstimate().mainStory` in hours (0 < hours <= 2), not hours already played; unknown completion lengths are not presented as short games.
+- `getTodayLayoutStyle` in `HomeLayoutContent.js` provides shared CSS variables for the real Today layout and Rewards previews. All five Home tabs stay available under every layout. Today cards (`home-daily-play`, `daily-spotlight`) consume equipped card styles; the friends card lives inside the story panel rather than an unassigned grid cell.
+- Reward catalog totals include card styles, logo animations and showcase slots. Signature titles remain in the catalog but are excluded from the XP-only roadmap because they require gameplay, not XP.
+- Regression checks: `npx jest src/RewardEffects.test.js src/Home.test.js src/services/RecommendationEngine.test.js --ci`. Also check actual computed styles in a browser after transitions settle; jsdom verifies the wiring but not the CSS cascade. Use an isolated context and StorageService-prefixed fixture keys (`gamepilot-library`), never the user's desktop data.

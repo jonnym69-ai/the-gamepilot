@@ -1,5 +1,42 @@
 import React from 'react';
 
+const SINGLE_COLUMN_AREAS = '"doodle" "strip" "play" "spotlight" "story"';
+const TODAY_LAYOUTS = {
+  focus_finder: { columns: 'minmax(0, 1fr)', areas: SINGLE_COLUMN_AREAS, width: '820px' },
+  dashboard_split: {
+    columns: 'minmax(0, 1fr) minmax(0, 1fr)',
+    areas: '"doodle doodle" "strip strip" "play spotlight" "story story"',
+  },
+  streamer_overlay: {
+    columns: 'minmax(0, 1fr)',
+    areas: SINGLE_COLUMN_AREAS,
+    width: '900px',
+    padding: '14px',
+    artWidth: '80px',
+  },
+  arcade_cabinet: { padding: '28px', borderWidth: '2px' },
+};
+
+export function getTodayLayoutStyle(layoutId) {
+  const layout = {
+    columns: 'minmax(0, 1.2fr) minmax(0, 1fr)',
+    areas: '"doodle doodle" "strip strip" "play spotlight" "story spotlight"',
+    width: '1240px',
+    padding: '24px',
+    artWidth: '120px',
+    borderWidth: '1px',
+    ...TODAY_LAYOUTS[layoutId],
+  };
+  return {
+    '--home-today-columns': layout.columns,
+    '--home-today-areas': layout.areas,
+    '--home-today-width': layout.width,
+    '--home-today-padding': layout.padding,
+    '--home-today-art-width': layout.artWidth,
+    '--home-today-border-width': layout.borderWidth,
+  };
+}
+
 const VIEW_SECTIONS = {
   discover: [
     'home-discovery-highlights',
