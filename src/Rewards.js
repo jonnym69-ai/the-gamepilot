@@ -1474,17 +1474,22 @@ function Rewards() {
 
         <div className="rewards-xp-sources" data-testid="rewards-xp-sources">
           <span className="rewards-xp-source">
-            <strong>{(xpStats?.playtimeXP ?? 0).toLocaleString()}</strong> hours played
+            <strong>{(xpStats?.playtimeXP ?? 0).toLocaleString()} XP</strong> from playtime
           </span>
           <span className="rewards-xp-source">
-            <strong>{(xpStats?.habitXP ?? 0).toLocaleString()}</strong> sessions &amp; habits
+            <strong>{(xpStats?.habitXP ?? 0).toLocaleString()} XP</strong> from sessions &amp; habits
           </span>
           <span className="rewards-xp-source">
-            <strong>{(xpStats?.launchXP ?? 0).toLocaleString()}</strong> launches
+            <strong>{(xpStats?.launchXP ?? 0).toLocaleString()} XP</strong> from launches
           </span>
           <span className="rewards-xp-source">
-            <strong>{(xpStats?.bonusRewardXP ?? 0).toLocaleString()}</strong> check-ins &amp; events
+            <strong>{(xpStats?.bonusRewardXP ?? 0).toLocaleString()} XP</strong> from check-ins &amp; events
           </span>
+          {(xpStats?.bonusXP ?? 0) > 0 && (
+            <span className="rewards-xp-source">
+              <strong>{xpStats.bonusXP.toLocaleString()} XP</strong> boost bonus
+            </span>
+          )}
           {lastXPAward && (
             <span className="rewards-xp-source rewards-xp-latest">
               Latest: +{lastXPAward.xp.toLocaleString()} {humanizeXPSource(lastXPAward.source)}

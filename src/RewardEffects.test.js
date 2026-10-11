@@ -148,7 +148,12 @@ test('Rewards shows where XP comes from, including the latest bonus award', () =
   AchievementTracker.grantXP('daily_checkin', 75, { streak: 2 });
   render(<Rewards />);
   const sources = screen.getByTestId('rewards-xp-sources');
-  for (const label of ['hours played', 'sessions & habits', 'launches', 'check-ins & events']) {
+  for (const label of [
+    'XP from playtime',
+    'XP from sessions & habits',
+    'XP from launches',
+    'XP from check-ins & events',
+  ]) {
     expect(sources).toHaveTextContent(label);
   }
   expect(sources).toHaveTextContent('Latest: +75 Daily check-in');
