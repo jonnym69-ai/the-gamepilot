@@ -7,7 +7,6 @@
   "homepage": "./",
   "author": "GamePilot Team",
   "dependencies": {
-    "axios": "^1.13.5",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
     "discord-rpc": "^4.0.1",
