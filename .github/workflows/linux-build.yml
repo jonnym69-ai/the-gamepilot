@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-linux:
@@ -26,10 +26,10 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run tests
-        run: npx react-scripts test --watchAll=false --silent
+        run: npx jest --ci
 
       - name: Build renderer
         run: npm run build
@@ -45,3 +45,9 @@ jobs:
             dist/*.AppImage
             dist/*.AppImage.blockmap
           if-no-files-found: error
+
+      - name: Attach AppImage to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.AppImage
