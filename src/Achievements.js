@@ -4,6 +4,7 @@ import { Trophy, Star, Target, Clock, Gamepad2, Award, Zap, Crown, Medal } from 
 import { ACHIEVEMENTS, AchievementTracker } from './AchievementSystem';
 import { RollingAchievementsTracker } from './services/RollingAchievementsTracker';
 import NavBar from './NavBar';
+import ProgressTabs from './components/ProgressTabs';
 import StorageService from './services/StorageService';
 import SessionRepository from './services/SessionRepository';
 import './Achievements.css';
@@ -490,6 +491,7 @@ function Achievements({ theme }) {
     <div className={`App ${theme}`}>
       <NavBar />
       <div className="achievements-container">
+        <ProgressTabs />
         <div className="achievements-header">
           <h1>🏆 Achievements</h1>
           <div className="achievement-summary">

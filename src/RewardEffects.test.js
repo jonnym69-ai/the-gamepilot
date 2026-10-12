@@ -21,6 +21,11 @@ jest.mock('react-router-dom', () => ({
       {children}
     </a>
   ),
+  NavLink: ({ to, className, children, ...props }) => (
+    <a href={to} className={typeof className === 'function' ? className({ isActive: false }) : className} {...props}>
+      {children}
+    </a>
+  ),
 }));
 jest.mock('./components/Toast', () => ({ useToast: () => ({ success: jest.fn(), error: jest.fn() }) }));
 

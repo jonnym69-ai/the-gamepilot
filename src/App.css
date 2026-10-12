@@ -309,9 +309,7 @@ body.dynamic-cover-bg .timeline-page,
 body.dynamic-cover-bg .year-review-page,
 body.dynamic-cover-bg .achievements-container,
 body.dynamic-cover-bg .feedback-page,
-body.dynamic-cover-bg .rewards-page,
-body.dynamic-cover-bg .performance-cockpit,
-body.dynamic-cover-bg .swipe-deck-page {
+body.dynamic-cover-bg .rewards-page {
   background: transparent !important;
 }
 

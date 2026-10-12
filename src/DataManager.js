@@ -1,8 +1,33 @@
 // DataManager.js - Utilities for exporting and importing user data
 // Date formatting helpers were previously used for UI timestamps but are no longer needed here. Removed to clean ESLint warnings.
 import StorageService from './services/StorageService';
+import SessionRepository from './services/SessionRepository';
 
-const BACKUP_VERSION = '2.0';
+const BACKUP_VERSION = '3.0';
+
+// Regenerable caches and in-flight state that must never round-trip through a
+// backup. Everything else under the gamepilot- storage prefix is user data and
+// is exported automatically — new features cannot be silently left out.
+const EXPORT_EXCLUDED_KEYS = new Set([
+  'activeGameSessions', // stale "currently playing" state must not be restored
+  'igdbArtworkCacheV1',
+  'wishlistPriceCacheV1',
+  'steamProfileCacheV1',
+  'steamFriendsCacheV1',
+  'similarGamesCacheV1',
+  'epicFreeGameRadarCacheV1',
+  'gamerpowerRadarCacheV1',
+  'freeGameRadarCacheV2',
+  'steamGenreCacheV2',
+  'steamSnapshotCacheV1',
+  'steamPriceCache',
+  'steamNewsCacheV1',
+  'pcgwCacheV2',
+  'patch_notes_cache',
+  'systemInfo',
+  'libraryCache',
+  'lastLibraryHash',
+]);
 
 const JSON_STORAGE_DEFAULTS = Object.freeze({
   gameLibrary: [],
@@ -93,12 +118,6 @@ const STRING_STORAGE_KEYS = Object.freeze([
   'lastReset_yearly',
 ]);
 
-const STRING_STORAGE_DEFAULTS = Object.freeze({
-  gamerLevel: '1',
-  gamerTitle: 'Casual Gamer',
-  gamerType: 'Casual',
-});
-
 const KNOWN_IMPORT_KEYS = new Set([
   ...Object.keys(JSON_STORAGE_DEFAULTS),
   ...STRING_STORAGE_KEYS,
@@ -108,12 +127,6 @@ const KNOWN_IMPORT_KEYS = new Set([
 ]);
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-
-const cloneDefaultValue = (value) => {
-  if (Array.isArray(value)) return [...value];
-  if (isPlainObject(value)) return { ...value };
-  return value;
-};
 
 const isValidForDefault = (value, fallback) => {
   if (Array.isArray(fallback)) {
@@ -132,15 +145,6 @@ const isValidForDefault = (value, fallback) => {
     return typeof value === 'string';
   }
   return value !== undefined;
-};
-
-const readJSONStorage = (key, fallback) => {
-  try {
-    const parsed = StorageService.get(key, null);
-    return isValidForDefault(parsed, fallback) ? parsed : cloneDefaultValue(fallback);
-  } catch (error) {
-    return cloneDefaultValue(fallback);
-  }
 };
 
 const normalizeImportPayload = (payload) => {
@@ -200,59 +204,38 @@ const parseImportedValue = (value, fallback) => {
   return null;
 };
 
-const getLegacyAchievements = (data) => {
-  if (!isPlainObject(data)) {
-    return null;
+// v3 backups store raw localStorage strings; v2 and older stored parsed values.
+// This coerces either form into a parsed value for type checks and consumers.
+const coerceImportedValue = (value) => {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
   }
-
-  if (Array.isArray(data.achievements)) {
-    return data.achievements;
-  }
-
-  if (isPlainObject(data.achievements) && Array.isArray(data.achievements.achievements)) {
-    return data.achievements.achievements;
-  }
-
-  return null;
 };
+
+const electronAPI = () => (typeof window !== 'undefined' ? window.electronAPI : null);
 
 export class DataManager {
   static exportUserData() {
     try {
-      const jsonData = Object.entries(JSON_STORAGE_DEFAULTS).reduce((acc, [key, fallback]) => {
-        acc[key] = readJSONStorage(key, fallback);
-        return acc;
-      }, {});
-
-      const legacyAchievements = readJSONStorage('achievements', []);
-      if (!jsonData.unlockedAchievements.length && legacyAchievements.length) {
-        jsonData.unlockedAchievements = legacyAchievements;
-      }
-
-      const stringData = {};
-      STRING_STORAGE_KEYS.forEach((key) => {
-        const value = StorageService.getString(key);
-        if (value !== null) {
-          stringData[key] = value;
-        }
+      // Export every gamepilot-prefixed storage key verbatim (localStorage
+      // values are already strings), minus regenerable caches. New features
+      // are picked up automatically instead of requiring a list update.
+      const data = {};
+      StorageService.keys().forEach((key) => {
+        if (EXPORT_EXCLUDED_KEYS.has(key)) return;
+        const raw = StorageService.getString(key, null);
+        if (raw === null) return;
+        data[key] = raw;
       });
 
-      Object.entries(STRING_STORAGE_DEFAULTS).forEach(([key, fallback]) => {
-        if (typeof stringData[key] === 'undefined') {
-          stringData[key] = fallback;
-        }
-      });
-
-      const userData = {
+      return {
         version: BACKUP_VERSION,
         exportDate: new Date().toISOString(),
-        data: {
-          ...jsonData,
-          ...stringData,
-        },
+        data,
       };
-
-      return userData;
     } catch (error) {
       console.error('Error exporting user data:', error);
       throw new Error('Failed to export user data');
@@ -279,57 +262,75 @@ export class DataManager {
     }
   }
 
-  static importUserData(jsonData) {
+  static async importUserData(jsonData) {
     try {
       const importedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      const fromEnvelope = isPlainObject(importedData) && isPlainObject(importedData.data);
 
       const data = extractImportPayload(importedData);
       if (!data) {
         throw new Error('Invalid backup file format');
       }
 
+      // Envelope-wrapped exports are our own format and are trusted to carry
+      // any key; bare payloads (v2/manual) still need a recognized key.
       const recognizedKeyCount = Object.keys(data).filter((key) => KNOWN_IMPORT_KEYS.has(key)).length;
-      if (recognizedKeyCount === 0) {
+      if (!fromEnvelope && recognizedKeyCount === 0) {
         throw new Error('Backup file does not contain recognized GamePilot data');
       }
 
       let importedCount = 0;
+      const skippedKeys = [];
 
-      Object.entries(JSON_STORAGE_DEFAULTS).forEach(([key, fallback]) => {
-        if (!Object.prototype.hasOwnProperty.call(data, key)) {
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === 'activeGameSessions' || EXPORT_EXCLUDED_KEYS.has(key)) return;
+        if (typeof key !== 'string' || key.length === 0 || key.length > 100) return;
+        if (value === undefined || value === null) return;
+
+        // Known JSON keys keep their type validation; everything else is
+        // restored verbatim (string) or as a JSON value (parsed payloads).
+        const fallback = JSON_STORAGE_DEFAULTS[key];
+        if (fallback !== undefined && parseImportedValue(value, fallback) === null) {
+          skippedKeys.push(key);
           return;
         }
 
-        const value = parseImportedValue(data[key], fallback);
-        if (value === null) {
-          return;
+        if (typeof value === 'string') {
+          StorageService.setString(key, value);
+        } else {
+          StorageService.set(key, value);
         }
-
-        StorageService.set(key, value);
         importedCount += 1;
       });
 
-      const legacyAchievements = getLegacyAchievements(data);
-      if (!Object.prototype.hasOwnProperty.call(data, 'unlockedAchievements') && Array.isArray(legacyAchievements)) {
-        StorageService.set('unlockedAchievements', legacyAchievements);
-        importedCount += 1;
+      // Session history lives in SQLite once initialized; localStorage is only
+      // a fallback mirror. Route the restore through the repository so both
+      // stores are replaced, and await the main-process write so the immediate
+      // reload cannot race past it.
+      if (Object.prototype.hasOwnProperty.call(data, 'sessionHistory')) {
+        const history = coerceImportedValue(data.sessionHistory);
+        if (Array.isArray(history)) {
+          try {
+            await electronAPI()?.sessionStoreReplaceHistory?.(SessionRepository.dedupeSessionHistory(history));
+          } catch (error) {
+            console.error('Failed to restore session history to SQLite:', error);
+          }
+          SessionRepository.replaceHistory(history);
+        }
       }
 
-      STRING_STORAGE_KEYS.forEach((key) => {
-        if (!Object.prototype.hasOwnProperty.call(data, key)) {
-          return;
-        }
-
-        const value = data[key];
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-          StorageService.setString(key, String(value));
-          importedCount += 1;
-        }
-      });
+      // A backup must never resurrect a stale "currently playing" state.
+      SessionRepository.saveActiveSessions({});
+      try {
+        await electronAPI()?.sessionStoreSaveActive?.({});
+      } catch (error) {
+        console.error('Failed to clear active sessions in SQLite:', error);
+      }
 
       return {
         success: true,
         importedCount,
+        skippedKeys,
         message: `Successfully imported ${importedCount} data entries`,
       };
     } catch (error) {
@@ -351,17 +352,21 @@ export class DataManager {
       }
 
       const dataKeys = Object.keys(data);
+      const fromEnvelope = isPlainObject(parsed.data);
       const recognizedKeys = dataKeys.filter((key) => KNOWN_IMPORT_KEYS.has(key));
-      if (recognizedKeys.length === 0) {
+      if (!fromEnvelope && recognizedKeys.length === 0) {
         return { valid: false, message: 'Backup file does not contain recognized GamePilot data' };
       }
 
       const hasValidLibrary =
-        !Object.prototype.hasOwnProperty.call(data, 'gameLibrary') || Array.isArray(data.gameLibrary);
+        !Object.prototype.hasOwnProperty.call(data, 'gameLibrary') ||
+        Array.isArray(coerceImportedValue(data.gameLibrary));
       const hasValidAchievements =
-        !Object.prototype.hasOwnProperty.call(data, 'unlockedAchievements') || Array.isArray(data.unlockedAchievements);
+        !Object.prototype.hasOwnProperty.call(data, 'unlockedAchievements') ||
+        Array.isArray(coerceImportedValue(data.unlockedAchievements));
       const hasValidPatreonBoost =
-        !Object.prototype.hasOwnProperty.call(data, 'patreonXpBoost') || isPlainObject(data.patreonXpBoost);
+        !Object.prototype.hasOwnProperty.call(data, 'patreonXpBoost') ||
+        isPlainObject(coerceImportedValue(data.patreonXpBoost));
 
       if (!hasValidLibrary || !hasValidAchievements || !hasValidPatreonBoost) {
         return { valid: false, message: 'Backup file contains invalid progression data types' };
@@ -378,23 +383,19 @@ export class DataManager {
     }
   }
 
-  static clearAllUserData() {
+  static async clearAllUserData() {
     try {
-      const keysToRemove = Array.from(
-        new Set([
-          ...Object.keys(JSON_STORAGE_DEFAULTS),
-          ...STRING_STORAGE_KEYS,
-          'achievements',
-          'gamepilotTheme',
-          'gamepilot-founder-tier',
-          'libraryCache',
-          'lastSync',
-        ])
-      );
-
-      keysToRemove.forEach((key) => {
-        StorageService.remove(key);
-      });
+      // Remove every gamepilot-prefixed key, not a curated subset, then clear
+      // the SQLite session databases — otherwise the repository rehydrates
+      // session history from SQLite on the next launch and the "clear"
+      // silently fails for the app's most important data.
+      StorageService.clear();
+      SessionRepository.clear();
+      try {
+        await electronAPI()?.sessionStoreClear?.();
+      } catch (error) {
+        console.error('Failed to clear SQLite session databases:', error);
+      }
 
       return { success: true, message: 'All user data cleared successfully' };
     } catch (error) {

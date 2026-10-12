@@ -85,9 +85,8 @@ describe('HybridNavBar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'More navigation options' }));
 
-    expect(screen.getByText('Habits')).toBeTruthy();
-    expect(screen.getByText('Achievements')).toBeTruthy();
-    expect(screen.getByText('Rewards')).toBeTruthy();
+    expect(screen.getByText('Progress')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Progress/ }).getAttribute('href')).toBe('/progress');
     expect(screen.getByText('Storage Manager')).toBeTruthy();
     expect(screen.queryByText(/Performance Cockpit/)).toBeNull();
     expect(screen.getByText('Export Hub')).toBeTruthy();

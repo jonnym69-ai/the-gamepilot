@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import NavBar from './NavBar';
+import ProgressTabs from './components/ProgressTabs';
 import { getTodayLayoutStyle } from './components/HomeLayoutContent';
 import { Link } from 'react-router-dom';
 import { useToast } from './components/Toast';
@@ -1451,6 +1452,7 @@ function Rewards() {
       <NavBar />
 
       <div className="rewards-container">
+        <ProgressTabs />
         {/* Header */}
         <div className="rewards-header">
           <div>

@@ -266,8 +266,9 @@ function AppContent() {
               <strong>{stillPlayingPrompt.gameName}</strong> has been active for 15 minutes.
             </p>
             <p style={{ marginBottom: '24px', opacity: 0.8, lineHeight: 1.6 }}>
-              Keep the session running if you are still playing, or end it now so your stats do not keep climbing by
-              accident.
+              {activeSessions[stillPlayingPrompt.gameName]?.metadata?.monitoringFailed
+                ? "GamePilot can't see this game's process, so it won't auto-end — end it now unless you're still playing."
+                : 'Keep the session running if you are still playing, or end it now so your stats do not keep climbing by accident.'}
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <button onClick={handleStillPlayingContinue} className="getting-started-primary">
@@ -446,6 +447,7 @@ function AppContent() {
                 </RouteErrorBoundary>
               }
             />
+            <Route path="/progress" element={<Navigate to="/habits" replace />} />
             <Route
               path="/habits"
               element={

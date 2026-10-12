@@ -180,4 +180,36 @@ describe('GameLaunchCoordinatorService', () => {
       },
     });
   });
+
+  test('flags the session as unmonitored and notifies when the monitor times out', async () => {
+    readActiveGameSessions.mockReturnValue({});
+    LauncherService.launchGame.mockResolvedValue({ success: true });
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
+    await GameLaunchCoordinatorService.launchGame({ game, library: [], onEndSession: jest.fn() });
+
+    readActiveGameSessions.mockReturnValue({
+      'Halo Infinite': {
+        startTime: '2024-01-01T00:00:00.000Z',
+        metadata: { platform: 'Steam' },
+      },
+    });
+
+    const monitorOptions = GameProcessMonitor.startMonitoring.mock.calls[0][1];
+    monitorOptions.onMonitorTimeout({ name: 'Halo Infinite' }, { reason: 'not-detected' });
+
+    expect(persistActiveGameSessions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Halo Infinite': expect.objectContaining({
+          metadata: expect.objectContaining({
+            platform: 'Steam',
+            monitoringFailed: true,
+            monitorTimeoutReason: 'not-detected',
+          }),
+        }),
+      })
+    );
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'gamepilot:monitor-timeout' }));
+    dispatchSpy.mockRestore();
+  });
 });

@@ -261,8 +261,35 @@ The typecheck command is optional for JS-only changes.
 
 ## Recommendations and Home rewards
 
-- Recommendations opens directly into Perfect Play (up to three picks). Genre filters, tuning and alternative modes are secondary disclosures. `/swipe-deck` redirects to `/recommendations`; the dormant component and `swipeDeckShortlist` / `swipeDeckHistory` data remain untouched. Do not restore casual swipe-to-14-day-suppression behaviour.
+- Recommendations opens directly into Perfect Play (up to three picks). Genre filters, tuning and alternative modes are secondary disclosures. `/swipe-deck` redirects to `/recommendations`; the component and stylesheet were deleted, while `swipeDeckShortlist` / `swipeDeckHistory` saved data remains untouched. Do not restore casual swipe-to-14-day-suppression behaviour.
 - Recommendations uses `getBlendedPlaytimeMinutes` and `isGameUnplayed` for imported playtime and played-elsewhere consistency. Session Playlist's short-game suggestions use cached `HowLongToBeatService.getEstimate().mainStory` in hours (0 < hours <= 2), not hours already played; unknown completion lengths are not presented as short games.
 - `getTodayLayoutStyle` in `HomeLayoutContent.js` provides shared CSS variables for the real Today layout and Rewards previews. All five Home tabs stay available under every layout. Today cards (`home-daily-play`, `daily-spotlight`) consume equipped card styles; the friends card lives inside the story panel rather than an unassigned grid cell.
 - Reward catalog totals include card styles, logo animations and showcase slots. Signature titles remain in the catalog but are excluded from the XP-only roadmap because they require gameplay, not XP.
 - Regression checks: `npx jest src/RewardEffects.test.js src/Home.test.js src/services/RecommendationEngine.test.js --ci`. Also check actual computed styles in a browser after transitions settle; jsdom verifies the wiring but not the CSS cascade. Use an isolated context and StorageService-prefixed fixture keys (`gamepilot-library`), never the user's desktop data.
+
+## Local backup and clear
+
+- `DataManager.exportUserData` (v3) exports every `gamepilot-`-prefixed
+  localStorage key verbatim, minus `EXPORT_EXCLUDED_KEYS` (regenerable caches
+  and `activeGameSessions`). When adding a new storage key, user data needs no
+  backup wiring; only add genuine caches to the exclusion set. Stale
+  "currently playing" state must never be restored.
+- `importUserData` and `clearAllUserData` are async. Import restores raw
+  strings via `setString` and parsed values via `set`, routes `sessionHistory`
+  through `SessionRepository.replaceHistory` (SQLite + fallback mirror), and
+  clears active sessions. Clear uses `StorageService.clear()` plus
+  `session-store-clear` — do not go back to curated key lists, they silently
+  miss new features.
+- Regression checks: `npx jest src/DataManager.test.js --ci`.
+
+## Progress area
+
+- `/progress` redirects to `/habits`. `ProgressTabs` (Goals & Habits /
+  Achievements / Rewards) renders at the top of all three pages so they read
+  as one area; the More menu links once to `/progress`. Keep the individual
+  `/habits`, `/achievements` and `/rewards` routes working — they are the tab
+  targets, not dead pages.
+- Habits owns goals, streaks, seasonal quests and the mood log; Stats owns
+  analytics and period insights. Don't re-duplicate per-period stat blocks
+  across both.
+- Regression checks: `npx jest src/components/HybridNavBar.test.js src/RewardEffects.test.js --ci`.

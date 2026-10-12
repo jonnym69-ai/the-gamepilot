@@ -9,7 +9,6 @@ import {
   Monitor,
   Palette,
   Trophy,
-  Target,
   Gift,
   Database,
   Download,
@@ -20,9 +19,9 @@ import {
 import { useTheme } from '../ThemeContext';
 
 // Primary nav: Home · Library · Recs · Stats · Profile · Settings
-// More menu: Year in Review, Habits, Achievements, Rewards,
-// Storage Manager, Export Hub,
-// Feedback, Gaming Links, Themes, TV Mode
+// More menu: Hall of Champions, Year in Review, Recent Activity, Wishlist,
+// Progress (Goals/Habits, Achievements, Rewards), Tools (Storage Manager,
+// Export Hub, Gaming Links), Feedback, Themes, TV Mode
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -158,28 +157,17 @@ function HybridNavBar() {
             </div>
             <div className="dropdown-section">
               <div className="dropdown-section-title">Progression</div>
-              <Link to="/habits" className="dropdown-item" onClick={closeDropdown} title="Track play habits and goals">
-                <Target size={16} className="dropdown-item-icon" /> Habits
-              </Link>
               <Link
-                to="/achievements"
+                to="/progress"
                 className="dropdown-item"
                 onClick={closeDropdown}
-                title="View achievements and milestones"
+                title="Goals, achievements, and unlockable rewards"
               >
-                <Trophy size={16} className="dropdown-item-icon" /> Achievements
-              </Link>
-              <Link
-                to="/rewards"
-                className="dropdown-item"
-                onClick={closeDropdown}
-                title="XP, unlocks, and progression rewards"
-              >
-                <Gift size={16} className="dropdown-item-icon" /> Rewards
+                <Trophy size={16} className="dropdown-item-icon" /> Progress
               </Link>
             </div>
             <div className="dropdown-section">
-              <div className="dropdown-section-title">Library Tools</div>
+              <div className="dropdown-section-title">Tools</div>
               <Link
                 to="/storage-manager"
                 className="dropdown-item"
@@ -196,6 +184,14 @@ function HybridNavBar() {
               >
                 <Download size={16} className="dropdown-item-icon" /> Export Hub
               </Link>
+              <Link
+                to="/gaming-links"
+                className="dropdown-item"
+                onClick={closeDropdown}
+                title="Your gaming bookmarks and useful links"
+              >
+                <LinkIcon size={16} className="dropdown-item-icon" /> Gaming Links
+              </Link>
             </div>
             <div className="dropdown-section">
               <div className="dropdown-section-title">Community</div>
@@ -206,14 +202,6 @@ function HybridNavBar() {
                 title="Suggest features and share feedback"
               >
                 <MessageSquarePlus size={16} className="dropdown-item-icon" /> Feedback
-              </Link>
-              <Link
-                to="/gaming-links"
-                className="dropdown-item"
-                onClick={closeDropdown}
-                title="Your gaming bookmarks and useful links"
-              >
-                <LinkIcon size={16} className="dropdown-item-icon" /> Gaming Links
               </Link>
             </div>
             <div className="dropdown-section">

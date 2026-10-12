@@ -199,7 +199,7 @@ function ExportHub({ library = [], theme }) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (loadEvent) => {
+    reader.onload = async (loadEvent) => {
       try {
         const payload = loadEvent?.target?.result;
         const validation = DataManager.validateBackupFile(payload);
@@ -208,7 +208,7 @@ function ExportHub({ library = [], theme }) {
           return;
         }
 
-        const result = DataManager.importUserData(payload);
+        const result = await DataManager.importUserData(payload);
         if (!result.success) {
           error(result.message);
           return;
@@ -224,12 +224,12 @@ function ExportHub({ library = [], theme }) {
     event.target.value = '';
   };
 
-  const handleClearAllData = () => {
+  const handleClearAllData = async () => {
     if (!window.confirm('Are you sure you want to clear all local GamePilot data? This cannot be undone.')) {
       return;
     }
 
-    const result = DataManager.clearAllUserData();
+    const result = await DataManager.clearAllUserData();
     if (!result.success) {
       error(result.message);
       return;

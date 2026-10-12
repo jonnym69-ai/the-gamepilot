@@ -24,6 +24,7 @@ import { SeasonalRewardService } from './services/SeasonalRewardService';
 import { useToast } from './components/Toast';
 import { CelebrationOverlay } from './components/CelebrationEffects';
 import NavBar from './NavBar';
+import ProgressTabs from './components/ProgressTabs';
 import './Habits.css';
 
 const GOAL_TYPE_OPTIONS = [
@@ -233,7 +234,8 @@ const Habits = ({ library = [] }) => {
     <div className="habits-page">
       <NavBar />
       <div className="habits-content">
-        <h1 className="habits-title">Gaming Habits</h1>
+        <ProgressTabs />
+        <h1 className="habits-title">Goals &amp; Habits</h1>
         <p className="habits-subtitle">Track your play patterns, set goals, and build better gaming habits.</p>
 
         {/* Active Seasonal Quest Banner */}

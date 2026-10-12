@@ -2201,6 +2201,13 @@ function Library({
                 <List size={20} />
               </button>
             </div>
+            <button
+              onClick={() => navigate('/storage-manager')}
+              className="library-clear-filters-btn"
+              title="Compare installed game sizes and reclaim disk space"
+            >
+              Manage storage
+            </button>
             {activeFilterCount > 0 && (
               <button onClick={clearAllFilters} className="library-clear-filters-btn">
                 Clear Filters

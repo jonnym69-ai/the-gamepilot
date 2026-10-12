@@ -172,10 +172,10 @@ export class DataExportService {
   static importAllDataFromJSON(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const raw = JSON.parse(e.target.result);
-          const result = DataManager.importUserData(raw);
+          const result = await DataManager.importUserData(raw);
 
           if (!result.success) {
             reject(new Error(result.message));
@@ -183,8 +183,19 @@ export class DataExportService {
           }
 
           // Preserve backward-compatible return value for existing callers.
+          // v3 backups store raw storage strings, so coerce before checking.
           const payload = raw.data || raw;
-          const games = Array.isArray(payload.gameLibrary) ? payload.gameLibrary : payload.library?.games || [];
+          const coerce = (v) => {
+            if (typeof v !== 'string') return v;
+            try {
+              return JSON.parse(v);
+            } catch {
+              return null;
+            }
+          };
+          const gameLibrary = coerce(payload.gameLibrary);
+          const library = coerce(payload.library);
+          const games = Array.isArray(gameLibrary) ? gameLibrary : library?.games || [];
           resolve(games);
         } catch (error) {
           reject(new Error('Invalid backup file format'));

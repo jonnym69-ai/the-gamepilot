@@ -1,7 +1,7 @@
 // WishlistService.js
-// Local-first wishlist with ITAD price-check integration.
+// Local-first wishlist with CheapShark price-check integration.
 // All wishlist data stays in localStorage. Price lookups hit the
-// IsThereAnyDeal public API with 24h caching. No user data leaves the device.
+// CheapShark public API with 24h caching. No user data leaves the device.
 
 import StorageService from './StorageService';
 import { getGameGenres } from '../GameGenreDatabase';

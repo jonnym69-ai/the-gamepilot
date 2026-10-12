@@ -115,6 +115,32 @@ export class GameLaunchCoordinatorService {
       },
       onMonitorTimeout: (timedOutGame, meta) => {
         console.warn(`⚠️ Monitor timeout for ${timedOutGame.name}${meta?.reason ? ` (${meta.reason})` : ''}`);
+        // The monitor gave up detecting the process, so nothing will fire
+        // game-closed for this session. Flag it so the Still-playing prompt
+        // becomes the explicit exit path and the user knows tracking is
+        // time-based only from here on.
+        try {
+          const sessions = readActiveGameSessions();
+          const session = sessions[timedOutGame.name];
+          if (session && typeof session === 'object') {
+            sessions[timedOutGame.name] = {
+              ...session,
+              metadata: {
+                ...(session.metadata && typeof session.metadata === 'object' ? session.metadata : {}),
+                monitoringFailed: true,
+                monitorTimeoutReason: meta?.reason || null,
+              },
+            };
+            persistActiveGameSessions(sessions);
+          }
+        } catch (error) {
+          console.error('Failed to flag unmonitored session:', error);
+        }
+        window.dispatchEvent(
+          new CustomEvent('gamepilot:monitor-timeout', {
+            detail: { gameName: timedOutGame.name, reason: meta?.reason || null },
+          })
+        );
       },
     });
   }

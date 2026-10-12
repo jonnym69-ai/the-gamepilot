@@ -106,6 +106,21 @@ export default function useSessionNotifications() {
     return () => window.removeEventListener('gamepilot:session-ended', handleSessionEnded);
   }, [toastSuccess, toastRoast]);
 
+  // Warn once when process monitoring gives up on a running session —
+  // playtime keeps accruing but nothing will detect the exit automatically.
+  useEffect(() => {
+    const handleMonitorTimeout = (event) => {
+      const gameName = event?.detail?.gameName;
+      if (!gameName) return;
+      toastInfo(
+        `GamePilot can't detect ${gameName}'s process, so this session won't auto-end. End it from Home when you finish.`,
+        8000
+      );
+    };
+    window.addEventListener('gamepilot:monitor-timeout', handleMonitorTimeout);
+    return () => window.removeEventListener('gamepilot:monitor-timeout', handleMonitorTimeout);
+  }, [toastInfo]);
+
   const submitRecommendationOutcome = useCallback(
     (outcome) => {
       if (!recommendationOutcomePrompt || !Object.values(RECOMMENDATION_OUTCOME).includes(outcome)) {
