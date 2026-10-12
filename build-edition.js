@@ -5,13 +5,13 @@ const manifest = require('./package.json');
 
 // Single-edition build: one installer, everything included.
 function getBuildConfig() {
-  const artifactName = 'GamePilot-${version}-${arch}.${ext}';
+  const artifactName = 'GamePilot-${arch}.${ext}';
   return {
     ...manifest.build,
     artifactName,
     directories: { ...manifest.build.directories, output: path.join(os.homedir(), 'gamepilot-dist') },
     linux: { ...manifest.build.linux, artifactName },
-    nsis: { ...manifest.build.nsis, artifactName: 'GamePilot-Setup-${version}.${ext}' },
+    nsis: { ...manifest.build.nsis, artifactName: 'GamePilot-Setup.${ext}' },
   };
 }
 

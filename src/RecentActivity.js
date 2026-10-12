@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCcw, Calendar, Clock, Gamepad2, Trophy, Sun, Moon } from 'lucide-react';
 import NavBar from './NavBar';
 import EmptyState from './components/EmptyState';
+import SessionHistoryShare from './components/SessionHistoryShare';
 import { PieChart, BarChart } from './components/StatsCharts';
 import { buildRecentActivityBreakdown, formatDuration } from './services/RecentActivityAggregator';
 import './RecentActivity.css';
@@ -49,6 +50,7 @@ function RecentActivity() {
   const [days, setDays] = useState(30);
   const [breakdown, setBreakdown] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [shareSnapshot, setShareSnapshot] = useState(null);
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -88,6 +90,7 @@ function RecentActivity() {
   return (
     <div className="recent-activity-page">
       <NavBar />
+      {shareSnapshot && <SessionHistoryShare breakdown={shareSnapshot} onClose={() => setShareSnapshot(null)} />}
       <div className="recent-activity-content">
         <div className="recent-activity-header">
           <button className="recent-activity-back-btn" onClick={() => navigate('/stats')} title="Back to Stats">
@@ -111,6 +114,13 @@ function RecentActivity() {
                 </button>
               ))}
             </div>
+            <button
+              className="recent-activity-refresh-btn"
+              disabled={loading || !breakdown?.hasData}
+              onClick={() => setShareSnapshot(breakdown)}
+            >
+              Share card
+            </button>
             <button className="recent-activity-refresh-btn" onClick={refresh} title="Refresh">
               <RefreshCcw size={18} />
             </button>

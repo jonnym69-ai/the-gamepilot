@@ -161,7 +161,7 @@ The typecheck command is optional for JS-only changes.
 - The `/donate` and `/editions` routes, the Donate page and the Settings edition/support sections were removed. Optional support lives on the itch.io page (pay-what-you-want), not in-app. `FounderService`/`EntitlementService` supporter plumbing stays dormant — it costs nothing with no founder data and removing it is risk without benefit.
 - `npm run build` writes `dist/renderer/` with an `edition.json` stamp (`edition: 'standard'`, version). `npm run build-electron-win` (or `-mac`/`-linux`) uses `build-edition.js`: it rebuilds the renderer, verifies the stamp version matches `package.json`, and packages with `publish: 'never'`.
 - The Performance Cockpit page was removed: its "can run X settings" verdicts were doubly-estimated (hardware score guess × requirements guess) and could be visibly wrong. `HardwareDetector` stays for real hardware reads — StorageManager/Library drive mapping and the `SystemSpecsCard` in Settings → About, which shows detected CPU/GPU/RAM/OS/storage with no verdicts. The orphaned `/startup-questionnaire` route was also removed; onboarding answers are edited inline on Profile via `StartupPersonalizationService`.
-- The single installer is `GamePilot-Setup-${version}.exe` in `~/gamepilot-dist/` (outside the watched repo). It keeps appId `com.gamepilot.app`, productName `GamePilot`, the existing `GamePilot` userData folder, and packaged renderer path `dist/renderer/index.html` — installs replace previous editions in place, sharing their local data.
+- User-facing download names are evergreen: `GamePilot-Setup.exe` and `GamePilot-${arch}.AppImage`. Keep internal version metadata for packaging and diagnostics; no new tag or release is needed for a local build. The single Windows installer is `GamePilot-Setup.exe` in `~/gamepilot-dist/` (outside the watched repo). It keeps appId `com.gamepilot.app`, productName `GamePilot`, the existing `GamePilot` userData folder, and packaged renderer path `dist/renderer/index.html` — installs replace previous editions in place, sharing their local data.
 - Regression checks: `npx jest src/services/EntitlementService.test.js src/components/ProGate.test.js src/buildEdition.test.js --ci`. These cover unconditional access, stored-data preservation and packaging config; they do not replace a real installer upgrade smoke test.
 - Jest setup supplies Node's TextEncoder/TextDecoder for tests using the real React Router in jsdom.
 
@@ -247,6 +247,17 @@ The typecheck command is optional for JS-only changes.
 - Cards render the full price picture: current price (or Free), retail strikethrough, discount %, store name, Price drop / Historic low badges, and a View deal link via `cheapshark.com/redirect?dealID=`. The per-item threshold is the user's alert price.
 - `wishlistAlertSummaryV1` is the local deal count; every write dispatches `gamepilot:wishlist-alerts`, which TodayStrip listens to for its "N deals" chip. Never fetch prices synchronously in the strip — read the summary only.
 - Regression checks: `npx jest src/services/WishlistService.test.js src/components/TodayStrip.test.js --ci`.
+
+## Steam library navigation
+
+- GameModal's secondary Open in Steam action uses the validated Steam ID and dedicated `open-steam-library` IPC. The main process constructs only `steam://nav/games/details/<appid>` from a positive uint32 string. It does not use launch-game, session tracking or XP callbacks; the general external URL allow-list is unchanged.
+- Regression checks: `npx jest src/components/GameModal.test.js src/services/SteamLibraryBridge.test.js --ci`. Verify actual navigation with an installed Steam client after rebuilding the desktop app.
+
+## Session history sharing
+
+- RecentActivity opens SessionHistoryShare with an immutable selected-period snapshot. The native modal previews the same 1200×900 canvas used for PNG download and clipboard copy through LocalShareService. Names are opt-in, no profile/social fields are read, and no upload is performed.
+- RecentActivityAggregator totals and daily bars use the same inclusive calendar-day window (today plus the preceding days minus one), excluding future calendar dates. Session duration is attributed to its end date, not split across midnight.
+- Regression checks: `npx jest src/components/SessionHistoryShare.test.js src/services/RecentActivityAggregator.test.js --ci`. Clipboard and download still require a packaged-desktop smoke check.
 
 ## Recommendations and Home rewards
 

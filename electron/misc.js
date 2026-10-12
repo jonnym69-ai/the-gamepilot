@@ -28,6 +28,18 @@ function registerIpcHandlers(ipcMain, deps) {
     }
   });
 
+  ipcMain.handle('open-steam-library', async (_event, appid) => {
+    if (typeof appid !== 'string' || !/^[1-9]\d{0,9}$/.test(appid) || Number(appid) > 4294967295) {
+      return false;
+    }
+    try {
+      await shell.openExternal(`steam://nav/games/details/${appid}`);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
   ipcMain.handle('minimize-window', async () => {
     const mainWindow = getMainWindow();
     if (mainWindow && !mainWindow.isDestroyed()) {

@@ -142,9 +142,10 @@
       "category": "Game",
       "icon": "public/gamepilotlogo.png",
       "maintainer": "Moz",
-      "artifactName": "GamePilot-${version}-${arch}.${ext}"
+      "artifactName": "GamePilot-${arch}.${ext}"
     },
     "nsis": {
+      "artifactName": "GamePilot-Setup.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,

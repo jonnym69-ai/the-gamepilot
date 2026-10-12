@@ -14,6 +14,7 @@ const electronAPI = {
   getStartupLaunchSettings: () => ipcRenderer.invoke('get-startup-launch-settings'),
   setStartupLaunchEnabled: (enabled) => ipcRenderer.invoke('set-startup-launch-enabled', enabled),
   openExternal: (url) => ipcRenderer.invoke('open-external-url', url),
+  openSteamLibrary: (appid) => ipcRenderer.invoke('open-steam-library', appid),
   hltbSearch: (query) => ipcRenderer.invoke('hltb-search', query),
   pcgwLookup: (query) => ipcRenderer.invoke('pcgw-lookup', query),
   steamAppReviews: (appid) => ipcRenderer.invoke('steam-appreviews', appid),

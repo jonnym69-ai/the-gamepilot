@@ -30,9 +30,9 @@ test('packaging keeps the existing application identity and runtime paths', () =
 
 test('a single installer is produced with a neutral name', () => {
   const config = getBuildConfig();
-  expect(config.artifactName).toBe(`GamePilot-\${version}-\${arch}.\${ext}`);
-  expect(config.nsis.artifactName).toBe(`GamePilot-Setup-\${version}.\${ext}`);
-  expect(config.linux.artifactName).toBe(`GamePilot-\${version}-\${arch}.\${ext}`);
+  expect(config.artifactName).toBe(`GamePilot-\${arch}.\${ext}`);
+  expect(config.nsis.artifactName).toBe(`GamePilot-Setup.\${ext}`);
+  expect(config.linux.artifactName).toBe(`GamePilot-\${arch}.\${ext}`);
   expect(config.artifactName).not.toMatch(/free|pro/i);
   expect(config.nsis.artifactName).not.toMatch(/free|pro/i);
 });

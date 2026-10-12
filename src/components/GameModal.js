@@ -358,6 +358,17 @@ const GameModal = ({
     }
   }, [game, onLaunch]);
 
+  const handleOpenSteamLibrary = useCallback(async () => {
+    if (!steamAppid) return;
+    try {
+      if (!(await window.electronAPI?.openSteamLibrary?.(steamAppid))) {
+        toastError('Could not open Steam. Check that the Steam desktop client is installed.');
+      }
+    } catch {
+      toastError('Could not open Steam. Please try again.');
+    }
+  }, [steamAppid, toastError]);
+
   const handleOpenStore = useCallback(async () => {
     if (!game?.appid) {
       return;
@@ -544,11 +555,12 @@ const GameModal = ({
       'replay',
       'saveRating',
       ...(game?.appid ? ['store'] : []),
+      ...(steamAppid ? ['steamLibrary'] : []),
       ...(typeof onTogglePin === 'function' ? ['pin'] : []),
       ...(typeof onToggleFavorite === 'function' ? ['favorite'] : []),
       'share',
     ],
-    [game?.appid, onTogglePin, onToggleFavorite]
+    [game?.appid, steamAppid, onTogglePin, onToggleFavorite]
   );
 
   useEffect(() => {
@@ -631,6 +643,9 @@ const GameModal = ({
         case 'saveRating':
           handleRatingSave();
           break;
+        case 'steamLibrary':
+          handleOpenSteamLibrary();
+          break;
         case 'store':
           handleOpenStore();
           break;
@@ -655,6 +670,7 @@ const GameModal = ({
     game,
     handleLaunchGame,
     handleOpenStore,
+    handleOpenSteamLibrary,
     handleRatingChange,
     handleRatingSave,
     handleReplayIntentChange,
@@ -1466,6 +1482,22 @@ const GameModal = ({
               />
             )}
 
+            {steamAppid && (
+              <button
+                className="store-button"
+                onClick={handleOpenSteamLibrary}
+                title="Open this game's Steam library page for Workshop, updates and settings without launching it"
+                style={{
+                  outline:
+                    modalControls[selectedControlIndex] === 'steamLibrary'
+                      ? '2px solid var(--accent, #ff6b35)'
+                      : 'none',
+                }}
+              >
+                <ExternalLink size={16} />
+                Open in Steam
+              </button>
+            )}
             {game.appid && (
               <button
                 className="store-button"

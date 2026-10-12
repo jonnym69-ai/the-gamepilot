@@ -118,7 +118,9 @@ const getMood = (session) => session?.mood || null;
 const filterSessionsByDays = (allSessions, days) => {
   const now = startOfDay(new Date());
   const cutoff = new Date(now);
-  cutoff.setDate(cutoff.getDate() - days);
+  cutoff.setDate(cutoff.getDate() - days + 1);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
   const seenIds = new Set();
   const filtered = [];
@@ -137,7 +139,7 @@ const filterSessionsByDays = (allSessions, days) => {
     if (!ts) continue;
 
     // Only include sessions that ended on or after the cutoff date
-    if (ts >= cutoff) {
+    if (ts >= cutoff && ts < tomorrow) {
       filtered.push(session);
     }
   }

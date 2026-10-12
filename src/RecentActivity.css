@@ -1,3 +1,60 @@
+.ra-share-dialog {
+  width: min(900px, calc(100vw - 32px));
+  max-height: 90vh;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid #46516a;
+  border-radius: 16px;
+  background: #10141e;
+  color: #e9edf5;
+}
+
+.ra-share-dialog::backdrop {
+  background: rgb(0 0 0 / 75%);
+}
+
+.ra-share-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ra-share-dialog button,
+.ra-share-dialog input {
+  padding: 10px 16px;
+  border: 1px solid #66738e;
+  border-radius: 8px;
+  background: #202938;
+  color: #fff;
+}
+
+.ra-share-dialog button:disabled {
+  opacity: 0.5;
+}
+
+.ra-share-dialog :focus-visible {
+  outline: 2px solid #ff854f;
+  outline-offset: 3px;
+}
+
+.ra-share-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ra-share-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 20px;
+}
+
 .recent-activity-page {
   min-height: 100vh;
   background: var(--bg, #0f1117);
@@ -54,6 +111,7 @@
 
 .recent-activity-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }

@@ -58,6 +58,16 @@ describe('RecentActivityAggregator', () => {
   });
 
   describe('buildRecentActivityBreakdown', () => {
+    test('totals only include the calendar days displayed in the chart', () => {
+      PlaytimeAutoLogger.getSessionHistory.mockReturnValue([
+        makeSession({ timestamp: daysAgo(6), playtimeMinutes: 60 }),
+        makeSession({ timestamp: daysAgo(7), playtimeMinutes: 120 }),
+        makeSession({ timestamp: daysAgo(-1), playtimeMinutes: 240 }),
+      ]);
+      const result = buildRecentActivityBreakdown(7);
+      expect(result.overview.totalPlaytimeMinutes).toBe(60);
+      expect(result.dailyTimeline.reduce((sum, day) => sum + day.totalMinutes, 0)).toBe(60);
+    });
     test('returns empty breakdown when no sessions exist', () => {
       PlaytimeAutoLogger.getSessionHistory.mockReturnValue([]);
       const result = buildRecentActivityBreakdown(7);
