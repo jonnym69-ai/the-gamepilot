@@ -168,22 +168,25 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
 
   const currency = getCurrentCurrency();
 
-  // Resolve artwork for a wishlist item: prefer matched library game art,
-  // then a Steam header image built from the appid, then the cheapshark thumb.
-  const artworkForItem = (item) => {
+  // Resolve artwork candidates for a wishlist item: matched library game art,
+  // a Steam header image built from the appid, then the cheapshark thumb.
+  // Any renderable scheme counts — data:/app:/file: covers are valid <img>
+  // sources in the desktop shell, and LazyImage handles genuinely dead URLs.
+  const artworkCandidatesForItem = (item) => {
+    const urls = [];
     const game = item?.libraryGame;
     if (game) {
       const art = resolveGameArtwork(game, { surface: 'library_card' });
-      if (art && typeof art === 'string' && art.startsWith('http')) return art;
+      if (art && typeof art === 'string' && art.trim()) urls.push(art.trim());
     }
     const steamId = item?.steamAppID || (item?.appid && /^\d+$/.test(String(item.appid)) ? item.appid : null);
     if (steamId) {
-      return `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamId}/header.jpg`;
+      urls.push(`https://cdn.cloudflare.steamstatic.com/steam/apps/${steamId}/header.jpg`);
     }
     if (item?.thumb && typeof item.thumb === 'string' && item.thumb.startsWith('http')) {
-      return item.thumb;
+      urls.push(item.thumb);
     }
-    return null;
+    return [...new Set(urls)];
   };
 
   return (
@@ -443,7 +446,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           {items.map((item) => {
             const game = item.libraryGame;
             const placeholder = getGameArtworkPlaceholder({ game, surface: 'library_card' });
-            const artwork = artworkForItem(item);
+            const [artwork, fallbackArtwork] = artworkCandidatesForItem(item);
             const currentPrice = item.currentPrice;
             const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;
             const discount = currentPrice ? Math.round(Number(currentPrice.cut) || 0) : 0;
@@ -456,7 +459,13 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
               <div key={item.name} className={`wishlist-card ${hasDrop ? 'wishlist-card--drop' : ''}`}>
                 <div className="wishlist-card-art">
                   {artwork ? (
-                    <LazyImage src={artwork} alt={item.name} placeholder={placeholder} className="game-image" />
+                    <LazyImage
+                      src={artwork}
+                      fallbackSrc={fallbackArtwork}
+                      alt={item.name}
+                      placeholder={placeholder}
+                      className="game-image"
+                    />
                   ) : (
                     <div className="game-placeholder">
                       <div className="platform-icon">🎮</div>

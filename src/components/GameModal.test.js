@@ -94,7 +94,7 @@ test('opens the Steam library without launching the game', async () => {
   window.electronAPI.openSteamLibrary = jest.fn().mockResolvedValue(true);
   const onLaunch = jest.fn();
   render(<GameModal game={game} isOpen onLaunch={onLaunch} onClose={jest.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Open in Steam' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Steam Library' }));
   await waitFor(() => expect(window.electronAPI.openSteamLibrary).toHaveBeenCalledWith('774361'));
   expect(onLaunch).not.toHaveBeenCalled();
   await screen.findByText('A punishing action-platformer.');
@@ -102,9 +102,9 @@ test('opens the Steam library without launching the game', async () => {
 
 test('does not offer Steam navigation for another launcher or malformed ID', () => {
   const { rerender } = render(<GameModal game={{ ...game, platform: 'GOG' }} isOpen onClose={jest.fn()} />);
-  expect(screen.queryByRole('button', { name: 'Open in Steam' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Steam Library' })).not.toBeInTheDocument();
   rerender(<GameModal game={{ ...game, appid: '108600/../../run' }} isOpen onClose={jest.fn()} />);
-  expect(screen.queryByRole('button', { name: 'Open in Steam' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Steam Library' })).not.toBeInTheDocument();
 });
 
 test('rejects a mismatched game returned by the bridge', async () => {

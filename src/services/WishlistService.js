@@ -151,6 +151,8 @@ const applyPriceEntryToWishlist = (key, entry) => {
           currentPrice: entry.currentPrice,
           historicalLow: entry.historicalLow,
           priceCheckedAt: entry.fetchedAt,
+          steamAppID: item.steamAppID || entry.steamAppID || '',
+          thumb: item.thumb || entry.thumb || '',
         }
       : item
   );
@@ -418,8 +420,10 @@ class WishlistService {
         const dealsResponse = await fetch(`${CHEAPSHARK_API}/games?id=${encodeURIComponent(gameId)}`);
         let currentBest = null;
         let historicalLow = null;
+        let info = null;
         if (dealsResponse.ok) {
           const dealsData = await dealsResponse.json();
+          info = dealsData?.info && typeof dealsData.info === 'object' ? dealsData.info : null;
           const deals = Array.isArray(dealsData?.deals) ? dealsData.deals : Array.isArray(dealsData) ? dealsData : [];
           currentBest =
             deals.length > 0
@@ -444,6 +448,11 @@ class WishlistService {
 
         const entry = {
           key,
+          // CheapShark returns the game's identity + art in `info`. Carry them
+          // so entries added by custom name or library match (no art fields)
+          // heal on the next price refresh.
+          steamAppID: info?.steamAppID || match.steamAppID || null,
+          thumb: info?.thumb || match.thumb || null,
           currentPrice: currentBest
             ? {
                 price: parseFloat(currentBest.price),

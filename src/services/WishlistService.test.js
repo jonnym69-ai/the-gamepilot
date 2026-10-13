@@ -129,3 +129,36 @@ describe('Steam wishlist import', () => {
     expect(SteamWishlistService.getLastSyncAt()).toBeNull();
   });
 });
+
+describe('WishlistService price fetch', () => {
+  afterEach(() => {
+    delete global.fetch;
+  });
+
+  it('backfills artwork fields from the CheapShark info block on price refresh', async () => {
+    WishlistService.addGame({ name: 'Hollow Knight' }); // entry with no art fields
+    global.fetch = jest.fn((url) => {
+      if (url.includes('/games?title=')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ gameID: '999', steamAppID: '367520' }]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            info: { steamAppID: '367520', thumb: 'https://cdn.example.com/hk.jpg' },
+            deals: [],
+            cheapestPriceEver: null,
+          }),
+      });
+    });
+
+    await WishlistService.fetchPrice('Hollow Knight', { force: true });
+
+    const item = WishlistService.getWishlist().find((i) => i.name === 'Hollow Knight');
+    expect(item.steamAppID).toBe('367520');
+    expect(item.thumb).toBe('https://cdn.example.com/hk.jpg');
+  });
+});

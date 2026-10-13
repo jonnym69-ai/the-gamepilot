@@ -4,7 +4,10 @@ import './LazyImage.css';
 
 // Persistent cache for failed image URLs using localStorage
 const FAILED_IMAGES_KEY = 'gamepilot_failed_images';
-const FAILED_IMAGES_TTL_MS = 12 * 60 * 60 * 1000;
+// One-hour window: long enough to stop hammering dead URLs, short enough that a
+// transient failure (app opening before the network is up, CDN blip) doesn't
+// blank artwork for half a day.
+const FAILED_IMAGES_TTL_MS = 60 * 60 * 1000;
 
 const writeFailedImageCache = (cache) => {
   try {

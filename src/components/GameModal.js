@@ -1495,7 +1495,7 @@ const GameModal = ({
                 }}
               >
                 <ExternalLink size={16} />
-                Open in Steam
+                Steam Library
               </button>
             )}
             {game.appid && (
@@ -1508,7 +1508,7 @@ const GameModal = ({
                 }}
               >
                 <ExternalLink size={16} />
-                View on Steam
+                Steam Store
               </button>
             )}
 
