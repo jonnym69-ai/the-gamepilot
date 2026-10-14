@@ -8,6 +8,7 @@
 
 import SessionRepository from './SessionRepository';
 import StorageService from './StorageService';
+import { formatPlaytimeHours } from '../utils/formatPlaytime';
 
 const RIVALRY_KEY = 'gamepilot-rivalries';
 const LAST_TOAST_KEY = 'gamepilot-rivalry-last-toast';
@@ -186,13 +187,7 @@ export const recordRivalry = (rivalry) => {
 // Toast generation
 // ---------------------------------------------------------------------------
 
-const formatHours = (minutes) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
-};
+const formatHours = formatPlaytimeHours;
 
 /**
  * Generate a rivalry toast message.

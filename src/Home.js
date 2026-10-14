@@ -20,8 +20,10 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import HomeDailyOverview, { HOME_VIEWS, HomeViewNavigation } from './components/HomeDailyOverview';
 import BacklogBusterList from './components/BacklogBusterList';
+import FinishableThisWeekend from './components/FinishableThisWeekend';
 import LibraryLeaderboard from './components/LibraryLeaderboard';
 import DiscoverHighlights from './components/DiscoverHighlights';
+import TrendingNowCard from './components/TrendingNowCard';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { BacklogCoachService } from './services/BacklogCoachService';
 import { GamingIdentity } from './GamingIdentity';
@@ -53,6 +55,7 @@ import WelcomeBackCard from './components/WelcomeBackCard';
 import { SessionService } from './services/SessionService';
 import { WelcomeBackService } from './services/WelcomeBackService';
 import StorageService from './services/StorageService';
+import SessionRepository from './services/SessionRepository';
 import { HomeSection } from './components/HomeSectionPrimitives';
 import {
   TuneYourNextPickSection,
@@ -178,6 +181,7 @@ function Home({
   const [recommendationFeedbackState, setRecommendationFeedbackState] = useState({});
   const [sessionFeedbackPrompt, setSessionFeedbackPrompt] = useState(null);
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [sessionNote, setSessionNote] = useState('');
   const [streaks, setStreaks] = useState({ current: 0, longest: 0 });
   const [weeklyHabitStats, setWeeklyHabitStats] = useState({
     totalHours: 0,
@@ -594,10 +598,33 @@ function Home({
     }));
   };
 
+  const saveSessionJournalNote = () => {
+    const note = sessionNote.trim().slice(0, 140);
+    if (!note || !sessionFeedbackPrompt) return;
+    try {
+      SessionRepository.updateSessionEntry(
+        sessionFeedbackPrompt.sessionId,
+        { note },
+        {
+          gameName: sessionFeedbackPrompt.gameName,
+          endTime: sessionFeedbackPrompt.endTime,
+        }
+      );
+    } catch {
+      /* journal is best-effort */
+    }
+  };
+
+  const closeSessionFeedback = () => {
+    saveSessionJournalNote();
+    setSessionFeedbackPrompt(null);
+    setSessionCompleted(false);
+    setSessionNote('');
+  };
+
   const submitSessionFeedback = (enjoyed) => {
     if (!sessionFeedbackPrompt || typeof enjoyed !== 'boolean') {
-      setSessionFeedbackPrompt(null);
-      setSessionCompleted(false);
+      closeSessionFeedback();
       return;
     }
 
@@ -610,8 +637,7 @@ function Home({
       completed: sessionCompleted,
     });
 
-    setSessionFeedbackPrompt(null);
-    setSessionCompleted(false);
+    closeSessionFeedback();
   };
 
   const disableSessionFeedback = () => {
@@ -622,6 +648,7 @@ function Home({
     }));
     setSessionFeedbackPrompt(null);
     setSessionCompleted(false);
+    setSessionNote('');
   };
 
   const renderRecommendationFeedback = (entry, result) => {
@@ -1721,6 +1748,7 @@ function Home({
         homeView !== 'today' && (
           <HomeLayoutContent layoutId={homeLayoutId} view={homeView}>
             <div className="home-discovery-highlights">
+              <TrendingNowCard library={library} onLaunchGame={handleTrackedLaunch} />
               <DiscoverHighlights library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
             </div>
             <div className="home-persona-section">
@@ -1821,7 +1849,7 @@ function Home({
                 <Link to="/achievements">Achievements</Link>
                 <Link to="/rewards">Earned rewards</Link>
               </nav>
-              <CurrentEraCard />
+              <CurrentEraCard library={safeLibrary} />
               <EraArchiveCard />
               <CurrentChampionCard library={safeLibrary} />
               <BecauseYouAreSection
@@ -1918,6 +1946,7 @@ function Home({
                   )}
                 </div>
                 <BacklogBusterList library={library} onLaunchGame={handleTrackedLaunch} />
+                <FinishableThisWeekend library={library} onLaunchGame={handleTrackedLaunch} />
                 <div className="home-backlog-games">
                   {backlogQueue.map((entry, i) => {
                     const game = entry?.game;
@@ -1996,6 +2025,24 @@ function Home({
             <p style={{ fontSize: '0.9rem', opacity: 0.75, marginBottom: '20px' }}>
               This helps GamePilot learn which recommendations actually land well for you.
             </p>
+            <input
+              type="text"
+              className="session-journal-input"
+              placeholder="One-line journal — how was it? (optional)"
+              maxLength={140}
+              value={sessionNote}
+              onChange={(e) => setSessionNote(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                marginBottom: '16px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
+                background: 'var(--surface-secondary, rgba(255,255,255,0.05))',
+                color: 'var(--text-primary, inherit)',
+                boxSizing: 'border-box',
+              }}
+            />
             <label
               className="session-completed-toggle"
               style={{
@@ -2023,13 +2070,7 @@ function Home({
               <button onClick={() => submitSessionFeedback(false)} className="action-button secondary">
                 👎 Not Really
               </button>
-              <button
-                onClick={() => {
-                  setSessionFeedbackPrompt(null);
-                  setSessionCompleted(false);
-                }}
-                className="clear-button"
-              >
+              <button onClick={closeSessionFeedback} className="clear-button">
                 Skip
               </button>
             </div>

@@ -13,6 +13,12 @@ const formatHoursOnly = (totalMinutes) => {
   return `${remainder}m`;
 };
 
+/**
+ * Always render in h/m units, ignoring the user's unit preference — for
+ * contexts where a fixed compact format is intentional (share cards, roasts).
+ */
+export const formatPlaytimeHours = (minutes = 0) => formatHoursOnly(Math.max(0, Math.round(Number(minutes) || 0)));
+
 const formatDays = (totalMinutes) => {
   const totalHours = totalMinutes / 60;
   const days = Math.floor(totalHours / HOURS_PER_DAY);

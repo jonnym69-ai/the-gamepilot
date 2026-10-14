@@ -2,15 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { getActiveRivalry } from '../services/RivalryService';
 import { resolveGameArtwork } from '../services/GameArtworkService';
 import LazyImage from './LazyImage';
+import { formatPlaytimeHours } from '../utils/formatPlaytime';
 import './RivalryBanner.css';
 
-const formatHours = (minutes) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
-};
+const formatHours = formatPlaytimeHours;
 
 const RivalryBanner = () => {
   const [rivalry, setRivalry] = useState(null);

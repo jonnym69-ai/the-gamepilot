@@ -8,6 +8,9 @@ import DailyDoodleTitle from './DailyDoodleTitle';
 import OnThisDayCard from './OnThisDayCard';
 import TodayStrip from './TodayStrip';
 import { CurrentEraCard, RecentSessionsSummary } from './IdentityWidgets';
+import EraTransitionCard from './EraTransitionCard';
+import MonthlyRecapStrip from './MonthlyRecapStrip';
+import WhatsNewCard from './WhatsNewCard';
 import WishlistService from '../services/WishlistService';
 import './HomeDailyOverview.css';
 
@@ -96,6 +99,7 @@ export default function HomeDailyOverview({
       </div>
       {hasLibrary ? (
         <>
+          <WhatsNewCard hasLibrary={hasLibrary} />
           <TodayStrip />
           <section className="home-daily-play" aria-labelledby="home-play-heading">
             <p className="home-daily-eyebrow">Ready when you are</p>
@@ -131,8 +135,10 @@ export default function HomeDailyOverview({
                 Explore identity <ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>
+            <EraTransitionCard />
             <CurrentEraCard compact />
             <RecentSessionsSummary compact />
+            <MonthlyRecapStrip />
             <Link to="/?view=activity" className="home-daily-text-link">
               View activity and recaps <ArrowRight size={15} aria-hidden="true" />
             </Link>

@@ -3340,6 +3340,22 @@
   opacity: 0.65;
 }
 
+.session-journal-list {
+  gap: 8px;
+}
+
+.session-journal-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.session-journal-note {
+  font-size: 0.88rem;
+  font-style: italic;
+  color: var(--text);
+}
+
 /* Persona confidence + provisional / empty states */
 .identity-card .identity-title-row {
   display: flex;

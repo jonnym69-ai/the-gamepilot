@@ -8,6 +8,7 @@
 
 import GamingPersonaService from './GamingPersonaService';
 import SessionRepository from './SessionRepository';
+import { formatPlaytimeHours } from '../utils/formatPlaytime';
 
 const pickRandom = (arr, seed) => {
   if (!Array.isArray(arr) || arr.length === 0) return null;
@@ -28,13 +29,7 @@ const isWeekend = (dateInput) => {
   return day === 0 || day === 6;
 };
 
-const formatHours = (minutes) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
-};
+const formatHours = formatPlaytimeHours;
 
 // ---------------------------------------------------------------------------
 // Situational modifiers — short one-liners prepended or appended to the roast
