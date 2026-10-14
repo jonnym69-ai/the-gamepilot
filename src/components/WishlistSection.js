@@ -22,6 +22,8 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
   const [filterGenre, setFilterGenre] = React.useState('');
   const [filterMaxPrice, setFilterMaxPrice] = React.useState('');
   const [familiarityBias, setFamiliarityBiasState] = React.useState(() => getFamiliarityBias());
+  const [healedArt, setHealedArt] = React.useState({});
+  const healAttemptedRef = React.useRef(new Set());
 
   // Genre + Price suggestions. Mood is intentionally excluded — it can't be
   // known for a game you don't own yet.
@@ -66,6 +68,49 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
       cancelled = true;
     };
   }, [enabled, loadItems]);
+
+  // Heal wishlist artwork for items with a Steam AppID whose stored thumb is
+  // missing or points at the guessed /apps/<id>/header.jpg path — that path
+  // 404s on newer app IDs. Pulls the canonical header_image via the desktop
+  // store-details bridge, then backfills the entry so it persists.
+  React.useEffect(() => {
+    const api = window.electronAPI?.steamStoreDetails;
+    if (typeof api !== 'function' || items.length === 0) return undefined;
+    const targets = items
+      .filter((item) => {
+        const steamId = item?.steamAppID || (item?.appid && /^\d+$/.test(String(item.appid)) ? item.appid : null);
+        if (!steamId || healAttemptedRef.current.has(item.key)) return false;
+        const thumb = typeof item?.thumb === 'string' ? item.thumb : '';
+        return !thumb || /\/steam\/apps\/\d+\/header\.jpg/.test(thumb);
+      })
+      .slice(0, 12);
+    if (targets.length === 0) return undefined;
+    targets.forEach((item) => healAttemptedRef.current.add(item.key));
+
+    let cancelled = false;
+    (async () => {
+      const healed = {};
+      for (const item of targets) {
+        const steamId = String(item.steamAppID || item.appid);
+        try {
+          const result = await api(steamId);
+          const url = result?.ok ? result.data?.header_image || result.data?.capsule_image : null;
+          if (url) {
+            healed[item.key] = url;
+            WishlistService.backfillGame(item.name, { thumb: url });
+          }
+        } catch {
+          /* best-effort heal */
+        }
+      }
+      if (!cancelled && Object.keys(healed).length > 0) {
+        setHealedArt((current) => ({ ...current, ...healed }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
 
   const handleRefresh = async () => {
     setLoading(true);
@@ -180,11 +225,14 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
       if (art && typeof art === 'string' && art.trim()) urls.push(art.trim());
     }
     const steamId = item?.steamAppID || (item?.appid && /^\d+$/.test(String(item.appid)) ? item.appid : null);
-    if (steamId) {
-      urls.push(`https://cdn.cloudflare.steamstatic.com/steam/apps/${steamId}/header.jpg`);
-    }
+    const healed = healedArt[item?.key];
+    if (healed) urls.push(healed);
     if (item?.thumb && typeof item.thumb === 'string' && item.thumb.startsWith('http')) {
       urls.push(item.thumb);
+    }
+    if (steamId) {
+      // Guessed path — kept as a last resort only; it 404s on newer app IDs.
+      urls.push(`https://cdn.cloudflare.steamstatic.com/steam/apps/${steamId}/header.jpg`);
     }
     return [...new Set(urls)];
   };

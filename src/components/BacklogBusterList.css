@@ -40,6 +40,37 @@
   color: var(--accent-color, #ff8c1a);
 }
 
+.backlog-buster-progress {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border-color, rgba(255, 255, 255, 0.1));
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.backlog-buster-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-color, #ff8c1a);
+  transition: width 0.3s ease;
+}
+
+.backlog-buster-complete {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-color, #ff8c1a);
+}
+
+.backlog-buster-card.busted {
+  border-color: rgba(110, 200, 120, 0.55);
+}
+
+.backlog-buster-card.busted .backlog-buster-minutes {
+  color: #7fd08a;
+  font-weight: 700;
+}
+
 .backlog-buster-row {
   display: flex;
   gap: 10px;

@@ -64,6 +64,27 @@
   gap: 10px;
 }
 
+.friends-playing-item.friends-playing-squad {
+  background: rgba(91, 141, 239, 0.08);
+  border: 1px solid rgba(91, 141, 239, 0.25);
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin: -2px -8px;
+}
+
+.friends-playing-avatars {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.friends-playing-avatars .friends-playing-avatar + .friends-playing-avatar,
+.friends-playing-avatars .friends-playing-avatar-fallback + .friends-playing-avatar,
+.friends-playing-avatars .friends-playing-avatar + .friends-playing-avatar-fallback,
+.friends-playing-avatars .friends-playing-avatar-fallback + .friends-playing-avatar-fallback {
+  margin-left: -8px;
+  box-shadow: 0 0 0 2px var(--bg-secondary, #12161f);
+}
+
 .friends-playing-avatar {
   width: 30px;
   height: 30px;

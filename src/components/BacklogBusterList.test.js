@@ -42,12 +42,12 @@ test('toggling candidates builds a persisted buster list that survives remount',
 
   const candidate = screen.getByRole('button', { name: /^tiny game/i });
   expect(candidate).toHaveAttribute('aria-pressed', 'true');
-  expect(StorageService.get('backlogBusterListV1', [])).toEqual(['tinygame']);
-  expect(screen.getByText(/your buster list · 1 picked/i)).toBeInTheDocument();
+  expect(StorageService.get('backlogBusterListV1', [])).toEqual([{ key: 'tinygame', threshold: 60 }]);
+  expect(screen.getByText(/your buster list · 0 of 1 busted/i)).toBeInTheDocument();
 
   view.unmount();
   render(<BacklogBusterList library={[tiny, mid]} />);
-  expect(screen.getByText(/your buster list · 1 picked/i)).toBeInTheDocument();
+  expect(screen.getByText(/your buster list · 0 of 1 busted/i)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /launch tiny game/i })).toBeInTheDocument();
 });
 
@@ -71,6 +71,15 @@ test('buster entries vanish when their game leaves the library', () => {
   StorageService.set('backlogBusterListV1', ['tinygame']);
   render(<BacklogBusterList library={[mid]} />);
   expect(screen.getByText(/no buster picks yet/i)).toBeInTheDocument();
+});
+
+test('a pick counts as busted once its playtime crosses the picked threshold', () => {
+  // Legacy string entry migrates to the 60m default; mid has 90m played.
+  StorageService.set('backlogBusterListV1', ['midgame']);
+  render(<BacklogBusterList library={[mid]} />);
+  expect(screen.getByText(/your buster list · 1 of 1 busted/i)).toBeInTheDocument();
+  expect(screen.getByText(/every pick busted/i)).toBeInTheDocument();
+  expect(screen.getByText('Busted ✓')).toBeInTheDocument();
 });
 
 test('saved threshold is reused and invalid values fall back to under-1h', () => {

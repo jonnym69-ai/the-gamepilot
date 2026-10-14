@@ -57,6 +57,19 @@ export default function FriendsPlayingCard({ library = [], onLaunchGame }) {
       .filter(([appid]) => Boolean(appid))
   );
 
+  // Group friends by what they're playing — a shared game is a squad-night
+  // signal, and "3 friends are in Valheim and you own it" is actionable.
+  const gameGroups = new Map();
+  playing.forEach((friend) => {
+    const key = friend.appid || friend.playing;
+    if (!key) return;
+    if (!gameGroups.has(key)) {
+      gameGroups.set(key, { gameTitle: friend.playing, appid: friend.appid, friends: [] });
+    }
+    gameGroups.get(key).friends.push(friend);
+  });
+  const grouped = [...gameGroups.values()].sort((a, b) => b.friends.length - a.friends.length);
+
   return (
     <aside className="friends-playing" aria-label="Steam friends activity">
       <header className="friends-playing-header">
@@ -84,20 +97,37 @@ export default function FriendsPlayingCard({ library = [], onLaunchGame }) {
       ) : (
         <>
           <ul className="friends-playing-list">
-            {playing.slice(0, 5).map((friend) => {
-              const owned = friend.appid ? ownedByAppId.get(friend.appid) : null;
+            {grouped.slice(0, 5).map((group) => {
+              const owned = group.appid ? ownedByAppId.get(group.appid) : null;
+              const squad = group.friends.length > 1;
               return (
-                <li key={friend.steamid} className="friends-playing-item">
-                  {friend.avatar ? (
-                    <img src={friend.avatar} alt="" className="friends-playing-avatar" loading="lazy" />
-                  ) : (
-                    <span className="friends-playing-avatar friends-playing-avatar-fallback" aria-hidden="true">
-                      {friend.name.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
+                <li
+                  key={group.appid || group.gameTitle}
+                  className={`friends-playing-item${squad && owned ? ' friends-playing-squad' : ''}`}
+                >
+                  <span className="friends-playing-avatars" aria-hidden="true">
+                    {group.friends.slice(0, 3).map((friend) =>
+                      friend.avatar ? (
+                        <img
+                          key={friend.steamid}
+                          src={friend.avatar}
+                          alt=""
+                          className="friends-playing-avatar"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span key={friend.steamid} className="friends-playing-avatar friends-playing-avatar-fallback">
+                          {friend.name.slice(0, 1).toUpperCase()}
+                        </span>
+                      )
+                    )}
+                  </span>
                   <span className="friends-playing-text">
-                    <strong>{friend.name}</strong>
-                    <span>{friend.playing}</span>
+                    <strong>{group.friends.map((f) => f.name).join(', ')}</strong>
+                    <span>
+                      {group.gameTitle}
+                      {squad ? ` · ${group.friends.length} in the same game` : ''}
+                    </span>
                   </span>
                   {owned && (
                     <button
@@ -106,7 +136,7 @@ export default function FriendsPlayingCard({ library = [], onLaunchGame }) {
                       onClick={() => onLaunchGame?.(owned)}
                       title={`${owned.name || owned.title} is in your library`}
                     >
-                      <Play size={12} aria-hidden="true" /> Play your copy
+                      <Play size={12} aria-hidden="true" /> {squad ? 'Join them' : 'Play your copy'}
                     </button>
                   )}
                 </li>

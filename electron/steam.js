@@ -455,6 +455,11 @@ const fetchStoreDetails = async (id) => {
           .filter(Boolean)
           .slice(0, 40)
           .map((description) => ({ description })),
+        // Canonical artwork URLs — validated through steamImageUrl. Wishlist
+        // healing uses header_image since guessed /apps/<id>/header.jpg paths
+        // 404 on newer app IDs (hashed store_item_assets hosting).
+        header_image: steamImageUrl(source.header_image) || null,
+        capsule_image: steamImageUrl(source.capsule_image) || null,
         metacritic: { score: source.metacritic?.score },
         price_overview: source.price_overview || null,
         screenshots: (Array.isArray(source.screenshots) ? source.screenshots : [])

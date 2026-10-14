@@ -22,10 +22,23 @@ const getGameKey = (game) =>
     .toLowerCase() ||
   null;
 
+// Entries are { key, threshold } — a pick counts as "busted" once its blended
+// playtime crosses the hour limit it was chosen under. Legacy plain-string
+// entries migrate to the 60m default.
 const readList = () => {
   try {
     const stored = StorageService.get(LIST_KEY, []);
-    return Array.isArray(stored) ? stored.filter((key) => typeof key === 'string' && key) : [];
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .map((entry) => {
+        if (typeof entry === 'string' && entry) return { key: entry, threshold: 60 };
+        if (entry && typeof entry === 'object' && typeof entry.key === 'string' && entry.key) {
+          const threshold = Number(entry.threshold);
+          return { key: entry.key, threshold: Number.isFinite(threshold) && threshold > 0 ? threshold : 60 };
+        }
+        return null;
+      })
+      .filter(Boolean);
   } catch {
     return [];
   }
@@ -48,7 +61,7 @@ const BacklogBusterList = ({ library = [], onLaunchGame }) => {
   const [threshold, setThreshold] = useState(readThreshold);
   const [picking, setPicking] = useState(false);
 
-  const { busters, candidates } = useMemo(() => {
+  const { busters, candidates, bustedCount } = useMemo(() => {
     const games = Array.isArray(library) ? library : [];
     const eligible = games.filter(
       (game) =>
@@ -64,7 +77,13 @@ const BacklogBusterList = ({ library = [], onLaunchGame }) => {
       const key = getGameKey(game);
       if (key && !byKey.has(key)) byKey.set(key, game);
     });
-    const list = busterKeys.map((key) => byKey.get(key)).filter(Boolean);
+    const list = busterKeys
+      .map((entry) => {
+        const game = byKey.get(entry.key);
+        if (!game) return null;
+        return { game, busted: getBlendedPlaytimeMinutes(game) >= entry.threshold };
+      })
+      .filter(Boolean);
     const pool = eligible
       .filter((game) => getBlendedPlaytimeMinutes(game) < threshold)
       .sort(
@@ -72,14 +91,16 @@ const BacklogBusterList = ({ library = [], onLaunchGame }) => {
           getBlendedPlaytimeMinutes(a) - getBlendedPlaytimeMinutes(b) || String(a.name).localeCompare(String(b.name))
       )
       .slice(0, MAX_CANDIDATES);
-    return { busters: list, candidates: pool };
+    return { busters: list, candidates: pool, bustedCount: list.filter((b) => b.busted).length };
   }, [library, busterKeys, threshold]);
 
   const toggleBuster = (game) => {
     const key = getGameKey(game);
     if (!key) return;
     setBusterKeys((current) => {
-      const next = current.includes(key) ? current.filter((entry) => entry !== key) : [...current, key];
+      const next = current.some((entry) => entry.key === key)
+        ? current.filter((entry) => entry.key !== key)
+        : [...current, { key, threshold }];
       try {
         StorageService.set(LIST_KEY, next);
       } catch {
@@ -102,7 +123,7 @@ const BacklogBusterList = ({ library = [], onLaunchGame }) => {
     <div className="backlog-buster">
       <div className="backlog-buster-header">
         <span className="backlog-buster-title">
-          {busters.length > 0 ? `Your buster list · ${busters.length} picked` : 'No buster picks yet'}
+          {busters.length > 0 ? `Your buster list · ${bustedCount} of ${busters.length} busted` : 'No buster picks yet'}
         </span>
         <button
           type="button"
@@ -116,27 +137,40 @@ const BacklogBusterList = ({ library = [], onLaunchGame }) => {
       </div>
 
       {busters.length > 0 && (
-        <div className="backlog-buster-row" aria-label="Your backlog buster list">
-          {busters.map((game) => {
-            const { artwork, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait' });
-            return (
-              <button
-                key={getGameKey(game)}
-                type="button"
-                className="backlog-buster-card"
-                aria-label={`Launch ${game.name}`}
-                title={`Launch ${game.name}`}
-                onClick={() => onLaunchGame?.(game)}
-              >
-                <span className="backlog-buster-art">
-                  <LazyImage src={artwork} alt={game.name} placeholder={placeholder} />
-                </span>
-                <span className="backlog-buster-name">{game.name}</span>
-                <span className="backlog-buster-minutes">{formatMinutes(getBlendedPlaytimeMinutes(game))}</span>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div className="backlog-buster-progress" aria-hidden="true">
+            <div
+              className="backlog-buster-progress-fill"
+              style={{ width: `${Math.round((bustedCount / busters.length) * 100)}%` }}
+            />
+          </div>
+          {bustedCount === busters.length && (
+            <p className="backlog-buster-complete">Every pick busted — the backlog fears you.</p>
+          )}
+          <div className="backlog-buster-row" aria-label="Your backlog buster list">
+            {busters.map(({ game, busted }) => {
+              const { artwork, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait' });
+              return (
+                <button
+                  key={getGameKey(game)}
+                  type="button"
+                  className={`backlog-buster-card${busted ? ' busted' : ''}`}
+                  aria-label={`Launch ${game.name}`}
+                  title={`Launch ${game.name}`}
+                  onClick={() => onLaunchGame?.(game)}
+                >
+                  <span className="backlog-buster-art">
+                    <LazyImage src={artwork} alt={game.name} placeholder={placeholder} />
+                  </span>
+                  <span className="backlog-buster-name">{game.name}</span>
+                  <span className="backlog-buster-minutes">
+                    {busted ? 'Busted ✓' : formatMinutes(getBlendedPlaytimeMinutes(game))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {picking && (
@@ -160,7 +194,7 @@ const BacklogBusterList = ({ library = [], onLaunchGame }) => {
             <div className="backlog-buster-candidates">
               {candidates.map((game) => {
                 const key = getGameKey(game);
-                const selected = busterKeys.includes(key);
+                const selected = busterKeys.some((entry) => entry.key === key);
                 const { artwork, placeholder } = resolveGameArtworkBundle(game, { surface: 'portrait' });
                 return (
                   <button
