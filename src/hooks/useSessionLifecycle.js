@@ -185,6 +185,7 @@ export default function useSessionLifecycle({
               : null,
             playtimeMinutes: normalizeTrackedNumber(sessionResult.playtimeMinutes),
             xpEarned,
+            sessionId: sessionResult.sessionId || null,
             endTime: sessionResult.endTime || Date.now(),
             recommendationType: recommendationLaunch?.recommendationType || null,
             recommendationSource: recommendationLaunch?.source || null,

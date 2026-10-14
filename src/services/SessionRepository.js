@@ -219,6 +219,37 @@ class SessionRepository {
     return true;
   }
 
+  /**
+   * Merge a patch into a single settled history entry (matched by sessionId,
+   * then game+timestamp fallback for legacy entries). Used by the session
+   * journal to attach a one-line note after settlement. Persists through the
+   * same localStorage + SQLite dual-write as replaceHistory.
+   */
+  static updateSessionEntry(sessionId, patch, fallback = {}) {
+    const history = this.getSessionHistory();
+    let index = sessionId ? history.findIndex((entry) => entry?.sessionId === sessionId) : -1;
+    if (index === -1 && fallback.gameName) {
+      const key = String(fallback.gameName).trim().toLowerCase();
+      const ts = fallback.endTime ? new Date(fallback.endTime).getTime() : 0;
+      index = history.findIndex((entry) => {
+        const entryKey = String(entry?.gameName || entry?.gameId || '')
+          .trim()
+          .toLowerCase();
+        if (entryKey !== key) return false;
+        const entryTs = getSessionTimestampMs(entry);
+        return ts > 0 ? Math.abs(entryTs - ts) <= 60000 : false;
+      });
+    }
+    if (index === -1) return false;
+    history[index] = { ...history[index], ...(patch && typeof patch === 'object' ? patch : {}) };
+    this.cache.sessionHistory = history;
+    this.persistFallback();
+    this.api?.sessionStoreReplaceHistory?.(this.cache.sessionHistory).catch((error) => {
+      console.error('Failed to persist session entry update:', error);
+    });
+    return true;
+  }
+
   static replaceHistory(history) {
     this.cache.sessionHistory = this.dedupeSessionHistory(Array.isArray(history) ? history : []);
     StorageService.set(SESSION_HISTORY_KEY, this.cache.sessionHistory);

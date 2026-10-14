@@ -183,3 +183,27 @@ describe('CurrentEraService.getCurrentEra imported-playtime estimate', () => {
     expect(tagline).not.toMatch(/h in the last/);
   });
 });
+
+describe('CurrentEraService.getEraTransition', () => {
+  test('describes the ended era and its successor from the last two history entries', () => {
+    seedHistory();
+
+    const transition = CurrentEraService.getEraTransition();
+
+    expect(transition.endedEra.name).toBe('The Zomboid Era');
+    expect(transition.endedEra.topGame).toBe('Project Zomboid');
+    expect(transition.endedEra.days).toBe(20);
+    expect(transition.newEra.name).toBe('The Quiet Season');
+    expect(transition.transitionedAt).toBe(NOW - 5 * DAY_MS);
+    expect(transition.signature).toContain('>');
+  });
+
+  test('returns null until at least one real transition is recorded', () => {
+    expect(CurrentEraService.getEraTransition()).toBeNull();
+
+    StorageService.set('currentEraHistory', [
+      { signature: 'x', name: 'The Saga Era', genre: 'rpg', topGame: 'Skyrim', since: NOW - 10 * DAY_MS },
+    ]);
+    expect(CurrentEraService.getEraTransition()).toBeNull();
+  });
+});

@@ -1,0 +1,60 @@
+.era-transition-card {
+  position: relative;
+  border-radius: var(--border-radius, 14px);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+  border-left: 3px solid var(--accent-color, #ff8c42);
+}
+
+.era-transition-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color, #ff8c42);
+  font-weight: 700;
+}
+
+.era-transition-name {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  color: var(--text-primary, #fff);
+}
+
+.era-transition-detail {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #aaa);
+}
+
+.era-transition-next {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--text-primary, #eee);
+}
+
+.era-transition-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+}
+
+.era-transition-dismiss:hover {
+  color: var(--text-primary, #fff);
+  border-color: var(--text-secondary, #aaa);
+}

@@ -98,6 +98,45 @@ describe('SessionRepository', () => {
     expect(SessionRepository.getSessionHistory()[1].sessionId).toBe('new-2');
   });
 
+  test('updateSessionEntry merges a patch into a settled entry by sessionId', () => {
+    SessionRepository.cache.sessionHistory = [
+      { sessionId: 'note-1', gameName: 'Game H', playtimeMinutes: 25, endTime: '2024-07-01T20:00:00.000Z' },
+      { sessionId: 'note-2', gameName: 'Game I', playtimeMinutes: 10, endTime: '2024-07-02T20:00:00.000Z' },
+    ];
+
+    const result = SessionRepository.updateSessionEntry('note-1', { note: 'finally beat the boss' });
+
+    expect(result).toBe(true);
+    const history = SessionRepository.getSessionHistory();
+    expect(history[0].note).toBe('finally beat the boss');
+    expect(history[1].note).toBeUndefined();
+  });
+
+  test('updateSessionEntry falls back to game + timestamp match for legacy entries', () => {
+    SessionRepository.cache.sessionHistory = [
+      { gameName: 'Game J', playtimeMinutes: 40, endTime: '2024-07-03T20:00:00.000Z' },
+    ];
+
+    const result = SessionRepository.updateSessionEntry(
+      null,
+      { note: 'cozy night' },
+      {
+        gameName: 'Game J',
+        endTime: '2024-07-03T20:00:00.000Z',
+      }
+    );
+
+    expect(result).toBe(true);
+    expect(SessionRepository.getSessionHistory()[0].note).toBe('cozy night');
+  });
+
+  test('updateSessionEntry returns false when nothing matches', () => {
+    SessionRepository.cache.sessionHistory = [{ sessionId: 'x-1', gameName: 'Game K', playtimeMinutes: 5 }];
+
+    expect(SessionRepository.updateSessionEntry('missing', { note: 'nope' })).toBe(false);
+    expect(SessionRepository.getSessionHistory()[0].note).toBeUndefined();
+  });
+
   test('clear wipes cache and localStorage fallback', () => {
     SessionRepository.cache.activeSessions = {
       'Game F': { startTime: '2024-05-01T00:00:00.000Z', sessionId: 'f-1' },

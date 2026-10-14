@@ -14,6 +14,7 @@ import { LocalShareService } from '../services/LocalShareService';
 import { ProfileService } from '../services/ProfileService';
 import ShareMenu from './ShareMenu';
 import ChampionShareCard from './ChampionShareCard';
+import EraShareCard from './EraShareCard';
 import html2canvas from 'html2canvas';
 
 function formatDuration(minutes) {
@@ -81,6 +82,15 @@ export function RecentSessionsSummary({ compact = false }) {
         ...new Set(weekSessions.map((s) => String(s.gameName || s.gameId || '').trim()).filter(Boolean)),
       ];
 
+      const journalEntries = sorted
+        .filter((s) => typeof s?.note === 'string' && s.note.trim())
+        .slice(0, 5)
+        .map((s) => ({
+          game: s.gameName || s.gameId || 'Unknown',
+          note: s.note.trim(),
+          ts: s.endTime || s.timestamp || null,
+        }));
+
       const totalWeekMinutes = weekSessions.reduce((sum, s) => {
         const m = Math.round(Number(s.playtimeMinutes ?? s.playtime ?? s.duration ?? s.minutes ?? 0) || 0);
         return sum + Math.max(0, m);
@@ -99,6 +109,7 @@ export function RecentSessionsSummary({ compact = false }) {
         gamesThisWeek,
         totalWeekTime: formatDuration(totalWeekMinutes),
         weekSessionCount: weekSessions.length,
+        journalEntries,
       };
     } catch {
       return null;
@@ -171,13 +182,30 @@ export function RecentSessionsSummary({ compact = false }) {
               </span>
             </div>
           )}
+          {data.journalEntries.length > 0 && (
+            <div className="recent-session-item session-journal-list">
+              <span className="recent-session-label">Journal</span>
+              {data.journalEntries.map((entry, index) => (
+                <div key={index} className="session-journal-entry">
+                  <span className="session-journal-note">“{entry.note}”</span>
+                  <span className="recent-session-meta">
+                    {entry.game} · {formatRelativeTime(entry.ts)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function CurrentEraCard({ compact = false }) {
+export function CurrentEraCard({ compact = false, library = [] }) {
+  const shareCardRef = React.useRef(null);
+  const [isCapturing, setIsCapturing] = React.useState(false);
+  const username = ProfileService.getCurrentUsername();
+
   const era = React.useMemo(() => {
     try {
       return CurrentEraService.getCurrentEra();
@@ -193,6 +221,19 @@ export function CurrentEraCard({ compact = false }) {
       return null;
     }
   }, [era?.topGame]);
+
+  const eraGame = React.useMemo(() => {
+    if (!era?.topGame || !Array.isArray(library)) return null;
+    const key = String(era.topGame).trim().toLowerCase();
+    return (
+      library.find(
+        (g) =>
+          String(g?.name || g?.title || '')
+            .trim()
+            .toLowerCase() === key
+      ) || null
+    );
+  }, [era?.topGame, library]);
 
   if (!era || !era.snapshot || era.snapshot.totalMinutes <= 0) {
     return compact ? <p>Your next era is taking shape. Record a few sessions to reveal it.</p> : null;
@@ -226,11 +267,74 @@ export function CurrentEraCard({ compact = false }) {
       <div className="result-card identity-card">
         <div className="identity-title-row">
           <h3 className="result-title">Current Era</h3>
-          <span className="identity-confidence-badge is-growing">
-            {era.estimated
-              ? 'Estimated · imported play history'
-              : `Day ${era.dayCount || 1} · last ${era.snapshot.windowDays} days`}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="identity-confidence-badge is-growing">
+              {era.estimated
+                ? 'Estimated · imported play history'
+                : `Day ${era.dayCount || 1} · last ${era.snapshot.windowDays} days`}
+            </span>
+            <ShareMenu
+              triggerLabel="Share era"
+              imageAvailable
+              disabled={isCapturing}
+              onCopyText={async () => {
+                const hours = era.snapshot?.totalMinutes ? ` (${(era.snapshot.totalMinutes / 60).toFixed(1)}h)` : '';
+                const text = `I'm living in ${era.name} — ${era.flavor}. Day ${era.dayCount || 1}${hours}.\nTracked locally by GamePilot`;
+                return LocalShareService.copyTextToClipboard(text);
+              }}
+              onCopyImage={async () => {
+                if (!shareCardRef.current) return false;
+                setIsCapturing(true);
+                try {
+                  const canvas = await html2canvas(shareCardRef.current, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false,
+                  });
+                  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                  if (!blob) return false;
+                  return LocalShareService.copyImageToClipboard(blob);
+                } catch (err) {
+                  console.error(err);
+                  return false;
+                } finally {
+                  setIsCapturing(false);
+                }
+              }}
+              onSaveImage={async () => {
+                if (!shareCardRef.current) return;
+                setIsCapturing(true);
+                try {
+                  const canvas = await html2canvas(shareCardRef.current, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false,
+                  });
+                  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+                  if (!blob) return;
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `era-${era.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                } catch (err) {
+                  console.error(err);
+                } finally {
+                  setIsCapturing(false);
+                }
+              }}
+              onShareText={async (channel) => {
+                const hours = era.snapshot?.totalMinutes ? ` (${(era.snapshot.totalMinutes / 60).toFixed(1)}h)` : '';
+                const text = `I'm living in ${era.name} — ${era.flavor}. Day ${era.dayCount || 1}${hours}.\nTracked locally by GamePilot`;
+                return LocalShareService.openShareIntent(channel, text);
+              }}
+            />
+          </div>
         </div>
         <div className="identity-body">
           <div className="identity-header">
@@ -284,6 +388,13 @@ export function CurrentEraCard({ compact = false }) {
               {driftNotes.join(' · ')}
             </p>
           )}
+        </div>
+
+        {/* Hidden render target for the era share PNG */}
+        <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+          <div ref={shareCardRef}>
+            <EraShareCard era={era} game={eraGame} username={username} />
+          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,38 @@
+.monthly-recap-strip {
+  border-radius: var(--border-radius, 14px);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+}
+
+.monthly-recap-eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color, #ff8c42);
+  font-weight: 700;
+}
+
+.monthly-recap-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #bbb);
+}
+
+.monthly-recap-stat strong {
+  color: var(--text-primary, #fff);
+}
+
+.monthly-recap-detail {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #aaa);
+}
+
+.monthly-recap-detail strong {
+  color: var(--text-primary, #eee);
+}

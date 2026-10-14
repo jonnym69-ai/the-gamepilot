@@ -398,6 +398,36 @@ export class CurrentEraService {
     }
   }
 
+  /**
+   * The most recent era transition: which era just ended, how long it ran,
+   * and what replaced it. Derived from history's last two signatures — null
+   * until at least one real transition has been recorded. `transitionedAt`
+   * is when the new era began; `signature` identifies this transition for
+   * dismissal ("seen it") purposes.
+   */
+  static getEraTransition() {
+    try {
+      const era = CurrentEraService.getCurrentEra();
+      const history = Array.isArray(era?.history) ? era.history : [];
+      if (history.length < 2) return null;
+      const previous = history[history.length - 2];
+      const current = history[history.length - 1];
+      if (!previous?.since || !current?.since || current.since <= previous.since) return null;
+      return {
+        endedEra: {
+          name: previous.name,
+          topGame: previous.topGame || null,
+          days: Math.max(1, Math.round((current.since - previous.since) / DAY_MS)),
+        },
+        newEra: { name: current.name, topGame: current.topGame || null },
+        transitionedAt: current.since,
+        signature: `${previous.signature}>${current.signature}`,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   static getEraTagline() {
     try {
       const era = CurrentEraService.getCurrentEra();
