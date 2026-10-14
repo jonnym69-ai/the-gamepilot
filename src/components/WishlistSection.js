@@ -446,7 +446,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           {items.map((item) => {
             const game = item.libraryGame;
             const placeholder = getGameArtworkPlaceholder({ game, surface: 'library_card' });
-            const [artwork, fallbackArtwork] = artworkCandidatesForItem(item);
+            const [artwork, ...fallbackArtwork] = artworkCandidatesForItem(item);
             const currentPrice = item.currentPrice;
             const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;
             const discount = currentPrice ? Math.round(Number(currentPrice.cut) || 0) : 0;
@@ -461,7 +461,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                   {artwork ? (
                     <LazyImage
                       src={artwork}
-                      fallbackSrc={fallbackArtwork}
+                      fallbackSrcs={fallbackArtwork}
                       alt={item.name}
                       placeholder={placeholder}
                       className="game-image"

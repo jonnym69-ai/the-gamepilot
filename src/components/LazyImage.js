@@ -74,12 +74,33 @@ const optimizeImageSrc = (url) => {
   return url;
 };
 
-const LazyImage = ({ src, alt, className, placeholder, fallbackSrc, gameName, platform, genre, mood, ...props }) => {
+const LazyImage = ({
+  src,
+  alt,
+  className,
+  placeholder,
+  fallbackSrc,
+  fallbackSrcs,
+  gameName,
+  platform,
+  genre,
+  mood,
+  ...props
+}) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [activeSrc, setActiveSrc] = useState(src);
   const imgRef = useRef(null);
+
+  // Ordered source chain: primary src, then fallbacks. Needed because Steam
+  // CDN URLs synthesized from an appid can 404 for newer games (their art only
+  // exists under hashed store_item_assets paths), so a real known-good URL
+  // must be able to take over after a failed load.
+  const allSources = useMemo(() => {
+    const extras = Array.isArray(fallbackSrcs) ? fallbackSrcs : fallbackSrc ? [fallbackSrc] : [];
+    return [...new Set([src, ...extras].filter((u) => typeof u === 'string' && u.trim().length > 0))];
+  }, [src, fallbackSrc, fallbackSrcs]);
 
   useEffect(() => {
     setActiveSrc(src);
@@ -91,17 +112,27 @@ const LazyImage = ({ src, alt, className, placeholder, fallbackSrc, gameName, pl
     return activeSrc && isImageFailed(activeSrc);
   }, [activeSrc]);
 
+  const nextSourceAfter = (current) => {
+    const idx = allSources.indexOf(current);
+    for (let i = idx + 1; i < allSources.length; i++) {
+      if (!isImageFailed(allSources[i])) return allSources[i];
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (!isKnownFailure) return;
-    if (fallbackSrc && fallbackSrc !== activeSrc && !isImageFailed(fallbackSrc)) {
-      setActiveSrc(fallbackSrc);
+    const next = nextSourceAfter(activeSrc);
+    if (next) {
+      setActiveSrc(next);
       setHasError(false);
       setIsLoaded(false);
       return;
     }
     setHasError(true);
     setIsLoaded(true);
-  }, [isKnownFailure, fallbackSrc, activeSrc]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isKnownFailure, activeSrc, allSources]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -139,8 +170,9 @@ const LazyImage = ({ src, alt, className, placeholder, fallbackSrc, gameName, pl
       addToFailedCache(activeSrc);
     }
 
-    if (fallbackSrc && fallbackSrc !== activeSrc && !isImageFailed(fallbackSrc)) {
-      setActiveSrc(fallbackSrc);
+    const next = nextSourceAfter(activeSrc);
+    if (next) {
+      setActiveSrc(next);
       setHasError(false);
       setIsLoaded(false);
       return;
