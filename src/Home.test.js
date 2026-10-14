@@ -102,7 +102,7 @@ test('manual views preserve deeper features and browser back navigation', () => 
   expect(screen.queryByRole('heading', { name: 'Perfect Play', exact: true })).not.toBeInTheDocument();
   fireEvent.click(navigation.getByRole('link', { name: 'Identity' }));
   expect(screen.getByText('Identity hub')).toBeInTheDocument();
-  expect(screen.getByText('Doodle & Paradox')).toBeInTheDocument();
+  expect(screen.queryByText('Doodle & Paradox')).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Full profile' })).toHaveAttribute('href', '/profile');
   fireEvent.click(navigation.getByRole('link', { name: 'Wishlist', exact: true }));
   expect(screen.getByRole('heading', { name: 'Track What to Buy Next' })).toBeInTheDocument();

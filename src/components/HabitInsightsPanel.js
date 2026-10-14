@@ -238,19 +238,25 @@ const HabitInsightsPanel = ({ library = [] }) => {
         <span className="habit-insights-badge">Librarian Analytics</span>
       </div>
 
+      <div className="habit-insight-hero">
+        <div className="habit-insight-hero-icon">
+          <Gamepad2 size={26} />
+        </div>
+        <div className="habit-insight-hero-body">
+          <span className="habit-insight-hero-eyebrow">Gaming Identity</span>
+          <span className="habit-insight-hero-value">
+            {primary?.label || persona?.personaIdentity?.label || 'Explorer'}
+          </span>
+          <span className="habit-insight-hero-roast">
+            {gamingPersona?.summaryRoast ||
+              primary?.roast ||
+              persona?.personaIdentity?.description ||
+              'Still forming your profile'}
+          </span>
+        </div>
+      </div>
+
       <div className="habit-insights-grid">
-        <InsightCard
-          icon={Gamepad2}
-          title="Gaming Identity"
-          value={primary?.label || persona?.personaIdentity?.label || 'Explorer'}
-          subtitle={
-            gamingPersona?.summaryRoast ||
-            primary?.roast ||
-            persona?.personaIdentity?.description ||
-            'Still forming your profile'
-          }
-          tone="highlight"
-        />
         <InsightCard
           icon={Clock}
           title="Peak Gaming Time"

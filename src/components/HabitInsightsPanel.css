@@ -41,6 +41,62 @@
   color: var(--accent, #3dd9ff);
 }
 
+.habit-insight-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(61, 217, 255, 0.3);
+  background: linear-gradient(135deg, rgba(61, 217, 255, 0.12), rgba(155, 92, 255, 0.12));
+}
+
+.habit-insight-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  background: rgba(61, 217, 255, 0.2);
+  color: #3dd9ff;
+}
+
+.habit-insight-hero-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.habit-insight-hero-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3dd9ff;
+}
+
+.habit-insight-hero-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary, #f1f5f9);
+  line-height: 1.15;
+}
+
+.habit-insight-hero-roast {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #cbd5e1);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .habit-insights-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -52,13 +108,26 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px;
+  padding: 16px 14px;
   border-radius: 12px;
   background: var(--surface, rgba(255, 255, 255, 0.03));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.05));
+  border-top: 3px solid var(--tone-accent, transparent);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+.habit-insight-card.tone-highlight {
+  --tone-accent: #3dd9ff;
+}
+
+.habit-insight-card.tone-good {
+  --tone-accent: #34d399;
+}
+
+.habit-insight-card.tone-warn {
+  --tone-accent: #fb923c;
 }
 
 .habit-insight-card:hover {
@@ -108,7 +177,7 @@
 }
 
 .insight-value {
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary, #f1f5f9);
   line-height: 1.3;
@@ -117,6 +186,11 @@
 .insight-subtitle {
   font-size: 0.8rem;
   color: var(--text-tertiary, #64748b);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .habit-patterns-section {

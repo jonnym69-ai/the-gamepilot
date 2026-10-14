@@ -19,8 +19,7 @@ import {
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import HomeDailyOverview, { HOME_VIEWS, HomeViewNavigation } from './components/HomeDailyOverview';
-import DailyDoodleTitle from './components/DailyDoodleTitle';
-import DailyParadox from './components/DailyParadox';
+import BacklogBusterList from './components/BacklogBusterList';
 import DiscoverHighlights from './components/DiscoverHighlights';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { BacklogCoachService } from './services/BacklogCoachService';
@@ -1830,15 +1829,6 @@ function Home({
                 onLaunchGame={onLaunchGame}
                 getGameCardClass={getGameCardClass}
               />
-              <CollapsibleSection title="Doodle & Paradox" subtitle="Your daily extras.">
-                <DailyDoodleTitle
-                  username={username}
-                  welcomeMessage={username ? welcomeMessage : ''}
-                  profilePic={profilePic}
-                  themeId={theme}
-                />
-                <DailyParadox />
-              </CollapsibleSection>
             </HomeSection>
 
             <HomeSection
@@ -1925,6 +1915,7 @@ function Home({
                     </div>
                   )}
                 </div>
+                <BacklogBusterList library={library} onLaunchGame={handleTrackedLaunch} />
                 <div className="home-backlog-games">
                   {backlogQueue.map((entry, i) => {
                     const game = entry?.game;
