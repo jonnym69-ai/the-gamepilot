@@ -1,8 +1,8 @@
 import React, { useEffect, useId, useState } from 'react';
-import { BookOpen, Image, LayoutGrid, Maximize2 } from 'lucide-react';
+import { BookOpen, Image, LayoutGrid, Maximize2, Trophy } from 'lucide-react';
 import DailySpotlightService from '../services/DailySpotlightService';
 import { getDateKey } from '../services/DateKeyService';
-import { getBlendedPlaytimeMinutes } from '../services/gameClassification';
+import { getBlendedPlaytimeMinutes, getLibraryRank, isTopShelfRank } from '../services/gameClassification';
 import { resolveGameArtworkBundle } from '../services/GameArtworkService';
 import StorageService from '../services/StorageService';
 import LazyImage from './LazyImage';
@@ -47,7 +47,7 @@ const checkedAt = (value) => {
   return Number.isFinite(value) && value > 0 && !Number.isNaN(date.getTime()) ? date.toLocaleString() : '';
 };
 
-function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunchGame }) {
+function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunchGame, library = [] }) {
   const id = useId();
   const appid = DailySpotlightService.getSteamAppId(game);
   const surface = rediscovery ? 'rediscovery' : 'spotlight';
@@ -114,6 +114,8 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
   const minutes = getBlendedPlaytimeMinutes(game);
   const playtime =
     minutes > 0 ? `${(minutes / 60).toLocaleString(undefined, { maximumFractionDigits: 1 })}h` : 'No playtime recorded';
+  const libraryRank = getLibraryRank(game, library);
+  const topShelf = isTopShelfRank(libraryRank);
   const { artwork, fallbackSrc, placeholder } = resolveGameArtworkBundle(
     { ...game, appid, app_id: null, steamAppId: null },
     { surface: 'portrait', fallbackSurface: 'hero' }
@@ -223,6 +225,12 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
           {rediscovery ? 'Already yours · worth another look' : 'From your library · daily discovery'}
         </p>
         <h3>{gameName}</h3>
+        {topShelf && (
+          <p className="daily-spotlight-rank">
+            <Trophy size={13} aria-hidden="true" />
+            Top shelf — #{libraryRank.rank} of {libraryRank.total} in your library
+          </p>
+        )}
         {reason && <p className="daily-spotlight-intro">{reason}</p>}
         {store?.shortDescription && <p className="daily-spotlight-blurb">{blurb(store.shortDescription)}</p>}
         {rediscovery && onLaunchGame && (
@@ -264,6 +272,14 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
             <dt>Your platform</dt>
             <dd>{text(game.platform) || 'Local'}</dd>
           </div>
+          {libraryRank && libraryRank.minutes > 0 && (
+            <div>
+              <dt>Library rank</dt>
+              <dd>
+                #{libraryRank.rank} of {libraryRank.total}
+              </dd>
+            </div>
+          )}
         </dl>
         {!appid && (
           <p className="daily-spotlight-source">
@@ -345,6 +361,7 @@ export default function DailySpotlightCard({ library, rediscovery = false, onLau
       rediscovery={rediscovery}
       reason={reason}
       onLaunchGame={onLaunchGame}
+      library={library}
     />
   );
 }

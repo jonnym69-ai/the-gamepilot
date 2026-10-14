@@ -205,6 +205,20 @@
   line-height: 1.2;
 }
 
+.daily-spotlight-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 0 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-color, #ff8c1a);
+  background: rgba(255, 140, 26, 0.12);
+  color: var(--accent-color, #ff8c1a);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .daily-spotlight-blurb {
   margin: 8px 0 0;
   font-size: 0.83rem;

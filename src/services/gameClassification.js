@@ -37,6 +37,25 @@ export const isGameUnplayed = (game) => {
   return true;
 };
 
+// Competition ranking by blended playtime across real games: #1 is the
+// most-played title, and games tied on minutes share the same rank. Returns
+// null for libraries too small to rank meaningfully or a missing game.
+export const getLibraryRank = (game, library) => {
+  if (!game || !Array.isArray(library)) return null;
+  const games = library.filter((entry) => entry && !isNonGameTitle(entry));
+  if (games.length < 2) return null;
+  const minutes = getBlendedPlaytimeMinutes(game);
+  const rank = games.filter((entry) => getBlendedPlaytimeMinutes(entry) > minutes).length + 1;
+  return { rank, total: games.length, minutes };
+};
+
+// Top-shelf badge: rank 1–3, or the library's top 10%, whichever reaches more
+// games. Games with no recorded playtime never qualify.
+export const isTopShelfRank = (rankInfo) => {
+  if (!rankInfo || rankInfo.minutes <= 0) return false;
+  return rankInfo.rank <= Math.max(3, Math.ceil(rankInfo.total * 0.1));
+};
+
 export const isGameCompleted = (game) => {
   if (!game) return false;
   const COMPLETED_STATUSES = ['finished', 'beaten', 'completed', '100%'];

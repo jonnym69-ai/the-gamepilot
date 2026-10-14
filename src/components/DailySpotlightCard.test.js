@@ -203,3 +203,31 @@ test('ignores invalid saved artwork styles and falls back to poster', () => {
   render(<DailySpotlightCard library={[game]} />);
   expect(screen.getByRole('button', { name: 'Poster' })).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('shows library rank and a top-shelf badge for the most played games', () => {
+  const lesser = { name: 'Second Shelf Game', platform: 'Steam', appid: 55, time_played: 30 };
+  StorageService.set('dailySpotlightSelectionV1', {
+    day: new Date().toISOString().slice(0, 10),
+    key: 'steam:108600',
+  });
+  render(<DailySpotlightCard library={[game, lesser]} />);
+  expect(screen.getByText(/top shelf — #1 of 2 in your library/i)).toBeInTheDocument();
+  expect(screen.getByText(/^#1 of 2$/)).toBeInTheDocument();
+});
+
+test('low-ranked games get a rank line without the badge', () => {
+  const others = [500, 400, 300].map((minutes, i) => ({
+    name: `Ranked ${i}`,
+    platform: 'Steam',
+    appid: 60 + i,
+    time_played: minutes,
+  }));
+  StorageService.set('dailySpotlightSelectionV1', {
+    day: new Date().toISOString().slice(0, 10),
+    key: 'steam:108600',
+  });
+  render(<DailySpotlightCard library={[game, ...others]} />);
+  // Zomboid (120m) ranks #4 of 4 — outside the top-shelf cutoff.
+  expect(screen.getByText('#4 of 4')).toBeInTheDocument();
+  expect(screen.queryByText(/top shelf/i)).not.toBeInTheDocument();
+});

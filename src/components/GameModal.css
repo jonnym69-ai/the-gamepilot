@@ -85,6 +85,20 @@
   line-height: 1.4;
 }
 
+.game-modal-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-color, #ff8c1a);
+  background: rgba(255, 140, 26, 0.15);
+  color: var(--accent-color, #ff8c1a);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .game-modal-close {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -866,6 +880,7 @@
   line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .game-modal-similar-launch {

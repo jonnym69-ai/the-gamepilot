@@ -28,6 +28,7 @@ import { RecommendationEngine } from '../services/RecommendationEngine';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { getGameArtworkPlaceholder, resolveGameArtwork, fileToCoverDataUri } from '../services/GameArtworkService';
 import { MOODS, getMoodForGame, getResolvedMood } from '../constants/GenresMoods';
+import { getLibraryRank, isTopShelfRank } from '../services/gameClassification';
 import LazyImage from './LazyImage';
 import { GameShareCard, buildGameShareCaption, buildGameShareData } from './GameShareCard';
 import { SessionLaunchShareCard } from './SessionLaunchShareCard';
@@ -145,6 +146,8 @@ const GameModal = ({
     const key = String(game?.appid || game?.name || '');
     return (interfacePrefs.pinnedGameIds || []).map(String).includes(key);
   }, [interfacePrefs.pinnedGameIds, game]);
+
+  const libraryRank = useMemo(() => getLibraryRank(game, library), [game, library]);
 
   // HLTB completion check — if the user has played more than the HLTB main
   // story time but hasn't marked the game as beaten/completed, show a prompt.
@@ -723,8 +726,18 @@ const GameModal = ({
               <div className="game-modal-title-copy">
                 <h2>{game.name}</h2>
                 <p className="game-modal-subtitle">
-                  {platformLabel} • {playtimeHours}h played{resolvedMood ? ` • ${resolvedMood}` : ''}
+                  {platformLabel} • {playtimeHours}h played
+                  {libraryRank && libraryRank.minutes > 0
+                    ? ` • #${libraryRank.rank} of ${libraryRank.total} in library`
+                    : ''}
+                  {resolvedMood ? ` • ${resolvedMood}` : ''}
                 </p>
+                {isTopShelfRank(libraryRank) && (
+                  <p className="game-modal-rank">
+                    <Trophy size={13} aria-hidden="true" />
+                    Top shelf — one of your most played games
+                  </p>
+                )}
               </div>
             </div>
             <button className="game-modal-close" onClick={onClose}>
