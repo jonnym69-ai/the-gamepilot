@@ -20,7 +20,12 @@ const TOUR_STEPS = [
   {
     selector: 'a[href="#/"]',
     title: 'Home — Your Daily Cockpit',
-    body: 'The doodle greets you by mood and time of day, the Today strip tracks your check-in streak and week, and Play Next is always front and centre. The Discover tab next to it handles giveaways and seasonal picks.',
+    body: 'The doodle greets you by mood and time of day, the Today strip tracks your check-in streak and week, and Play Next is always front and centre.',
+  },
+  {
+    selector: '.home-view-navigation',
+    title: 'Five Views on Home',
+    body: 'Today is the cockpit. Discover finds something to play and builds your backlog list, Activity tracks sessions and your all-time top shelf, Identity holds your persona and eras, and Wishlist watches prices.',
   },
   {
     selector: 'a[href="#/library"]',

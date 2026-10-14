@@ -20,6 +20,7 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import HomeDailyOverview, { HOME_VIEWS, HomeViewNavigation } from './components/HomeDailyOverview';
 import BacklogBusterList from './components/BacklogBusterList';
+import LibraryLeaderboard from './components/LibraryLeaderboard';
 import DiscoverHighlights from './components/DiscoverHighlights';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { BacklogCoachService } from './services/BacklogCoachService';
@@ -1733,6 +1734,7 @@ function Home({
                 <Link to="/habits">Habits</Link>
                 <Link to="/year-in-review">Year in Review</Link>
               </nav>
+              <LibraryLeaderboard library={library} onLaunchGame={handleTrackedLaunch} />
               <RecentlyPlayedShelf library={library} onLaunchGame={onLaunchGame} />
               <RecentSessionsSummary />
               <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />

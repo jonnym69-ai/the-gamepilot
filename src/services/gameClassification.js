@@ -56,6 +56,29 @@ export const isTopShelfRank = (rankInfo) => {
   return rankInfo.rank <= Math.max(3, Math.ceil(rankInfo.total * 0.1));
 };
 
+// Ranked most-played list for leaderboard surfaces: real games with recorded
+// playtime, sorted by blended minutes with competition ranks (ties share a
+// rank). `limit` is a soft cap — games tied at the cutoff rank are all kept so
+// the board never arbitrarily splits a tie. Needs at least two real games,
+// matching getLibraryRank's meaningfulness threshold.
+export const getTopPlayedGames = (library, limit = 10) => {
+  if (!Array.isArray(library)) return [];
+  const games = library.filter((entry) => entry && !isNonGameTitle(entry));
+  if (games.length < 2) return [];
+  const played = games
+    .map((game) => ({ game, minutes: getBlendedPlaytimeMinutes(game) }))
+    .filter((entry) => entry.minutes > 0)
+    .sort((a, b) => b.minutes - a.minutes || String(a.game.name || '').localeCompare(String(b.game.name || '')));
+  if (played.length === 0) return [];
+  const ranked = [];
+  played.forEach((entry, index) => {
+    const rank = index > 0 && entry.minutes === played[index - 1].minutes ? ranked[index - 1].rank : index + 1;
+    ranked.push({ ...entry, rank, total: games.length });
+  });
+  const cutoffRank = ranked[Math.min(limit, ranked.length) - 1].rank;
+  return ranked.filter((entry) => entry.rank <= cutoffRank);
+};
+
 export const isGameCompleted = (game) => {
   if (!game) return false;
   const COMPLETED_STATUSES = ['finished', 'beaten', 'completed', '100%'];

@@ -1,4 +1,4 @@
-import { getLibraryRank, isTopShelfRank } from './gameClassification';
+import { getLibraryRank, getTopPlayedGames, isTopShelfRank } from './gameClassification';
 
 const game = (name, minutes) => ({ name, platform: 'Steam', time_played: minutes });
 
@@ -32,6 +32,38 @@ describe('getLibraryRank', () => {
     expect(getLibraryRank(library[0], [library[0]])).toBeNull();
     expect(getLibraryRank(null, library)).toBeNull();
     expect(getLibraryRank(library[0], null)).toBeNull();
+  });
+});
+
+describe('getTopPlayedGames', () => {
+  const library = [
+    game('Most Played', 600),
+    game('Mid Game', 300),
+    game('Least Played', 60),
+    game('Unplayed', 0),
+    { name: 'GOG Galaxy', platform: 'GOG' },
+  ];
+
+  it('returns played games sorted by blended playtime with ranks', () => {
+    const top = getTopPlayedGames(library, 10);
+    expect(top.map((entry) => entry.game.name)).toEqual(['Most Played', 'Mid Game', 'Least Played']);
+    expect(top.map((entry) => entry.rank)).toEqual([1, 2, 3]);
+    expect(top[0].total).toBe(4);
+  });
+
+  it('respects the limit but keeps ties at the cutoff rank', () => {
+    const tied = [game('A', 500), game('B', 400), game('C', 400), game('D', 100)];
+    const top = getTopPlayedGames(tied, 2);
+    expect(top.map((entry) => entry.game.name)).toEqual(['A', 'B', 'C']);
+    expect(top.map((entry) => entry.rank)).toEqual([1, 2, 2]);
+  });
+
+  it('skips unplayed games, non-games and tiny libraries', () => {
+    expect(getTopPlayedGames(library, 10).some((entry) => entry.game.name === 'Unplayed')).toBe(false);
+    expect(getTopPlayedGames(library, 10).some((entry) => entry.game.name === 'GOG Galaxy')).toBe(false);
+    expect(getTopPlayedGames([game('Solo', 100)], 10)).toEqual([]);
+    expect(getTopPlayedGames([game('A', 0), game('B', 0)], 10)).toEqual([]);
+    expect(getTopPlayedGames(null, 10)).toEqual([]);
   });
 });
 

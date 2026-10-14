@@ -197,6 +197,13 @@ The typecheck command is optional for JS-only changes.
 - Essentials launches pass the original library object to the existing callback only after an exact platform/ID or explicit-name match with installation evidence. Do not infer one installed game from another sharing its launcher (e.g. League of Legends versus Teamfight Tactics).
 - Regression checks: `npx jest src/components/DiscoverQuickPicks.test.js src/components/DiscoverHighlights.test.js src/components/FreeToPlayEssentials.test.js src/Home.test.js --ci`.
 
+## Library ranking and top shelf
+
+- `getLibraryRank` / `isTopShelfRank` / `getTopPlayedGames` in `src/services/gameClassification.js` are the single source for the user's own most-played ranking. Competition ranking over blended playtime; ties share a rank; non-game launcher tokens and unplayed games are excluded; libraries under two real games return nothing.
+- `LibraryLeaderboard` tops the Home Activity section with a persisted Top 10/Top 20 board (`libraryLeaderboardLimitV1`); the cutoff keeps every game tied at the boundary rank. Spotlight, Rediscover and GameModal show the same rank/`Top shelf` pill. Never present these as regional or global rankings — GamePilot has no telemetry and all ranks are local to the user's library.
+- `BacklogBusterList` (Discover, inside Backlog Plan) is the user-curated counterpart to the automatic backlog queue: under-1h/under-2h threshold picks persisted in `backlogBusterListV1`, keys via `getCanonicalGameKey`.
+- Regression checks: `npx jest src/services/gameClassification.test.js src/components/LibraryLeaderboard.test.js src/components/BacklogBusterList.test.js --ci`.
+
 ## Sharing and export verification
 
 - Share images use html2canvas. Avoid gradient-clipped/transparent text in card CSS: it renders as solid rectangles in PNGs. Verify exported pixels, not only the live DOM. Identity, Story and Year in Review use solid export-safe title colours.
