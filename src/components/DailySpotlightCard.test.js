@@ -162,3 +162,44 @@ test('rotates on calendar rollover while mounted and on returning from sleep', (
   fireEvent.focus(window);
   expect(screen.getByRole('heading', { level: 3 }).textContent).toBe(first);
 });
+
+test('artwork style picker defaults to Poster, persists choices per surface', () => {
+  const { unmount } = render(<DailySpotlightCard library={[game]} />);
+  expect(screen.getByRole('group', { name: /artwork style/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Poster' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getAllByRole('img')).toHaveLength(1);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Mosaic' }));
+  expect(screen.getAllByRole('img')).toHaveLength(1);
+  expect(screen.getAllByRole('presentation')).toHaveLength(3);
+  expect(StorageService.get('spotlightArtStyles', {})).toEqual({ spotlight: 'mosaic' });
+
+  unmount();
+  render(<DailySpotlightCard library={[game]} />);
+  expect(screen.getAllByRole('presentation')).toHaveLength(3);
+  expect(screen.getByRole('button', { name: 'Mosaic' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('rediscovery card stores its artwork style independently of the spotlight card', () => {
+  const overlookedA = { name: 'Forgotten Gem', platform: 'Steam', appid: 222001, time_played: 30 };
+  const overlookedB = { name: 'Dusty Classic', platform: 'Steam', appid: 222002, time_played: 45 };
+  StorageService.set('spotlightArtStyles', { spotlight: 'fill' });
+  render(<DailySpotlightCard library={[game, overlookedA, overlookedB]} rediscovery />);
+  expect(screen.getByRole('heading', { name: 'Rediscover your library' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Poster' })).toHaveAttribute('aria-pressed', 'true');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Fill' }));
+  expect(StorageService.get('spotlightArtStyles', {})).toEqual({ spotlight: 'fill', rediscovery: 'fill' });
+});
+
+test('fill mode prefers the landscape hero art with portrait as fallback', () => {
+  render(<DailySpotlightCard library={[game]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Fill' }));
+  expect(screen.getByRole('img', { name: /project zomboid artwork/i })).toBeInTheDocument();
+});
+
+test('ignores invalid saved artwork styles and falls back to poster', () => {
+  StorageService.set('spotlightArtStyles', { spotlight: 'not-a-style' });
+  render(<DailySpotlightCard library={[game]} />);
+  expect(screen.getByRole('button', { name: 'Poster' })).toHaveAttribute('aria-pressed', 'true');
+});

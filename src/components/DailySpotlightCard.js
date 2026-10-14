@@ -1,11 +1,38 @@
 import React, { useEffect, useId, useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Image, LayoutGrid, Maximize2 } from 'lucide-react';
 import DailySpotlightService from '../services/DailySpotlightService';
 import { getDateKey } from '../services/DateKeyService';
 import { getBlendedPlaytimeMinutes } from '../services/gameClassification';
 import { resolveGameArtworkBundle } from '../services/GameArtworkService';
+import StorageService from '../services/StorageService';
 import LazyImage from './LazyImage';
 import './DailySpotlightCard.css';
+
+const ART_STYLES = [
+  { id: 'poster', label: 'Poster', Icon: Image },
+  { id: 'fill', label: 'Fill', Icon: Maximize2 },
+  { id: 'mosaic', label: 'Mosaic', Icon: LayoutGrid },
+];
+const ART_STYLES_KEY = 'spotlightArtStyles';
+const readArtStyles = () => {
+  try {
+    const stored = StorageService.get(ART_STYLES_KEY, {});
+    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+  } catch {
+    return {};
+  }
+};
+const getArtStyle = (surface) => {
+  const saved = readArtStyles()[surface];
+  return ART_STYLES.some((style) => style.id === saved) ? saved : 'poster';
+};
+const saveArtStyle = (surface, style) => {
+  try {
+    StorageService.set(ART_STYLES_KEY, { ...readArtStyles(), [surface]: style });
+  } catch {
+    /* non-persistent storage — style change still applies for the session */
+  }
+};
 
 const text = (value) => (typeof value === 'string' ? value.trim().slice(0, 160) : '');
 const blurb = (value) => (typeof value === 'string' ? value.trim().slice(0, 320) : '');
@@ -23,6 +50,8 @@ const checkedAt = (value) => {
 function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunchGame }) {
   const id = useId();
   const appid = DailySpotlightService.getSteamAppId(game);
+  const surface = rediscovery ? 'rediscovery' : 'spotlight';
+  const [artStyle, setArtStyle] = useState(() => getArtStyle(surface));
   const [enabled, setEnabled] = useState(() => DailySpotlightService.isEnabled());
   const [facts, setFacts] = useState(() => DailySpotlightService.getCached(game));
   const [status, setStatus] = useState('');
@@ -96,24 +125,69 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
       : [];
   const selectedIndex = currentScreenshot < screenshots.length ? currentScreenshot : 0;
   const screenshot = screenshots[selectedIndex];
+  const mosaicSources = [artwork, fallbackSrc, ...screenshots.map((image) => image.path_full)].filter(
+    (source, index, all) => typeof source === 'string' && source && all.indexOf(source) === index
+  );
+  const chooseArtStyle = (style) => {
+    if (!ART_STYLES.some((entry) => entry.id === style)) return;
+    saveArtStyle(surface, style);
+    setArtStyle(style);
+  };
 
   return (
     <section className="daily-spotlight" aria-labelledby={`${id}-heading`}>
       <header className="daily-spotlight-heading">
         <BookOpen size={17} aria-hidden="true" />
         <h2 id={`${id}-heading`}>{rediscovery ? 'Rediscover your library' : "Today's Spotlight"}</h2>
+        <div className="daily-spotlight-art-styles" role="group" aria-label="Artwork style">
+          {ART_STYLES.map(({ id: styleId, label, Icon }) => (
+            <button
+              key={styleId}
+              type="button"
+              className={`daily-spotlight-style-btn${artStyle === styleId ? ' active' : ''}`}
+              aria-pressed={artStyle === styleId}
+              title={`${label} artwork`}
+              onClick={() => chooseArtStyle(styleId)}
+            >
+              <Icon size={13} aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
         <time dateTime={day}>{day}</time>
       </header>
       <div
         className="daily-spotlight-art"
+        data-art-style={artStyle}
         style={artwork ? { '--spotlight-backdrop': `url("${artwork}")` } : undefined}
       >
-        <LazyImage
-          src={artwork || placeholder}
-          fallbackSrc={artwork ? fallbackSrc : undefined}
-          placeholder={placeholder}
-          alt={`${gameName} artwork`}
-        />
+        {artStyle === 'mosaic' ? (
+          <div className="daily-spotlight-mosaic">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div key={index} className="daily-spotlight-mosaic-tile">
+                <LazyImage
+                  src={mosaicSources[index % mosaicSources.length] || placeholder}
+                  placeholder={placeholder}
+                  alt={index === 0 ? `${gameName} artwork` : ''}
+                />
+              </div>
+            ))}
+          </div>
+        ) : artStyle === 'fill' ? (
+          <LazyImage
+            src={fallbackSrc || artwork || placeholder}
+            fallbackSrcs={[artwork].filter((source) => source && source !== fallbackSrc)}
+            placeholder={placeholder}
+            alt={`${gameName} artwork`}
+          />
+        ) : (
+          <LazyImage
+            src={artwork || placeholder}
+            fallbackSrc={artwork ? fallbackSrc : undefined}
+            placeholder={placeholder}
+            alt={`${gameName} artwork`}
+          />
+        )}
       </div>
       {screenshots.length > 0 && (
         <div className="daily-spotlight-gallery">
