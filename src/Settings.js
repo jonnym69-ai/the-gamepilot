@@ -34,6 +34,7 @@ import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
 import SteamFriendsService from './services/SteamFriendsService';
 import SteamProfileService from './services/SteamProfileService';
+import SteamOwnedGamesService from './services/SteamOwnedGamesService';
 import IgdbArtworkService from './services/IgdbArtworkService';
 import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
@@ -77,6 +78,7 @@ function Settings({
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
   const [steamProfileEnabled, setSteamProfileEnabled] = useState(() => SteamProfileService.isEnabled());
   const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
+  const [steamOwnedGamesEnabled, setSteamOwnedGamesEnabled] = useState(() => SteamOwnedGamesService.isEnabled());
   const [igdbArtworkEnabled, setIgdbArtworkEnabled] = useState(() => IgdbArtworkService.isEnabled());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
@@ -1260,6 +1262,31 @@ function Settings({
                         Off by default. Shows your Steam persona name, avatar, level, badge count and join date on the
                         Profile page. Uses the same Steam64 ID as wishlist import. Only public Steam profile data is
                         read — nothing is posted or changed.
+                      </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Steam Owned Games (Not Installed)</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={steamOwnedGamesEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setSteamOwnedGamesEnabled(next);
+                            SteamOwnedGamesService.setEnabled(next);
+                            success(`Steam owned games ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="steam-owned-games-enabled"
+                        />
+                        <label htmlFor="steam-owned-games-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Off by default. Shows games you own on Steam that aren&apos;t installed, with one-click install
+                        links, in an &quot;Owned, not installed&quot; section on the Library page. Uses the same Steam64
+                        ID as wishlist import and requires your Steam game details to be public. Read-only — nothing is
+                        installed, posted or changed automatically. Steam free games appear only if they have recorded
+                        playtime.
                       </p>
                     </div>
 

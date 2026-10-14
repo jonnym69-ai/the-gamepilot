@@ -31,6 +31,7 @@ import ShareMenu from './components/ShareMenu';
 import EmptyLibraryState from './components/EmptyLibraryState';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
+import NotInstalledSection from './components/NotInstalledSection';
 import HLTBChip from './components/HLTBChip';
 import PatchNewsBadge from './components/PatchNewsBadge';
 import DiskSizeChip from './components/DiskSizeChip';
@@ -2958,6 +2959,8 @@ function Library({
           </div>
         </div>
       )}
+
+      <NotInstalledSection library={library} />
 
       <BackToTopButton />
     </div>

@@ -233,6 +233,14 @@ The typecheck command is optional for JS-only changes.
 - Presence is read-only public Steam data, cached 60s in the main process and service layer. Friends are grouped by the game they're playing — multiple friends in one game get a "squad" row with stacked avatars and a `Join them` action when you own it; a single friend's current game offers "Play your copy" only when its appid matches a Steam game in the local library via `getSteamAppId`.
 - Regression checks: `npx jest src/services/SteamFriendsService.test.js src/components/FriendsPlayingCard.test.js --ci`. Live presence needs the Netlify function deployed with `STEAM_API_KEY` set — Jest mocks the bridge and cannot verify the relay end-to-end.
 
+## Owned, not installed
+
+- `NotInstalledSection` at the bottom of the Library page lists owned-but-uninstalled games from two sources: Steam (opt-in "Steam Owned Games" toggle, `steamOwnedGamesEnabled`, same Steam64 ID) and GOG (local Galaxy DB, no toggle or network).
+- Steam path: `steam-owned-library` IPC → `electron/steam.js` → `api/getSteamLibrary` → `netlify/functions/getSteamLibrary.js` → `IPlayerService/GetOwnedGames` (`include_appinfo=1&include_played_free_games=1`). Trimmed fields only (appid/name/playtime/icon), 6h cache both layers. Private game details return an empty array plus `privateDetails` — mapped to honest messaging, never presented as an empty library. Free games only appear when they have recorded playtime (Steam API limitation, disclosed in the UI).
+- `SteamOwnedGamesService.diffUninstalled` subtracts installed games by Steam appid via `getSteamAppId`. Steam rows offer an Install button → `steam-install` IPC → `shell.openExternal('steam://install/<appid>')` with validated numeric appid (same validation as `open-steam-library`).
+- GOG path: `gog-uninstalled` IPC → `nativeLibraryScanner` → `getGogGalaxyUninstalledGames` in `scannerUtils` — reads `gog_*` releaseKey titles + GAMETIMES/LASTPLAYEDDATES from `galaxy-2.0.db` via sql.js, then `diffUninstalledByTitle` subtracts installed games by normalized title. Runs in the main process (real fs), not the renderer. GOG rows are display-only — no install deep link.
+- Regression checks: `npx jest src/services/SteamOwnedGamesService.test.js src/components/NotInstalledSection.test.js src/services/scanner/scanner.test.js --ci`. The relay needs `STEAM_API_KEY` deployed; GOG coverage needs a real Galaxy install — Jest cannot verify either end-to-end.
+
 ## Steam profile card
 
 - `SteamProfileCard` on Profile is opt-in via Settings ("Steam Profile Card", off by default) and reuses the `steamWishlistId` Steam64 ID. It hides entirely when disabled, unconfigured, or still loading.

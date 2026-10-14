@@ -10,6 +10,7 @@ const {
   addGameIfUnique,
   parseVdf,
   getSteamPlaytimeMap,
+  diffUninstalledByTitle,
 } = require('./scannerUtils');
 const { getSupportedScanPlatforms } = require('../../../nativeLibraryScanner');
 const { isLaunchPlatformSupported } = require('../../../launchHandler');
@@ -227,6 +228,39 @@ describe('Scanner Utils', () => {
     test('returns empty map when no userdata exists', () => {
       expect(getSteamPlaytimeMap([])).toEqual({});
       expect(getSteamPlaytimeMap(['/non/existent/steamapps'])).toEqual({});
+    });
+  });
+
+  describe('diffUninstalledByTitle', () => {
+    const library = [
+      { name: 'The Witcher 3: Wild Hunt', platform: 'GOG' },
+      { name: 'Hades', platform: 'Steam' },
+    ];
+
+    test('returns owned titles not present in the local library', () => {
+      const owned = [
+        { name: 'The Witcher 3: Wild Hunt', playtimeForever: 6000 },
+        { name: 'Baldurs Gate 3', playtimeForever: 120 },
+        { name: 'Cyperpunk 2077', playtimeForever: 0 },
+      ];
+      const missing = diffUninstalledByTitle(owned, library);
+      expect(missing.map((g) => g.name)).toEqual(['Baldurs Gate 3', 'Cyperpunk 2077']);
+    });
+
+    test('matches titles with punctuation-normalized names and sorts by playtime', () => {
+      const owned = [
+        { name: 'the witcher 3 wild hunt', playtimeForever: 10 },
+        { name: 'Some Game', playtimeForever: 500 },
+        { name: 'Another Game', playtimeForever: 5 },
+      ];
+      const missing = diffUninstalledByTitle(owned, library);
+      expect(missing.map((g) => g.name)).toEqual(['Some Game', 'Another Game']);
+    });
+
+    test('drops entries without names and tolerates empty inputs', () => {
+      expect(diffUninstalledByTitle([{ name: '' }, null], library)).toEqual([]);
+      expect(diffUninstalledByTitle(null, library)).toEqual([]);
+      expect(diffUninstalledByTitle([{ name: 'New Game' }], null)).toEqual([{ name: 'New Game' }]);
     });
   });
 });

@@ -700,6 +700,85 @@ const normalizeGameNameForMatch = (name) =>
     .replace(/[^a-z0-9 ]/g, '')
     .trim();
 
+// Pure diff helper: owned release entries minus anything already in the local
+// library (matched by normalized title — same rule as applyGogGalaxyPlaytime).
+const diffUninstalledByTitle = (ownedGames, library) => {
+  const installedNames = new Set(
+    (Array.isArray(library) ? library : [])
+      .map((game) => normalizeGameNameForMatch(game?.name || game?.title || ''))
+      .filter(Boolean)
+  );
+  return (Array.isArray(ownedGames) ? ownedGames : [])
+    .filter((game) => game && game.name && !installedNames.has(normalizeGameNameForMatch(game.name)))
+    .sort((a, b) => (b.playtimeForever || 0) - (a.playtimeForever || 0));
+};
+
+// GOG Galaxy tracks every owned product in galaxy-2.0.db — including games the
+// user has uninstalled. Reads titles + recorded playtime for gog_* releaseKeys,
+// then subtracts whatever the local scan already found. Entirely local; no
+// network calls. Returns [] on non-Windows or when the DB is unreadable.
+const getGogGalaxyUninstalledGames = async (library) => {
+  const dbPaths = getGogGalaxyInstallPaths();
+  if (dbPaths.length === 0) return [];
+
+  let SQL;
+  try {
+    SQL = await getSqlJs();
+  } catch (error) {
+    scannerDebug('[Scanner] sql.js not available for GOG Galaxy uninstalled:', error.message);
+    return [];
+  }
+
+  for (const dbPath of dbPaths) {
+    try {
+      const fileBuffer = fs.readFileSync(dbPath);
+      const db = new SQL.Database(fileBuffer);
+
+      const titleTypeId = getGamePieceTypeId(db, 'title');
+      const titleRows = titleTypeId
+        ? queryAllRows(
+            db,
+            `SELECT releaseKey, value AS title FROM GamePieces WHERE gamePieceTypeId = ${titleTypeId} AND releaseKey LIKE 'gog_%'`
+          )
+        : [];
+      const minutesByKey = {};
+      queryAllRows(db, 'SELECT releaseKey, minutesInGame FROM GAMETIMES').forEach((row) => {
+        if (row.releaseKey && typeof row.minutesInGame === 'number') {
+          minutesByKey[row.releaseKey] = row.minutesInGame;
+        }
+      });
+      const lastPlayedByKey = {};
+      queryAllRows(db, 'SELECT gameReleaseKey AS releaseKey, lastPlayedDate FROM LASTPLAYEDDATES').forEach((row) => {
+        const seconds = Number(row.lastPlayedDate) || 0;
+        if (row.releaseKey && seconds > 0) lastPlayedByKey[row.releaseKey] = seconds * 1000;
+      });
+      db.close();
+
+      const owned = titleRows
+        .map((row) => {
+          const productId = String(row.releaseKey || '').replace(/^gog_/, '');
+          if (!row.title || !/^\d+$/.test(productId)) return null;
+          return {
+            name: String(row.title).trim(),
+            platform: 'GOG',
+            installed: false,
+            gogProductId: productId,
+            releaseKey: String(row.releaseKey),
+            playtimeForever: minutesByKey[row.releaseKey] || 0,
+            lastPlayed: lastPlayedByKey[row.releaseKey] || 0,
+          };
+        })
+        .filter((game) => game && game.name);
+
+      scannerDebug('[Scanner] GOG Galaxy owned releases:', owned.length, 'from', dbPath);
+      return diffUninstalledByTitle(owned, library);
+    } catch (error) {
+      scannerDebug('[Scanner] Failed to read GOG Galaxy owned games:', dbPath, error.message);
+    }
+  }
+  return [];
+};
+
 const applyGogGalaxyPlaytime = (games, gogMap) => {
   if (!Array.isArray(games) || !gogMap || Object.keys(gogMap).length === 0) {
     return games;
@@ -848,4 +927,6 @@ module.exports = {
   getSteamPlaytimeMap,
   getGogGalaxyPlaytimeMap,
   applyGogGalaxyPlaytime,
+  getGogGalaxyUninstalledGames,
+  diffUninstalledByTitle,
 };

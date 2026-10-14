@@ -2,7 +2,6 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import FinishableThisWeekend from './FinishableThisWeekend';
 import HowLongToBeatService from '../services/HowLongToBeatService';
-import { BacklogCoachService } from '../services/BacklogCoachService';
 
 jest.mock('./LazyImage', () => ({ alt }) => <img alt={alt} />);
 

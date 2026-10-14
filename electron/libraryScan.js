@@ -66,6 +66,24 @@ function registerIpcHandlers(ipcMain, deps) {
   });
 
   ipcMain.handle('get-scan-debug', async () => global.lastScanDebug || null);
+
+  // Owned-but-uninstalled GOG games, read from the local Galaxy DB. The
+  // renderer sends only the names already in its library so the main
+  // process can diff owned releases against installed ones.
+  ipcMain.handle('gog-uninstalled', async (_event, names) => {
+    try {
+      const list = (Array.isArray(names) ? names : [])
+        .map((name) => ({ name: String(name || '').slice(0, 200) }))
+        .filter((entry) => entry.name)
+        .slice(0, 5000);
+      const { getGogGalaxyUninstalledGames } = require('../nativeLibraryScanner');
+      const games = await getGogGalaxyUninstalledGames(list);
+      return { ok: true, games: Array.isArray(games) ? games.slice(0, 500) : [] };
+    } catch (error) {
+      console.warn('[Electron] GOG uninstalled read failed:', error.message);
+      return { ok: false, error: 'gog-uninstalled-unavailable', games: [] };
+    }
+  });
 }
 
 module.exports = { registerIpcHandlers };

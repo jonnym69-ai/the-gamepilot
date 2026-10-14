@@ -76,6 +76,7 @@ if (typeof getSteamPlaytimeMap !== 'function') {
 // GOG Galaxy playtime reader (galaxy-2.0.db) - shared util, dev/prod paths.
 let getGogGalaxyPlaytimeMap;
 let applyGogGalaxyPlaytime;
+let getGogGalaxyUninstalledGames;
 const GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES = [
   path.join(__dirname, 'src', 'services', 'scanner', 'scannerUtils'),
   path.join(__dirname, 'scannerUtils'),
@@ -85,7 +86,7 @@ const GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES = [
 
 for (const candidate of GOG_GALAXY_PLAYTIME_REQUIRE_CANDIDATES) {
   try {
-    ({ getGogGalaxyPlaytimeMap, applyGogGalaxyPlaytime } = require(candidate));
+    ({ getGogGalaxyPlaytimeMap, applyGogGalaxyPlaytime, getGogGalaxyUninstalledGames } = require(candidate));
     if (typeof getGogGalaxyPlaytimeMap === 'function' && typeof applyGogGalaxyPlaytime === 'function') {
       console.log('[Scanner] GOG Galaxy playtime reader loaded from:', candidate);
       break;
@@ -101,6 +102,10 @@ if (typeof getGogGalaxyPlaytimeMap !== 'function') {
   );
   getGogGalaxyPlaytimeMap = async () => ({});
   applyGogGalaxyPlaytime = (games) => games;
+  getGogGalaxyUninstalledGames = async () => [];
+}
+if (typeof getGogGalaxyUninstalledGames !== 'function') {
+  getGogGalaxyUninstalledGames = async () => [];
 }
 
 // Import genre database for game classification
@@ -2378,4 +2383,5 @@ const scanAllLibraries = async () => {
 module.exports = {
   scanAllLibraries,
   getSupportedScanPlatforms,
+  getGogGalaxyUninstalledGames,
 };

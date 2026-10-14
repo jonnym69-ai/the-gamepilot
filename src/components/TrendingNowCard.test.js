@@ -53,10 +53,10 @@ test('hides without the bridge, on failure, or with zero matches', async () => {
   view.unmount();
 
   window.electronAPI = { steamMostPlayed: jest.fn().mockRejectedValue(new Error('offline')) };
-  const second = render(<TrendingNowCard library={[game('Solo', 1)]} />);
+  const utils = render(<TrendingNowCard library={[game('Solo', 1)]} />);
   await Promise.resolve();
   expect(screen.queryByText(/trending in your library/i)).not.toBeInTheDocument();
-  second.unmount();
+  utils.unmount();
 
   window.electronAPI = {
     steamMostPlayed: jest.fn().mockResolvedValue({ ok: true, rows: [{ appid: 730, rank: 1 }] }),

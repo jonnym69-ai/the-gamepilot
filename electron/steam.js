@@ -3,10 +3,13 @@ const { httpsRequest } = require('./net');
 
 const STEAM_FRIENDS_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamFriends';
 const STEAM_PROFILE_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamProfile';
+const STEAM_LIBRARY_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamLibrary';
 const FRIENDS_CACHE = new Map();
 const FRIENDS_CACHE_TTL_MS = 60000;
 const PROFILE_CACHE = new Map();
 const PROFILE_CACHE_TTL_MS = 5 * 60000;
+const OWNED_CACHE = new Map();
+const OWNED_CACHE_TTL_MS = 6 * 60 * 60000;
 
 const steamHttpsGet = async (hostname, pathname) => {
   const res = await httpsRequest(`https://${hostname}${pathname}`, null, {
@@ -868,6 +871,44 @@ function registerIpcHandlers(ipcMain) {
     } catch (error) {
       console.warn('[SteamProfile] relay request failed:', error.message);
       return { ok: false, error: 'profile-unavailable' };
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Steam owned games. Same relay pattern as friends/profile — GetOwnedGames
+  // server-side so the API key never ships in the bundle. Returns trimmed
+  // appid/name/playtime/last-played/icon fields. privateDetails=true means the
+  // profile's game details are hidden — honest messaging, not an empty library.
+  // Cached 6h per steamid; owned libraries change slowly.
+  // ---------------------------------------------------------------------------
+  ipcMain.handle('steam-owned-library', async (_event, steamId) => {
+    const cleanId = String(steamId || '').replace(/[^0-9]/g, '');
+    if (!/^\d{17}$/.test(cleanId)) return { ok: false, error: 'invalid-steamid' };
+
+    const cached = OWNED_CACHE.get(cleanId);
+    if (cached && Date.now() < cached.expiresAt) return { ok: true, ...cached.data, cached: true };
+
+    try {
+      const res = await httpsRequest(`${STEAM_LIBRARY_RELAY_URL}?steamid=${cleanId}`, null, {
+        'User-Agent': 'GamePilot/1.9',
+        Accept: 'application/json',
+      });
+      if (res.status === 403) return { ok: false, error: 'game-details-private' };
+      if (res.status !== 200) return { ok: false, error: 'library-unavailable' };
+      const data = JSON.parse(res.body || '{}');
+      if (!Array.isArray(data?.games)) return { ok: false, error: 'library-unavailable' };
+      const result = {
+        games: data.games.slice(0, 500),
+        privateDetails: data.privateDetails === true,
+        fetchedAt: Number(data.fetchedAt) || Date.now(),
+      };
+      OWNED_CACHE.delete(cleanId);
+      OWNED_CACHE.set(cleanId, { data: result, expiresAt: Date.now() + OWNED_CACHE_TTL_MS });
+      if (OWNED_CACHE.size > 4) OWNED_CACHE.delete(OWNED_CACHE.keys().next().value);
+      return { ok: true, ...result };
+    } catch (error) {
+      console.warn('[SteamOwned] relay request failed:', error.message);
+      return { ok: false, error: 'library-unavailable' };
     }
   });
 
