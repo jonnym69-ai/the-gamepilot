@@ -22,7 +22,6 @@ export default function EraArchiveCard() {
       <div className="result-card identity-card era-archive-card">
         <div className="identity-title-row">
           <h3 className="result-title">Era Archive</h3>
-          <span className="identity-confidence-badge is-provisional">Pro</span>
         </div>
         <p className="identity-description">
           Your past eras will collect here as your play shifts — each one dated, named after what took over, and ranked

@@ -6,10 +6,8 @@ import GamingPersonaService from '../services/GamingPersonaService';
 import CurrentEraService from '../services/CurrentEraService';
 import SignatureTitleService from '../services/SignatureTitleService';
 import { resolveGameArtworkBundle } from '../services/GameArtworkService';
-import { StartupPersonalizationService } from '../services/StartupPersonalizationService';
 import { isGameUnplayed } from '../services/RecommendationEngine';
 import { getBlendedPlaytimeMinutes } from '../services/gameClassification';
-import { formatSessionStyle } from './HomeSectionPrimitives';
 import SessionRepository from '../services/SessionRepository';
 import PeriodChampionService from '../services/PeriodChampionService';
 import { LocalShareService } from '../services/LocalShareService';
@@ -292,172 +290,6 @@ export function CurrentEraCard({ compact = false }) {
   );
 }
 
-export function IdentitySnapshotCard({ persona }) {
-  const navigate = useNavigate();
-  // Default mode = adaptive current-rotation persona. This is the source of
-  // truth for the identity surfaces; the all-time view lives on the Profile
-  // page as an explicit opt-in.
-  let publicIdentity = null;
-  try {
-    publicIdentity = GamingPersonaService.getPublicIdentity();
-  } catch {
-    publicIdentity = null;
-  }
-
-  const primary = publicIdentity?.primary || null;
-  const roast = publicIdentity?.roast || null;
-  const label = publicIdentity?.label || null;
-  const tags = [...(publicIdentity?.subTraits || []).map((trait) => trait.label)].filter(Boolean);
-  const confidence = publicIdentity?.confidence || 'none';
-  const isEmpty = !label && tags.length === 0 && !roast;
-  const canTune = !StartupPersonalizationService.hasCompletedOnboarding();
-  const topGenre = publicIdentity?.dominantGenre || null;
-  const topGameName = publicIdentity?.topGameName || null;
-  const blendFactor = publicIdentity?.blendFactor ?? 0;
-  const isWarmingUp = blendFactor < 1;
-
-  const confidenceMeta =
-    {
-      high: { label: 'Locked in', className: 'is-confirmed' },
-      medium: { label: 'Learning', className: 'is-growing' },
-      low: { label: 'Early read', className: 'is-provisional' },
-      confirmed: { label: 'Locked in', className: 'is-confirmed' },
-      growing: { label: 'Learning', className: 'is-growing' },
-      provisional: { label: 'Early read', className: 'is-provisional' },
-    }[confidence] || null;
-
-  const provisionalNote = isWarmingUp
-    ? 'Warming up — blending your library with tracked play until ~10h of recent sessions. After that, this is purely your current rotation.'
-    : canTune
-      ? 'Still learning your tastes — a quick tune-up sharpens recommendations.'
-      : null;
-
-  if (isEmpty) {
-    return (
-      <div className="results-section">
-        <div className="result-card identity-card">
-          <h3 className="result-title">Your Gaming Persona</h3>
-          <div className="identity-empty">
-            <span className="identity-empty-icon">🧭</span>
-            <p className="identity-empty-text">
-              Scan your library and play a few sessions — GamePilot will build a roast-backed persona from how you
-              actually play.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="results-section">
-      <div className="result-card identity-card">
-        <div className="identity-title-row">
-          <h3 className="result-title">Your Gaming Persona</h3>
-          <span className="identity-confidence-badge is-growing">Current play</span>
-          {confidenceMeta && (
-            <span className={`identity-confidence-badge ${confidenceMeta.className}`}>{confidenceMeta.label}</span>
-          )}
-        </div>
-        <div className="identity-body">
-          <div className="identity-header">
-            <span className="identity-label">{label || 'Gamer in progress'}</span>
-            {primary?.description && (
-              <p className="identity-description" style={{ opacity: 0.75, marginBottom: 6 }}>
-                {primary.description}
-              </p>
-            )}
-            {roast && <p className="identity-description">{roast}</p>}
-            {topGameName && (
-              <p className="identity-provisional-note" style={{ marginTop: 4 }}>
-                Built from your play — currently led by {topGameName}.
-              </p>
-            )}
-          </div>
-          {provisionalNote && (
-            <p className="identity-provisional-note">
-              {provisionalNote}
-              {canTune && (
-                <>
-                  {' '}
-                  <button
-                    type="button"
-                    className="identity-tune-link"
-                    onClick={() => navigate('/profile')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      color: 'var(--button-primary-bg)',
-                      font: 'inherit',
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Tune recommendations →
-                  </button>
-                </>
-              )}
-            </p>
-          )}
-          <div className="identity-tags">
-            {tags.map((tag, i) => (
-              <span key={`tag-${i}`} className="identity-tag">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <div className="identity-metrics">
-            {topGenre && (
-              <div className="identity-metric">
-                <span className="identity-metric-label">Top Genre</span>
-                <span className="identity-metric-value">{topGenre}</span>
-              </div>
-            )}
-            {persona?.preferredSessionBucket && (
-              <div className="identity-metric">
-                <span className="identity-metric-label">Typical Session</span>
-                <span className="identity-metric-value">{formatSessionStyle(persona.preferredSessionBucket)}</span>
-              </div>
-            )}
-            {persona?.peakPlayWindow && (
-              <div className="identity-metric">
-                <span className="identity-metric-label">Peak Window</span>
-                <span className="identity-metric-value">{persona.peakPlayWindow}</span>
-              </div>
-            )}
-            {persona?.avgSessionLength > 0 && (
-              <div className="identity-metric">
-                <span className="identity-metric-label">Avg Session</span>
-                <span className="identity-metric-value">{persona.avgSessionLength}m</span>
-              </div>
-            )}
-          </div>
-          <p className="identity-provisional-note" style={{ marginTop: 8 }}>
-            Reflects your current rotation.{' '}
-            <button
-              type="button"
-              className="identity-tune-link"
-              onClick={() => navigate('/profile')}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                color: 'var(--button-primary-bg)',
-                font: 'inherit',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-              }}
-            >
-              View all-time persona →
-            </button>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function WeeklyPlaySnapshot({ weeklyStats, streaks }) {
   const hasData = weeklyStats && (weeklyStats.totalHours > 0 || weeklyStats.sessions > 0 || weeklyStats.daysPlayed > 0);
   if (!hasData) return null;
@@ -519,8 +351,11 @@ export function BecauseYouAreSection({ library, platformIcons, formatPlaytime, o
 
     return (
       <div className="results-section">
-        <div className="result-card because-you-are-card">
-          <h3 className="result-title">{publicIdentity.becauseYouAre}</h3>
+        <div className="result-card because-you-are-card identity-card">
+          <div className="identity-title-row">
+            <h3 className="result-title">{publicIdentity.becauseYouAre}</h3>
+            <span className="identity-confidence-badge is-growing">All-time</span>
+          </div>
           <p style={{ color: 'var(--text)', opacity: 0.7, marginBottom: '16px', fontSize: '0.9rem' }}>
             {publicIdentity.roast
               ? `${publicIdentity.roast} These are your most-played games of all time.`

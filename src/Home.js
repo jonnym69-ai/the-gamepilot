@@ -64,7 +64,6 @@ import {
 import { HomeGuidedContent, HomeToolsContent } from './components/HomeOrchestrators';
 import { LibraryTodaySection } from './components/LibraryTodaySection';
 import {
-  IdentitySnapshotCard,
   CurrentEraCard,
   WeeklyPlaySnapshot,
   BecauseYouAreSection,
@@ -73,7 +72,6 @@ import {
   CurrentChampionCard,
 } from './components/IdentityWidgets';
 import EraArchiveCard from './components/EraArchiveCard';
-import ProGate from './components/ProGate';
 import RivalryBanner from './components/RivalryBanner';
 import StreakBadge from './components/StreakBadge';
 import GettingStartedModal from './components/GettingStartedModal';
@@ -180,7 +178,6 @@ function Home({
   const [recommendationFeedbackState, setRecommendationFeedbackState] = useState({});
   const [sessionFeedbackPrompt, setSessionFeedbackPrompt] = useState(null);
   const [sessionCompleted, setSessionCompleted] = useState(false);
-  const [personaSnapshot, setPersonaSnapshot] = useState(null);
   const [streaks, setStreaks] = useState({ current: 0, longest: 0 });
   const [weeklyHabitStats, setWeeklyHabitStats] = useState({
     totalHours: 0,
@@ -256,12 +253,7 @@ function Home({
   }, []);
 
   useEffect(() => {
-    // Compute identity, habits, and insights surfaces
-    try {
-      setPersonaSnapshot(UserBehaviorProfile.getPersonaSnapshot());
-    } catch (e) {
-      console.error('Home: failed to load persona snapshot', e);
-    }
+    // Compute habits and insights surfaces
     try {
       setStreaks(HabitTrackerService.getStreaks());
     } catch (e) {
@@ -308,11 +300,6 @@ function Home({
 
   useEffect(() => {
     const handleQuestionnaireCompleted = () => {
-      try {
-        setPersonaSnapshot(UserBehaviorProfile.getPersonaSnapshot());
-      } catch (e) {
-        console.error('Home: failed to refresh persona snapshot after questionnaire', e);
-      }
       const savedMessage =
         localStorage.getItem('gamepilot-welcomeMessage') ||
         localStorage.getItem('welcomeMessage') ||
@@ -1207,15 +1194,20 @@ function Home({
             ...game,
             appid: game.appid || game.app_id || game.steamAppId || item.steamAppID,
           };
-          const artwork =
-            resolveGameArtwork(gameForArt, { surface: 'portrait' }) ||
-            (item.thumb && /^https?:\/\//i.test(item.thumb) ? item.thumb : '');
+          // resolveGameArtwork always synthesizes a Steam CDN URL for numeric
+          // appids, but newer apps 404 on legacy paths — their real art lives
+          // under hashed store_item_assets URLs, which the wishlist item's
+          // thumb already carries. Keep it as the next fallback source.
+          const thumbSrc = item.thumb && /^https?:\/\//i.test(item.thumb) ? item.thumb : null;
+          const artwork = resolveGameArtwork(gameForArt, { surface: 'portrait' }) || '';
+          const artFallbacks = thumbSrc ? [thumbSrc] : [];
           const artPlaceholder = getGameArtworkPlaceholder({ game: gameForArt, surface: 'portrait' });
           return (
             <article key={entry.id || game.name} className="discovery-card">
               <div className="discovery-card-art">
                 <LazyImage
                   src={artwork || artPlaceholder}
+                  fallbackSrcs={artFallbacks}
                   alt={game.name}
                   placeholder={artPlaceholder}
                   className="discovery-card-image"
@@ -1829,9 +1821,7 @@ function Home({
                 <Link to="/rewards">Earned rewards</Link>
               </nav>
               <CurrentEraCard />
-              <ProGate feature="era-archive" compact>
-                <EraArchiveCard />
-              </ProGate>
+              <EraArchiveCard />
               <CurrentChampionCard library={safeLibrary} />
               <BecauseYouAreSection
                 library={library}
@@ -1840,7 +1830,6 @@ function Home({
                 onLaunchGame={onLaunchGame}
                 getGameCardClass={getGameCardClass}
               />
-              <IdentitySnapshotCard persona={personaSnapshot} />
               <CollapsibleSection title="Doodle & Paradox" subtitle="Your daily extras.">
                 <DailyDoodleTitle
                   username={username}

@@ -1,9 +1,11 @@
 import React, { useMemo, useRef, useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LocalShareService } from '../services/LocalShareService';
 import { User, Download, Share2, Trophy, Clock, Gamepad2, BarChart3, Sparkles, Zap } from 'lucide-react';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
 import GamingPersonaService from '../services/GamingPersonaService';
+import { StartupPersonalizationService } from '../services/StartupPersonalizationService';
 import './GamerIdentityCard.css';
 
 const StatPill = ({ icon: Icon, label, value }) => (
@@ -14,8 +16,18 @@ const StatPill = ({ icon: Icon, label, value }) => (
   </div>
 );
 
+const CONFIDENCE_META = {
+  high: { label: 'Locked in', className: 'is-confirmed' },
+  confirmed: { label: 'Locked in', className: 'is-confirmed' },
+  medium: { label: 'Learning', className: 'is-growing' },
+  growing: { label: 'Learning', className: 'is-growing' },
+  low: { label: 'Early read', className: 'is-provisional' },
+  provisional: { label: 'Early read', className: 'is-provisional' },
+};
+
 const GamerIdentityCard = ({ library = [], className = '' }) => {
   const cardRef = useRef(null);
+  const navigate = useNavigate();
   const [shareStatus, setShareStatus] = useState('');
 
   const identity = useMemo(() => {
@@ -69,8 +81,27 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
           : peakHours[0]?.timeOfDay || 'Unknown',
       completionRate:
         allTime?.sessions > 0 ? Math.round(((allTime?.questUsage?.totalCompleted || 0) / allTime.sessions) * 100) : 0,
+      confidence: persona?.confidence || 'low',
+      blendFactor: persona?.blendFactor ?? 0,
     };
   }, [library]);
+
+  // Confidence + warm-up state, merged in from the former IdentitySnapshotCard
+  // so this is the single persona statement on the identity view.
+  const confidenceMeta = CONFIDENCE_META[identity?.confidence] || null;
+  const canTune = (() => {
+    try {
+      return !StartupPersonalizationService.hasCompletedOnboarding();
+    } catch {
+      return false;
+    }
+  })();
+  const provisionalNote =
+    identity && identity.blendFactor < 1
+      ? 'Warming up — blending your library with tracked play until ~10h of recent sessions.'
+      : canTune
+        ? 'Still learning your tastes — a quick tune-up sharpens recommendations.'
+        : null;
 
   const handleExport = useCallback(() => {
     if (!cardRef.current || !identity) return;
@@ -195,6 +226,9 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
         <div className="gamer-card-title">
           <Sparkles size={18} />
           <span>Gamer Identity</span>
+          {confidenceMeta && (
+            <span className={`gamer-confidence-badge ${confidenceMeta.className}`}>{confidenceMeta.label}</span>
+          )}
         </div>
         <div className="gamer-card-actions">
           <button type="button" className="gamer-card-btn" onClick={handleExport} title="Export as image">
@@ -241,6 +275,21 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
       {identity.contextLine && (
         <div className="gamer-card-footer">
           <span>{identity.contextLine}</span>
+        </div>
+      )}
+      {provisionalNote && (
+        <div className="gamer-card-footer gamer-provisional-note">
+          <span>
+            {provisionalNote}
+            {canTune && (
+              <>
+                {' '}
+                <button type="button" className="gamer-tune-link" onClick={() => navigate('/profile')}>
+                  Tune recommendations →
+                </button>
+              </>
+            )}
+          </span>
         </div>
       )}
     </div>
