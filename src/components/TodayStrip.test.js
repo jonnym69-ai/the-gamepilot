@@ -98,10 +98,10 @@ test('shows the current era and the active hunt progress', () => {
   expect(screen.getByRole('link', { name: /Pumpkin Hunt: 1 of 5 found/ })).toBeInTheDocument();
 });
 
-test('teases the daily paradox with a link to the identity view', () => {
+test('teases the daily paradox with a link to the dashboard doodle tab', () => {
   renderStrip();
   const teaser = screen.getByRole('link', { name: /Today's paradox/ });
-  expect(teaser).toHaveAttribute('href', '/?view=identity');
+  expect(teaser).toHaveAttribute('href', '/dashboard?tab=doodle');
 });
 
 test('shows wishlist deal alerts and re-reads on the alerts event', () => {

@@ -1512,6 +1512,7 @@ function Home({
                 welcomeMessage={username ? welcomeMessage : ''}
                 profilePic={profilePic}
                 themeId={theme}
+                initialTab={searchParams.get('tab')}
               />
             </div>
           </div>

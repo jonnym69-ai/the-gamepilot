@@ -182,7 +182,7 @@ export default function TodayStrip() {
       )}
 
       {paradox && (
-        <Link to="/?view=identity" className="today-strip-teaser">
+        <Link to="/dashboard?tab=doodle" className="today-strip-teaser">
           <span aria-hidden="true">{paradox.categoryIcon}</span> Today's paradox: {paradox.title}{' '}
           <ArrowRight size={13} aria-hidden="true" />
         </Link>

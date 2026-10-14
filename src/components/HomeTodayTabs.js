@@ -18,8 +18,18 @@ const TABS = [
  * tabbed slot so the hero stays compact instead of stacking cards.
  * Play Next is the default tab — it is the action the page exists for.
  */
-export default function HomeTodayTabs({ library = [], onLaunchGame, username, welcomeMessage, profilePic, themeId }) {
-  const [activeTab, setActiveTab] = useState('play-next');
+export default function HomeTodayTabs({
+  library = [],
+  onLaunchGame,
+  username,
+  welcomeMessage,
+  profilePic,
+  themeId,
+  initialTab,
+}) {
+  const [activeTab, setActiveTab] = useState(() =>
+    TABS.some((tab) => tab.id === initialTab) ? initialTab : 'play-next'
+  );
   const hasLibrary = Array.isArray(library) && library.length > 0;
 
   return (
