@@ -25,7 +25,7 @@ const TOUR_STEPS = [
   {
     selector: '.home-view-navigation',
     title: 'Five Views on Home',
-    body: 'Today is the cockpit. Discover finds something to play and builds your backlog list, Activity tracks sessions and your all-time top shelf, Identity holds your persona and eras, and Wishlist watches prices.',
+    body: 'Today is the cockpit. Discover finds something to play and builds your backlog list, Activity tracks sessions, your all-time top shelf and live Steam player counts, Identity holds your persona and eras, and Wishlist watches prices.',
   },
   {
     selector: 'a[href="#/library"]',

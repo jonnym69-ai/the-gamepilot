@@ -499,6 +499,44 @@ const fetchPlayerCount = async (id) => {
   return request;
 };
 
+const mostPlayedCache = { data: null, expiresAt: 0 };
+const MOST_PLAYED_TTL_MS = 600000;
+
+// Steam's global "most played" chart — the same data behind Steam's own
+// top-played list. One keyless request returns the top 100 by live concurrent
+// players; we intersect it with the user's library in the renderer.
+const fetchMostPlayed = async () => {
+  if (mostPlayedCache.data && Date.now() < mostPlayedCache.expiresAt) {
+    return mostPlayedCache.data;
+  }
+  const data = await steamHttpsGet(
+    'api.steampowered.com',
+    '/ISteamChartsService/GetGamesByConcurrentPlayers/v1/?format=json'
+  );
+  const ranks = Array.isArray(data?.response?.ranks) ? data.response.ranks : [];
+  const rows = ranks
+    .filter(
+      (entry) =>
+        Number.isSafeInteger(entry?.appid) &&
+        Number.isSafeInteger(entry?.concurrent_in_game) &&
+        entry.concurrent_in_game >= 0
+    )
+    .map((entry) => ({
+      appid: entry.appid,
+      rank: Number.isSafeInteger(entry.rank) ? entry.rank : null,
+      concurrent: entry.concurrent_in_game,
+      peak: Number.isSafeInteger(entry.peak_in_game) ? entry.peak_in_game : null,
+    }));
+  const result = {
+    ok: rows.length > 0,
+    rows,
+    fetchedAt: Number.isSafeInteger(data?.response?.last_update) ? data.response.last_update * 1000 : Date.now(),
+  };
+  mostPlayedCache.data = result;
+  mostPlayedCache.expiresAt = Date.now() + MOST_PLAYED_TTL_MS;
+  return result;
+};
+
 const spotlightCache = new Map();
 const spotlightInflight = new Map();
 const spotlightText = (value) => (typeof value === 'string' ? value.trim().slice(0, 160) : '');
@@ -550,6 +588,16 @@ function registerIpcHandlers(ipcMain) {
     } catch (error) {
       console.warn('[SteamStore] player count failed:', error.message);
       return { ok: false, error: 'players-unavailable' };
+    }
+  });
+
+  ipcMain.handle('steam-most-played', async () => {
+    try {
+      const result = await fetchMostPlayed();
+      return result.ok ? result : { ok: false, error: 'chart-unavailable' };
+    } catch (error) {
+      console.warn('[SteamStore] most-played chart failed:', error.message);
+      return { ok: false, error: 'chart-unavailable' };
     }
   });
 

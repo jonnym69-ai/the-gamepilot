@@ -24,6 +24,7 @@ const electronAPI = {
   steamSpotlight: (appid) => ipcRenderer.invoke('steam-spotlight', appid),
   steamStoreDetails: (appid) => ipcRenderer.invoke('steam-store-details', appid),
   steamPlayerCount: (appid) => ipcRenderer.invoke('steam-player-count', appid),
+  steamMostPlayed: () => ipcRenderer.invoke('steam-most-played'),
   epicFreeGames: () => ipcRenderer.invoke('epic-free-games'),
   giveawayFeed: () => ipcRenderer.invoke('giveaway-feed'),
   steamWishlist: (steamId) => ipcRenderer.invoke('steam-wishlist', steamId),
