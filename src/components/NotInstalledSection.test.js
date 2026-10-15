@@ -51,18 +51,21 @@ test('shows uninstalled GOG games read from the local Galaxy database', async ()
           name: 'The Witcher 3',
           platform: 'GOG',
           releaseKey: 'gog_1207664643',
+          gogProductId: '1207664643',
           playtimeForever: 6000,
           lastPlayed: 0,
         },
       ],
     }),
+    gogOpenInGalaxy: jest.fn().mockResolvedValue(true),
   };
 
   render(<NotInstalledSection library={library} />);
 
   expect(await screen.findByText('The Witcher 3')).toBeInTheDocument();
-  expect(screen.getByText('via GOG Galaxy')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Install' })).not.toBeInTheDocument();
+  const installButton = screen.getByRole('button', { name: /install via galaxy/i });
+  fireEvent.click(installButton);
+  await waitFor(() => expect(window.electronAPI.gogOpenInGalaxy).toHaveBeenCalledWith('1207664643'));
   expect(window.electronAPI.gogUninstalled).toHaveBeenCalledWith(['Installed Game']);
 });
 

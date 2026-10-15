@@ -17,7 +17,8 @@ const formatLastPlayed = (ms) => {
  * "Owned, not installed" — games you own that aren't on this PC.
  * Steam comes from the opt-in owned-library relay (Settings → Connections);
  * GOG entries are read locally from GOG Galaxy's database (no account, no
- * network). Steam rows get a real install deep-link via steam://install.
+ * network). Steam rows deep-link via steam://install; GOG rows open the game
+ * page in GOG Galaxy via goggalaxy://openGameView.
  * Hides entirely when neither source has anything to show.
  */
 export default function NotInstalledSection({ library = [] }) {
@@ -104,6 +105,17 @@ export default function NotInstalledSection({ library = [] }) {
     }
   };
 
+  const handleGogOpen = async (game) => {
+    const api = getElectronAPI();
+    if (!api || typeof api.gogOpenInGalaxy !== 'function' || !game?.gogProductId) return;
+    setInstalling(game.gogProductId);
+    try {
+      await api.gogOpenInGalaxy(String(game.gogProductId));
+    } finally {
+      setInstalling(null);
+    }
+  };
+
   return (
     <section className="not-installed" aria-label="Owned games that are not installed">
       <div className="not-installed-header">
@@ -171,7 +183,15 @@ export default function NotInstalledSection({ library = [] }) {
                     {installing === game.appid ? 'Opening Steam…' : 'Install'}
                   </button>
                 ) : (
-                  <span className="not-installed-via">via GOG Galaxy</span>
+                  <button
+                    type="button"
+                    className="not-installed-install"
+                    onClick={() => handleGogOpen(game)}
+                    disabled={!game.gogProductId || installing === game.gogProductId}
+                    title="Opens the game page in GOG Galaxy"
+                  >
+                    {installing === game.gogProductId ? 'Opening Galaxy…' : 'Install via Galaxy'}
+                  </button>
                 )}
               </li>
             ))}

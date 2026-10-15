@@ -52,6 +52,18 @@ function registerIpcHandlers(ipcMain, deps) {
     }
   });
 
+  ipcMain.handle('gog-open-galaxy', async (_event, productId) => {
+    if (typeof productId !== 'string' || !/^[1-9]\d{0,14}$/.test(productId)) {
+      return false;
+    }
+    try {
+      await shell.openExternal(`goggalaxy://openGameView/${productId}`);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
   ipcMain.handle('minimize-window', async () => {
     const mainWindow = getMainWindow();
     if (mainWindow && !mainWindow.isDestroyed()) {

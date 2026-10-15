@@ -27,6 +27,7 @@ const electronAPI = {
   steamMostPlayed: () => ipcRenderer.invoke('steam-most-played'),
   steamOwnedLibrary: (steamId) => ipcRenderer.invoke('steam-owned-library', steamId),
   steamInstall: (appid) => ipcRenderer.invoke('steam-install', appid),
+  gogOpenInGalaxy: (productId) => ipcRenderer.invoke('gog-open-galaxy', productId),
   gogUninstalled: (names) => ipcRenderer.invoke('gog-uninstalled', names),
   epicFreeGames: () => ipcRenderer.invoke('epic-free-games'),
   giveawayFeed: () => ipcRenderer.invoke('giveaway-feed'),
