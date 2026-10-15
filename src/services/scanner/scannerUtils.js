@@ -654,8 +654,9 @@ const getGogGalaxyPlaytimeMap = async () => {
         : [];
       const titleByReleaseKey = {};
       titleRows.forEach((row) => {
-        if (row.releaseKey && row.title) {
-          titleByReleaseKey[row.releaseKey] = String(row.title);
+        const title = parseGogPieceTitle(row.title);
+        if (row.releaseKey && title) {
+          titleByReleaseKey[row.releaseKey] = title;
         }
       });
 
@@ -692,6 +693,17 @@ const getGogGalaxyPlaytimeMap = async () => {
   return playtimeMap;
 };
 
+// GamePieces stores each field as a JSON blob — the title piece is
+// {"title":"..."} or {"title":null}. Extract the string or return null.
+const parseGogPieceTitle = (value) => {
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed?.title === 'string' && parsed.title.trim() ? parsed.title.trim() : null;
+  } catch {
+    return null;
+  }
+};
+
 const normalizeGameNameForMatch = (name) =>
   String(name || '')
     .toLowerCase()
@@ -713,9 +725,11 @@ const diffUninstalledByTitle = (ownedGames, library) => {
     .sort((a, b) => (b.playtimeForever || 0) - (a.playtimeForever || 0));
 };
 
-// GOG Galaxy tracks every owned product in galaxy-2.0.db — including games the
-// user has uninstalled. Reads titles + recorded playtime for gog_* releaseKeys,
-// then subtracts whatever the local scan already found. Entirely local; no
+// GOG Galaxy tracks owned products in galaxy-2.0.db — including games the
+// user has uninstalled. LibraryReleases is the authoritative ownership table:
+// GamePieces caches store/catalog metadata for thousands of products the user
+// does not own, so titles are only taken for releaseKeys present there.
+// Subtracts whatever the local scan already found. Entirely local; no
 // network calls. Returns [] on non-Windows or when the DB is unreadable.
 const getGogGalaxyUninstalledGames = async (library) => {
   const dbPaths = getGogGalaxyInstallPaths();
@@ -734,13 +748,34 @@ const getGogGalaxyUninstalledGames = async (library) => {
       const fileBuffer = fs.readFileSync(dbPath);
       const db = new SQL.Database(fileBuffer);
 
+      // Ownership: releaseKeys the Galaxy user actually has in their library.
+      // Restrict to the dominant userId so a shared machine only exposes the
+      // primary account's games.
+      const releaseRows = queryAllRows(db, 'SELECT releaseKey, userId FROM LibraryReleases');
+      const countsByUser = {};
+      releaseRows.forEach((row) => {
+        const uid = String(row.userId || '');
+        if (uid) countsByUser[uid] = (countsByUser[uid] || 0) + 1;
+      });
+      const primaryUserId = Object.keys(countsByUser).sort((a, b) => countsByUser[b] - countsByUser[a])[0];
+      const ownedKeys = new Set(
+        releaseRows
+          .filter((row) => String(row.userId) === primaryUserId)
+          .map((row) => String(row.releaseKey || ''))
+          .filter((key) => /^gog_\d+$/.test(key))
+      );
+
       const titleTypeId = getGamePieceTypeId(db, 'title');
-      const titleRows = titleTypeId
-        ? queryAllRows(
-            db,
-            `SELECT releaseKey, value AS title FROM GamePieces WHERE gamePieceTypeId = ${titleTypeId} AND releaseKey LIKE 'gog_%'`
-          )
-        : [];
+      const titleByKey = {};
+      if (titleTypeId) {
+        queryAllRows(
+          db,
+          `SELECT releaseKey, value AS title FROM GamePieces WHERE gamePieceTypeId = ${titleTypeId} AND releaseKey LIKE 'gog_%'`
+        ).forEach((row) => {
+          const title = parseGogPieceTitle(row.title);
+          if (row.releaseKey && title) titleByKey[row.releaseKey] = title;
+        });
+      }
       const minutesByKey = {};
       queryAllRows(db, 'SELECT releaseKey, minutesInGame FROM GAMETIMES').forEach((row) => {
         if (row.releaseKey && typeof row.minutesInGame === 'number') {
@@ -754,21 +789,21 @@ const getGogGalaxyUninstalledGames = async (library) => {
       });
       db.close();
 
-      const owned = titleRows
-        .map((row) => {
-          const productId = String(row.releaseKey || '').replace(/^gog_/, '');
-          if (!row.title || !/^\d+$/.test(productId)) return null;
+      const owned = [...ownedKeys]
+        .map((key) => {
+          const name = titleByKey[key];
+          if (!name) return null;
           return {
-            name: String(row.title).trim(),
+            name,
             platform: 'GOG',
             installed: false,
-            gogProductId: productId,
-            releaseKey: String(row.releaseKey),
-            playtimeForever: minutesByKey[row.releaseKey] || 0,
-            lastPlayed: lastPlayedByKey[row.releaseKey] || 0,
+            gogProductId: key.replace(/^gog_/, ''),
+            releaseKey: key,
+            playtimeForever: minutesByKey[key] || 0,
+            lastPlayed: lastPlayedByKey[key] || 0,
           };
         })
-        .filter((game) => game && game.name);
+        .filter(Boolean);
 
       scannerDebug('[Scanner] GOG Galaxy owned releases:', owned.length, 'from', dbPath);
       return diffUninstalledByTitle(owned, library);
