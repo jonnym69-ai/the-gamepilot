@@ -48,7 +48,7 @@ export default defineConfig(() => ({
     jsxInJsPlugin,
     react(),
     nodePolyfills({
-      include: ['path', 'os', 'process', 'stream', 'crypto', 'url', 'util', 'buffer', 'http', 'https'],
+      include: ['path', 'os', 'process', 'stream', 'url', 'util', 'buffer', 'http', 'https'],
       globals: {
         Buffer: true,
         process: true,

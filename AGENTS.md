@@ -150,9 +150,20 @@ The typecheck command is optional for JS-only changes.
 - Session history uses localStorage; IndexedDB migration was evaluated and
   deferred — the dual-write system (localStorage + SQLite) works and the
   migration risk outweighs the benefit at current scale.
-- `react-scripts` and `react-app-rewired` remain in `package.json`
-  dependencies for the `eslint-config-react-app` preset; they can be removed
-  once ESLint is reconfigured with standalone plugins.
+- `react-scripts`/`react-app-rewired` were removed; ESLint now uses standalone
+  `eslint-config-react-app` (devDep) with `eslint` pinned at 8.x — the
+  `react-app`/`react-app/jest` preset names in `eslintConfig` resolve through
+  that package. Do not let `eslint` drift to v9+ (flat-config only) without
+  migrating the config.
+- Residual `npm audit` findings are all dev/build-time and unfixed upstream:
+  `braces` (jest/stylelint/electron-reloader glob matching — DoS needs hostile
+  glob input; these tools match fixed patterns), `elliptic` (transitive dep of
+  `vite-plugin-node-polyfills` via `node-stdlib-browser`; never imported —
+  `'crypto'` was removed from the polyfill `include` list so it is absent from
+  the shipped bundle), and `sprintf-js` (`electron-builder` build-time chain).
+  Electron is at 44.x; `electron-reloader` stays at 1.x (v2 is ESM-only and
+  requires Node 22; `electron.js` `require()`s it under
+  `ELECTRON_ENABLE_RELOADER`).
 
 ## Single-edition build
 
