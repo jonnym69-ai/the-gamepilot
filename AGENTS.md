@@ -239,7 +239,7 @@ The typecheck command is optional for JS-only changes.
 ## Steam friends presence
 
 - `FriendsPlayingCard` on Today is opt-in via Settings ("Steam Friends Presence", off by default) and reuses the `steamWishlistId` Steam64 ID. It hides entirely when disabled or unconfigured.
-- The Steam Web API key stays server-side: renderer → `steam-friends` IPC → `electron/steam.js` → `https://gamepilot.netlify.app/api/getSteamFriends` → `netlify/functions/getSteamFriends.js` → `api.steampowered.com` (`STEAM_API_KEY` env var). No renderer fetch, no key in the client bundle.
+- The Steam Web API key stays server-side: renderer → `steam-friends` IPC → `electron/steam.js` → `https://gamepilot-moz.netlify.app/api/getSteamFriends` → `netlify/functions/getSteamFriends.js` → `api.steampowered.com` (`STEAM_API_KEY` env var). No renderer fetch, no key in the client bundle.
 - The function validates a 17-digit Steam64 ID, caps at 200 friends, batches `GetPlayerSummaries` at 100 IDs, and returns trimmed fields (name, avatar, `personastate`, current game, appid). 401/403 from `GetFriendList` maps to a "friends list is private" message — missing presence must never be presented as "offline".
 - Presence is read-only public Steam data, cached 60s in the main process and service layer. Friends are grouped by the game they're playing — multiple friends in one game get a "squad" row with stacked avatars and a `Join them` action when you own it; a single friend's current game offers "Play your copy" only when its appid matches a Steam game in the local library via `getSteamAppId`.
 - Regression checks: `npx jest src/services/SteamFriendsService.test.js src/components/FriendsPlayingCard.test.js --ci`. Live presence needs the Netlify function deployed with `STEAM_API_KEY` set — Jest mocks the bridge and cannot verify the relay end-to-end.
@@ -262,7 +262,7 @@ The typecheck command is optional for JS-only changes.
 ## IGDB artwork enrichment
 
 - `IgdbArtworkService` fills `coverImage` on games that resolve to no artwork (non-Steam titles), using official IGDB covers. Opt-in via Settings ("IGDB Cover Art Lookup", off by default); it runs on library load and after scans, never blocks the scan result, and never overwrites `coverArtOverride`.
-- Credentials stay server-side: renderer → `igdb-lookup` IPC → `electron/igdb.js` → `https://gamepilot.netlify.app/api/getIgdbGame` → `netlify/functions/getIgdbGame.js` → `api.igdb.com` (Twitch `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` env vars; the function fetches and caches an OAuth token itself).
+- Credentials stay server-side: renderer → `igdb-lookup` IPC → `electron/igdb.js` → `https://gamepilot-moz.netlify.app/api/getIgdbGame` → `netlify/functions/getIgdbGame.js` → `api.igdb.com` (Twitch `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` env vars; the function fetches and caches an OAuth token itself).
 - Only the game name is sent. Lookups are cached on-device (`igdbArtworkCacheV1`): hits for 30 days, misses for 7 days; calls are throttled to ~2.5/s. The `enrichLibraryCovers` result is a new array (or null) — persist via `saveLibrary`/`StorageService`.
 - Regression checks: `npx jest src/services/IgdbArtworkService.test.js --ci`. Env-var changes require a `netlify deploy --prod` before functions see them.
 

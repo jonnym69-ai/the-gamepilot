@@ -7,7 +7,7 @@ const { httpsRequest } = require('./net');
 // Used by IgdbArtworkService to fetch cover art + metadata for games that
 // have no artwork source (non-Steam launchers). Cached in-memory per name.
 // ---------------------------------------------------------------------------
-const IGDB_RELAY_URL = 'https://gamepilot.netlify.app/api/getIgdbGame';
+const IGDB_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getIgdbGame';
 const IGDB_CACHE = new Map();
 const IGDB_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_NAME_LENGTH = 120;

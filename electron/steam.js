@@ -1,9 +1,9 @@
 const { BrowserWindow } = require('electron');
 const { httpsRequest } = require('./net');
 
-const STEAM_FRIENDS_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamFriends';
-const STEAM_PROFILE_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamProfile';
-const STEAM_LIBRARY_RELAY_URL = 'https://gamepilot.netlify.app/api/getSteamLibrary';
+const STEAM_FRIENDS_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamFriends';
+const STEAM_PROFILE_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamProfile';
+const STEAM_LIBRARY_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamLibrary';
 const FRIENDS_CACHE = new Map();
 const FRIENDS_CACHE_TTL_MS = 60000;
 const PROFILE_CACHE = new Map();
