@@ -61,6 +61,13 @@ const normalizeHistoryEntry = (result = {}, game = {}) => {
 
 class SaveBackupService {
   static async buildPlan(game) {
+    // Emulated games don't exist on PCGamingWiki — resolve save/state dirs
+    // from the emulator install instead (RetroArch saves/states, Dolphin
+    // memory cards, PCSX2 memcards, ...).
+    if (game?.source === 'emulator' || game?.launchType === 'emulator') {
+      return this.buildEmulatorPlan(game);
+    }
+
     const pcgw = await PCGamingWikiService.lookup(game);
     const candidates = [
       normalizeLocation(pcgw?.saveLocation, 'save'),
@@ -104,6 +111,49 @@ class SaveBackupService {
         ...plan,
         error: error.message || 'Unable to validate save locations',
       };
+    }
+  }
+
+  static async buildEmulatorPlan(game) {
+    const plan = {
+      gameName: game?.name || 'Unknown Game',
+      generatedAt: Date.now(),
+      source: 'emulator',
+      pageUrl: null,
+      candidates: [],
+      locations: [],
+      readyCount: 0,
+      missingCount: 0,
+      hasElectronBridge: Boolean(typeof window !== 'undefined' && window.electronAPI?.saveLocationStatus),
+      hasBackupBridge: Boolean(
+        typeof window !== 'undefined' &&
+          window.electronAPI?.chooseSaveBackupDestination &&
+          window.electronAPI?.createSaveBackup
+      ),
+      hasRestorePreviewBridge: Boolean(typeof window !== 'undefined' && window.electronAPI?.previewSaveRestore),
+      note: 'GamePilot can create a timestamped local backup with a manifest. Restore is intentionally disabled until overwrite safety checks are built.',
+    };
+
+    if (typeof window === 'undefined' || !window.electronAPI?.emulatorSavePaths) {
+      return { ...plan, note: 'Emulator save detection needs the desktop app.' };
+    }
+
+    try {
+      const result = await window.electronAPI.emulatorSavePaths({
+        emulatorPath: game?.emulatorPath,
+        consolePlatform: game?.brandPlatform || game?.platform,
+      });
+      const locations = Array.isArray(result?.locations) ? result.locations : [];
+      return {
+        ...plan,
+        candidates: locations,
+        locations,
+        readyCount: locations.filter((location) => location.exists).length,
+        missingCount: locations.filter((location) => !location.exists).length,
+        note: result?.note || plan.note,
+      };
+    } catch (error) {
+      return { ...plan, error: error.message || 'Unable to resolve emulator save paths' };
     }
   }
 

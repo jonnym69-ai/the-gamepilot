@@ -51,6 +51,7 @@ import { FreeGameRadar } from './services/FreeGameRadar';
 import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { GameCurationService } from './services/GameCurationService';
 import EmulatorLibraryService from './services/EmulatorLibraryService';
+import RetroAchievementsService from './services/RetroAchievementsService';
 import { mergeLibraryUpdates } from './services/LibraryDataService';
 import { getGameArtworkPlaceholder, resolveGameArtwork, hasMissingCoverArt } from './services/GameArtworkService';
 import { formatPrice } from './CurrencyConverter';
@@ -294,6 +295,10 @@ function Library({
     extensions: EmulatorLibraryService.getDefaultExtensions().join(', '),
     launchTemplate: '"{emulator}" "{rom}"',
   }));
+  const [detectedEmulators, setDetectedEmulators] = useState([]);
+  const [detectingEmulators, setDetectingEmulators] = useState(false);
+  const [emulatorDetectionRan, setEmulatorDetectionRan] = useState(false);
+  const [emulatorBiosStatus, setEmulatorBiosStatus] = useState({});
   const [localSortBy, setLocalSortBy] = useState(sortBy);
   const [localFilterMood, setLocalFilterMood] = useState(filterMood);
   const [localFilterGenre, setLocalFilterGenre] = useState(filterGenre);
@@ -998,7 +1003,8 @@ function Library({
     setScanningEmulators(true);
     try {
       const scannedGames = await EmulatorLibraryService.scanAllProfiles();
-      const mergedLibrary = mergeLibraryUpdates(library, scannedGames);
+      const raEnriched = await RetroAchievementsService.enrichEmulatedGames(scannedGames);
+      const mergedLibrary = mergeLibraryUpdates(library, raEnriched);
       scannedGames.forEach((game) => GameCurationService.recordGameSeen(game.name));
       onLibraryUpdated(GameCurationService.enrichLibrary(mergedLibrary));
     } catch (error) {
@@ -1007,6 +1013,58 @@ function Library({
       setScanningEmulators(false);
     }
   }, [emulatorProfiles.length, library, onLibraryUpdated, scanningEmulators]);
+
+  const detectEmulatorInstalls = useCallback(async () => {
+    if (!window.electronAPI?.detectEmulators || detectingEmulators) {
+      return;
+    }
+    setDetectingEmulators(true);
+    try {
+      const detected = await window.electronAPI.detectEmulators();
+      setDetectedEmulators(Array.isArray(detected) ? detected : []);
+    } catch (error) {
+      console.error('Failed to detect emulators:', error);
+      setDetectedEmulators([]);
+    } finally {
+      setDetectingEmulators(false);
+      setEmulatorDetectionRan(true);
+    }
+  }, [detectingEmulators]);
+
+  const applyDetectedEmulator = useCallback((detected, platform) => {
+    setEmulatorDraft((draft) => ({
+      ...draft,
+      name: `${detected.name} ${platform}`,
+      consolePlatform: platform,
+      emulatorPath: detected.emulatorPath,
+    }));
+  }, []);
+
+  // BIOS status is advisory — check each profile while the manager is open so
+  // missing firmware surfaces before a failed launch, never as a hard block.
+  useEffect(() => {
+    if (!showEmulatorManager || !window.electronAPI?.emulatorBiosCheck || emulatorProfiles.length === 0) {
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        emulatorProfiles.map(async (profile) => [
+          profile.id,
+          await window.electronAPI.emulatorBiosCheck({
+            emulatorPath: profile.emulatorPath,
+            consolePlatform: profile.consolePlatform,
+          }),
+        ])
+      );
+      if (!cancelled) {
+        setEmulatorBiosStatus(Object.fromEntries(entries));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showEmulatorManager, emulatorProfiles]);
 
   useEffect(() => {
     setLocalSortBy(sortBy);
@@ -2136,6 +2194,42 @@ function Library({
                 Add Profile
               </button>
             </div>
+            <div className="emulator-detected-block">
+              <button
+                type="button"
+                className="emulator-secondary-button"
+                onClick={detectEmulatorInstalls}
+                disabled={detectingEmulators}
+              >
+                {detectingEmulators ? 'Detecting...' : 'Detect Installed Emulators'}
+              </button>
+              {detectedEmulators.length > 0 && (
+                <div className="emulator-detected-list">
+                  {detectedEmulators.map((detected) => (
+                    <div key={`${detected.key}:${detected.emulatorPath}`} className="emulator-detected-item">
+                      <div className="emulator-detected-meta">
+                        <strong>{detected.name}</strong>
+                        <span className="emulator-detected-path">{detected.emulatorPath}</span>
+                      </div>
+                      <div className="emulator-detected-platforms">
+                        {detected.platforms.map((platform) => (
+                          <button
+                            key={platform}
+                            type="button"
+                            onClick={() => applyDetectedEmulator(detected, platform)}
+                          >
+                            {platform}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {emulatorDetectionRan && !detectingEmulators && detectedEmulators.length === 0 && (
+                <p className="emulator-detected-empty">No known emulators found in the usual locations.</p>
+              )}
+            </div>
             {(emulatorDraft.emulatorPath || emulatorDraft.romFolder) && (
               <div className="emulator-path-preview">
                 {emulatorDraft.emulatorPath && <span>Emulator: {emulatorDraft.emulatorPath}</span>}
@@ -2144,16 +2238,24 @@ function Library({
             )}
             {emulatorProfiles.length > 0 && (
               <div className="emulator-profile-list">
-                {emulatorProfiles.map((profile) => (
-                  <div key={profile.id} className="emulator-profile-chip">
-                    <span>
-                      {profile.name} · {profile.consolePlatform}
-                    </span>
-                    <button type="button" onClick={() => removeEmulatorProfile(profile.id)}>
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                {emulatorProfiles.map((profile) => {
+                  const bios = emulatorBiosStatus[profile.id];
+                  return (
+                    <div key={profile.id} className="emulator-profile-chip">
+                      <span>
+                        {profile.name} · {profile.consolePlatform}
+                      </span>
+                      {bios?.missing && (
+                        <span className={bios.required ? 'emulator-bios-warning' : 'emulator-bios-note'}>
+                          {bios.required ? 'BIOS missing' : 'BIOS optional'} — {bios.hint}
+                        </span>
+                      )}
+                      <button type="button" onClick={() => removeEmulatorProfile(profile.id)}>
+                        Remove
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2686,6 +2788,18 @@ function Library({
                       {resolvedMood && <span className="library-game-tag mood">{resolvedMood}</span>}
                       {Array.isArray(game.genres) && game.genres[0] && (
                         <span className="library-game-tag genre">{game.genres[0]}</span>
+                      )}
+                      {game.raProgress && game.raProgress.total > 0 && (
+                        <span
+                          className="library-game-tag ra"
+                          title={
+                            game.raProgress.completionHardcore
+                              ? `RetroAchievements: ${game.raProgress.completionHardcore} hardcore`
+                              : 'RetroAchievements progress'
+                          }
+                        >
+                          RA {game.raProgress.earned}/{game.raProgress.total}
+                        </span>
                       )}
                       {game.replayIntent && game.replayIntent !== 'none' && (
                         <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>

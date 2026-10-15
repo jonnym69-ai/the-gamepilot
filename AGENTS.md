@@ -37,7 +37,10 @@ The typecheck command is optional for JS-only changes.
   - `steam.js` — Steam API (reviews, achievements, news, wishlist).
   - `saveManager.js` — save location, backup/restore, disk usage.
   - `uninstall.js` — uninstall planning and execution.
-  - `emulator.js` — emulator/ROM selection.
+  - `emulator.js` — emulator/ROM selection, ROM scanning, emulator
+    auto-detection, BIOS checks and emulator save-path resolution.
+  - `retroAchievements.js` — RetroAchievements API bridge (user's own web API
+    key in `z`/`y` params; no relay or server-side secret).
   - `sessionStore.js` — session database IPC.
   - `libraryScan.js` — game launch + library scan IPC.
   - `discord.js` — Discord Rich Presence IPC.
@@ -326,3 +329,30 @@ The typecheck command is optional for JS-only changes.
   analytics and period insights. Don't re-duplicate per-period stat blocks
   across both.
 - Regression checks: `npx jest src/components/HybridNavBar.test.js src/RewardEffects.test.js --ci`.
+
+## Emulator library
+
+- `EmulatorLibraryService` scans profile ROM folders into `source: 'emulator'`
+  games. Scans dedupe by title: region tags (`(USA)`/`(Europe)`/...) collapse
+  to the preferred entry (USA > World > Europe > Japan), `.cue`/`.gdi`/`.m3u`
+  launcher files beat `.bin`/payload files sharing a stem, and disc/side tags
+  keep multi-disc sets as separate entries. Untagged dumps lose to tagged ones.
+- `coverImage` on emulated games points at keyless `thumbnails.libretro.com`
+  `Named_Boxarts` URLs built from the raw DAT-style stem (region tags kept,
+  `&*/:<>?\|"` sanitized to `_`). 404s degrade to placeholders via LazyImage's
+  failed-image cache — never probe URLs just to check they exist.
+- `detect-emulators` / `emulator-bios-check` / `emulator-save-paths` IPCs in
+  `electron/emulator.js` drive the Settings manager: detected installs prefill
+  the profile draft, and BIOS results are advisory warnings on profile chips
+  (PS1/PS2/Saturn/Dreamcast/3DS required, DS/GBA optional) — never a hard
+  launch block. Emulator saves route through the same `SaveBackupPanel`/
+  `SaveManager` pipeline; `SaveBackupService.buildPlan` short-circuits to
+  `buildEmulatorPlan` for `source: 'emulator'` games instead of PCGamingWiki.
+- RetroAchievements is opt-in (`retroAchievementsEnabled` + username + the
+  user's own web API key in Settings). `electron/retroAchievements.js` calls
+  RA directly — no relay. `enrichEmulatedGames` matches scanned games to the
+  RA catalog (one game-list call per console) and fetches progress for a
+  capped slice; matched games get `raGameId`/`raProgress` rendered as an
+  `RA x/y` tag on library cards. Consoles RA doesn't cover (GC/Wii/3DS/
+  Switch/PS3) get no match, not an error.
+- Regression checks: `npx jest src/services/EmulatorLibraryService.test.js src/services/RetroAchievementsService.test.js src/services/SaveBackupService.test.js --ci`. Detection/BIOS/save IPCs are main-process fs code — verify them in a packaged-desktop smoke test, not jsdom.

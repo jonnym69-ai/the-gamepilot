@@ -36,6 +36,7 @@ import SteamFriendsService from './services/SteamFriendsService';
 import SteamProfileService from './services/SteamProfileService';
 import SteamOwnedGamesService from './services/SteamOwnedGamesService';
 import IgdbArtworkService from './services/IgdbArtworkService';
+import RetroAchievementsService from './services/RetroAchievementsService';
 import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
 import { LocalShareService } from './services/LocalShareService';
@@ -80,6 +81,9 @@ function Settings({
   const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
   const [steamOwnedGamesEnabled, setSteamOwnedGamesEnabled] = useState(() => SteamOwnedGamesService.isEnabled());
   const [igdbArtworkEnabled, setIgdbArtworkEnabled] = useState(() => IgdbArtworkService.isEnabled());
+  const [raEnabled, setRaEnabled] = useState(() => RetroAchievementsService.isEnabled());
+  const [raUsername, setRaUsername] = useState(() => RetroAchievementsService.getUsername());
+  const [raApiKey, setRaApiKey] = useState(() => RetroAchievementsService.getApiKey());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
   const [startupLaunchSupported, setStartupLaunchSupported] = useState(false);
@@ -1315,6 +1319,81 @@ function Settings({
                         looked up on IGDB by name and given official cover art. Only the game's name is sent — no
                         playtime, account, or library data. Results are cached on-device for 30 days.
                       </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>RetroAchievements</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={raEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setRaEnabled(next);
+                            RetroAchievementsService.setEnabled(next);
+                            success(
+                              next
+                                ? 'RetroAchievements enabled. Rescan ROMs to match your retro library.'
+                                : 'RetroAchievements disabled.'
+                            );
+                          }}
+                          id="retro-achievements-enabled"
+                        />
+                        <label htmlFor="retro-achievements-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Off by default. Matches your emulated games to the RetroAchievements catalog and shows
+                        achievement progress on library cards after the next ROM scan. Get your free web API key at
+                        retroachievements.org → Settings → Keys. Your username and key stay on-device — only the RA API
+                        sees them, and nothing is posted or changed on your account.
+                      </p>
+                      {raEnabled && (
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <input
+                            type="text"
+                            placeholder="RetroAchievements username"
+                            value={raUsername}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              setRaUsername(next);
+                              RetroAchievementsService.setUsername(next);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border)',
+                              background: 'var(--bg)',
+                              color: 'var(--text)',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                          <input
+                            type="password"
+                            placeholder="Web API key (retroachievements.org → Settings → Keys)"
+                            value={raApiKey}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              setRaApiKey(next);
+                              RetroAchievementsService.setApiKey(next);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border)',
+                              background: 'var(--bg)',
+                              color: 'var(--text)',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                          {(!raUsername.trim() || !raApiKey.trim()) && (
+                            <p className="setting-description" style={{ margin: '4px 0 0' }}>
+                              Add both a username and API key so a ROM rescan can pick up progress.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>System</h4>

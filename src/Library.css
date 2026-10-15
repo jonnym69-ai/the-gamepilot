@@ -841,6 +841,78 @@ body.reduced-motion .empty-library-scan-spinner {
   font-size: 0.84rem;
 }
 
+.emulator-bios-warning {
+  color: #fbbf24 !important;
+}
+
+.emulator-bios-note {
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.emulator-detected-block {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.emulator-detected-list {
+  display: grid;
+  gap: 8px;
+}
+
+.emulator-detected-item {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.14));
+  background: var(--bg-card, rgba(255, 255, 255, 0.06));
+}
+
+.emulator-detected-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.emulator-detected-meta strong {
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+
+.emulator-detected-path {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  word-break: break-all;
+}
+
+.emulator-detected-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.emulator-detected-platforms button {
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.14);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.emulator-detected-platforms button:hover {
+  background: rgba(139, 92, 246, 0.28);
+}
+
+.emulator-detected-empty {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  margin: 0;
+}
+
 .library-game-actions.list-mode {
   margin-left: 0;
 }
@@ -1042,6 +1114,12 @@ body.reduced-motion .empty-library-scan-spinner {
   background: rgba(139, 92, 246, 0.12);
   border-color: rgba(139, 92, 246, 0.25);
   color: rgba(199, 180, 255, 0.9);
+}
+
+.library-game-tag.ra {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: rgba(252, 211, 77, 0.95);
 }
 
 .library-game-tag-multi-source {
