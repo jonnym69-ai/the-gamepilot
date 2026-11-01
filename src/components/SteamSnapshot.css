@@ -8,7 +8,6 @@
   flex-direction: column;
   gap: 10px;
 }
-
 .steam-snapshot-header {
   display: flex;
   align-items: center;
@@ -27,7 +26,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-
 .steam-snapshot-loading {
   display: flex;
   align-items: center;
@@ -69,7 +67,6 @@
 .steam-snapshot-enable:hover {
   filter: brightness(1.08);
 }
-
 .steam-snapshot-reviews {
   padding: 8px 10px;
   border-radius: 8px;
@@ -79,25 +76,6 @@
   flex-direction: column;
   gap: 3px;
 }
-.steam-snapshot-reviews.tone-good {
-  border-color: rgba(16, 185, 129, 0.4);
-}
-.steam-snapshot-reviews.tone-good strong:first-child {
-  color: #6ee7b7;
-}
-.steam-snapshot-reviews.tone-ok strong:first-child {
-  color: #93c5fd;
-}
-.steam-snapshot-reviews.tone-meh strong:first-child {
-  color: #fde68a;
-}
-.steam-snapshot-reviews.tone-bad {
-  border-color: rgba(239, 68, 68, 0.4);
-}
-.steam-snapshot-reviews.tone-bad strong:first-child {
-  color: #fca5a5;
-}
-
 .steam-snapshot-reviews-line {
   display: flex;
   justify-content: space-between;
@@ -112,17 +90,14 @@
   color: var(--text-secondary, #94a3b8);
   font-weight: 600;
 }
-
 .steam-snapshot-reviews-meta {
   font-size: 11.5px;
   color: var(--text-secondary, #94a3b8);
 }
-
 .steam-snapshot-divider {
   margin: 0 6px;
   opacity: 0.6;
 }
-
 .steam-snapshot-players {
   display: flex;
   align-items: flex-start;
@@ -147,7 +122,6 @@
   font-size: 11.5px;
   color: var(--text-secondary, #94a3b8);
 }
-
 .steam-snapshot-achievements {
   display: flex;
   align-items: flex-start;
@@ -175,7 +149,6 @@
 .steam-snapshot-ach-meta strong {
   color: #fca5a5;
 }
-
 .steam-snapshot-links {
   display: flex;
   gap: 6px;
@@ -197,4 +170,90 @@
 .steam-snapshot-links button:hover {
   color: #e2e8f0;
   border-color: rgba(147, 197, 253, 0.5);
+}
+
+/* Personal achievement unlocks */
+.steam-snapshot-personal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.steam-snapshot-personal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text, #fff);
+  text-align: left;
+}
+.steam-snapshot-personal-line {
+  flex: 1;
+  font-size: 0.88rem;
+}
+.steam-snapshot-personal-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.steam-snapshot-personal-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--accent-primary, #ff6b35), var(--accent-secondary, #ff8c42));
+  transition: width 0.3s ease;
+}
+.steam-snapshot-personal-rare {
+  font-size: 0.78rem;
+  color: var(--text-muted, #8892a0);
+}
+.steam-snapshot-personal-hint {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted, #8892a0);
+}
+.steam-snapshot-personal-hint a {
+  color: var(--accent-color, #ff6b35);
+}
+.steam-snapshot-personal-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.steam-snapshot-personal-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.8rem;
+}
+.steam-snapshot-personal-list li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.steam-snapshot-personal-list li.unlocked svg {
+  color: #f0c040;
+}
+.steam-snapshot-personal-list li.locked {
+  opacity: 0.65;
+}
+.steam-snapshot-personal-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.steam-snapshot-personal-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted, #8892a0);
 }

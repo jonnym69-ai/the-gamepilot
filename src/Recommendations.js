@@ -19,24 +19,24 @@ import {
   Scale,
   TrendingUp,
   Gamepad2,
+  EyeOff,
 } from 'lucide-react';
 import NavBar from './NavBar';
 import LazyImage from './components/LazyImage';
+import { useToast } from './components/Toast';
 import { PerfectPlaySelector } from './components/PerfectPlaySelector';
+import OwnedBacklogShelf from './components/OwnedBacklogShelf';
 import { GamingIdentity } from './GamingIdentity';
-import { AchievementTracker } from './AchievementSystem';
 import { RecommendationEngine } from './services/RecommendationEngine';
 import { RecommendationReasonChip } from './components/RecommendationReasonChip';
-import { UserBehaviorProfile } from './services/UserBehaviorProfile';
+import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from './services/UserBehaviorProfile';
 import WishlistService from './services/WishlistService';
 import StorageService from './services/StorageService';
 import HowLongToBeatService from './services/HowLongToBeatService';
 import { getBlendedPlaytimeMinutes, isGameUnplayed } from './services/gameClassification';
 import { getGameArtworkPlaceholder, resolveGameArtwork } from './services/GameArtworkService';
-import { MOODS, getResolvedMood } from './constants/GenresMoods';
+import { mapGameGenresToValid } from './constants/GenresMoods';
 import './Recommendations.css';
-import useRewardPresentation from './hooks/useRewardPresentation';
-import './RewardPresentation.css';
 
 function formatPlaytime(minutes) {
   const safe = Math.max(0, Math.round(Number(minutes) || 0));
@@ -152,49 +152,31 @@ function getPlatformIcon(platform) {
 
 /* ──────────────── Recommendation Style Engines ──────────────── */
 
-function getMoodMixes(library, identity) {
+// Fixed palette rotated by stack index so mixes keep distinct header colors.
+const GENRE_MIX_PALETTE = ['#e74c3c', '#3498db', '#27ae60', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#6366f1'];
+
+function getGenreMixes(library) {
   if (!library?.length) return [];
-  const moods = Object.fromEntries(MOODS.map((mood) => [mood, []]));
+  const stacks = new Map();
   library.forEach((game) => {
     if (UserBehaviorProfile.shouldSuppressRecommendation(game?.appid || game?.name, game?.name)) return;
-    const mood = getResolvedMood(game);
-    if (mood && moods[mood]) moods[mood].push(game);
-  });
-
-  const mixes = MOODS.map((mood) => {
-    const games = moods[mood];
-    const shuffled = [...games].sort(() => Math.random() - 0.5);
-    return {
-      title: `${mood} Mix`,
-      subtitle: games.length > 0 ? `${games.length} ${games.length === 1 ? 'game' : 'games'}` : 'No matches yet',
-      mood,
-      games: shuffled.slice(0, 6),
-      color: getMoodColor(mood),
-    };
-  });
-
-  // Prioritize mixes that match user's favorite mood
-  const favorite = identity?.identity?.favoriteMood;
-  if (favorite) {
-    mixes.sort((a, b) => {
-      if (a.mood === favorite) return -1;
-      if (b.mood === favorite) return 1;
-      return b.games.length - a.games.length;
+    mapGameGenresToValid(game.genres).forEach((genre) => {
+      if (!stacks.has(genre)) stacks.set(genre, []);
+      stacks.get(genre).push(game);
     });
-  }
+  });
 
-  return mixes.slice(0, 6);
-}
-
-function getMoodColor(mood) {
-  const map = {
-    Competitive: '#e74c3c',
-    Relaxed: '#27ae60',
-    Social: '#f39c12',
-    Creative: '#9b59b6',
-    Focused: '#3498db',
-  };
-  return map[mood] || '#6366f1';
+  return [...stacks.entries()]
+    .map(([genre, games]) => ({
+      title: `${genre} Mix`,
+      subtitle: `${games.length} ${games.length === 1 ? 'game' : 'games'}`,
+      genre,
+      games: [...games].sort((a, b) => getMinutesPlayed(b) - getMinutesPlayed(a)).slice(0, 6),
+      totalPlaytime: games.reduce((sum, game) => sum + getMinutesPlayed(game), 0),
+    }))
+    .sort((a, b) => b.totalPlaytime - a.totalPlaytime || b.games.length - a.games.length)
+    .slice(0, 6)
+    .map((stack, index) => ({ ...stack, color: GENRE_MIX_PALETTE[index % GENRE_MIX_PALETTE.length] }));
 }
 
 function getRabbitHole(library, identity) {
@@ -209,7 +191,6 @@ function getRabbitHole(library, identity) {
   if (!seedGame) return null;
 
   const seedGenres = Array.isArray(seedGame.genres) ? seedGame.genres : [];
-  const seedMood = getResolvedMood(seedGame);
 
   // Find similar games
   const similar = library
@@ -220,8 +201,6 @@ function getRabbitHole(library, identity) {
       genres.forEach((g) => {
         if (seedGenres.includes(g)) score += 3;
       });
-      const gameMood = getResolvedMood(game);
-      if (gameMood && gameMood === seedMood) score += 2;
       if (game.platform === seedGame.platform) score += 1;
       return { game, score };
     })
@@ -270,7 +249,7 @@ function StyleCard({ icon: Icon, title, description, color, onClick, isActive })
   );
 }
 
-function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommendationType }) {
+function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommendationType, onDismiss }) {
   const artwork = useMemo(() => resolveGameArtwork(game, { surface: 'portrait' }), [game]);
   const placeholder = useMemo(() => getGameArtworkPlaceholder({ game, surface: 'portrait' }), [game]);
 
@@ -284,7 +263,7 @@ function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommend
         <span className="rec-row-title">{game.name}</span>
         <span className="rec-row-meta">
           {getPlatformIcon(game.platform)} {game.platform}
-          {getResolvedMood(game) && <> · {getResolvedMood(game)}</>}
+          {mapGameGenresToValid(game.genres)[0] && <> · {mapGameGenresToValid(game.genres)[0]}</>}
           {getMinutesPlayed(game) > 0 ? <> · {formatPlaytime(getMinutesPlayed(game))}</> : null}
         </span>
         {recommendationType && <RecommendationReasonChip game={game} recommendationType={recommendationType} />}
@@ -299,6 +278,17 @@ function GameRow({ game, index, onLaunch, onAddToPlaylist, inPlaylist, recommend
         >
           {inPlaylist ? <Trash2 size={16} /> : <Plus size={16} />}
           <span>{inPlaylist ? 'Remove' : 'Add'}</span>
+        </button>
+      )}
+      {onDismiss && (
+        <button
+          type="button"
+          className="rec-row-dismiss"
+          onClick={() => onDismiss(game)}
+          title="Not for me — stop recommending this"
+          aria-label={`Not interested in ${game.name}`}
+        >
+          <EyeOff size={16} />
         </button>
       )}
       {onLaunch && (
@@ -338,7 +328,9 @@ function HorizontalGameStrip({ games, onLaunch, onAddToPlaylist, playlist, recom
             </button>
           </div>
           <span className="rec-strip-title">{game.name}</span>
-          {getResolvedMood(game) && <span className="rec-strip-mood">{getResolvedMood(game)}</span>}
+          {mapGameGenresToValid(game.genres)[0] && (
+            <span className="rec-strip-mood">{mapGameGenresToValid(game.genres)[0]}</span>
+          )}
           {recommendationType && <RecommendationReasonChip game={game} recommendationType={recommendationType} />}
           {onAddToPlaylist && (
             <button
@@ -359,7 +351,6 @@ function HorizontalGameStrip({ games, onLaunch, onAddToPlaylist, playlist, recom
 /* ──────────────── Main Component ──────────────── */
 
 export default function Recommendations({ library, onLaunchGame }) {
-  const rewardPresentation = useRewardPresentation();
   const navigate = useNavigate();
   const [activeStyle, setActiveStyle] = useState('hub');
   const [showAlternatives, setShowAlternatives] = useState(false);
@@ -407,18 +398,9 @@ export default function Recommendations({ library, onLaunchGame }) {
     (game) => {
       const gameId = game?.appid || game?.name;
       const recommendationType = activeStyle === 'hub' ? 'perfect-play' : activeStyle;
-      const achievementFeature = {
-        'perfect-play': 'perfect_play',
-        'surprise-me': 'surprise',
-        rediscover: 'rediscover',
-      }[recommendationType];
-      if (achievementFeature) {
-        AchievementTracker.logGameplayFeature(achievementFeature);
-        AchievementTracker.checkAndUnlockAchievements();
-      }
       if (gameId) {
         UserBehaviorProfile.trackRecommendationLaunch(recommendationType, gameId, {
-          mood: getResolvedMood(game) || null,
+          mood: null,
           genre: RecommendationEngine.getPrimaryGenre(game) || null,
           source: 'recommendations-page',
         });
@@ -429,6 +411,34 @@ export default function Recommendations({ library, onLaunchGame }) {
     },
     [activeStyle, onLaunchGame]
   );
+
+  const [dismissedIds, setDismissedIds] = useState(() => new Set());
+  const toast = useToast();
+
+  const dismissGame = useCallback(
+    (game) => {
+      const gameId = getGameId(game);
+      if (!gameId) return;
+      // Record the impression first so the outcome has a selection-history
+      // entry to mark — suppression only applies to tracked recommendations.
+      UserBehaviorProfile.trackRecommendation(
+        activeStyle === 'hub' ? 'perfect-play' : activeStyle,
+        null,
+        null,
+        null,
+        [gameId],
+        { gameName: game?.name }
+      );
+      UserBehaviorProfile.trackRecommendationOutcome(gameId, RECOMMENDATION_OUTCOME.NOT_FOR_ME, {
+        gameName: game?.name,
+      });
+      setDismissedIds((prev) => new Set(prev).add(gameId));
+      toast?.info?.(`${game?.name} won't be recommended again`);
+    },
+    [activeStyle, toast]
+  );
+
+  const isDismissed = useCallback((game) => dismissedIds.has(getGameId(game)), [dismissedIds]);
 
   const recommendationStyles = useMemo(
     () => [
@@ -441,15 +451,15 @@ export default function Recommendations({ library, onLaunchGame }) {
       },
       {
         id: 'perfect-play',
-        title: 'Perfect Play',
-        description: 'Best match for your current mood and time',
+        title: 'For You',
+        description: 'Top picks for right now, from how you play',
         icon: Target,
         color: '#e74c3c',
       },
       {
-        id: 'mood-mix',
-        title: 'Mood Mix',
-        description: 'Curated stacks by vibe like Spotify Daily Mix',
+        id: 'genre-mix',
+        title: 'Genre Mix',
+        description: 'Stacks grouped by your library genres',
         icon: Music,
         color: '#1db954',
       },
@@ -543,10 +553,10 @@ export default function Recommendations({ library, onLaunchGame }) {
     return RecommendationEngine.getSurpriseMeResult(safeLibrary);
   }, [activeStyle, safeLibrary]);
 
-  const moodMixes = useMemo(() => {
-    if (activeStyle !== 'mood-mix') return [];
-    return getMoodMixes(safeLibrary, identity);
-  }, [activeStyle, safeLibrary, identity]);
+  const genreMixes = useMemo(() => {
+    if (activeStyle !== 'genre-mix') return [];
+    return getGenreMixes(safeLibrary);
+  }, [activeStyle, safeLibrary]);
 
   const rabbitHole = useMemo(() => {
     if (activeStyle !== 'rabbit-hole') return null;
@@ -621,10 +631,11 @@ export default function Recommendations({ library, onLaunchGame }) {
     <>
       <div className="rec-hub-header">
         <h1>Recommendations</h1>
-        <p>Pick a mood and the time you have. Choose from games you already own.</p>
+        <p>Picks from the games you already own — matched by how you actually play.</p>
       </div>
 
       <PerfectPlaySelector library={safeLibrary} onGameSelected={handleLaunch} />
+      <OwnedBacklogShelf library={safeLibrary} />
       <section className="rec-alternatives" aria-label="Alternative ways to choose">
         <button
           type="button"
@@ -672,30 +683,43 @@ export default function Recommendations({ library, onLaunchGame }) {
 
   const renderStyleHeader = (title, subtitle) => (
     <div className="rec-style-detail-header">
-      <button className="rec-back-btn" onClick={() => setActiveStyle('hub')}>
+      <button className="rec-back-btn" onClick={() => setActiveStyle('hub')} aria-label="Back to recommendations">
         <ArrowLeft size={20} />
       </button>
       <div>
+        <h2 className="rec-detail-title">{title}</h2>
         <p className="rec-detail-subtitle">{subtitle}</p>
       </div>
     </div>
   );
 
-  const renderGameList = (games, recommendationType) => (
-    <div className="rec-game-list">
-      {games.map((game, i) => (
-        <GameRow
-          key={`${game.appid || game.name}-${i}`}
-          game={game}
-          index={i}
-          onLaunch={handleLaunch}
-          onAddToPlaylist={activeStyle === 'session-playlist' ? addToPlaylist : undefined}
-          inPlaylist={playlist.some((p) => p.name === game.name)}
-          recommendationType={recommendationType}
-        />
-      ))}
-    </div>
-  );
+  const renderGameList = (games, recommendationType) => {
+    const visibleGames = games.filter((game) => !isDismissed(game));
+    if (visibleGames.length === 0) {
+      return (
+        <div className="rec-empty">
+          <EyeOff size={48} />
+          <p>All picks in this list were dismissed. They won't be recommended again.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="rec-game-list">
+        {visibleGames.map((game, i) => (
+          <GameRow
+            key={`${game.appid || game.name}-${i}`}
+            game={game}
+            index={i}
+            onLaunch={handleLaunch}
+            onAddToPlaylist={activeStyle === 'session-playlist' ? addToPlaylist : undefined}
+            inPlaylist={playlist.some((p) => p.name === game.name)}
+            recommendationType={recommendationType}
+            onDismiss={dismissGame}
+          />
+        ))}
+      </div>
+    );
+  };
 
   const renderPayload = (payload, recommendationType) => {
     if (!payload?.games?.length) {
@@ -717,19 +741,25 @@ export default function Recommendations({ library, onLaunchGame }) {
     );
   };
 
-  const renderMoodMixes = () => {
-    if (!moodMixes.length) {
+  const renderGenreMixes = () => {
+    if (!genreMixes.length) {
       return (
         <div className="rec-empty">
           <Music size={48} />
-          <p>Not enough mood-tagged games to build mixes.</p>
+          <p>Not enough genre data to build mixes.</p>
         </div>
       );
     }
     return (
       <div className="rec-mood-mixes">
-        {moodMixes.map((mix) => (
-          <div key={mix.title} className="rec-mood-mix-card" style={{ borderColor: mix.color }}>
+        {genreMixes.map((mix) => (
+          <div
+            key={mix.title}
+            className="rec-mood-mix-card"
+            style={{ borderColor: mix.color }}
+            role="group"
+            aria-label={mix.title}
+          >
             <div className="rec-mix-header" style={{ background: mix.color }}>
               <Music size={20} />
               <div>
@@ -737,10 +767,10 @@ export default function Recommendations({ library, onLaunchGame }) {
                 <span>{mix.subtitle}</span>
               </div>
             </div>
-            {mix.games.length > 0 ? (
-              <HorizontalGameStrip games={mix.games} onLaunch={handleLaunch} />
+            {mix.games.filter((game) => !isDismissed(game)).length > 0 ? (
+              <HorizontalGameStrip games={mix.games.filter((game) => !isDismissed(game))} onLaunch={handleLaunch} />
             ) : (
-              <div className="rec-mood-empty">No games in your library currently match this mood.</div>
+              <div className="rec-mood-empty">No games in this stack.</div>
             )}
           </div>
         ))}
@@ -789,10 +819,7 @@ export default function Recommendations({ library, onLaunchGame }) {
         </p>
         {candidates.length === 0 ? (
           <div className="rec-empty">
-            <p>
-              No known short games yet. Look up completion times in a game's details, or try Perfect Play for a timed
-              session.
-            </p>
+            <p>No known short games yet. Look up completion times in a game's details and they'll show up here.</p>
           </div>
         ) : (
           renderGameList(candidates)
@@ -1015,11 +1042,7 @@ export default function Recommendations({ library, onLaunchGame }) {
   );
 
   return (
-    <div
-      data-testid="recommendations-page"
-      className={`recommendations-page ${rewardPresentation.className}`}
-      style={rewardPresentation.style}
-    >
+    <div data-testid="recommendations-page" className="recommendations-page">
       <NavBar />
       {renderTopNav()}
       <div className="rec-content">
@@ -1035,15 +1058,15 @@ export default function Recommendations({ library, onLaunchGame }) {
 
         {activeStyle === 'perfect-play' && (
           <>
-            {renderStyleHeader('Perfect Play', 'Select moods, genres & time to find your match')}
+            {renderStyleHeader('For You', 'Top picks for right now, from how you play')}
             <PerfectPlaySelector library={safeLibrary} onGameSelected={handleLaunch} />
           </>
         )}
 
-        {activeStyle === 'mood-mix' && (
+        {activeStyle === 'genre-mix' && (
           <>
-            {renderStyleHeader('Mood Mix', 'Curated stacks by vibe')}
-            {renderMoodMixes()}
+            {renderStyleHeader('Genre Mix', 'Stacks grouped by your library genres')}
+            {renderGenreMixes()}
           </>
         )}
 

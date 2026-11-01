@@ -1,8 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import useSessionLifecycle from './useSessionLifecycle';
 import { PlaytimeAutoLogger } from '../services/PlaytimeAutoLogger';
-import { HabitTrackerService } from '../services/HabitTrackerService';
-import { AchievementTracker } from '../AchievementSystem';
 
 jest.mock('../components/Toast', () => ({
   useToast: () => ({ info: jest.fn(), success: jest.fn() }),
@@ -39,13 +37,13 @@ const buildDeps = () => ({
   hasLoadedLibrary: true,
 });
 
-describe('useSessionLifecycle XP reporting', () => {
+describe('useSessionLifecycle session reporting', () => {
   beforeEach(() => {
     localStorage.clear();
     jest.clearAllMocks();
   });
 
-  test('session-ended events report the XP that session earned', async () => {
+  test('session-ended events report the recorded playtime and session id', async () => {
     PlaytimeAutoLogger.endSession.mockReturnValue({
       playtimeMinutes: 90,
       endTime: Date.now(),
@@ -58,26 +56,22 @@ describe('useSessionLifecycle XP reporting', () => {
     try {
       const { result } = renderHook(() => useSessionLifecycle(buildDeps()));
       await waitFor(() => expect(PlaytimeAutoLogger.getActiveSessions).toHaveBeenCalled());
-      const habitBefore = HabitTrackerService.getHabitXP().total;
-      const bonusBefore = AchievementTracker.getBonusRewardStats().totalXP;
 
       act(() => {
         result.current.handleEndSession('Test Game');
       });
 
-      const habitAfter = HabitTrackerService.getHabitXP().total;
-      const bonusAfter = AchievementTracker.getBonusRewardStats().totalXP;
       expect(received).toHaveLength(1);
       expect(received[0].gameName).toBe('Test Game');
-      // 90 minutes × 0.5 XP/min plus real habit/bonus deltas from the recorded session
-      expect(received[0].xpEarned).toBe(45 + (habitAfter - habitBefore) + (bonusAfter - bonusBefore));
-      expect(received[0].xpEarned).toBeGreaterThan(45);
+      expect(received[0].playtimeMinutes).toBe(90);
+      expect(received[0].sessionId).toBe('s1');
+      expect(received[0].xpEarned).toBeUndefined();
     } finally {
       window.removeEventListener('gamepilot:session-ended', listener);
     }
   });
 
-  test('failed session ends report no event and no XP', async () => {
+  test('failed session ends report no event', async () => {
     PlaytimeAutoLogger.endSession.mockReturnValue(null);
     const listener = jest.fn();
     window.addEventListener('gamepilot:session-ended', listener);

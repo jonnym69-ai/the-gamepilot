@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import html2canvas from 'html2canvas';
 import {
   Brain,
   Clock,
@@ -17,6 +18,13 @@ import { GameCurationService } from '../services/GameCurationService';
 import { GamingIdentity } from '../GamingIdentity';
 import GamingPersonaService from '../services/GamingPersonaService';
 import { isGameUnplayed } from '../services/RecommendationEngine';
+import { LocalShareService } from '../services/LocalShareService';
+import { ProfileService } from '../services/ProfileService';
+import { findLibraryGame } from '../services/PeriodChampionService';
+import { resolveGameArtworkBundle } from '../services/GameArtworkService';
+import { formatPlaytime } from '../utils/formatPlaytime';
+import ShareMenu from './ShareMenu';
+import { HabitsShareCard } from './HabitsShareCard';
 import './HabitInsightsPanel.css';
 
 const InsightCard = ({ icon: Icon, title, value, subtitle, tone = 'neutral' }) => (
@@ -194,6 +202,40 @@ const HabitInsightsPanel = ({ library = [] }) => {
     };
   }, [library]);
 
+  const shareCardRef = useRef(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const username = useMemo(() => ProfileService.getCurrentUsername(), []);
+
+  // Covers for the two game-naming stats on the share card: library match
+  // first, then a stub carrying any recorded cover/appid, so the exported
+  // card shows the same art the app does.
+  const shareCovers = useMemo(() => {
+    const habitData = insights?.habit;
+    if (!habitData) return {};
+    const resolveCover = (name, coverUrl, numericId) => {
+      const game = findLibraryGame(library, name);
+      const source = game || { name, platform: 'steam', coverImage: coverUrl || '' };
+      if (!game && Number.isFinite(numericId) && numericId > 0) source.appid = numericId;
+      return resolveGameArtworkBundle(source, { surface: 'portrait', fallbackSurface: 'library_card' });
+    };
+    const covers = {};
+    if (habitData.longestSession?.gameName) {
+      covers.longestSession = resolveCover(habitData.longestSession.gameName);
+    }
+    if (habitData.mostReturnedTo?.name) {
+      const numericId = Number(habitData.mostReturnedTo.id);
+      const isSteam = String(habitData.mostReturnedTo.platform || '')
+        .toLowerCase()
+        .includes('steam');
+      covers.mostReturnedTo = resolveCover(
+        habitData.mostReturnedTo.name,
+        habitData.mostReturnedTo.coverUrl,
+        isSteam && Number.isFinite(numericId) ? numericId : null
+      );
+    }
+    return covers;
+  }, [insights, library]);
+
   if (!insights) {
     return (
       <div className="habit-insights-panel empty">
@@ -230,12 +272,77 @@ const HabitInsightsPanel = ({ library = [] }) => {
   const trendIcon = sessionTrend === 'increasing' ? TrendingUp : sessionTrend === 'decreasing' ? TrendingDown : Target;
   const trendTone = sessionTrend === 'increasing' ? 'good' : sessionTrend === 'decreasing' ? 'warn' : 'neutral';
 
+  const buildHabitShareText = () =>
+    [
+      `My GamePilot play habits — ${habitPeriodLabel || 'All Time'}`,
+      habit?.longestSession
+        ? `Longest session: ${habit.longestSession.gameName} (${formatPlaytime(habit.longestSession.playtimeMinutes)})`
+        : '',
+      habit?.mostReturnedTo
+        ? `Most returned to: ${habit.mostReturnedTo.name} (${habit.mostReturnedTo.sessions} sessions)`
+        : '',
+      `${habit?.lateNightSessions || 0} late-night runs · ${habit?.weekendSessions || 0} weekend sessions`,
+      '#GamePilot',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+  const captureHabitCard = async () => {
+    if (!shareCardRef.current) return null;
+    const canvas = await html2canvas(shareCardRef.current, {
+      scale: 2,
+      backgroundColor: null,
+      useCORS: true,
+      logging: false,
+    });
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  };
+
+  const captureHabitCardSafely = async () => {
+    setIsCapturing(true);
+    try {
+      return await captureHabitCard();
+    } catch (err) {
+      console.error('Failed to capture habits share card:', err);
+      return null;
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
   return (
     <div className="habit-insights-panel">
       <div className="habit-insights-header">
         <Brain size={20} />
         <h3>Habit Insights</h3>
         <span className="habit-insights-badge">Librarian Analytics</span>
+        <div className="habit-insights-share">
+          <ShareMenu
+            triggerLabel="Share"
+            imageAvailable
+            disabled={isCapturing}
+            onCopyText={() => LocalShareService.copyTextToClipboard(buildHabitShareText())}
+            onCopyImage={async () => {
+              const blob = await captureHabitCardSafely();
+              return blob ? LocalShareService.copyImageToClipboard(blob) : false;
+            }}
+            onSaveImage={async () => {
+              const blob = await captureHabitCardSafely();
+              if (!blob) return;
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `gamepilot-play-habits-${(habitPeriodLabel || 'all-time')
+                .toLowerCase()
+                .replace(/\s+/g, '-')}.png`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }}
+            onShareText={(channel) => LocalShareService.openShareIntent(channel, buildHabitShareText())}
+          />
+        </div>
       </div>
 
       <div className="habit-insight-hero">
@@ -425,6 +532,18 @@ const HabitInsightsPanel = ({ library = [] }) => {
         <span>{totalGames} games</span>
         <span>{totalSessions} sessions</span>
         <span>{Math.round(totalHours)} hours tracked</span>
+      </div>
+
+      {/* Hidden render target for the share card image */}
+      <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+        <div ref={shareCardRef}>
+          <HabitsShareCard
+            insights={habit}
+            username={username}
+            periodLabel={habitPeriodLabel || 'All Time'}
+            covers={shareCovers}
+          />
+        </div>
       </div>
     </div>
   );

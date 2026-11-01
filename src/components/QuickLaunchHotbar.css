@@ -18,11 +18,9 @@
   color: #fff;
   transition: padding 0.15s ease;
 }
-
 .quick-launch-hotbar.collapsed {
   padding: 6px 10px;
 }
-
 .quick-launch-toggle {
   display: flex;
   align-items: center;
@@ -38,11 +36,9 @@
   cursor: pointer;
   opacity: 0.85;
 }
-
 .quick-launch-toggle:hover {
   opacity: 1;
 }
-
 .quick-launch-list {
   display: flex;
   align-items: center;
@@ -51,7 +47,6 @@
   max-width: min(78vw, 1100px);
   padding: 2px;
 }
-
 .quick-launch-list::-webkit-scrollbar {
   height: 4px;
 }
@@ -59,7 +54,6 @@
   background: rgba(255, 255, 255, 0.18);
   border-radius: 4px;
 }
-
 .quick-launch-item {
   position: relative;
   display: flex;
@@ -77,12 +71,10 @@
   flex-shrink: 0;
   max-width: 220px;
 }
-
 .quick-launch-item:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
 }
-
 .quick-launch-art {
   width: 36px;
   height: 36px;
@@ -96,7 +88,6 @@
   justify-content: center;
   color: rgba(255, 255, 255, 0.6);
 }
-
 .quick-launch-name {
   font-size: 12.5px;
   white-space: nowrap;
@@ -104,7 +95,6 @@
   text-overflow: ellipsis;
   max-width: 140px;
 }
-
 .quick-launch-pin {
   display: inline-flex;
   align-items: center;
@@ -114,7 +104,6 @@
   opacity: 0.45;
   cursor: pointer;
 }
-
 .quick-launch-pin:hover {
   opacity: 1;
   background: rgba(255, 255, 255, 0.08);
@@ -123,7 +112,6 @@
   opacity: 1;
   color: #ff8a4c;
 }
-
 body.compact-mode .quick-launch-hotbar {
   padding: 5px 8px;
   bottom: 8px;

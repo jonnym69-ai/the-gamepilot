@@ -6,7 +6,6 @@
   margin: 24px auto;
   color: var(--text);
 }
-
 .home-daily-heading-row,
 .home-daily-section-heading {
   display: flex;
@@ -15,25 +14,21 @@
   flex-wrap: wrap;
   gap: 16px;
 }
-
 .home-daily-header h1 {
   margin: 0;
   font-size: clamp(1.4rem, 2.5vw, 2rem);
   line-height: 1.2;
 }
-
 .home-daily-header p,
 .home-daily-overview p {
   color: var(--home-muted);
   line-height: 1.6;
 }
-
 .home-daily-eyebrow {
   margin: 0 0 8px;
   font-size: 0.75rem;
   letter-spacing: 0.04em;
 }
-
 .home-daily-actions,
 .home-view-navigation,
 .home-view-links {
@@ -42,7 +37,6 @@
   align-items: center;
   gap: 10px;
 }
-
 .home-page .home-daily-header .home-rescan {
   display: inline-flex;
   align-items: center;
@@ -57,27 +51,22 @@
   cursor: pointer;
   font-size: 0.85rem;
 }
-
 .home-page .home-daily-header .home-rescan:hover {
   background: var(--home-hover-bg);
   box-shadow: none;
 }
-
 .home-daily-page .home-persona-section .daily-doodle {
   width: 100%;
 }
-
 .home-daily-header button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
-
 .home-view-navigation {
   margin-top: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--home-line);
 }
-
 .home-view-navigation a,
 .home-view-links a {
   padding: 10px 16px;
@@ -86,20 +75,17 @@
   text-decoration: none;
   font-size: 0.9rem;
 }
-
 .home-view-navigation a[aria-current='page'] {
   background: var(--home-dot-ring);
   color: var(--text);
   box-shadow: inset 0 -2px var(--home-accent);
   font-weight: 700;
 }
-
 .home-view-navigation a:hover,
 .home-view-links a:hover {
   background: var(--home-hover-bg);
   color: var(--text);
 }
-
 .home-daily-overview {
   display: grid;
   grid-template-columns: var(--home-today-columns);
@@ -107,20 +93,16 @@
   gap: var(--home-section-gap, 24px);
   align-items: start;
 }
-
 .home-daily-doodle {
   grid-area: doodle;
 }
-
 .home-daily-doodle .daily-doodle,
 .home-daily-doodle .logo-static {
   width: 100%;
 }
-
 .home-daily-overview > * {
   min-width: 0;
 }
-
 .home-daily-play,
 .home-daily-story,
 .home-daily-empty {
@@ -129,28 +111,22 @@
   border-radius: 18px;
   background: var(--card-bg);
 }
-
 .home-daily-play {
   grid-area: play;
 }
-
 .home-daily-spotlight {
   grid-area: spotlight;
 }
-
 .home-daily-story {
   grid-area: story;
 }
-
 .home-daily-empty {
   grid-column: 1 / -1;
 }
-
 .home-daily-overview h2 {
   margin: 0;
   font-size: 1.15rem;
 }
-
 .home-daily-play .play-next-card {
   margin: 20px 0;
   padding: 0;
@@ -161,23 +137,19 @@
   box-shadow: none;
   flex-wrap: wrap;
 }
-
 .home-daily-play .play-next-art {
   width: var(--home-today-art-width, 120px);
   height: calc(var(--home-today-art-width, 120px) * 1.5);
 }
-
 .home-daily-play .play-next-actions {
   flex-direction: row;
   flex-wrap: wrap;
   width: 100%;
 }
-
 .home-daily-play .play-next-reason {
   display: block;
   overflow: visible;
 }
-
 .home-daily-section-heading a,
 .home-daily-text-link {
   display: inline-flex;
@@ -187,29 +159,110 @@
   font-size: 0.8rem;
   text-underline-offset: 4px;
 }
-
 .home-story-era,
 .home-story-session {
   padding: 16px 0;
   border-bottom: 1px solid var(--home-line);
   margin-bottom: 14px;
 }
-
 .home-story-era h3,
 .home-story-session p {
   margin: 4px 0;
 }
-
 .home-story-era h3 {
   font-size: 1.1rem;
 }
-
 .home-story-era > span,
 .home-story-session > span {
   color: var(--home-muted);
   font-size: 0.78rem;
 }
-
+.home-new-games {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--home-line);
+}
+.home-new-games-label {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.home-new-games-row {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+.home-new-games-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 76px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.home-new-games-art {
+  position: relative;
+  width: 76px;
+  height: 106px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--home-line);
+  transition: border-color 0.15s ease;
+}
+.home-new-games-tile:hover .home-new-games-art,
+.home-new-games-tile:focus-visible .home-new-games-art {
+  border-color: var(--home-accent);
+}
+.home-new-games-art img,
+.home-new-games-art > span:first-child {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-new-games-placeholder {
+  font-size: 1.2rem;
+}
+.home-new-games-play {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--button-primary-text, #1a1207);
+  background: var(--button-primary-bg, linear-gradient(135deg, #ffb347, #ff8c1a));
+}
+.home-new-games-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+}
+.home-new-games-added {
+  color: var(--home-muted);
+  font-size: 0.66rem;
+}
 .home-active-sessions > div {
   display: flex;
   flex-wrap: wrap;
@@ -219,32 +272,15 @@
   padding-top: 14px;
   font-size: 0.85rem;
 }
-
 .home-daily-header :focus-visible,
 .home-daily-overview :focus-visible,
 .home-view-links :focus-visible {
   outline: 2px solid var(--home-accent);
   outline-offset: 4px;
 }
-
 .home-daily-page .home-layout-content {
   max-width: var(--home-today-width, 1240px);
 }
-
-.home-page.home-daily-page .home-engagement-widgets {
-  display: grid !important;
-  gap: var(--home-card-gap);
-}
-
-.home-daily-page.home-layout-dashboard_split .home-daily-story {
-  border-left: 3px solid var(--home-accent);
-}
-
-.home-daily-page.home-layout-arcade_cabinet .home-daily-play,
-.home-daily-page.home-layout-arcade_cabinet .home-daily-story {
-  border-color: var(--home-accent);
-}
-
 @media (max-width: 900px) {
   .home-daily-overview {
     grid-template-columns: minmax(0, 1fr);
@@ -264,17 +300,14 @@
     width: calc(100% - 24px);
     margin-top: 16px;
   }
-
   .home-daily-play,
   .home-daily-story,
   .home-daily-empty {
     padding: min(18px, var(--home-today-padding, 24px));
   }
-
   .home-view-navigation {
     gap: 4px;
   }
-
   .home-view-navigation a {
     padding: 10px;
   }

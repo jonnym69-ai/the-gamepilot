@@ -1,0 +1,21 @@
+{
+  "version": "{VERSION}",
+  "description": "A local-first PC gaming library manager and launcher.",
+  "homepage": "https://github.com/jonnym69-ai/the-gamepilot",
+  "license": "MIT",
+  "url": "https://github.com/jonnym69-ai/the-gamepilot/releases/download/v{VERSION}/GamePilot-Setup.exe",
+  "hash": "{SHA256}",
+  "pre_install": "if (Test-Path \"$dir\\`$PLUGINSDIR\") { Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force }",
+  "shortcuts": [
+    [
+      "GamePilot.exe",
+      "GamePilot"
+    ]
+  ],
+  "checkver": {
+    "github": "https://github.com/jonnym69-ai/the-gamepilot"
+  },
+  "autoupdate": {
+    "url": "https://github.com/jonnym69-ai/the-gamepilot/releases/download/v$version/GamePilot-Setup.exe"
+  }
+}

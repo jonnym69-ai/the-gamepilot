@@ -310,5 +310,37 @@ describe('RecentActivityAggregator', () => {
       const result = buildRecentActivityBreakdown(7);
       expect(result.perGameBreakdown[0].name).toBe('Unknown');
     });
+
+    test('carries Steam appid and coverUrl into perGameBreakdown for share artwork', () => {
+      PlaytimeAutoLogger.getSessionHistory.mockReturnValue([
+        makeSession({
+          sessionId: 's1',
+          gameName: 'Hades',
+          gameId: 1145360,
+          platform: 'steam',
+          coverUrl: 'https://example.com/hades.jpg',
+          playtimeMinutes: 60,
+          timestamp: daysAgo(1),
+        }),
+      ]);
+      const result = buildRecentActivityBreakdown(7);
+      expect(result.perGameBreakdown[0].appid).toBe(1145360);
+      expect(result.perGameBreakdown[0].coverUrl).toBe('https://example.com/hades.jpg');
+    });
+
+    test('ignores numeric ids from non-Steam platforms so they cannot resolve wrong artwork', () => {
+      PlaytimeAutoLogger.getSessionHistory.mockReturnValue([
+        makeSession({
+          sessionId: 's1',
+          gameName: 'GOG Game',
+          gameId: '1234567890',
+          platform: 'gog',
+          playtimeMinutes: 60,
+          timestamp: daysAgo(1),
+        }),
+      ]);
+      const result = buildRecentActivityBreakdown(7);
+      expect(result.perGameBreakdown[0].appid).toBeNull();
+    });
   });
 });

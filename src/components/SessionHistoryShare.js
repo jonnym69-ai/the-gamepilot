@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LocalShareService } from '../services/LocalShareService';
 import { formatDuration } from '../services/RecentActivityAggregator';
+import { resolveGameArtworkBundle } from '../services/GameArtworkService';
 
 const COLORS = ['#ff854f', '#63ddd2', '#ffe08a', '#8994ae'];
 
-export function drawSessionHistoryCard(canvas, breakdown, name = '') {
+export function drawSessionHistoryCard(canvas, breakdown, name = '', images = {}) {
   canvas.width = 1200;
   canvas.height = 900;
   const ctx = canvas.getContext('2d');
@@ -59,9 +60,25 @@ export function drawSessionHistoryCard(canvas, breakdown, name = '') {
   });
   top.forEach((game, index) => {
     const y = 620 + index * 48;
+    const cover = images[game.name];
     ctx.fillStyle = COLORS[index];
     ctx.fillRect(60, y - 17, 14, 14);
-    text(game.name, 88, y, 23, '#e9edf5', 690);
+    let nameX = 88;
+    if (cover && ctx.drawImage) {
+      // 2:3 portrait thumb beside the colour key, matching the library tiles.
+      ctx.save();
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(96, y - 38, 30, 44, 5);
+      } else {
+        ctx.rect(96, y - 38, 30, 44);
+      }
+      ctx.clip();
+      ctx.drawImage(cover, 96, y - 38, 30, 44);
+      ctx.restore();
+      nameX = 140;
+    }
+    text(game.name, nameX, y, 23, '#e9edf5', 690 - (nameX - 88));
     const percent =
       stats.totalPlaytimeMinutes > 0 ? Math.round((game.totalMinutes / stats.totalPlaytimeMinutes) * 100) : 0;
     text(`${formatDuration(game.totalMinutes)} · ${percent}%`, 850, y, 23, '#e9edf5', 290);
@@ -71,6 +88,22 @@ export function drawSessionHistoryCard(canvas, breakdown, name = '') {
   text('Recorded sessions only · Generated locally with GamePilot', 60, 866, 18, '#adb8cc');
 }
 
+const loadFirstAvailable = (sources) =>
+  new Promise((resolve) => {
+    const tryNext = (index) => {
+      if (index >= sources.length) {
+        resolve(null);
+        return;
+      }
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.onload = () => resolve(image);
+      image.onerror = () => tryNext(index + 1);
+      image.src = sources[index];
+    };
+    tryNext(0);
+  });
+
 export default function SessionHistoryShare({ breakdown, onClose }) {
   const dialogRef = useRef(null);
   const canvasRef = useRef(null);
@@ -78,21 +111,57 @@ export default function SessionHistoryShare({ breakdown, onClose }) {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState('');
+  const [covers, setCovers] = useState({});
+
+  // Artwork candidates for the top games, in preference order: Steam portrait,
+  // its landscape fallback, the recorded session cover, then the generated
+  // name-tile placeholder so every game still gets an image.
+  const coverSources = useMemo(() => {
+    const sources = {};
+    (breakdown.perGameBreakdown || []).slice(0, 3).forEach((game) => {
+      const bundle = resolveGameArtworkBundle(
+        { name: game.name, appid: game.appid || null, platform: 'steam' },
+        { surface: 'portrait', fallbackSurface: 'library_card' }
+      );
+      sources[game.name] = [bundle.artwork, bundle.fallbackSrc, game.coverUrl, bundle.placeholder].filter(
+        (value, index, list) => value && list.indexOf(value) === index
+      );
+    });
+    return sources;
+  }, [breakdown]);
 
   useEffect(() => {
     dialogRef.current.showModal();
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    const entries = Object.entries(coverSources).filter(([, sources]) => sources.length > 0);
+    if (entries.length === 0) {
+      setCovers({});
+      return undefined;
+    }
+    Promise.all(entries.map(([key, sources]) => loadFirstAvailable(sources).then((image) => [key, image]))).then(
+      (loaded) => {
+        if (cancelled) return;
+        setCovers(Object.fromEntries(loaded.filter(([, image]) => image)));
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [coverSources]);
+
+  useEffect(() => {
     try {
-      drawSessionHistoryCard(canvasRef.current, breakdown, name);
+      drawSessionHistoryCard(canvasRef.current, breakdown, name, covers);
       setReady(true);
       setMessage('');
     } catch {
       setReady(false);
       setMessage('Could not generate the preview. Close and try again.');
     }
-  }, [breakdown, name]);
+  }, [breakdown, name, covers]);
 
   const exportImage = async (copy) => {
     setBusy(true);

@@ -14,8 +14,8 @@ import { useCallback } from 'react';
 import { normalizeLibraryData } from '../services/LibraryDataService';
 import { GameCurationService } from '../services/GameCurationService';
 import { GameRatingService } from '../services/GameRatingService';
-import { AchievementTracker } from '../AchievementSystem';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
+import ManualGamesService from '../services/ManualGamesService';
 
 const FAVORITES_STORAGE_KEY = 'favorites';
 
@@ -49,7 +49,6 @@ export default function useLibraryCuration({ library, setLibrary, saveLibrary, t
 
       setLibrary(updatedLibrary);
       saveLibrary(updatedLibrary);
-      AchievementTracker.checkAndUnlockAchievements();
 
       if (typeof userRating === 'number' && userRating > 0) {
         const targetGame = (library || []).find((g) => g?.name === gameName);
@@ -93,6 +92,13 @@ export default function useLibraryCuration({ library, setLibrary, saveLibrary, t
       }
 
       const removalSet = new Set(normalizedIds);
+      // Manually added games have a backing record in the manual store —
+      // delete it too, or the next merge would resurrect the entry.
+      (library || []).forEach((game) => {
+        if (game?.source === 'manual' && removalSet.has(String(game?.appid || game?.name))) {
+          ManualGamesService.remove(game.manualId || game.name);
+        }
+      });
       const updatedLibrary = normalizeLibraryData(
         (library || []).filter((game) => !removalSet.has(String(game?.appid || game?.name)))
       );
@@ -131,30 +137,12 @@ export default function useLibraryCuration({ library, setLibrary, saveLibrary, t
 
   const handleUpdateCompletion = useCallback(
     (gameName, status, note) => {
-      const completedStatuses = new Set(['beaten', 'completed', '100%']);
-      const isCompletionStatus = completedStatuses.has(
-        String(status || '')
-          .trim()
-          .toLowerCase()
-      );
       GameCurationService.setGameCompletion(gameName, status, note);
       setLibrary((prev) => {
-        const priorGame = prev.find((g) => g.name === gameName);
-        const wasCompleted = completedStatuses.has(
-          String(priorGame?.completionStatus || '')
-            .trim()
-            .toLowerCase()
-        );
-        const hadPlaytime = Number(priorGame?.time_played || 0) > 0;
         const updatedLibrary = normalizeLibraryData(
           prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
         );
         saveLibrary(updatedLibrary);
-        AchievementTracker.checkAndUnlockAchievements();
-        if (isCompletionStatus && hadPlaytime && !wasCompleted) {
-          AchievementTracker.trackBacklogMilestone('finish_started');
-          AchievementTracker.checkAndUnlockAchievements();
-        }
         return updatedLibrary;
       });
     },
@@ -218,6 +206,24 @@ export default function useLibraryCuration({ library, setLibrary, saveLibrary, t
     [saveLibrary, setLibrary]
   );
 
+  const handleSetMetadataOverride = useCallback(
+    (gameName, patch) => {
+      if (patch == null || (typeof patch === 'object' && Object.keys(patch).length === 0)) {
+        GameCurationService.clearMetadataOverride(gameName);
+      } else {
+        GameCurationService.setMetadataOverride(gameName, patch);
+      }
+      setLibrary((prev) => {
+        const updatedLibrary = normalizeLibraryData(
+          prev.map((g) => (g.name === gameName ? GameCurationService.enrichGame(g) : g))
+        );
+        saveLibrary(updatedLibrary);
+        return updatedLibrary;
+      });
+    },
+    [saveLibrary, setLibrary]
+  );
+
   const handleTogglePlayedElsewhere = useCallback(
     (gameName) => {
       const next = GameCurationService.togglePlayedElsewhere(gameName);
@@ -249,5 +255,6 @@ export default function useLibraryCuration({ library, setLibrary, saveLibrary, t
     handleUpdateMood,
     handleAddSessionNote,
     handleTogglePlayedElsewhere,
+    handleSetMetadataOverride,
   };
 }

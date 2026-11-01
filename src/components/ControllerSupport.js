@@ -120,17 +120,9 @@ const findCloseTarget = () =>
 function ControllerSupport({ children, onControllerInput }) {
   const lastInputRef = useRef({});
 
-  const isControllerModeEnabled = useCallback(() => {
-    return typeof document !== 'undefined' && document.body.classList.contains('big-screen-mode');
-  }, []);
-
   const emitControllerInput = useCallback(
     (...args) => {
       const [action, payload] = args;
-
-      if (!isControllerModeEnabled() && action !== 'connected' && action !== 'disconnected') {
-        return false;
-      }
 
       if (typeof onControllerInput === 'function') {
         onControllerInput(...args);
@@ -146,7 +138,7 @@ function ControllerSupport({ children, onControllerInput }) {
 
       return window.dispatchEvent(controllerEvent);
     },
-    [isControllerModeEnabled, onControllerInput]
+    [onControllerInput]
   );
 
   const emitDebouncedInput = useCallback(
@@ -163,27 +155,21 @@ function ControllerSupport({ children, onControllerInput }) {
     [emitControllerInput]
   );
 
-  const handleControllerNavigation = useCallback(
-    (direction) => {
-      if (!isControllerModeEnabled()) return false;
-      const focusableElements = getFocusableElements();
-      const target = findDirectionalTarget(document.activeElement, direction, focusableElements);
-      return focusElement(target);
-    },
-    [isControllerModeEnabled]
-  );
+  const handleControllerNavigation = useCallback((direction) => {
+    const focusableElements = getFocusableElements();
+    const target = findDirectionalTarget(document.activeElement, direction, focusableElements);
+    return focusElement(target);
+  }, []);
 
   const handleControllerActivation = useCallback(() => {
-    if (!isControllerModeEnabled()) return false;
     const activeElement = document.activeElement;
     if (!activeElement || activeElement === document.body) {
       return focusElement(getFocusableElements()[0]);
     }
     return activateElement(activeElement);
-  }, [isControllerModeEnabled]);
+  }, []);
 
   const handleControllerCancel = useCallback(() => {
-    if (!isControllerModeEnabled()) return false;
     const closeTarget = findCloseTarget();
     if (closeTarget) {
       closeTarget.click();
@@ -195,7 +181,7 @@ function ControllerSupport({ children, onControllerInput }) {
       return true;
     }
     return false;
-  }, [isControllerModeEnabled]);
+  }, []);
 
   const handleGamepadInput = useCallback(
     (gamepad) => {
@@ -231,7 +217,6 @@ function ControllerSupport({ children, onControllerInput }) {
     window.addEventListener('gamepaddisconnected', handleDisconnected);
 
     const interval = setInterval(() => {
-      if (!isControllerModeEnabled()) return;
       if (typeof navigator === 'undefined' || !navigator.getGamepads) return;
       const gamepads = navigator.getGamepads();
       if (!gamepads) return;
@@ -244,14 +229,14 @@ function ControllerSupport({ children, onControllerInput }) {
         // Only process the first active gamepad to avoid duplicate inputs
         handleGamepadInput(active[0]);
       }
-    }, 250); // Poll only while controller mode is enabled
+    }, 250);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('gamepadconnected', handleConnected);
       window.removeEventListener('gamepaddisconnected', handleDisconnected);
     };
-  }, [emitControllerInput, handleGamepadInput, isControllerModeEnabled]);
+  }, [emitControllerInput, handleGamepadInput]);
 
   useEffect(() => {
     const handleControllerInput = (e) => {

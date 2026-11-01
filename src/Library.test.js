@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock(
@@ -38,25 +38,8 @@ jest.mock('./services/HardwareDetector', () => ({
   },
 }));
 
-jest.mock('./services/FreeGameRadar', () => ({
-  FreeGameRadar: {
-    getFreeGames: jest.fn(() => new Promise(() => {})),
-  },
-}));
-
-jest.mock('./services/ProgressionUnlockService', () => ({
-  ProgressionUnlockService: {
-    getLibraryPresentationPreference: jest.fn(() => 'classic_shelf'),
-    getRewardPresentationCustomization: jest.fn(() => ({ selectedLibraryVariant: 'classic_shelf' })),
-    getLibraryPresentationVariants: jest.fn(() => [
-      { id: 'classic_shelf', name: 'Classic Shelf', preview: 'linear-gradient(135deg, #ff6b35, #ff8c42)' },
-    ]),
-  },
-}));
-
 const Library = require('./Library').default;
 const { HardwareDetector } = require('./services/HardwareDetector');
-const { FreeGameRadar } = require('./services/FreeGameRadar');
 
 // Mock child components
 jest.mock(
@@ -96,14 +79,6 @@ jest.mock('./components/LazyImage', () => ({ src, alt, style }) => (
 ));
 
 jest.mock('./components/HLTBChip', () => () => null);
-
-// Mock AchievementTracker
-jest.mock('./AchievementSystem', () => ({
-  AchievementTracker: {
-    trackFeatureUsage: jest.fn(),
-    trackPlatformUsage: jest.fn(),
-  },
-}));
 
 // Mock localStorage
 const localStorageMock = {
@@ -158,24 +133,15 @@ describe('Library Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue('[]'); // Empty favorites
+    // StorageService resolves the real jsdom localStorage — clear it so
+    // saved views written by one test don't leak into the next render.
+    window.localStorage.clear();
     HardwareDetector.getSystemInfo.mockImplementation(() => new Promise(() => {}));
-    FreeGameRadar.getFreeGames.mockImplementation(() => new Promise(() => {}));
   });
 
   const renderLibrary = async (overrides = {}) => {
     return render(<Library {...defaultProps} {...overrides} />);
   };
-
-  test('refreshes equipped presentation without remounting the Library', async () => {
-    const { ProgressionUnlockService } = require('./services/ProgressionUnlockService');
-    await renderLibrary();
-    ProgressionUnlockService.getRewardPresentationCustomization.mockReturnValueOnce({
-      selectedLibraryVariant: 'classic_shelf',
-      selectedCardStyle: 'neon',
-    });
-    act(() => window.dispatchEvent(new CustomEvent('gamepilot:reward-presentation-updated')));
-    expect(screen.getByTestId('library-page')).toHaveClass('library-card-style-neon');
-  });
 
   test('renders library with games', async () => {
     await renderLibrary();
@@ -227,5 +193,63 @@ describe('Library Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '🔄 Scan' }));
     expect(onScanLibrary).toHaveBeenCalledTimes(1);
+  });
+
+  test('sorts A–Z by sortName override when present', async () => {
+    const library = [
+      { name: 'Zebra Game', genres: ['Action'], platform: 'Steam', sortName: 'Aardvark Game' },
+      { name: 'Mango Game', genres: ['Action'], platform: 'Steam' },
+    ];
+    await renderLibrary({ library });
+
+    const zebra = screen.getByText('Zebra Game');
+    const mango = screen.getByText('Mango Game');
+    // sortName "Aardvark Game" pulls Zebra ahead of Mango alphabetically.
+    expect(zebra.compareDocumentPosition(mango) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test('groups games by platform with section headers', async () => {
+    const mixedLibrary = [
+      { appid: '1', name: 'Witcher 3', platform: 'Steam', genres: ['RPG'], time_played: 10 },
+      { appid: '2', name: 'Stardew Valley', platform: 'GOG', genres: ['Sim'], time_played: 20 },
+      { appid: '3', name: 'Fortnite', platform: 'Epic', genres: ['Action'], time_played: 30 },
+    ];
+    await renderLibrary({ library: mixedLibrary });
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Group by' }), { target: { value: 'platform' } });
+
+    expect(screen.getByRole('heading', { name: 'Epic' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'GOG' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Steam' })).toBeInTheDocument();
+  });
+
+  test('saved views capture sort state and recall it on apply', async () => {
+    const setSortBy = jest.fn();
+    await renderLibrary({ setSortBy });
+
+    // Change sort, then save it as a named view
+    fireEvent.change(screen.getByDisplayValue('Name'), { target: { value: 'most-played' } });
+    fireEvent.click(screen.getByRole('button', { name: '+ Save view' }));
+    fireEvent.change(screen.getByLabelText('Saved view name'), { target: { value: 'Heavy hitters' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    // Move the sort elsewhere, then recall the view
+    fireEvent.change(screen.getByDisplayValue('Most Played'), { target: { value: 'name' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Heavy hitters' }));
+
+    expect(setSortBy).toHaveBeenLastCalledWith('most-played');
+  });
+
+  test('delete button removes a saved view chip', async () => {
+    await renderLibrary();
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Save view' }));
+    fireEvent.change(screen.getByLabelText('Saved view name'), { target: { value: 'Backlog' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByRole('button', { name: 'Backlog' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete view Backlog' }));
+    expect(screen.queryByRole('button', { name: 'Backlog' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete view Backlog' })).not.toBeInTheDocument();
   });
 });

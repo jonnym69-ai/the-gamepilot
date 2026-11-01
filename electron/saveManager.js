@@ -1,7 +1,6 @@
 const { app, shell, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { execFile: childExecFile } = require('child_process');
 
 const MAX_DISK_WALK_DEPTH = 16;
 const MAX_DISK_WALK_FILES = 250_000;

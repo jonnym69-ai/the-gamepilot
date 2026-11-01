@@ -17,13 +17,20 @@ const readCache = () => {
   }
 };
 
+const normalizeLastPlayed = (value) => {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return 0;
+  const milliseconds = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+  return Number.isNaN(new Date(milliseconds).getTime()) ? 0 : milliseconds;
+};
+
 const normalizeGame = (game) => ({
   appid: Number(game?.appid) || 0,
   name: String(game?.name || 'Unknown game'),
   platform: 'Steam',
   installed: false,
   playtimeForever: Number(game?.playtimeForever) || 0,
-  lastPlayed: Number(game?.lastPlayed) || 0,
+  lastPlayed: normalizeLastPlayed(game?.lastPlayed),
   icon: typeof game?.icon === 'string' && game.icon.startsWith('https://') ? game.icon : null,
 });
 

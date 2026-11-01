@@ -6,7 +6,7 @@ import './LibrariansNotes.css';
 const labelControllerValue = (value) => {
   if (!value) return null;
   if (value === 'yes') return 'Full support';
-  if (value === 'limited') return 'Partial / hackable';
+  if (value === 'limited') return 'Partial / workaround';
   if (value === 'no') return 'Not supported';
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
@@ -30,20 +30,21 @@ const LibrariansNotes = ({ game }) => {
 
   useEffect(() => {
     setEntry(PCGamingWikiService.getCached(game));
-    if (!game || !PCGamingWikiService.isEnabled()) return undefined;
+    if (!game || !enabled) return undefined;
     let cancelled = false;
     setLoading(true);
     PCGamingWikiService.lookup(game)
       .then((result) => {
         if (!cancelled) setEntry(result);
       })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [game]);
+  }, [game, enabled]);
 
   const openExternal = (url) => {
     if (!url) return;

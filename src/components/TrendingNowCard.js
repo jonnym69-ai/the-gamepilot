@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Flame } from 'lucide-react';
 import { isNonGameTitle } from '../services/gameClassification';
 import { getCanonicalGameKey } from '../services/LibraryDataService';
@@ -61,6 +62,9 @@ export default function TrendingNowCard({ library = [], onLaunchGame }) {
         <Flame size={15} aria-hidden="true" />
         <span className="trending-now-title">Trending in your library</span>
         <span className="trending-now-sub">On Steam's live most-played chart</span>
+        <Link className="trending-now-all" to="/trending">
+          Full chart →
+        </Link>
       </div>
       <div className="trending-now-row">
         {rows.map(({ game, rank, concurrent }) => {

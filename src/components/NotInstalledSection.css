@@ -5,27 +5,23 @@
   border-radius: 14px;
   background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
 }
-
 .not-installed-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
-
 .not-installed-heading {
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--text-primary, #fff);
 }
-
 .not-installed-heading h2 {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
 }
-
 .not-installed-count {
   padding: 1px 8px;
   border-radius: 999px;
@@ -34,7 +30,6 @@
   font-size: 0.75rem;
   font-weight: 700;
 }
-
 .not-installed-refresh {
   display: inline-flex;
   align-items: center;
@@ -47,23 +42,19 @@
   font-size: 0.78rem;
   cursor: pointer;
 }
-
 .not-installed-refresh:hover:not(:disabled) {
   border-color: var(--accent, #ff9a4d);
   color: var(--text-primary, #fff);
 }
-
 .not-installed-refresh:disabled {
   opacity: 0.6;
   cursor: default;
 }
-
 .not-installed-sub {
   margin: 6px 0 14px;
   font-size: 0.8rem;
   color: var(--text-secondary, rgba(255, 255, 255, 0.6));
 }
-
 .not-installed-error {
   display: flex;
   align-items: center;
@@ -74,7 +65,6 @@
   color: var(--text-secondary, rgba(255, 255, 255, 0.75));
   font-size: 0.82rem;
 }
-
 .not-installed-error button {
   padding: 3px 10px;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
@@ -84,7 +74,6 @@
   font-size: 0.78rem;
   cursor: pointer;
 }
-
 .not-installed-list {
   list-style: none;
   margin: 0;
@@ -93,19 +82,21 @@
   flex-direction: column;
   gap: 2px;
 }
-
 .not-installed-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 10px;
   border-radius: 10px;
+  cursor: pointer;
 }
-
 .not-installed-row:hover {
   background: rgba(255, 255, 255, 0.04);
 }
-
+.not-installed-row:focus-visible {
+  outline: 2px solid var(--accent, #8ab4f8);
+  outline-offset: -2px;
+}
 .not-installed-icon {
   width: 32px;
   height: 32px;
@@ -117,26 +108,22 @@
   justify-content: center;
   background: rgba(255, 255, 255, 0.06);
 }
-
 .not-installed-icon img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .not-installed-icon-fallback {
   font-size: 0.8rem;
   font-weight: 800;
   color: var(--text-secondary, rgba(255, 255, 255, 0.5));
 }
-
 .not-installed-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
 }
-
 .not-installed-name {
   font-size: 0.9rem;
   font-weight: 600;
@@ -145,12 +132,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .not-installed-meta {
   font-size: 0.75rem;
   color: var(--text-secondary, rgba(255, 255, 255, 0.55));
 }
-
 .not-installed-install {
   padding: 5px 16px;
   border: none;
@@ -162,22 +147,13 @@
   cursor: pointer;
   flex-shrink: 0;
 }
-
 .not-installed-install:hover:not(:disabled) {
   filter: brightness(1.1);
 }
-
 .not-installed-install:disabled {
   opacity: 0.6;
   cursor: default;
 }
-
-.not-installed-via {
-  font-size: 0.72rem;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.45));
-  flex-shrink: 0;
-}
-
 .not-installed-more {
   margin-top: 10px;
   padding: 6px 16px;
@@ -189,7 +165,6 @@
   cursor: pointer;
   width: 100%;
 }
-
 .not-installed-more:hover {
   color: var(--text-primary, #fff);
   border-color: var(--accent, #ff9a4d);

@@ -1,0 +1,10 @@
+PackageIdentifier: Moz.GamePilot
+PackageVersion: 1.9.1
+PackageLocale: en-US
+Publisher: Moz
+PackageName: GamePilot
+License: MIT
+ShortDescription: A local-first PC gaming library manager and launcher.
+PackageUrl: https://github.com/jonnym69-ai/the-gamepilot
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

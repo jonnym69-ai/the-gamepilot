@@ -1,7 +1,6 @@
 .smart-collections-shelf {
   margin-bottom: 16px;
 }
-
 .smart-collections-header {
   display: flex;
   align-items: center;
@@ -9,14 +8,12 @@
   margin-bottom: 14px;
   padding: 0 4px;
 }
-
 .smart-collections-header h3 {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-primary, #f1f5f9);
 }
-
 .smart-collections-badge {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -26,14 +23,12 @@
   background: var(--accent-muted, rgba(61, 217, 255, 0.12));
   color: var(--accent, #3dd9ff);
 }
-
 .smart-collections-header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-left: auto;
 }
-
 .smart-collections-create-btn {
   background: rgba(255, 107, 53, 0.12);
   border: 1px solid rgba(255, 107, 53, 0.25);
@@ -45,12 +40,10 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .smart-collections-create-btn:hover {
   background: rgba(255, 107, 53, 0.2);
   border-color: var(--accent-color, #ff6b35);
 }
-
 .smart-collections-empty {
   background: var(--card, #1a1a2e);
   border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.12));
@@ -59,17 +52,14 @@
   text-align: center;
   color: var(--text-muted, #8892a0);
 }
-
 .smart-collections-empty p {
   margin: 0 0 14px;
 }
-
 .smart-collections-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-
 .smart-collection-card {
   background: var(--surface-elevated, rgba(255, 255, 255, 0.04));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
@@ -79,12 +69,10 @@
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
-
 .smart-collection-card:hover {
   border-color: var(--collection-accent, rgba(255, 255, 255, 0.12));
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-
 .smart-collection-header {
   display: flex;
   align-items: flex-start;
@@ -92,14 +80,12 @@
   gap: 12px;
   margin-bottom: 12px;
 }
-
 .smart-collection-meta {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   min-width: 0;
 }
-
 .smart-collection-icon {
   display: flex;
   align-items: center;
@@ -109,14 +95,12 @@
   border-radius: 10px;
   flex-shrink: 0;
 }
-
 .smart-collection-titles {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-
 .smart-collection-title {
   margin: 0;
   font-size: 0.95rem;
@@ -126,7 +110,6 @@
   align-items: center;
   gap: 8px;
 }
-
 .smart-collection-user-badge {
   font-size: 0.65rem;
   font-weight: 700;
@@ -138,7 +121,6 @@
   color: var(--accent-color, #ff6b35);
   border: 1px solid rgba(255, 107, 53, 0.25);
 }
-
 .smart-collection-preset-badge {
   font-size: 0.65rem;
   font-weight: 700;
@@ -150,20 +132,17 @@
   color: #3dd9ff;
   border: 1px solid rgba(61, 217, 255, 0.2);
 }
-
 .smart-collection-subtitle {
   margin: 0;
   font-size: 0.8rem;
   color: var(--text-secondary, #94a3b8);
 }
-
 .smart-collection-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
-
 .smart-collection-expand {
   font-size: 0.75rem;
   font-weight: 500;
@@ -177,12 +156,10 @@
     background 0.15s,
     color 0.15s;
 }
-
 .smart-collection-expand:hover {
   background: var(--accent-muted, rgba(61, 217, 255, 0.15));
   color: var(--accent, #3dd9ff);
 }
-
 .smart-collection-dismiss {
   display: flex;
   align-items: center;
@@ -198,18 +175,15 @@
     background 0.15s,
     color 0.15s;
 }
-
 .smart-collection-dismiss:hover {
   background: rgba(251, 146, 60, 0.15);
   color: #fb923c;
 }
-
 .smart-collection-games {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-
 .smart-game-chip {
   display: flex;
   align-items: center;
@@ -228,13 +202,11 @@
     box-shadow 0.15s;
   max-width: 220px;
 }
-
 .smart-game-chip:hover {
   transform: translateY(-1px);
   border-color: var(--collection-accent, rgba(255, 255, 255, 0.12));
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-
 .smart-game-thumb {
   width: 28px;
   height: 28px;
@@ -243,13 +215,11 @@
   flex-shrink: 0;
   background: var(--surface-elevated, rgba(255, 255, 255, 0.06));
 }
-
 .smart-game-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .smart-game-placeholder {
   width: 100%;
   height: 100%;
@@ -260,43 +230,36 @@
   color: var(--text-tertiary, #64748b);
   background: var(--surface-elevated, rgba(255, 255, 255, 0.06));
 }
-
 .smart-game-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
 }
-
 .smart-game-arrow {
   color: var(--text-tertiary, #64748b);
   flex-shrink: 0;
 }
-
 .smart-collection-footer {
   margin: 10px 0 0;
   font-size: 0.8rem;
   color: var(--text-secondary, #94a3b8);
 }
-
 .smart-collection-insight {
   padding: 10px 12px;
   border-radius: 10px;
   background: var(--surface, rgba(255, 255, 255, 0.03));
 }
-
 .smart-collection-insight p {
   margin: 0 0 8px;
   font-size: 0.85rem;
   color: var(--text-secondary, #94a3b8);
 }
-
 .smart-collection-gaps {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-
 .smart-gap-pill {
   font-size: 0.75rem;
   font-weight: 500;

@@ -11,7 +11,6 @@
   padding: 24px;
   animation: um-fade 140ms ease-out;
 }
-
 @keyframes um-fade {
   from {
     opacity: 0;
@@ -38,7 +37,6 @@
   flex-direction: column;
   gap: 16px;
 }
-
 .uninstall-modal-close {
   position: absolute;
   top: 12px;
@@ -58,7 +56,6 @@
   outline: 2px solid var(--accent-primary, #ff6b35);
   outline-offset: 2px;
 }
-
 .uninstall-modal-header {
   display: flex;
   flex-direction: column;
@@ -81,7 +78,6 @@
   color: var(--text-secondary, #94a3b8);
   line-height: 1.5;
 }
-
 .uninstall-modal-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -117,7 +113,6 @@
   color: var(--text-primary, #e2e8f0);
   font-weight: 600;
 }
-
 .uninstall-modal-warn {
   display: flex;
   align-items: center;
@@ -129,7 +124,6 @@
   color: #fcd34d;
   font-size: 12.5px;
 }
-
 .uninstall-modal-plan {
   background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(148, 163, 184, 0.18);
@@ -185,7 +179,6 @@
   font-size: 12px;
   color: #f87171;
 }
-
 .uninstall-modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -208,7 +201,6 @@
   outline: 2px solid var(--accent-primary, #ff6b35);
   outline-offset: 2px;
 }
-
 .uninstall-modal-cancel {
   background: rgba(148, 163, 184, 0.16);
   color: var(--text-primary, #e2e8f0);
@@ -228,7 +220,6 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
-
 @media (max-width: 540px) {
   .uninstall-modal-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));

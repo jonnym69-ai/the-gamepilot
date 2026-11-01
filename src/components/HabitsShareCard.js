@@ -6,8 +6,16 @@ import './HabitsShareCard.css';
 
 export const HABITS_SHARE_CARD_SIZE_PX = 1080;
 
-export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel = 'All Time' }) {
+export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel = 'All Time', covers = {} }) {
   const h = insights || {};
+  const coverFor = (key) => {
+    const bundle = covers?.[key];
+    if (!bundle) return null;
+    const layers = [bundle.artwork, bundle.fallbackSrc, bundle.placeholder].filter(Boolean);
+    return layers.length > 0 ? { backgroundImage: layers.map((src) => `url("${src}")`).join(', ') } : null;
+  };
+  const longestSessionCover = coverFor('longestSession');
+  const mostReturnedCover = coverFor('mostReturnedTo');
 
   return (
     <div className="habits-share-card" style={{ width: HABITS_SHARE_CARD_SIZE_PX, height: HABITS_SHARE_CARD_SIZE_PX }}>
@@ -32,13 +40,24 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
 
         <div className="habits-share-card-grid">
           {h.longestSession && (
-            <div className="habits-share-card-stat featured">
-              <div className="habits-share-card-stat-label">
-                <Clock size={18} />
-                Longest Session
+            <div className={`habits-share-card-stat featured${longestSessionCover ? ' with-cover' : ''}`}>
+              {longestSessionCover && (
+                <div
+                  className="habits-share-card-cover"
+                  style={longestSessionCover}
+                  role="img"
+                  aria-label={`${h.longestSession.gameName} cover`}
+                  title={h.longestSession.gameName}
+                />
+              )}
+              <div className="habits-share-card-stat-copy">
+                <div className="habits-share-card-stat-label">
+                  <Clock size={18} />
+                  Longest Session
+                </div>
+                <strong>{h.longestSession.gameName}</strong>
+                <span>{formatPlaytime(h.longestSession.playtimeMinutes)}</span>
               </div>
-              <strong>{h.longestSession.gameName}</strong>
-              <span>{formatPlaytime(h.longestSession.playtimeMinutes)}</span>
             </div>
           )}
 
@@ -56,15 +75,26 @@ export function HabitsShareCard({ insights = {}, username = 'Pilot', periodLabel
           )}
 
           {h.mostReturnedTo && (
-            <div className="habits-share-card-stat">
-              <div className="habits-share-card-stat-label">
-                <RotateCcw size={18} />
-                Most Returned To
+            <div className={`habits-share-card-stat${mostReturnedCover ? ' with-cover' : ''}`}>
+              {mostReturnedCover && (
+                <div
+                  className="habits-share-card-cover"
+                  style={mostReturnedCover}
+                  role="img"
+                  aria-label={`${h.mostReturnedTo.name} cover`}
+                  title={h.mostReturnedTo.name}
+                />
+              )}
+              <div className="habits-share-card-stat-copy">
+                <div className="habits-share-card-stat-label">
+                  <RotateCcw size={18} />
+                  Most Returned To
+                </div>
+                <strong>{h.mostReturnedTo.name}</strong>
+                <span>
+                  {h.mostReturnedTo.sessions} sessions · {formatPlaytime(h.mostReturnedTo.totalPlaytime)}
+                </span>
               </div>
-              <strong>{h.mostReturnedTo.name}</strong>
-              <span>
-                {h.mostReturnedTo.sessions} sessions · {formatPlaytime(h.mostReturnedTo.totalPlaytime)}
-              </span>
             </div>
           )}
 

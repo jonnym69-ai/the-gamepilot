@@ -4,7 +4,6 @@ import { CuratedShelfCard, BuyShelfCard } from './HomeSectionPrimitives';
 
 export function LibraryTodaySection({
   homeShelfCards,
-  weeklyQuestSummary,
   weeklyPlayDays,
   weeklyPlaytimeHours,
   recentLibraryActivity,
@@ -96,7 +95,7 @@ export function LibraryTodaySection({
           one game worth rediscovering, and one favourite to keep close.
         </p>
         <p style={{ color: 'var(--text)', opacity: 0.65, marginBottom: '20px', fontSize: '0.92rem' }}>
-          {weeklyQuestSummary}
+          Playstyle picks and shelves tuned to how you actually play.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
           <div className="home-reward-pill">

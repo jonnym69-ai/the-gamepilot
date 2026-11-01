@@ -175,7 +175,7 @@ const normalizeNameForMatch = (name) =>
     .replace(/[^a-z0-9 ]/g, '')
     .trim();
 
-const findLibraryGame = (library, gameName) => {
+export const findLibraryGame = (library, gameName) => {
   if (!Array.isArray(library) || !gameName) return null;
   const needle = normalizeNameForMatch(gameName);
   if (!needle) return null;

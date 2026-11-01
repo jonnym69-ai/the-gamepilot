@@ -4,7 +4,6 @@
  */
 
 import StorageService from './StorageService';
-import { AchievementTracker } from '../AchievementSystem';
 
 const HABIT_STORAGE_KEY = 'gamepilot_habits_v1';
 const GOALS_STORAGE_KEY = 'gamepilot_habit_goals_v1';
@@ -555,32 +554,8 @@ export const HabitTrackerService = {
     if (newlyCompleted.length > 0) {
       saveGoalCompletions(completions);
       newlyCompleted.forEach((goal) => {
-        if (typeof AchievementTracker?.grantXP === 'function') {
-          AchievementTracker.grantXP('goal_completion', goal.xp, {
-            goalId: goal.id,
-            label: goal.label,
-            period: goal.period,
-            target: goal.target,
-            type: goal.type,
-          });
-        }
         dispatchGoalCompleted(goal, goal.xp);
       });
-
-      const stats = this.getGoalStats();
-      if (stats.totalCompleted >= 1) AchievementTracker.unlockAchievement('goal_first');
-      if (stats.totalCompleted >= 5) AchievementTracker.unlockAchievement('goal_5');
-      if (stats.totalCompleted >= 10) AchievementTracker.unlockAchievement('goal_10');
-      if (stats.totalCompleted >= 25) AchievementTracker.unlockAchievement('goal_25');
-      if (stats.totalCompleted >= 50) AchievementTracker.unlockAchievement('goal_50');
-      if (stats.monthlyCompleted >= 3) AchievementTracker.unlockAchievement('goal_monthly_3');
-      if (stats.weeklyCompleted >= 5) AchievementTracker.unlockAchievement('goal_weekly_5');
-
-      // Also feed into quest achievements for cross-system progression
-      if (stats.totalCompleted >= 1) AchievementTracker.unlockAchievement('quest_total_1');
-      if (stats.totalCompleted >= 10) AchievementTracker.unlockAchievement('quest_total_10');
-      if (stats.totalCompleted >= 25) AchievementTracker.unlockAchievement('quest_total_25');
-      if (stats.totalCompleted >= 50) AchievementTracker.unlockAchievement('quest_total_50');
     }
 
     return progress;

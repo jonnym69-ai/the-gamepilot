@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, Gamepad2, Sparkles } from 'lucide-react';
 import { formatPlaytime } from '../utils/formatPlaytime';
+import BoldText from './BoldText';
 import './GamingStoryCard.css';
 
 function GamingStoryCard({ story, onContinue }) {
@@ -54,12 +55,9 @@ function GamingStoryCard({ story, onContinue }) {
             </div>
           )}
 
-          <p
-            className="gaming-story-narrative"
-            dangerouslySetInnerHTML={{
-              __html: narrative.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
-            }}
-          />
+          <p className="gaming-story-narrative">
+            <BoldText>{narrative}</BoldText>
+          </p>
 
           <div className="gaming-story-note">
             <BookOpen size={14} />

@@ -1,16 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../components/Toast';
 import { RECOMMENDATION_OUTCOME, UserBehaviorProfile } from '../services/UserBehaviorProfile';
-import StorageService from '../services/StorageService';
-import { generateSessionRoast } from '../services/SessionRoastService';
-import { generateRivalryToast } from '../services/RivalryService';
-import { checkStreakMilestone, updateStreakCharacterization } from '../services/StreakCharacterizerService';
-import { storeSnapshot, checkIdentityShiftToast } from '../services/IdentityShiftService';
 
 /**
- * Listens for `gamepilot:session-ended` events and shows toast
- * notifications (roasts, rivalry, streak milestones, identity shifts)
- * plus the recommendation outcome prompt.
+ * Listens for `gamepilot:session-ended` events and shows the
+ * session-saved toast plus the recommendation outcome prompt.
  *
  * Returns:
  *   - recommendationOutcomePrompt: { ...detail, recommendationSession } or null
@@ -19,7 +13,7 @@ import { storeSnapshot, checkIdentityShiftToast } from '../services/IdentityShif
  */
 export default function useSessionNotifications() {
   const [recommendationOutcomePrompt, setRecommendationOutcomePrompt] = useState(null);
-  const { success: toastSuccess, info: toastInfo, roast: toastRoast } = useToast();
+  const { success: toastSuccess, info: toastInfo } = useToast();
 
   useEffect(() => {
     const handleSessionEnded = (event) => {
@@ -29,60 +23,7 @@ export default function useSessionNotifications() {
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
       const timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-      const xpEarned = Math.max(0, Math.round(Number(detail?.xpEarned) || 0));
-      const xpSuffix = xpEarned > 0 ? ` · +${xpEarned} XP` : '';
-      const sessionSavedMessage = `Session saved: +${timeString} to ${detail.gameName}${xpSuffix}`;
-
-      // Generate personality-driven roast toast for real sessions
-      const personalityEnabled = StorageService.getString('personalityToastsEnabled', 'true') === 'true';
-      if (personalityEnabled && !detail?.recoveredSession && !detail?.shutdownSession && minutes > 0) {
-        try {
-          const roast = generateSessionRoast(detail);
-          if (roast?.message) {
-            toastRoast(`${roast.message}${xpSuffix}`, 6000);
-          } else {
-            toastSuccess(sessionSavedMessage, 5000);
-          }
-        } catch {
-          toastSuccess(sessionSavedMessage, 5000);
-        }
-      } else {
-        toastSuccess(sessionSavedMessage, 5000);
-      }
-
-      // Check for active rivalry (throttled to once per day inside the service)
-      if (personalityEnabled && !detail?.recoveredSession && !detail?.shutdownSession) {
-        try {
-          const rivalryToast = generateRivalryToast();
-          if (rivalryToast?.message) {
-            setTimeout(() => toastRoast(rivalryToast.message, 6000), 1500);
-          }
-        } catch {
-          /* non-critical */
-        }
-
-        // Check for streak milestone (throttled inside the service)
-        try {
-          updateStreakCharacterization();
-          const milestone = checkStreakMilestone();
-          if (milestone?.message) {
-            setTimeout(() => toastRoast(milestone.message, 6000), 3000);
-          }
-        } catch {
-          /* non-critical */
-        }
-
-        // Store persona snapshot and check for identity shift (throttled per quarter)
-        try {
-          storeSnapshot();
-          const shift = checkIdentityShiftToast();
-          if (shift?.message) {
-            setTimeout(() => toastRoast(shift.message, 7000), 4500);
-          }
-        } catch {
-          /* non-critical */
-        }
-      }
+      toastSuccess(`Session saved: +${timeString} to ${detail.gameName}`, 5000);
 
       const feedbackPreferences = UserBehaviorProfile.getFeedbackPreferences();
       if (
@@ -104,7 +45,7 @@ export default function useSessionNotifications() {
 
     window.addEventListener('gamepilot:session-ended', handleSessionEnded);
     return () => window.removeEventListener('gamepilot:session-ended', handleSessionEnded);
-  }, [toastSuccess, toastRoast]);
+  }, [toastSuccess]);
 
   // Warn once when process monitoring gives up on a running session —
   // playtime keeps accruing but nothing will detect the exit automatically.

@@ -1,5 +1,6 @@
 import { mergeLibraryUpdates } from './LibraryDataService';
 import { LibraryScannerService } from './LibraryScannerService';
+import ManualGamesService from './ManualGamesService';
 import StorageService from './StorageService';
 
 const SCAN_REPORT_KEY = 'gamepilot-lastScanReport';
@@ -23,7 +24,9 @@ export class LibraryScanCoordinatorService {
 
   static async scanAndMergeLibrary({ currentLibrary = [], assignMoodToGame, manual = false }) {
     const allGames = await this.collectScannedGames(assignMoodToGame, { manual });
-    const mergedLibrary = mergeLibraryUpdates(currentLibrary, allGames);
+    // Manual (user-picked) games are never produced by the native scanners;
+    // re-append them post-merge so a rescan can never silently drop them.
+    const mergedLibrary = ManualGamesService.mergeIntoLibrary(mergeLibraryUpdates(currentLibrary, allGames));
     const scanReport = LibraryScannerService.getLastScanDebug();
 
     if (scanReport) {

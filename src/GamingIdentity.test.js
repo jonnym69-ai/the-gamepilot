@@ -1,22 +1,6 @@
 import { GamingIdentity } from './GamingIdentity';
-import { AchievementTracker } from './AchievementSystem';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import StorageService from './services/StorageService';
-
-jest.mock('./AchievementSystem', () => ({
-  AchievementTracker: {
-    getUnlockedAchievements: jest.fn(),
-    getWeeklyMoodBadge: jest.fn(),
-    getPlatformStats: jest.fn(),
-    getFeatureStats: jest.fn(),
-    getMoodStats: jest.fn(),
-    getGenreStats: jest.fn(),
-    getTimeStats: jest.fn(),
-    getXPStats: jest.fn(),
-    getPatreonBoostProfile: jest.fn(() => ({ multiplier: 1, tier: null, code: null })),
-  },
-  ACHIEVEMENTS: jest.requireActual('./AchievementSystem').ACHIEVEMENTS,
-}));
 
 jest.mock('./services/StatsAggregationService', () => ({
   StatsAggregationService: {
@@ -28,16 +12,6 @@ describe('GamingIdentity', () => {
   beforeEach(() => {
     StorageService.clear();
     jest.clearAllMocks();
-
-    AchievementTracker.getUnlockedAchievements.mockReturnValue([]);
-    AchievementTracker.getWeeklyMoodBadge.mockReturnValue(null);
-    AchievementTracker.getPlatformStats.mockReturnValue({});
-    AchievementTracker.getFeatureStats.mockReturnValue({});
-    AchievementTracker.getMoodStats.mockReturnValue({});
-    AchievementTracker.getGenreStats.mockReturnValue({});
-    AchievementTracker.getTimeStats.mockReturnValue({ total: 0, sessions: 0 });
-    AchievementTracker.getXPStats.mockReturnValue({ level: 1, xp: 0, nextLevelXP: 100 });
-    AchievementTracker.getPatreonBoostProfile.mockReturnValue({ multiplier: 1, tier: null, code: null });
 
     StatsAggregationService.getDashboardData.mockReturnValue({
       periods: {
@@ -56,7 +30,6 @@ describe('GamingIdentity', () => {
   test('getGamingStats reads canonical all-time dashboard snapshot', () => {
     StorageService.set('library', [{ name: 'Game A' }, { name: 'Game B' }]);
 
-    AchievementTracker.getUnlockedAchievements.mockReturnValue(['a1', 'a2']);
     StatsAggregationService.getDashboardData.mockReturnValue({
       periods: {
         all: {
@@ -79,19 +52,15 @@ describe('GamingIdentity', () => {
     expect(stats.favoriteMood).toBe('Relaxed');
     expect(stats.favoriteGenre).toBe('RPG');
     expect(stats.mostUsedFeature).toBe('perfect_play');
-    expect(stats.achievementProgress.unlocked).toBe(2);
     expect(stats.librarySize).toBe(2);
   });
 
-  test('calculateGamerLevel scales with playtime, achievements, and library size', () => {
-    AchievementTracker.getXPStats.mockReturnValue({ level: 5, xp: 450, nextLevelXP: 1000 });
-    const level = GamingIdentity.calculateGamerLevel({
-      totalPlayTime: 6000,
-      achievementProgress: { unlocked: 8 },
-      librarySize: 30,
-    });
-
-    expect(level).toBeGreaterThan(1);
+  test('calculateGamerLevel scales with total playtime', () => {
+    expect(GamingIdentity.calculateGamerLevel({ totalPlayTime: 0 })).toBe(1);
+    expect(GamingIdentity.calculateGamerLevel({ totalPlayTime: 6000 })).toBeGreaterThan(1);
+    expect(GamingIdentity.calculateGamerLevel({ totalPlayTime: 60000 })).toBeGreaterThan(
+      GamingIdentity.calculateGamerLevel({ totalPlayTime: 600 })
+    );
   });
 
   test('determineGamerType classifies hardcore players by total playtime', () => {
@@ -128,25 +97,25 @@ describe('GamingIdentity', () => {
     expect(StorageService.getString('joinDate')).toBe(resetValue);
   });
 
-  test('getAchievedBadges resolves real names and icons from the achievement catalog', () => {
-    AchievementTracker.getUnlockedAchievements.mockReturnValue(['hour_100', 'collector_5']);
+  test('getAchievedBadges returns platform badges for platforms with 10+ launches', () => {
+    StatsAggregationService.getDashboardData.mockReturnValue({
+      periods: {
+        all: {
+          playtimeMinutes: 600,
+          sessions: 30,
+          platformCounts: { Steam: 25, Xbox: 3 },
+          moodCounts: {},
+          genreCounts: {},
+          featureUsage: { counts: {} },
+        },
+      },
+    });
 
     const badges = GamingIdentity.getAchievedBadges();
-    const byId = Object.fromEntries(badges.map((badge) => [badge.id, badge]));
 
-    expect(byId.hour_100.name).toBe('Hundred Hours');
-    expect(byId.hour_100.icon).toBe('💯');
-    expect(byId.collector_5.name).toBe('Small Shelf');
-    expect(byId.collector_5.icon).toBe('📚');
-  });
-
-  test('getAchievedBadges humanizes unknown IDs instead of repeating "Achievement"', () => {
-    AchievementTracker.getUnlockedAchievements.mockReturnValue(['quest_streak_7']);
-
-    const badges = GamingIdentity.getAchievedBadges();
-
-    expect(badges[0].name).toBe('Quest Streak 7');
-    expect(badges[0].icon).toBe('🏆');
+    expect(badges).toHaveLength(1);
+    expect(badges[0].id).toBe('platform_Steam');
+    expect(badges[0].name).toBe('Steam Fan');
   });
 
   test('detectTasteClusters does not label survival sandbox games as narrative RPGs', () => {

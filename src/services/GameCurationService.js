@@ -17,6 +17,7 @@ const KEYS = {
   duplicates: 'duplicateMergesV1',
   scanTimestamps: 'scanTimestampsV1',
   playedElsewhere: 'playedElsewhereV1',
+  metadataOverrides: 'metadataOverridesV1',
 };
 
 const DEFAULT_COLLECTIONS = [
@@ -257,6 +258,69 @@ function deleteSessionNote(gameKey, timestamp) {
   StorageService.set(KEYS.sessionNotes, all);
 }
 
+// ---------- Metadata Overrides ----------
+
+const METADATA_OVERRIDE_FIELDS = ['sortName', 'genres', 'tags', 'releaseYear', 'developer', 'publisher'];
+
+function getMetadataOverrides() {
+  const all = StorageService.get(KEYS.metadataOverrides, {});
+  return all && typeof all === 'object' && !Array.isArray(all) ? all : {};
+}
+
+function getMetadataOverride(gameKey) {
+  return getMetadataOverrides()[gameKey] || null;
+}
+
+/**
+ * Merge a patch into a game's metadata override. Empty strings, null and
+ * empty arrays DELETE that field; a fully emptied override removes the
+ * game's key entirely. Unknown fields are ignored.
+ */
+function setMetadataOverride(gameKey, patch = {}) {
+  const all = getMetadataOverrides();
+  const current = { ...(all[gameKey] || {}) };
+  const entries = patch && typeof patch === 'object' ? Object.entries(patch) : [];
+
+  entries.forEach(([field, value]) => {
+    if (!METADATA_OVERRIDE_FIELDS.includes(field)) return;
+    const isEmpty = value == null || value === '' || (Array.isArray(value) && value.length === 0);
+    if (isEmpty) {
+      delete current[field];
+      return;
+    }
+    if (field === 'genres' || field === 'tags') {
+      const list = [
+        ...new Set((Array.isArray(value) ? value : [value]).map((item) => String(item).trim()).filter(Boolean)),
+      ];
+      if (list.length > 0) current[field] = list;
+      else delete current[field];
+      return;
+    }
+    if (field === 'releaseYear') {
+      const year = Math.round(Number(value));
+      const maxYear = new Date().getFullYear() + 2;
+      // Invalid non-empty values are ignored (kept as-is); empty clears above.
+      if (Number.isFinite(year) && year >= 1970 && year <= maxYear) current[field] = year;
+      return;
+    }
+    const text = String(value).trim();
+    if (text) current[field] = text;
+    else delete current[field];
+  });
+
+  if (Object.keys(current).length === 0) delete all[gameKey];
+  else all[gameKey] = current;
+  StorageService.set(KEYS.metadataOverrides, all);
+}
+
+function clearMetadataOverride(gameKey) {
+  const all = getMetadataOverrides();
+  if (Object.prototype.hasOwnProperty.call(all, gameKey)) {
+    delete all[gameKey];
+    StorageService.set(KEYS.metadataOverrides, all);
+  }
+}
+
 // ---------- Duplicate Detection ----------
 
 function normalizeForDedup(name) {
@@ -348,6 +412,29 @@ function enrichGame(game) {
   const hidden = isGameHidden(key);
   const duplicatePrimary = getMergedGameKey(key);
   const playedElsewhere = isPlayedElsewhere(key);
+  const metadataOverride = getMetadataOverride(key);
+
+  const metadataPatch = {};
+  if (metadataOverride) {
+    // Snapshot the scanned values so "Reset" can show what was overridden.
+    // An already-enriched game keeps its original snapshot — the live
+    // genres/year fields hold the override, not the scanned truth.
+    metadataPatch.scanned = game.scanned || {
+      genres: game.genres,
+      releaseYear: game.releaseYear,
+      developer: game.developer,
+      publisher: game.publisher,
+    };
+    if (metadataOverride.sortName) metadataPatch.sortName = metadataOverride.sortName;
+    if (Array.isArray(metadataOverride.genres)) {
+      metadataPatch.genres = metadataOverride.genres;
+      metadataPatch.genresOverridden = true;
+    }
+    if (Array.isArray(metadataOverride.tags)) metadataPatch.userTags = metadataOverride.tags;
+    if (metadataOverride.releaseYear != null) metadataPatch.releaseYear = metadataOverride.releaseYear;
+    if (metadataOverride.developer) metadataPatch.developer = metadataOverride.developer;
+    if (metadataOverride.publisher) metadataPatch.publisher = metadataOverride.publisher;
+  }
 
   return {
     ...game,
@@ -363,6 +450,7 @@ function enrichGame(game) {
     isDuplicateMerged: duplicatePrimary !== key,
     duplicatePrimaryKey: duplicatePrimary,
     playedElsewhere,
+    ...metadataPatch,
   };
 }
 
@@ -430,6 +518,10 @@ export const GameCurationService = {
   isPlayedElsewhere,
   setPlayedElsewhere,
   togglePlayedElsewhere,
+  // Metadata overrides
+  getMetadataOverride,
+  setMetadataOverride,
+  clearMetadataOverride,
   // Recently added
   recordGameSeen,
   getDateAdded,

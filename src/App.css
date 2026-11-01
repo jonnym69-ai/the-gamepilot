@@ -26,8 +26,8 @@
   --elevation-2: 0 2px 6px rgba(0, 0, 0, 0.26), 0 12px 32px rgba(0, 0, 0, 0.18);
   --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-
 /* === Dropdown item Lucide icons === */
+
 .dropdown-item {
   display: flex !important;
   align-items: center !important;
@@ -45,8 +45,8 @@
   flex-shrink: 0;
   opacity: 0.85;
 }
-
 /* === Compact mode === */
+
 body.compact-mode {
   --app-navbar-offset: 64px;
 }
@@ -59,9 +59,6 @@ body.compact-mode .navbar .nav-link,
 body.compact-mode .dropdown-toggle {
   padding: 6px 12px !important;
   font-size: 13px !important;
-}
-body.compact-mode .home-hero {
-  padding: 24px 16px 20px !important;
 }
 body.compact-mode .home-reward-pill {
   padding: 8px 12px !important;
@@ -77,8 +74,8 @@ body.compact-mode h1 {
 body.compact-mode h2 {
   font-size: 1.25rem !important;
 }
-
 /* === Reduced motion === */
+
 body.reduced-motion *,
 body.reduced-motion *::before,
 body.reduced-motion *::after {
@@ -87,10 +84,6 @@ body.reduced-motion *::after {
   transition-duration: 0.05s !important;
   scroll-behavior: auto !important;
 }
-body.reduced-motion .spin-nav-button.has-spin {
-  animation: none !important;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -101,7 +94,9 @@ body.reduced-motion .spin-nav-button.has-spin {
 }
 
 /* === Ornament level: plain | balanced | full === */
+
 /* Plain: drop decorative pseudo-elements, force clean fonts everywhere */
+
 body.ornament-plain .card::before,
 body.ornament-plain .card::after,
 body.ornament-plain .modal::before,
@@ -113,9 +108,7 @@ body.ornament-plain .stat-card::after,
 body.ornament-plain .settings-section::before,
 body.ornament-plain .settings-section::after,
 body.ornament-plain .profile-card::before,
-body.ornament-plain .profile-card::after,
-body.ornament-plain .achievement-counters-grid .counter-card::before,
-body.ornament-plain .achievement-counters-grid .counter-card::after {
+body.ornament-plain .profile-card::after {
   content: none !important;
   display: none !important;
 }
@@ -147,8 +140,8 @@ body.ornament-plain .profile-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
   background-image: none !important;
 }
-
 /* Balanced: keep colors/gradients, drop heavy animations + decorative fonts */
+
 body.ornament-balanced .card::before,
 body.ornament-balanced .modal::before,
 body.ornament-balanced .game-card::before,
@@ -163,51 +156,29 @@ body.ornament-balanced,
 body.ornament-balanced * {
   font-family: 'Inter', 'Poppins', system-ui, sans-serif !important;
 }
-
 /* === Home section visibility toggles === */
-body.hide-home-reward-strip .home-reward-strip {
-  display: none !important;
-}
-body.hide-home-checkin-pill .home-checkin-panel {
-  display: none !important;
-}
-body.hide-home-hero-summary .home-hero-summary {
-  display: none !important;
-}
-body.hide-home-retention-quests .retention-section {
-  display: none !important;
-}
-body.hide-home-launcher-summary .launcher-status,
-body.hide-home-launcher-summary .launcher-grid,
-body.hide-home-launcher-summary .launcher-status-header {
-  display: none !important;
-}
-body.hide-home-daily-missions [class*='engagement-pulse'] .daily-mission-card,
-body.hide-home-daily-missions .daily-mission-card {
-  display: none !important;
-}
-body.hide-home-backlog-rescue .backlog-rescue-card,
-body.hide-home-backlog-rescue [class*='backlog-rescue'] {
-  display: none !important;
-}
+
 body.hide-home-shelves .home-shelf-card {
   display: none !important;
 }
-body.hide-home-themed-page-titles .page-title::before,
 body.hide-themed-page-titles .page-title::before {
   content: none !important;
 }
-
 /* === User accent override === */
+
 body.has-user-accent {
   --accent-primary: var(--user-accent) !important;
+  --accent-secondary: var(--user-accent-strong) !important;
   --accent-color: var(--user-accent) !important;
   --text-accent: var(--user-accent) !important;
   --link-primary: var(--user-accent) !important;
   --button-primary-bg: var(--user-accent) !important;
   --nav-active: var(--user-accent) !important;
+  --gradient-accent: var(--user-accent-soft) !important;
 }
-
+body.has-user-accent .storage-manager-progress-bar {
+  background: linear-gradient(90deg, var(--user-accent), var(--user-accent-strong));
+}
 .page-loading-fallback {
   min-height: calc(100vh - var(--app-navbar-offset));
   display: grid;
@@ -221,7 +192,6 @@ body.has-user-accent {
     transparent 38%
   );
 }
-
 .page-loading-mark {
   display: grid;
   place-items: center;
@@ -235,7 +205,6 @@ body.has-user-accent {
   font-weight: 800;
   letter-spacing: 0.08em;
 }
-
 .page-loading-spinner {
   width: 26px;
   height: 26px;
@@ -244,13 +213,11 @@ body.has-user-accent {
   border-radius: 50%;
   animation: page-loading-spin 0.8s linear infinite;
 }
-
 .page-loading-label {
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
-
 @keyframes page-loading-spin {
   to {
     transform: rotate(360deg);
@@ -258,6 +225,7 @@ body.has-user-accent {
 }
 
 /* Basic body styling */
+
 body {
   background: var(--bg-primary);
   background-attachment: fixed;
@@ -278,8 +246,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-
 /* Dynamic cover-art background mode */
+
 body.dynamic-cover-bg {
   background: linear-gradient(rgba(10, 10, 14, 0.72), rgba(10, 10, 14, 0.72)), var(--dynamic-cover-image, none);
   background-attachment: fixed;
@@ -287,9 +255,9 @@ body.dynamic-cover-bg {
   background-size: cover;
   background-position: center;
 }
-
 /* When dynamic cover bg is active, make cards slightly more opaque
    so they remain readable over the artwork. */
+
 body.dynamic-cover-bg .card,
 body.dynamic-cover-bg .settings-section,
 body.dynamic-cover-bg .game-card,
@@ -299,28 +267,23 @@ body.dynamic-cover-bg .profile-card {
   -webkit-backdrop-filter: blur(8px) !important;
   backdrop-filter: blur(8px) !important;
 }
-
 /* Make page-level backgrounds transparent so the cover art shows through */
+
 body.dynamic-cover-bg .home-page,
 body.dynamic-cover-bg .profile-page,
 body.dynamic-cover-bg .settings-container,
-body.dynamic-cover-bg .habits-page,
 body.dynamic-cover-bg .timeline-page,
-body.dynamic-cover-bg .year-review-page,
-body.dynamic-cover-bg .achievements-container,
-body.dynamic-cover-bg .feedback-page,
-body.dynamic-cover-bg .rewards-page {
+body.dynamic-cover-bg .feedback-page {
   background: transparent !important;
 }
-
 /* Pro: animated dynamic backdrop from cover art colors */
+
 body.dynamic-backdrop-active {
   background: var(--dynamic-backdrop, var(--bg-primary, #0d1224));
   background-size: var(--dynamic-backdrop-size, 100% 100%);
   animation: dynamic-backdrop-flow var(--backdrop-animation-speed, 20s) ease-in-out infinite;
   transition: background 0.5s ease;
 }
-
 body.dynamic-backdrop-active::before {
   content: '';
   position: fixed;
@@ -329,7 +292,6 @@ body.dynamic-backdrop-active::before {
   pointer-events: none;
   z-index: -1;
 }
-
 body.dynamic-backdrop-active::after {
   content: '';
   position: fixed;
@@ -338,7 +300,6 @@ body.dynamic-backdrop-active::after {
   pointer-events: none;
   z-index: -1;
 }
-
 @keyframes dynamic-backdrop-flow {
   0% {
     background-position: 0% 50%;
@@ -351,25 +312,6 @@ body.dynamic-backdrop-active::after {
   }
 }
 
-body.big-screen-mode :is(a[href], button, input, select, textarea, [role='button'], [tabindex]):focus-visible,
-body.big-screen-mode :is(a[href], button, input, select, textarea, [role='button'], [tabindex]):focus {
-  outline: 4px solid var(--accent-primary, #ff8c42) !important;
-  outline-offset: 4px !important;
-  box-shadow:
-    0 0 0 8px rgba(255, 140, 66, 0.2),
-    0 0 28px rgba(255, 140, 66, 0.38) !important;
-  transform: translateY(-1px);
-  z-index: 20;
-}
-
-body.big-screen-mode :is(input, select, textarea):focus {
-  transform: none;
-}
-
-body.big-screen-mode .controller-focus-scope {
-  scroll-margin: 120px;
-}
-
 .App {
   min-height: 100vh;
   background: var(--bg-primary);
@@ -377,8 +319,8 @@ body.big-screen-mode .controller-focus-scope {
   background-size: cover;
   color: var(--text-color);
 }
-
 /* THEME-AWARE NAVBAR */
+
 .navbar {
   --nav-surface: var(--nav-bg);
   --nav-divider: rgba(128, 128, 128, 0.2);
@@ -407,7 +349,6 @@ body.big-screen-mode .controller-focus-scope {
   backdrop-filter: blur(20px) saturate(180%);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent) !important;
 }
-
 @supports (color: color-mix(in srgb, black, white)) {
   .navbar {
     --nav-surface: color-mix(in srgb, var(--nav-bg) 72%, transparent);
@@ -421,6 +362,7 @@ body.big-screen-mode .controller-focus-scope {
 }
 
 /* Primary navigation section */
+
 .navbar-primary {
   display: flex !important;
   gap: 2px !important;
@@ -428,7 +370,6 @@ body.big-screen-mode .controller-focus-scope {
   min-width: 0;
   padding: 4px;
 }
-
 .navbar .navbar-brand {
   flex-shrink: 0;
   gap: 10px;
@@ -436,7 +377,6 @@ body.big-screen-mode .controller-focus-scope {
   opacity: 1 !important;
   overflow: visible !important;
 }
-
 .navbar-brand-mark {
   display: grid;
   place-items: center;
@@ -449,29 +389,26 @@ body.big-screen-mode .controller-focus-scope {
   font-weight: 800;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
-
 .navbar-brand-name {
   font-size: 1.1rem;
   font-weight: 750;
   letter-spacing: -0.04em;
 }
-
 .navbar-brand-name > span {
   color: var(--accent-primary, #ff6b35);
 }
-
 .navbar :is(a, button):focus-visible {
   outline: 2px solid var(--accent-primary, #ff6b35);
   outline-offset: 3px;
 }
-
 /* Dropdown section */
+
 .navbar-dropdown {
   position: relative !important;
   flex-shrink: 0;
 }
-
 /* Dropdown toggle button */
+
 .dropdown-toggle {
   display: flex !important;
   align-items: center !important;
@@ -486,7 +423,6 @@ body.big-screen-mode .controller-focus-scope {
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
   font-size: 14px !important;
 }
-
 .dropdown-toggle:hover {
   background-color: var(--nav-hover) !important;
   color: var(--nav-text) !important;
@@ -494,8 +430,8 @@ body.big-screen-mode .controller-focus-scope {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
-
 /* Desktop-optimized dropdown positioning */
+
 .dropdown-menu {
   position: absolute !important;
   top: 100% !important;
@@ -515,14 +451,14 @@ body.big-screen-mode .controller-focus-scope {
   -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
   backdrop-filter: blur(18px) saturate(160%) !important;
 }
-
 /* Ensure dropdown text is always visible regardless of theme */
+
 .dropdown-item,
 .dropdown-section-title {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
 }
-
 /* Prevent dropdown from going off-screen on smaller viewports */
+
 @media (max-width: 400px) {
   .dropdown-menu {
     right: 0 !important;
@@ -532,15 +468,14 @@ body.big-screen-mode .controller-focus-scope {
 }
 
 /* Dropdown sections */
+
 .dropdown-section {
   padding: 8px 0 !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
-
 .dropdown-section:last-child {
   border-bottom: none !important;
 }
-
 .dropdown-section-title {
   padding: 8px 16px !important;
   font-size: 11px !important;
@@ -550,18 +485,16 @@ body.big-screen-mode .controller-focus-scope {
   color: var(--nav-text) !important;
   opacity: 0.6 !important;
 }
-
 /* Dropdown items hover/active states */
+
 .dropdown-item:hover {
   background-color: var(--nav-hover) !important;
   color: var(--nav-text) !important;
 }
-
 .dropdown-item:active {
   background-color: var(--nav-active) !important;
   color: #ffffff !important;
 }
-
 .navbar a,
 .navbar .nav-link {
   color: var(--nav-text) !important;
@@ -583,14 +516,12 @@ body.big-screen-mode .controller-focus-scope {
   letter-spacing: 0.01em !important;
   opacity: 0.75 !important;
 }
-
 .navbar a:hover,
 .navbar .nav-link:hover {
   background-color: rgba(255, 255, 255, 0.08) !important;
   color: var(--nav-text) !important;
   opacity: 1 !important;
 }
-
 .navbar a.active,
 .navbar .nav-link.active {
   background-color: var(--nav-active-bg) !important;
@@ -599,7 +530,6 @@ body.big-screen-mode .controller-focus-scope {
   font-weight: 600 !important;
   box-shadow: none !important;
 }
-
 .navbar a.active::after,
 .navbar .nav-link.active::after {
   content: '' !important;
@@ -612,7 +542,6 @@ body.big-screen-mode .controller-focus-scope {
   background: var(--button-primary-bg, #ff6b35) !important;
   border-radius: 1px !important;
 }
-
 .nav-search-pill {
   display: inline-flex;
   align-items: center;
@@ -631,21 +560,17 @@ body.big-screen-mode .controller-focus-scope {
     border-color 0.18s ease,
     transform 0.18s ease;
 }
-
 .nav-search-pill:hover {
   background: var(--nav-control-hover);
   border-color: var(--accent-primary, #ff6b35);
 }
-
 .nav-search-pill:focus-visible {
   outline: 2px solid var(--accent-primary, #ff6b35);
   outline-offset: 2px;
 }
-
 .nav-search-pill-label {
   opacity: 0.9;
 }
-
 .nav-search-pill-kbd {
   display: inline-flex;
   align-items: center;
@@ -662,7 +587,6 @@ body.big-screen-mode .controller-focus-scope {
   line-height: 1;
   color: var(--nav-text);
 }
-
 @media (max-width: 720px) {
   .nav-search-pill-label {
     display: none;
@@ -670,29 +594,6 @@ body.big-screen-mode .controller-focus-scope {
   .nav-search-pill {
     padding: 6px 8px;
   }
-}
-
-.spin-nav-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, #4ade80, #22c55e) !important;
-  color: #1a1a2e !important;
-  border: none !important;
-  padding: 8px 16px !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  cursor: pointer;
-  transition: all 0.2s !important;
-}
-
-.spin-nav-button:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4) !important;
-}
-
-.spin-nav-button.has-spin {
-  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
@@ -705,17 +606,8 @@ body.big-screen-mode .controller-focus-scope {
   }
 }
 
-.streak-badge {
-  background: #fbbf24;
-  color: #1a1a2e;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 10px;
-  margin-left: 4px;
-}
-
 /* Floating Back to Top button */
+
 .back-to-top-button {
   position: fixed;
   bottom: clamp(16px, 4vw, 32px);
@@ -739,37 +631,41 @@ body.big-screen-mode .controller-focus-scope {
     opacity 0.25s ease;
   opacity: 0.92;
 }
-
 .back-to-top-button:hover {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
   opacity: 1;
 }
-
 .back-to-top-button:active {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
 }
-
 /* ===== DARK THEME (GREY & ORANGE) ===== */
+
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
 /* ===== LIGHT THEME (MINIMALIST) ===== */
+
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
 /* ===== SOCIAL THEME ===== */
+
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
 /* ===== CREATIVE THEME ===== */
+
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
 /* ===== FOCUSED THEME ===== */
+
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
 /* ===== COMPETITIVE THEME ===== */
+
 /* REMOVED - Now using dynamic theme system from moodThemes.json */
 
 /* Cards and containers */
+
 .card,
 .modal {
   background: var(--card-bg);
@@ -781,8 +677,8 @@ body.big-screen-mode .controller-focus-scope {
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   backdrop-filter: blur(12px) saturate(150%);
 }
-
 /* Form elements */
+
 input,
 select,
 textarea {
@@ -797,23 +693,21 @@ textarea {
   font-family: inherit;
   font-size: 0.875rem;
 }
-
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.12);
+  box-shadow: 0 0 0 3px var(--user-accent-soft, rgba(255, 107, 53, 0.12));
 }
-
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--accent-primary, #ff6b35);
   outline-offset: 2px;
 }
-
 /* Specifically for select dropdowns */
+
 select {
   background-color: var(--input-bg);
   color: var(--text-color);
@@ -822,22 +716,21 @@ select {
   padding: 9px 13px;
   font-family: inherit;
 }
-
 /* Ensure dropdown options are visible.
    Native option popups can't render translucent backgrounds, so use a solid
    colour (--option-bg) — themes with semi-transparent --input-bg would
    otherwise produce light-on-light (invisible) option text. */
+
 select option {
   background-color: var(--option-bg, var(--input-bg, #1a1a2e));
   color: var(--text-color, #ffffff);
 }
-
 body.theme-builder-active select option {
   background-color: var(--option-bg, #1a1a2e);
   color: var(--text-color, #ffffff);
 }
-
 /* Buttons */
+
 button {
   background: var(--button-bg);
   color: var(--button-text);
@@ -855,24 +748,21 @@ button {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
   letter-spacing: 0.01em;
 }
-
 button:hover {
   background: var(--button-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
-
 button:active {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
-
 button:focus-visible {
   outline: 2px solid var(--accent-primary, #ff6b35);
   outline-offset: 2px;
 }
-
 /* ===== LIGHT THEME - Studio Daylight ===== */
+
 .App.light {
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -885,7 +775,6 @@ button:focus-visible {
     'Segoe UI',
     sans-serif;
 }
-
 .App.light::before {
   content: '';
   position: fixed;
@@ -895,23 +784,12 @@ button:focus-visible {
     radial-gradient(circle at 80% 0%, rgba(228, 91, 23, 0.08), transparent 35%);
   z-index: 0;
 }
-
-.App.light .home-hero {
-  background: linear-gradient(135deg, rgba(255, 249, 243, 0.95), rgba(255, 244, 235, 0.92));
-  border-radius: 32px;
-  border: 1px solid rgba(44, 26, 15, 0.08);
-  box-shadow: 0 20px 45px rgba(43, 26, 15, 0.12);
-  isolation: isolate;
-}
-
 .App.light .card,
 .App.light .modal,
 .App.light .game-card,
 .App.light .stat-card,
 .App.light .settings-section,
 .App.light .profile-card,
-.App.light .achievement-counters-grid .counter-card,
-.App.light .datetime-card,
 .App.light .filter-card {
   background: linear-gradient(145deg, rgba(255, 249, 243, 0.92), rgba(255, 244, 235, 0.9));
   border: 1px solid rgba(195, 143, 107, 0.3);
@@ -919,7 +797,6 @@ button:focus-visible {
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
-
 .App.light .card::after,
 .App.light .filter-card::after,
 .App.light .stat-card::after {
@@ -930,7 +807,6 @@ button:focus-visible {
   border: 1px solid rgba(255, 182, 92, 0.15);
   pointer-events: none;
 }
-
 .App.light h1,
 .App.light h2,
 .App.light h3,
@@ -942,64 +818,42 @@ button:focus-visible {
   letter-spacing: -0.015em;
   text-shadow: 0 8px 25px rgba(43, 26, 15, 0.08);
 }
-
 .App.light .section-header,
 .App.light .page-title,
-.App.light .stats-title,
 .App.light .library-title {
   color: #4a2c1c !important;
   border-color: rgba(195, 143, 107, 0.4) !important;
 }
-
 .App.light button,
 .App.light .btn,
 .App.light .scan-button,
-.App.light .save-button,
-.App.light .primary-action {
+.App.light .save-button {
   background: linear-gradient(120deg, #e45b17, #f48b2c);
   color: var(--button-primary-text);
   border: 1px solid rgba(228, 91, 23, 0.35);
   box-shadow: 0 15px 35px rgba(228, 91, 23, 0.25);
   font-weight: 600;
 }
-
 .App.light button:hover,
 .App.light .btn:hover,
 .App.light .scan-button:hover,
-.App.light .save-button:hover,
-.App.light .primary-action:hover {
+.App.light .save-button:hover {
   background: linear-gradient(120deg, #f48b2c, #ffb65c);
   box-shadow: 0 18px 40px rgba(228, 91, 23, 0.3);
 }
-
 .App.light .secondary-button,
-.App.light .reset-button,
-.App.light .ghost-button {
+.App.light .reset-button {
   background: rgba(255, 182, 92, 0.12);
   color: #8d5f3d;
   border: 1px solid rgba(195, 143, 107, 0.4);
   box-shadow: none;
 }
-
-.App.light .launcher-badge {
-  background: rgba(255, 249, 243, 0.8);
-  color: #5b341f;
-  border: 1px solid rgba(228, 91, 23, 0.15);
-}
-
-.App.light .launcher-badge.detected {
-  background: rgba(228, 91, 23, 0.12);
-  border-color: rgba(228, 91, 23, 0.25);
-  color: #a33c0b;
-}
-
 .App.light .filter-card label,
 .App.light .filter-label,
 .App.light .stat-number,
 .App.light .trait-value {
   color: #a33c0b;
 }
-
 .App.light input,
 .App.light select,
 .App.light textarea {
@@ -1008,58 +862,49 @@ button:focus-visible {
   color: #3a2416;
   box-shadow: inset 0 2px 8px rgba(255, 255, 255, 0.65);
 }
-
 .App.light input:focus,
 .App.light select:focus,
 .App.light textarea:focus {
-  border-color: rgba(228, 91, 23, 0.55);
-  box-shadow: 0 0 0 3px rgba(228, 91, 23, 0.18);
+  border-color: var(--accent-color, rgba(228, 91, 23, 0.55));
+  box-shadow: 0 0 0 3px var(--user-accent-soft, rgba(228, 91, 23, 0.18));
 }
-
 .App.light .nav,
 .App.light .navbar {
   background: rgba(255, 249, 243, 0.95) !important;
   border-bottom: 1px solid rgba(195, 143, 107, 0.2) !important;
   box-shadow: 0 12px 25px rgba(43, 26, 15, 0.08) !important;
 }
-
 .App.light .navbar a.active {
   color: var(--nav-text) !important;
   box-shadow: none !important;
 }
-
 .App.light .nav-search-pill {
   background: var(--nav-control-bg);
   color: var(--nav-text);
   border-color: var(--nav-control-border);
   box-shadow: none;
 }
-
 .App.light .nav-search-pill:hover {
   background: var(--nav-control-hover);
   border-color: var(--accent-primary, #ff6b35);
 }
-
-.App.light .achievement-card,
-.App.light .most-played-item,
-.App.light .recent-unlock-card {
+.App.light .most-played-item {
   border: 1px solid rgba(228, 91, 23, 0.08);
   background: rgba(255, 249, 243, 0.9);
 }
-
 /* Links */
+
 a {
   color: var(--link-primary);
   text-decoration: none;
   transition: color 0.3s ease;
 }
-
 a:hover {
   color: var(--link-primary-hover);
   text-decoration: underline;
 }
-
 /* Special styling for gaming elements */
+
 .game-card {
   background: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -1074,7 +919,6 @@ a:hover {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
-
 .game-card:hover {
   transform: translateY(-3px);
   box-shadow:
@@ -1082,21 +926,19 @@ a:hover {
     0 0 0 1px rgba(255, 107, 53, 0.25);
   border-color: rgba(255, 107, 53, 0.3);
 }
-
 /* ===== RELAXED THEME - Tropical Paradise ===== */
+
 .relaxed .card,
 .relaxed .modal,
 .relaxed .game-card,
 .relaxed .stat-card,
 .relaxed .settings-section,
-.relaxed .profile-card,
-.relaxed .achievement-counters-grid .counter-card {
+.relaxed .profile-card {
   border-radius: 20px;
   box-shadow: 0 15px 35px rgba(76, 175, 80, 0.15);
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-
 .relaxed .card:hover,
 .relaxed .game-card:hover,
 .relaxed .stat-card:hover,
@@ -1105,7 +947,6 @@ a:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 25px 50px rgba(76, 175, 80, 0.25);
 }
-
 .relaxed button {
   border-radius: 20px;
   font-weight: 500;
@@ -1113,24 +954,21 @@ a:hover {
   position: relative;
   z-index: 10;
 }
-
 .relaxed button,
 .relaxed a,
 .relaxed input,
-.relaxed select,
-.relaxed .clickable {
+.relaxed select {
   position: relative;
   z-index: 10;
 }
-
 /* ===== SOCIAL THEME - Fiery Passion ===== */
+
 .social .card,
 .social .modal,
 .social .game-card,
 .social .stat-card,
 .social .settings-section,
-.social .profile-card,
-.social .achievement-counters-grid .counter-card {
+.social .profile-card {
   border-radius: 15px;
   box-shadow: 0 10px 30px rgba(244, 67, 54, 0.2);
   background: linear-gradient(135deg, rgba(244, 67, 54, 0.05), rgba(255, 152, 0, 0.05));
@@ -1139,7 +977,6 @@ a:hover {
   transition: all 0.4s ease;
   font-family: 'Arial Black', Arial, sans-serif;
 }
-
 .social .card::before,
 .social .modal::before,
 .social .game-card::before,
@@ -1157,7 +994,6 @@ a:hover {
   pointer-events: none;
   z-index: 1;
 }
-
 @keyframes social-rotate {
   0% {
     transform: rotate(0deg);
@@ -1175,24 +1011,21 @@ a:hover {
   position: relative;
   z-index: 10;
 }
-
 .social button,
 .social a,
 .social input,
-.social select,
-.social .clickable {
+.social select {
   position: relative;
   z-index: 10;
 }
-
 /* ===== CREATIVE THEME - Royal Majesty ===== */
+
 .creative .card,
 .creative .modal,
 .creative .game-card,
 .creative .stat-card,
 .creative .settings-section,
-.creative .profile-card,
-.creative .achievement-counters-grid .counter-card {
+.creative .profile-card {
   border-radius: 25px;
   box-shadow: 0 20px 40px rgba(156, 39, 176, 0.2);
   border: 2px solid rgba(156, 39, 176, 0.2);
@@ -1203,7 +1036,6 @@ a:hover {
   transition: all 0.8s ease;
   font-family: 'Georgia', serif;
 }
-
 .creative .card::after,
 .creative .modal::after,
 .creative .game-card::after,
@@ -1221,7 +1053,6 @@ a:hover {
   pointer-events: none;
   z-index: 1;
 }
-
 @keyframes creative-shimmer {
   0% {
     opacity: 0.3;
@@ -1238,24 +1069,21 @@ a:hover {
   position: relative;
   z-index: 10;
 }
-
 .creative button,
 .creative a,
 .creative input,
-.creative select,
-.creative .clickable {
+.creative select {
   position: relative;
   z-index: 10;
 }
-
 /* ===== FOCUSED THEME - Arctic Chill ===== */
+
 .focused .card,
 .focused .modal,
 .focused .game-card,
 .focused .stat-card,
 .focused .settings-section,
-.focused .profile-card,
-.focused .achievement-counters-grid .counter-card {
+.focused .profile-card {
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(3, 169, 244, 0.15);
   border: 1px solid rgba(3, 169, 244, 0.2);
@@ -1263,7 +1091,6 @@ a:hover {
   transition: all 0.3s ease;
   font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
-
 .focused button,
 .focused input,
 .focused select {
@@ -1273,7 +1100,6 @@ a:hover {
   position: relative;
   z-index: 10;
 }
-
 .focused .card:hover,
 .focused .game-card:hover,
 .focused .stat-card:hover,
@@ -1282,15 +1108,14 @@ a:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 25px rgba(3, 169, 244, 0.2);
 }
-
 /* ===== COMPETITIVE THEME - Volcanic Heat ===== */
+
 .competitive .card,
 .competitive .modal,
 .competitive .game-card,
 .competitive .stat-card,
 .competitive .settings-section,
-.competitive .profile-card,
-.competitive .achievement-counters-grid .counter-card {
+.competitive .profile-card {
   border-radius: 18px;
   box-shadow: 0 18px 45px rgba(255, 87, 34, 0.3);
   border: 2px solid rgba(255, 87, 34, 0.25);
@@ -1299,7 +1124,6 @@ a:hover {
   transition: all 0.7s ease;
   font-family: 'Impact', 'Arial Black', sans-serif;
 }
-
 .competitive .card::before,
 .competitive .modal::before,
 .competitive .game-card::before,
@@ -1317,7 +1141,6 @@ a:hover {
   pointer-events: none;
   z-index: -1;
 }
-
 @keyframes competitive-sweep {
   0% {
     left: -100%;
@@ -1338,24 +1161,21 @@ a:hover {
   position: relative;
   z-index: 10;
 }
-
 .competitive button,
 .competitive a,
 .competitive input,
-.competitive select,
-.competitive .clickable {
+.competitive select {
   position: relative;
   z-index: 10;
 }
-
 /* ===== SUNSET THEME - Golden Hour ===== */
+
 .sunset .card,
 .sunset .modal,
 .sunset .game-card,
 .sunset .stat-card,
 .sunset .settings-section,
-.sunset .profile-card,
-.sunset .achievement-counters-grid .counter-card {
+.sunset .profile-card {
   border-radius: 30px;
   box-shadow: 0 20px 50px rgba(255, 140, 66, 0.25);
   border: 3px solid rgba(255, 140, 66, 0.2);
@@ -1364,7 +1184,6 @@ a:hover {
   transition: all 1s ease;
   font-family: 'Inter', 'Poppins', system-ui, sans-serif;
 }
-
 .sunset .card::after,
 .sunset .modal::after,
 .sunset .game-card::after,
@@ -1383,7 +1202,6 @@ a:hover {
   animation: sunset-pulse 3s ease-in-out infinite;
   pointer-events: none;
 }
-
 @keyframes sunset-pulse {
   0%,
   100% {
@@ -1403,24 +1221,21 @@ a:hover {
   position: relative;
   z-index: 10;
 }
-
 .sunset button,
 .sunset a,
 .sunset input,
-.sunset select,
-.sunset .clickable {
+.sunset select {
   position: relative;
   z-index: 10;
 }
-
 /* ===== MIDNIGHT THEME - Deep Space ===== */
+
 .midnight .card,
 .midnight .modal,
 .midnight .game-card,
 .midnight .stat-card,
 .midnight .settings-section,
-.midnight .profile-card,
-.midnight .achievement-counters-grid .counter-card {
+.midnight .profile-card {
   border-radius: 12px;
   box-shadow: 0 25px 60px rgba(99, 102, 241, 0.3);
   border: 1px solid rgba(99, 102, 241, 0.3);
@@ -1431,7 +1246,6 @@ a:hover {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: 'Courier New', monospace;
 }
-
 .midnight .card:hover,
 .midnight .game-card:hover,
 .midnight .stat-card:hover,
@@ -1440,7 +1254,6 @@ a:hover {
   box-shadow: 0 30px 70px rgba(99, 102, 241, 0.4);
   transform: translateY(-5px) rotate(0.5deg);
 }
-
 .midnight button,
 .midnight input,
 .midnight select {
@@ -1448,15 +1261,14 @@ a:hover {
   position: relative;
   z-index: 10;
 }
-
 /* ===== RETRO THEME - Classic Arcade ===== */
+
 .retro .card,
 .retro .modal,
 .retro .game-card,
 .retro .stat-card,
 .retro .settings-section,
-.retro .profile-card,
-.retro .achievement-counters-grid .counter-card {
+.retro .profile-card {
   border-radius: 0px;
   box-shadow: 5px 5px 0px rgba(57, 255, 20, 0.5);
   border: 4px solid rgba(57, 255, 20, 0.8);
@@ -1465,7 +1277,6 @@ a:hover {
   image-rendering: pixelated;
   position: relative;
 }
-
 .retro .card:hover,
 .retro .game-card:hover,
 .retro .stat-card:hover,
@@ -1474,7 +1285,6 @@ a:hover {
   transform: translate(-3px, -3px);
   box-shadow: 8px 8px 0px rgba(57, 255, 20, 0.7);
 }
-
 .retro button {
   border-radius: 0px !important;
   border: 3px solid rgba(57, 255, 20, 0.8) !important;
@@ -1489,56 +1299,51 @@ a:hover {
   position: relative !important;
   z-index: 10 !important;
 }
-
 .retro button:hover {
   background: rgba(57, 255, 20, 0.1) !important;
   transform: none !important;
 }
-
 /* Retro theme links - specifically red */
+
 .retro a {
   color: #ff0000 !important;
   text-decoration: underline !important;
   font-weight: bold !important;
 }
-
 .retro a:hover {
   color: #ff3333 !important;
   text-decoration: none !important;
 }
-
 /* Creative theme links - artistic red */
+
 .creative a {
   color: #e74c3c !important;
   text-decoration: underline !important;
   font-weight: 600 !important;
 }
-
 .creative a:hover {
   color: #c0392b !important;
   text-decoration: none !important;
 }
-
 /* Sporty theme links - black for visibility */
+
 .sporty a {
   color: #000000 !important;
   text-decoration: underline !important;
   font-weight: bold !important;
 }
-
 .sporty a:hover {
   color: #333333 !important;
   text-decoration: none !important;
 }
-
 /* ===== FOREST THEME - Enchanted Woodland ===== */
+
 .forest .card,
 .forest .modal,
 .forest .game-card,
 .forest .stat-card,
 .forest .settings-section,
-.forest .profile-card,
-.forest .achievement-counters-grid .counter-card {
+.forest .profile-card {
   border-radius: 22px;
   box-shadow: 0 15px 40px rgba(76, 175, 80, 0.25);
   border: 2px solid rgba(76, 175, 80, 0.2);
@@ -1548,7 +1353,6 @@ a:hover {
   font-family: 'Georgia', serif;
   overflow: hidden;
 }
-
 .forest .card::before,
 .forest .modal::before,
 .forest .game-card::before,
@@ -1565,7 +1369,6 @@ a:hover {
   pointer-events: none;
   z-index: 2;
 }
-
 .forest .card::after,
 .forest .modal::after,
 .forest .game-card::after,
@@ -1584,7 +1387,6 @@ a:hover {
   pointer-events: none;
   z-index: 1;
 }
-
 @keyframes forest-tree-sway {
   0%,
   100% {
@@ -1627,34 +1429,31 @@ a:hover {
   box-shadow: 0 25px 50px rgba(76, 175, 80, 0.3);
   border-color: rgba(139, 195, 74, 0.4);
 }
-
 .forest button:hover {
   transform: scale(1.05) rotate(1deg);
   box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
 }
-
 .forest button,
 .forest a,
 .forest input,
-.forest select,
-.forest .clickable {
+.forest select {
   position: relative;
   z-index: 10;
 }
-
 /* ===== COMIC BOOK THEME - Bold Comic Style ===== */
+
 /* ===== FILM NOIR THEME - Pure Black & White ===== */
+
 .App.noir {
   position: relative;
   background: linear-gradient(135deg, #000000 0%, #0a0a0a 25%, #141414 50%, #1a1a1a 75%, #000000 100%);
 }
-
 /* Comic Book navbar styling - readable text */
+
 .App.noir .navbar {
   background: rgba(0, 0, 0, 0.8) !important;
   border-bottom: 3px solid #ffffff !important;
 }
-
 .App.noir .navbar a,
 .App.noir .navbar .nav-link,
 .App.noir .navbar button {
@@ -1668,7 +1467,6 @@ a:hover {
   margin: 0 4px !important;
   border-radius: 4px !important;
 }
-
 .App.noir .navbar a:hover,
 .App.noir .navbar .nav-link:hover,
 .App.noir .navbar button:hover {
@@ -1677,9 +1475,10 @@ a:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
 }
-
 /* Comic Book button styling - bold and readable */
+
 /* Film Noir button styling - pure black and white */
+
 .App.noir button,
 .App.noir .btn,
 .App.noir input[type='button'],
@@ -1694,7 +1493,6 @@ a:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
   transition: all 0.2s ease !important;
 }
-
 .App.noir button:hover,
 .App.noir .btn:hover,
 .App.noir input[type='button']:hover,
@@ -1705,9 +1503,10 @@ a:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
   border: 2px solid #ffffff !important;
 }
-
 /* Comic Book input styling */
+
 /* Film Noir input styling */
+
 .App.noir input,
 .App.noir select,
 .App.noir textarea {
@@ -1716,42 +1515,39 @@ a:hover {
   border: 2px solid #ffffff !important;
   font-weight: normal !important;
 }
-
 .App.noir input:focus,
 .App.noir select:focus,
 .App.noir textarea:focus {
   border-color: #cccccc !important;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.2) !important;
 }
-
 /* Comic Book card styling - comic panels */
+
 /* Film Noir card styling - enhanced contrast */
+
 .App.noir .card,
 .App.noir .modal,
 .App.noir .game-card,
 .App.noir .stat-card,
 .App.noir .settings-section,
-.App.noir .profile-card,
-.App.noir .achievement-counters-grid .counter-card {
+.App.noir .profile-card {
   background: rgba(0, 0, 0, 0.95) !important;
   border: 2px solid #ffffff !important;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5) !important;
   border-radius: 8px !important;
 }
-
 .App.noir .card:hover,
 .App.noir .modal:hover,
 .App.noir .game-card:hover,
 .App.noir .stat-card:hover,
 .App.noir .settings-section:hover,
-.App.noir .profile-card:hover,
-.App.noir .achievement-counters-grid .counter-card:hover {
+.App.noir .profile-card:hover {
   border-color: #cccccc !important;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.7) !important;
   transform: translateY(-2px) !important;
 }
-
 /* Comic Book text overrides - bold comic style */
+
 .App.noir h1,
 .App.noir h2,
 .App.noir h3,
@@ -1764,7 +1560,6 @@ a:hover {
   text-shadow: 2px 2px 0px #ffffff !important;
   letter-spacing: 0.05em !important;
 }
-
 .App.noir p,
 .App.noir span,
 .App.noir div,
@@ -1775,9 +1570,10 @@ a:hover {
   font-weight: 600 !important;
   text-shadow: 1px 1px 0px #ffffff !important;
 }
-
 /* Comic Book links */
+
 /* Film Noir links */
+
 .App.noir a,
 .App.noir a:hover,
 .App.noir a:visited {
@@ -1786,64 +1582,48 @@ a:hover {
   text-decoration: underline !important;
   text-shadow: 1px 1px 0px #ffffff !important;
 }
-
 /* Comic Book dropdown/selector styling - fix visibility */
+
 .App.noir select,
 .App.noir option,
-.App.noir .theme-selector,
-.App.noir .theme-dropdown,
-.App.noir .dropdown-item,
-.App.noir .dropdown-option {
+.App.noir .dropdown-item {
   background: rgba(0, 0, 0, 0.9) !important;
   color: #ffffff !important;
   border: 2px solid #ffffff !important;
   font-weight: bold !important;
   text-shadow: 1px 1px 0px #000000 !important;
 }
-
-.App.noir select:focus,
-.App.noir .theme-selector:focus,
-.App.noir .theme-dropdown:focus {
+.App.noir select:focus {
   border-color: #ff6b35 !important;
   box-shadow: 0 0 10px rgba(255, 109, 53, 0.5) !important;
 }
-
 /* Comic Book dropdown hover states */
+
 .App.noir select:hover,
 .App.noir option:hover,
-.App.noir .theme-selector:hover,
-.App.noir .theme-dropdown:hover,
-.App.noir .dropdown-item:hover,
-.App.noir .dropdown-option:hover {
+.App.noir .dropdown-item:hover {
   background: rgba(255, 109, 53, 0.8) !important;
   color: #ffffff !important;
 }
-
 /* Comic Book any dropdown or select element */
+
 .App.noir .dropdown,
-.App.noir .select-wrapper,
 .App.noir .custom-select {
   background: rgba(0, 0, 0, 0.9) !important;
   color: #ffffff !important;
   border: 2px solid #ffffff !important;
 }
-
-.App.noir .dropdown-menu,
-.App.noir .dropdown-content,
-.App.noir .select-options {
+.App.noir .dropdown-menu {
   background: rgba(0, 0, 0, 0.95) !important;
   border: 2px solid #ffffff !important;
 }
-
-.App.noir .dropdown-menu *,
-.App.noir .dropdown-content *,
-.App.noir .select-options * {
+.App.noir .dropdown-menu * {
   color: #ffffff !important;
   font-weight: bold !important;
   text-shadow: 1px 1px 0px #000000 !important;
 }
-
 /* Film Noir text overrides - force black and white */
+
 .App.noir *,
 .App.noir *::before,
 .App.noir *::after {
@@ -1851,16 +1631,16 @@ a:hover {
   text-shadow: none !important;
   border-color: #ffffff !important;
 }
-
 /* Film Noir icons and SVG */
+
 .App.noir svg,
 .App.noir svg * {
   color: #ffffff !important;
   fill: #ffffff !important;
   stroke: #ffffff !important;
 }
-
 /* Film Noir badges and tags */
+
 .App.noir .platform-tag,
 .App.noir .mood-tag,
 .App.noir .genre-tag,
@@ -1869,96 +1649,30 @@ a:hover {
   color: #ffffff !important;
   border-color: #ffffff !important;
 }
-
 /* Film Noir stat icons */
+
 .App.noir .stat-icon svg {
   color: #ffffff !important;
   fill: #ffffff !important;
 }
-
-/* Film Noir achievement colors */
-.App.noir .founder-achievement h3 {
-  color: #ffffff !important;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5) !important;
-}
-
-.App.noir .founder-achievement p {
-  color: #cccccc !important;
-}
-
-/* Film Noir donate elements */
-.App.noir .external-icon {
-  color: #ffffff !important;
-}
-
-.App.noir .code-input:focus {
-  border-color: #ffffff !important;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2) !important;
-}
-
-.App.noir .validation-message.success {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid #ffffff !important;
-  color: #ffffff !important;
-}
-
-.App.noir .validation-message.error {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid #ffffff !important;
-  color: #ffffff !important;
-}
-
-.App.noir .code-info a {
-  color: #ffffff !important;
-}
-
-/* Film Noir home elements */
-.App.noir .launcher-badge.detected {
-  background: rgba(255, 255, 255, 0.25) !important;
-  border-color: #ffffff !important;
-  color: #ffffff !important;
-}
-
 .App.noir .result-card {
   border-color: #ffffff !important;
 }
-
 .App.noir .result-title {
   color: #ffffff !important;
 }
-
 .App.noir .result-error {
   color: #ffffff !important;
 }
-
-/* Film Noir gaming identity */
-.App.noir .date-value,
-.App.noir .time-value,
 .App.noir .session-value {
   color: #ffffff !important;
 }
-
-.App.noir .badge-item:hover {
-  border-color: #ffffff !important;
-}
-
-.App.noir .founder-badge {
-  background: linear-gradient(135deg, #ffffff, #cccccc) !important;
-  color: #000000 !important;
-  border: 1px solid #ffffff !important;
-}
-
-.App.noir .trophy-display {
-  color: #ffffff !important;
-  filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.3)) !important;
-}
-
 /* Film Noir library elements */
+
 .App.noir .library-title,
 .App.noir .stat-number {
   color: #ffffff !important;
 }
-
 .App.noir .platform-tag,
 .App.noir .mood-tag,
 .App.noir .genre-tag {
@@ -1966,19 +1680,18 @@ a:hover {
   color: #ffffff !important;
   border-color: #ffffff !important;
 }
-
 .App.noir .game-list-item:hover {
   border-color: #ffffff !important;
 }
-
 /* ===== 16-BIT RETRO THEME - SNES/Genesis Era Style ===== */
+
 .App.retro {
   position: relative;
   background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 25%, #6b3e2a 50%, #8b5a3b 75%, #a0724c 100%);
   font-family: 'Press Start 2P', 'Courier New', 'Monaco', 'Menlo', monospace !important;
 }
-
 /* 16-bit text styling - different from 8-bit */
+
 .App.retro body,
 .App.retro .App,
 .App.retro * {
@@ -1994,8 +1707,8 @@ a:hover {
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
-
 /* 16-bit text effects - more refined than 8-bit */
+
 .App.retro h1,
 .App.retro h2,
 .App.retro h3,
@@ -2012,7 +1725,6 @@ a:hover {
     0 0 12px rgba(255, 107, 53, 0.3) !important;
   animation: text-glow-16bit 4s infinite alternate !important;
 }
-
 .App.retro p,
 .App.retro span,
 .App.retro div,
@@ -2023,8 +1735,8 @@ a:hover {
   letter-spacing: 0.02em !important;
   font-size: 0.9em !important;
 }
-
 /* 16-bit button styling - SNES style */
+
 .App.retro button,
 .App.retro .btn,
 .App.retro input[type='button'],
@@ -2044,7 +1756,6 @@ a:hover {
   transition: all 0.1s ease !important;
   border-radius: 2px !important;
 }
-
 .App.retro button:hover,
 .App.retro .btn:hover,
 .App.retro input[type='button']:hover,
@@ -2057,15 +1768,14 @@ a:hover {
     0 0 0 4px #ff6b35,
     0 4px 0 4px rgba(0, 0, 0, 0.8) !important;
 }
-
 /* 16-bit card styling - SNES cartridge style */
+
 .App.retro .card,
 .App.retro .modal,
 .App.retro .game-card,
 .App.retro .stat-card,
 .App.retro .settings-section,
-.App.retro .profile-card,
-.App.retro .achievement-counters-grid .counter-card {
+.App.retro .profile-card {
   background: linear-gradient(135deg, #8b4513 0%, #a0522d 50%, #cd853f 100%) !important;
   border: 3px solid #ffd700 !important;
   box-shadow:
@@ -2075,22 +1785,20 @@ a:hover {
   font-family: 'Press Start 2P', 'Courier New', 'Monaco', 'Menlo', monospace !important;
   border-radius: 2px !important;
 }
-
 .App.retro .card:hover,
 .App.retro .modal:hover,
 .App.retro .game-card:hover,
 .App.retro .stat-card:hover,
 .App.retro .settings-section:hover,
-.App.retro .profile-card:hover,
-.App.retro .achievement-counters-grid .counter-card:hover {
+.App.retro .profile-card:hover {
   border-color: #ff6b35 !important;
   box-shadow:
     0 0 0 2px #000000,
     0 0 0 4px #ff6b35,
     0 8px 0 4px rgba(0, 0, 0, 0.8) !important;
 }
-
 /* 16-bit input styling */
+
 .App.retro input,
 .App.retro select,
 .App.retro textarea {
@@ -2101,15 +1809,14 @@ a:hover {
   letter-spacing: 0.02em !important;
   border-radius: 2px !important;
 }
-
 .App.retro input:focus,
 .App.retro select:focus,
 .App.retro textarea:focus {
   border-color: #ff6b35 !important;
   box-shadow: 0 0 10px rgba(255, 107, 53, 0.5) !important;
 }
-
 /* 16-bit glow animation - different from 8-bit */
+
 @keyframes text-glow-16bit {
   0%,
   100% {
@@ -2131,6 +1838,7 @@ a:hover {
 }
 
 /* 16-bit scanline effect - subtler than 8-bit */
+
 .App.retro::before {
   content: '';
   position: absolute;
@@ -2143,15 +1851,15 @@ a:hover {
   pointer-events: none;
   z-index: 1;
 }
-
 /* ===== 8-BIT RETRO THEME - Classic Gaming Style ===== */
+
 .App.zen {
   position: relative;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #533483 75%, #e94560 100%);
   font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
 }
-
 /* 8-bit pixel font styling */
+
 .App.zen body,
 .App.zen .App,
 .App.zen * {
@@ -2167,8 +1875,8 @@ a:hover {
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
-
 /* 8-bit text effects */
+
 .App.zen h1,
 .App.zen h2,
 .App.zen h3,
@@ -2185,7 +1893,6 @@ a:hover {
     0 0 20px rgba(0, 255, 0, 0.3) !important;
   animation: text-flicker 3s infinite alternate !important;
 }
-
 .App.zen p,
 .App.zen span,
 .App.zen div,
@@ -2195,8 +1902,8 @@ a:hover {
   font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
   letter-spacing: 0.05em !important;
 }
-
 /* 8-bit button styling */
+
 .App.zen button,
 .App.zen .btn,
 .App.zen input[type='button'],
@@ -2215,7 +1922,6 @@ a:hover {
   text-shadow: none !important;
   transition: all 0.1s ease !important;
 }
-
 .App.zen button:hover,
 .App.zen .btn:hover,
 .App.zen input[type='button']:hover,
@@ -2227,15 +1933,14 @@ a:hover {
     0 0 0 6px #00ff00,
     0 2px 0 6px rgba(0, 0, 0, 0.8) !important;
 }
-
 /* 8-bit card styling */
+
 .App.zen .card,
 .App.zen .modal,
 .App.zen .game-card,
 .App.zen .stat-card,
 .App.zen .settings-section,
-.App.zen .profile-card,
-.App.zen .achievement-counters-grid .counter-card {
+.App.zen .profile-card {
   background: rgba(15, 15, 35, 0.95) !important;
   border: 3px solid #00ff00 !important;
   box-shadow:
@@ -2244,22 +1949,20 @@ a:hover {
     0 8px 0 6px rgba(0, 0, 0, 0.8) !important;
   font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
 }
-
 .App.zen .card:hover,
 .App.zen .modal:hover,
 .App.zen .game-card:hover,
 .App.zen .stat-card:hover,
 .App.zen .settings-section:hover,
-.App.zen .profile-card:hover,
-.App.zen .achievement-counters-grid .counter-card:hover {
+.App.zen .profile-card:hover {
   border-color: #ffff00 !important;
   box-shadow:
     0 0 0 3px #000000,
     0 0 0 6px #ffff00,
     0 8px 0 6px rgba(0, 0, 0, 0.8) !important;
 }
-
 /* 8-bit input styling */
+
 .App.zen input,
 .App.zen select,
 .App.zen textarea {
@@ -2269,15 +1972,14 @@ a:hover {
   color: #00ff00 !important;
   letter-spacing: 0.05em !important;
 }
-
 .App.zen input:focus,
 .App.zen select:focus,
 .App.zen textarea:focus {
   border-color: #ffff00 !important;
   box-shadow: 0 0 10px rgba(255, 255, 0, 0.5) !important;
 }
-
 /* 8-bit flicker animation */
+
 @keyframes text-flicker {
   0%,
   100% {
@@ -2298,6 +2000,7 @@ a:hover {
 }
 
 /* 8-bit scanline effect */
+
 .App.zen::before {
   content: '';
   position: absolute;
@@ -2310,15 +2013,15 @@ a:hover {
   pointer-events: none;
   z-index: 1;
 }
-
 /* ===== GALAXY THEME - Deep Space with Parallax Stars ===== */
+
 .App.galaxy {
   position: relative;
   background: linear-gradient(135deg, #000000 0%, #0a0033 20%, #1a0066 40%, #330099 60%, #4d00cc 80%, #6600ff 100%);
   min-height: 100vh;
 }
-
 /* Animated star layers for parallax effect */
+
 .App.galaxy::before {
   content: '';
   position: absolute;
@@ -2340,7 +2043,6 @@ a:hover {
   z-index: -1;
   pointer-events: none;
 }
-
 .App.galaxy::after {
   content: '';
   position: absolute;
@@ -2360,8 +2062,8 @@ a:hover {
   z-index: -1;
   pointer-events: none;
 }
-
 /* Parallax star animations */
+
 @keyframes stars-parallax-slow {
   0% {
     transform: translate(0, 0);
@@ -2381,13 +2083,13 @@ a:hover {
 }
 
 /* Galaxy-specific card effects */
+
 .App.galaxy .card,
 .App.galaxy .modal,
 .App.galaxy .game-card,
 .App.galaxy .stat-card,
 .App.galaxy .settings-section,
-.App.galaxy .profile-card,
-.App.galaxy .achievement-counters-grid .counter-card {
+.App.galaxy .profile-card {
   background: rgba(26, 0, 102, 0.85) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
   box-shadow:
@@ -2396,22 +2098,20 @@ a:hover {
   -webkit-backdrop-filter: blur(10px) !important;
   backdrop-filter: blur(10px) !important;
 }
-
 .App.galaxy .card:hover,
 .App.galaxy .modal:hover,
 .App.galaxy .game-card:hover,
 .App.galaxy .stat-card:hover,
 .App.galaxy .settings-section:hover,
-.App.galaxy .profile-card:hover,
-.App.galaxy .achievement-counters-grid .counter-card:hover {
+.App.galaxy .profile-card:hover {
   border-color: rgba(0, 255, 255, 0.6) !important;
   box-shadow:
     0 12px 40px rgba(0, 255, 255, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   transform: translateY(-2px) !important;
 }
-
 /* Galaxy button effects */
+
 .App.galaxy button,
 .App.galaxy .btn {
   background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 255, 0.2)) !important;
@@ -2421,7 +2121,6 @@ a:hover {
     0 4px 15px rgba(0, 255, 255, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
-
 .App.galaxy button:hover,
 .App.galaxy .btn:hover {
   background: linear-gradient(135deg, rgba(0, 255, 255, 0.4), rgba(255, 0, 255, 0.4)) !important;
@@ -2430,8 +2129,8 @@ a:hover {
     0 6px 20px rgba(0, 255, 255, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
-
 /* Galaxy text glow */
+
 .App.galaxy h1,
 .App.galaxy h2,
 .App.galaxy h3 {
@@ -2439,23 +2138,19 @@ a:hover {
     0 0 10px rgba(0, 255, 255, 0.5),
     0 0 20px rgba(0, 255, 255, 0.3) !important;
 }
-
-.App.galaxy .library-title,
-.App.galaxy .stats-title,
-.App.galaxy .achievement-header {
+.App.galaxy .library-title {
   text-shadow:
     0 0 15px rgba(255, 255, 255, 0.8),
     0 0 25px rgba(0, 255, 255, 0.6) !important;
 }
-
 /* ===== OCEAN THEME - Deep Blue Depths ===== */
+
 .ocean .card,
 .ocean .modal,
 .ocean .game-card,
 .ocean .stat-card,
 .ocean .settings-section,
-.ocean .profile-card,
-.ocean .achievement-counters-grid .counter-card {
+.ocean .profile-card {
   border-radius: 16px;
   box-shadow: 0 20px 45px rgba(6, 182, 212, 0.25);
   border: 2px solid rgba(6, 182, 212, 0.2);
@@ -2464,7 +2159,6 @@ a:hover {
   transition: all 0.6s ease;
   font-family: 'Arial', sans-serif;
 }
-
 .ocean .card::after,
 .ocean .modal::after,
 .ocean .game-card::after,
@@ -2483,7 +2177,6 @@ a:hover {
   pointer-events: none;
   z-index: 1;
 }
-
 @keyframes ocean-waves {
   0% {
     opacity: 0.3;
@@ -2501,7 +2194,6 @@ a:hover {
   transform: translateY(-4px) scale(1.01);
   animation: ocean-bob 2s ease-in-out infinite;
 }
-
 @keyframes ocean-bob {
   0%,
   100% {
@@ -2515,34 +2207,30 @@ a:hover {
 .ocean button,
 .ocean a,
 .ocean input,
-.ocean select,
-.ocean .clickable {
+.ocean select {
   position: relative;
   z-index: 10;
 }
-
 /* Apply theme-specific styles to all components */
+
 [class*='theme'] .card,
 [class*='theme'] .modal,
 [class*='theme'] .game-card,
 [class*='theme'] .stat-card,
 [class*='theme'] .settings-section,
-[class*='theme'] .profile-card,
-[class*='theme'] .achievement-counters-grid .counter-card {
+[class*='theme'] .profile-card {
   border-radius: var(--border-radius, 12px);
   transition-duration: var(--animation-duration, 0.3s);
 }
-
 [class*='theme'] body {
   font-family: var(--font-family, 'Inter', sans-serif);
 }
-
 /* Ensure all interactive elements are clickable across all themes */
+
 [class*='theme'] button,
 [class*='theme'] a,
 [class*='theme'] input,
 [class*='theme'] select,
-[class*='theme'] .clickable,
 [class*='theme'] [role='button'],
 [class*='theme'] [onclick] {
   cursor: pointer !important;
@@ -2550,8 +2238,8 @@ a:hover {
   position: relative !important;
   z-index: 10 !important;
 }
-
 /* Prevent background elements from blocking interactions */
+
 [class*='theme'] .card::before,
 [class*='theme'] .card::after,
 [class*='theme'] .modal::before,
@@ -2566,7 +2254,6 @@ a:hover {
 [class*='theme'] .profile-card::after {
   pointer-events: none !important;
 }
-
 .librarian-pick-banner {
   margin: 0 20px 20px;
   padding: 16px 18px;
@@ -2578,45 +2265,37 @@ a:hover {
   flex-wrap: wrap;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
-
 .librarian-pick-banner.smart {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.1) 100%);
   border-color: rgba(102, 126, 234, 0.24);
 }
-
 .librarian-pick-banner.random {
   background: linear-gradient(135deg, rgba(240, 147, 251, 0.12) 0%, rgba(245, 87, 108, 0.1) 100%);
   border-color: rgba(240, 147, 251, 0.24);
 }
-
 .librarian-pick-icon {
   font-size: 1.8rem;
   line-height: 1;
 }
-
 .librarian-pick-copy {
   flex: 1;
   min-width: 220px;
 }
-
 .librarian-pick-copy h3 {
   margin: 0 0 4px;
   font-size: 1rem;
 }
-
 .librarian-pick-copy p {
   margin: 0;
   opacity: 0.76;
   font-size: 0.9rem;
 }
-
 .librarian-pick-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
-
 .librarian-pick-game-chip {
   display: flex;
   align-items: center;
@@ -2625,11 +2304,9 @@ a:hover {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
-
 .librarian-pick-game-chip span {
   font-weight: 600;
 }
-
 .librarian-pick-play {
   padding: 6px 12px;
   font-size: 0.82rem;
@@ -2639,7 +2316,6 @@ a:hover {
   color: #fff;
   cursor: pointer;
 }
-
 .librarian-pick-dismiss {
   background: transparent;
   border: none;
@@ -2649,126 +2325,7 @@ a:hover {
   line-height: 1;
   opacity: 0.72;
 }
-
 /* ===== FREE GAMES SECTION STYLING ===== */
-
-/* Main free games container */
-.free-games-section {
-  background: linear-gradient(135deg, rgba(255, 140, 0, 0.05), rgba(255, 165, 0, 0.025));
-  border: 1px solid rgba(255, 140, 0, 0.16);
-  border-radius: 16px;
-  padding: 18px;
-  margin: 0 20px 20px;
-  -webkit-backdrop-filter: blur(10px) !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 0 8px 22px rgba(255, 140, 0, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-
-.free-games-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #ff8c00, #ffa500, #ff8c00);
-  background-size: 200% 100%;
-  animation: free-games-glow 4s ease-in-out infinite;
-}
-
-@keyframes free-games-glow {
-  0%,
-  100% {
-    opacity: 0.35;
-    background-position: 0% 50%;
-  }
-  50% {
-    opacity: 1;
-    background-position: 100% 50%;
-  }
-}
-
-/* Header section */
-.free-games-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-  gap: 20px;
-}
-
-.free-games-header h3 {
-  color: #ff8c00;
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 6px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.free-games-header p {
-  color: var(--text-secondary, #888);
-  font-size: 13px;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.free-games-controls {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.free-games-toggle {
-  background: rgba(255, 140, 0, 0.1);
-  border: 1px solid rgba(255, 140, 0, 0.3);
-  color: #ff8c00;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  -webkit-backdrop-filter: blur(5px) !important;
-  backdrop-filter: blur(5px) !important;
-}
-
-.free-games-toggle:hover:not(:disabled) {
-  background: rgba(255, 140, 0, 0.2);
-  border-color: rgba(255, 140, 0, 0.5);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2);
-}
-
-.free-games-toggle:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Error and loading states */
-.free-games-error {
-  background: rgba(220, 53, 69, 0.1);
-  border: 1px solid rgba(220, 53, 69, 0.3);
-  color: #dc3545;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.free-games-loading {
-  text-align: center;
-  padding: 40px;
-  color: var(--text-secondary, #888);
-  font-size: 16px;
-  font-style: italic;
-}
 
 .scan-overlay {
   position: fixed;
@@ -2782,7 +2339,6 @@ a:hover {
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
-
 .scan-overlay-card {
   width: min(520px, 100%);
   padding: 34px;
@@ -2793,7 +2349,6 @@ a:hover {
   color: var(--text-primary);
   text-align: center;
 }
-
 .scan-radar {
   position: relative;
   width: 120px;
@@ -2805,28 +2360,24 @@ a:hover {
   background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0 2px, transparent 3px), rgba(255, 255, 255, 0.04);
   box-shadow: 0 0 34px rgba(255, 107, 53, 0.28);
 }
-
 .scan-radar::before,
 .scan-radar::after {
   content: '';
   position: absolute;
   background: rgba(255, 255, 255, 0.22);
 }
-
 .scan-radar::before {
   left: 50%;
   top: 0;
   bottom: 0;
   width: 1px;
 }
-
 .scan-radar::after {
   left: 0;
   right: 0;
   top: 50%;
   height: 1px;
 }
-
 .scan-radar-sweep {
   position: absolute;
   inset: 50% 50% 0 0;
@@ -2834,7 +2385,6 @@ a:hover {
   background: linear-gradient(45deg, rgba(255, 171, 0, 0.75), transparent 65%);
   animation: scanRadarSweep 1.8s linear infinite;
 }
-
 .scan-radar-dot {
   position: absolute;
   width: 8px;
@@ -2844,24 +2394,20 @@ a:hover {
   box-shadow: 0 0 16px var(--accent-color);
   animation: scanDotPulse 1.6s ease-in-out infinite;
 }
-
 .scan-radar-dot.dot-one {
   left: 32px;
   top: 38px;
 }
-
 .scan-radar-dot.dot-two {
   right: 28px;
   top: 56px;
   animation-delay: 0.35s;
 }
-
 .scan-radar-dot.dot-three {
   left: 58px;
   bottom: 26px;
   animation-delay: 0.7s;
 }
-
 .scan-overlay-eyebrow {
   margin: 0 0 8px;
   color: var(--accent-color);
@@ -2870,19 +2416,16 @@ a:hover {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-
 .scan-overlay-card h2 {
   margin: 0 0 12px;
   color: var(--text-primary);
   font-size: clamp(26px, 4vw, 36px);
 }
-
 .scan-overlay-card p {
   margin: 0;
   color: var(--text-secondary);
   line-height: 1.6;
 }
-
 .scan-overlay-progress {
   position: relative;
   height: 10px;
@@ -2891,7 +2434,6 @@ a:hover {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
 }
-
 .scan-overlay-progress span {
   position: absolute;
   inset: 0 auto 0 0;
@@ -2900,12 +2442,10 @@ a:hover {
   background: linear-gradient(90deg, transparent, var(--accent-color), var(--button-primary-bg));
   animation: scanProgressSlide 1.4s ease-in-out infinite;
 }
-
 .scan-overlay-note {
   font-size: 13px;
   opacity: 0.78;
 }
-
 @keyframes scanRadarSweep {
   from {
     transform: rotate(0deg);
@@ -2936,298 +2476,19 @@ a:hover {
   }
 }
 
-.free-games-empty {
-  text-align: center;
-  padding: 40px;
-  color: var(--text-secondary, #888);
-  font-size: 15px;
-  font-style: italic;
-}
-
-/* Free games grid */
-.free-games-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-}
-
-/* Individual free game card */
-.free-game-card {
-  background: var(--surface-secondary, rgba(255, 255, 255, 0.05));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
-}
-
-.free-game-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 140, 0, 0.3);
-}
-
-.free-game-thumb {
-  width: 100%;
-  height: 120px;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--surface-tertiary, rgba(0, 0, 0, 0.2));
-  background-image: linear-gradient(135deg, rgba(255, 140, 0, 0.12), rgba(255, 100, 0, 0.08));
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.free-game-thumb::before {
-  content: '🆓';
-  font-size: 2.5rem;
-  opacity: 0.35;
-  position: absolute;
-  z-index: 0;
-}
-
-.free-game-thumb[style*='url('] .free-game-thumb::before {
-  display: none;
-}
-
-.free-game-thumb::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-}
-
-.free-game-body {
-  padding: 14px;
-}
-
-.free-game-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.free-game-title span {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.free-game-title h4 {
-  color: var(--text-color, #fff);
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.free-game-body p {
-  color: var(--text-secondary, #888);
-  font-size: 13px;
-  line-height: 1.4;
-  margin: 0 0 12px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.free-game-body .free-game-mystery-note {
-  color: #ffb347;
-}
-
-.free-game-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.free-game-meta span {
-  color: var(--text-secondary, #888);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.free-game-meta button {
-  background: linear-gradient(135deg, #ff8c00, #ffa500);
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.free-game-meta button:hover {
-  background: linear-gradient(135deg, #ff7700, #ff9500);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
-}
-
-/* Hidden state bar */
-.free-games-hidden-bar {
-  background: rgba(255, 140, 0, 0.05);
-  border: 1px solid rgba(255, 140, 0, 0.2);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin: 0 20px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  -webkit-backdrop-filter: blur(5px) !important;
-  backdrop-filter: blur(5px) !important;
-}
-
-.free-games-hidden-bar span {
-  color: var(--text-secondary, #888);
-  font-size: 14px;
-}
-
-.free-games-hidden-bar button {
-  background: rgba(255, 140, 0, 0.1);
-  border: 1px solid rgba(255, 140, 0, 0.3);
-  color: #ff8c00;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.free-games-hidden-bar button:hover {
-  background: rgba(255, 140, 0, 0.2);
-  border-color: rgba(255, 140, 0, 0.5);
-}
-
 /* Removed mobile responsive styles - GamePilot is desktop-only */
 
 /* Responsive design */
+
 @media (max-width: 768px) {
-  .free-games-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .free-games-controls {
-    justify-content: flex-end;
-  }
-
-  .free-games-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .free-games-section {
-    padding: 16px;
-    margin: 0 15px 18px;
-  }
-
-  .librarian-pick-banner,
-  .free-games-hidden-bar {
+  .librarian-pick-banner {
     margin-left: 15px;
     margin-right: 15px;
   }
 }
 
-@media (max-width: 480px) {
-  .free-games-header h3 {
-    font-size: 20px;
-  }
-
-  .free-games-controls {
-    flex-wrap: wrap;
-  }
-
-  .free-games-toggle {
-    flex: 1;
-    min-width: 0;
-  }
-}
-
-/* Big Screen Mode */
-body.big-screen-mode {
-  font-size: 1.25rem;
-}
-
-body.big-screen-mode .App {
-  max-width: 95%;
-  margin: 0 auto;
-}
-
-body.big-screen-mode nav .nav-link,
-body.big-screen-mode nav .dropdown-toggle,
-body.big-screen-mode button,
-body.big-screen-mode .game-card,
-body.big-screen-mode .rec-tuner-preset-btn,
-body.big-screen-mode .mood-button,
-body.big-screen-mode .genre-button,
-body.big-screen-mode .time-button,
-body.big-screen-mode .tuning-toggle {
-  font-size: 1.2rem;
-  padding: 1em 1.2em;
-  min-height: 48px;
-}
-
-body.big-screen-mode .game-card img {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
-}
-
-body.big-screen-mode .navbar-primary {
-  gap: 16px;
-}
-
-body.big-screen-mode .dropdown-item {
-  font-size: 1.2rem;
-  padding: 14px 18px;
-}
-
-body.big-screen-mode .dropdown-menu {
-  min-width: 320px;
-}
-
-@media screen and (min-width: 1200px) {
-  body.big-screen-mode {
-    font-size: 1.5rem;
-  }
-  body.big-screen-mode nav .nav-link,
-  body.big-screen-mode nav .dropdown-toggle,
-  body.big-screen-mode button,
-  body.big-screen-mode .game-card,
-  body.big-screen-mode .rec-tuner-preset-btn,
-  body.big-screen-mode .mood-button,
-  body.big-screen-mode .genre-button,
-  body.big-screen-mode .time-button,
-  body.big-screen-mode .tuning-toggle {
-    font-size: 1.6rem;
-    padding: 1.2em 1.4em;
-  }
-  body.big-screen-mode .dropdown-item {
-    font-size: 1.4rem;
-    padding: 18px 22px;
-  }
-  body.big-screen-mode .dropdown-menu {
-    min-width: 400px;
-  }
-}
-
 /* ===== PAGE FADE-IN ANIMATION ===== */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -3239,27 +2500,19 @@ body.big-screen-mode .dropdown-menu {
 
 .home-page,
 .library-page,
-.stats-page,
-.achievements-page,
-.profile-page,
-.settings-page,
-.habits-page {
+.profile-page {
   animation: fadeIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @media (prefers-reduced-motion: reduce) {
   .home-page,
   .library-page,
-  .stats-page,
-  .achievements-page,
-  .profile-page,
-  .settings-page,
-  .habits-page {
+  .profile-page {
     animation: none;
   }
 }
 
 /* ===== TYPOGRAPHY SCALE ===== */
+
 h1 {
   font-size: 1.75rem;
   font-weight: 700;
@@ -3295,8 +2548,8 @@ h6 {
   letter-spacing: 0.04em;
   line-height: 1.4;
 }
-
 /* ===== SCROLLBAR POLISH (dark theme) ===== */
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -3311,35 +2564,23 @@ h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
-
-/* ===== CONTENT WRAPPER UTILITY ===== */
-.page-content-wrapper {
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: var(--space-lg);
-}
-
 /* ===== THEME BUILDER OVERRIDES ===== */
+
 .theme-builder-active {
   font-family: var(--builder-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
 }
-
 .theme-builder-active .card,
 .theme-builder-active [class*='card'],
-.theme-builder-active .settings-section,
-.theme-builder-active .builder-section {
+.theme-builder-active .settings-section {
   border-radius: var(--card-radius, 12px);
   border-width: var(--card-border-width, 1px);
   -webkit-backdrop-filter: blur(var(--card-blur, 12px));
   backdrop-filter: blur(var(--card-blur, 12px));
 }
-
-.theme-builder-active .preview-card,
 .theme-builder-active .card,
 .theme-builder-active [class*='card'] {
   box-shadow: var(--neon-glow, none);
 }
-
 .theme-builder-active::before,
 .theme-builder-active::after {
   content: '';
@@ -3348,7 +2589,6 @@ h6 {
   pointer-events: none;
   z-index: 9999;
 }
-
 .theme-builder-active::after {
   box-shadow: inset 0 0 180px rgba(0, 0, 0, calc(var(--builder-vignette, 0) + 0.02));
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
@@ -3356,17 +2596,14 @@ h6 {
   opacity: var(--builder-grain, 0);
   mix-blend-mode: screen;
 }
-
 .theme-builder-active .App {
   filter: saturate(calc(1 + var(--builder-bloom, 0))) brightness(calc(1 + (var(--builder-bloom, 0) * 0.5)));
 }
-
 .theme-builder-active[data-builder-effect='particles']::before {
   background-image: radial-gradient(circle, var(--builder-effect-soft, rgba(255, 255, 255, 0.15)) 1px, transparent 1px);
   background-size: 40px 40px;
   animation: builderAppParticleDrift var(--builder-effect-speed, 9s) linear infinite;
 }
-
 .theme-builder-active[data-builder-effect='matrix-rain']::before {
   content: '';
   position: absolute;
@@ -3395,7 +2632,6 @@ h6 {
   opacity: calc(0.45 + var(--builder-effect-intensity, 3) * 0.1);
   animation: builderAppMatrixRain var(--builder-effect-speed, 9s) linear infinite;
 }
-
 .theme-builder-active[data-builder-effect='matrix-rain']::after {
   content: '';
   position: absolute;
@@ -3408,7 +2644,6 @@ h6 {
     transparent 4px
   );
 }
-
 .theme-builder-active[data-builder-effect='starfield']::before {
   background-image: radial-gradient(1px 1px at 10% 20%, var(--builder-effect-color, #ffffff), transparent),
     radial-gradient(2px 2px at 30% 70%, var(--builder-effect-soft, rgba(255, 255, 255, 0.3)), transparent),
@@ -3419,7 +2654,6 @@ h6 {
   opacity: calc(0.25 + (var(--builder-effect-intensity, 3) * 0.1));
   animation: builderAppStarfield var(--builder-effect-speed, 9s) linear infinite;
 }
-
 .theme-builder-active[data-builder-effect='aurora']::before {
   background: radial-gradient(
       ellipse at 30% 20%,
@@ -3429,14 +2663,12 @@ h6 {
     radial-gradient(ellipse at 70% 80%, var(--builder-effect-soft, rgba(255, 255, 255, 0.1)) 0%, transparent 60%);
   animation: builderAppAurora var(--builder-effect-speed, 9s) ease-in-out infinite alternate;
 }
-
 .theme-builder-active[data-builder-effect='waves'] {
   overflow: hidden;
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, transparent 40%, var(--builder-effect-soft, rgba(0, 180, 220, 0.15)) 100%);
 }
-
 .theme-builder-active[data-builder-effect='waves']::before {
   content: '';
   position: absolute;
@@ -3456,7 +2688,6 @@ h6 {
   animation: waveScroll var(--builder-effect-speed, 9s) linear infinite;
   opacity: 0.85;
 }
-
 .theme-builder-active[data-builder-effect='waves']::after {
   content: '';
   position: absolute;
@@ -3472,7 +2703,6 @@ h6 {
   animation: waveScroll calc(var(--builder-effect-speed, 9s) * 0.7) linear infinite reverse;
   opacity: 0.6;
 }
-
 .theme-builder-active[data-builder-effect='rain']::before {
   content: '';
   position: absolute;
@@ -3488,7 +2718,6 @@ h6 {
   opacity: calc(0.45 + var(--builder-effect-intensity, 3) * 0.1);
   animation: rainFallFast 0.6s linear infinite;
 }
-
 .theme-builder-active[data-builder-effect='rain']::after {
   content: '';
   position: absolute;
@@ -3504,7 +2733,6 @@ h6 {
   opacity: calc(0.25 + var(--builder-effect-intensity, 3) * 0.05);
   animation: rainFallSlow 0.9s linear infinite;
 }
-
 .theme-builder-active[data-builder-effect='snow']::before {
   background-image: radial-gradient(2px 2px at 12px 18px, var(--builder-effect-color, #ffffff), transparent),
     radial-gradient(1px 1px at 42px 62px, var(--builder-effect-soft, rgba(255, 255, 255, 0.8)), transparent),
@@ -3518,7 +2746,6 @@ h6 {
   opacity: calc(0.55 + (var(--builder-effect-intensity, 3) * 0.1));
   animation: builderAppSnow var(--builder-effect-speed, 9s) linear infinite;
 }
-
 .theme-builder-active[data-builder-effect='pulse']::before {
   background: radial-gradient(
     circle at center,
@@ -3527,7 +2754,6 @@ h6 {
   );
   animation: builderAppPulse var(--builder-effect-speed, 9s) ease-in-out infinite;
 }
-
 @keyframes builderAppParticleDrift {
   0% {
     transform: translateY(0);
@@ -3616,21 +2842,15 @@ h6 {
 .home-page,
 .library-page,
 .recommendations-page,
-.stats-page,
-.profile-page,
-.rewards-page {
+.profile-page {
   isolation: isolate;
 }
-
 .home-page > :not(.navbar),
 .library-page > :not(.navbar),
 .recommendations-page > :not(.navbar),
-.profile-page > :not(.navbar),
-.rewards-page > :not(.navbar),
-.App > .stats-page {
+.profile-page > :not(.navbar) {
   animation: gamepilot-page-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @keyframes gamepilot-page-enter {
   from {
     opacity: 0;
@@ -3650,67 +2870,52 @@ button[aria-disabled='true'] {
   box-shadow: none !important;
   transform: none !important;
 }
-
 button:not(:disabled):active,
 [role='button'][aria-disabled='false']:active {
   transform: translateY(0) scale(0.975);
 }
-
 input:disabled,
 select:disabled,
 textarea:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
-
 body.compact-mode .empty-library-state {
   padding: 24px 16px;
 }
-
 body.compact-mode .empty-library-header {
   margin-bottom: 28px;
 }
-
 body.compact-mode .empty-library-icon {
   width: 56px;
   height: 56px;
 }
-
 body.compact-mode .empty-library-header h1 {
   font-size: 1.5rem;
 }
-
 body.compact-mode .empty-library-header p {
   font-size: 0.95rem;
 }
-
 .card,
 .modal,
 .settings-section,
 .stat-card,
 .profile-card,
-.rewards-card-item,
-.rec-style-card,
-.stats-summary-card {
+.rec-style-card {
   border-color: var(--surface-hairline);
 }
-
 .card:hover,
 .settings-section:hover,
 .stat-card:hover,
-.rewards-card-item:not(.locked):hover,
-.rec-style-card:hover,
-.stats-summary-card:hover {
+.rec-style-card:hover {
   border-color: rgba(255, 107, 53, 0.3);
 }
-
 .modal-overlay {
   padding: clamp(16px, 4vw, 40px);
   background: rgba(5, 8, 16, 0.72);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
   backdrop-filter: blur(14px) saturate(130%);
 }
-
 .modal-content {
   border: 1px solid rgba(255, 255, 255, 0.11);
   box-shadow:
@@ -3718,7 +2923,6 @@ body.compact-mode .empty-library-header p {
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   animation: gamepilot-dialog-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @keyframes gamepilot-dialog-enter {
   from {
     opacity: 0;
@@ -3730,50 +2934,37 @@ body.compact-mode .empty-library-header p {
   }
 }
 
-:is(.home-hero, .library-header, .stats-header, .profile-header, .rewards-header, .rec-hub-header) h1 {
-  max-width: 100%;
-  letter-spacing: -0.035em;
-}
-
 :is(.scan-button, .library-launch-button, .rec-row-launch, .action-button.primary, .getting-started-primary) {
   box-shadow: 0 10px 26px rgba(255, 107, 53, 0.2);
 }
-
 :is(.scan-button, .library-launch-button, .rec-row-launch, .action-button.primary, .getting-started-primary):not(
     :disabled
   ):hover {
   box-shadow: 0 14px 34px rgba(255, 107, 53, 0.3);
 }
-
 @media (max-width: 900px) {
   .navbar {
     justify-content: space-between !important;
     padding-inline: 12px !important;
     gap: 10px !important;
   }
-
   .navbar-brand-name {
     display: none;
   }
-
   .navbar-primary {
     flex: 1;
     overflow-x: auto;
   }
-
   .navbar-primary::-webkit-scrollbar {
     height: 6px;
   }
-
   .navbar-primary::-webkit-scrollbar-track {
     background: transparent;
   }
-
   .navbar-primary::-webkit-scrollbar-thumb {
     background: var(--nav-scrollbar);
     border-radius: 4px;
   }
-
   @supports (scrollbar-width: thin) and (scrollbar-color: gray transparent) {
     .navbar-primary {
       scrollbar-width: thin;
@@ -3791,21 +2982,17 @@ body.compact-mode .empty-library-header p {
   :root {
     --app-navbar-offset: 64px;
   }
-
   .nav-search-pill-kbd,
   .navbar-dropdown .dropdown-toggle > span {
     display: none;
   }
-
   .navbar-primary .nav-link,
   .nav-search-pill {
     flex-shrink: 0;
   }
-
   .navbar .navbar-brand {
     padding-inline: 0 !important;
   }
-
   .modal-content {
     width: min(100%, 560px);
     max-height: calc(100vh - 32px);
@@ -3818,14 +3005,13 @@ body.compact-mode .empty-library-header p {
   .library-page > :not(.navbar),
   .recommendations-page > :not(.navbar),
   .profile-page > :not(.navbar),
-  .rewards-page > :not(.navbar),
-  .App > .stats-page,
   .modal-content {
     animation: none;
   }
 }
 
 /* ===== Polish pass: shared elevation + interaction consistency ===== */
+
 .App .filter-select,
 .App .filter-toggle,
 .App .library-filter-toggle,
@@ -3836,12 +3022,10 @@ body.compact-mode .empty-library-header p {
     box-shadow var(--transition-fast, 0.15s ease),
     transform var(--transition-fast, 0.15s ease);
 }
-
 .App .filter-select:hover,
 .App select:hover {
   border-color: rgba(255, 255, 255, 0.22);
 }
-
 .App .filter-select:focus-visible,
 .App select:focus-visible {
   border-color: var(--accent-primary, #ff6b35);

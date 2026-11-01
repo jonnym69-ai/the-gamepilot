@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LocalShareService } from '../services/LocalShareService';
-import { User, Download, Share2, Trophy, Clock, Gamepad2, BarChart3, Sparkles, Zap } from 'lucide-react';
+import { resolveGameArtworkBundle } from '../services/GameArtworkService';
+import { User, Download, Share2, Clock, Gamepad2, BarChart3, Sparkles, Zap } from 'lucide-react';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
 import GamingPersonaService from '../services/GamingPersonaService';
@@ -25,6 +26,178 @@ const CONFIDENCE_META = {
   provisional: { label: 'Early read', className: 'is-provisional' },
 };
 
+const loadShareImage = (sources) =>
+  new Promise((resolve) => {
+    const tryNext = (index) => {
+      if (index >= sources.length) {
+        resolve(null);
+        return;
+      }
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.onload = () => resolve(image);
+      image.onerror = () => tryNext(index + 1);
+      image.src = sources[index];
+    };
+    tryNext(0);
+  });
+
+const truncateCanvasText = (ctx, value, maxWidth) => {
+  let label = String(value);
+  if (ctx.measureText(label).width <= maxWidth) return label;
+  while (label.length && ctx.measureText(`${label}…`).width > maxWidth) label = label.slice(0, -1);
+  return `${label}…`;
+};
+
+// Both the download and the share button rasterize the same canvas so the
+// copied image matches the exported card exactly — no text-only share path.
+export const buildIdentityCanvas = async (identity) => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas unavailable');
+  const width = 800;
+  const height = 480;
+  canvas.width = width * 2;
+  canvas.height = height * 2;
+  ctx.scale(2, 2);
+
+  // Background gradient based on persona
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, '#0f172a');
+  gradient.addColorStop(1, '#1e293b');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // Top-played game cover on the right — the same artwork the in-app card is
+  // drawn from, so the shared image shows what the app shows.
+  const bundle = identity.topGame
+    ? resolveGameArtworkBundle(identity.topGame, { surface: 'portrait', fallbackSurface: 'library_card' })
+    : null;
+  const sources = bundle ? [bundle.artwork, bundle.fallbackSrc, bundle.placeholder].filter(Boolean) : [];
+  const cover = sources.length > 0 ? await loadShareImage(sources) : null;
+  const panelX = 552;
+  const panelY = 66;
+  const panelW = 216;
+  const panelH = 310;
+  if (cover && ctx.drawImage) {
+    ctx.save();
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(panelX, panelY, panelW, panelH, 14);
+    } else {
+      ctx.rect(panelX, panelY, panelW, panelH);
+    }
+    ctx.clip();
+    const imageRatio = cover.width / cover.height;
+    const boxRatio = panelW / panelH;
+    let drawW = panelW;
+    let drawH = panelH;
+    let drawX = panelX;
+    let drawY = panelY;
+    if (imageRatio > boxRatio) {
+      drawW = panelH * imageRatio;
+      drawX = panelX - (drawW - panelW) / 2;
+    } else {
+      drawH = panelW / imageRatio;
+      drawY = panelY - (drawH - panelH) / 2;
+    }
+    ctx.drawImage(cover, drawX, drawY, drawW, drawH);
+    const fade = ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelH);
+    fade.addColorStop(0, 'rgba(15, 23, 42, 0)');
+    fade.addColorStop(1, 'rgba(15, 23, 42, 0.55)');
+    ctx.fillStyle = fade;
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(61, 217, 255, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('MOST PLAYED', panelX, panelY + panelH + 26);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText(truncateCanvasText(ctx, identity.topGame?.name || '', panelW), panelX, panelY + panelH + 50);
+  }
+
+  // Accent bar
+  ctx.fillStyle = '#3dd9ff';
+  ctx.fillRect(0, 0, width, 6);
+
+  // Title
+  ctx.fillStyle = '#f1f5f9';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.fillText('GamePilot Identity', 32, 52);
+
+  // Persona label
+  ctx.fillStyle = '#3dd9ff';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.fillText(identity.label, 32, 110);
+
+  // Description
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '18px sans-serif';
+  const words = identity.description.split(' ');
+  let line = '';
+  let y = 148;
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > 500 && line !== '') {
+      ctx.fillText(line, 32, y);
+      line = word + ' ';
+      y += 26;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, 32, y);
+
+  // Tags
+  let tagX = 32;
+  const tagY = y + 40;
+  ctx.font = '14px sans-serif';
+  identity.tags.slice(0, 4).forEach((tag) => {
+    const textWidth = ctx.measureText(tag).width + 20;
+    ctx.fillStyle = 'rgba(61, 217, 255, 0.15)';
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(tagX, tagY - 18, textWidth, 28, 6);
+    } else {
+      ctx.rect(tagX, tagY - 18, textWidth, 28);
+    }
+    ctx.fill();
+    ctx.fillStyle = '#3dd9ff';
+    ctx.fillText(tag, tagX + 10, tagY);
+    tagX += textWidth + 10;
+  });
+
+  // Stats grid
+  const stats = [
+    { label: 'Games', value: String(identity.totalGames) },
+    { label: 'Hours', value: String(identity.totalHours) },
+    { label: 'Sessions', value: String(identity.totalSessions) },
+    { label: 'Avg Session', value: `${identity.avgSession}m` },
+  ];
+
+  let statX = 32;
+  const statY = tagY + 60;
+  stats.forEach((stat) => {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(stat.label.toUpperCase(), statX, statY);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(stat.value, statX, statY + 28);
+    statX += 140;
+  });
+
+  // Footer
+  ctx.fillStyle = '#475569';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('Generated by GamePilot — Your Gaming Librarian', 32, height - 20);
+
+  return canvas;
+};
+
 const GamerIdentityCard = ({ library = [], className = '' }) => {
   const cardRef = useRef(null);
   const navigate = useNavigate();
@@ -40,12 +213,18 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
     const allTime = dashboard?.periods?.all;
     const trackedMinutes = Number(allTime?.playtimeMinutes) || 0;
     const importedMinutes = Number(dashboard?.importedPlaytime?.totalMinutes) || 0;
+    let topGame = null;
+    let topGameMinutes = 0;
     const libraryMinutes = library.reduce((sum, game) => {
       const mins = Math.max(
         Number(game?.time_played) || 0,
         Number(game?.playtime?.total) || 0,
         Number(game?.importedPlaytimeMinutes) || 0
       );
+      if (mins > topGameMinutes) {
+        topGameMinutes = mins;
+        topGame = game;
+      }
       return sum + mins;
     }, 0);
     const lifetimeMinutes = Math.max(trackedMinutes, importedMinutes, libraryMinutes);
@@ -70,8 +249,8 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
       totalGames: library.length,
       totalHours: Math.round(lifetimeMinutes / 60),
       totalSessions: allTime?.sessions || 0,
-      completedCount: allTime?.questUsage?.totalCompleted || 0,
       avgSession: allTime?.avgSessionMinutes || 0,
+      topGame,
       topMoods,
       topGenres,
       recentGenre,
@@ -79,8 +258,6 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
         recentPeakHour !== null
           ? UserBehaviorProfile.getTimeOfDay(recentPeakHour)
           : peakHours[0]?.timeOfDay || 'Unknown',
-      completionRate:
-        allTime?.sessions > 0 ? Math.round(((allTime?.questUsage?.totalCompleted || 0) / allTime.sessions) * 100) : 0,
       confidence: persona?.confidence || 'low',
       blendFactor: persona?.blendFactor ?? 0,
     };
@@ -103,96 +280,11 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
         ? 'Still learning your tastes — a quick tune-up sharpens recommendations.'
         : null;
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     if (!cardRef.current || !identity) return;
 
     try {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const width = 800;
-      const height = 480;
-      canvas.width = width * 2;
-      canvas.height = height * 2;
-      ctx.scale(2, 2);
-
-      // Background gradient based on persona
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#0f172a');
-      gradient.addColorStop(1, '#1e293b');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-
-      // Accent bar
-      ctx.fillStyle = '#3dd9ff';
-      ctx.fillRect(0, 0, width, 6);
-
-      // Title
-      ctx.fillStyle = '#f1f5f9';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('GamePilot Identity', 32, 52);
-
-      // Persona label
-      ctx.fillStyle = '#3dd9ff';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.fillText(identity.label, 32, 110);
-
-      // Description
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '18px sans-serif';
-      const words = identity.description.split(' ');
-      let line = '';
-      let y = 148;
-      for (const word of words) {
-        const test = line + word + ' ';
-        if (ctx.measureText(test).width > 520 && line !== '') {
-          ctx.fillText(line, 32, y);
-          line = word + ' ';
-          y += 26;
-        } else {
-          line = test;
-        }
-      }
-      ctx.fillText(line, 32, y);
-
-      // Tags
-      let tagX = 32;
-      const tagY = y + 40;
-      ctx.font = '14px sans-serif';
-      identity.tags.slice(0, 4).forEach((tag) => {
-        const textWidth = ctx.measureText(tag).width + 20;
-        ctx.fillStyle = 'rgba(61, 217, 255, 0.15)';
-        ctx.beginPath();
-        ctx.roundRect(tagX, tagY - 18, textWidth, 28, 6);
-        ctx.fill();
-        ctx.fillStyle = '#3dd9ff';
-        ctx.fillText(tag, tagX + 10, tagY);
-        tagX += textWidth + 10;
-      });
-
-      // Stats grid
-      const stats = [
-        { label: 'Games', value: String(identity.totalGames) },
-        { label: 'Hours', value: String(identity.totalHours) },
-        { label: 'Sessions', value: String(identity.totalSessions) },
-        { label: 'Avg Session', value: `${identity.avgSession}m` },
-      ];
-
-      let statX = 32;
-      const statY = tagY + 60;
-      stats.forEach((stat) => {
-        ctx.fillStyle = '#64748b';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(stat.label.toUpperCase(), statX, statY);
-        ctx.fillStyle = '#f1f5f9';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.fillText(stat.value, statX, statY + 28);
-        statX += 140;
-      });
-
-      // Footer
-      ctx.fillStyle = '#475569';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('Generated by GamePilot — Your Gaming Librarian', 32, height - 20);
+      const canvas = await buildIdentityCanvas(identity);
 
       // Download
       const link = document.createElement('a');
@@ -206,9 +298,18 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
 
   const handleShare = useCallback(async () => {
     if (!identity) return;
-    const text = `My GamePilot Identity: ${identity.label}\n${identity.totalGames} games · ${identity.totalHours} hours · ${identity.totalSessions} sessions\n#GamePilot`;
-    const copied = await LocalShareService.copyTextToClipboard(text);
-    setShareStatus(copied ? 'Summary copied.' : 'Could not copy the summary. Try exporting the image.');
+    try {
+      const canvas = await buildIdentityCanvas(identity);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      const copied = blob
+        ? await LocalShareService.copyImageToClipboard(blob, `gamepilot-identity-${Date.now()}.png`)
+        : false;
+      setShareStatus(
+        copied ? 'Card image copied. Paste it wherever you share.' : 'Could not copy the image. Try exporting instead.'
+      );
+    } catch {
+      setShareStatus('Could not copy the image. Try exporting instead.');
+    }
   }, [identity]);
 
   if (!identity) {
@@ -234,7 +335,7 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
           <button type="button" className="gamer-card-btn" onClick={handleExport} title="Export as image">
             <Download size={16} />
           </button>
-          <button type="button" className="gamer-card-btn" onClick={handleShare} title="Copy summary">
+          <button type="button" className="gamer-card-btn" onClick={handleShare} title="Copy card image">
             <Share2 size={16} />
           </button>
         </div>
@@ -263,7 +364,6 @@ const GamerIdentityCard = ({ library = [], className = '' }) => {
         <StatPill icon={Clock} label="Hours" value={identity.totalHours} />
         <StatPill icon={Zap} label="Sessions" value={identity.totalSessions} />
         <StatPill icon={BarChart3} label="Avg" value={`${identity.avgSession}m`} />
-        {identity.completedCount > 0 && <StatPill icon={Trophy} label="Completed" value={identity.completedCount} />}
       </div>
 
       <div className="gamer-card-footer">

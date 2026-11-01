@@ -15,8 +15,10 @@ import {
   Info,
   MessageSquarePlus,
   Compass,
+  HardDrive,
 } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
+import ThemePicker from './components/ThemePicker';
 import { useToast } from './components/Toast';
 import { useTheme } from './ThemeContext';
 import NavBar from './NavBar';
@@ -35,6 +37,9 @@ import SteamWishlistService from './services/SteamWishlistService';
 import SteamFriendsService from './services/SteamFriendsService';
 import SteamProfileService from './services/SteamProfileService';
 import SteamOwnedGamesService from './services/SteamOwnedGamesService';
+import EpicAccountService from './services/EpicAccountService';
+import ItchAccountService from './services/ItchAccountService';
+import YouTubeSettings from './components/YouTubeSettings';
 import IgdbArtworkService from './services/IgdbArtworkService';
 import RetroAchievementsService from './services/RetroAchievementsService';
 import { SessionService } from './services/SessionService';
@@ -44,6 +49,8 @@ import RecommendationTunerPanel from './components/RecommendationTunerPanel';
 import { ScanReportPanel } from './components/ScanReportPanel';
 import BackupRestoreDashboard from './components/BackupRestoreDashboard';
 import SystemSpecsCard from './components/SystemSpecsCard';
+import UpdateCheckCard from './components/UpdateCheckCard';
+import SessionHistoryBackups from './components/SessionHistoryBackups';
 import DiscordPresenceService from './services/DiscordPresenceService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
 import { APP_VERSION } from './appVersion';
@@ -57,8 +64,7 @@ function Settings({
   setMinimizeOnLaunch,
 }) {
   const navigate = useNavigate();
-  const { currentTheme, setTheme, availableThemes, bigScreenMode, toggleBigScreenMode, autoTheme, toggleAutoTheme } =
-    useTheme();
+  const { currentTheme, setTheme, availableThemes, autoTheme, toggleAutoTheme } = useTheme();
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [timeFormat, setTimeFormat] = useState('24-hour');
   const [timezone, setTimezone] = useState('UTC');
@@ -80,6 +86,11 @@ function Settings({
   const [steamProfileEnabled, setSteamProfileEnabled] = useState(() => SteamProfileService.isEnabled());
   const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
   const [steamOwnedGamesEnabled, setSteamOwnedGamesEnabled] = useState(() => SteamOwnedGamesService.isEnabled());
+  const [epicLinked, setEpicLinked] = useState(() => EpicAccountService.isLinked());
+  const [itchKey, setItchKey] = useState(() => ItchAccountService.getApiKey());
+  const [epicDisplayName, setEpicDisplayName] = useState(() => EpicAccountService.getAccountMeta()?.displayName || '');
+  const [epicLinkBusy, setEpicLinkBusy] = useState(false);
+  const [epicLinkError, setEpicLinkError] = useState(null);
   const [igdbArtworkEnabled, setIgdbArtworkEnabled] = useState(() => IgdbArtworkService.isEnabled());
   const [raEnabled, setRaEnabled] = useState(() => RetroAchievementsService.isEnabled());
   const [raUsername, setRaUsername] = useState(() => RetroAchievementsService.getUsername());
@@ -106,9 +117,6 @@ function Settings({
   const [recommendationOutcomePromptsEnabled, setRecommendationOutcomePromptsEnabled] = useState(
     () => UserBehaviorProfile.getFeedbackPreferences().sessionPromptEnabled
   );
-  const [personalityToastsEnabled, setPersonalityToastsEnabled] = useState(
-    () => StorageService.getString('personalityToastsEnabled', 'true') === 'true'
-  );
   const [toastDurationPreference, setToastDurationPreference] = useState(() =>
     StorageService.getString('toastDurationPreference', 'short')
   );
@@ -134,6 +142,18 @@ function Settings({
     setCustomBgOverlay(parseInt(StorageService.getString('customBgOverlay', '30')));
     refreshShortcutSettings();
   }, [refreshShortcutSettings]);
+
+  useEffect(() => {
+    let active = true;
+    EpicAccountService.refreshStatus().then((status) => {
+      if (!active) return;
+      setEpicLinked(status.linked === true);
+      setEpicDisplayName(status.displayName || EpicAccountService.getAccountMeta()?.displayName || '');
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -538,65 +558,11 @@ function Settings({
                     </div>
 
                     {themeMode === 'custom' && (
-                      <div className="setting-item">
-                        <label>Custom Theme</label>
-                        <div className="theme-wheel-display" style={{ alignItems: 'stretch' }}>
-                          <div className="theme-wheel-preview">
-                            <div
-                              className="theme-preview"
-                              style={{
-                                background:
-                                  availableThemes[currentTheme]?.preview ||
-                                  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                width: '100%',
-                                height: '100%',
-                                borderRadius: '8px',
-                                position: 'relative',
-                              }}
-                            ></div>
-                          </div>
-
-                          <div className="theme-wheel-info" style={{ gap: '10px' }}>
-                            <div className="theme-wheel-name">
-                              {availableThemes[currentTheme]?.name || currentTheme || 'Current Theme'}
-                            </div>
-                            <div className="theme-wheel-index">
-                              {Object.keys(availableThemes).length} themes available in your collection
-                            </div>
-                            <div className="theme-wheel-access-badge" style={{ color: 'var(--text-primary)' }}>
-                              <Palette size={12} />
-                              Browse and switch themes from the dedicated Themes page
-                            </div>
-                            <button
-                              type="button"
-                              className="save-btn"
-                              onClick={() => {
-                                navigate('/themes');
-                              }}
-                            >
-                              Open Themes Page
-                            </button>
-                          </div>
-                        </div>
+                      <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                        <label>Themes ({Object.keys(availableThemes).length})</label>
+                        <ThemePicker themes={availableThemes} currentTheme={currentTheme} onSelect={setTheme} />
                       </div>
                     )}
-
-                    <div className="setting-item">
-                      <label>Big Screen/Controller Mode</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={bigScreenMode}
-                          onChange={() => toggleBigScreenMode()}
-                          id="big-screen-mode"
-                        />
-                        <label htmlFor="big-screen-mode" className="toggle-slider"></label>
-                      </div>
-                      <p className="setting-description">
-                        Optimizes the interface for larger screens and enables controller navigation. Ideal for TV or
-                        console-like setups.
-                      </p>
-                    </div>
 
                     <div className="setting-item">
                       <label>Auto-switch to system theme</label>
@@ -665,28 +631,7 @@ function Settings({
                       </div>
                       <p className="setting-description">
                         When you open GamePilot for the first time in a session, show a pop-up with a game
-                        recommendation based on what you've been playing — served with your persona roast.
-                      </p>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Personality toasts</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={personalityToastsEnabled}
-                          onChange={() => {
-                            const next = !personalityToastsEnabled;
-                            setPersonalityToastsEnabled(next);
-                            StorageService.setString('personalityToastsEnabled', next ? 'true' : 'false');
-                          }}
-                          id="personality-toasts-toggle"
-                        />
-                        <label htmlFor="personality-toasts-toggle" className="toggle-slider"></label>
-                      </div>
-                      <p className="setting-description">
-                        Show personality-driven roast toasts after sessions, when streaks hit milestones, when rivalries
-                        heat up, and when your gaming identity shifts. Disable for plain session notifications only.
+                        recommendation based on what you've been playing.
                       </p>
                     </div>
 
@@ -717,7 +662,7 @@ function Settings({
                       </div>
                       <p className="setting-description">
                         Control how long notifications stay on screen. "Until dismissed" keeps toasts visible until you
-                        click the × button — useful for roasts you don't want to miss.
+                        click the × button — useful for notices you don't want to miss.
                       </p>
                     </div>
                   </div>
@@ -858,7 +803,7 @@ function Settings({
               {/* Interface Customization */}
               <CollapsibleSection
                 title="Interface"
-                subtitle="Hide elements like the streak, trim the Home page, set compact mode, and pick an accent."
+                subtitle="Home sections, density, motion, ornamentation, and accent color."
                 badge="Customization"
                 icon={<Eye size={18} />}
                 className="settings-folder"
@@ -1039,7 +984,7 @@ function Settings({
                     </div>
 
                     <div className="setting-item">
-                      <label>Disk Usage &amp; Library Reclaimer</label>
+                      <label>Disk Usage &amp; Storage Manager</label>
                       <div className="toggle-switch">
                         <input
                           type="checkbox"
@@ -1056,9 +1001,20 @@ function Settings({
                       </div>
                       <p className="setting-description">
                         On by default. GamePilot walks each game's install folder locally to measure disk usage and
-                        powers the Library Reclaimer page + size chips on Library cards. Everything stays on-device — no
-                        data leaves your machine. Folder walks are throttled and bounded so they cannot hang the app.
+                        powers the Storage Manager page — including the Reclaim space panel, which can send orphaned
+                        Steam shader caches and old crash dumps to the Recycle Bin — plus size chips on Library cards.
+                        Everything stays on-device — no data leaves your machine. Folder walks are throttled and bounded
+                        so they cannot hang the app.
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/storage-manager')}
+                        className="data-button export"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}
+                      >
+                        <HardDrive size={16} />
+                        Open Storage Manager
+                      </button>
                     </div>
 
                     <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>
@@ -1105,8 +1061,8 @@ function Settings({
                       </div>
                       <p className="setting-description">
                         Off by default. Ranks your local Wishlist using owned-library taste signals and cached price
-                        context. This first scaffold does not call external catalog APIs, open stores, purchase
-                        anything, or send your play history anywhere.
+                        context. It does not call external catalog APIs, open stores, purchase anything, or send your
+                        play history anywhere.
                       </p>
                     </div>
 
@@ -1295,6 +1251,118 @@ function Settings({
                     </div>
 
                     <div className="setting-item">
+                      <label>Epic Account (Owned Games)</label>
+                      <div>
+                        {epicLinked ? (
+                          <button
+                            type="button"
+                            className="export-button"
+                            onClick={async () => {
+                              setEpicLinkBusy(true);
+                              try {
+                                await EpicAccountService.disconnect();
+                                setEpicLinked(false);
+                                setEpicDisplayName('');
+                                setEpicLinkError(null);
+                                success('Epic account disconnected.');
+                              } finally {
+                                setEpicLinkBusy(false);
+                              }
+                            }}
+                            disabled={epicLinkBusy}
+                          >
+                            {epicLinkBusy ? 'Working…' : 'Disconnect'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="export-button"
+                            onClick={async () => {
+                              setEpicLinkBusy(true);
+                              setEpicLinkError(null);
+                              try {
+                                const result = await EpicAccountService.link();
+                                if (result.success) {
+                                  setEpicLinked(true);
+                                  setEpicDisplayName(result.displayName || '');
+                                  success(
+                                    `Epic account linked${result.displayName ? ` as ${result.displayName}` : ''}.`
+                                  );
+                                } else if (result.code !== 'cancelled') {
+                                  setEpicLinkError(result.error || 'Epic sign-in failed — try again.');
+                                }
+                              } finally {
+                                setEpicLinkBusy(false);
+                              }
+                            }}
+                            disabled={epicLinkBusy}
+                          >
+                            {epicLinkBusy ? 'Waiting for sign-in…' : 'Link Epic Account'}
+                          </button>
+                        )}
+                      </div>
+                      <p className="setting-description">
+                        Off by default. Sign in once on Epic&apos;s own page to show games you own on Epic that
+                        aren&apos;t installed, with install links, in the &quot;Owned, not installed&quot; section on
+                        the Library page. Your session token is encrypted, stored only on this PC, used solely to read
+                        your Epic library, and removed by Disconnect. Read-only — nothing is installed, posted or
+                        changed automatically.
+                      </p>
+                      {epicLinked && epicDisplayName && (
+                        <p className="setting-description" style={{ margin: '4px 0 0' }}>
+                          Linked as {epicDisplayName}.
+                        </p>
+                      )}
+                      {epicLinkError && (
+                        <p className="setting-description" style={{ margin: '4px 0 0' }}>
+                          {epicLinkError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="setting-item">
+                      <label>itch.io Library (Owned Games)</label>
+                      <div>
+                        <input
+                          type="password"
+                          placeholder="Paste your itch.io API key..."
+                          value={itchKey}
+                          onChange={(e) => setItchKey(e.target.value)}
+                          onBlur={() => {
+                            const next = itchKey.trim();
+                            if (next) ItchAccountService.setApiKey(next);
+                            else ItchAccountService.clear();
+                            setItchKey(ItchAccountService.getApiKey());
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg)',
+                            color: 'var(--text)',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                      <p className="setting-description">
+                        Off by default. itch has no OAuth for third-party apps — generate a personal API key at itch.io
+                        → user settings → API keys and paste it here. Your owned library (purchases, claimed freebies,
+                        bundle games) then shows in &quot;Owned, not installed&quot; and backlog picks. The key stays on
+                        this PC and is only used to read your owned-keys list. Clear the field to disconnect.
+                      </p>
+                      {itchKey && (
+                        <p className="setting-description" style={{ margin: '4px 0 0' }}>
+                          {ItchAccountService.getCached()?.games?.length
+                            ? `Key saved — ${ItchAccountService.getCached().games.length} itch games found.`
+                            : 'Key saved — your itch games appear on the next library refresh.'}
+                        </p>
+                      )}
+                    </div>
+
+                    <YouTubeSettings />
+
+                    <div className="setting-item">
                       <label>IGDB Cover Art Lookup</label>
                       <div className="toggle-switch">
                         <input
@@ -1433,7 +1501,7 @@ function Settings({
                       </div>
                       <input
                         id="discord-webhook-url"
-                        type="text"
+                        type="password"
                         value={discordWebhookUrl}
                         onChange={(e) => setDiscordWebhookUrl(e.target.value)}
                         onBlur={() => {
@@ -1642,6 +1710,7 @@ function Settings({
                 defaultOpen={false}
               >
                 <BackupRestoreDashboard />
+                <SessionHistoryBackups />
               </CollapsibleSection>
 
               {/* About & Feedback Section */}
@@ -1729,6 +1798,8 @@ function Settings({
                       </p>
                       <SystemSpecsCard />
                     </div>
+
+                    <UpdateCheckCard />
                   </div>
                 </div>
               </CollapsibleSection>

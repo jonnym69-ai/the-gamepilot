@@ -14,7 +14,6 @@
   box-sizing: border-box;
   padding: 64px;
 }
-
 .identity-share-card-glow {
   position: absolute;
   top: -160px;
@@ -26,7 +25,6 @@
   pointer-events: none;
   z-index: 0;
 }
-
 .identity-share-card-cover {
   position: absolute;
   inset: 0;
@@ -36,7 +34,6 @@
   opacity: 0.18;
   filter: saturate(0.6) brightness(0.7);
 }
-
 .identity-share-card-cover-overlay {
   position: absolute;
   inset: 0;
@@ -49,7 +46,6 @@
     linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.7) 100%);
   z-index: 0;
 }
-
 .identity-share-watermark {
   position: absolute;
   bottom: -48px;
@@ -59,7 +55,6 @@
   transform: rotate(-12deg);
   z-index: 0;
 }
-
 .identity-share-card-header {
   position: relative;
   z-index: 1;
@@ -68,7 +63,6 @@
   justify-content: space-between;
   margin-bottom: 48px;
 }
-
 .identity-share-card-brand {
   font-weight: 800;
   font-size: 1.4rem;
@@ -76,7 +70,6 @@
   text-transform: uppercase;
   color: #ffffff;
 }
-
 .identity-share-card-tag {
   font-size: 0.75rem;
   font-weight: 600;
@@ -88,7 +81,6 @@
   color: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
-
 .identity-share-card-body {
   position: relative;
   z-index: 1;
@@ -97,13 +89,11 @@
   flex-direction: column;
   gap: 32px;
 }
-
 .identity-share-card-hero {
   display: flex;
   align-items: center;
   gap: 28px;
 }
-
 .identity-share-card-avatar {
   width: 120px;
   height: 120px;
@@ -115,17 +105,14 @@
   flex-shrink: 0;
   box-shadow: 0 16px 40px rgba(124, 58, 237, 0.35);
 }
-
 .identity-share-card-avatar svg {
   color: #ffffff;
 }
-
 .identity-share-card-hero-text {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .identity-share-card-eyebrow {
   font-size: 0.9rem;
   font-weight: 500;
@@ -133,7 +120,6 @@
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-
 .identity-share-card-title {
   margin: 0;
   font-size: 3rem;
@@ -142,7 +128,6 @@
   color: #ede9fe;
   overflow-wrap: anywhere;
 }
-
 .identity-share-card-description {
   margin: 0;
   font-size: 1.1rem;
@@ -150,13 +135,11 @@
   color: rgba(255, 255, 255, 0.75);
   max-width: 620px;
 }
-
 .identity-share-card-badges {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
 }
-
 .identity-share-card-badge {
   display: inline-flex;
   align-items: center;
@@ -169,17 +152,14 @@
   font-weight: 600;
   color: #ffffff;
 }
-
 .identity-share-card-badge svg {
   color: #a78bfa;
 }
-
 .identity-share-card-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
-
 .identity-share-card-stat {
   display: flex;
   flex-direction: column;
@@ -189,31 +169,26 @@
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 .identity-share-card-stat svg {
   color: #a78bfa;
   margin-bottom: 4px;
 }
-
 .identity-share-card-stat strong {
   font-size: 1.5rem;
   font-weight: 700;
   color: #ffffff;
 }
-
 .identity-share-card-stat span {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.65);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .identity-share-card-identity-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
-
 .identity-share-card-identity-grid > div {
   display: flex;
   flex-direction: column;
@@ -222,20 +197,17 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
 }
-
 .identity-share-card-identity-grid span {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .identity-share-card-identity-grid strong {
   font-size: 1.2rem;
   font-weight: 700;
   color: #ffffff;
 }
-
 .identity-share-card-evolution {
   margin-top: auto;
   padding: 24px;
@@ -243,7 +215,6 @@
   background: rgba(124, 58, 237, 0.14);
   border: 1px solid rgba(167, 139, 250, 0.25);
 }
-
 .identity-share-card-evolution-label {
   display: block;
   font-size: 0.75rem;
@@ -253,14 +224,12 @@
   color: #a78bfa;
   margin-bottom: 8px;
 }
-
 .identity-share-card-evolution p {
   margin: 0 0 12px;
   font-size: 1rem;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.85);
 }
-
 .identity-share-card-evolution-row {
   display: flex;
   align-items: center;
@@ -268,16 +237,13 @@
   font-size: 0.95rem;
   font-weight: 600;
 }
-
 .identity-share-card-evolution-from {
   color: rgba(255, 255, 255, 0.6);
   text-decoration: line-through;
 }
-
 .identity-share-card-evolution-to {
   color: #a78bfa;
 }
-
 .identity-share-card-footer {
   position: relative;
   z-index: 1;
@@ -287,12 +253,10 @@
   gap: 6px;
   text-align: center;
 }
-
 .identity-share-card-cta {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.55);
 }
-
 .identity-share-card-tagline {
   font-size: 0.75rem;
   font-weight: 600;
@@ -300,14 +264,12 @@
   letter-spacing: 1px;
   color: rgba(255, 255, 255, 0.4);
 }
-
 .identity-share-card-traits {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 16px;
 }
-
 .identity-share-card-trait-chip {
   padding: 6px 14px;
   border-radius: 999px;
@@ -316,14 +278,12 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
-
 .identity-share-card-evidence {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 12px;
 }
-
 .identity-share-card-evidence-item {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
@@ -331,24 +291,20 @@
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
 }
-
 .identity-share-card-basis {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.45);
   margin-top: 10px;
   font-style: italic;
 }
-
 @media (max-width: 720px) {
   .identity-share-card {
     padding: 32px;
   }
-
   .identity-share-card-stats,
   .identity-share-card-identity-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .identity-share-card-title {
     font-size: 2rem;
   }

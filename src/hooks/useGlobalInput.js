@@ -1,5 +1,5 @@
 /**
- * Global keyboard shortcuts, easter-egg keys, and controller navigation.
+ * Global keyboard shortcuts and controller navigation.
  *
  * Registers/unregisters all global input listeners. The controller
  * navigation effect depends on the current route, so it re-registers
@@ -9,19 +9,8 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { KeyboardShortcuts } from '../KeyboardShortcuts';
-import { EasterEggService } from '../services/EasterEggService';
 
-const CONTROLLER_NAV_ROUTES = [
-  '/',
-  '/library',
-  '/recommendations',
-  '/stats',
-  '/profile',
-  '/year-in-review',
-  '/timeline',
-  '/settings',
-  '/feedback',
-];
+const CONTROLLER_NAV_ROUTES = ['/', '/library', '/recommendations', '/profile', '/timeline', '/settings', '/feedback'];
 
 export default function useGlobalInput() {
   const navigate = useNavigate();
@@ -119,15 +108,6 @@ export default function useGlobalInput() {
     );
 
     KeyboardShortcuts.registerAction(
-      'go_stats',
-      'Ctrl+S',
-      () => {
-        window.location.hash = '#/stats';
-      },
-      'Go to Stats'
-    );
-
-    KeyboardShortcuts.registerAction(
       'go_settings',
       'Ctrl+T',
       () => {
@@ -150,19 +130,8 @@ export default function useGlobalInput() {
       KeyboardShortcuts.unregisterAction('go_library');
       KeyboardShortcuts.unregisterAction('go_home');
       KeyboardShortcuts.unregisterAction('go_profile');
-      KeyboardShortcuts.unregisterAction('go_stats');
       KeyboardShortcuts.unregisterAction('go_settings');
       KeyboardShortcuts.unregisterAction('show_shortcuts');
     };
-  }, []);
-
-  // Listen for easter egg inputs
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      EasterEggService.handleKeyPress(e.key);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 }

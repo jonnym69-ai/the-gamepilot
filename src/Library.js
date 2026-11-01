@@ -18,6 +18,9 @@ import {
   EyeOff,
   Eye,
   ImageOff,
+  Plus,
+  Wrench,
+  Bookmark,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './NavBar';
@@ -26,7 +29,6 @@ import LibraryAnalyticsPanel from './components/LibraryAnalyticsPanel';
 import LibraryShareCard, { LIBRARY_SHARE_CARD_SIZE_PX } from './components/LibraryShareCard';
 import TopRatedShareCard, { TOP_RATED_SHARE_CARD_SIZE_PX } from './components/TopRatedShareCard';
 import MultiGameShareCard, { MULTI_GAME_SHARE_CARD_SIZE_PX } from './components/MultiGameShareCard';
-import RecapCustomizeModal from './components/RecapCustomizeModal';
 import ShareMenu from './components/ShareMenu';
 import EmptyLibraryState from './components/EmptyLibraryState';
 import LazyImage from './components/LazyImage';
@@ -47,23 +49,50 @@ import HowLongToBeatService, { hltbGameKey } from './services/HowLongToBeatServi
 import { MOODS, getMoodScoresForGame, getResolvedMood as getResolvedMoodShared } from './constants/GenresMoods';
 import { ThemeContext, getThemeSpecificLibraryTitle } from './ThemeContext';
 import { HardwareDetector } from './services/HardwareDetector';
-import { FreeGameRadar } from './services/FreeGameRadar';
-import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { GameCurationService } from './services/GameCurationService';
 import EmulatorLibraryService from './services/EmulatorLibraryService';
 import RetroAchievementsService from './services/RetroAchievementsService';
 import { mergeLibraryUpdates } from './services/LibraryDataService';
+import ManualGamesService from './services/ManualGamesService';
 import { getGameArtworkPlaceholder, resolveGameArtwork, hasMissingCoverArt } from './services/GameArtworkService';
 import { formatPrice } from './CurrencyConverter';
 import { formatPlaytime } from './utils/formatPlaytime';
 import useInterfacePreferences from './hooks/useInterfacePreferences';
 import './Library.css';
-import useRewardPresentation from './hooks/useRewardPresentation';
 
 const getFavoriteGameKey = (game) => game?.appid || game?.app_id || game?.steamAppId || game?.name;
+// User-set "sort name" override wins; identity key stays game.name.
+const getGameSortName = (game) => game?.sortName || game?.name || '';
 const NOOP = () => {};
 const CONTROLLER_NAV_ROUTES = ['/', '/library', '/stats', '/year-in-review', '/profile', '/settings'];
 const FAVORITES_STORAGE_KEY = 'favorites';
+const SAVED_VIEWS_KEY = 'librarySavedViewsV1';
+const SAVED_VIEWS_LIMIT = 10;
+// Saved views snapshot the browsing state a player actually re-makes —
+// sort + every filter select. Search text is deliberately excluded (a saved
+// view is a lens on the library, not a frozen query).
+const VIEW_FILTER_KEYS = [
+  'sortBy',
+  'mood',
+  'genre',
+  'platform',
+  'maxTime',
+  'replayIntent',
+  'completion',
+  'missingCoverOnly',
+];
+const REPLAY_INTENT_LABELS = {
+  active: 'Currently Playing',
+  soon: 'Playing Soon',
+  endless: 'Endless / Ongoing',
+  finished: 'Finished',
+  none: 'Not Planned',
+};
+const GROUP_ORDER = {
+  platform: null, // alphabetical
+  genre: null,
+  status: ['active', 'soon', 'endless', 'finished', 'none'],
+};
 const RECENTLY_ADDED_WINDOW_DAYS = 14;
 
 const getResolvedMood = (game) => getResolvedMoodShared(game) || 'Relaxed';
@@ -241,6 +270,7 @@ function Library({
   onUpdateMood = NOOP,
   onAddSessionNote = NOOP,
   onTogglePlayedElsewhere = NOOP,
+  onUpdateMetadata = NOOP,
   searchQuery = '',
   setSearchQuery = NOOP,
   endSession = NOOP,
@@ -262,11 +292,13 @@ function Library({
       return [];
     }
   });
-  const [isRecapCustomizeOpen, setIsRecapCustomizeOpen] = useState(false);
   const [sharePeriod, setSharePeriod] = useState('all');
-  const [recapCustomization, setRecapCustomization] = useState(
-    () => ProgressionUnlockService.getRecapCustomization?.() || { palette: null, visibleStats: {} }
-  );
+  const recapCustomization = {
+    palette: null,
+    visibleStats: {},
+    useMostPlayedCover: true,
+    shareCardWatermark: 'gamepilot',
+  };
   const [selectedTopRatedGames, setSelectedTopRatedGames] = useState([]);
   const [showTopRatedPicker, setShowTopRatedPicker] = useState(false);
   const libraryShareCardRef = useRef(null);
@@ -280,10 +312,10 @@ function Library({
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedGames, setSelectedGames] = useState(new Set());
   const [systemInfo, setSystemInfo] = useState(null);
-  const [freeGames, setFreeGames] = useState([]);
-  const [showFreeGames, setShowFreeGames] = useState(true);
-  const [loadingFreeGames, setLoadingFreeGames] = useState(false);
-  const [freeGameError, setFreeGameError] = useState(null);
+  const [groupBy, setGroupBy] = useState('');
+  const [savedViews, setSavedViews] = useState(() => StorageService.get(SAVED_VIEWS_KEY, []));
+  const [savingViewName, setSavingViewName] = useState(null);
+  const [showLibraryTools, setShowLibraryTools] = useState(false);
   const [emulatorProfiles, setEmulatorProfiles] = useState(() => EmulatorLibraryService.getProfiles());
   const [showEmulatorManager, setShowEmulatorManager] = useState(false);
   const [scanningEmulators, setScanningEmulators] = useState(false);
@@ -944,6 +976,39 @@ function Library({
     }
   }, [loading, scanLibraryHandler]);
 
+  // Manually add an external (DRM-free / launcher-less) game via a file pick.
+  const handleAddExternalGame = useCallback(async () => {
+    const pickExecutable = window.electronAPI?.pickExecutable;
+    if (typeof pickExecutable !== 'function') {
+      toastError('Adding games manually needs the desktop app.');
+      return;
+    }
+
+    try {
+      const result = await pickExecutable();
+      if (!result?.ok || !result.filePath) {
+        return; // user cancelled the picker
+      }
+      const alreadyAdded = ManualGamesService.list().some((entry) => entry.exePath === result.filePath);
+      const entry = ManualGamesService.add({ exePath: result.filePath });
+      if (!entry) {
+        toastError('That file looks like a launcher, not a game — it was not added.');
+        return;
+      }
+      success(
+        alreadyAdded
+          ? `"${entry.name}" is already in your library.`
+          : `Added "${entry.name}" — it'll show in your library.`
+      );
+      if (!alreadyAdded && typeof onLibraryUpdated === 'function') {
+        onLibraryUpdated(ManualGamesService.mergeIntoLibrary(library));
+      }
+    } catch (addError) {
+      console.error('Failed to add external game:', addError);
+      toastError('Could not add that game.');
+    }
+  }, [library, onLibraryUpdated, success, toastError]);
+
   const handleEmulatorDraftChange = useCallback((field, value) => {
     setEmulatorDraft((previousDraft) => ({
       ...previousDraft,
@@ -1114,45 +1179,6 @@ function Library({
     getSystemInfo();
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadFreeGames = async () => {
-      setLoadingFreeGames(true);
-      try {
-        const games = await FreeGameRadar.getFreeGames();
-        if (isMounted) {
-          setFreeGames(games);
-          setFreeGameError(null);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setFreeGameError(error.message);
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingFreeGames(false);
-        }
-      }
-    };
-    loadFreeGames();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const refreshFreeGames = async () => {
-    setLoadingFreeGames(true);
-    try {
-      const games = await FreeGameRadar.getFreeGames({ forceRefresh: true });
-      setFreeGames(games);
-      setFreeGameError(null);
-    } catch (error) {
-      setFreeGameError(error.message);
-    } finally {
-      setLoadingFreeGames(false);
-    }
-  };
-
   const debounce = (func, delay) => {
     let timeoutId;
     return (...args) => {
@@ -1190,6 +1216,7 @@ function Library({
     setLocalFilterMaxTime('');
     setFilterMaxTime('');
     setLocalFilterReplayIntent('');
+    setLocalFilterCompletion('');
     setShowHidden(false);
     setMissingCoverOnly(false);
     setDisplayCount(50);
@@ -1235,6 +1262,67 @@ function Library({
     setSelectedGameIndex(0);
   };
 
+  // --- Saved views ----------------------------------------------------------
+  // A view is a named snapshot of sort + every filter select, stored locally.
+  // Applying one sets the local filter state and the lifted parent filters —
+  // same contract as the individual change handlers above.
+
+  const captureCurrentView = () => ({
+    sortBy: localSortBy,
+    mood: localFilterMood,
+    genre: localFilterGenre,
+    platform: localFilterPlatform,
+    maxTime: localFilterMaxTime,
+    replayIntent: localFilterReplayIntent,
+    completion: localFilterCompletion,
+    missingCoverOnly,
+  });
+
+  const applySavedView = (view) => {
+    const filters = view?.filters || {};
+    handleSortChange(filters.sortBy || 'name');
+    handlePlatformFilterChange(filters.platform || '');
+    handleMoodFilterChange(filters.mood || '');
+    handleGenreFilterChange(filters.genre || '');
+    handlePlaytimeFilterChange(filters.maxTime || '');
+    handleReplayIntentFilterChange(filters.replayIntent || '');
+    handleCompletionFilterChange(filters.completion || '');
+    setMissingCoverOnly(Boolean(filters.missingCoverOnly));
+  };
+
+  const saveCurrentView = () => {
+    const name = String(savingViewName || '').trim();
+    if (!name) return;
+    const next = [...savedViews.filter((view) => view.name !== name), { name, filters: captureCurrentView() }];
+    setSavedViews(next);
+    StorageService.set(SAVED_VIEWS_KEY, next);
+    setSavingViewName(null);
+  };
+
+  const deleteSavedView = (name) => {
+    const next = savedViews.filter((view) => view.name !== name);
+    setSavedViews(next);
+    StorageService.set(SAVED_VIEWS_KEY, next);
+  };
+
+  const describeSavedView = (view) => {
+    const filters = view?.filters || {};
+    const labels = {
+      sortBy: 'Sort',
+      mood: 'Mood',
+      genre: 'Genre',
+      platform: 'Platform',
+      maxTime: 'Max time',
+      replayIntent: 'Status',
+      completion: 'Completion',
+    };
+    const parts = VIEW_FILTER_KEYS.map((key) => {
+      if (key === 'missingCoverOnly') return filters.missingCoverOnly ? 'Missing cover art' : null;
+      return filters[key] ? `${labels[key]}: ${filters[key]}` : null;
+    }).filter(Boolean);
+    return parts.length ? parts.join(' · ') : 'All games';
+  };
+
   const missingCoverCount = useMemo(
     () =>
       Array.isArray(library) ? library.filter((game) => game && !game.isHidden && hasMissingCoverArt(game)).length : 0,
@@ -1267,6 +1355,8 @@ function Library({
             ? gamePlaytime === 0
             : gamePlaytime > 0 && gamePlaytime <= maxTimeFilter;
       const matchesReplayIntent = !localFilterReplayIntent || (game.replayIntent || 'none') === localFilterReplayIntent;
+      const matchesCompletion =
+        !localFilterCompletion || (game.completionStatus || 'not-started') === localFilterCompletion;
       const matchesHidden = showHidden ? true : !(game.isHidden || false);
       const matchesCover = !missingCoverOnly || hasMissingCoverArt(game);
 
@@ -1277,6 +1367,7 @@ function Library({
         matchesPlatform &&
         matchesMaxTime &&
         matchesReplayIntent &&
+        matchesCompletion &&
         matchesHidden &&
         matchesCover
       );
@@ -1304,12 +1395,12 @@ function Library({
         case 'last-played':
           const aLP = getLastPlayedSortValue(a.last_played);
           const bLP = getLastPlayedSortValue(b.last_played);
-          if (aLP === 0 && bLP === 0) return a.name.localeCompare(b.name);
+          if (aLP === 0 && bLP === 0) return getGameSortName(a).localeCompare(getGameSortName(b));
           return aLP === 0 ? 1 : bLP === 0 ? -1 : bLP - aLP;
         case 'rating':
           const aRating = typeof a.userRating === 'number' ? a.userRating : -1;
           const bRating = typeof b.userRating === 'number' ? b.userRating : -1;
-          if (aRating === bRating) return a.name.localeCompare(b.name);
+          if (aRating === bRating) return getGameSortName(a).localeCompare(getGameSortName(b));
           return bRating - aRating;
         case 'platform':
           return (a.platform || '').localeCompare(b.platform || '');
@@ -1329,23 +1420,23 @@ function Library({
           const bFav = favorites.includes(getFavoriteGameKey(b));
           if (aFav && !bFav) return -1;
           if (!aFav && bFav) return 1;
-          return a.name.localeCompare(b.name);
+          return getGameSortName(a).localeCompare(getGameSortName(b));
         case 'hltb-longest':
           const aHltbL = getHltbHours(a);
           const bHltbL = getHltbHours(b);
-          if (aHltbL === 0 && bHltbL === 0) return a.name.localeCompare(b.name);
+          if (aHltbL === 0 && bHltbL === 0) return getGameSortName(a).localeCompare(getGameSortName(b));
           if (aHltbL === 0) return 1;
           if (bHltbL === 0) return -1;
           return bHltbL - aHltbL;
         case 'hltb-shortest':
           const aHltbS = getHltbHours(a);
           const bHltbS = getHltbHours(b);
-          if (aHltbS === 0 && bHltbS === 0) return a.name.localeCompare(b.name);
+          if (aHltbS === 0 && bHltbS === 0) return getGameSortName(a).localeCompare(getGameSortName(b));
           if (aHltbS === 0) return 1;
           if (bHltbS === 0) return -1;
           return aHltbS - bHltbS;
         default:
-          return a.name.localeCompare(b.name);
+          return getGameSortName(a).localeCompare(getGameSortName(b));
       }
     });
 
@@ -1358,6 +1449,7 @@ function Library({
     localFilterPlatform,
     localFilterMaxTime,
     localFilterReplayIntent,
+    localFilterCompletion,
     showHidden,
     missingCoverOnly,
     localSortBy,
@@ -1367,6 +1459,64 @@ function Library({
   const displayedGames = useMemo(() => {
     return filteredAndSortedGames.slice(0, displayCount);
   }, [displayCount, filteredAndSortedGames]);
+
+  // --- Grouping -------------------------------------------------------------
+  // Buckets the visible page into labelled sections. Status uses a fixed
+  // lifecycle order; platform/genre groups sort alphabetically with 'Other'
+  // last. Within a group the existing sort order is preserved (stable sort).
+
+  const getGroupKey = useCallback(
+    (game) => {
+      switch (groupBy) {
+        case 'platform':
+          return getDisplayPlatform(game) || 'Other';
+        case 'genre':
+          return game.genres?.[0] || 'Other';
+        case 'status':
+          return game.replayIntent || 'none';
+        default:
+          return null;
+      }
+    },
+    [groupBy]
+  );
+
+  const getGroupLabel = useCallback(
+    (key) => (groupBy === 'status' ? REPLAY_INTENT_LABELS[key] || key : key),
+    [groupBy]
+  );
+
+  const groupedDisplayedGames = useMemo(() => {
+    if (!groupBy) return displayedGames;
+    const uniqueKeys = [...new Set(displayedGames.map(getGroupKey))];
+    const fixedOrder = GROUP_ORDER[groupBy];
+    const orderedKeys = uniqueKeys.sort((left, right) => {
+      if (fixedOrder) {
+        const rank = (key) => {
+          const index = fixedOrder.indexOf(key);
+          return index === -1 ? fixedOrder.length : index;
+        };
+        return rank(left) - rank(right) || left.localeCompare(right);
+      }
+      if (left === 'Other') return 1;
+      if (right === 'Other') return -1;
+      return left.localeCompare(right);
+    });
+    const rankMap = new Map(orderedKeys.map((key, index) => [key, index]));
+    return [...displayedGames].sort(
+      (left, right) => (rankMap.get(getGroupKey(left)) ?? 0) - (rankMap.get(getGroupKey(right)) ?? 0)
+    );
+  }, [displayedGames, groupBy, getGroupKey]);
+
+  const groupCounts = useMemo(() => {
+    if (!groupBy) return null;
+    const counts = {};
+    groupedDisplayedGames.forEach((game) => {
+      const key = getGroupKey(game);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [groupedDisplayedGames, groupBy, getGroupKey]);
 
   const openMultiGamePicker = useCallback(() => {
     if (multiGamePicks.length === 0 && Array.isArray(library) && library.length > 0) {
@@ -1710,25 +1860,14 @@ function Library({
   }, [handleControllerInput]);
 
   // UI Presentation Logic
-  const { customization: rewardPresentationCustomization } = useRewardPresentation();
-  const libraryPresentationRewards = ProgressionUnlockService.getLibraryPresentationVariants?.() || [];
-  const selectedLibraryPresentation =
-    libraryPresentationRewards.find(
-      (presentation) => presentation.id === rewardPresentationCustomization.selectedLibraryVariant
-    ) ||
-    libraryPresentationRewards[0] ||
-    null;
-  const libraryPresentationId = selectedLibraryPresentation?.id || 'classic_shelf';
-  const libraryPresentationPreset =
-    LIBRARY_PRESENTATION_PRESETS[libraryPresentationId] || LIBRARY_PRESENTATION_PRESETS.classic_shelf;
-  const libraryCardStyle = rewardPresentationCustomization?.selectedCardStyle || 'standard';
+  const libraryPresentationId = 'classic_shelf';
+  const libraryPresentationPreset = LIBRARY_PRESENTATION_PRESETS.classic_shelf;
+  const libraryCardStyle = 'standard';
 
   const libraryRootStyle = {
     '--library-presentation-accent': libraryPresentationPreset.accent,
     '--library-presentation-secondary': libraryPresentationPreset.secondary,
-    '--library-presentation-preview':
-      selectedLibraryPresentation?.preview ||
-      'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))',
+    '--library-presentation-preview': 'linear-gradient(135deg, rgba(255, 107, 53, 0.18), rgba(15, 23, 42, 0.24))',
     '--library-presentation-card-border': `${libraryPresentationPreset.accent}33`,
     '--library-presentation-card-radius': `${libraryPresentationPreset.cardRadius}px`,
     '--library-presentation-card-shadow': libraryPresentationPreset.cardShadow,
@@ -1844,27 +1983,25 @@ function Library({
           </h1>
           <p className="library-header-summary">
             {library.length > 0
-              ? `${filteredAndSortedGames.length} visible game${filteredAndSortedGames.length === 1 ? '' : 's'} from ${library.length} total in your current library view.`
+              ? `${library.length} games · ${playedGameCount} played · ${Math.floor(totalPlaytimeMinutes / 60)}h logged${activeFilterCount > 0 ? ` — ${filteredAndSortedGames.length} in current view` : ''}`
               : 'Your library summary, filters, and quick actions will appear here once games have been scanned in.'}
           </p>
           <div className="library-reward-pill">
             <span>Library Presentation</span>
-            <strong>{selectedLibraryPresentation?.name || 'Classic Shelf'}</strong>
+            <strong>Classic Shelf</strong>
           </div>
         </div>
-        <div className="library-stats">
-          <div className="stat-card">
-            <span className="stat-number">{library.length}</span>
-            <span className="stat-label">Total Games</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">{playedGameCount}</span>
-            <span className="stat-label">Games Played</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">{Math.floor(totalPlaytimeMinutes / 60)}</span>
-            <span className="stat-label">Hours Logged</span>
-          </div>
+        <div className="library-header-actions">
+          <button onClick={handleScanLibrary} className="export-button" disabled={loading}>
+            {loading ? '⏳ Scanning...' : '🔄 Scan'}
+          </button>
+          <button
+            onClick={handleAddExternalGame}
+            className="export-button"
+            title="Add a DRM-free or external game by picking its executable"
+          >
+            <Plus size={16} /> Add Game
+          </button>
         </div>
       </div>
 
@@ -1916,162 +2053,19 @@ function Library({
         </div>
       )}
 
-      {/* Free Games Section */}
-      {showFreeGames ? (
-        <div className="free-games-section">
-          <div className="free-games-header">
-            <div>
-              <h3>🆓 Epic Free Games</h3>
-              <p>Optional radar from the Epic Games Store — auto-refreshes hourly.</p>
-            </div>
-            <div className="free-games-controls">
-              <button onClick={refreshFreeGames} disabled={loadingFreeGames}>
-                Refresh
-              </button>
-              <button onClick={() => setShowFreeGames(false)}>Hide</button>
-            </div>
-          </div>
-          {freeGameError && (
-            <div className="free-games-error" role="alert">
-              {freeGameError}
-            </div>
-          )}
-          <div className="free-games-grid">
-            {freeGames.map((game) => (
-              <div key={game.id} className="free-game-card">
-                <div className="free-game-thumb" style={{ backgroundImage: `url(${game.image})` }} />
-                <div className="free-game-body">
-                  <h4>{game.title}</h4>
-                  {game.isMysteryGame && (
-                    <p className="free-game-mystery-note">Epic has not revealed this free game yet.</p>
-                  )}
-                  <div className="free-game-meta">
-                    {game.isMysteryGame && <span>Upcoming reveal</span>}
-                    <button onClick={() => window.open(game.url, '_blank')}>
-                      {game.isMysteryGame ? 'View Radar' : 'Claim'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="free-games-hidden-bar">
-          <button onClick={() => setShowFreeGames(true)}>Show Free Games Radar</button>
-        </div>
-      )}
-
       <div className="library-control-panel">
         <div className="library-control-panel-header">
-          <span className="library-control-panel-label">Library Control Panel</span>
-        </div>
-        <div className="library-action-group">
-          <select
-            className="export-button library-share-period-select"
-            value={sharePeriod}
-            onChange={(event) => setSharePeriod(event.target.value)}
-            title="Choose the recap period"
-          >
-            <option value="all">All-Time Recap</option>
-            <option value="weekly">Weekly Recap</option>
-            <option value="monthly">Monthly Recap</option>
-          </select>
-          <button
-            onClick={() => setIsRecapCustomizeOpen(true)}
-            className="export-button"
-            title="Customize your shareable recap card theme and stats"
-          >
-            <Sparkles size={16} /> Customize Recap
-          </button>
+          <span className="library-control-panel-label">Library actions</span>
           <button
             type="button"
-            className="export-button"
-            title="Toggle between hours and days for playtime display"
-            onClick={() => {
-              const current = InterfacePreferencesService.get('playtimeUnit') || 'auto';
-              const order = ['hours', 'days', 'auto'];
-              const next = order[(order.indexOf(current) + 1) % order.length];
-              InterfacePreferencesService.set('playtimeUnit', next);
-            }}
+            className="library-tools-toggle"
+            onClick={() => setShowLibraryTools((visible) => !visible)}
+            aria-expanded={showLibraryTools}
           >
-            <Clock size={16} />{' '}
-            {(() => {
-              const unit = interfacePrefs.playtimeUnit || 'auto';
-              if (unit === 'hours') return 'Hours';
-              if (unit === 'days') return 'Days';
-              return 'Auto';
-            })()}
+            <Wrench size={14} /> Tools {showLibraryTools ? '▴' : '▾'}
           </button>
-          <ShareMenu
-            imageAvailable={library.length > 0}
-            onCopyText={handleCopyLibraryShareText}
-            onCopyImage={handleCopyLibraryShareCard}
-            onSaveImage={handleDownloadLibraryShareCard}
-            onShareText={handleShareToChannel}
-            onShareToDiscord={handleShareToDiscord}
-            onShareToMessenger={handleShareToMessenger}
-            onDownloadText={handleDownloadShareText}
-            onNativeShare={handleNativeShareLibraryCard}
-            buildCaption={() =>
-              ProfileService.appendSocialLinksToShareText(
-                LocalShareService.buildLibraryShareText(library, username, sharePeriod)
-              )
-            }
-          />
-          <ShareMenu
-            imageAvailable={library.length > 0}
-            onCopyText={handleCopyTopRatedShareText}
-            onCopyImage={handleCopyTopRatedShareCard}
-            onSaveImage={handleDownloadTopRatedShareCard}
-            onShareText={handleShareTopRatedToChannel}
-            onShareToDiscord={handleShareTopRatedToDiscord}
-            onShareToMessenger={handleShareTopRatedToMessenger}
-            onDownloadText={handleCopyTopRatedShareText}
-            onNativeShare={handleNativeShareTopRatedCard}
-            buildCaption={() =>
-              ProfileService.appendSocialLinksToShareText(
-                LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames)
-              )
-            }
-            triggerLabel="Share 10/10 Picks"
-          />
-          <ShareMenu
-            imageAvailable={multiGamePicks.length > 0}
-            onCopyText={handleCopyMultiGameShareText}
-            onCopyImage={handleCopyMultiGameShareCard}
-            onSaveImage={handleDownloadMultiGameShareCard}
-            onShareText={handleShareMultiGameToChannel}
-            onShareToDiscord={handleShareMultiGameToDiscord}
-            onShareToMessenger={handleShareMultiGameToMessenger}
-            onDownloadText={handleCopyMultiGameShareText}
-            onNativeShare={handleNativeShareMultiGameCard}
-            buildCaption={() =>
-              ProfileService.appendSocialLinksToShareText(
-                LocalShareService.buildMultiGameShareText(multiGamePicks, username)
-              )
-            }
-            triggerLabel="Share My Picks"
-          />
-          <button
-            onClick={openMultiGamePicker}
-            className="export-button"
-            title="Choose up to 3 games to feature on a share card"
-          >
-            <Sparkles size={16} /> Edit Picks ({multiGamePicks.length || 'auto'})
-          </button>
-          {allTopRatedGames.length > 6 && (
-            <button
-              onClick={() => setShowTopRatedPicker(true)}
-              className="export-button"
-              title={`Choose which ${allTopRatedGames.length} perfect 10/10 games to display (max 6)`}
-            >
-              Edit Picks ({selectedTopRatedGames.length > 0 ? selectedTopRatedGames.length : '6 auto'})
-            </button>
-          )}
-          <button onClick={handleScanLibrary} className="export-button" disabled={loading}>
-            {loading ? '⏳ Scanning...' : '🔄 Scan'}
-          </button>
+        </div>
+        <div className="library-action-group">
           <button
             onClick={handlePickForMe}
             className="export-button export-button-recommend"
@@ -2107,12 +2101,111 @@ function Library({
               <Trash2 size={16} /> Remove {selectedGames.size}
             </button>
           )}
-          {!bulkMode && (
-            <button onClick={() => setShowAnalytics(true)} className="export-button" title="Open Library Analytics">
-              <BarChart3 size={16} /> Analytics
-            </button>
-          )}
         </div>
+        {showLibraryTools && (
+          <div className="library-action-group library-tools-group">
+            <select
+              className="export-button library-share-period-select"
+              value={sharePeriod}
+              onChange={(event) => setSharePeriod(event.target.value)}
+              title="Choose the recap period"
+            >
+              <option value="all">All-Time Recap</option>
+              <option value="weekly">Weekly Recap</option>
+              <option value="monthly">Monthly Recap</option>
+            </select>
+            <button
+              type="button"
+              className="export-button"
+              title="Toggle between hours and days for playtime display"
+              onClick={() => {
+                const current = InterfacePreferencesService.get('playtimeUnit') || 'auto';
+                const order = ['hours', 'days', 'auto'];
+                const next = order[(order.indexOf(current) + 1) % order.length];
+                InterfacePreferencesService.set('playtimeUnit', next);
+              }}
+            >
+              <Clock size={16} />{' '}
+              {(() => {
+                const unit = interfacePrefs.playtimeUnit || 'auto';
+                if (unit === 'hours') return 'Hours';
+                if (unit === 'days') return 'Days';
+                return 'Auto';
+              })()}
+            </button>
+            <ShareMenu
+              imageAvailable={library.length > 0}
+              onCopyText={handleCopyLibraryShareText}
+              onCopyImage={handleCopyLibraryShareCard}
+              onSaveImage={handleDownloadLibraryShareCard}
+              onShareText={handleShareToChannel}
+              onShareToDiscord={handleShareToDiscord}
+              onShareToMessenger={handleShareToMessenger}
+              onDownloadText={handleDownloadShareText}
+              onNativeShare={handleNativeShareLibraryCard}
+              buildCaption={() =>
+                ProfileService.appendSocialLinksToShareText(
+                  LocalShareService.buildLibraryShareText(library, username, sharePeriod)
+                )
+              }
+            />
+            <ShareMenu
+              imageAvailable={library.length > 0}
+              onCopyText={handleCopyTopRatedShareText}
+              onCopyImage={handleCopyTopRatedShareCard}
+              onSaveImage={handleDownloadTopRatedShareCard}
+              onShareText={handleShareTopRatedToChannel}
+              onShareToDiscord={handleShareTopRatedToDiscord}
+              onShareToMessenger={handleShareTopRatedToMessenger}
+              onDownloadText={handleCopyTopRatedShareText}
+              onNativeShare={handleNativeShareTopRatedCard}
+              buildCaption={() =>
+                ProfileService.appendSocialLinksToShareText(
+                  LocalShareService.buildTopRatedShareText(library, username, selectedTopRatedGames)
+                )
+              }
+              triggerLabel="Share 10/10 Picks"
+            />
+            <ShareMenu
+              imageAvailable={multiGamePicks.length > 0}
+              onCopyText={handleCopyMultiGameShareText}
+              onCopyImage={handleCopyMultiGameShareCard}
+              onSaveImage={handleDownloadMultiGameShareCard}
+              onShareText={handleShareMultiGameToChannel}
+              onShareToDiscord={handleShareMultiGameToDiscord}
+              onShareToMessenger={handleShareMultiGameToMessenger}
+              onDownloadText={handleCopyMultiGameShareText}
+              onNativeShare={handleNativeShareMultiGameCard}
+              buildCaption={() =>
+                ProfileService.appendSocialLinksToShareText(
+                  LocalShareService.buildMultiGameShareText(multiGamePicks, username)
+                )
+              }
+              triggerLabel="Share My Picks"
+            />
+            <button
+              onClick={openMultiGamePicker}
+              className="export-button"
+              title="Choose up to 3 games to feature on a share card"
+            >
+              <Sparkles size={16} /> Edit Picks ({multiGamePicks.length || 'auto'})
+            </button>
+            {allTopRatedGames.length > 6 && (
+              <button
+                onClick={() => setShowTopRatedPicker(true)}
+                className="export-button"
+                title={`Choose which ${allTopRatedGames.length} perfect 10/10 games to display (max 6)`}
+              >
+                Edit Picks ({selectedTopRatedGames.length > 0 ? selectedTopRatedGames.length : '6 auto'})
+              </button>
+            )}
+            {!bulkMode && (
+              <button onClick={() => setShowAnalytics(true)} className="export-button" title="Open Library Analytics">
+                <BarChart3 size={16} /> Analytics
+              </button>
+            )}
+          </div>
+        )}
       </div>
       {/* Library Analytics Modal */}
       {showAnalytics && (
@@ -2130,137 +2223,6 @@ function Library({
           </div>
         </div>
       )}
-
-      <div className="emulator-library-panel">
-        <div className="emulator-library-header">
-          <div>
-            <h3>Emulator Library</h3>
-            <p>
-              {emulatorProfiles.length} profile{emulatorProfiles.length === 1 ? '' : 's'} configured for ROM scanning.
-            </p>
-          </div>
-          <div className="emulator-library-actions">
-            <button
-              type="button"
-              className="emulator-secondary-button"
-              onClick={() => setShowEmulatorManager((visible) => !visible)}
-            >
-              {showEmulatorManager ? 'Hide Manager' : 'Manage Emulators'}
-            </button>
-            <button
-              type="button"
-              className="emulator-primary-button"
-              onClick={scanEmulatorProfiles}
-              disabled={emulatorProfiles.length === 0 || scanningEmulators}
-            >
-              {scanningEmulators ? 'Scanning ROMs...' : 'Scan ROMs'}
-            </button>
-          </div>
-        </div>
-        {showEmulatorManager && (
-          <div className="emulator-manager-body">
-            <div className="emulator-profile-form">
-              <input
-                type="text"
-                value={emulatorDraft.name}
-                onChange={(event) => handleEmulatorDraftChange('name', event.target.value)}
-                placeholder="Profile name, e.g. Dolphin"
-              />
-              <input
-                type="text"
-                value={emulatorDraft.consolePlatform}
-                onChange={(event) => handleEmulatorDraftChange('consolePlatform', event.target.value)}
-                placeholder="Console, e.g. GameCube"
-              />
-              <button type="button" onClick={chooseEmulatorExecutable}>
-                Choose Emulator
-              </button>
-              <button type="button" onClick={chooseRomFolder}>
-                Choose ROM Folder
-              </button>
-              <input
-                type="text"
-                value={emulatorDraft.extensions}
-                onChange={(event) => handleEmulatorDraftChange('extensions', event.target.value)}
-                placeholder="Extensions: iso, chd, gba"
-              />
-              <input
-                type="text"
-                value={emulatorDraft.launchTemplate}
-                onChange={(event) => handleEmulatorDraftChange('launchTemplate', event.target.value)}
-                placeholder={'"{emulator}" "{rom}"'}
-              />
-              <button type="button" className="emulator-add-profile" onClick={addEmulatorProfile}>
-                Add Profile
-              </button>
-            </div>
-            <div className="emulator-detected-block">
-              <button
-                type="button"
-                className="emulator-secondary-button"
-                onClick={detectEmulatorInstalls}
-                disabled={detectingEmulators}
-              >
-                {detectingEmulators ? 'Detecting...' : 'Detect Installed Emulators'}
-              </button>
-              {detectedEmulators.length > 0 && (
-                <div className="emulator-detected-list">
-                  {detectedEmulators.map((detected) => (
-                    <div key={`${detected.key}:${detected.emulatorPath}`} className="emulator-detected-item">
-                      <div className="emulator-detected-meta">
-                        <strong>{detected.name}</strong>
-                        <span className="emulator-detected-path">{detected.emulatorPath}</span>
-                      </div>
-                      <div className="emulator-detected-platforms">
-                        {detected.platforms.map((platform) => (
-                          <button
-                            key={platform}
-                            type="button"
-                            onClick={() => applyDetectedEmulator(detected, platform)}
-                          >
-                            {platform}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {emulatorDetectionRan && !detectingEmulators && detectedEmulators.length === 0 && (
-                <p className="emulator-detected-empty">No known emulators found in the usual locations.</p>
-              )}
-            </div>
-            {(emulatorDraft.emulatorPath || emulatorDraft.romFolder) && (
-              <div className="emulator-path-preview">
-                {emulatorDraft.emulatorPath && <span>Emulator: {emulatorDraft.emulatorPath}</span>}
-                {emulatorDraft.romFolder && <span>ROMs: {emulatorDraft.romFolder}</span>}
-              </div>
-            )}
-            {emulatorProfiles.length > 0 && (
-              <div className="emulator-profile-list">
-                {emulatorProfiles.map((profile) => {
-                  const bios = emulatorBiosStatus[profile.id];
-                  return (
-                    <div key={profile.id} className="emulator-profile-chip">
-                      <span>
-                        {profile.name} · {profile.consolePlatform}
-                      </span>
-                      {bios?.missing && (
-                        <span className={bios.required ? 'emulator-bios-warning' : 'emulator-bios-note'}>
-                          {bios.required ? 'BIOS missing' : 'BIOS optional'} — {bios.hint}
-                        </span>
-                      )}
-                      <button type="button" onClick={() => removeEmulatorProfile(profile.id)}>
-                        Remove
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       {library.length === 0 ? (
         <EmptyLibraryState onScan={handleScanLibrary} theme={theme} />
@@ -2443,33 +2405,79 @@ function Library({
                 </button>
               </div>
             )}
+            <div className="filter-group">
+              <label>Group</label>
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value)}
+                className="filter-select"
+                aria-label="Group by"
+              >
+                <option value="">None</option>
+                <option value="platform">Platform</option>
+                <option value="status">Status</option>
+                <option value="genre">Genre</option>
+              </select>
+            </div>
+            <div className="filter-group saved-views-group">
+              <label>Views</label>
+              <div className="saved-views-row">
+                {savedViews.map((view) => (
+                  <span key={view.name} className="saved-view-chip">
+                    <button type="button" onClick={() => applySavedView(view)} title={describeSavedView(view)}>
+                      <Bookmark size={11} aria-hidden="true" /> {view.name}
+                    </button>
+                    <button
+                      type="button"
+                      className="saved-view-delete"
+                      onClick={() => deleteSavedView(view.name)}
+                      aria-label={`Delete view ${view.name}`}
+                    >
+                      <X size={11} aria-hidden="true" />
+                    </button>
+                  </span>
+                ))}
+                {savingViewName !== null ? (
+                  <span className="saved-view-editor">
+                    <input
+                      autoFocus
+                      value={savingViewName}
+                      onChange={(event) => setSavingViewName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') saveCurrentView();
+                        if (event.key === 'Escape') setSavingViewName(null);
+                      }}
+                      placeholder="View name"
+                      maxLength={24}
+                      aria-label="Saved view name"
+                    />
+                    <button type="button" onClick={saveCurrentView} disabled={!savingViewName.trim()}>
+                      Save
+                    </button>
+                  </span>
+                ) : (
+                  savedViews.length < SAVED_VIEWS_LIMIT && (
+                    <button
+                      type="button"
+                      className="saved-view-add"
+                      onClick={() => setSavingViewName('')}
+                      title="Save the current sort and filters as a named view"
+                    >
+                      + Save view
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="library-context-bar">
-            <div className="library-context-pill">
-              <span>Showing</span>
-              <strong>
-                {displayedGames.length} of {filteredAndSortedGames.length}
-              </strong>
-            </div>
-            <div className="library-context-pill library-context-pill-highlight">
-              <span>New in {RECENTLY_ADDED_WINDOW_DAYS} days</span>
-              <strong>{recentlyAddedCount}</strong>
-            </div>
-            <div className="library-context-pill">
-              <span>Filters</span>
-              <strong>{activeFilterCount > 0 ? `${activeFilterCount} active` : 'None'}</strong>
-            </div>
-            <div className="library-context-pill">
-              <span>Loaded</span>
-              <strong>
-                {displayedGames.length} / {filteredAndSortedGames.length}
-              </strong>
-            </div>
-            <div className="library-context-pill">
-              <span>Free Games Radar</span>
-              <strong>{showFreeGames ? 'Visible' : 'Hidden'}</strong>
-            </div>
+            <p className="library-context-line">
+              Showing {displayedGames.length} of {filteredAndSortedGames.length}
+              {recentlyAddedCount > 0 &&
+                ` · ${recentlyAddedCount} added in the last ${RECENTLY_ADDED_WINDOW_DAYS} days`}
+              {activeFilterCount > 0 && ` · ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'} active`}
+            </p>
           </div>
 
           {/* Unified Shelf Carousel */}
@@ -2622,237 +2630,257 @@ function Library({
                   }
             }
           >
-            {displayedGames.map((game, index) => {
-              const favoriteKey = getFavoriteGameKey(game);
-              const isFavorite = favorites.includes(favoriteKey);
-              const resolvedMood = getResolvedMood(game);
-              const gameValue = getGameValue(game);
-              const isRecentlyAdded = GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS);
-              const needsCoverArt = hasMissingCoverArt(game);
-
-              return (
-                <div
-                  key={game.appid || game.name}
-                  className={`${getGameCardClass(game, index)}${isRecentlyAdded ? ' is-recently-added' : ''}`}
-                  onClick={() => (bulkMode ? null : openGameModal(game))}
-                  style={
-                    viewMode === 'grid'
-                      ? {
-                          backgroundColor: 'var(--bg-card)',
-                          borderRadius: 'var(--library-presentation-card-radius)',
-                          padding: `${libraryPresentationPreset.cardPadding}px`,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          boxShadow: 'var(--library-presentation-card-shadow)',
-                          border: '1px solid var(--library-presentation-card-border)',
-                        }
-                      : {
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          padding: libraryPresentationPreset.listPadding,
-                          backgroundColor: 'var(--bg-card)',
-                          borderRadius: 'var(--library-presentation-card-radius)',
-                          border: '1px solid var(--border-primary)',
-                          cursor: 'pointer',
-                        }
-                  }
-                >
-                  {/* Bulk Selection Overlay */}
-                  {bulkMode && (
-                    <div className="bulk-checkbox-container" style={{ marginRight: '10px' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedGames.has(game.appid || game.name)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          const newSet = new Set(selectedGames);
-                          const id = game.appid || game.name;
-                          if (newSet.has(id)) newSet.delete(id);
-                          else newSet.add(id);
-                          setSelectedGames(newSet);
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  <div
-                    className="game-card-image-wrapper"
-                    style={
-                      viewMode === 'grid'
-                        ? {
-                            width: '100%',
-                            aspectRatio: '2 / 3',
-                            height: 'auto',
-                            marginBottom: '12px',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            flexShrink: 0,
-                            backgroundColor: '#1a1a1a',
-                            position: 'relative',
-                          }
-                        : {
-                            width: '120px',
-                            aspectRatio: '231 / 87',
-                            height: 'auto',
-                            marginRight: '15px',
-                            borderRadius: '6px',
-                            overflow: 'hidden',
-                            flexShrink: 0,
-                            backgroundColor: '#1a1a1a',
-                            position: 'relative',
-                          }
-                    }
-                  >
-                    <LazyImage
-                      src={resolveGameArtwork(game, {
-                        surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card',
-                      })}
-                      fallbackSrc={viewMode === 'grid' ? resolveGameArtwork(game, { surface: 'hero' }) : undefined}
-                      alt={game.name}
-                      gameName={game.name}
-                      platform={getDisplayPlatform(game)}
-                      genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
-                      mood={getResolvedMood(game)}
-                      placeholder={getGameArtworkPlaceholder({
-                        game,
-                        surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card',
-                      })}
-                      style={{ height: '100%', width: '100%', objectFit: 'cover' }}
-                    />
-                    {needsCoverArt && (
-                      <div
-                        className="game-card-cover-hint"
-                        title="No cover art found — click to add one via Cover Art Override"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openGameModal(game);
-                        }}
-                      >
-                        <ImageOff size={14} /> Add Cover
-                      </div>
-                    )}
-                  </div>
-                  <div className="game-info" style={{ flexGrow: 1 }}>
-                    <div className="library-game-title-row">
-                      <h3 className="library-game-title">{game.name}</h3>
-                      <div className="library-game-title-actions">
-                        {isRecentlyAdded && <span className="library-new-badge">New</span>}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTogglePin(game);
-                          }}
-                          aria-label={pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`}
-                          className={`library-pin-button ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
-                        >
-                          <Pin size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleFavorite(favoriteKey);
-                          }}
-                          aria-label={
-                            isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`
-                          }
-                          className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
-                        >
-                          <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="playtime library-game-playtime">
-                      <Clock size={12} /> {formatTimePlayed(game.time_played)}
-                      <HLTBChip game={game} autoFetch />
-                      <PatchNewsBadge game={game} />
-                      <DiskSizeChip game={game} />
-                    </p>
-                    {gameValue > 0 && <p className="library-game-value">Value: {formatPrice(gameValue, currency)}</p>}
-                    <div className="library-game-tags">
-                      <span className="library-game-tag platform">
-                        {getDisplayPlatform(game)}
-                        {Array.isArray(game.launchSources) && game.launchSources.length > 1 && (
-                          <span
-                            className="library-game-tag-multi-source"
-                            title={`Also available on ${game.launchSources
-                              .map((source) => source.platform)
-                              .filter((platform) => platform && platform !== getDisplayPlatform(game))
-                              .join(', ')}`}
-                          >
-                            +{game.launchSources.length - 1}
-                          </span>
-                        )}
+            {(() => {
+              let lastGroupKey = null;
+              return groupedDisplayedGames.map((game, index) => {
+                const groupKey = groupBy ? getGroupKey(game) : null;
+                const groupHeader =
+                  groupKey && groupKey !== lastGroupKey ? (
+                    <h3 key={`group-${groupKey}`} className="library-group-header" aria-label={getGroupLabel(groupKey)}>
+                      {getGroupLabel(groupKey)}
+                      <span className="library-group-count" aria-hidden="true">
+                        {groupCounts?.[groupKey] ?? 0}
                       </span>
-                      {resolvedMood && <span className="library-game-tag mood">{resolvedMood}</span>}
-                      {Array.isArray(game.genres) && game.genres[0] && (
-                        <span className="library-game-tag genre">{game.genres[0]}</span>
-                      )}
-                      {game.raProgress && game.raProgress.total > 0 && (
-                        <span
-                          className="library-game-tag ra"
-                          title={
-                            game.raProgress.completionHardcore
-                              ? `RetroAchievements: ${game.raProgress.completionHardcore} hardcore`
-                              : 'RetroAchievements progress'
-                          }
-                        >
-                          RA {game.raProgress.earned}/{game.raProgress.total}
-                        </span>
-                      )}
-                      {game.replayIntent && game.replayIntent !== 'none' && (
-                        <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>
-                          {game.replayIntent === 'active' && '▶ Playing'}
-                          {game.replayIntent === 'soon' && '⏳ Soon'}
-                          {game.replayIntent === 'finished' && '✓ Done'}
-                          {game.replayIntent === 'endless' && '∞ Endless'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    </h3>
+                  ) : null;
+                lastGroupKey = groupKey;
+                const favoriteKey = getFavoriteGameKey(game);
+                const isFavorite = favorites.includes(favoriteKey);
+                const resolvedMood = getResolvedMood(game);
+                const gameValue = getGameValue(game);
+                const isRecentlyAdded = GameCurationService.isRecentlyAdded(game?.name, RECENTLY_ADDED_WINDOW_DAYS);
+                const needsCoverArt = hasMissingCoverArt(game);
 
-                  <div className={`library-game-actions ${viewMode === 'list' ? 'list-mode' : 'grid-mode'}`}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onLaunchGame(game);
-                      }}
-                      className="library-launch-button"
-                      aria-label={`Launch ${game.name}`}
+                return (
+                  <React.Fragment key={game.appid || game.name}>
+                    {groupHeader}
+                    <div
+                      className={`${getGameCardClass(game, index)}${isRecentlyAdded ? ' is-recently-added' : ''}`}
+                      onClick={() => (bulkMode ? null : openGameModal(game))}
+                      style={
+                        viewMode === 'grid'
+                          ? {
+                              backgroundColor: 'var(--bg-card)',
+                              borderRadius: 'var(--library-presentation-card-radius)',
+                              padding: `${libraryPresentationPreset.cardPadding}px`,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              boxShadow: 'var(--library-presentation-card-shadow)',
+                              border: '1px solid var(--library-presentation-card-border)',
+                            }
+                          : {
+                              display: 'flex',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              padding: libraryPresentationPreset.listPadding,
+                              backgroundColor: 'var(--bg-card)',
+                              borderRadius: 'var(--library-presentation-card-radius)',
+                              border: '1px solid var(--border-primary)',
+                              cursor: 'pointer',
+                            }
+                      }
                     >
-                      Launch
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleHidden(game);
-                        success(game.hidden ? 'Game unhidden' : 'Game hidden');
-                      }}
-                      className="library-action-button"
-                      title={game.hidden ? 'Unhide game' : 'Hide game'}
-                      aria-label={`${game.hidden ? 'Unhide' : 'Hide'} ${game.name}`}
-                    >
-                      {game.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`Remove "${game.name}" from your library?`)) {
-                          onRemoveGames([game.appid || game.name]);
-                          success(`Removed "${game.name}" from library`);
+                      {/* Bulk Selection Overlay */}
+                      {bulkMode && (
+                        <div className="bulk-checkbox-container" style={{ marginRight: '10px' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedGames.has(game.appid || game.name)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              const newSet = new Set(selectedGames);
+                              const id = game.appid || game.name;
+                              if (newSet.has(id)) newSet.delete(id);
+                              else newSet.add(id);
+                              setSelectedGames(newSet);
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      <div
+                        className="game-card-image-wrapper"
+                        style={
+                          viewMode === 'grid'
+                            ? {
+                                width: '100%',
+                                aspectRatio: '2 / 3',
+                                height: 'auto',
+                                marginBottom: '12px',
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                                backgroundColor: '#1a1a1a',
+                                position: 'relative',
+                              }
+                            : {
+                                width: '120px',
+                                aspectRatio: '231 / 87',
+                                height: 'auto',
+                                marginRight: '15px',
+                                borderRadius: '6px',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                                backgroundColor: '#1a1a1a',
+                                position: 'relative',
+                              }
                         }
-                      }}
-                      className="library-action-button danger"
-                      title="Remove game"
-                      aria-label={`Remove ${game.name} from library`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      >
+                        <LazyImage
+                          src={resolveGameArtwork(game, {
+                            surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card',
+                          })}
+                          fallbackSrc={viewMode === 'grid' ? resolveGameArtwork(game, { surface: 'hero' }) : undefined}
+                          alt={game.name}
+                          gameName={game.name}
+                          platform={getDisplayPlatform(game)}
+                          genre={Array.isArray(game.genres) ? game.genres[0] : undefined}
+                          mood={getResolvedMood(game)}
+                          placeholder={getGameArtworkPlaceholder({
+                            game,
+                            surface: viewMode === 'grid' ? 'portrait' : 'recommendation_card',
+                          })}
+                          style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                        />
+                        {needsCoverArt && (
+                          <div
+                            className="game-card-cover-hint"
+                            title="No cover art found — click to add one via Cover Art Override"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openGameModal(game);
+                            }}
+                          >
+                            <ImageOff size={14} /> Add Cover
+                          </div>
+                        )}
+                      </div>
+                      <div className="game-info" style={{ flexGrow: 1 }}>
+                        <div className="library-game-title-row">
+                          <h3 className="library-game-title">{game.name}</h3>
+                          <div className="library-game-title-actions">
+                            {isRecentlyAdded && <span className="library-new-badge">New</span>}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTogglePin(game);
+                              }}
+                              aria-label={
+                                pinnedIds.has(String(favoriteKey)) ? `Unpin ${game.name}` : `Pin ${game.name}`
+                              }
+                              className={`library-pin-button ${pinnedIds.has(String(favoriteKey)) ? 'is-pinned' : ''}`}
+                            >
+                              <Pin size={16} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleFavorite(favoriteKey);
+                              }}
+                              aria-label={
+                                isFavorite ? `Remove ${game.name} from favorites` : `Add ${game.name} to favorites`
+                              }
+                              className={`library-favorite-button ${isFavorite ? 'is-favorite' : ''}`}
+                            >
+                              <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="playtime library-game-playtime">
+                          <Clock size={12} /> {formatTimePlayed(game.time_played)}
+                          <HLTBChip game={game} autoFetch />
+                          <PatchNewsBadge game={game} />
+                          <DiskSizeChip game={game} />
+                        </p>
+                        {gameValue > 0 && (
+                          <p className="library-game-value">Value: {formatPrice(gameValue, currency)}</p>
+                        )}
+                        <div className="library-game-tags">
+                          <span className="library-game-tag platform">
+                            {getDisplayPlatform(game)}
+                            {Array.isArray(game.launchSources) && game.launchSources.length > 1 && (
+                              <span
+                                className="library-game-tag-multi-source"
+                                title={`Also available on ${game.launchSources
+                                  .map((source) => source.platform)
+                                  .filter((platform) => platform && platform !== getDisplayPlatform(game))
+                                  .join(', ')}`}
+                              >
+                                +{game.launchSources.length - 1}
+                              </span>
+                            )}
+                          </span>
+                          {resolvedMood && <span className="library-game-tag mood">{resolvedMood}</span>}
+                          {Array.isArray(game.genres) && game.genres[0] && (
+                            <span className="library-game-tag genre">{game.genres[0]}</span>
+                          )}
+                          {game.raProgress && game.raProgress.total > 0 && (
+                            <span
+                              className="library-game-tag ra"
+                              title={
+                                game.raProgress.completionHardcore
+                                  ? `RetroAchievements: ${game.raProgress.completionHardcore} hardcore`
+                                  : 'RetroAchievements progress'
+                              }
+                            >
+                              RA {game.raProgress.earned}/{game.raProgress.total}
+                            </span>
+                          )}
+                          {game.replayIntent && game.replayIntent !== 'none' && (
+                            <span className={`library-game-tag replay-intent replay-intent-${game.replayIntent}`}>
+                              {game.replayIntent === 'active' && '▶ Playing'}
+                              {game.replayIntent === 'soon' && '⏳ Soon'}
+                              {game.replayIntent === 'finished' && '✓ Done'}
+                              {game.replayIntent === 'endless' && '∞ Endless'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className={`library-game-actions ${viewMode === 'list' ? 'list-mode' : 'grid-mode'}`}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onLaunchGame(game);
+                          }}
+                          className="library-launch-button"
+                          aria-label={`Launch ${game.name}`}
+                        >
+                          Launch
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleHidden(game.name);
+                            success(game.hidden ? 'Game unhidden' : 'Game hidden');
+                          }}
+                          className="library-action-button"
+                          title={game.hidden ? 'Unhide game' : 'Hide game'}
+                          aria-label={`${game.hidden ? 'Unhide' : 'Hide'} ${game.name}`}
+                        >
+                          {game.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Remove "${game.name}" from your library?`)) {
+                              onRemoveGames([game.appid || game.name]);
+                              success(`Removed "${game.name}" from library`);
+                            }
+                          }}
+                          className="library-action-button danger"
+                          title="Remove game"
+                          aria-label={`Remove ${game.name} from library`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              });
+            })()}
           </div>
 
           {/* Load More */}
@@ -2865,6 +2893,139 @@ function Library({
           )}
         </>
       )}
+
+      {/* Emulator manager lives at the foot of the page — it is configuration,
+          not browsing, so it sits below the games rather than above them. */}
+      <div className="emulator-library-panel">
+        <div className="emulator-library-header">
+          <div>
+            <h3>Emulator Library</h3>
+            <p>
+              {emulatorProfiles.length} profile{emulatorProfiles.length === 1 ? '' : 's'} configured for ROM scanning.
+            </p>
+          </div>
+          <div className="emulator-library-actions">
+            <button
+              type="button"
+              className="emulator-secondary-button"
+              onClick={() => setShowEmulatorManager((visible) => !visible)}
+            >
+              {showEmulatorManager ? 'Hide Manager' : 'Manage Emulators'}
+            </button>
+            <button
+              type="button"
+              className="emulator-primary-button"
+              onClick={scanEmulatorProfiles}
+              disabled={emulatorProfiles.length === 0 || scanningEmulators}
+            >
+              {scanningEmulators ? 'Scanning ROMs...' : 'Scan ROMs'}
+            </button>
+          </div>
+        </div>
+        {showEmulatorManager && (
+          <div className="emulator-manager-body">
+            <div className="emulator-profile-form">
+              <input
+                type="text"
+                value={emulatorDraft.name}
+                onChange={(event) => handleEmulatorDraftChange('name', event.target.value)}
+                placeholder="Profile name, e.g. Dolphin"
+              />
+              <input
+                type="text"
+                value={emulatorDraft.consolePlatform}
+                onChange={(event) => handleEmulatorDraftChange('consolePlatform', event.target.value)}
+                placeholder="Console, e.g. GameCube"
+              />
+              <button type="button" onClick={chooseEmulatorExecutable}>
+                Choose Emulator
+              </button>
+              <button type="button" onClick={chooseRomFolder}>
+                Choose ROM Folder
+              </button>
+              <input
+                type="text"
+                value={emulatorDraft.extensions}
+                onChange={(event) => handleEmulatorDraftChange('extensions', event.target.value)}
+                placeholder="Extensions: iso, chd, gba"
+              />
+              <input
+                type="text"
+                value={emulatorDraft.launchTemplate}
+                onChange={(event) => handleEmulatorDraftChange('launchTemplate', event.target.value)}
+                placeholder={'"{emulator}" "{rom}"'}
+              />
+              <button type="button" className="emulator-add-profile" onClick={addEmulatorProfile}>
+                Add Profile
+              </button>
+            </div>
+            <div className="emulator-detected-block">
+              <button
+                type="button"
+                className="emulator-secondary-button"
+                onClick={detectEmulatorInstalls}
+                disabled={detectingEmulators}
+              >
+                {detectingEmulators ? 'Detecting...' : 'Detect Installed Emulators'}
+              </button>
+              {detectedEmulators.length > 0 && (
+                <div className="emulator-detected-list">
+                  {detectedEmulators.map((detected) => (
+                    <div key={`${detected.key}:${detected.emulatorPath}`} className="emulator-detected-item">
+                      <div className="emulator-detected-meta">
+                        <strong>{detected.name}</strong>
+                        <span className="emulator-detected-path">{detected.emulatorPath}</span>
+                      </div>
+                      <div className="emulator-detected-platforms">
+                        {detected.platforms.map((platform) => (
+                          <button
+                            key={platform}
+                            type="button"
+                            onClick={() => applyDetectedEmulator(detected, platform)}
+                          >
+                            {platform}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {emulatorDetectionRan && !detectingEmulators && detectedEmulators.length === 0 && (
+                <p className="emulator-detected-empty">No known emulators found in the usual locations.</p>
+              )}
+            </div>
+            {(emulatorDraft.emulatorPath || emulatorDraft.romFolder) && (
+              <div className="emulator-path-preview">
+                {emulatorDraft.emulatorPath && <span>Emulator: {emulatorDraft.emulatorPath}</span>}
+                {emulatorDraft.romFolder && <span>ROMs: {emulatorDraft.romFolder}</span>}
+              </div>
+            )}
+            {emulatorProfiles.length > 0 && (
+              <div className="emulator-profile-list">
+                {emulatorProfiles.map((profile) => {
+                  const bios = emulatorBiosStatus[profile.id];
+                  return (
+                    <div key={profile.id} className="emulator-profile-chip">
+                      <span>
+                        {profile.name} · {profile.consolePlatform}
+                      </span>
+                      {bios?.missing && (
+                        <span className={bios.required ? 'emulator-bios-warning' : 'emulator-bios-note'}>
+                          {bios.required ? 'BIOS missing' : 'BIOS optional'} — {bios.hint}
+                        </span>
+                      )}
+                      <button type="button" onClick={() => removeEmulatorProfile(profile.id)}>
+                        Remove
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
       {isModalOpen && (
@@ -2888,17 +3049,9 @@ function Library({
           onUpdateMood={onUpdateMood}
           onAddSessionNote={onAddSessionNote}
           onTogglePlayedElsewhere={onTogglePlayedElsewhere}
+          onUpdateMetadata={onUpdateMetadata}
         />
       )}
-      <RecapCustomizeModal
-        isOpen={isRecapCustomizeOpen}
-        onClose={() => setIsRecapCustomizeOpen(false)}
-        library={library}
-        username={username}
-        period={sharePeriod}
-        onApplied={() => setRecapCustomization(ProgressionUnlockService.getRecapCustomization())}
-      />
-
       <div
         aria-hidden="true"
         style={{

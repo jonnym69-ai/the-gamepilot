@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { useNavigate } from 'react-router-dom';
 import {
   Clock,
   Download,
   X,
-  Trophy,
-  Star,
   User,
   Camera,
   Check,
-  Crown,
   Edit2,
   TrendingUp,
   Image as ImageIcon,
@@ -22,7 +20,6 @@ import {
 } from 'lucide-react';
 import './Profile.css';
 import { useToast } from './components/Toast';
-import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
 import CollapsibleSection from './components/CollapsibleSection';
 import StorageService from './services/StorageService';
 import SessionRepository from './services/SessionRepository';
@@ -30,9 +27,7 @@ import ProfileService, { SOCIAL_PLATFORMS } from './services/ProfileService';
 import SteamProfileCard from './components/SteamProfileCard';
 import SteamProfileService from './services/SteamProfileService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
-import { ProgressionUnlockService } from './services/ProgressionUnlockService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
-import CalendarXPService from './services/CalendarXPService';
 import NavBar from './NavBar';
 import { GamingIdentity } from './GamingIdentity';
 import GamingPersonaService from './services/GamingPersonaService';
@@ -50,21 +45,6 @@ import { YearInReviewService } from './services/YearInReviewService';
 import { LocalShareService } from './services/LocalShareService';
 import ShareMenu from './components/ShareMenu';
 import { GENRES, MOODS } from './constants/GenresMoods';
-
-const SUPPORT_TIER_WEIGHT = {
-  Bronze: 1,
-  Silver: 2,
-  Gold: 3,
-  Platinum: 4,
-};
-
-const resolveHighestSupportTier = (tiers = []) => {
-  return (
-    tiers
-      .filter((tier) => typeof tier === 'string')
-      .sort((left, right) => (SUPPORT_TIER_WEIGHT[right] || 0) - (SUPPORT_TIER_WEIGHT[left] || 0))[0] || null
-  );
-};
 
 const getSessionStartTime = (sessionEntry) => {
   if (!sessionEntry) {
@@ -97,19 +77,19 @@ const dispatchProfileUpdatedEvent = (detail = {}) => {
 };
 
 const Profile = ({ theme, library = [] }) => {
+  const navigate = useNavigate();
   const { success, error } = useToast();
   const safeLibrary = useMemo(() => (Array.isArray(library) ? library.filter(Boolean) : []), [library]);
   const [tempUsername, setTempUsername] = useState('');
   const personaEvolution = useMemo(() => YearInReviewService.getLifetimePersonaEvolution(safeLibrary), [safeLibrary]);
   const [tempMessage, setTempMessage] = useState('Ready to find your perfect play?');
-  const [tempBirthdayMonth, setTempBirthdayMonth] = useState('');
-  const [tempBirthdayDay, setTempBirthdayDay] = useState('');
   const [socialLinks, setSocialLinks] = useState([]);
   const [tempSocialLinks, setTempSocialLinks] = useState([]);
   const [gamingIdentity, setGamingIdentity] = useState(null);
   const [personaSeed, setPersonaSeed] = useState(null);
   const [showPersonaDebug, setShowPersonaDebug] = useState(false);
   const [personaVariant, setPersonaVariant] = useState('primary');
+  const [expandedTraitId, setExpandedTraitId] = useState(null);
   const [personaWindow, setPersonaWindow] = useState('recent'); // 'all' | 'recent' — recent (current rotation) is the default; all-time is opt-in
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   const [pinnedPersonaId, setPinnedPersonaId] = useState(() => GamingPersonaService.getPinnedPersonaId());
@@ -145,10 +125,7 @@ const Profile = ({ theme, library = [] }) => {
   const storyShareCardRef = useRef(null);
   const [isCapturingIdentity, setIsCapturingIdentity] = useState(false);
   const [isCapturingStory, setIsCapturingStory] = useState(false);
-  const [xpStats, setXpStats] = useState(null);
-  const [xpBoost, setXpBoost] = useState(null);
   const [completedGames, setCompletedGames] = useState([]);
-  const [founderTier, setFounderTier] = useState(null);
   const [username, setUsername] = useState('');
   const [profilePic, setProfilePic] = useState('');
   const [steamAvatar, setSteamAvatar] = useState(null);
@@ -156,26 +133,12 @@ const Profile = ({ theme, library = [] }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
-  const [isFounder, setIsFounder] = useState(false);
   const [startupPersonalization, setStartupPersonalization] = useState(() =>
     StartupPersonalizationService.getProfile()
   );
   const [isEditingStartupPersonalization, setIsEditingStartupPersonalization] = useState(false);
   const [startupDraft, setStartupDraft] = useState(() => StartupPersonalizationService.getProfile());
-  const [rewardCatalog, setRewardCatalog] = useState(() => ProgressionUnlockService.getProfileRewardCatalog());
-  const [rewardSummary, setRewardSummary] = useState(() => ProgressionUnlockService.getRewardCatalogSummary());
-  const [recapCustomization] = useState(() => ProgressionUnlockService.getRecapCustomization());
   const [selectedSection, setSelectedSection] = useState(0);
-
-  const refreshRewardCatalog = useCallback(() => {
-    setRewardCatalog(ProgressionUnlockService.getProfileRewardCatalog());
-    setRewardSummary(ProgressionUnlockService.getRewardCatalogSummary());
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('gamepilot:profile-updated', refreshRewardCatalog);
-    return () => window.removeEventListener('gamepilot:profile-updated', refreshRewardCatalog);
-  }, [refreshRewardCatalog]);
 
   const generateIdentityShareCardBlob = useCallback(async () => {
     if (!identityShareCardRef.current) return null;
@@ -723,101 +686,7 @@ const Profile = ({ theme, library = [] }) => {
     };
   }, [completedGames]);
 
-  const selectedProfileBanner = useMemo(() => {
-    const selectedId = rewardCatalog?.customization?.selectedBanner;
-    return rewardCatalog?.banners?.find((banner) => banner.id === selectedId) || rewardCatalog?.banners?.[0] || null;
-  }, [rewardCatalog]);
-
-  const selectedProfileTitle = useMemo(() => {
-    const selectedId = rewardCatalog?.customization?.selectedTitle;
-    return rewardCatalog?.titles?.find((title) => title.id === selectedId) || rewardCatalog?.titles?.[0] || null;
-  }, [rewardCatalog]);
-
-  const selectedProfileFrame = useMemo(() => {
-    const selectedId = rewardCatalog?.customization?.selectedFrame;
-    return rewardCatalog?.frames?.find((frame) => frame.id === selectedId) || rewardCatalog?.frames?.[0] || null;
-  }, [rewardCatalog]);
-
   const startupInfluence = UserBehaviorProfile.getStartupInfluenceSummary();
-
-  const founderAccentStyle = useMemo(() => {
-    if (!isFounder || !founderTier) {
-      return undefined;
-    }
-
-    const accentMap = {
-      Platinum: {
-        '--founder-accent': '#e5e7eb',
-        '--founder-glow': 'rgba(229, 231, 235, 0.28)',
-        '--founder-banner': 'linear-gradient(135deg, rgba(229, 231, 235, 0.28), rgba(148, 163, 184, 0.18))',
-        '--founder-border': 'rgba(229, 231, 235, 0.22)',
-        '--founder-border-strong': 'rgba(229, 231, 235, 0.34)',
-        '--founder-surface': 'rgba(229, 231, 235, 0.12)',
-      },
-      Gold: {
-        '--founder-accent': '#facc15',
-        '--founder-glow': 'rgba(250, 204, 21, 0.24)',
-        '--founder-banner': 'linear-gradient(135deg, rgba(250, 204, 21, 0.3), rgba(251, 146, 60, 0.18))',
-        '--founder-border': 'rgba(250, 204, 21, 0.2)',
-        '--founder-border-strong': 'rgba(250, 204, 21, 0.3)',
-        '--founder-surface': 'rgba(250, 204, 21, 0.14)',
-      },
-      Silver: {
-        '--founder-accent': '#cbd5e1',
-        '--founder-glow': 'rgba(203, 213, 225, 0.24)',
-        '--founder-banner': 'linear-gradient(135deg, rgba(203, 213, 225, 0.24), rgba(148, 163, 184, 0.16))',
-        '--founder-border': 'rgba(203, 213, 225, 0.2)',
-        '--founder-border-strong': 'rgba(203, 213, 225, 0.3)',
-        '--founder-surface': 'rgba(203, 213, 225, 0.12)',
-      },
-      Bronze: {
-        '--founder-accent': '#fb923c',
-        '--founder-glow': 'rgba(251, 146, 60, 0.22)',
-        '--founder-banner': 'linear-gradient(135deg, rgba(251, 146, 60, 0.26), rgba(180, 83, 9, 0.16))',
-        '--founder-border': 'rgba(251, 146, 60, 0.2)',
-        '--founder-border-strong': 'rgba(251, 146, 60, 0.3)',
-        '--founder-surface': 'rgba(251, 146, 60, 0.14)',
-      },
-    };
-
-    return accentMap[founderTier] || undefined;
-  }, [founderTier, isFounder]);
-
-  const unlockedShowcaseSlotCount = rewardSummary?.showcaseSlotsUnlocked || 0;
-
-  const showcasedAchievements = useMemo(() => {
-    const pointsMap = AchievementTracker.getAchievementPoints();
-    return (rewardCatalog?.customization?.showcasedAchievements || [])
-      .map((achievementId) => {
-        const achievement = AchievementTracker.getAchievementById(achievementId);
-        if (!achievement) {
-          return null;
-        }
-
-        return {
-          id: achievementId,
-          name: achievement.name,
-          description: achievement.description,
-          points: pointsMap[achievementId] || 0,
-        };
-      })
-      .filter(Boolean);
-  }, [rewardCatalog]);
-
-  const emptyShowcaseSlots = Math.max(0, unlockedShowcaseSlotCount - showcasedAchievements.length);
-
-  const achievementSummary = useMemo(() => {
-    const total = Object.values(ACHIEVEMENTS).reduce((sum, category) => sum + (category?.length || 0), 0);
-    const unlocked = AchievementTracker.getUnlockedAchievements() || [];
-    const pointsMap = AchievementTracker.getAchievementPoints();
-    const unlockedPoints = unlocked.reduce((sum, id) => sum + (pointsMap[id] || 0), 0);
-    return {
-      total,
-      unlocked: unlocked.length,
-      percent: total > 0 ? Math.round((unlocked.length / total) * 100) : 0,
-      points: unlockedPoints,
-    };
-  }, []);
 
   // Handle ending sessions
   const handleEndSession = (gameName) => {
@@ -878,20 +747,6 @@ const Profile = ({ theme, library = [] }) => {
     setSocialLinks(savedSocialLinks);
     setTempSocialLinks(savedSocialLinks);
 
-    let userFounders = [];
-    try {
-      const parsedFounders = StorageService.get('userFounders', []);
-      userFounders = Array.isArray(parsedFounders) ? parsedFounders : [];
-    } catch (err) {
-      userFounders = [];
-    }
-    const currentUser = userFounders.find((founder) => founder.name === savedUsername);
-    const boostTier = AchievementTracker.getPatreonBoostProfile().tier || null;
-    const effectiveSupportTier = resolveHighestSupportTier([currentUser?.tier, boostTier]);
-
-    setIsFounder(Boolean(effectiveSupportTier));
-    setFounderTier(effectiveSupportTier);
-
     const identity = GamingIdentity.getProfile();
     setGamingIdentity(identity);
     setGamingStory(GamingStoryService.updateStory(safeLibrary));
@@ -902,13 +757,8 @@ const Profile = ({ theme, library = [] }) => {
     );
     setStartupPersonalization(StartupPersonalizationService.getProfile());
     setStartupDraft(StartupPersonalizationService.getProfile());
-
-    const xpData = AchievementTracker.getXPStats();
-    setXpStats(xpData);
-    setXpBoost(AchievementTracker.getPatreonBoostProfile());
-    refreshRewardCatalog();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [safeLibrary, refreshRewardCatalog]);
+  }, [safeLibrary]);
 
   // Reuse the Steam profile card's avatar as the header image when the
   // feature is on and the user hasn't chosen a custom picture.
@@ -995,24 +845,6 @@ const Profile = ({ theme, library = [] }) => {
       StorageService.setString('welcomeMessage', tempMessage);
       ProfileService.setSocialLinks(tempSocialLinks);
 
-      // Persist birthday for annual XP bonus / seasonal events
-      if (tempBirthdayMonth && tempBirthdayDay) {
-        const month = parseInt(tempBirthdayMonth, 10) - 1;
-        const day = parseInt(tempBirthdayDay, 10);
-        const validationDate = new Date(2000, month, day);
-        const isValidBirthday =
-          month >= 0 &&
-          month <= 11 &&
-          day >= 1 &&
-          validationDate.getMonth() === month &&
-          validationDate.getDate() === day;
-        if (!isValidBirthday) {
-          error('Enter a valid birthday.');
-          return;
-        }
-        CalendarXPService.setBirthday(month, day);
-      }
-
       dispatchProfileUpdatedEvent({
         username: tempUsername.trim(),
         profilePic,
@@ -1025,22 +857,10 @@ const Profile = ({ theme, library = [] }) => {
     }
   };
 
-  const loadBirthdayDraft = () => {
-    const birthday = CalendarXPService.getBirthday();
-    if (birthday && Number.isInteger(birthday.month) && Number.isInteger(birthday.day)) {
-      setTempBirthdayMonth(String(birthday.month + 1));
-      setTempBirthdayDay(String(birthday.day));
-    } else {
-      setTempBirthdayMonth('');
-      setTempBirthdayDay('');
-    }
-  };
-
   const handleCancel = () => {
     setTempUsername(username);
     setTempMessage(welcomeMessage);
     setTempSocialLinks(socialLinks);
-    loadBirthdayDraft();
     setIsEditing(false);
   };
 
@@ -1048,7 +868,6 @@ const Profile = ({ theme, library = [] }) => {
     setTempUsername(username);
     setTempMessage(welcomeMessage);
     setTempSocialLinks(socialLinks);
-    loadBirthdayDraft();
     setIsEditing(true);
   };
 
@@ -1178,25 +997,9 @@ const Profile = ({ theme, library = [] }) => {
             </div>
           </div>
 
-          <div
-            className={`profile-card reward-profile-card ${isFounder && founderTier ? `founder-profile-card founder-profile-card-${founderTier.toLowerCase()}` : ''}`}
-            style={{
-              ...(selectedProfileBanner ? { '--profile-banner-preview': selectedProfileBanner.preview } : {}),
-              ...(founderAccentStyle || {}),
-            }}
-          >
+          <div className="profile-card">
             <div className="profile-picture-section">
-              <div
-                className="profile-picture-container"
-                style={
-                  selectedProfileFrame
-                    ? {
-                        borderColor: selectedProfileFrame.accentColor,
-                        boxShadow: `0 10px 30px ${selectedProfileFrame.shadowColor}`,
-                      }
-                    : undefined
-                }
-              >
+              <div className="profile-picture-container">
                 {profilePic || steamAvatar ? (
                   <img src={profilePic || steamAvatar} alt="Profile" className="profile-picture" />
                 ) : (
@@ -1233,26 +1036,6 @@ const Profile = ({ theme, library = [] }) => {
             </div>
 
             <div className="profile-info">
-              <div
-                className={`profile-identity-banner ${isFounder && founderTier ? `founder-identity-banner founder-identity-banner-${founderTier.toLowerCase()}` : ''}`}
-                style={selectedProfileBanner ? { background: selectedProfileBanner.preview } : undefined}
-              >
-                <div className="profile-identity-banner-copy">
-                  <span className="profile-identity-label">Equipped Banner</span>
-                  <strong>{selectedProfileBanner?.name || 'Pilot Sunset'}</strong>
-                  <p>{selectedProfileTitle?.name || 'Rookie Pilot'}</p>
-                </div>
-                <div className="profile-identity-banner-meta">
-                  <span>{selectedProfileFrame?.name || 'Starter Halo'}</span>
-                  <span>
-                    {unlockedShowcaseSlotCount} showcase slot{unlockedShowcaseSlotCount === 1 ? '' : 's'}
-                  </span>
-                  <span className="profile-achievement-badge">
-                    <Trophy size={14} />
-                    {achievementSummary.unlocked} / {achievementSummary.total} achievements
-                  </span>
-                </div>
-              </div>
               {isEditing ? (
                 <div className="edit-form">
                   <div className="form-group">
@@ -1280,38 +1063,6 @@ const Profile = ({ theme, library = [] }) => {
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Birthday (annual XP bonus)</label>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <select
-                        value={tempBirthdayMonth}
-                        onChange={(e) => setTempBirthdayMonth(e.target.value)}
-                        className="profile-select"
-                        style={{ flex: 2 }}
-                      >
-                        <option value="">Month</option>
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <option key={i} value={i + 1}>
-                            {new Date(2024, i, 1).toLocaleDateString('en-US', { month: 'long' })}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={tempBirthdayDay}
-                        onChange={(e) => setTempBirthdayDay(e.target.value)}
-                        className="profile-select"
-                        style={{ flex: 1 }}
-                      >
-                        <option value="">Day</option>
-                        {Array.from({ length: 31 }, (_, i) => (
-                          <option key={i} value={i + 1}>
-                            {i + 1}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
 
                   <div className="form-group">
@@ -1423,18 +1174,6 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="profile-display">
                   <div className="username-display">
                     <h2>{username || 'Guest Player'}</h2>
-                    {selectedProfileTitle && (
-                      <div className="profile-title-pill">
-                        <Star size={14} />
-                        <span>{selectedProfileTitle.name}</span>
-                      </div>
-                    )}
-                    {isFounder && (
-                      <div className={`founder-badge ${(founderTier || '').toLowerCase()}`}>
-                        <Crown size={16} />
-                        <span>Founding Supporter</span>
-                      </div>
-                    )}
                     <button onClick={handleEdit} className="edit-button">
                       <Edit2 size={16} />
                       Edit Profile
@@ -1539,16 +1278,49 @@ const Profile = ({ theme, library = [] }) => {
                                 Built from your actual play history, led by {active.basedOnGame}
                               </span>
                             )}
+                            {displayedPersona.signals?.adaptiveSessionCount > 0 && (
+                              <span className="gaming-persona-basis">
+                                {displayedPersona.mode === 'all-time'
+                                  ? `Based on ${displayedPersona.signals.adaptiveSessionCount} tracked sessions`
+                                  : `Based on your last ${displayedPersona.signals.adaptiveSessionCount} tracked sessions`}
+                              </span>
+                            )}
                           </div>
                         );
                       })()}
                       {displayedPersona.subTraits.length > 0 && (
                         <div className="gaming-persona-traits">
-                          {displayedPersona.subTraits.map((trait) => (
-                            <span key={trait.id} className="gaming-persona-trait" title={trait.description}>
-                              {trait.label}
-                            </span>
-                          ))}
+                          {displayedPersona.subTraits.map((trait) => {
+                            const isExpanded = expandedTraitId === trait.id;
+                            return (
+                              <React.Fragment key={trait.id}>
+                                <button
+                                  type="button"
+                                  className={`gaming-persona-trait${isExpanded ? ' active' : ''}`}
+                                  title={trait.description}
+                                  aria-expanded={isExpanded}
+                                  onClick={() => setExpandedTraitId(isExpanded ? null : trait.id)}
+                                >
+                                  {trait.label}
+                                </button>
+                                {isExpanded && (
+                                  <div className="gaming-persona-trait-receipts" role="region">
+                                    <p className="gaming-persona-trait-roast">{trait.description}</p>
+                                    {trait.evidence?.length > 0 && (
+                                      <div
+                                        className="gaming-persona-evidence"
+                                        aria-label={`Why you're tagged ${trait.label}`}
+                                      >
+                                        {trait.evidence.map((item) => (
+                                          <span key={item}>{item}</span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
                         </div>
                       )}
                       {displayedPersona.confidence === 'low' && (
@@ -1650,10 +1422,6 @@ const Profile = ({ theme, library = [] }) => {
                     </div>
                   )}
 
-                  <div className="profile-equipped-meta">
-                    <span>Frame: {selectedProfileFrame?.name || 'Starter Halo'}</span>
-                    <span>Banner: {selectedProfileBanner?.name || 'Pilot Sunset'}</span>
-                  </div>
                   {socialLinks.length > 0 && (
                     <div
                       className="profile-social-links"
@@ -1692,23 +1460,6 @@ const Profile = ({ theme, library = [] }) => {
                       })}
                     </div>
                   )}
-                  {(showcasedAchievements.length > 0 || emptyShowcaseSlots > 0) && (
-                    <div className="profile-showcase-strip">
-                      {showcasedAchievements.map((achievement) => (
-                        <div key={achievement.id} className="profile-showcase-chip">
-                          <span className="profile-showcase-chip-name">{achievement.name}</span>
-                          <span className="profile-showcase-chip-points">+{achievement.points} XP</span>
-                        </div>
-                      ))}
-                      {emptyShowcaseSlots > 0 && (
-                        <div className="profile-showcase-chip empty">
-                          <span>
-                            +{emptyShowcaseSlots} open slot{emptyShowcaseSlots === 1 ? '' : 's'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -1728,6 +1479,13 @@ const Profile = ({ theme, library = [] }) => {
                 <div className="gaming-identity-card-header">
                   <h3>Gaming Identity</h3>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="startup-personalization-button"
+                      onClick={() => navigate('/year-in-review')}
+                    >
+                      Your Gaming Life
+                    </button>
                     <ShareMenu
                       imageAvailable={Boolean(gamingIdentity)}
                       onCopyText={handleCopyIdentityShareText}
@@ -1750,7 +1508,7 @@ const Profile = ({ theme, library = [] }) => {
                 </div>
                 <div className="identity-header">
                   <div className="level-badge">
-                    <div className="level-number">{xpStats ? xpStats.level : gamingIdentity.level}</div>
+                    <div className="level-number">{gamingIdentity.level}</div>
                     <div className="level-text">Level</div>
                   </div>
                   <div className="title-section">
@@ -1758,17 +1516,6 @@ const Profile = ({ theme, library = [] }) => {
                     <p className="identity-description">{gamingIdentity.identity.description}</p>
                   </div>
                 </div>
-                {isFounder && founderTier && (
-                  <div className={`founder-plaque founder-plaque-${founderTier.toLowerCase()}`}>
-                    <div>
-                      <span className="trait-label">Supporter Plaque</span>
-                      <strong>Founding Supporter</strong>
-                      <p className="identity-description">
-                        Thanks for backing GamePilot early — your banner, frame, and showcase extras stay equipped.
-                      </p>
-                    </div>
-                  </div>
-                )}
                 {startupPersonalization?.completed && (
                   <div className="startup-personalization-panel">
                     <div className="startup-personalization-header">
@@ -2014,29 +1761,6 @@ const Profile = ({ theme, library = [] }) => {
             </CollapsibleSection>
           )}
 
-          {/* Identity Badges Section (from Gaming DNA) */}
-          {gamingIdentity && gamingIdentity.badges && gamingIdentity.badges.length > 0 && (
-            <CollapsibleSection
-              title="Identity Badges"
-              subtitle="Milestones and traits earned through your play behavior."
-              badge={`${gamingIdentity.badges.length} badges`}
-              defaultOpen={false}
-              icon={<Award size={18} />}
-              className={getSectionClass(1)}
-            >
-              <div className="dna-badges-section">
-                <div className="dna-badges-grid">
-                  {gamingIdentity.badges.slice(0, 8).map((badge) => (
-                    <div key={badge.id} className="dna-badge">
-                      <span className="dna-badge-icon">{badge.icon}</span>
-                      <span className="dna-badge-name">{badge.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CollapsibleSection>
-          )}
-
           {/* Gamer Signature Section (from Gaming DNA) */}
           {gamingIdentity && gamingIdentity.identity && (
             <CollapsibleSection
@@ -2139,69 +1863,6 @@ const Profile = ({ theme, library = [] }) => {
             <PersonaEvolutionCard evolution={personaEvolution} />
           </CollapsibleSection>
 
-          {/* XP & Level Section */}
-          {xpStats && (
-            <CollapsibleSection
-              title="Experience & Level"
-              subtitle="Background progression — optional noise."
-              badge={`Lv ${xpStats.level}`}
-              defaultOpen={false}
-              icon={<Star size={18} />}
-              className={getSectionClass(2)}
-            >
-              <div className="gaming-identity-card">
-                <h3>Experience & Level</h3>
-                <div className="identity-header">
-                  <div className="level-badge">
-                    <div className="level-number">{xpStats.level}</div>
-                    <div className="level-text">Level</div>
-                  </div>
-                  <div className="title-section">
-                    <h4>Gaming Experience</h4>
-                    <p className="xp-total">{xpStats.totalXP.toLocaleString()} XP Total</p>
-                  </div>
-                </div>
-                <div className="xp-progress-section">
-                  <div className="xp-progress-header">
-                    <span>Level {xpStats.level} Progress</span>
-                    <span>
-                      {xpStats.xpProgress}/{xpStats.xpToNextLevel} XP
-                    </span>
-                  </div>
-                  <div className="xp-progress-bar">
-                    <div className="xp-progress-fill" style={{ width: `${xpStats.levelProgress}%` }}></div>
-                  </div>
-                </div>
-                <div className="xp-breakdown">
-                  <div className="xp-source">
-                    <TrendingUp size={16} />
-                    <span>Habits: {(xpStats.habitXP || 0).toLocaleString()} XP</span>
-                  </div>
-                  <div className="xp-source">
-                    <Clock size={16} />
-                    <span>Playtime: {(xpStats.playtimeXP || 0).toLocaleString()} XP</span>
-                  </div>
-                  <div className="xp-source">
-                    <Star size={16} />
-                    <span>Total: {xpStats.totalXP.toLocaleString()} XP</span>
-                  </div>
-                </div>
-                {xpBoost && xpBoost.multiplier > 1 && (
-                  <div className="xp-boost-indicator">
-                    <Sparkles size={16} />
-                    <span>
-                      <strong>{xpBoost.multiplier}x XP Boost</strong> active
-                      {xpBoost.tier && ` (${xpBoost.tier} tier)`}
-                      {xpBoost.isMonthly && ' — monthly'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Removed duplicate achievement counter block; stats page owns this display */}
-
           {/* Completed Games Section */}
           <CollapsibleSection
             title="Completed Games"
@@ -2226,7 +1887,7 @@ const Profile = ({ theme, library = [] }) => {
                 <EmptyState
                   icon="✅"
                   title="No completed games logged yet"
-                  description="Track finished games here to build a personal completion log and keep your profile milestones feeling real."
+                  description="Track finished games here to build a personal completion log of what you've actually beaten."
                   compact
                   style={{ marginBottom: '18px' }}
                 />
@@ -2334,7 +1995,7 @@ const Profile = ({ theme, library = [] }) => {
                   profile={gamingIdentity}
                   evolution={personaEvolution}
                   library={safeLibrary}
-                  watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+                  watermark="gamepilot"
                 />
               )}
             </div>
@@ -2360,7 +2021,7 @@ const Profile = ({ theme, library = [] }) => {
                   username={username || 'Pilot'}
                   totalPlaytime={(storyToShare.totalHours || 0) * 60}
                   topGame={storyCardTopGame}
-                  watermark={recapCustomization.shareCardWatermark || 'gamepilot'}
+                  watermark="gamepilot"
                 />
               )}
             </div>

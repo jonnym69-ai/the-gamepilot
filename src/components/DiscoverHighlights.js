@@ -1,13 +1,14 @@
 import React, { useEffect, useId, useState } from 'react';
-import { Gift, ExternalLink, RefreshCw } from 'lucide-react';
+import { Gift, ExternalLink, Plus, RefreshCw } from 'lucide-react';
 import DailySpotlightCard from './DailySpotlightCard';
 import DiscoverQuickPicks from './DiscoverQuickPicks';
 import FreeToPlayEssentials from './FreeToPlayEssentials';
-import SeasonalShelf from './SeasonalShelf';
 import LazyImage from './LazyImage';
 import { FreeGameRadar, getEpicOfferState } from '../services/FreeGameRadar';
 import { openExternalUrl } from '../services/ElectronBridge';
+import ManualGamesService from '../services/ManualGamesService';
 import StorageService from '../services/StorageService';
+import { useToast } from './Toast';
 import './DiscoverHighlights.css';
 
 const EPIC_URL = 'https://store.epicgames.com/free-games';
@@ -166,6 +167,7 @@ function EpicOffers() {
 
 function GiveawayFeed() {
   const id = useId();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
@@ -201,6 +203,31 @@ function GiveawayFeed() {
       setLinkError('Could not open the giveaway page. Please try again.');
     }
   };
+
+  // Claimed a DRM-free copy already? Pick its executable and it joins the
+  // library, launch flow and playtime tracking like any other entry.
+  const addToLibrary = async (title) => {
+    const pickExecutable = window.electronAPI?.pickExecutable;
+    if (typeof pickExecutable !== 'function') {
+      toastError('Adding games manually needs the desktop app.');
+      return;
+    }
+    try {
+      const picked = await pickExecutable();
+      if (!picked?.ok || !picked.filePath) return;
+      // Prefer the giveaway title over the raw exe name — the user knows which
+      // DRM-free copy they just claimed for this card.
+      const entry = ManualGamesService.add({ exePath: picked.filePath, name: title });
+      if (!entry) {
+        toastError('That file looks like a launcher, not a game — it was not added.');
+        return;
+      }
+      toastSuccess(`Added — it'll show in your library`);
+    } catch {
+      toastError('Could not add that game.');
+    }
+  };
+
   const games = Array.isArray(result?.games) ? result.games : [];
   return (
     <section className="discover-epic-radar discover-giveaway-feed" aria-labelledby={`${id}-heading`}>
@@ -236,6 +263,26 @@ function GiveawayFeed() {
         {result?.stale && result?.checkedAt ? ' Showing saved listings; verify availability.' : ''}
       </p>
       <div className="discover-free-offers">
+        <article className="discover-free-offer discover-prime-card">
+          <div>
+            <span className="discover-offer-badge">Prime Gaming · weekly drops</span>
+            <h3>Free games with Prime</h3>
+            <p className="discover-offer-description">
+              A Prime membership includes free PC games every week — delivered as Epic keys, GOG codes and Amazon Games
+              titles. Easy to forget, worth a look.
+            </p>
+            <p className="discover-offer-date">New drops land roughly weekly — claim each batch before it expires.</p>
+            <span className="discover-offer-actions">
+              <button
+                type="button"
+                onClick={() => openOffer('https://luna.amazon.com/claims')}
+                aria-label="Check this week's free games with Prime"
+              >
+                Check Prime claims <ExternalLink size={14} aria-hidden="true" />
+              </button>
+            </span>
+          </div>
+        </article>
         {games.slice(0, 6).map((game) => (
           <article key={game.id} className="discover-free-offer">
             {game.image && <LazyImage src={game.image} alt={`${game.title} artwork`} />}
@@ -255,15 +302,25 @@ function GiveawayFeed() {
                 )}
                 {game.worth ? ` · was ${game.worth}` : ''}
               </p>
-              {game.url && (
+              <span className="discover-offer-actions">
+                {game.url && (
+                  <button
+                    type="button"
+                    onClick={() => openOffer(game.url)}
+                    aria-label={`View the ${game.title} giveaway`}
+                  >
+                    {result?.stale ? 'Check giveaway' : 'View giveaway'} <ExternalLink size={14} aria-hidden="true" />
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => openOffer(game.url)}
-                  aria-label={`View the ${game.title} giveaway`}
+                  className="discover-add-library"
+                  onClick={() => addToLibrary(game.title)}
+                  aria-label={`Add ${game.title} to your library`}
                 >
-                  {result?.stale ? 'Check giveaway' : 'View giveaway'} <ExternalLink size={14} aria-hidden="true" />
+                  <Plus size={14} aria-hidden="true" /> Add to library
                 </button>
-              )}
+              </span>
             </div>
           </article>
         ))}
@@ -293,7 +350,6 @@ export default function DiscoverHighlights({ library, onLaunchGame, activeSessio
     <div className="discover-highlights">
       <DiscoverQuickPicks library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
       <DailySpotlightCard library={library} rediscovery onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
-      <SeasonalShelf library={library} onLaunchGame={onLaunchGame} />
       <section className="discover-external" aria-labelledby={`${id}-external-heading`}>
         <header className="discover-radar-header">
           <div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   X,
   Star,
-  Clock,
   Calendar,
   Play,
   ExternalLink,
@@ -13,6 +12,8 @@ import {
   Trophy,
   Sparkles,
   Upload,
+  Wrench,
+  MoreHorizontal,
 } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
@@ -29,14 +30,20 @@ import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { getGameArtworkPlaceholder, resolveGameArtwork, fileToCoverDataUri } from '../services/GameArtworkService';
 import { MOODS, getMoodForGame, getResolvedMood } from '../constants/GenresMoods';
 import { getLibraryRank, isTopShelfRank } from '../services/gameClassification';
+import SessionRepository from '../services/SessionRepository';
+import { getGameSessionContext } from '../services/GameSessionContext';
+import stripHtml from '../utils/stripHtml';
 import LazyImage from './LazyImage';
 import { GameShareCard, buildGameShareCaption, buildGameShareData } from './GameShareCard';
 import { SessionLaunchShareCard } from './SessionLaunchShareCard';
 import { ShareMenu } from './ShareMenu';
 import LibrariansNotes from './LibrariansNotes';
+import EditGameModal from './EditGameModal';
 import SaveBackupPanel from './SaveBackupPanel';
 import SteamSnapshot from './SteamSnapshot';
 import PatchNewsPanel from './PatchNewsPanel';
+import YouTubeVideosPanel from './YouTubeVideosPanel';
+import RecommendationPreferenceControl from './RecommendationPreferenceControl';
 import UninstallModal from './UninstallModal';
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
 import { useToast } from './Toast';
@@ -96,7 +103,7 @@ const GameModal = ({
   onUpdateMood,
   onAddSessionNote,
   onTogglePlayedElsewhere,
-  bigScreen = false,
+  onUpdateMetadata,
 }) => {
   const { success: toastSuccess, error: toastError } = useToast();
   const [gameDetails, setGameDetails] = useState(null);
@@ -125,6 +132,22 @@ const GameModal = ({
   const [moodOverride, setMoodOverride] = useState(game?.moodOverride || '');
   const [playedElsewhere, setPlayedElsewhere] = useState(Boolean(game?.playedElsewhere));
   const [sessionNoteText, setSessionNoteText] = useState('');
+  const [sessionHistory, setSessionHistory] = useState(() => SessionRepository.getSessionHistory());
+  const [showEditPanels, setShowEditPanels] = useState(false);
+  const [showEditDetails, setShowEditDetails] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen || !game) return undefined;
+    const refresh = () => setSessionHistory(SessionRepository.getSessionHistory());
+    refresh();
+    const events = ['gamepilot:session-storage-ready', 'gamepilot:session-ended', 'gameSessionEnded'];
+    events.forEach((eventName) => window.addEventListener(eventName, refresh));
+    return () => events.forEach((eventName) => window.removeEventListener(eventName, refresh));
+  }, [isOpen, game]);
+
+  const sessionContext = useMemo(() => getGameSessionContext(game, sessionHistory), [game, sessionHistory]);
   const fetchedGameId = React.useRef(null);
   const modalBodyRef = useRef(null);
   const shareCardRef = useRef(null);
@@ -566,6 +589,34 @@ const GameModal = ({
     [game?.appid, steamAppid, onTogglePin, onToggleFavorite]
   );
 
+  // Footer "More" menu holds the secondary actions. Controller navigation
+  // highlights controls by name, so landing on one that lives inside the
+  // menu auto-opens it — the focus outline is never on a hidden button.
+  const OVERFLOW_CONTROLS = ['steamLibrary', 'store', 'pin', 'favorite', 'playedElsewhere'];
+  const activeModalControl = modalControls[selectedControlIndex] || modalControls[0];
+  useEffect(() => {
+    if (OVERFLOW_CONTROLS.includes(activeModalControl)) setOverflowOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeModalControl]);
+
+  useEffect(() => {
+    if (!overflowOpen) return undefined;
+    const handleClickOutside = (event) => {
+      if (overflowRef.current && !overflowRef.current.contains(event.target)) {
+        setOverflowOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setOverflowOpen(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [overflowOpen]);
+
   useEffect(() => {
     if (!isOpen || !game) {
       return undefined;
@@ -711,7 +762,7 @@ const GameModal = ({
 
   return (
     <>
-      <div className={`game-modal-overlay ${bigScreen ? 'gm-big-screen' : ''}`} onClick={onClose}>
+      <div className="game-modal-overlay" onClick={onClose}>
         <div className="game-modal-container" onClick={(e) => e.stopPropagation()}>
           <div className="game-modal-header">
             <div className="game-modal-title">
@@ -814,10 +865,7 @@ const GameModal = ({
                   <div className="game-info-panel">
                     <h3>Overview</h3>
                     {gameDetails?.short_description ? (
-                      <p
-                        className="game-description"
-                        dangerouslySetInnerHTML={{ __html: gameDetails.short_description }}
-                      />
+                      <p className="game-description">{stripHtml(gameDetails.short_description)}</p>
                     ) : (
                       <p className="game-description">{fallbackOverview}</p>
                     )}
@@ -854,21 +902,87 @@ const GameModal = ({
                     </div>
                   </div>
 
-                  {gameDetails?.developers && (
-                    <div className="game-info-panel">
-                      <h3>Developers</h3>
-                      <p className="game-description">{gameDetails.developers.join(', ')}</p>
-                    </div>
-                  )}
-
                   <SteamSnapshot game={game} />
 
                   <PatchNewsPanel game={game} />
+
+                  <YouTubeVideosPanel key={game.name || game.title} game={game} />
 
                   <LibrariansNotes game={game} />
                 </div>
 
                 <div className="game-modal-secondary">
+                  <div className="game-info-panel">
+                    <h3>Your sessions &amp; notes</h3>
+                    {sessionContext.sessionCount > 0 ? (
+                      <>
+                        <p>
+                          {sessionContext.sessionCount} recorded session
+                          {sessionContext.sessionCount === 1 ? '' : 's'} · Last session{' '}
+                          {new Date(sessionContext.lastSessionAt).toLocaleDateString()}
+                        </p>
+                        {sessionContext.medianMinutes !== null && (
+                          <p>
+                            Typical recorded session: {sessionContext.medianMinutes} min{' '}
+                            <small>(median of your latest {sessionContext.sampleCount} sessions)</small>
+                          </p>
+                        )}
+                        {sessionContext.activeMonths >= 2 && (
+                          <p>Played across {sessionContext.activeMonths} calendar months.</p>
+                        )}
+                        <p className="game-session-context-note">
+                          Based on GamePilot’s recorded sessions; idle time may be included. Imported lifetime hours
+                          aren’t session history.
+                        </p>
+                      </>
+                    ) : (
+                      <p>No recorded sessions yet. Imported playtime does not tell us when you played.</p>
+                    )}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Where did you leave off? What next?"
+                        value={sessionNoteText}
+                        onChange={(e) => setSessionNoteText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddSessionNoteLocal();
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border)',
+                          background: 'var(--bg)',
+                          color: 'var(--text)',
+                        }}
+                      />
+                      <button
+                        onClick={handleAddSessionNoteLocal}
+                        className="export-button"
+                        style={{ padding: '6px 12px' }}
+                      >
+                        Add
+                      </button>
+                    </div>
+                    {sessionContext.notes.length > 0 && (
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: '120px', overflowY: 'auto' }}>
+                        {sessionContext.notes.map((note) => (
+                          <li
+                            key={`${note.at}:${note.text}`}
+                            style={{
+                              padding: '4px 0',
+                              borderBottom: '1px solid var(--border-subtle)',
+                              fontSize: '12px',
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {new Date(note.at).toLocaleDateString()} — {note.text}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
                   <div className="game-info-panel">
                     <h3>Game Details</h3>
                     <div className="info-grid">
@@ -1065,12 +1179,6 @@ const GameModal = ({
                         </div>
                       </div>
 
-                      <div className="info-item">
-                        <Clock size={16} />
-                        <span className="info-label">Playtime</span>
-                        <span>{playtimeHours} hours played</span>
-                      </div>
-
                       {gameDetails?.release_date && (
                         <div className="info-item">
                           <Calendar size={16} />
@@ -1079,26 +1187,18 @@ const GameModal = ({
                         </div>
                       )}
 
+                      {gameDetails?.developers?.length > 0 && (
+                        <div className="info-item">
+                          <span className="info-label">Developer</span>
+                          <span>{gameDetails.developers.join(', ')}</span>
+                        </div>
+                      )}
+
                       {genreLabels.length > 0 && (
                         <div className="info-item">
                           <Star size={16} />
                           <span className="info-label">Genres</span>
                           <span>{genreLabels.join(', ')}</span>
-                        </div>
-                      )}
-
-                      {typeof game.launch_count === 'number' && (
-                        <div className="info-item">
-                          <Play size={16} />
-                          <span className="info-label">Launches</span>
-                          <span>{game.launch_count}</span>
-                        </div>
-                      )}
-
-                      {game.last_played && (
-                        <div className="info-item">
-                          <span className="info-label">Last Played</span>
-                          <span>{formatDateValue(game.last_played)}</span>
                         </div>
                       )}
                     </div>
@@ -1188,190 +1288,166 @@ const GameModal = ({
                         </option>
                       ))}
                     </select>
+                    <RecommendationPreferenceControl game={game} />
                   </div>
 
-                  <div className="game-info-panel">
-                    <h3>Cover Art Override</h3>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      <input
-                        type="text"
-                        placeholder="Paste image URL..."
-                        value={coverArtUrl}
-                        onChange={(e) => setCoverArtUrl(e.target.value)}
-                        style={{
-                          flex: 1,
-                          minWidth: '180px',
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          border: '1px solid var(--border)',
-                          background: 'var(--bg)',
-                          color: 'var(--text)',
-                        }}
-                      />
-                      <button onClick={handleCoverArtSave} className="export-button" style={{ padding: '6px 12px' }}>
-                        Save
-                      </button>
-                      {coverArtUrl && (
-                        <button
-                          onClick={handleCoverArtClear}
-                          className="export-button"
-                          style={{ padding: '6px 12px', opacity: 0.7 }}
-                        >
-                          Clear
-                        </button>
-                      )}
-                      <label
-                        className="export-button"
-                        title="Pick a local image file — stored offline in your GamePilot data"
-                        style={{
-                          padding: '6px 12px',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <Upload size={14} /> Upload
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={handleCoverFilePicked}
-                        />
-                      </label>
-                    </div>
-                    {coverArtUrl && (
-                      <div style={{ marginTop: '8px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <img
-                          src={coverArtUrl}
-                          alt="Cover preview"
-                          style={{
-                            width: '48px',
-                            height: '72px',
-                            objectFit: 'cover',
-                            borderRadius: '4px',
-                            border: '1px solid var(--border)',
-                          }}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'inline';
-                          }}
-                        />
-                        <span style={{ display: 'none', fontSize: '12px', color: '#ff8a6b' }}>
-                          This URL can't be loaded as an image. Right-click the image in your browser and choose "Copy
-                          image address".
-                        </span>
-                      </div>
-                    )}
-                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {COVER_SEARCH_LINKS(game.name).map((target) => (
-                        <a
-                          key={target.id}
-                          href={target.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="export-button"
-                          style={{
-                            padding: '4px 10px',
-                            fontSize: '12px',
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
-                          <ExternalLink size={11} /> {target.label}
-                        </a>
-                      ))}
-                    </div>
+                  <div className="game-modal-edit-toggle-wrap">
+                    <button
+                      type="button"
+                      className="game-modal-edit-toggle"
+                      onClick={() => setShowEditPanels((visible) => !visible)}
+                      aria-expanded={showEditPanels}
+                    >
+                      <Wrench size={14} /> Artwork &amp; mood {showEditPanels ? '▴' : '▾'}
+                    </button>
+                    <button type="button" className="game-modal-edit-toggle" onClick={() => setShowEditDetails(true)}>
+                      <Wrench size={14} /> Edit details
+                    </button>
                   </div>
 
-                  <div className="game-info-panel">
-                    <h3>Mood</h3>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <select
-                        value={moodOverride}
-                        onChange={handleMoodOverrideChange}
-                        className="filter-select"
-                        style={{
-                          width: 'auto',
-                          minWidth: '160px',
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          border: '1px solid var(--border)',
-                          background: 'var(--bg)',
-                          color: 'var(--text)',
-                        }}
-                      >
-                        <option value="">Auto ({getMoodForGame(game?.genres) || 'Unknown'})</option>
-                        {MOODS.map((mood) => (
-                          <option key={mood} value={mood}>
-                            {mood}
-                          </option>
-                        ))}
-                      </select>
-                      {moodOverride && (
-                        <button
-                          onClick={() => handleMoodOverrideChange({ target: { value: '' } })}
-                          className="export-button"
-                          style={{ padding: '6px 12px', opacity: 0.7 }}
-                        >
-                          Reset to Auto
-                        </button>
-                      )}
-                    </div>
-                    <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: '6px 0 0' }}>
-                      Override the auto-detected mood if it doesn't feel right. Used for mood filters and
-                      recommendations.
-                    </p>
-                  </div>
-
-                  <div className="game-info-panel">
-                    <h3>Session Notes</h3>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder="Quick note about this session..."
-                        value={sessionNoteText}
-                        onChange={(e) => setSessionNoteText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleAddSessionNoteLocal();
-                        }}
-                        style={{
-                          flex: 1,
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          border: '1px solid var(--border)',
-                          background: 'var(--bg)',
-                          color: 'var(--text)',
-                        }}
-                      />
-                      <button
-                        onClick={handleAddSessionNoteLocal}
-                        className="export-button"
-                        style={{ padding: '6px 12px' }}
-                      >
-                        Add
-                      </button>
-                    </div>
-                    {game?.sessionNotes && game.sessionNotes.length > 0 && (
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: '120px', overflowY: 'auto' }}>
-                        {game.sessionNotes.map((note) => (
-                          <li
-                            key={note.timestamp}
+                  {showEditPanels && (
+                    <>
+                      <div className="game-info-panel">
+                        <h3>Cover Art Override</h3>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                          <input
+                            type="text"
+                            placeholder="Paste image URL..."
+                            value={coverArtUrl}
+                            onChange={(e) => setCoverArtUrl(e.target.value)}
                             style={{
-                              padding: '4px 0',
-                              borderBottom: '1px solid var(--border-subtle)',
-                              fontSize: '12px',
-                              color: 'var(--text-secondary)',
+                              flex: 1,
+                              minWidth: '180px',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border)',
+                              background: 'var(--bg)',
+                              color: 'var(--text)',
+                            }}
+                          />
+                          <button
+                            onClick={handleCoverArtSave}
+                            className="export-button"
+                            style={{ padding: '6px 12px' }}
+                          >
+                            Save
+                          </button>
+                          {coverArtUrl && (
+                            <button
+                              onClick={handleCoverArtClear}
+                              className="export-button"
+                              style={{ padding: '6px 12px', opacity: 0.7 }}
+                            >
+                              Clear
+                            </button>
+                          )}
+                          <label
+                            className="export-button"
+                            title="Pick a local image file — stored offline in your GamePilot data"
+                            style={{
+                              padding: '6px 12px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
                             }}
                           >
-                            {new Date(note.timestamp).toLocaleDateString()} — {note.text}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                            <Upload size={14} /> Upload
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={handleCoverFilePicked}
+                            />
+                          </label>
+                        </div>
+                        {coverArtUrl && (
+                          <div style={{ marginTop: '8px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <img
+                              src={coverArtUrl}
+                              alt="Cover preview"
+                              style={{
+                                width: '48px',
+                                height: '72px',
+                                objectFit: 'cover',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border)',
+                              }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'inline';
+                              }}
+                            />
+                            <span style={{ display: 'none', fontSize: '12px', color: '#ff8a6b' }}>
+                              This URL can't be loaded as an image. Right-click the image in your browser and choose
+                              "Copy image address".
+                            </span>
+                          </div>
+                        )}
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {COVER_SEARCH_LINKS(game.name).map((target) => (
+                            <a
+                              key={target.id}
+                              href={target.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="export-button"
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <ExternalLink size={11} /> {target.label}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="game-info-panel">
+                        <h3>Mood</h3>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <select
+                            value={moodOverride}
+                            onChange={handleMoodOverrideChange}
+                            className="filter-select"
+                            style={{
+                              width: 'auto',
+                              minWidth: '160px',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border)',
+                              background: 'var(--bg)',
+                              color: 'var(--text)',
+                            }}
+                          >
+                            <option value="">Auto ({getMoodForGame(game?.genres) || 'Unknown'})</option>
+                            {MOODS.map((mood) => (
+                              <option key={mood} value={mood}>
+                                {mood}
+                              </option>
+                            ))}
+                          </select>
+                          {moodOverride && (
+                            <button
+                              onClick={() => handleMoodOverrideChange({ target: { value: '' } })}
+                              className="export-button"
+                              style={{ padding: '6px 12px', opacity: 0.7 }}
+                            >
+                              Reset to Auto
+                            </button>
+                          )}
+                        </div>
+                        <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: '6px 0 0' }}>
+                          Override the auto-detected mood if it doesn't feel right. Used for mood filters and
+                          recommendations.
+                        </p>
+                      </div>
+                    </>
+                  )}
 
                   {gameDetails?.price_overview && (
                     <div className="game-info-panel">
@@ -1470,18 +1546,19 @@ const GameModal = ({
           </div>
 
           <div className="game-modal-footer">
-            <button
-              className={`save-rating-button ${hasUnsavedRatingChanges ? 'dirty' : 'saved'}`}
-              onClick={() => handleRatingSave()}
-              disabled={!hasUnsavedRatingChanges}
-              style={{
-                outline:
-                  modalControls[selectedControlIndex] === 'saveRating' ? '2px solid var(--accent, #ff6b35)' : 'none',
-              }}
-            >
-              <Star size={16} />
-              {hasUnsavedRatingChanges ? 'Save Rating' : 'Rating Saved'}
-            </button>
+            {hasUnsavedRatingChanges && (
+              <button
+                className="save-rating-button dirty"
+                onClick={() => handleRatingSave()}
+                style={{
+                  outline:
+                    modalControls[selectedControlIndex] === 'saveRating' ? '2px solid var(--accent, #ff6b35)' : 'none',
+                }}
+              >
+                <Star size={16} />
+                Save Rating
+              </button>
+            )}
             {(typeof onLaunch === 'function' || game.appid) && (
               <LaunchSourceMenu
                 game={game}
@@ -1495,123 +1572,144 @@ const GameModal = ({
               />
             )}
 
-            {steamAppid && (
+            <div className="game-modal-overflow" ref={overflowRef}>
               <button
-                className="store-button"
-                onClick={handleOpenSteamLibrary}
-                title="Open this game's Steam library page for Workshop, updates and settings without launching it"
-                style={{
-                  outline:
-                    modalControls[selectedControlIndex] === 'steamLibrary'
-                      ? '2px solid var(--accent, #ff6b35)'
-                      : 'none',
-                }}
+                type="button"
+                className="game-modal-overflow-trigger"
+                aria-haspopup="true"
+                aria-expanded={overflowOpen}
+                onClick={() => setOverflowOpen((open) => !open)}
               >
-                <ExternalLink size={16} />
-                Steam Library
+                <MoreHorizontal size={16} />
+                More
               </button>
-            )}
-            {game.appid && (
-              <button
-                className="store-button"
-                onClick={handleOpenStore}
-                style={{
-                  outline:
-                    modalControls[selectedControlIndex] === 'store' ? '2px solid var(--accent, #ff6b35)' : 'none',
-                }}
-              >
-                <ExternalLink size={16} />
-                Steam Store
-              </button>
-            )}
+              {overflowOpen && (
+                <div className="game-modal-overflow-menu" role="menu">
+                  {steamAppid && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="game-modal-overflow-item"
+                      onClick={() => {
+                        handleOpenSteamLibrary();
+                        setOverflowOpen(false);
+                      }}
+                      title="Open this game's Steam library page for Workshop, updates and settings without launching it"
+                    >
+                      <ExternalLink size={15} />
+                      Steam Library
+                    </button>
+                  )}
+                  {game.appid && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="game-modal-overflow-item"
+                      onClick={() => {
+                        handleOpenStore();
+                        setOverflowOpen(false);
+                      }}
+                    >
+                      <ExternalLink size={15} />
+                      Steam Store
+                    </button>
+                  )}
+                  {typeof onTogglePin === 'function' && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="game-modal-overflow-item"
+                      onClick={() => {
+                        onTogglePin(game);
+                        setOverflowOpen(false);
+                      }}
+                    >
+                      <Pin size={15} />
+                      {isPinned ? 'Unpin Game' : 'Pin Game'}
+                    </button>
+                  )}
+                  {typeof onToggleFavorite === 'function' && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="game-modal-overflow-item"
+                      onClick={() => {
+                        onToggleFavorite(favoriteKey);
+                        setOverflowOpen(false);
+                      }}
+                    >
+                      <Heart size={15} />
+                      {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                    </button>
+                  )}
+                  {typeof onTogglePlayedElsewhere === 'function' && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="game-modal-overflow-item"
+                      onClick={() => {
+                        onTogglePlayedElsewhere(game.name);
+                        setPlayedElsewhere((prev) => !prev);
+                        setOverflowOpen(false);
+                      }}
+                      title="Mark this game as played on another launcher/platform so it stops counting as unplayed"
+                    >
+                      <Globe size={15} />
+                      {playedElsewhere ? 'Played Elsewhere ✓' : 'Mark Played Elsewhere'}
+                    </button>
+                  )}
 
-            {typeof onTogglePin === 'function' && (
-              <button
-                className={`wishlist-button ${isPinned ? 'wishlisted' : ''}`}
-                onClick={() => onTogglePin(game)}
-                style={{
-                  outline: modalControls[selectedControlIndex] === 'pin' ? '2px solid var(--accent, #ff6b35)' : 'none',
-                }}
-              >
-                <Pin size={16} />
-                {isPinned ? 'Unpin Game' : 'Pin Game'}
-              </button>
-            )}
+                  <div className="game-modal-overflow-share" onClickCapture={() => setOverflowOpen(false)}>
+                    <ShareMenu
+                      onCopyText={async (text = null) => {
+                        const copied = await LocalShareService.copyTextToClipboard(text || buildGameShareText());
+                        toastSuccess(copied ? 'Game text copied to clipboard.' : 'Could not copy game text.');
+                        return copied;
+                      }}
+                      onCopyImage={handleCopyGameShareCard}
+                      onSaveImage={handleDownloadGameShareCard}
+                      onShareText={handleShareGameText}
+                      buildCaption={buildGameShareText}
+                      onNativeShare={handleNativeShareGame}
+                      triggerLabel="Share Game"
+                      imageAvailable={true}
+                      disabled={isCapturing}
+                    />
+                  </div>
+                  <div className="game-modal-overflow-share" onClickCapture={() => setOverflowOpen(false)}>
+                    <ShareMenu
+                      onCopyText={async (text = null) => {
+                        const copied = await LocalShareService.copyTextToClipboard(text || buildGameSessionShareText());
+                        toastSuccess(copied ? 'Session text copied to clipboard.' : 'Could not copy session text.');
+                        return copied;
+                      }}
+                      onCopyImage={handleCopySessionLaunchShareCard}
+                      onSaveImage={handleDownloadSessionLaunchShareCard}
+                      onShareText={handleShareGameText}
+                      buildCaption={buildGameSessionShareText}
+                      onNativeShare={handleNativeShareSessionLaunch}
+                      triggerLabel="Going Live"
+                      imageAvailable={true}
+                      disabled={isCapturing}
+                    />
+                  </div>
 
-            {typeof onToggleFavorite === 'function' && (
-              <button
-                className={`wishlist-button ${isFavorite ? 'wishlisted' : ''}`}
-                onClick={() => onToggleFavorite(favoriteKey)}
-                style={{
-                  outline:
-                    modalControls[selectedControlIndex] === 'favorite' ? '2px solid var(--accent, #ff6b35)' : 'none',
-                }}
-              >
-                <Heart size={16} />
-                {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
-              </button>
-            )}
-
-            {typeof onTogglePlayedElsewhere === 'function' && (
-              <button
-                className={`wishlist-button ${playedElsewhere ? 'wishlisted' : ''}`}
-                onClick={() => {
-                  onTogglePlayedElsewhere(game.name);
-                  setPlayedElsewhere((prev) => !prev);
-                }}
-                title="Mark this game as played on another launcher/platform so it stops counting as unplayed"
-                style={{
-                  outline:
-                    modalControls[selectedControlIndex] === 'playedElsewhere'
-                      ? '2px solid var(--accent, #ff6b35)'
-                      : 'none',
-                }}
-              >
-                <Globe size={16} />
-                {playedElsewhere ? 'Played Elsewhere ✓' : 'Mark Played Elsewhere'}
-              </button>
-            )}
-
-            <ShareMenu
-              onCopyText={async (text = null) => {
-                const copied = await LocalShareService.copyTextToClipboard(text || buildGameShareText());
-                toastSuccess(copied ? 'Game text copied to clipboard.' : 'Could not copy game text.');
-                return copied;
-              }}
-              onCopyImage={handleCopyGameShareCard}
-              onSaveImage={handleDownloadGameShareCard}
-              onShareText={handleShareGameText}
-              buildCaption={buildGameShareText}
-              onNativeShare={handleNativeShareGame}
-              triggerLabel="Share Game"
-              imageAvailable={true}
-              disabled={isCapturing}
-            />
-
-            <ShareMenu
-              onCopyText={async (text = null) => {
-                const copied = await LocalShareService.copyTextToClipboard(text || buildGameSessionShareText());
-                toastSuccess(copied ? 'Session text copied to clipboard.' : 'Could not copy session text.');
-                return copied;
-              }}
-              onCopyImage={handleCopySessionLaunchShareCard}
-              onSaveImage={handleDownloadSessionLaunchShareCard}
-              onShareText={handleShareGameText}
-              buildCaption={buildGameSessionShareText}
-              onNativeShare={handleNativeShareSessionLaunch}
-              triggerLabel="Going Live"
-              imageAvailable={true}
-              disabled={isCapturing}
-            />
-
-            <button
-              className="uninstall-modal-button"
-              onClick={() => setShowUninstall(true)}
-              title="Open safe uninstall hand-off"
-            >
-              <Trash2 size={16} />
-              Uninstall…
-            </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="game-modal-overflow-item danger"
+                    onClick={() => {
+                      setShowUninstall(true);
+                      setOverflowOpen(false);
+                    }}
+                    title="Open safe uninstall hand-off"
+                  >
+                    <Trash2 size={15} />
+                    Uninstall…
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1621,6 +1719,15 @@ const GameModal = ({
         game={game}
         onClose={() => setShowUninstall(false)}
         onCompleted={() => setShowUninstall(false)}
+      />
+
+      <EditGameModal
+        isOpen={showEditDetails}
+        game={game}
+        onClose={() => setShowEditDetails(false)}
+        onSave={onUpdateMetadata}
+        onUpdateCoverArt={onUpdateCoverArt}
+        onToggleHidden={onToggleHidden}
       />
 
       <div style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>

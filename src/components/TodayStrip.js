@@ -1,12 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarCheck, Flame, Tag } from 'lucide-react';
-import CalendarXPService from '../services/CalendarXPService';
+import { Tag } from 'lucide-react';
 import WishlistService from '../services/WishlistService';
 import SessionRepository from '../services/SessionRepository';
 import CurrentEraService from '../services/CurrentEraService';
-import { SeasonalHideAndSeekService } from '../services/SeasonalHideAndSeekService';
-import { getTodayParadox } from '../services/DailyParadoxService';
 import './TodayStrip.css';
 
 const formatWeekMinutes = (minutes) => {
@@ -44,27 +41,11 @@ const getWeekSummary = () => {
   }
 };
 
-const getCalendarStatus = () => {
-  try {
-    return CalendarXPService.getFullCalendarStatus();
-  } catch {
-    return null;
-  }
-};
-
 const getEra = () => {
   try {
     const era = CurrentEraService.getCurrentEra();
     if (!era || !era.snapshot?.totalMinutes) return null;
     return era;
-  } catch {
-    return null;
-  }
-};
-
-const getParadox = () => {
-  try {
-    return getTodayParadox();
   } catch {
     return null;
   }
@@ -81,17 +62,14 @@ const getWishlistAlerts = () => {
 };
 
 /**
- * A compact "today at a glance" strip for the Home Today view: check-in
- * streak, this week's play, current era, the active hide-and-seek event and a
- * teaser for the daily paradox. All local data — no network calls.
+ * A compact "today at a glance" strip for the Home Today view: this week's
+ * play, the current era and wishlist price alerts. All local data — no
+ * network calls.
  */
 export default function TodayStrip() {
-  const [calendar, setCalendar] = useState(getCalendarStatus);
   const [wishlistAlerts, setWishlistAlerts] = useState(getWishlistAlerts);
   const week = useMemo(getWeekSummary, []);
   const era = useMemo(getEra, []);
-  const hunt = useMemo(() => SeasonalHideAndSeekService.getActiveProgress(), []);
-  const paradox = useMemo(getParadox, []);
 
   useEffect(() => {
     const refresh = () => setWishlistAlerts(getWishlistAlerts());
@@ -99,37 +77,10 @@ export default function TodayStrip() {
     return () => window.removeEventListener('gamepilot:wishlist-alerts', refresh);
   }, []);
 
-  const handleCheckin = useCallback(() => {
-    const result = CalendarXPService.processDailyCheckin();
-    if (result?.success || result?.alreadyCheckedIn) {
-      setCalendar(getCalendarStatus());
-    }
-  }, []);
-
-  const streak = calendar?.streak?.currentStreak || 0;
-  const canCheckIn = calendar?.canCheckIn !== false;
   const weekTime = week ? formatWeekMinutes(week.totalMinutes) : null;
 
   return (
     <div className="today-strip" aria-label="Today at a glance">
-      {canCheckIn ? (
-        <button type="button" className="today-strip-item today-strip-checkin" onClick={handleCheckin}>
-          <CalendarCheck size={15} aria-hidden="true" />
-          <span>
-            <strong>Check in</strong>
-            {streak > 0 ? `Day ${streak} streak` : 'Start your streak'}
-          </span>
-        </button>
-      ) : (
-        <div className="today-strip-item">
-          <Flame size={15} aria-hidden="true" />
-          <span>
-            <strong>Checked in</strong>
-            {streak > 0 ? `Day ${streak} streak` : 'See you tomorrow'}
-          </span>
-        </div>
-      )}
-
       {week && (
         <Link to="/?view=activity" className="today-strip-item">
           <span>
@@ -164,27 +115,6 @@ export default function TodayStrip() {
             </strong>
             Wishlist alerts
           </span>
-        </Link>
-      )}
-
-      {hunt && (
-        <Link
-          to="/rewards"
-          className="today-strip-item"
-          aria-label={`${hunt.name}: ${hunt.completed ? 'complete' : `${hunt.found.length} of ${hunt.totalItems} found`}`}
-        >
-          <span aria-hidden="true">{hunt.icon}</span>
-          <span>
-            <strong>{hunt.completed ? 'Complete!' : `${hunt.found.length} / ${hunt.totalItems}`}</strong>
-            {hunt.name}
-          </span>
-        </Link>
-      )}
-
-      {paradox && (
-        <Link to="/dashboard?tab=doodle" className="today-strip-teaser">
-          <span aria-hidden="true">{paradox.categoryIcon}</span> Today's paradox: {paradox.title}{' '}
-          <ArrowRight size={13} aria-hidden="true" />
         </Link>
       )}
     </div>

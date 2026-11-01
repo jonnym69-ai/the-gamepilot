@@ -46,6 +46,7 @@ test('fetchOwned returns normalized games and caches them', async () => {
   expect(result.success).toBe(true);
   expect(result.games).toHaveLength(1);
   expect(result.games[0]).toMatchObject({ appid: 105600, name: 'Terraria', platform: 'Steam', installed: false });
+  expect(result.games[0].lastPlayed).toBe(1700000000000);
   expect(StorageService.set).toHaveBeenCalledWith(
     'steamOwnedCacheV1',
     expect.objectContaining({ fetchedAt: 1700000100000 })
@@ -62,6 +63,40 @@ test('fetchOwned maps private game details and missing config to honest errors',
   const missing = await SteamOwnedGamesService.fetchOwned({ force: true });
   expect(missing.success).toBe(false);
   expect(missing.code).toBe('missing-steamid');
+});
+
+test('getCached upgrades cached seconds lastPlayed and diffUninstalled keeps milliseconds', () => {
+  StorageService.get.mockReturnValue({
+    games: [
+      { appid: 105600, name: 'Terraria', playtimeForever: 1200, lastPlayed: 1700000000, icon: null },
+      { appid: 730, name: 'Counter-Strike 2', playtimeForever: 5000, lastPlayed: 1700000000000, icon: null },
+    ],
+    fetchedAt: 1700000100000,
+    privateDetails: false,
+  });
+
+  const cached = SteamOwnedGamesService.getCached();
+  expect(cached.games[0].lastPlayed).toBe(1700000000000);
+  expect(cached.games[1].lastPlayed).toBe(1700000000000);
+
+  const missing = SteamOwnedGamesService.diffUninstalled(cached.games, []);
+  expect(missing[0].lastPlayed).toBe(1700000000000);
+  expect(missing[1].lastPlayed).toBe(1700000000000);
+});
+
+test('lastPlayed normalization zeroes out invalid values', () => {
+  StorageService.get.mockReturnValue({
+    games: [
+      { appid: 1, name: 'Zero', lastPlayed: 0 },
+      { appid: 2, name: 'Negative', lastPlayed: -5 },
+      { appid: 3, name: 'Invalid', lastPlayed: 'not-a-date' },
+      { appid: 4, name: 'Infinite', lastPlayed: Infinity },
+    ],
+    fetchedAt: 1700000100000,
+  });
+
+  const cached = SteamOwnedGamesService.getCached();
+  expect(cached.games.map((g) => g.lastPlayed)).toEqual([0, 0, 0, 0]);
 });
 
 test('diffUninstalled excludes appids already in the local library', () => {

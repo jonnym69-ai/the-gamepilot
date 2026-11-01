@@ -13,6 +13,7 @@ import StorageService from './StorageService';
 import { GamingPersonaService, PERSONA_AFFINITY_GENRES } from './GamingPersonaService';
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
 import { getBlendedPlaytimeMinutes, isGameUnplayed, NEGLIGIBLE_PLAYTIME_MINUTES } from './gameClassification';
+import RecommendationPreferenceService from './RecommendationPreferenceService';
 const PERSONA_GENRE_MAP = PERSONA_AFFINITY_GENRES;
 
 export { getBlendedPlaytimeMinutes, isGameUnplayed, NEGLIGIBLE_PLAYTIME_MINUTES };
@@ -699,7 +700,7 @@ export class RecommendationEngine {
     const isExploration = !!game?._isExplorationPick;
     const gameId = String(game?.appid || game?.name || '');
     const outcomeSignal = UserBehaviorProfile.getRecommendationOutcomeSignal(gameId, game?.name);
-    if (outcomeSignal.suppress) return null;
+    if (UserBehaviorProfile.shouldSuppressRecommendation(gameId, game?.name)) return null;
     const baseExplanation = RecommendationExplainer.getDetailedExplanation(
       game,
       mood,
@@ -710,14 +711,12 @@ export class RecommendationEngine {
 
     return {
       game,
-      mood: mood || getResolvedMood(game) || null,
+      mood: getResolvedMood(game) || null,
       genre: resolvedGenre,
       estimatedSessionMinutes: PersonaPerformanceInsights.estimateSessionMinutes(game) || null,
       isExploration,
-      explanation:
-        outcomeSignal.reason && outcomeSignal.adjustment > 0
-          ? [baseExplanation, `${outcomeSignal.reason}.`].filter(Boolean).join(' ')
-          : baseExplanation,
+      explanation: baseExplanation,
+      feedbackReason: outcomeSignal.adjustment > 0 ? outcomeSignal.reason : null,
       meta: { ...metadata, learnedReason: outcomeSignal.reason },
     };
   }
@@ -1014,6 +1013,7 @@ export class RecommendationEngine {
     if (!Array.isArray(library) || library.length === 0) {
       return [];
     }
+    library = library.filter((game) => !RecommendationPreferenceService.isSetAside(game?.name));
 
     const { now, validRecent } = this.getRecentRecommendationState();
     const normalizedTimeConstraint = this.normalizeTimeConstraint(timeConstraint);

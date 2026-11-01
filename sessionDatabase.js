@@ -2,6 +2,29 @@ const fs = require('fs');
 const path = require('path');
 const initSqlJs = require('sql.js');
 
+const HISTORY_SCHEMA_SQL = `
+      PRAGMA foreign_keys = ON;
+      CREATE TABLE IF NOT EXISTS session_history (
+        session_id TEXT PRIMARY KEY,
+        game_name TEXT NOT NULL,
+        game_id TEXT,
+        started_at TEXT,
+        ended_at TEXT NOT NULL,
+        playtime_minutes INTEGER NOT NULL CHECK(playtime_minutes >= 0),
+        payload_json TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_session_history_ended_at ON session_history(ended_at);
+      CREATE INDEX IF NOT EXISTS idx_session_history_game_name ON session_history(game_name);
+      CREATE TABLE IF NOT EXISTS app_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `;
+
+const BACKUP_DIR_NAME = 'session-backups';
+const MAX_BACKUPS = 10;
+const BACKUP_FILE_PATTERN = /^session-history-.*\.sqlite$/;
+
 /**
  * Helper to open (or create) a single sql.js database file and run schema DDL.
  */
@@ -43,8 +66,10 @@ class SessionDatabase {
     this.activeDbPath = path.join(userDataPath, 'gamepilot-active-sessions.sqlite');
     this.historyDbPath = path.join(userDataPath, 'gamepilot-session-history.sqlite');
     this.legacyDbPath = path.join(userDataPath, 'gamepilot-sessions.sqlite');
+    this.backupDirPath = path.join(userDataPath, BACKUP_DIR_NAME);
     this.activeDb = null;
     this.historyDb = null;
+    this.SQL = null;
     this.readyPromise = this.initialize();
   }
 
@@ -52,6 +77,7 @@ class SessionDatabase {
     const SQL = await initSqlJs({
       locateFile: () => require.resolve('sql.js/dist/sql-wasm.wasm'),
     });
+    this.SQL = SQL;
 
     // If the legacy single-file database exists, migrate its data into the
     // two new files, then rename it so we don't migrate again.
@@ -74,32 +100,14 @@ class SessionDatabase {
     `
     );
 
-    this.historyDb = await openDatabase(
-      SQL,
-      this.historyDbPath,
-      `
-      PRAGMA foreign_keys = ON;
-      CREATE TABLE IF NOT EXISTS session_history (
-        session_id TEXT PRIMARY KEY,
-        game_name TEXT NOT NULL,
-        game_id TEXT,
-        started_at TEXT,
-        ended_at TEXT NOT NULL,
-        playtime_minutes INTEGER NOT NULL CHECK(playtime_minutes >= 0),
-        payload_json TEXT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_session_history_ended_at ON session_history(ended_at);
-      CREATE INDEX IF NOT EXISTS idx_session_history_game_name ON session_history(game_name);
-      CREATE TABLE IF NOT EXISTS app_metadata (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
-    `
-    );
+    this.historyDb = await openDatabase(SQL, this.historyDbPath, HISTORY_SCHEMA_SQL);
 
     // Ensure schema is persisted for fresh databases.
     persistDatabase(this.activeDb, this.activeDbPath);
     persistDatabase(this.historyDb, this.historyDbPath);
+
+    // Rolling safety copy — at most one per day per reason. Never throws.
+    await this.backupHistory('startup');
   }
 
   /**
@@ -316,17 +324,161 @@ class SessionDatabase {
     return { inserted };
   }
 
-  async replaceHistory(history) {
+  countHistoryRows() {
+    const result = this.historyDb.exec('SELECT COUNT(*) AS n FROM session_history');
+    return result[0]?.values?.[0]?.[0] ?? 0;
+  }
+
+  /**
+   * Whole-history replace (renderer merge/sanitize writes). Guarded: a
+   * renderer bug passing an empty or drastically truncated array must not
+   * destroy the on-disk record, so suspicious replaces are refused unless
+   * the caller passes { force: true }. Accepted replaces take a once-a-day
+   * 'pre-replace' backup first.
+   */
+  async replaceHistory(history, { force = false } = {}) {
     await this.readyPromise;
+    const incoming = Array.isArray(history) ? history.length : 0;
+    const existing = this.countHistoryRows();
+    const wipesExisting = incoming === 0 && existing > 0;
+    const shrinksByHalf = existing >= 20 && incoming < existing * 0.5;
+    if (!force && (wipesExisting || shrinksByHalf)) {
+      console.warn(
+        `SessionDatabase: rejected session history replace (${existing} rows -> ${incoming}); pass { force: true } to override.`
+      );
+      return { ok: false, rejected: true, existing, incoming };
+    }
+    await this.backupHistory('pre-replace');
     transactionOn(this.historyDb, this.historyDbPath, () => {
       this.historyDb.run('DELETE FROM session_history');
       (Array.isArray(history) ? history : []).forEach((entry) => this.insertHistoryEntry(entry));
     });
-    return true;
+    return { ok: true, existing, incoming };
+  }
+
+  /**
+   * Copy the history DB into userData/session-backups/. At most one backup
+   * per day per reason (files are date-stamped); prunes to the newest 10.
+   * Never throws — backup failure must not break session writes.
+   */
+  async backupHistory(reason = 'manual') {
+    try {
+      if (!fs.existsSync(this.historyDbPath)) return { ok: false, skipped: 'no-db' };
+      const date = new Date().toISOString().slice(0, 10);
+      const safeReason =
+        String(reason)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') || 'manual';
+      const fileName = `session-history-${date}-${safeReason}.sqlite`;
+      fs.mkdirSync(this.backupDirPath, { recursive: true });
+      const destination = path.join(this.backupDirPath, fileName);
+      const skipped = fs.existsSync(destination);
+      if (!skipped) fs.copyFileSync(this.historyDbPath, destination);
+      this.pruneBackups();
+      return { ok: true, skipped, file: fileName, path: destination };
+    } catch (error) {
+      console.error('SessionDatabase: history backup failed:', error);
+      return { ok: false, error: String(error?.message || error) };
+    }
+  }
+
+  pruneBackups(keep = MAX_BACKUPS) {
+    try {
+      if (!fs.existsSync(this.backupDirPath)) return;
+      const files = fs
+        .readdirSync(this.backupDirPath)
+        .filter((name) => BACKUP_FILE_PATTERN.test(name))
+        .map((name) => ({
+          name,
+          mtime: fs.statSync(path.join(this.backupDirPath, name)).mtimeMs,
+        }))
+        .sort((a, b) => b.mtime - a.mtime || b.name.localeCompare(a.name));
+      files.slice(keep).forEach((entry) => {
+        try {
+          fs.unlinkSync(path.join(this.backupDirPath, entry.name));
+        } catch (error) {
+          console.error('SessionDatabase: failed to prune backup:', error);
+        }
+      });
+    } catch (error) {
+      console.error('SessionDatabase: backup pruning failed:', error);
+    }
+  }
+
+  /**
+   * List rolling backups, newest-friendly ordering (file name sorts by date).
+   * sessionCount is read through sql.js; corrupt files report null.
+   */
+  async listBackups() {
+    await this.readyPromise;
+    try {
+      if (!fs.existsSync(this.backupDirPath)) return [];
+      const names = fs
+        .readdirSync(this.backupDirPath)
+        .filter((name) => BACKUP_FILE_PATTERN.test(name))
+        .sort();
+      const backups = [];
+      for (const name of names) {
+        const filePath = path.join(this.backupDirPath, name);
+        const stat = fs.statSync(filePath);
+        let sessionCount = null;
+        try {
+          const db = new this.SQL.Database(fs.readFileSync(filePath));
+          try {
+            const result = db.exec('SELECT COUNT(*) AS n FROM session_history');
+            sessionCount = result[0]?.values?.[0]?.[0] ?? 0;
+          } finally {
+            db.close();
+          }
+        } catch {
+          sessionCount = null;
+        }
+        backups.push({
+          file: name,
+          path: filePath,
+          sizeBytes: stat.size,
+          createdAt: stat.mtime.toISOString(),
+          sessionCount,
+        });
+      }
+      return backups;
+    } catch (error) {
+      console.error('SessionDatabase: listing backups failed:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Restore the history DB from a named backup. The name must match an entry
+   * from listBackups() (no path traversal). A 'pre-restore' safety copy of
+   * the current file is taken first, then the file is swapped and reopened.
+   */
+  async restoreBackup(fileName) {
+    await this.readyPromise;
+    try {
+      const backups = await this.listBackups();
+      const match = backups.find((backup) => backup.file === fileName);
+      if (!match) return { ok: false, error: 'unknown-backup' };
+      await this.backupHistory('pre-restore');
+      try {
+        this.historyDb.close();
+      } catch {
+        // Already closed/never opened — the file swap below still applies.
+      }
+      fs.copyFileSync(match.path, this.historyDbPath);
+      this.historyDb = await openDatabase(this.SQL, this.historyDbPath, HISTORY_SCHEMA_SQL);
+      return { ok: true, snapshot: this.getSnapshot() };
+    } catch (error) {
+      console.error('SessionDatabase: backup restore failed:', error);
+      return { ok: false, error: String(error?.message || error) };
+    }
   }
 
   async clear() {
     await this.readyPromise;
+    // Explicit user action — a direct DELETE, deliberately not routed
+    // through replaceHistory's shrink guards.
     transactionOn(this.activeDb, this.activeDbPath, () => {
       this.activeDb.run('DELETE FROM active_sessions');
     });

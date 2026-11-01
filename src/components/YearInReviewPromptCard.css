@@ -1,0 +1,70 @@
+.yir-prompt-card {
+  position: relative;
+  border-radius: var(--border-radius, 14px);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+  border-left: 3px solid var(--accent-color, #ff8c42);
+}
+
+.yir-prompt-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color, #ff8c42);
+  font-weight: 700;
+}
+
+.yir-prompt-heading {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  color: var(--text-primary, #fff);
+}
+
+.yir-prompt-teaser {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #aaa);
+}
+
+.yir-prompt-timeline {
+  margin: 0 0 14px;
+  max-width: 340px;
+}
+
+.yir-prompt-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent-color, #ff8c42);
+  text-decoration: none;
+}
+
+.yir-prompt-cta:hover {
+  text-decoration: underline;
+}
+
+.yir-prompt-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  background: transparent;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+}
+
+.yir-prompt-dismiss:hover {
+  color: var(--text-primary, #fff);
+  border-color: var(--text-secondary, #aaa);
+}

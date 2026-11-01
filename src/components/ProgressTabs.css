@@ -8,7 +8,6 @@
   border: 1px solid var(--border-color, rgba(148, 163, 184, 0.28));
   border-radius: 12px;
 }
-
 .progress-tab {
   display: inline-flex;
   align-items: center;
@@ -26,19 +25,16 @@
     color 0.2s ease,
     border-color 0.2s ease;
 }
-
 .progress-tab:hover {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary, #e2e8f0);
 }
-
 .progress-tab-active {
   background: linear-gradient(135deg, var(--accent-primary, #ff6b35), var(--accent-secondary, #ff8c42));
   color: #fff;
   border-color: var(--accent-primary, #ff6b35);
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
 }
-
 .progress-tab-active:hover {
   background: linear-gradient(135deg, var(--accent-secondary, #ff8c42), var(--accent-primary, #ff6b35));
   color: #fff;

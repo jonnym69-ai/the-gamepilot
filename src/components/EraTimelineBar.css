@@ -1,0 +1,46 @@
+/* 12-month era timeline bar — shared by the Year in Review page, the story
+   share card, and the December recap prompt on Today */
+.era-timeline-bar {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.era-timeline-segment {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 26px;
+  border-radius: 7px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.era-timeline-bar.compact .era-timeline-segment {
+  min-height: 10px;
+  border-radius: 4px;
+}
+
+.era-timeline-segment.quiet {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.era-timeline-segment em {
+  font-style: normal;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+  padding-bottom: 4px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.era-timeline-bar.compact .era-timeline-segment em {
+  display: none;
+}
+
+.era-timeline-segment.quiet em {
+  color: var(--text-color);
+  opacity: 0.4;
+  text-shadow: none;
+}

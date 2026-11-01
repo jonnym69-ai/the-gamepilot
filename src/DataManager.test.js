@@ -82,7 +82,7 @@ describe('importUserData', () => {
     const result = await DataManager.importUserData(backup);
 
     expect(result.success).toBe(true);
-    expect(window.electronAPI.sessionStoreReplaceHistory).toHaveBeenCalledWith(history);
+    expect(window.electronAPI.sessionStoreReplaceHistory).toHaveBeenCalledWith(history, { force: true });
     expect(SessionRepository.getSessionHistory()).toEqual(history);
   });
 
@@ -153,5 +153,66 @@ describe('clearAllUserData', () => {
     expect(result.success).toBe(true);
     expect(StorageService.keys()).toEqual([]);
     expect(window.electronAPI.sessionStoreClear).toHaveBeenCalled();
+  });
+});
+
+describe('credential protection', () => {
+  const creds = {
+    itchApiKeyV1: 'dummy-itch-key',
+    retroAchievementsApiKey: 'dummy-ra-key',
+    discordWebhookUrl: 'https://discord.invalid/dummy-webhook',
+  };
+  const seedCreds = () => Object.entries(creds).forEach(([key, value]) => StorageService.setString(key, value));
+  const expectLocalCreds = () =>
+    Object.entries(creds).forEach(([key, value]) => expect(StorageService.getString(key)).toBe(value));
+
+  test('export never includes locally stored credentials', async () => {
+    seedCreds();
+    StorageService.set('gameLibrary', [{ name: 'Zomboid' }]);
+    const backup = DataManager.exportUserData();
+    expect(backup.data).not.toHaveProperty('itchApiKeyV1');
+    expect(backup.data).not.toHaveProperty('retroAchievementsApiKey');
+    expect(backup.data).not.toHaveProperty('discordWebhookUrl');
+    expect(JSON.stringify(backup)).not.toContain('dummy-itch-key');
+    const { default: BackupService } = await import('./services/BackupService');
+    const legacy = BackupService.createBackup();
+    expect(legacy.data).not.toHaveProperty('itchApiKeyV1');
+    expect(legacy.data).not.toHaveProperty('discordWebhookUrl');
+    expect(JSON.stringify(legacy.data)).not.toContain('dummy-ra-key');
+  });
+
+  test('a malicious backup cannot replace locally configured credentials', async () => {
+    seedCreds();
+    const hostile = {
+      version: '3.0',
+      data: {
+        gameLibrary: '[]',
+        itchApiKeyV1: 'attacker-itch',
+        retroAchievementsApiKey: 'attacker-ra',
+        discordWebhookUrl: 'https://attacker.invalid/hook',
+      },
+    };
+    const result = await DataManager.importUserData(JSON.stringify(hostile));
+    expect(result.success).toBe(true);
+    expectLocalCreds();
+  });
+
+  test('BackupService restore skips credential keys and overwrite preserves them', async () => {
+    const { default: BackupService } = await import('./services/BackupService');
+    seedCreds();
+    StorageService.setString('theme', 'dark');
+    const backup = {
+      version: '1.0',
+      type: 'gamepilot-backup',
+      data: {
+        theme: 'light',
+        itchApiKeyV1: 'attacker-itch',
+        discordWebhookUrl: 'https://attacker.invalid/hook',
+      },
+    };
+    const result = BackupService.restoreBackup(backup, { overwrite: true });
+    expect(result.success).toBe(true);
+    expect(StorageService.get('theme')).toBe('light');
+    expectLocalCreds();
   });
 });

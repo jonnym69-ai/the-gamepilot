@@ -18,8 +18,16 @@ function registerIpcHandlers(ipcMain, deps) {
     }
     return sessionDatabase.settleSession(payload.entry, payload.activeSessions);
   });
-  ipcMain.handle('session-store-replace-history', async (_event, history = []) =>
-    sessionDatabase.replaceHistory(history)
+  ipcMain.handle('session-store-replace-history', async (_event, history = [], options = {}) =>
+    sessionDatabase.replaceHistory(history, { force: Boolean(options?.force) })
+  );
+  ipcMain.handle('session-store-get-snapshot', async () => {
+    await sessionDatabase.readyPromise;
+    return sessionDatabase.getSnapshot();
+  });
+  ipcMain.handle('session-store-list-backups', async () => sessionDatabase.listBackups());
+  ipcMain.handle('session-store-restore-backup', async (_event, fileName) =>
+    sessionDatabase.restoreBackup(typeof fileName === 'string' ? fileName : '')
   );
   ipcMain.handle('session-store-clear', async () => sessionDatabase.clear());
 }

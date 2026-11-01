@@ -143,16 +143,21 @@ class SteamNewsService {
   static getUpdateStatus(game) {
     const entry = this.getCached(game);
     if (!entry || !entry.found || entry.items.length === 0) return null;
+    const validItems = entry.items
+      .filter((it) => Number.isFinite(it.dateMs) && it.dateMs > 0 && it.dateMs <= Date.now())
+      .sort((a, b) => b.dateMs - a.dateMs);
+    if (!validItems.length) return null;
     const lastPlayedMs = (() => {
-      const lp = game?.last_played;
+      const lp = game?.last_played ?? game?.lastPlayed;
       if (!lp) return 0;
-      const t = new Date(lp).getTime();
-      return Number.isFinite(t) ? t : 0;
+      const numeric = typeof lp === 'number' || /^\d+(\.\d+)?$/.test(String(lp)) ? Number(lp) : null;
+      const t = numeric !== null ? (numeric < 1e12 ? numeric * 1000 : numeric) : Date.parse(lp);
+      return Number.isFinite(t) && t > 0 && t <= Date.now() ? t : 0;
     })();
     if (!lastPlayedMs) {
       // Never played — no "since you last played" framing applies. Return
       // the most-recent post age so callers can decide how to surface it.
-      const latest = entry.items[0];
+      const latest = validItems[0];
       return {
         sinceLastPlayed: false,
         unread: false,
@@ -160,7 +165,7 @@ class SteamNewsService {
         ageDays: latest ? Math.round((Date.now() - latest.dateMs) / 86400000) : null,
       };
     }
-    const newer = entry.items.filter((it) => it.dateMs > lastPlayedMs);
+    const newer = validItems.filter((it) => it.dateMs > lastPlayedMs);
     if (newer.length === 0) return null;
     const latest = newer[0];
     const isPatch = newer.some((it) => PATCH_KEYWORDS.test(`${it.title} ${it.feedLabel}`));

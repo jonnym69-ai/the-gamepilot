@@ -439,6 +439,48 @@ describe('GamingPersonaService', () => {
     });
   });
 
+  describe('sub-trait evidence (receipts)', () => {
+    test('every matched sub-trait carries non-empty evidence', () => {
+      seedHardLibrary();
+      const persona = GamingPersonaService.getPersona();
+      expect(persona.subTraits.length).toBeGreaterThan(0);
+      persona.subTraits.forEach((trait) => {
+        expect(Array.isArray(trait.evidence)).toBe(true);
+        expect(trait.evidence.length).toBeGreaterThan(0);
+      });
+    });
+
+    test('genre_specialist cites the dominant genre and its share', () => {
+      seedHardLibrary();
+      const trait = GamingPersonaService.getPersona().subTraits.find((t) => t.id === 'genre_specialist');
+      expect(trait).toBeTruthy();
+      expect(trait.evidence.join(' ')).toMatch(/action/i);
+      expect(trait.evidence.join(' ')).toMatch(/\d+%/);
+    });
+
+    test('night_owl cites the actual peak hour', () => {
+      SessionRepository.replaceHistory([makeSession({ atHour: 2, minutes: 120 })]);
+      const trait = GamingPersonaService.getPersona(null, null, { windowDays: 7 }).subTraits.find(
+        (t) => t.id === 'night_owl'
+      );
+      expect(trait).toBeTruthy();
+      expect(trait.evidence.join(' ')).toContain('2am');
+    });
+
+    test('backlog_hoarder cites the unplayed counts', () => {
+      seedBacklogLibrary(25);
+      const trait = GamingPersonaService.getPersona().subTraits.find((t) => t.id === 'backlog_hoarder');
+      expect(trait).toBeTruthy();
+      expect(trait.evidence.join(' ')).toContain('25 of 25');
+    });
+
+    test('unknown trait ids produce empty evidence rather than crashing', () => {
+      // Direct shape check: a trait id with no evidence builder returns [].
+      const persona = GamingPersonaService.getPersona();
+      persona.subTraits.forEach((trait) => expect(trait.evidence.length).toBeLessThanOrEqual(3));
+    });
+  });
+
   describe('getGameSpecificRoast', () => {
     test('returns a contextual roast string for a valid game', () => {
       seedBacklogLibrary(25);

@@ -4,14 +4,12 @@
   border-radius: 10px;
   padding: 12px 14px;
 }
-
 .friends-playing-header {
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--text-secondary, rgba(255, 255, 255, 0.7));
 }
-
 .friends-playing-label {
   font-size: 12px;
   font-weight: 600;
@@ -19,7 +17,6 @@
   text-transform: uppercase;
   flex: 1;
 }
-
 .friends-playing-refresh {
   background: none;
   border: none;
@@ -29,20 +26,16 @@
   border-radius: 4px;
   display: inline-flex;
 }
-
 .friends-playing-refresh:hover:not(:disabled) {
   color: var(--text-primary, #fff);
 }
-
 .friends-playing-refresh:disabled {
   opacity: 0.5;
   cursor: default;
 }
-
 .friends-playing-refresh .spinning {
   animation: friends-playing-spin 0.9s linear infinite;
 }
-
 @keyframes friends-playing-spin {
   to {
     transform: rotate(360deg);
@@ -57,13 +50,11 @@
   flex-direction: column;
   gap: 8px;
 }
-
 .friends-playing-item {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .friends-playing-item.friends-playing-squad {
   background: rgba(91, 141, 239, 0.08);
   border: 1px solid rgba(91, 141, 239, 0.25);
@@ -71,12 +62,10 @@
   padding: 6px 8px;
   margin: -2px -8px;
 }
-
 .friends-playing-avatars {
   display: flex;
   flex-shrink: 0;
 }
-
 .friends-playing-avatars .friends-playing-avatar + .friends-playing-avatar,
 .friends-playing-avatars .friends-playing-avatar-fallback + .friends-playing-avatar,
 .friends-playing-avatars .friends-playing-avatar + .friends-playing-avatar-fallback,
@@ -84,7 +73,6 @@
   margin-left: -8px;
   box-shadow: 0 0 0 2px var(--bg-secondary, #12161f);
 }
-
 .friends-playing-avatar {
   width: 30px;
   height: 30px;
@@ -92,7 +80,6 @@
   flex-shrink: 0;
   object-fit: cover;
 }
-
 .friends-playing-avatar-fallback {
   display: inline-flex;
   align-items: center;
@@ -102,14 +89,12 @@
   font-size: 13px;
   font-weight: 700;
 }
-
 .friends-playing-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
 }
-
 .friends-playing-text strong {
   color: var(--text-primary, #fff);
   font-size: 13px;
@@ -117,7 +102,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .friends-playing-text span {
   color: var(--text-secondary, rgba(255, 255, 255, 0.65));
   font-size: 12px;
@@ -125,7 +109,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .friends-playing-launch {
   display: inline-flex;
   align-items: center;
@@ -141,12 +124,10 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-
 .friends-playing-launch:hover {
   background: var(--accent, #5b8def);
   color: #fff;
 }
-
 .friends-playing-note,
 .friends-playing-footnote {
   margin: 8px 0 0;

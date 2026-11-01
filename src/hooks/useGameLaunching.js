@@ -14,7 +14,6 @@ import { GameLaunchCoordinatorService } from '../services/GameLaunchCoordinatorS
  *   - handleEndSession: from useSessionLifecycle
  *   - refreshActiveSessions: from useSessionLifecycle
  *   - minimizeOnLaunch: boolean preference
- *   - trackGamePlay: from useSeasonalFeatures
  *
  * Returns:
  *   - handleLaunchGame(game): launch a game
@@ -27,7 +26,6 @@ export default function useGameLaunching({
   handleEndSession,
   refreshActiveSessions,
   minimizeOnLaunch,
-  trackGamePlay,
 }) {
   const launchesInProgress = useRef(new Set());
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
@@ -73,9 +71,6 @@ export default function useGameLaunching({
           refreshActiveSessions();
           toastSuccess(`${game.name} launched. Session tracking is active.`);
 
-          // Record the play for seasonal reward tracking (reward toast is shown elsewhere).
-          trackGamePlay(game);
-
           if (minimizeOnLaunch && window.electronAPI?.minimizeWindow) {
             window.electronAPI.minimizeWindow().catch(() => {});
           }
@@ -95,7 +90,6 @@ export default function useGameLaunching({
       setLibrary,
       setLastPlayedGame,
       refreshActiveSessions,
-      trackGamePlay,
       toastError,
       toastInfo,
       toastSuccess,

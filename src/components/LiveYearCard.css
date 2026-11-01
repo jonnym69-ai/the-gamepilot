@@ -1,0 +1,66 @@
+.live-year-card {
+  border-radius: var(--border-radius, 14px);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+}
+.live-year-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.live-year-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color, #ff8c42);
+  font-weight: 700;
+}
+.live-year-hide {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #999);
+  cursor: pointer;
+}
+.live-year-hide:hover {
+  color: var(--text-primary, #fff);
+  background: rgba(255, 255, 255, 0.08);
+}
+.live-year-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #bbb);
+}
+.live-year-stat strong {
+  color: var(--text-primary, #fff);
+}
+.live-year-detail {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #aaa);
+}
+.live-year-detail strong {
+  color: var(--text-primary, #eee);
+}
+.live-year-link {
+  color: var(--accent-color, #ff8c42);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.live-year-link:hover {
+  text-decoration: underline;
+}

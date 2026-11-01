@@ -1,12 +1,14 @@
 # GamePilot
 
-**Less browsing. More playing. — and the record of how you actually play.**
+**The record of how you actually play — from one launcher that runs everything you own.**
 
 ![Today — your streak, your era, your week](screenshots/today-header.png)
 
-I built this because I kept spending twenty minutes scrolling my Steam library and then closing it and watching YouTube instead.
+Steam knows your lifetime hours. GOG knows your last-played date. Nobody keeps the part that matters: the Tuesday nights, the month a single game owned you, the backlog title you finally finished at 2 a.m.
 
-GamePilot scans your games (Steam, Epic, GOG, Battle.net, itch, Xbox, and more — plus your emulator library), asks what mood you're in and how long you've got, and picks something from what you already own. While you play, it builds the record Steam never bothered to keep: real sessions, streaks, eras, and the games that owned you for a month at a time.
+GamePilot tracks real sessions across every launcher on your PC — Steam, Epic, GOG, Battle.net, itch, Xbox, emulators and manual installs — and turns them into something you can actually read back: streaks, eras, weekly and monthly champions, habits, a Year in Review that updates all year. It learns what you play and when, and uses that to pick your next game from what you already own, with the reason attached.
+
+And yes, it launches all of them from one place, so you stop scrolling and start playing.
 
 No account. No cloud. No telemetry. No AI in the app — everything it "knows" about you is local math on your own data. Windows 10/11, Linux in beta.
 
@@ -16,18 +18,30 @@ No account. No cloud. No telemetry. No AI in the app — everything it "knows" a
 - **Linux (beta):** x86_64 AppImage on the same releases page. Steam-first; works on Steam Deck in Desktop Mode — add it to Steam as a non-Steam game for Gaming Mode.
 - **itch.io:** <https://moz91.itch.io/gamepilot>
 
-## What it does
+## What it tracks
 
-- Scans and launches games across Steam, Epic, GOG, Battle.net, Riot, itch.io, Xbox, Ubisoft, and manual installs
+- **Real sessions**, not lifetime totals — start, end, length, time of day, across every launcher, offline, with crash recovery and a one-line journal per session
 - **Eras** — when a game takes over your life for a month, it gets named ("The Zomboid Era") and the transition is commemorated
-- Mood + time picks from your own library — with a reason attached, not a black box ("0 hours in Far Cry 6, because 'probably finished' is not a recognized status")
-- **Trending in your library** — live Steam player counts and global chart rank for games *you own*, not the store chart
-- "Owned, not installed" — Steam and GOG games you own but haven't installed, with one-click install deep links
+- **Hall of Champions** — the game that won each week, month and year, with hours, longest sitting and share of your play
+- **Habits** — time-of-day heatmaps, weekday patterns, streaks, monthly recaps, On This Day, and a Year in Review that's live all year
 - A persona and roast built from what you actually play (toggleable)
-- Session tracking that works offline and across launchers — real sessions, not just lifetime totals
-- Monthly recaps, check-in streaks, XP and achievements earned by playing, not buying
+- **Your Steam achievements** per game, with rarity, alongside your own session record
+- Shareable cards for all of it — eras, champions, your year, your library
+
+## What it does with that
+
+- Mood + time picks from your own library — with a reason attached, not a black box ("0 hours in Far Cry 6, because 'probably finished' is not a recognized status")
+- "Finishable this weekend" — backlog games whose remaining HowLongToBeat time fits the time you have
+- **Trending in your library** — live Steam player counts and global chart rank for games *you own*, not the store chart
+
+## And the launcher part
+
+- Scans and launches games across Steam, Epic, GOG, Battle.net, Riot, itch.io, Xbox, Ubisoft, Amazon, EA, Rockstar and manual installs
+- "Owned, not installed" — Steam and GOG games you own but haven't installed, with one-click install deep links
+- Edit any game's details — sort name, genres, tags, year, developer, cover art — when the scan gets it wrong
 - Wishlist with price-drop alerts, and a giveaway radar for free-game dumps
-- Save backups, an uninstall planner, big-screen TV mode, Discord Rich Presence
+- Save backups, rolling session-history backups, an uninstall planner, big-screen TV mode, Discord Rich Presence
+- Auto-updates from GitHub releases (Winget and Scoop manifests live in `packaging/`)
 
 ### First-class retro support
 

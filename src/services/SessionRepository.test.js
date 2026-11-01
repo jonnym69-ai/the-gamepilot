@@ -4,6 +4,7 @@ import StorageService from './StorageService';
 describe('SessionRepository', () => {
   beforeEach(() => {
     localStorage.clear();
+    delete window.electronAPI;
     SessionRepository.cache = { activeSessions: {}, sessionHistory: [] };
     SessionRepository.initialized = false;
     SessionRepository.initializing = null;
@@ -188,5 +189,143 @@ describe('SessionRepository', () => {
 
     expect(first).toEqual(second);
     expect(SessionRepository.initialized).toBe(true);
+  });
+
+  describe('SQLite rejection resync', () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    const diskSnapshot = {
+      activeSessions: { 'Disk Game': { startTime: '2024-01-05T00:00:00.000Z', sessionId: 'disk-a' } },
+      sessionHistory: [
+        { sessionId: 'disk-1', gameName: 'Disk Game', playtimeMinutes: 42, endTime: '2024-01-05T01:00:00.000Z' },
+      ],
+    };
+
+    test('replaceHistory re-syncs the cache from SQLite when the replace is rejected', async () => {
+      window.electronAPI = {
+        sessionStoreReplaceHistory: jest
+          .fn()
+          .mockResolvedValue({ ok: false, rejected: true, existing: 5, incoming: 1 }),
+        sessionStoreGetSnapshot: jest.fn().mockResolvedValue(diskSnapshot),
+      };
+
+      SessionRepository.replaceHistory([{ sessionId: 'local-1', gameName: 'Local Game', playtimeMinutes: 1 }]);
+      await flush();
+
+      expect(window.electronAPI.sessionStoreGetSnapshot).toHaveBeenCalledTimes(1);
+      expect(SessionRepository.getSessionHistory()).toEqual(diskSnapshot.sessionHistory);
+      expect(StorageService.get('sessionHistory', [])).toEqual(diskSnapshot.sessionHistory);
+    });
+
+    test('updateSessionEntry re-syncs when its history write is rejected', async () => {
+      window.electronAPI = {
+        sessionStoreReplaceHistory: jest
+          .fn()
+          .mockResolvedValue({ ok: false, rejected: true, existing: 5, incoming: 1 }),
+        sessionStoreGetSnapshot: jest.fn().mockResolvedValue(diskSnapshot),
+      };
+      SessionRepository.cache.sessionHistory = [
+        { sessionId: 'note-1', gameName: 'Disk Game', playtimeMinutes: 10, endTime: '2024-01-05T01:00:00.000Z' },
+      ];
+
+      SessionRepository.updateSessionEntry('note-1', { note: 'hi' });
+      await flush();
+
+      expect(SessionRepository.getSessionHistory()).toEqual(diskSnapshot.sessionHistory);
+    });
+
+    test('replaceHistory forwards { force: true } and resolves once the write lands', async () => {
+      window.electronAPI = {
+        sessionStoreReplaceHistory: jest.fn().mockResolvedValue({ ok: true, existing: 5, incoming: 1 }),
+      };
+      const history = [{ sessionId: 'imp-1', gameName: 'Imported', playtimeMinutes: 20 }];
+
+      const result = await SessionRepository.replaceHistory(history, { force: true });
+
+      expect(result).toBe(true);
+      expect(window.electronAPI.sessionStoreReplaceHistory).toHaveBeenCalledWith(history, { force: true });
+      expect(SessionRepository.getSessionHistory()).toEqual(history);
+    });
+
+    test('replaceHistory defaults to { force: false } and resolves true without a bridge', async () => {
+      window.electronAPI = {
+        sessionStoreReplaceHistory: jest.fn().mockResolvedValue({ ok: true }),
+      };
+      await SessionRepository.replaceHistory([{ sessionId: 'd-1', gameName: 'G', playtimeMinutes: 1 }]);
+      expect(window.electronAPI.sessionStoreReplaceHistory).toHaveBeenCalledWith(expect.any(Array), {
+        force: false,
+      });
+
+      delete window.electronAPI;
+      expect(SessionRepository.replaceHistory([{ sessionId: 'd-2', gameName: 'G2', playtimeMinutes: 1 }])).toBe(true);
+    });
+
+    test('sanitizeHistory re-syncs when its write is rejected', async () => {
+      window.electronAPI = {
+        sessionStoreReplaceHistory: jest
+          .fn()
+          .mockResolvedValue({ ok: false, rejected: true, existing: 20, incoming: 1 }),
+        sessionStoreGetSnapshot: jest.fn().mockResolvedValue(diskSnapshot),
+      };
+      SessionRepository.cache.sessionHistory = [
+        { sessionId: 'dup', gameName: 'Disk Game', playtimeMinutes: 10, endTime: '2024-01-05T01:00:00.000Z' },
+        { gameName: 'Disk Game', playtimeMinutes: 10, endTime: '2024-01-05T01:00:00.000Z' },
+      ];
+
+      SessionRepository.sanitizeHistory();
+      await flush();
+
+      expect(window.electronAPI.sessionStoreGetSnapshot).toHaveBeenCalled();
+      expect(SessionRepository.getSessionHistory()).toEqual(diskSnapshot.sessionHistory);
+    });
+  });
+
+  describe('rolling backups', () => {
+    test('listBackups forwards to the bridge and falls back to []', async () => {
+      window.electronAPI = {
+        sessionStoreListBackups: jest.fn().mockResolvedValue([
+          {
+            file: 'session-history-2024-01-01-startup.sqlite',
+            path: '/x',
+            sizeBytes: 10,
+            createdAt: '2024-01-01',
+            sessionCount: 3,
+          },
+        ]),
+      };
+
+      await expect(SessionRepository.listBackups()).resolves.toHaveLength(1);
+
+      window.electronAPI = { sessionStoreListBackups: jest.fn().mockRejectedValue(new Error('nope')) };
+      await expect(SessionRepository.listBackups()).resolves.toEqual([]);
+
+      delete window.electronAPI;
+      await expect(SessionRepository.listBackups()).resolves.toEqual([]);
+    });
+
+    test('restoreBackup adopts the returned snapshot and notifies listeners', async () => {
+      const restored = {
+        activeSessions: {},
+        sessionHistory: [
+          { sessionId: 'r-1', gameName: 'Restored', playtimeMinutes: 5, endTime: '2024-02-01T00:00:00.000Z' },
+        ],
+      };
+      window.electronAPI = {
+        sessionStoreRestoreBackup: jest.fn().mockResolvedValue({ ok: true, snapshot: restored }),
+      };
+      const listener = jest.fn();
+      window.addEventListener('gamepilot:session-storage-ready', listener);
+
+      const result = await SessionRepository.restoreBackup('session-history-2024-02-01-startup.sqlite');
+
+      expect(result).toMatchObject({ ok: true });
+      expect(window.electronAPI.sessionStoreRestoreBackup).toHaveBeenCalledWith(
+        'session-history-2024-02-01-startup.sqlite'
+      );
+      expect(SessionRepository.getSessionHistory()).toEqual(restored.sessionHistory);
+      expect(StorageService.get('sessionHistory', [])).toEqual(restored.sessionHistory);
+      expect(listener).toHaveBeenCalledTimes(1);
+      window.removeEventListener('gamepilot:session-storage-ready', listener);
+    });
   });
 });

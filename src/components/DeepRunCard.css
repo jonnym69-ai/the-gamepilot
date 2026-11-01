@@ -1,0 +1,100 @@
+.deep-run-card {
+  border-radius: var(--border-radius, 14px);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+}
+.deep-run-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.deep-run-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color, #ff8c42);
+  font-weight: 700;
+}
+.deep-run-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #999);
+  cursor: pointer;
+}
+.deep-run-dismiss:hover {
+  color: var(--text-primary, #fff);
+  background: rgba(255, 255, 255, 0.08);
+}
+.deep-run-era {
+  margin: 6px 0 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+.deep-run-pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.deep-run-art {
+  width: 44px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.deep-run-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.deep-run-placeholder {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-secondary, #888);
+}
+.deep-run-info {
+  min-width: 0;
+}
+.deep-run-line {
+  margin: 0 0 2px;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #bbb);
+}
+.deep-run-line strong {
+  color: var(--text-primary, #fff);
+}
+.deep-run-why {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #999);
+}
+.deep-run-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-color, #ff8c42);
+  color: #14110f;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.deep-run-play:hover {
+  filter: brightness(1.08);
+}

@@ -132,39 +132,43 @@ export class RecommendationExplainer {
 
   static getSignatureGameReasoning(game) {
     try {
-      const identity = GamingIdentity.getProfile();
-      const sigGames = identity?.signatureGames || [];
-      const clusters = identity?.tasteClusters || [];
-      const gameGenres = Array.isArray(game?.genres) ? game.genres : [];
-      const reasons = [];
-
-      // Check taste cluster membership first — this is the strongest signal
-      if (clusters.length > 0) {
-        const topCluster = clusters[0];
-        const clusterGenres = new Set(
-          topCluster.gameNames.map((n) => sigGames.find((s) => s.name === n)?.genres || []).flat()
-        );
-        const genreOverlap = gameGenres.filter((g) => clusterGenres.has(g)).length;
-        if (genreOverlap > 0) {
-          reasons.push(
-            `Shares your ${topCluster.label} taste — your signature includes ${topCluster.gameNames.slice(0, 2).join(' and ')}`
-          );
-        }
-      }
-
-      // Check direct genre overlap with signature games
-      if (sigGames.length > 0 && reasons.length === 0) {
-        const sigGenres = new Set(sigGames.flatMap((s) => s.genres || []));
-        const overlap = gameGenres.filter((g) => sigGenres.has(g));
-        if (overlap.length >= 2) {
-          const topSig = sigGames[0];
-          reasons.push(
-            `Overlaps with ${overlap.length} genres from your signature game ${topSig.name} (${topSig.playtimeHours}h played)`
-          );
-        }
-      }
-
-      return reasons.length > 0 ? reasons[0] : null;
+      const signatures = GamingIdentity.getProfile()?.signatureGames || [];
+      const generic = new Set([
+        'action',
+        'adventure',
+        'indie',
+        'casual',
+        'singleplayer',
+        'multiplayer',
+        'rpg',
+        'strategy',
+        'simulation',
+      ]);
+      const normalize = (value) =>
+        String(value || '')
+          .trim()
+          .toLowerCase();
+      const genres = [
+        ...new Set(
+          (Array.isArray(game?.genres) ? game.genres : []).filter(
+            (genre) => typeof genre === 'string' && !generic.has(normalize(genre))
+          )
+        ),
+      ];
+      const matches = signatures
+        .filter((signature) => signature?.name && normalize(signature.name) !== normalize(game?.name))
+        .map((signature) => ({
+          signature,
+          shared: genres.filter((genre) =>
+            (signature.genres || []).some((other) => normalize(other) === normalize(genre))
+          ),
+        }))
+        .filter((match) => match.shared.length > 0)
+        .sort((left, right) => right.shared.length - left.shared.length);
+      const match = matches[0];
+      return match
+        ? `Shares ${match.shared.slice(0, 2).join(' and ')} with ${match.signature.name}, one of your most-played games.`
+        : null;
     } catch {
       return null;
     }
@@ -1045,8 +1049,6 @@ export class RecommendationExplainer {
     if (/current rotation|active rotation|heating up|this fortnight/i.test(reason)) score += 5;
     if (/shares .* with your current .* rotation/i.test(reason)) score += 3;
     if (/shares your .* taste/i.test(reason)) score += 4;
-    if (/overlaps with \d+ genres?/i.test(reason)) score += 3;
-    if (/signature/i.test(reason)) score += 2;
     if (/unplayed in your local history/i.test(reason)) score += 1;
     if (/fits within your/i.test(reason)) score += 1;
 

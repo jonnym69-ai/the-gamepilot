@@ -64,6 +64,7 @@ export default function PlayNextCard({ library, onLaunchGame, emptyFallback = nu
           {current.reason}
           {current.detail ? ` · ${current.detail}` : ''}
         </span>
+        {current.note && <span className="play-next-note">“{current.note}”</span>}
       </div>
       <div className="play-next-actions">
         <button type="button" className="play-next-play" onClick={() => onLaunchGame?.(game)}>
@@ -82,6 +83,42 @@ export default function PlayNextCard({ library, onLaunchGame, emptyFallback = nu
           </button>
         )}
       </div>
+      {choices.length > 1 && (
+        <div className="play-next-alternates" role="group" aria-label="Other picks">
+          {choices.map((choice, index) => {
+            if (index === pickOffset % choices.length) return null;
+            const altName = choice.game?.name || choice.game?.title || 'Unknown game';
+            const altArt = resolveGameArtworkBundle(choice.game, {
+              surface: 'portrait',
+              fallbackSurface: 'library_card',
+            });
+            return (
+              <button
+                key={`${altName}-${index}`}
+                type="button"
+                className="play-next-alt"
+                onClick={() => setPickOffset(index)}
+                title={choice.reason}
+              >
+                {altArt.artwork ? (
+                  <LazyImage
+                    src={altArt.artwork}
+                    fallbackSrc={altArt.fallbackSrc}
+                    alt=""
+                    placeholder={altArt.placeholder}
+                    className="play-next-alt-art"
+                  />
+                ) : (
+                  <span className="play-next-alt-placeholder" aria-hidden="true">
+                    {altName[0] || '?'}
+                  </span>
+                )}
+                <span className="play-next-alt-name">{altName}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

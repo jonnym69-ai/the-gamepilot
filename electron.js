@@ -26,8 +26,12 @@ const pcgamingWiki = require('./electron/pcgamingWiki');
 const steam = require('./electron/steam');
 const igdb = require('./electron/igdb');
 const epic = require('./electron/epic');
+const epicAuth = require('./electron/epicAuth');
 const giveaways = require('./electron/giveaways');
+const itch = require('./electron/itch');
+const youtube = require('./electron/youtube');
 const saveManager = require('./electron/saveManager');
+const storageCleaner = require('./electron/storageCleaner');
 const uninstall = require('./electron/uninstall');
 const emulator = require('./electron/emulator');
 const retroAchievements = require('./electron/retroAchievements');
@@ -35,6 +39,9 @@ const sessionStore = require('./electron/sessionStore');
 const libraryScan = require('./electron/libraryScan');
 const discord = require('./electron/discord');
 const misc = require('./electron/misc');
+const installWatcher = require('./electron/installWatcher');
+const updater = require('./electron/updater');
+const { createTrustedIpc } = require('./electron/rendererSecurity');
 
 const APP_DISPLAY_NAME = 'GamePilot';
 app.setName(APP_DISPLAY_NAME);
@@ -50,27 +57,34 @@ const { getMainWindow, getGameBarWindow, createWindow, createGameBarOverlayWindo
 // ---------------------------------------------------------------------------
 // Register IPC handlers for every domain module.
 // ---------------------------------------------------------------------------
-const sharedDeps = { getMainWindow, getGameBarWindow, gameLauncher, sessionDatabase };
+const sharedDeps = { getMainWindow, getGameBarWindow, gameLauncher, sessionDatabase, logger: require('./logger') };
+const guardedIpc = createTrustedIpc(ipcMain, () => [getMainWindow(), getGameBarWindow()]);
 
-preferences.registerIpcHandlers(ipcMain);
-systemInfo.registerIpcHandlers(ipcMain);
-howLongToBeat.registerIpcHandlers(ipcMain);
-pcgamingWiki.registerIpcHandlers(ipcMain);
-steam.registerIpcHandlers(ipcMain);
-igdb.registerIpcHandlers(ipcMain);
-epic.registerIpcHandlers(ipcMain);
-giveaways.registerIpcHandlers(ipcMain);
-saveManager.registerIpcHandlers(ipcMain);
-uninstall.registerIpcHandlers(ipcMain);
-emulator.registerIpcHandlers(ipcMain);
-retroAchievements.registerIpcHandlers(ipcMain);
-sessionStore.registerIpcHandlers(ipcMain, sharedDeps);
-libraryScan.registerIpcHandlers(ipcMain, sharedDeps);
-discord.registerIpcHandlers(ipcMain);
-misc.registerIpcHandlers(ipcMain, sharedDeps);
-processMonitor.registerIpcHandlers(ipcMain);
-passiveWatcher.registerIpcHandlers(ipcMain, sharedDeps);
-trayManager.registerIpcHandlers(ipcMain, {
+preferences.registerIpcHandlers(guardedIpc);
+systemInfo.registerIpcHandlers(guardedIpc);
+howLongToBeat.registerIpcHandlers(guardedIpc);
+pcgamingWiki.registerIpcHandlers(guardedIpc);
+steam.registerIpcHandlers(guardedIpc);
+igdb.registerIpcHandlers(guardedIpc);
+epic.registerIpcHandlers(guardedIpc);
+epicAuth.registerIpcHandlers(guardedIpc);
+giveaways.registerIpcHandlers(guardedIpc);
+itch.registerIpcHandlers(guardedIpc);
+youtube.registerIpcHandlers(guardedIpc);
+saveManager.registerIpcHandlers(guardedIpc);
+storageCleaner.registerIpcHandlers(guardedIpc);
+uninstall.registerIpcHandlers(guardedIpc);
+emulator.registerIpcHandlers(guardedIpc);
+retroAchievements.registerIpcHandlers(guardedIpc);
+sessionStore.registerIpcHandlers(guardedIpc, sharedDeps);
+libraryScan.registerIpcHandlers(guardedIpc, sharedDeps);
+discord.registerIpcHandlers(guardedIpc);
+misc.registerIpcHandlers(guardedIpc, sharedDeps);
+installWatcher.registerIpcHandlers(guardedIpc, sharedDeps);
+updater.registerIpcHandlers(guardedIpc, sharedDeps);
+processMonitor.registerIpcHandlers(guardedIpc);
+passiveWatcher.registerIpcHandlers(guardedIpc, sharedDeps);
+trayManager.registerIpcHandlers(guardedIpc, {
   createWindow,
   createGameBarOverlayWindow,
   gameLauncher,

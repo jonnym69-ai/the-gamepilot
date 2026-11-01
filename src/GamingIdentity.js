@@ -1,5 +1,4 @@
 // GamingIdentity.js - Enhanced Gaming Identity System
-import { AchievementTracker, ACHIEVEMENTS } from './AchievementSystem';
 import { StatsAggregationService } from './services/StatsAggregationService';
 import { StartupPersonalizationService } from './services/StartupPersonalizationService';
 import { UserBehaviorProfile } from './services/UserBehaviorProfile';
@@ -10,7 +9,6 @@ import { getGameGenres } from './GameGenreDatabase';
 import GamingPersonaService from './services/GamingPersonaService';
 
 const IDENTITY_SNAPSHOTS_KEY = 'identitySnapshots';
-const IDENTITY_REWARDS_KEY = 'identityRewards';
 
 // Lightweight 500ms memoization to prevent duplicate expensive computations
 // within a single React render cycle or rapid successive calls.
@@ -21,20 +19,6 @@ let _statsCacheTime = 0;
 let _signatureGamesCache = null;
 let _signatureGamesCacheTime = 0;
 const CACHE_TTL_MS = 500;
-
-// Flat lookup over the ACHIEVEMENTS catalog so badge chips show real
-// names/icons instead of the legacy six-entry map.
-const ACHIEVEMENT_LOOKUP = (() => {
-  const lookup = {};
-  Object.values(ACHIEVEMENTS || {}).forEach((category) => {
-    (Array.isArray(category) ? category : []).forEach((entry) => {
-      if (entry && entry.id) lookup[entry.id] = entry;
-    });
-  });
-  return lookup;
-})();
-
-const getAchievementCatalogEntry = (achievementId) => ACHIEVEMENT_LOOKUP[achievementId] || null;
 
 export class GamingIdentity {
   static getProfile() {
@@ -87,13 +71,15 @@ export class GamingIdentity {
     return profile;
   }
 
-  static calculateGamerLevel(_stats) {
-    return AchievementTracker.getXPStats().level || 1;
+  static calculateGamerLevel(stats) {
+    // Playtime-derived level: ~1 level per 10 lifetime hours, sqrt curve so
+    // early progress feels fast and late progress slows naturally.
+    const hours = Math.max(0, (stats?.totalPlayTime || 0) / 60);
+    return Math.max(1, Math.floor(Math.sqrt(hours) * 3) + 1);
   }
 
   static getGamerTitle(stats) {
     const level = this.calculateGamerLevel(stats);
-    const platformStats = AchievementTracker.getPlatformStats();
 
     const titles = [
       { name: 'Newbie', requirement: () => level >= 1 },
@@ -102,9 +88,8 @@ export class GamingIdentity {
       { name: 'Game Enthusiast', requirement: () => level >= 10 },
       { name: 'Hardcore Gamer', requirement: () => level >= 15 },
       { name: 'Gaming Legend', requirement: () => level >= 20 },
-      { name: 'Platform Master', requirement: () => Object.keys(platformStats).length >= 5 },
+      { name: 'Platform Master', requirement: () => stats.platformDiversity >= 5 },
       { name: 'Time Lord', requirement: () => stats.totalPlayTime >= 60000 }, // 1000+ hours (totalPlayTime is in minutes)
-      { name: 'Achievement Hunter', requirement: () => stats.achievementProgress?.unlocked >= 20 },
       { name: 'Game Master', requirement: () => level >= 25 },
     ];
 
@@ -119,35 +104,11 @@ export class GamingIdentity {
   }
 
   static getAchievedBadges() {
-    const achievements = AchievementTracker.getUnlockedAchievements();
     const badges = [];
 
-    // Achievement badges
-    achievements.forEach((achievementId) => {
-      badges.push({
-        id: achievementId,
-        type: 'achievement',
-        icon: this.getAchievementIcon(achievementId),
-        name: this.getAchievementName(achievementId),
-        date: StorageService.getString(`achievement_${achievementId}_date`, new Date().toISOString()),
-      });
-    });
-
-    // Weekly mood badges
-    const weeklyBadge = AchievementTracker.getWeeklyMoodBadge();
-    if (weeklyBadge) {
-      badges.push({
-        id: 'weekly_mood',
-        type: 'weekly',
-        icon: '🏆',
-        name: weeklyBadge.badge,
-        description: `Most used mood: ${weeklyBadge.mood}`,
-        date: new Date().toISOString(),
-      });
-    }
-
-    // Platform badges
-    const platformStats = AchievementTracker.getPlatformStats();
+    // Platform badges from real platform stats
+    const dashboardData = StatsAggregationService.getDashboardData(StorageService.get('library', []));
+    const platformStats = dashboardData?.periods?.all?.platformCounts || {};
     Object.entries(platformStats).forEach(([platform, count]) => {
       if (count >= 10) {
         badges.push({
@@ -161,7 +122,7 @@ export class GamingIdentity {
       }
     });
 
-    return badges.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return badges;
   }
 
   static getGamingStats() {
@@ -174,24 +135,11 @@ export class GamingIdentity {
     const dashboardData = StatsAggregationService.getDashboardData(library);
     const allTimeSnapshot = dashboardData?.periods?.all;
     const onboardingSeed = StartupPersonalizationService.getSeededRecommendationContext();
-    const legacyTimeStats = AchievementTracker.getTimeStats();
-    const platformStats =
-      Object.keys(allTimeSnapshot?.platformCounts || {}).length > 0
-        ? allTimeSnapshot.platformCounts
-        : AchievementTracker.getPlatformStats();
-    const featureStats =
-      Object.keys(allTimeSnapshot?.featureUsage?.counts || {}).length > 0
-        ? allTimeSnapshot.featureUsage.counts
-        : AchievementTracker.getFeatureStats();
-    const moodStats =
-      Object.keys(allTimeSnapshot?.moodCounts || {}).length > 0
-        ? allTimeSnapshot.moodCounts
-        : AchievementTracker.getMoodStats();
-    const genreStats =
-      Object.keys(allTimeSnapshot?.genreCounts || {}).length > 0
-        ? allTimeSnapshot.genreCounts
-        : AchievementTracker.getGenreStats();
-    const trackedPlayTime = Number(allTimeSnapshot?.playtimeMinutes || legacyTimeStats.total || 0);
+    const platformStats = allTimeSnapshot?.platformCounts || {};
+    const featureStats = allTimeSnapshot?.featureUsage?.counts || {};
+    const moodStats = allTimeSnapshot?.moodCounts || {};
+    const genreStats = allTimeSnapshot?.genreCounts || {};
+    const trackedPlayTime = Number(allTimeSnapshot?.playtimeMinutes || 0);
     // Lifetime floor from library (Steam/GOG imports + local). Never show a
     // "0h identity" when the library clearly has hundreds of imported hours.
     const libraryLifetimeMinutes = Array.isArray(library)
@@ -207,7 +155,7 @@ export class GamingIdentity {
       : 0;
     const importedSummaryMinutes = Number(dashboardData?.importedPlaytime?.totalMinutes) || 0;
     const totalPlayTime = Math.max(trackedPlayTime, libraryLifetimeMinutes, importedSummaryMinutes);
-    const totalSessions = Number(allTimeSnapshot?.sessions || legacyTimeStats.sessions || 0);
+    const totalSessions = Number(allTimeSnapshot?.sessions || 0);
 
     const stats = {
       totalPlayTime,
@@ -226,10 +174,6 @@ export class GamingIdentity {
           ? this.getFavoriteGenre(genreStats)
           : onboardingSeed?.genres?.[0] || 'None',
       platformDiversity: Object.keys(platformStats).length,
-      achievementProgress: {
-        unlocked: AchievementTracker.getUnlockedAchievements().length,
-        total: this.getTotalAchievements(),
-      },
       librarySize: librarySize,
       onboardingSeed,
     };
@@ -676,7 +620,6 @@ export class GamingIdentity {
       sessionLength: stats.averageSessionTime > 60 ? 'Long' : 'Short',
       platformVariety: stats.platformDiversity > 3 ? 'Diverse' : 'Focused',
       moodStability: stats.favoriteMood ? 'Consistent' : 'Varied',
-      achievementFocus: stats.achievementProgress.unlocked > 10 ? 'Achievement Hunter' : 'Casual',
     };
   }
 
@@ -687,7 +630,7 @@ export class GamingIdentity {
     return {
       frequency: sessionsPerWeek > 7 ? 'Daily' : sessionsPerWeek > 3 ? 'Regular' : 'Occasional',
       consistency: totalPlayTime > 0 ? 'Consistent' : 'New',
-      engagement: stats.achievementProgress.unlocked > 5 ? 'Highly Engaged' : 'Developing',
+      engagement: totalSessions > 20 ? 'Highly Engaged' : 'Developing',
     };
   }
 
@@ -701,20 +644,6 @@ export class GamingIdentity {
   }
 
   // Helper functions
-  static getAchievementIcon(achievementId) {
-    return getAchievementCatalogEntry(achievementId)?.icon || '🏆';
-  }
-
-  static getAchievementName(achievementId) {
-    const catalogName = getAchievementCatalogEntry(achievementId)?.name;
-    if (catalogName) return catalogName;
-    const humanized = String(achievementId || '')
-      .replace(/[_-]+/g, ' ')
-      .trim()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    return humanized || 'Achievement';
-  }
-
   static getPlatformIcon(platform) {
     const icons = {
       Steam: '🚂',
@@ -771,11 +700,6 @@ export class GamingIdentity {
     const entries = Object.entries(genreStats);
     if (entries.length === 0) return 'None';
     return entries.sort(([, a], [, b]) => b - a)[0][0];
-  }
-
-  static getTotalAchievements() {
-    // Count total achievements from AchievementSystem
-    return 50; // Approximate total number of achievements
   }
 
   static updateGamingIdentity() {
@@ -839,85 +763,5 @@ export class GamingIdentity {
 
   static getIdentitySnapshots() {
     return StorageService.get(IDENTITY_SNAPSHOTS_KEY, []);
-  }
-
-  // ---- Completion-Driven Identity Rewards ----
-
-  static checkIdentityRewards() {
-    const profile = this.getProfile();
-    const unlocked = StorageService.get(IDENTITY_REWARDS_KEY, []);
-    const newRewards = [];
-
-    const rewardDefs = [
-      {
-        id: 'mood_master',
-        name: 'Mood Master',
-        icon: '🎭',
-        requirement: () => profile.identity?.favoriteMood && profile.stats?.totalSessions >= 10,
-      },
-      {
-        id: 'genre_specialist',
-        name: 'Genre Specialist',
-        icon: '🎯',
-        requirement: () => profile.identity?.favoriteGenre && profile.stats?.totalPlayTime >= 300,
-      },
-      {
-        id: 'archetype_unlocked',
-        name: 'True Identity',
-        icon: '🏆',
-        requirement: () => profile.identity?.archetype !== null && profile.stats?.librarySize >= 5,
-      },
-      {
-        id: 'marathon_runner',
-        name: 'Marathon Runner',
-        icon: '⏱️',
-        requirement: () => profile.identity?.playStyle === 'Marathon' && profile.stats?.totalPlayTime >= 600,
-      },
-      {
-        id: 'quick_session_king',
-        name: 'Quick Session King',
-        icon: '⚡',
-        requirement: () => profile.identity?.playStyle === 'Quick Sessions' && profile.stats?.totalSessions >= 20,
-      },
-      {
-        id: 'strategist',
-        name: 'Strategist',
-        icon: '♟️',
-        requirement: () => profile.identity?.playStyle === 'Strategic' && profile.stats?.totalSessions >= 15,
-      },
-      {
-        id: 'explorer',
-        name: 'Explorer',
-        icon: '🗺️',
-        requirement: () => profile.identity?.playStyle === 'Explorer' && profile.stats?.librarySize >= 8,
-      },
-    ];
-
-    for (const def of rewardDefs) {
-      if (!unlocked.includes(def.id) && def.requirement()) {
-        unlocked.push(def.id);
-        newRewards.push(def);
-      }
-    }
-
-    if (newRewards.length > 0) {
-      StorageService.set(IDENTITY_REWARDS_KEY, unlocked);
-    }
-
-    return { unlocked, newRewards };
-  }
-
-  static getIdentityRewards() {
-    const all = [
-      { id: 'mood_master', name: 'Mood Master', icon: '🎭', desc: 'Found your signature mood after 10 sessions.' },
-      { id: 'genre_specialist', name: 'Genre Specialist', icon: '🎯', desc: '5+ hours in your favorite genre.' },
-      { id: 'archetype_unlocked', name: 'True Identity', icon: '🏆', desc: 'Discovered your archetype with 5+ games.' },
-      { id: 'marathon_runner', name: 'Marathon Runner', icon: '⏱️', desc: '10+ hours as a marathon player.' },
-      { id: 'quick_session_king', name: 'Quick Session King', icon: '⚡', desc: '20+ quick sessions logged.' },
-      { id: 'strategist', name: 'Strategist', icon: '♟️', desc: '15+ strategic sessions played.' },
-      { id: 'explorer', name: 'Explorer', icon: '🗺️', desc: '8+ games in your library as an explorer.' },
-    ];
-    const unlocked = StorageService.get(IDENTITY_REWARDS_KEY, []);
-    return all.map((r) => ({ ...r, unlocked: unlocked.includes(r.id) }));
   }
 }

@@ -83,31 +83,6 @@
   padding: 24px 20px 40px;
 }
 
-.year-review-shell-founder {
-  --year-review-founder-accent: #fb923c;
-  --year-review-founder-glow: rgba(251, 146, 60, 0.18);
-}
-
-.year-review-shell-founder-bronze {
-  --year-review-founder-accent: #fb923c;
-  --year-review-founder-glow: rgba(251, 146, 60, 0.18);
-}
-
-.year-review-shell-founder-silver {
-  --year-review-founder-accent: #cbd5e1;
-  --year-review-founder-glow: rgba(203, 213, 225, 0.18);
-}
-
-.year-review-shell-founder-gold {
-  --year-review-founder-accent: #facc15;
-  --year-review-founder-glow: rgba(250, 204, 21, 0.2);
-}
-
-.year-review-shell-founder-platinum {
-  --year-review-founder-accent: #e5e7eb;
-  --year-review-founder-glow: rgba(229, 231, 235, 0.18);
-}
-
 .year-review-hero {
   display: flex;
   justify-content: space-between;
@@ -211,22 +186,6 @@
   cursor: wait;
 }
 
-.year-review-founder-stamp {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 9px 14px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.42);
-  border: 1px solid var(--year-review-founder-accent, rgba(255, 255, 255, 0.18));
-  color: var(--year-review-founder-accent, #fb923c);
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .year-review-status {
   display: inline-flex;
   align-items: center;
@@ -246,23 +205,72 @@
   padding: 0;
 }
 
-.year-review-export-surface-founder {
-  position: relative;
+/* Tab bar — pill control in the same visual language as .year-review-kicker */
+.year-review-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 6px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  width: fit-content;
+  max-width: 100%;
 }
 
-.year-review-export-surface-founder::before {
-  content: '';
-  position: absolute;
-  inset: -12px;
-  border-radius: 28px;
-  border: 1px solid var(--year-review-founder-accent, rgba(255, 255, 255, 0.16));
-  box-shadow: 0 0 36px var(--year-review-founder-glow, rgba(251, 146, 60, 0.12));
-  pointer-events: none;
+.year-review-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 8px 18px;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.year-review-tab:hover {
+  background: rgba(255, 107, 53, 0.12);
+}
+
+.year-review-tab:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+.year-review-tab.active {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: rgba(255, 107, 53, 0.4);
+  color: var(--header-text, var(--text-color));
+}
+
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+  .year-review-tab:hover {
+    background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  }
+
+  .year-review-tab.active {
+    background: color-mix(in srgb, var(--accent-color) 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
+  }
+}
+
+.year-review-tabpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .year-review-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 14px;
 }
 
@@ -340,40 +348,6 @@
   margin: 0 auto;
   color: var(--text-color);
   opacity: 0.82;
-}
-
-.year-review-highlights-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-}
-
-.year-review-mini-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  border-radius: 18px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-}
-
-.year-review-mini-card svg {
-  color: var(--text-accent, var(--accent-color));
-}
-
-.year-review-mini-card span {
-  display: block;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-}
-
-.year-review-mini-card strong {
-  display: block;
-  margin-top: 4px;
-  font-size: 1.2rem;
 }
 
 .year-review-champion-journey {
@@ -544,11 +518,6 @@
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
 }
 
-.year-review-deep-stat-featured {
-  grid-column: span 2;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-color) 22%, var(--card-bg)), var(--input-bg));
-}
-
 .year-review-deep-stat-card span {
   display: block;
   margin-bottom: 10px;
@@ -648,9 +617,7 @@
 }
 
 .identity-grid span,
-.identity-arc span,
-.achievement-summary-strip span,
-.progression-headline span {
+.identity-arc span {
   display: block;
   margin-bottom: 6px;
   font-size: 0.75rem;
@@ -660,9 +627,7 @@
 }
 
 .identity-grid strong,
-.identity-arc strong,
-.achievement-summary-strip strong,
-.progression-headline strong {
+.identity-arc strong {
   color: var(--header-text, var(--text-color));
   font-size: 1rem;
 }
@@ -688,25 +653,21 @@
   gap: 8px;
 }
 
-.month-bar-labels,
-.progression-group-labels,
-.challenge-quest-stats {
+.month-bar-labels {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.month-bar-track,
-.progression-group-track {
+.month-bar-track {
   height: 10px;
   border-radius: 999px;
   overflow: hidden;
   background: var(--input-bg);
 }
 
-.month-bar-fill,
-.progression-group-fill {
+.month-bar-fill {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(135deg, var(--accent-color), rgba(255, 140, 66, 0.5));
@@ -715,91 +676,6 @@
 .month-bar-row small {
   color: var(--text-color);
   opacity: 0.68;
-}
-
-.top-games-list,
-.achievement-highlight-list,
-.progression-groups {
-  display: grid;
-  gap: 12px;
-}
-
-.top-game-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.top-game-rank {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: rgba(255, 140, 66, 0.14);
-  color: var(--text-accent, var(--accent-color));
-  font-weight: 800;
-}
-
-.top-game-copy,
-.achievement-highlight-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.top-game-copy strong,
-.achievement-highlight-copy strong {
-  color: var(--header-text, var(--text-color));
-}
-
-.top-game-copy span,
-.achievement-highlight-copy span,
-.top-game-stats small,
-.achievement-highlight-row small,
-.achievement-highlight-empty {
-  color: var(--text-color);
-  opacity: 0.76;
-}
-
-.top-game-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: right;
-}
-
-.achievement-summary-strip,
-.progression-headline {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.achievement-summary-strip div,
-.progression-headline div {
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-}
-
-.achievement-highlight-icon {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: rgba(255, 140, 66, 0.14);
-  font-size: 1.3rem;
 }
 
 .mix-columns {
@@ -853,12 +729,6 @@
   font-size: 0.92rem;
 }
 
-.progression-group-row {
-  display: grid;
-  gap: 8px;
-  transition: background-color 0.2s ease;
-}
-
 @media (max-width: 1080px) {
   .year-review-hero,
   .year-review-main-grid {
@@ -876,6 +746,10 @@
 
   .mix-columns {
     grid-template-columns: 1fr;
+  }
+
+  .year-review-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .year-review-deep-stats-grid {
@@ -905,14 +779,18 @@
 
   .year-review-main-grid,
   .identity-grid,
-  .achievement-summary-strip,
-  .progression-headline,
+  .year-review-summary-grid,
   .year-review-deep-stats-grid {
     grid-template-columns: 1fr;
   }
 
-  .year-review-deep-stat-featured {
-    grid-column: auto;
+  .year-review-tabs {
+    width: 100%;
+    border-radius: 18px;
+  }
+
+  .year-review-tab {
+    flex: 1 1 40%;
   }
 
   .year-review-champion-journey {
@@ -936,69 +814,12 @@
   .year-review-month-champions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .top-game-row,
-  .achievement-highlight-row {
-    grid-template-columns: auto 1fr;
-  }
-
-  .top-game-stats,
-  .achievement-highlight-row small {
-    grid-column: 2;
-    text-align: left;
-  }
 }
 
 /* Hover States */
 .year-review-summary-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.32);
-}
-
-.year-review-export-surface-founder .year-review-summary-card,
-.year-review-export-surface-founder .year-review-mini-card,
-.year-review-export-surface-founder .year-review-panel {
-  border-color: var(--year-review-founder-accent, var(--card-border));
-  box-shadow:
-    0 18px 35px rgba(0, 0, 0, 0.2),
-    0 0 24px var(--year-review-founder-glow, rgba(251, 146, 60, 0.08));
-}
-
-.year-review-export-surface-founder .summary-card-title,
-.year-review-export-surface-founder .year-review-mini-card span,
-.year-review-export-surface-founder .identity-grid span,
-.year-review-export-surface-founder .achievement-summary-strip span,
-.year-review-export-surface-founder .mix-columns > div > span {
-  color: var(--year-review-founder-accent, var(--text-color));
-  opacity: 0.9;
-}
-
-.top-game-row:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.24);
-}
-
-.achievement-highlight-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.achievement-highlight-row:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.24);
-}
-
-.progression-group-row:hover {
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .mix-columns li:hover {
@@ -1034,186 +855,130 @@
   -webkit-text-fill-color: transparent;
 }
 
-.year-review-story-arc {
-  font-size: 1.05rem;
-  font-style: italic;
-  color: var(--text-color);
-  opacity: 0.85;
-  margin: 0 0 28px 0;
-  padding-left: 32px;
-  border-left: 2px solid rgba(124, 58, 237, 0.3);
-}
-
-@keyframes chapter-enter {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.year-review-story-chapters {
+.year-review-story-paragraphs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 18px;
+  max-width: 70ch;
 }
 
-.year-review-chapter {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 24px;
-  position: relative;
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+.year-review-story-paragraphs p {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.02rem;
+  line-height: 1.65;
+  opacity: 0.88;
+}
+
+.year-review-story-paragraphs p.yir-story-para {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.yir-story-cover {
+  width: 40px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  margin-top: 2px;
+}
+
+.yir-story-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.year-review-story-paragraphs p:first-child {
+  font-size: 1.15rem;
+  color: var(--header-text, var(--text-color));
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .year-review-chapter {
-    opacity: 0;
-    animation: chapter-enter 0.6s ease forwards;
-  }
-
-  .year-review-chapter:nth-child(1) {
-    animation-delay: 0.08s;
-  }
-  .year-review-chapter:nth-child(2) {
-    animation-delay: 0.16s;
-  }
-  .year-review-chapter:nth-child(3) {
-    animation-delay: 0.24s;
-  }
-  .year-review-chapter:nth-child(4) {
-    animation-delay: 0.32s;
-  }
-}
-
-.year-review-chapter:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-}
-
-.year-review-chapter--empty {
-  opacity: 0.45;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.year-review-chapter--empty:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-.chapter-season-label {
+/* Compact eras strip on the Overview tab */
+.year-review-era-strip {
+  appearance: none;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 24px;
+  text-align: left;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(124, 58, 237, 0.08), var(--card-bg));
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.year-review-era-strip:hover {
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+.year-review-era-strip:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff6b35);
+  outline-offset: 2px;
+}
+
+.year-review-era-strip-copy {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
-.chapter-season-label span {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--accent-color);
-  background: rgba(124, 58, 237, 0.12);
-  padding: 4px 10px;
-  border-radius: 20px;
+.year-review-era-strip-copy > strong {
+  font-size: 1.3rem;
+  color: var(--header-text, var(--text-color));
 }
 
-.chapter-season-label small {
-  font-size: 0.75rem;
-  color: var(--text-color);
-  opacity: 0.5;
-}
-
-.year-review-chapter h3 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin: 0 0 10px 0;
-  line-height: 1.3;
-  color: var(--text-color);
-}
-
-.year-review-chapter > p {
+.year-review-era-strip-cta {
   font-size: 0.9rem;
-  line-height: 1.55;
-  margin: 0;
-  color: var(--text-color);
-  opacity: 0.75;
+  color: var(--text-accent, var(--accent-color));
+  font-weight: 600;
 }
 
-.chapter-stats {
+.year-review-era-strip-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 8px 16px;
 }
 
-.chapter-stats span {
-  font-size: 0.78rem;
+.year-review-era-strip-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.82rem;
   font-weight: 600;
-  background: rgba(124, 58, 237, 0.1);
-  color: var(--accent-color);
-  padding: 4px 10px;
-  border-radius: 12px;
+  opacity: 0.85;
 }
 
-.chapter-stats .chapter-top-game {
-  background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
+.year-review-era-strip-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 
-.chapter-pivot {
-  margin-top: 14px;
-  padding: 10px 14px;
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), rgba(251, 146, 60, 0.02));
-  border-left: 3px solid rgba(251, 146, 60, 0.5);
-  border-radius: 0 10px 10px 0;
-}
+/* 12-month era timeline bar styles live in components/EraTimelineBar.css —
+   the component is shared with the Today recap prompt and story share card. */
 
-.chapter-pivot span {
+.month-bar-quiet {
+  margin: 4px 0 0;
+  color: var(--text-color);
+  opacity: 0.6;
   font-size: 0.85rem;
   font-style: italic;
-  color: #fbbf24;
-  opacity: 0.9;
-}
-
-.chapter-connector {
-  position: absolute;
-  right: -16px;
-  top: 50%;
-  width: 16px;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent-color), transparent);
-  transform: translateY(-50%);
-  z-index: 1;
-}
-
-@media (max-width: 1024px) {
-  .year-review-story-chapters {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .chapter-connector {
-    display: none;
-  }
-  .year-review-deep-stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .year-review-deep-stat-featured {
-    grid-column: span 1;
-  }
 }
 
 @media (max-width: 600px) {
-  .year-review-story-chapters {
-    grid-template-columns: 1fr;
-  }
   .year-review-story-section {
     padding: 20px;
   }
@@ -1225,5 +990,246 @@
   .year-review-controls {
     width: 100%;
     min-width: unset;
+  }
+}
+
+/* Eras of your year */
+.year-review-eras-section {
+  margin: 32px 0;
+  padding: 32px;
+  background: linear-gradient(145deg, rgba(124, 58, 237, 0.06), rgba(15, 23, 42, 0.6));
+  border: 1px solid var(--card-border);
+  border-radius: 28px;
+}
+
+.year-review-eras-header {
+  margin-bottom: 20px;
+}
+
+.year-review-eras-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 8px;
+  color: var(--header-text, var(--text-color));
+  font-size: 1.35rem;
+}
+
+.year-review-eras-header p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.78;
+  max-width: 640px;
+}
+
+.year-review-era-track {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.year-review-era-card {
+  flex: 1 1 0;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-top: 3px solid var(--accent-color);
+}
+
+.year-review-era-months {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-color);
+}
+
+.year-review-era-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--header-text, var(--text-color));
+}
+
+.year-review-era-signature {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.year-review-era-signature span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--accent-color);
+}
+
+.year-review-era-stats {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 0.85rem;
+  color: var(--text-color);
+  opacity: 0.85;
+}
+
+.year-review-era-top-game {
+  flex-basis: 100%;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.year-review-recorded-eras {
+  margin-top: 20px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.year-review-recorded-eras-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.72;
+}
+
+.year-review-recorded-eras ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.year-review-recorded-eras li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.year-review-recorded-eras li strong {
+  color: var(--header-text, var(--text-color));
+}
+
+.year-review-recorded-eras li span {
+  color: var(--text-color);
+  opacity: 0.75;
+  font-size: 0.92rem;
+}
+
+/* Top games by real playtime */
+.year-review-top-games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.year-review-top-games li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.year-review-top-game-rank {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255, 140, 66, 0.14);
+  color: var(--text-accent, var(--accent-color));
+  font-weight: 800;
+}
+
+.year-review-top-game-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.year-review-top-game-info strong {
+  color: var(--header-text, var(--text-color));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.year-review-top-game-info span {
+  color: var(--text-color);
+  opacity: 0.76;
+  font-size: 0.9rem;
+}
+
+/* Session journal */
+.year-review-journal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.year-review-journal-list li {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.year-review-journal-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.year-review-journal-meta strong {
+  color: var(--header-text, var(--text-color));
+}
+
+.year-review-journal-meta span {
+  color: var(--text-color);
+  opacity: 0.65;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.year-review-journal-list p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.85;
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+@media (max-width: 760px) {
+  .year-review-eras-section {
+    padding: 20px;
   }
 }

@@ -6,6 +6,7 @@ import { SteamGenreEnrichmentService } from '../services/SteamGenreEnrichmentSer
 import { GameCurationService } from '../services/GameCurationService';
 import IgdbArtworkService from '../services/IgdbArtworkService';
 import WishlistService from '../services/WishlistService';
+import ManualGamesService from '../services/ManualGamesService';
 
 /**
  * Manages initial library loading from localStorage and the saveLibrary
@@ -36,11 +37,15 @@ export default function useLibraryLoading({ setLibrary, setLastPlayedGame }) {
     (async () => {
       try {
         const parsedLibrary = StorageService.get('library', null);
-        if (!Array.isArray(parsedLibrary) || parsedLibrary.length === 0) {
+        // Manually added games live in their own store and merge in here so a
+        // manual-only library still loads, and records dropped from the manual
+        // store fall out of the library.
+        const mergedLibrary = ManualGamesService.mergeIntoLibrary(Array.isArray(parsedLibrary) ? parsedLibrary : []);
+        if (mergedLibrary.length === 0) {
           return;
         }
 
-        const enrichedLibrary = PlaytimeEnrichmentService.enrichLibraryWithPlaytime(parsedLibrary);
+        const enrichedLibrary = PlaytimeEnrichmentService.enrichLibraryWithPlaytime(mergedLibrary);
         const curatedLibrary = GameCurationService.enrichLibrary(enrichedLibrary);
         const normalizedLibrary = normalizeLibraryData(curatedLibrary);
         setLibrary(normalizedLibrary);
@@ -77,7 +82,7 @@ export default function useLibraryLoading({ setLibrary, setLastPlayedGame }) {
           console.warn('IGDB cover enrichment skipped:', coverErr.message);
         }
 
-        if (JSON.stringify(parsedLibrary) !== JSON.stringify(workingLibrary)) {
+        if (JSON.stringify(mergedLibrary) !== JSON.stringify(workingLibrary)) {
           StorageService.set('library', workingLibrary);
         }
 

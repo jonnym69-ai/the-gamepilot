@@ -16,7 +16,6 @@
   -webkit-user-select: none;
   -webkit-app-region: drag;
 }
-
 .gamebar-header {
   display: flex;
   align-items: center;
@@ -26,21 +25,17 @@
   font-size: 13px;
   opacity: 0.8;
 }
-
 .gamebar-logo {
   font-size: 14px;
 }
-
 .gamebar-title {
   letter-spacing: 0.3px;
 }
-
 .gamebar-game {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-
 .gamebar-name {
   font-size: 15px;
   font-weight: 700;
@@ -48,7 +43,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .gamebar-meta {
   display: flex;
   align-items: center;
@@ -56,16 +50,13 @@
   font-size: 12px;
   opacity: 0.75;
 }
-
 .gamebar-live {
   color: #4ade80;
   font-weight: 600;
 }
-
 .gamebar-divider {
   opacity: 0.4;
 }
-
 .gamebar-empty {
   font-size: 13px;
   opacity: 0.6;

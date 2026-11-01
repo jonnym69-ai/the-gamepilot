@@ -5,7 +5,6 @@
   padding: 16px;
   margin-top: 16px;
 }
-
 .scan-report-panel.empty {
   display: flex;
   align-items: center;
@@ -13,14 +12,12 @@
   color: var(--text-secondary, #94a3b8);
   font-size: 0.9rem;
 }
-
 .scan-report-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
 }
-
 .scan-report-title {
   display: flex;
   align-items: center;
@@ -28,12 +25,10 @@
   font-weight: 600;
   color: var(--text-primary, #e8e8e8);
 }
-
 .scan-report-title h3 {
   margin: 0;
   font-size: 1rem;
 }
-
 .scan-report-clear {
   background: transparent;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
@@ -43,19 +38,16 @@
   cursor: pointer;
   transition: 0.15s ease;
 }
-
 .scan-report-clear:hover {
   color: var(--danger, #ef4444);
   border-color: var(--danger, #ef4444);
 }
-
 .scan-report-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
-
 .scan-report-stat {
   display: flex;
   flex-direction: column;
@@ -64,19 +56,16 @@
   border-radius: 8px;
   background: var(--bg-primary, #0f0f1a);
 }
-
 .scan-report-value {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-primary, #e8e8e8);
 }
-
 .scan-report-label {
   font-size: 0.75rem;
   color: var(--text-secondary, #94a3b8);
   text-transform: capitalize;
 }
-
 .scan-report-meta {
   display: flex;
   align-items: center;
@@ -85,13 +74,11 @@
   color: var(--text-secondary, #94a3b8);
   margin-bottom: 12px;
 }
-
 .scan-report-platforms {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .scan-report-row {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
@@ -102,42 +89,34 @@
   background: var(--bg-primary, #0f0f1a);
   font-size: 0.85rem;
 }
-
 .scan-report-platform-name {
   font-weight: 500;
   color: var(--text-primary, #e8e8e8);
   text-transform: capitalize;
 }
-
 .scan-report-platform-status {
   color: var(--text-secondary, #94a3b8);
   text-transform: capitalize;
 }
-
 .scan-report-platform-count {
   font-weight: 600;
   color: var(--text-primary, #e8e8e8);
 }
-
 .scan-report-platform-reason {
   grid-column: 1 / -1;
   color: var(--text-secondary, #94a3b8);
   font-size: 0.8rem;
   margin-top: 2px;
 }
-
 .scan-status-found {
   color: var(--success, #22c55e);
 }
-
 .scan-status-error {
   color: var(--danger, #ef4444);
 }
-
 .scan-status-empty {
   color: var(--warning, #f59e0b);
 }
-
 @media (max-width: 480px) {
   .scan-report-summary {
     grid-template-columns: repeat(2, 1fr);

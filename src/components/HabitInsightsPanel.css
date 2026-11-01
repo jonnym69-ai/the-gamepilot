@@ -5,7 +5,6 @@
   padding: 20px;
   margin-bottom: 16px;
 }
-
 .habit-insights-panel.empty {
   display: flex;
   flex-direction: column;
@@ -15,21 +14,18 @@
   color: var(--text-secondary, #94a3b8);
   text-align: center;
 }
-
 .habit-insights-header {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
 }
-
 .habit-insights-header h3 {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary, #f1f5f9);
 }
-
 .habit-insights-badge {
   margin-left: auto;
   font-size: 0.7rem;
@@ -40,7 +36,6 @@
   background: var(--accent-muted, rgba(61, 217, 255, 0.12));
   color: var(--accent, #3dd9ff);
 }
-
 .habit-insight-hero {
   display: flex;
   align-items: center;
@@ -51,7 +46,6 @@
   border: 1px solid rgba(61, 217, 255, 0.3);
   background: linear-gradient(135deg, rgba(61, 217, 255, 0.12), rgba(155, 92, 255, 0.12));
 }
-
 .habit-insight-hero-icon {
   display: flex;
   align-items: center;
@@ -63,14 +57,12 @@
   background: rgba(61, 217, 255, 0.2);
   color: #3dd9ff;
 }
-
 .habit-insight-hero-body {
   display: flex;
   flex-direction: column;
   gap: 3px;
   min-width: 0;
 }
-
 .habit-insight-hero-eyebrow {
   font-size: 0.72rem;
   font-weight: 600;
@@ -78,14 +70,12 @@
   text-transform: uppercase;
   color: #3dd9ff;
 }
-
 .habit-insight-hero-value {
   font-size: 1.4rem;
   font-weight: 800;
   color: var(--text-primary, #f1f5f9);
   line-height: 1.15;
 }
-
 .habit-insight-hero-roast {
   font-size: 0.85rem;
   line-height: 1.45;
@@ -96,14 +86,12 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .habit-insights-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
-
 .habit-insight-card {
   display: flex;
   align-items: flex-start;
@@ -117,24 +105,10 @@
     transform 0.15s ease,
     box-shadow 0.15s ease;
 }
-
-.habit-insight-card.tone-highlight {
-  --tone-accent: #3dd9ff;
-}
-
-.habit-insight-card.tone-good {
-  --tone-accent: #34d399;
-}
-
-.habit-insight-card.tone-warn {
-  --tone-accent: #fb923c;
-}
-
 .habit-insight-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
-
 .insight-icon {
   display: flex;
   align-items: center;
@@ -146,43 +120,24 @@
   background: var(--tone-bg, rgba(148, 163, 184, 0.12));
   color: var(--tone-color, #94a3b8);
 }
-
-.habit-insight-card.tone-highlight .insight-icon {
-  --tone-bg: rgba(61, 217, 255, 0.15);
-  --tone-color: #3dd9ff;
-}
-
-.habit-insight-card.tone-good .insight-icon {
-  --tone-bg: rgba(52, 211, 153, 0.15);
-  --tone-color: #34d399;
-}
-
-.habit-insight-card.tone-warn .insight-icon {
-  --tone-bg: rgba(251, 146, 60, 0.15);
-  --tone-color: #fb923c;
-}
-
 .insight-body {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-
 .insight-title {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-secondary, #94a3b8);
 }
-
 .insight-value {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary, #f1f5f9);
   line-height: 1.3;
 }
-
 .insight-subtitle {
   font-size: 0.8rem;
   color: var(--text-tertiary, #64748b);
@@ -192,13 +147,11 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .habit-patterns-section {
   border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
   padding-top: 16px;
   margin-bottom: 16px;
 }
-
 .habit-patterns-section h4 {
   display: flex;
   align-items: center;
@@ -208,13 +161,11 @@
   font-weight: 600;
   color: var(--text-primary, #f1f5f9);
 }
-
 .habit-patterns-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .habit-pattern-row {
   display: flex;
   align-items: center;
@@ -224,34 +175,16 @@
   background: var(--surface, rgba(255, 255, 255, 0.02));
   border-left: 3px solid var(--tone-border, #475569);
 }
-
-.habit-pattern-row.tone-highlight {
-  --tone-border: #3dd9ff;
-  background: rgba(61, 217, 255, 0.05);
-}
-
-.habit-pattern-row.tone-good {
-  --tone-border: #34d399;
-  background: rgba(52, 211, 153, 0.05);
-}
-
-.habit-pattern-row.tone-warn {
-  --tone-border: #fb923c;
-  background: rgba(251, 146, 60, 0.05);
-}
-
 .pattern-label {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--text-secondary, #cbd5e1);
 }
-
 .pattern-detail {
   font-size: 0.85rem;
   color: var(--text-primary, #f1f5f9);
   text-align: right;
 }
-
 .habit-summary-bar {
   display: flex;
   align-items: center;
@@ -262,11 +195,9 @@
   font-size: 0.8rem;
   color: var(--text-tertiary, #64748b);
 }
-
 .habit-summary-bar span {
   position: relative;
 }
-
 .habit-summary-bar span:not(:last-child)::after {
   content: '';
   position: absolute;
@@ -278,13 +209,11 @@
   border-radius: 50%;
   background: var(--text-tertiary, #64748b);
 }
-
 .habit-viz-section {
   border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
   padding-top: 16px;
   margin-bottom: 16px;
 }
-
 .habit-viz-section h4 {
   display: flex;
   align-items: center;
@@ -294,8 +223,8 @@
   font-weight: 600;
   color: var(--text-primary, #f1f5f9);
 }
-
 /* Time-of-Day Heatmap */
+
 .viz-heatmap {
   display: flex;
   align-items: flex-end;
@@ -304,7 +233,6 @@
   padding-bottom: 18px;
   position: relative;
 }
-
 .viz-heatmap-cell {
   flex: 1;
   display: flex;
@@ -314,7 +242,6 @@
   gap: 4px;
   min-width: 0;
 }
-
 .viz-heatmap-bar {
   width: 100%;
   border-radius: 3px 3px 0 0;
@@ -322,14 +249,13 @@
   transition: opacity 0.15s;
   min-height: 2px;
 }
-
 .viz-heatmap-label {
   font-size: 0.55rem;
   color: var(--text-tertiary, #64748b);
   white-space: nowrap;
 }
-
 /* Session Trend */
+
 .viz-trend {
   display: flex;
   align-items: flex-end;
@@ -337,7 +263,6 @@
   height: 70px;
   padding: 0 4px;
 }
-
 .viz-trend-cell {
   flex: 1;
   display: flex;
@@ -346,7 +271,6 @@
   justify-content: flex-end;
   min-width: 0;
 }
-
 .viz-trend-bar {
   width: 100%;
   border-radius: 3px 3px 0 0;
@@ -354,7 +278,6 @@
   transition: height 0.3s ease;
   min-height: 2px;
 }
-
 .viz-trend-axis {
   display: flex;
   justify-content: space-between;
@@ -363,7 +286,6 @@
   font-size: 0.65rem;
   color: var(--text-tertiary, #64748b);
 }
-
 .habit-viz-empty {
   margin: 0;
   padding: 12px 4px;
@@ -371,20 +293,18 @@
   color: var(--text-tertiary, #94a3b8);
   font-style: italic;
 }
-
 /* Genre Phases */
+
 .viz-genres {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .viz-genre-row {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .viz-genre-name {
   width: 80px;
   font-size: 0.8rem;
@@ -394,7 +314,6 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-
 .viz-genre-track {
   flex: 1;
   height: 8px;
@@ -402,14 +321,12 @@
   background: var(--surface, rgba(255, 255, 255, 0.05));
   overflow: hidden;
 }
-
 .viz-genre-fill {
   height: 100%;
   border-radius: 4px;
   background: linear-gradient(90deg, rgba(61, 217, 255, 0.6), rgba(155, 92, 255, 0.6));
   transition: width 0.4s ease;
 }
-
 .viz-genre-value {
   width: 36px;
   font-size: 0.75rem;
@@ -418,14 +335,13 @@
   text-align: right;
   flex-shrink: 0;
 }
-
 /* Taste Clusters */
+
 .viz-taste-clusters {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-
 .viz-taste-cluster {
   display: flex;
   flex-direction: column;
@@ -436,32 +352,27 @@
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
   border-left: 3px solid var(--accent, #3dd9ff);
 }
-
 .viz-taste-cluster-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
-
 .viz-taste-cluster-label {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary, #f1f5f9);
 }
-
 .viz-taste-cluster-count {
   font-size: 0.7rem;
   color: var(--text-tertiary, #64748b);
   white-space: nowrap;
 }
-
 .viz-taste-cluster-description {
   font-size: 0.8rem;
   color: var(--text-secondary, #94a3b8);
   line-height: 1.4;
 }
-
 .viz-taste-cluster-games {
   font-size: 0.75rem;
   color: var(--text-tertiary, #64748b);

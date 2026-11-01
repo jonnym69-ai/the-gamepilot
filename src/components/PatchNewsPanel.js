@@ -25,7 +25,7 @@ const PatchNewsPanel = ({ game }) => {
 
   useEffect(() => {
     setEntry(SteamNewsService.getCached(game));
-    if (!game || !SteamNewsService.isEnabled()) return undefined;
+    if (!game || !enabled) return undefined;
     if (String(game.platform || '').toLowerCase() !== 'steam') return undefined;
     let cancelled = false;
     setLoading(true);
@@ -33,13 +33,14 @@ const PatchNewsPanel = ({ game }) => {
       .then((result) => {
         if (!cancelled) setEntry(result);
       })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [game]);
+  }, [game, enabled]);
 
   if (!game || String(game.platform || '').toLowerCase() !== 'steam') return null;
 
@@ -98,10 +99,13 @@ const PatchNewsPanel = ({ game }) => {
       {status?.sinceLastPlayed && (
         <div className={`patch-news-since ${status.isPatch ? 'is-patch' : ''}`}>
           <Bell size={12} aria-hidden="true" />
-          <span>
-            <strong>{status.newerCount}</strong> {status.isPatch ? 'patch / update' : 'post'}
-            {status.newerCount === 1 ? '' : 's'} since you last played
-          </span>
+          <div>
+            <span>
+              <strong>{status.newerCount}</strong> recent post{status.newerCount === 1 ? '' : 's'} published since your
+              last play
+            </span>
+            <p className="patch-news-note">From the latest fetched news; not a complete update history.</p>
+          </div>
         </div>
       )}
 

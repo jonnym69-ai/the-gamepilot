@@ -4,6 +4,7 @@ const { httpsRequest } = require('./net');
 const STEAM_FRIENDS_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamFriends';
 const STEAM_PROFILE_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamProfile';
 const STEAM_LIBRARY_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamLibrary';
+const STEAM_ACHIEVEMENTS_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamAchievements';
 const FRIENDS_CACHE = new Map();
 const FRIENDS_CACHE_TTL_MS = 60000;
 const PROFILE_CACHE = new Map();
@@ -507,6 +508,48 @@ const fetchPlayerCount = async (id) => {
   return request;
 };
 
+// Steam's full app catalogue (appid -> name) in one request. GetAppList is
+// ~8MB of JSON, but it resolves every chart row's title at once — far
+// kinder to the store API than a per-app appdetails call for each row, and
+// it covers apps appdetails refuses (unreleased, delisted, playtests).
+const appListCache = { map: null, expiresAt: 0 };
+let appListInflight = null;
+const APP_LIST_TTL_MS = 24 * 60 * 60 * 1000;
+
+const fetchAppListMap = async () => {
+  if (appListCache.map && Date.now() < appListCache.expiresAt) return appListCache.map;
+  if (appListInflight) return appListInflight;
+  appListInflight = steamHttpsGet('api.steampowered.com', '/ISteamApps/GetAppList/v2/?format=json')
+    .then((data) => {
+      const apps = Array.isArray(data?.applist?.apps) ? data.applist.apps : [];
+      const map = new Map();
+      apps.forEach((entry) => {
+        if (Number.isSafeInteger(entry?.appid) && entry.appid > 0 && typeof entry?.name === 'string' && entry.name) {
+          map.set(entry.appid, entry.name);
+        }
+      });
+      appListCache.map = map;
+      appListCache.expiresAt = Date.now() + APP_LIST_TTL_MS;
+      return map;
+    })
+    .finally(() => {
+      appListInflight = null;
+    });
+  return appListInflight;
+};
+
+const fetchAppNames = async (appids) => {
+  const map = await fetchAppListMap();
+  const names = {};
+  (Array.isArray(appids) ? appids : []).forEach((appid) => {
+    if (Number.isSafeInteger(appid) && appid > 0) {
+      const name = map.get(appid);
+      if (name) names[appid] = name;
+    }
+  });
+  return { ok: Object.keys(names).length > 0, names };
+};
+
 const mostPlayedCache = { data: null, expiresAt: 0 };
 const MOST_PLAYED_TTL_MS = 600000;
 
@@ -609,6 +652,17 @@ function registerIpcHandlers(ipcMain) {
     }
   });
 
+  ipcMain.handle('steam-app-names', async (_event, appids) => {
+    const ids = (Array.isArray(appids) ? appids : []).map(validAppId).filter(Boolean).slice(0, 200);
+    if (ids.length === 0) return { ok: false, error: 'invalid-appids' };
+    try {
+      return await fetchAppNames(ids);
+    } catch (error) {
+      console.warn('[SteamStore] app-list lookup failed:', error.message);
+      return { ok: false, error: 'app-list-unavailable' };
+    }
+  });
+
   ipcMain.handle('steam-spotlight', async (_event, appid) => {
     const id = validAppId(appid);
     if (!id) return { ok: false, error: 'invalid-appid' };
@@ -668,6 +722,42 @@ function registerIpcHandlers(ipcMain) {
     } catch (error) {
       console.warn('[SteamSnapshot] global-achievements failed:', error.message);
       return { ok: false, error: error.message || 'unknown' };
+    }
+  });
+
+  // Per-user achievement unlocks via the server-side relay (API key stays
+  // off the client). Requires the user's own 17-digit Steam64 ID.
+  ipcMain.handle('steam-player-achievements', async (_event, payload = {}) => {
+    const cleanId = String(payload?.steamId || '').replace(/[^0-9]/g, '');
+    const appid = String(payload?.appid || '').replace(/[^0-9]/g, '');
+    if (!/^\d{17}$/.test(cleanId)) return { ok: false, error: 'invalid-steamid' };
+    if (!appid) return { ok: false, error: 'invalid-appid' };
+
+    try {
+      const res = await httpsRequest(
+        `${STEAM_ACHIEVEMENTS_RELAY_URL}?steamid=${cleanId}&appid=${appid}`,
+        null,
+        {
+          'User-Agent': 'GamePilot/1.9',
+          Accept: 'application/json',
+        }
+      );
+      const data = JSON.parse(res.body || '{}');
+      if (res.status === 403 || data?.error === 'private-profile') {
+        return { ok: false, error: 'private-profile' };
+      }
+      if (data?.error === 'no-achievements') return { ok: false, error: 'no-achievements' };
+      if (res.status !== 200 || data?.ok !== true || !Array.isArray(data?.achievements)) {
+        return { ok: false, error: 'steam-error' };
+      }
+      return {
+        ok: true,
+        gameName: typeof data.gameName === 'string' ? data.gameName : '',
+        achievements: data.achievements,
+      };
+    } catch (error) {
+      console.warn('[SteamAchievements] relay request failed:', error.message);
+      return { ok: false, error: 'steam-error' };
     }
   });
 

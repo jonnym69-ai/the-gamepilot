@@ -1,19 +1,17 @@
 import StorageService from './StorageService';
-import { AchievementTracker } from '../AchievementSystem';
 
 const TIER_ORDER = ['Platinum', 'Gold', 'Silver', 'Bronze'];
 
 const FounderService = {
   getFounderProfile() {
-    const boostProfile = AchievementTracker.getPatreonBoostProfile() || {};
     const savedUsername = StorageService.getString('profileUsername', '');
     const userFounders = StorageService.get('userFounders', []);
     const matchedFounder = userFounders.find((f) => f.name?.toLowerCase() === savedUsername.trim().toLowerCase());
 
-    const tier = matchedFounder?.tier || boostProfile.tier || null;
+    const tier = matchedFounder?.tier || null;
     const isFounder = Boolean(tier);
-    const multiplier = boostProfile.multiplier || 1;
-    const joinDate = matchedFounder?.date || boostProfile.activatedAt || null;
+    const multiplier = 1;
+    const joinDate = matchedFounder?.date || null;
     const displayName = matchedFounder?.name || savedUsername || null;
 
     return {

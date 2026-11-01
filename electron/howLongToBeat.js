@@ -2,17 +2,21 @@ const { httpsRequest } = require('./net');
 
 // ---------------------------------------------------------------------------
 // HowLongToBeat unofficial search bridge.
-// HLTB has no official API. As of 2025 their search moved to a two-step flow:
-//   1) GET /api/bleed/init?t=<timestamp>  → {token, hpKey, hpVal}
-//   2) POST /api/bleed  (headers x-auth-token, x-hp-key, x-hp-val)
-//                       (body includes the search payload + [hpKey]: hpVal)
+// HLTB has no official API. As of late 2026 their Next.js site uses a two-step
+// flow:
+//   1) GET /api/search/site/init?t=<timestamp>  → {token}
+//   2) POST /api/search/site  (header x-auth-token)
+//                             (body is the search payload)
+// The token is bound to the client IP + User-Agent, so both requests must use
+// the same UA and come from the user's machine — which they do via electron.net.
+// On HTTP 403 the site itself re-inits and retries once; we mirror that.
 // All requests are server-side (Electron main) to avoid CORS, and every step
 // fails gracefully so the renderer can fall back to "unknown".
 //
 // We use electron.net (Chromium network stack) instead of Node https because
 // HLTB's CDN blocks raw Node TLS fingerprints with 403.
 // ---------------------------------------------------------------------------
-let cachedHltbBleed = { token: null, hpKey: null, hpVal: null, expires: 0 };
+let cachedHltbInit = { token: null, expires: 0 };
 
 const HLTB_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36';
@@ -35,14 +39,14 @@ const sanitizeHltbQuery = (value) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-// Step 1: fetch the rotating auth token + hpKey/hpVal pair from HLTB.
-const fetchHltbBleedInit = async () => {
+// Step 1: fetch the rotating auth token from HLTB.
+const fetchHltbInit = async () => {
   const now = Date.now();
-  if (cachedHltbBleed.token && cachedHltbBleed.hpKey && cachedHltbBleed.hpVal && cachedHltbBleed.expires > now) {
-    return { token: cachedHltbBleed.token, hpKey: cachedHltbBleed.hpKey, hpVal: cachedHltbBleed.hpVal };
+  if (cachedHltbInit.token && cachedHltbInit.expires > now) {
+    return { token: cachedHltbInit.token };
   }
 
-  const init = await httpsRequest(`https://howlongtobeat.com/api/bleed/init?t=${now}`, null, {
+  const init = await httpsRequest(`https://howlongtobeat.com/api/search/site/init?t=${now}`, null, {
     'User-Agent': HLTB_UA,
     Accept: 'application/json',
     'Accept-Language': 'en-US,en;q=0.9',
@@ -50,20 +54,64 @@ const fetchHltbBleedInit = async () => {
     Origin: 'https://howlongtobeat.com',
   });
   if (init.status !== 200) {
-    throw new Error(`HLTB bleed/init HTTP ${init.status}`);
+    throw new Error(`HLTB init HTTP ${init.status}`);
   }
   let parsed;
   try {
     parsed = JSON.parse(init.body);
   } catch {
-    throw new Error('HLTB bleed/init parse failed');
+    throw new Error('HLTB init parse failed');
   }
-  if (!parsed || !parsed.token || !parsed.hpKey || !parsed.hpVal) {
-    throw new Error('HLTB bleed/init missing fields');
+  if (!parsed || !parsed.token) {
+    throw new Error('HLTB init missing token');
   }
-  cachedHltbBleed = { token: parsed.token, hpKey: parsed.hpKey, hpVal: parsed.hpVal, expires: now + 60 * 60 * 1000 };
-  hltbDebug(`[HLTB] bleed/init ok — hpKey=${parsed.hpKey}`);
-  return { token: parsed.token, hpKey: parsed.hpKey, hpVal: parsed.hpVal };
+  cachedHltbInit = { token: parsed.token, expires: now + 60 * 60 * 1000 };
+  hltbDebug('[HLTB] init ok');
+  return { token: parsed.token };
+};
+
+const invalidateHltbInit = () => {
+  cachedHltbInit = { token: null, expires: 0 };
+};
+
+const postHltbSearch = async (cleanedQuery, token) => {
+  // Strip trademark symbols and punctuation from each term so HLTB's
+  // search engine isn't tripped up by trailing colons or ™ symbols.
+  const rawTerms = cleanedQuery.trim().split(/\s+/);
+  const cleanTerms = rawTerms.map((t) => t.replace(/[®™©:;,.!?&\-–—]/g, '')).filter(Boolean);
+  const payload = JSON.stringify({
+    searchType: 'games',
+    searchTerms: cleanTerms.length ? cleanTerms : rawTerms,
+    searchPage: 1,
+    size: 20,
+    searchOptions: {
+      games: {
+        userId: 0,
+        platform: '',
+        sortCategory: 'popular',
+        rangeCategory: 'main',
+        rangeTime: { min: null, max: null },
+        gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
+        rangeYear: { min: '', max: '' },
+        modifier: '',
+      },
+      users: { sortCategory: 'postcount' },
+      lists: { sortCategory: 'follows' },
+      filter: '',
+      sort: 0,
+      randomizer: 0,
+    },
+    useCache: true,
+  });
+  return httpsRequest('https://howlongtobeat.com/api/search/site', payload, {
+    'User-Agent': HLTB_UA,
+    'Content-Type': 'application/json',
+    Accept: '*/*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    Origin: 'https://howlongtobeat.com',
+    Referer: 'https://howlongtobeat.com/',
+    'x-auth-token': token,
+  });
 };
 
 function registerIpcHandlers(ipcMain) {
@@ -74,53 +122,19 @@ function registerIpcHandlers(ipcMain) {
     }
     hltbDebug(`[HLTB main] search request: "${cleanedQuery}"`);
     try {
-      const { token, hpKey, hpVal } = await fetchHltbBleedInit();
-      // Strip trademark symbols and punctuation from each term so HLTB's
-      // search engine isn't tripped up by trailing colons or ™ symbols.
-      const rawTerms = cleanedQuery.trim().split(/\s+/);
-      const cleanTerms = rawTerms.map((t) => t.replace(/[\u00ae\u2122\u00a9:;,.!?&\-–—]/g, '')).filter(Boolean);
-      const payloadBody = {
-        searchType: 'games',
-        searchTerms: cleanTerms.length ? cleanTerms : rawTerms,
-        searchPage: 1,
-        size: 20,
-        searchOptions: {
-          games: {
-            userId: 0,
-            platform: '',
-            sortCategory: 'popular',
-            rangeCategory: 'main',
-            rangeTime: { min: null, max: null },
-            gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
-            rangeYear: { min: '', max: '' },
-            modifier: '',
-          },
-          users: { sortCategory: 'postcount' },
-          lists: { sortCategory: 'follows' },
-          filter: '',
-          sort: 0,
-          randomizer: 0,
-        },
-        useCache: true,
-        [hpKey]: hpVal,
-      };
-      const payload = JSON.stringify(payloadBody);
-      const res = await httpsRequest('https://howlongtobeat.com/api/bleed', payload, {
-        'User-Agent': HLTB_UA,
-        'Content-Type': 'application/json',
-        Accept: '*/*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        Origin: 'https://howlongtobeat.com',
-        Referer: 'https://howlongtobeat.com/',
-        'x-auth-token': token,
-        'x-hp-key': hpKey,
-        'x-hp-val': hpVal,
-      });
-
+      let { token } = await fetchHltbInit();
+      let res = await postHltbSearch(cleanedQuery, token);
+      if (res.status === 403) {
+        // Token expired or rejected — the site refreshes and retries once.
+        invalidateHltbInit();
+        ({ token } = await fetchHltbInit());
+        res = await postHltbSearch(cleanedQuery, token);
+      }
       if (res.status !== 200) {
-        // Invalidate cached bleed init so next call re-fetches.
-        cachedHltbBleed = { token: null, hpKey: null, hpVal: null, expires: 0 };
-        console.warn(`[HLTB] POST /api/bleed -> ${res.status}; body: ${res.body?.slice(0, 200)?.replace(/\s+/g, ' ')}`);
+        invalidateHltbInit();
+        console.warn(
+          `[HLTB] POST /api/search/site -> ${res.status}; body: ${res.body?.slice(0, 200)?.replace(/\s+/g, ' ')}`
+        );
         return { ok: false, error: `http-${res.status}` };
       }
       let parsed;

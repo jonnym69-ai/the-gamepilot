@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { LocalShareService } from '../services/LocalShareService';
 import { Crown, Download, X, Image, Palette } from 'lucide-react';
-import { AchievementTracker } from '../AchievementSystem';
+
 import StorageService from '../services/StorageService';
 import EntitlementService from '../services/EntitlementService';
 import ProGate from './ProGate';
@@ -37,8 +37,7 @@ const CinematicExport = ({ library, theme, isOpen, onClose }) => {
 
     const localFounder =
       userFounders.find((founder) => founder.name?.toLowerCase() === savedUsername.trim().toLowerCase()) || null;
-    const boostTier = AchievementTracker.getPatreonBoostProfile().tier || null;
-    const tier = resolveHighestSupportTier([localFounder?.tier, boostTier]);
+    const tier = resolveHighestSupportTier([localFounder?.tier]);
 
     return {
       name: savedUsername || 'Pilot',

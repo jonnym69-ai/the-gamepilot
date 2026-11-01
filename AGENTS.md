@@ -8,7 +8,7 @@ Electron + React. Version 1.9.0.
 ```bash
 npm run format:check          # Prettier formatting check
 npx eslint src --max-warnings 0   # ESLint (zero warnings allowed)
-npx jest --ci                 # Jest tests (432 tests, 33 suites)
+npx jest --ci                 # Jest tests (~800 tests, 86 suites)
 npm run build                 # Production renderer build (Vite)
 npm run lint:css              # Stylelint (non-blocking, reports duplicate selectors)
 npm run typecheck             # TypeScript type check (tsc --noEmit)
@@ -57,7 +57,7 @@ The typecheck command is optional for JS-only changes.
   Route elements are wrapped with `RouteErrorBoundary` for per-page failure
   isolation; a top-level `ErrorBoundary` remains as a last-resort fallback.
 - `src/index.jsx` — Vite entry point. Renders `<App />` in React StrictMode.
-- `src/hooks/` — custom hooks extracted from App.js (13 hooks):
+- `src/hooks/` — custom hooks extracted from App.js (12 hooks):
   - `useLibraryFilters.js` — mood/time/genre filter state.
   - `useTheme.js` — theme + big-screen-mode state and body-class effects.
   - `useGlobalInput.js` — keyboard shortcuts, easter-egg keys, controller nav.
@@ -69,9 +69,8 @@ The typecheck command is optional for JS-only changes.
   - `useSessionLifecycle.js` — session start/end/recovery/heartbeat/shutdown.
   - `useGameLaunching.js` — handleLaunchGame + launch event listener.
   - `useStillPlayingPrompt.js` — 15-min prompt + deadlines + escape key.
-  - `useSessionNotifications.js` — roast/rivalry/streak/identity toasts + rec prompt.
+  - `useSessionNotifications.js` — session-saved toast + recommendation outcome prompt.
   - `useDynamicBackdrop.js` — cover-art + animated backdrop CSS effects.
-  - `useSeasonalFeatures.js` — calendar rewards + seasonal play tracking.
 - `src/services/` — service modules (library scanning, playtime tracking, etc.).
 - `src/components/` — React components.
 
@@ -120,8 +119,7 @@ The typecheck command is optional for JS-only changes.
 
 1. ESLint (blocking)
 2. Prettier format check (blocking)
-3. Stylelint (non-blocking — duplicate-selector issues resolved; a few
-   pre-existing non-duplicate errors remain)
+3. Stylelint (non-blocking — currently fully clean; keep it that way)
 4. Jest tests (blocking)
 5. Production build (blocking)
 
@@ -143,16 +141,25 @@ The typecheck command is optional for JS-only changes.
 
 ## Known technical debt
 
-- Five pre-existing Stylelint errors remain: shorthand overrides in `Profile.css`
-  and `Settings.css`, and three `no-unknown-animations` findings in
-  `cinematicExport.css` / `DailyDoodleTitle.css`. `App.css`, `Home.css`, and
-  `LibrarianHubCarousel.css` pass targeted Stylelint checks.
+- `npm run lint:css` is fully clean (zero errors). Animation keyframes are
+  namespaced per file (`doodle-*`, `cinematic-*`) rather than relying on
+  globals defined elsewhere.
 - Main index chunk is ~576 KB, still above the 500 KB Vite warning
   threshold. Further reduction would require lazy-loading services, which is
   more invasive.
 - Session history uses localStorage; IndexedDB migration was evaluated and
   deferred — the dual-write system (localStorage + SQLite) works and the
   migration risk outweighs the benefit at current scale.
+- Session history safety: `SessionDatabase.replaceHistory` refuses suspicious
+  shrinks (empty replace over a non-empty DB, or <50% of rows when 20+ exist)
+  unless called with `{ force: true }`; rejected results make
+  `SessionRepository` re-sync its cache from `session-store-get-snapshot` —
+  SQLite is the source of truth. Rolling backups live in
+  `userData/session-backups/` (`backupHistory`, once/day/reason, pruned to 10,
+  called on `initialize()` and before accepted replaces); `listBackups()` /
+  `restoreBackup(fileName)` (name-validated, `pre-restore` copy first) feed the
+  Settings → Backup & Restore "Session History Backups" panel. `clear()` stays
+  a direct DELETE — it is the explicit user wipe.
 - `react-scripts`/`react-app-rewired` were removed; ESLint now uses standalone
   `eslint-config-react-app` (devDep) with `eslint` pinned at 8.x — the
   `react-app`/`react-app/jest` preset names in `eslintConfig` resolve through
@@ -170,21 +177,21 @@ The typecheck command is optional for JS-only changes.
 
 ## Single-edition build
 
-- There is one GamePilot build — the Free/Pro split was removed. Every feature ships unlocked: cinematic export, Library Reclaimer (`storage-manager`), recommendation tuner, era archive (`currentEraHistory` on Home), year-over-year (PeriodComparisonService + YearComparisonCard on Stats) and the signature theme collection (`src/themes/proThemes.json`).
+- There is one GamePilot build — the Free/Pro split was removed. Every feature ships unlocked: cinematic export, recommendation tuner, era archive (`currentEraHistory` on Home), and the signature theme collection (`src/themes/proThemes.json`).
 - `EntitlementService` is retained as dormant compatibility plumbing: `getEdition()` always returns `'pro'`, `isPro()` is always true, `hasFeature()` grants every catalogued feature, and unknown feature keys still fail closed. `ProGate` renders children unconditionally; `ThemeContext`'s pro-theme checks auto-pass. Stored entitlements, founder records and saved recommendation weights are preserved and never mutated by entitlement reads. Do not reintroduce feature gating without revisiting these call-sites.
 - The `/donate` and `/editions` routes, the Donate page and the Settings edition/support sections were removed. Optional support lives on the itch.io page (pay-what-you-want), not in-app. `FounderService`/`EntitlementService` supporter plumbing stays dormant — it costs nothing with no founder data and removing it is risk without benefit.
 - `npm run build` writes `dist/renderer/` with an `edition.json` stamp (`edition: 'standard'`, version). `npm run build-electron-win` (or `-mac`/`-linux`) uses `build-edition.js`: it rebuilds the renderer, verifies the stamp version matches `package.json`, and packages with `publish: 'never'`.
-- The Performance Cockpit page was removed: its "can run X settings" verdicts were doubly-estimated (hardware score guess × requirements guess) and could be visibly wrong. `HardwareDetector` stays for real hardware reads — StorageManager/Library drive mapping and the `SystemSpecsCard` in Settings → About, which shows detected CPU/GPU/RAM/OS/storage with no verdicts. The orphaned `/startup-questionnaire` route was also removed; onboarding answers are edited inline on Profile via `StartupPersonalizationService`.
+- The Performance Cockpit page was removed: its "can run X settings" verdicts were doubly-estimated (hardware score guess × requirements guess) and could be visibly wrong. `HardwareDetector` stays for real hardware reads — the `SystemSpecsCard` in Settings → About shows detected CPU/GPU/RAM/OS/storage with no verdicts. The orphaned `/startup-questionnaire` route was also removed; onboarding answers are edited inline on Profile via `StartupPersonalizationService`.
 - User-facing download names are evergreen: `GamePilot-Setup.exe` and `GamePilot-${arch}.AppImage`. Keep internal version metadata for packaging and diagnostics; no new tag or release is needed for a local build. The single Windows installer is `GamePilot-Setup.exe` in `~/gamepilot-dist/` (outside the watched repo). It keeps appId `com.gamepilot.app`, productName `GamePilot`, the existing `GamePilot` userData folder, and packaged renderer path `dist/renderer/index.html` — installs replace previous editions in place, sharing their local data.
 - Regression checks: `npx jest src/services/EntitlementService.test.js src/components/ProGate.test.js src/buildEdition.test.js --ci`. These cover unconditional access, stored-data preservation and packaging config; they do not replace a real installer upgrade smoke test.
 - Jest setup supplies Node's TextEncoder/TextDecoder for tests using the real React Router in jsdom.
 
 ## Home navigation
 
-- `/` opens the focused Today view (`HomeDailyOverview`): the `DailyDoodleTitle` greeting banner (also still in the Dashboard Today tabs), `TodayStrip` (check-in streak with claim, last-seven-day session summary, current era, live hide-and-seek progress, daily paradox teaser), Play Next, Spotlight, compact era/last-session summary, and active-session end controls. All strip data is local (CalendarXPService, SessionRepository, CurrentEraService, SeasonalHideAndSeekService, DailyParadoxService) — no network calls. Empty libraries show scan-first onboarding.
-- `/?view=discover|activity|identity|wishlist` opens explicit, bookmarkable Home sections. `HomeLayoutContent` only mounts the selected section group; explicit views remain accessible in all reward layouts, including Focus Finder and Streamer Overlay. Without a view, its original layout filtering/order is retained for Dashboard.
-- `/dashboard` preserves the full guided dashboard, challenges and legacy Today tabs. Home's footer links to it. Preserve the existing session-feedback and onboarding flows when changing Home.
-- Regression checks: `npx jest src/Home.test.js src/RewardEffects.test.js --ci`. They cover launch/end-session callbacks, empty states, view navigation/back/remount, Dashboard and layout-preset access.
+- `/` opens the focused Today view (`HomeDailyOverview`): the `DailyDoodleTitle` greeting banner, `TodayStrip` (last-seven-day session summary, current era, wishlist deal alerts), Play Next, Spotlight, compact era/last-session summary, and active-session end controls. All strip data is local (SessionRepository, CurrentEraService, WishlistService) — no network calls. Empty libraries show scan-first onboarding.
+- `/?view=discover|activity|identity|wishlist` opens explicit, bookmarkable Home sections. `HomeLayoutContent` only mounts the selected section group.
+- `/dashboard` redirects to `/`. The legacy guided dashboard, challenges, Today tabs (including the daily paradox), and the engagement widgets (rivalry banner, streak badge, nostalgia card, patch-notes badge, weekly recap/digest, smart nudge) were removed — the explicit view sections replaced them.
+- Regression checks: `npx jest src/Home.test.js --ci`. Covers launch/end-session callbacks, empty states, and view navigation/back/remount.
 
 ## Eras and personas from imported playtime
 
@@ -198,7 +205,7 @@ The typecheck command is optional for JS-only changes.
 
 ## Daily Spotlight
 
-- `DailySpotlightService` selects a library game by the preferred calendar timezone and persists the day's identity. `DailySpotlightCard` appears beside Play Next on Home's Today view; the doodle/paradox remain available in the Dashboard Today tabs (the Identity extras section was removed). Today's paradox teaser links to `/dashboard?tab=doodle` — `HomeTodayTabs` honours an `initialTab` prop so the link opens the Doodle & Paradox tab directly. Spotlight cards carry a Poster/Fill/Mosaic artwork-style picker persisted per surface via `spotlightArtStyles`. Spotlight does not launch games.
+- `DailySpotlightService` selects a library game by the preferred calendar timezone and persists the day's identity. `DailySpotlightCard` appears beside Play Next on Home's Today view. Spotlight cards carry a Poster/Fill/Mosaic artwork-style picker persisted per surface via `spotlightArtStyles`. Spotlight does not launch games.
 - Online facts are opt-in via the card (`dailySpotlightOnlineEnabled`). `steam-spotlight` IPC accepts only a validated numeric Steam AppID; it fetches store details and concurrent players independently through `electron/net.js`. No renderer fetch, API key, sales estimates or non-Steam name matching is used.
 - `dailySpotlightFactsV1` retains up to 64 cached games. Normal refresh is 24 hours, retry backoff is one hour, and failed sources retain their last successful timestamp. Cached player counts must never be labelled live. Artwork follows the existing library artwork loader, independently of the online-facts switch.
 - Steam `appdetails` can return a game's correct data under a different outer response key (observed for Blasphemous, Hades and Dota 2). Resolve only successful game entries whose internal `data.steam_appid` matches the requested ID; never accept the first entry blindly. `steam-store-details` and Spotlight share this main-process lookup, a bounded success cache and in-flight deduplication. GameModal uses the desktop bridge, not a direct renderer fetch, and offers retry on failure.
@@ -210,7 +217,6 @@ The typecheck command is optional for JS-only changes.
 - Quick-pick skips are component-local for the current Discover visit, survive mood/time changes, and never write negative taste feedback. Replacement preserves the other cards; reset and remount clear skips. Running games are excluded before scoring.
 - External discovery mounts only its selected category: limited-time giveaways or curated free-to-play essentials. The existing `discoverEpicRadarVisible` preference hides both. GamerPower uses on-open/manual refresh with an hourly cache, not an hourly timer.
 - The GamerPower panel shows a "N new since your last visit" badge diffed against `giveawaySeenIdsV1` (capped id set in localStorage). The first-ever visit records a baseline silently so the badge only reports genuinely new listings.
-- `SeasonalShelf` renders calendar-driven own-library picks on Discover (e.g. the active seasonal challenge's genres in October, with seasonal fallbacks when the challenge has no genre requirement). Unplayed games rank first; uninstalled games are excluded; the shelf hides when nothing matches.
 - `src/constants/FreeToPlayEssentials.json` is a bundled, manually maintained selection (a small set per platform), not a live ranking. Review official links, publisher artwork and purchase caveats when updating it. Do not mix trials, subscriptions or temporary giveaways into the catalogue. Artwork is remote with local placeholders; catalogue browsing itself needs no API or account connection. Landscape publisher art is letterboxed over a blurred copy of itself inside the portrait frame.
 - Essentials launches pass the original library object to the existing callback only after an exact platform/ID or explicit-name match with installation evidence. Do not infer one installed game from another sharing its launcher (e.g. League of Legends versus Teamfight Tactics).
 - Regression checks: `npx jest src/components/DiscoverQuickPicks.test.js src/components/DiscoverHighlights.test.js src/components/FreeToPlayEssentials.test.js src/Home.test.js --ci`.
@@ -228,7 +234,7 @@ The typecheck command is optional for JS-only changes.
 ## Sharing and export verification
 
 - Share images use html2canvas. Avoid gradient-clipped/transparent text in card CSS: it renders as solid rectangles in PNGs. Verify exported pixels, not only the live DOM. Identity, Story and Year in Review use solid export-safe title colours.
-- Weekly/monthly library cards and captions must never substitute lifetime totals when the selected period has no sessions. Export Hub date filters select games by last-played date; its filtered image shows lifetime totals for those games, not period activity. Empty libraries must not export sample games as user data.
+- Weekly/monthly library cards and captions must never substitute lifetime totals when the selected period has no sessions. Empty libraries must not export sample games as user data.
 - Sharing-app intents do not upload images. Save/copy image is the portable path; clipboard support and external-open failures must be checked. Discord webhooks post directly and require explicit disclosure in the caption dialog; mention parsing is disabled. Backups are private recovery files, not social share files.
 - Cinematic posters load cover art before compositing text, render previews offscreen, and export the completed preview. Showcase Export is library-only; its other page choices are disabled with directions to dedicated share cards.
 - Regression checks: `npx jest src/services/LocalShareService.test.js src/components/ShareMenu.test.js src/components/ShareCaptionDialog.test.js src/components/ExportModal.test.js src/components/ProGate.test.js --ci`. Browser PNG checks do not verify authenticated social posting or packaged Electron clipboard behaviour.
@@ -295,13 +301,12 @@ The typecheck command is optional for JS-only changes.
 - RecentActivityAggregator totals and daily bars use the same inclusive calendar-day window (today plus the preceding days minus one), excluding future calendar dates. Session duration is attributed to its end date, not split across midnight.
 - Regression checks: `npx jest src/components/SessionHistoryShare.test.js src/services/RecentActivityAggregator.test.js --ci`. Clipboard and download still require a packaged-desktop smoke check.
 
-## Recommendations and Home rewards
+## Recommendations
 
 - Recommendations opens directly into Perfect Play (up to three picks). Genre filters, tuning and alternative modes are secondary disclosures. `/swipe-deck` redirects to `/recommendations`; the component and stylesheet were deleted, while `swipeDeckShortlist` / `swipeDeckHistory` saved data remains untouched. Do not restore casual swipe-to-14-day-suppression behaviour.
 - Recommendations uses `getBlendedPlaytimeMinutes` and `isGameUnplayed` for imported playtime and played-elsewhere consistency. Session Playlist's short-game suggestions use cached `HowLongToBeatService.getEstimate().mainStory` in hours (0 < hours <= 2), not hours already played; unknown completion lengths are not presented as short games.
-- `getTodayLayoutStyle` in `HomeLayoutContent.js` provides shared CSS variables for the real Today layout and Rewards previews. All five Home tabs stay available under every layout. Today cards (`home-daily-play`, `daily-spotlight`) consume equipped card styles; the friends card lives inside the story panel rather than an unassigned grid cell.
-- Reward catalog totals include card styles, logo animations and showcase slots. Signature titles remain in the catalog but are excluded from the XP-only roadmap because they require gameplay, not XP.
-- Regression checks: `npx jest src/RewardEffects.test.js src/Home.test.js src/services/RecommendationEngine.test.js --ci`. Also check actual computed styles in a browser after transitions settle; jsdom verifies the wiring but not the CSS cascade. Use an isolated context and StorageService-prefixed fixture keys (`gamepilot-library`), never the user's desktop data.
+- `getTodayLayoutStyle` in `HomeLayoutContent.js` provides the shared CSS variables for the Today layout. `HomeLayoutContent` also filters children by the active `view` (discover/activity/identity/wishlist).
+- Regression checks: `npx jest src/Home.test.js src/services/RecommendationEngine.test.js --ci`. Also check actual computed styles in a browser after transitions settle; jsdom verifies the wiring but not the CSS cascade. Use an isolated context and StorageService-prefixed fixture keys (`gamepilot-library`), never the user's desktop data.
 
 ## Local backup and clear
 
@@ -318,17 +323,76 @@ The typecheck command is optional for JS-only changes.
   miss new features.
 - Regression checks: `npx jest src/DataManager.test.js --ci`.
 
-## Progress area
+## Removed gamification systems
 
-- `/progress` redirects to `/habits`. `ProgressTabs` (Goals & Habits /
-  Achievements / Rewards) renders at the top of all three pages so they read
-  as one area; the More menu links once to `/progress`. Keep the individual
-  `/habits`, `/achievements` and `/rewards` routes working — they are the tab
-  targets, not dead pages.
-- Habits owns goals, streaks, seasonal quests and the mood log; Stats owns
-  analytics and period insights. Don't re-duplicate per-period stat blocks
-  across both.
-- Regression checks: `npx jest src/components/HybridNavBar.test.js src/RewardEffects.test.js --ci`.
+- The XP/achievements/quests reward economy was removed entirely:
+  `AchievementSystem`, `ProgressionUnlockService`, `RetentionQuestService`,
+  `CalendarXPService`, `SeasonalRewardService`, `SeasonalHideAndSeekService`,
+  `SessionRoastService`, `IdentityShiftService`, `RivalryService` (banners),
+  `StreakCharacterizerService`, `SmartNudgeService`, `NostalgiaService`,
+  `PatchNotesService`, `DailyParadoxService`, `MilestoneService`,
+  `SpecialEventsService`, `QuestRerollService`, `QuestHistoryService`, and
+  `PersonaService` (the reward-era one — `GamingPersonaService` remains) were
+  all deleted along with their pages/components/hooks.
+- The `/dashboard`, `/stats`, `/gaming-dna`, `/themes`, `/progress`, `/habits`,
+  `/year-in-review`, `/gaming-links`, `/library-intelligence`, `/achievements`,
+  `/export-hub`, `/storage-manager`, `/swipe-deck`, and `/rewards` routes now
+  redirect rather than render pages.
+- `GamingIdentity` computes a playtime-derived level from
+  `StatsAggregationService` data — no XP, no achievement catalog. Session
+  toasts carry playtime only, never XP. Themes, logo animations, and animated
+  backgrounds are all freely selectable — nothing is gated by progression.
+- `InterfacePreferencesService` filters stored prefs to known keys on load so
+  dead gamification toggles from older installs can't leak through `getAll()`.
+- `HabitTrackerService`, `RollingAchievementsTracker`, and
+  `ChampionSpeechService` remain: they are self-contained passive stats/flavor
+  (streaks shown inside MonthlyRecapStrip/DailyDoodleTitle, period champion
+  titles) with no reward loop attached. The free-games/giveaway feed
+  (`DiscoverHighlights` → FreeGameRadar) is intentionally kept.
+
+## Year in Review and storage cleaner
+
+- `/year-in-review` is a local recap page (`src/YearInReview.js`) labelled
+  "Your Gaming Life" in the UI year-round (nav, command palette, page h1).
+  `src/utils/recapSeason.js` defines the recap season (Dec 1–Jan 15): inside
+  it the page h1 flips to "{year} Year in Review" with "Your Gaming Life" as
+  the kicker, and `YearInReviewPromptCard` surfaces the recap on Today.
+  `/gaming-life` is an alias route to the same page. The page is fed by
+  `YearInReviewService.getYearSnapshot`, organised into four URL-query tabs
+  (`?tab=overview|story|eras|numbers`). It keeps top games by real tracked
+  playtime, total time, session counts, mood/genre mix, busiest month, deep
+  stats, a data-driven story (`snapshot.story.paragraphs` — short paragraphs
+  each gated on the underlying fact, no roast or templated season filler), the
+  champion journey, and the year's session journal notes (`note` field on
+  settled history entries). The persona roast renders exactly once (Player
+  Identity card, Overview). An "Eras of your
+  year" section buckets the year's sessions by month, computes each month's
+  dominant genre/mood/top game (playtime-weighted), and merges adjacent months
+  sharing the same signature into era stretches; `currentEraHistory` entries
+  from `CurrentEraService` that fall inside the year are listed as recorded era
+  changes. Imported Steam/GOG totals are undated — they never produce months or
+  eras, and a year without tracked sessions shows an honest empty state.
+- `YearInReviewShareCard` and `YearInReviewStoryShareCard` are 1080×1080
+  html2canvas targets sharing `EraShareCard`'s visual language (blurred
+  artwork backdrop, badge/username pills, bordered games box, watermark
+  footer). No XP, level, or achievement content.
+- `/storage-manager` (`src/StorageManager.js`) is the Library Reclaimer —
+  install-size table plus launcher-uninstall handoff — topped by
+  `ReclaimSpacePanel`, which surfaces `electron/storageCleaner.js` results:
+  orphaned Steam shader caches (numeric `shadercache/<appid>` dirs with no
+  `appmanifest_<appid>.acf` in ANY discovered steamapps dir; appid 228980
+  excluded) and Windows `%LOCALAPPDATA%\CrashDumps` \*.dmp files. Linked from
+  Settings → Preferences (Disk Usage row) and the Command Palette; Year in
+  Review is linked from Profile's Gaming Identity header and Home's identity
+  section.
+- Cleaner safety contract: `storage-cleaner-clean` accepts **ids only** (never
+  renderer paths); the main process re-runs the scan to rebuild the allowlist,
+  refuses unknown/stale ids, lstat-checks every target (no symlinks/junctions,
+  must stay inside the expected parent), and moves items to the Recycle Bin via
+  `shell.trashItem`. Per-item failures are reported in the result, never
+  thrown. Orphans + crash dumps only — no driver caches, DirectX caches, or
+  installed-game shader caches by design.
+- Regression checks: `npx jest src/services/YearInReviewService.test.js src/storageCleaner.test.js src/YearInReview.test.js src/components/ReclaimSpacePanel.test.js --ci`. Recycle Bin behaviour and real Steam layout need a packaged-desktop smoke test; Jest uses a temp-dir fixture.
 
 ## Emulator library
 
@@ -356,3 +420,57 @@ The typecheck command is optional for JS-only changes.
   `RA x/y` tag on library cards. Consoles RA doesn't cover (GC/Wii/3DS/
   Switch/PS3) get no match, not an error.
 - Regression checks: `npx jest src/services/EmulatorLibraryService.test.js src/services/RetroAchievementsService.test.js src/services/SaveBackupService.test.js --ci`. Detection/BIOS/save IPCs are main-process fs code — verify them in a packaged-desktop smoke test, not jsdom.
+
+## YouTube "Watch before you play" (local preview)
+
+- `YouTubeVideosPanel` renders in `GameModal` and `OwnedGameModal` with three
+  on-demand categories (Gameplay / Reviews / Guides). Nothing is fetched on
+  mount — the only network trigger is a category click, and results open on
+  youtube.com via `openExternalUrl`; there are no embeds, autoplay, OAuth or
+  backend relay.
+- `electron/youtube.js` IPC: `youtube-status` (`{ok, configured}` only — the
+  key is never returned), `youtube-set-key` (validated
+  `^[A-Za-z0-9_-]{20,200}$`, safeStorage-encrypted to
+  `userData/youtube-key.enc` via atomic temp+rename, mode 0600; fails closed
+  when encryption is unavailable or the backend is `basic_text`),
+  `youtube-clear-key` (ENOENT-safe) and `youtube-search`. Searches call
+  `googleapis.com/youtube/v3/search` through `electron/net.js` with the key in
+  an `X-Goog-Api-Key` header — never in the URL. Errors are sanitized codes
+  (`missing-key`/`invalid-key`/`access-denied`/`quota-exceeded`/`unavailable`);
+  video ids must match `^[A-Za-z0-9_-]{11}$` and thumbnails are canonical
+  `i.ytimg.com/vi/<id>/mqdefault.jpg`.
+- Successful results (including empty) cache 24h in memory (100-entry cap,
+  inflight dedupe); a generation counter invalidates cache + inflight on key
+  save/clear so old-key responses can't repopulate. `YouTubeSettings` on the
+  Settings page owns the password-style key entry — status is checked on mount
+  but the saved secret is never read back into the renderer.
+- Regression checks: `npx jest src/services/YouTubeBridge.test.js src/components/YouTubeVideosPanel.test.js --ci`. A live YouTube API call was never verified (no key in this environment) — needs a packaged smoke test with a real key.
+
+## Recorded-session context and ownership accuracy
+
+- `GameModal`'s "Your sessions & notes" panel is driven by
+  `getGameSessionContext(game, history)` (`src/services/GameSessionContext.js`)
+  — SessionRepository rows only: count/last/median (latest 10, min 3)/distinct
+  UTC months and a merged, deduped journal+manual-notes list. Imported lifetime
+  hours never become session history; the panel says so explicitly. The frozen
+  metrics and `GameSessionContext.test.js` are authoritative — do not change
+  formulas/thresholds without sign-off.
+- `OwnedEnrichmentService`: `alsoOwnedOn` requires `exactTitleKey` equality
+  (strict, edition words kept); `relatedOwnedOn` is the loose `matchKeyFor`
+  "possible other edition" hint only — never implied equivalent. `freebie` now
+  requires the remembered giveaway's stored title to exact-match too
+  (observation ≠ claim; `seenAt` is the radar sighting date, not a claim
+  date). `probableFreebie` is always false and no longer displayed; labels are
+  "Previously offered free on …", "Same title on …", "Possible other edition
+  on …" in `NotInstalledSection`/`OwnedBacklogShelf`/`OwnedGameModal`.
+- `PCGamingWikiService`: `extractControllerSupport` no longer collapses
+  `unknown` to `no`, and remap-only articles count as real data; cache bumped
+  `pcgwCacheV2`→`V3` (both keys stay export-excluded in `DataManager`).
+  Librarian's Notes labels `limited` as "Partial / workaround". The
+  LibrariansNotes/PatchNewsPanel lookup effects depend on `[game, enabled]` so
+  "Enable now" actually triggers a fetch, and failures are caught.
+- `SteamNewsService.getUpdateStatus` normalizes `last_played`/`lastPlayed`
+  seconds/ms/ISO via the `<1e12` seconds heuristic and drops future-dated
+  posts/last-played before counting. `PatchNewsPanel`'s badge says "N recent
+  posts published since your last play" — it does not claim installed updates.
+- Regression checks: `npx jest src/services/GameSessionContext.test.js src/services/OwnedEnrichmentService.test.js src/services/SteamNewsService.test.js src/services/PCGamingWikiService.test.js src/components/GameModal.test.js src/components/OwnedGameModal.test.js src/components/PatchNewsPanel.test.js --ci`.

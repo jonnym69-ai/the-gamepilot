@@ -21,8 +21,8 @@ const MODES = [
   { id: 'playtime', label: 'Your hours' },
   { id: 'players', label: 'Playing now' },
 ];
-const SUPPLEMENT_TARGET = 8;
 const SUPPLEMENT_CAP = 10;
+const SUPPLEMENT_MAX = 30;
 
 const readLimit = () => {
   try {
@@ -100,12 +100,12 @@ const LibraryLeaderboard = ({ library = [], onLaunchGame }) => {
       }));
 
     const rows = [...matched];
-    if (matched.length < SUPPLEMENT_TARGET && typeof api.steamPlayerCount === 'function') {
+    if (typeof api.steamPlayerCount === 'function') {
       const chartAppids = new Set(chartRows.map((row) => row.appid));
       const extras = steamGames
         .filter((entry) => !chartAppids.has(entry.appid))
         .sort((a, b) => getBlendedPlaytimeMinutes(b.game) - getBlendedPlaytimeMinutes(a.game))
-        .slice(0, SUPPLEMENT_CAP);
+        .slice(0, Math.min(Math.max(limit + SUPPLEMENT_CAP, SUPPLEMENT_CAP), SUPPLEMENT_MAX));
       const counts = await Promise.all(
         extras.map(async (entry) => {
           try {
@@ -118,8 +118,9 @@ const LibraryLeaderboard = ({ library = [], onLaunchGame }) => {
           }
         })
       );
-      rows.push(...counts.filter(Boolean).sort((a, b) => b.concurrent - a.concurrent));
+      rows.push(...counts.filter(Boolean));
     }
+    rows.sort((a, b) => b.concurrent - a.concurrent);
 
     setPlayersState({
       status: rows.length > 0 || chartRows.length > 0 ? 'ready' : 'error',
@@ -127,7 +128,7 @@ const LibraryLeaderboard = ({ library = [], onLaunchGame }) => {
       fetchedAt,
       noApi: false,
     });
-  }, [library]);
+  }, [library, limit]);
 
   useEffect(() => {
     if (mode !== 'players' || playersState.status !== 'idle') return;
@@ -166,7 +167,7 @@ const LibraryLeaderboard = ({ library = [], onLaunchGame }) => {
           <h3 id="library-leaderboard-heading">{mode === 'players' ? 'Trending in your library' : 'Your top shelf'}</h3>
           <p className="library-leaderboard-sub">
             {mode === 'players'
-              ? "Steam's live most-played chart, crossed with games you own."
+              ? 'Your games ranked by how many people are playing them on Steam right now.'
               : 'All-time most played across your library — ranked by your own hours, not a store chart.'}
           </p>
         </div>
@@ -223,7 +224,7 @@ const LibraryLeaderboard = ({ library = [], onLaunchGame }) => {
             <p className="library-leaderboard-note">No Steam games in your library to chart.</p>
           )}
           {playersState.status === 'ready' && playersRows.length === 0 && (
-            <p className="library-leaderboard-note">None of your games are on Steam's live chart right now.</p>
+            <p className="library-leaderboard-note">No live player counts available for your games right now.</p>
           )}
           {playersRows.length > 0 && (
             <>

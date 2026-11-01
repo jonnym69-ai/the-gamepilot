@@ -9,20 +9,8 @@ import StorageService from './StorageService';
 const STORAGE_KEY = 'interfacePreferences';
 
 const DEFAULTS = Object.freeze({
-  // Navbar
-  showDailyButton: true,
-  showStreakBadge: true,
   // Home section visibility
-  showHomeRewardStrip: true,
-  showHomeCheckinPill: true,
-  showHomeDailyMissions: true,
-  showHomeRetentionQuests: true,
-  showHomeBacklogRescue: true,
-  showHomeContinuePlaying: true,
-  showHomeRecommendations: true,
   showHomeShelves: true,
-  showHomeLauncherSummary: true,
-  showHomeHeroSummary: true,
   // Visual density & motion
   compactMode: false,
   reducedMotion: false,
@@ -32,13 +20,13 @@ const DEFAULTS = Object.freeze({
   ornamentLevel: 'full',
   // Accent override (null = follow theme)
   accentOverride: null,
+  // Up to 5 most recent custom accent hexes
+  recentAccents: [],
   // Pinned game ids (string list) for Library quick row
   pinnedGameIds: [],
   // Quick-launch hotbar
   showQuickLaunchHotbar: true,
   quickLaunchCollapsed: false,
-  // Big-screen / TV / 10-foot UI mode
-  bigScreenMode: false,
   // Playtime display unit: 'auto' | 'hours' | 'days'
   playtimeUnit: 'auto',
 });
@@ -46,31 +34,54 @@ const DEFAULTS = Object.freeze({
 // Values applied to fresh installs as a calmer default ("Balanced" experience).
 // Existing users keep whatever they have stored — only truly empty storage gets these.
 const FRESH_INSTALL_DEFAULTS = Object.freeze({
-  showHomeRetentionQuests: false,
   ornamentLevel: 'balanced',
   showThemedPageTitles: true,
 });
 
 // Full Balanced preset values (used by applyBalancedPreset).
 const BALANCED_PRESET_VALUES = Object.freeze({
-  showDailyButton: true,
-  showStreakBadge: true,
-  showHomeRewardStrip: true,
-  showHomeCheckinPill: true,
-  showHomeDailyMissions: true,
-  showHomeRetentionQuests: false,
-  showHomeBacklogRescue: true,
   showHomeShelves: true,
-  showHomeLauncherSummary: true,
-  showHomeRecommendations: true,
-  showHomeContinuePlaying: true,
-  showHomeHeroSummary: true,
   compactMode: false,
   reducedMotion: false,
   showThemedPageTitles: true,
   ornamentLevel: 'balanced',
   showQuickLaunchHotbar: true,
 });
+
+// Drop stored keys that no longer exist so stale preferences from older
+// versions never leak through getAll().
+const pickKnownKeys = (stored) => {
+  const clean = {};
+  Object.keys(DEFAULTS).forEach((key) => {
+    if (key in stored) clean[key] = stored[key];
+  });
+  return clean;
+};
+
+const ACCENT_HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const MAX_RECENT_ACCENTS = 5;
+
+const isValidAccent = (value) => value === null || ACCENT_HEX_RE.test(String(value));
+
+const hexToRgb = (hex) => ({
+  r: parseInt(hex.slice(1, 3), 16),
+  g: parseInt(hex.slice(3, 5), 16),
+  b: parseInt(hex.slice(5, 7), 16),
+});
+
+const accentSoft = (hex) => {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, 0.18)`;
+};
+
+const accentStrong = (hex) => {
+  const { r, g, b } = hexToRgb(hex);
+  const darken = (c) =>
+    Math.round(c * 0.88)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${darken(r)}${darken(g)}${darken(b)}`;
+};
 
 const listeners = new Set();
 
@@ -81,7 +92,7 @@ const readRaw = () => {
     // explicit user action (or banner pick) so the banner can still appear.
     return { ...DEFAULTS, ...FRESH_INSTALL_DEFAULTS };
   }
-  return { ...DEFAULTS, ...stored };
+  return { ...DEFAULTS, ...pickKnownKeys(stored) };
 };
 
 let cache = readRaw();
@@ -100,16 +111,7 @@ const notify = () => {
 };
 
 const SECTION_CLASS_MAP = {
-  showHomeRewardStrip: 'hide-home-reward-strip',
-  showHomeCheckinPill: 'hide-home-checkin-pill',
-  showHomeDailyMissions: 'hide-home-daily-missions',
-  showHomeRetentionQuests: 'hide-home-retention-quests',
-  showHomeBacklogRescue: 'hide-home-backlog-rescue',
-  showHomeContinuePlaying: 'hide-home-continue-playing',
-  showHomeRecommendations: 'hide-home-recommendations',
   showHomeShelves: 'hide-home-shelves',
-  showHomeLauncherSummary: 'hide-home-launcher-summary',
-  showHomeHeroSummary: 'hide-home-hero-summary',
   showThemedPageTitles: 'hide-themed-page-titles',
 };
 
@@ -118,18 +120,22 @@ const applyBodyClasses = (prefs) => {
   const body = document.body;
   body.classList.toggle('compact-mode', !!prefs.compactMode);
   body.classList.toggle('reduced-motion', !!prefs.reducedMotion);
-  body.classList.toggle('big-screen-mode', !!prefs.bigScreenMode);
   Object.entries(SECTION_CLASS_MAP).forEach(([key, cls]) => {
     body.classList.toggle(cls, prefs[key] === false);
   });
   ['ornament-plain', 'ornament-balanced', 'ornament-full'].forEach((cls) => body.classList.remove(cls));
   const level = ['plain', 'balanced', 'full'].includes(prefs.ornamentLevel) ? prefs.ornamentLevel : 'full';
   body.classList.add(`ornament-${level}`);
-  if (prefs.accentOverride && typeof prefs.accentOverride === 'string') {
-    document.documentElement.style.setProperty('--user-accent', prefs.accentOverride);
+  const rootStyle = document.documentElement.style;
+  if (isValidAccent(prefs.accentOverride) && prefs.accentOverride) {
+    rootStyle.setProperty('--user-accent', prefs.accentOverride);
+    rootStyle.setProperty('--user-accent-soft', accentSoft(prefs.accentOverride));
+    rootStyle.setProperty('--user-accent-strong', accentStrong(prefs.accentOverride));
     body.classList.add('has-user-accent');
   } else {
-    document.documentElement.style.removeProperty('--user-accent');
+    rootStyle.removeProperty('--user-accent');
+    rootStyle.removeProperty('--user-accent-soft');
+    rootStyle.removeProperty('--user-accent-strong');
     body.classList.remove('has-user-accent');
   }
 };
@@ -149,6 +155,7 @@ const InterfacePreferencesService = {
 
   set(key, value) {
     if (!(key in DEFAULTS)) return;
+    if (key === 'accentOverride' && !isValidAccent(value)) return;
     cache = { ...cache, [key]: value };
     StorageService.set(STORAGE_KEY, cache);
     applyBodyClasses(cache);
@@ -156,7 +163,11 @@ const InterfacePreferencesService = {
   },
 
   update(partial = {}) {
-    cache = { ...cache, ...partial };
+    const clean = { ...partial };
+    if ('accentOverride' in clean && !isValidAccent(clean.accentOverride)) {
+      delete clean.accentOverride;
+    }
+    cache = { ...cache, ...clean };
     StorageService.set(STORAGE_KEY, cache);
     applyBodyClasses(cache);
     notify();
@@ -171,16 +182,7 @@ const InterfacePreferencesService = {
 
   applyFocusHomePreset() {
     this.update({
-      showHomeRewardStrip: false,
-      showHomeCheckinPill: false,
-      showHomeDailyMissions: false,
-      showHomeRetentionQuests: false,
-      showHomeBacklogRescue: false,
       showHomeShelves: false,
-      showHomeLauncherSummary: false,
-      showHomeRecommendations: true,
-      showHomeContinuePlaying: true,
-      showHomeHeroSummary: false,
       compactMode: true,
       reducedMotion: true,
       showThemedPageTitles: false,
@@ -189,20 +191,9 @@ const InterfacePreferencesService = {
   },
 
   applyLibrarianPreset() {
-    // Pure tool-mode: no gamification surfaces, clean fonts, minimal flourish.
+    // Pure tool-mode: clean fonts, minimal flourish.
     this.update({
-      showDailyButton: false,
-      showStreakBadge: false,
-      showHomeRewardStrip: false,
-      showHomeCheckinPill: false,
-      showHomeDailyMissions: false,
-      showHomeRetentionQuests: false,
-      showHomeBacklogRescue: false,
       showHomeShelves: true,
-      showHomeLauncherSummary: true,
-      showHomeRecommendations: true,
-      showHomeContinuePlaying: true,
-      showHomeHeroSummary: true,
       compactMode: true,
       reducedMotion: false,
       showThemedPageTitles: false,
@@ -213,13 +204,13 @@ const InterfacePreferencesService = {
   },
 
   applyBalancedPreset() {
-    // Tool-first with light gamification: streak visible, retention hidden.
+    // Tool-first with light flourishes.
     this.update({ ...BALANCED_PRESET_VALUES });
     StorageService.set('experienceMode', 'balanced');
   },
 
   applyFullPreset() {
-    // Everything on: full gamification, flourishes, themed titles.
+    // Everything on: flourishes, themed titles.
     this.resetAll();
     StorageService.set('experienceMode', 'full');
   },
@@ -232,6 +223,17 @@ const InterfacePreferencesService = {
     if (typeof listener !== 'function') return () => {};
     listeners.add(listener);
     return () => listeners.delete(listener);
+  },
+
+  setCustomAccent(hex) {
+    const value = String(hex || '').toLowerCase();
+    if (!ACCENT_HEX_RE.test(value)) return false;
+    const recents = [value, ...(cache.recentAccents || []).filter((c) => String(c).toLowerCase() !== value)].slice(
+      0,
+      MAX_RECENT_ACCENTS
+    );
+    this.update({ accentOverride: value, recentAccents: recents });
+    return true;
   },
 
   isPinned(gameKey) {

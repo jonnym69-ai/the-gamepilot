@@ -6,6 +6,7 @@
 
 const { app, BrowserWindow, shell, Menu, powerMonitor } = require('electron');
 const path = require('path');
+const { protectWindow } = require('./rendererSecurity');
 
 let mainWindow = null;
 let gameBarWindow = null;
@@ -36,6 +37,8 @@ function createGameBarOverlayWindow() {
       webSecurity: true,
     },
   });
+
+  protectWindow(gameBarWindow, shell);
 
   gameBarWindow.loadURL(
     process.env.NODE_ENV === 'development'
@@ -74,27 +77,13 @@ function createWindow(deps = {}) {
 
     console.log('📱 Window created successfully, ID:', mainWindow.id);
 
+    protectWindow(mainWindow, shell);
+
     mainWindow.loadURL(
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000'
         : `file://${path.join(__dirname, '..', 'dist', 'renderer', 'index.html')}`
     );
-
-    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-      if (/^https?:\/\//i.test(url)) {
-        shell.openExternal(url).catch((error) => console.error('Failed to open external window URL:', error));
-      }
-      return { action: 'deny' };
-    });
-
-    mainWindow.webContents.on('will-navigate', (event, url) => {
-      const developmentOrigin = 'http://localhost:3000';
-      const isAllowedNavigation =
-        process.env.NODE_ENV === 'development' ? url.startsWith(developmentOrigin) : url.startsWith('file://');
-      if (!isAllowedNavigation) {
-        event.preventDefault();
-      }
-    });
 
     mainWindow.webContents.on('console-message', (_event, _level, message) => {
       if (typeof message === 'string' && message.includes('[PERF]')) {

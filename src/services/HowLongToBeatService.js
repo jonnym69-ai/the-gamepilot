@@ -8,8 +8,8 @@ import StorageService from './StorageService';
 
 // Bumped V1 -> V2 alongside the more robust electron-side credential
 // extractor so any negative entries from a broken extractor don't shadow
-// fresh lookups.
-const CACHE_KEY = 'hltbCacheV5';
+// fresh lookups. V5 -> V6 after HLTB rotated /api/bleed to /api/search/site.
+const CACHE_KEY = 'hltbCacheV6';
 const TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const PENDING_TTL_MS = 60 * 60 * 1000; // re-try misses after 1h
 const SETTINGS_KEY = 'hltbEnabled';

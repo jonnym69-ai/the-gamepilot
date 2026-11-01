@@ -1,4 +1,3 @@
-import { AchievementTracker } from '../AchievementSystem';
 import { GamingIdentity } from '../GamingIdentity';
 import { GameProcessMonitor } from '../GameProcessMonitor';
 import { GameLaunchCoordinatorService } from './GameLaunchCoordinatorService';
@@ -10,21 +9,6 @@ import {
 } from './ActiveSessionService';
 import { LauncherService } from './LauncherService';
 import { PlaytimeAutoLogger } from './PlaytimeAutoLogger';
-
-jest.mock('../AchievementSystem', () => ({
-  AchievementTracker: {
-    rewardGameLaunch: jest.fn(),
-    logUniqueGamePlay: jest.fn(),
-    logGameplayMood: jest.fn(),
-    logGameplayGenre: jest.fn(),
-    trackPlatformUsage: jest.fn(),
-    trackThemeUsage: jest.fn(),
-    checkDustOff: jest.fn(),
-    checkShelfDiver: jest.fn(),
-    trackBacklogMilestone: jest.fn(),
-    checkAndUnlockAchievements: jest.fn(),
-  },
-}));
 
 jest.mock('../GamingIdentity', () => ({
   GamingIdentity: {
@@ -118,7 +102,6 @@ describe('GameLaunchCoordinatorService', () => {
       '1240440',
       expect.objectContaining({ platform: 'Steam' })
     );
-    expect(AchievementTracker.rewardGameLaunch).toHaveBeenCalledWith(10);
     expect(GamingIdentity.updateGamingIdentity).toHaveBeenCalledTimes(1);
 
     expect(GameProcessMonitor.stopMonitoringByGame).toHaveBeenCalledWith('Halo Infinite');
@@ -147,7 +130,6 @@ describe('GameLaunchCoordinatorService', () => {
       'Another Game': { startTime: '2024-01-01T01:00:00.000Z' },
     });
     expect(GameProcessMonitor.startMonitoring).not.toHaveBeenCalled();
-    expect(AchievementTracker.rewardGameLaunch).not.toHaveBeenCalled();
   });
 
   test('does not cleanup sessions on failed launch if an active session already existed', async () => {

@@ -7,7 +7,6 @@
   --hub-active-bg: rgba(255, 107, 53, 0.1);
   --hub-active-border: rgba(255, 107, 53, 0.28);
 }
-
 @supports (color: color-mix(in srgb, black, white)) {
   .librarian-hub-carousel {
     --hub-active-bg: color-mix(in srgb, var(--accent-primary, #ff6b35) 10%, transparent);
@@ -22,7 +21,6 @@
   margin-bottom: 16px;
   padding: 4px 0;
 }
-
 .librarian-hub-carousel .librarian-hub-tabs .librarian-hub-tab {
   display: flex;
   align-items: center;
@@ -42,23 +40,19 @@
     border-color 0.15s,
     box-shadow 0.15s;
 }
-
 .librarian-hub-carousel .librarian-hub-tabs .librarian-hub-tab:hover {
   background: var(--surface-elevated, rgba(255, 255, 255, 0.06));
   color: var(--text-primary, #f1f5f9);
 }
-
 .librarian-hub-carousel .librarian-hub-tabs .librarian-hub-tab.active {
   background: var(--hub-active-bg);
   border-color: var(--hub-active-border);
   color: var(--accent-primary, #ff6b35);
   box-shadow: none;
 }
-
 .librarian-hub-panel > * {
   animation: librarianFadeIn 0.25s ease;
 }
-
 @keyframes librarianFadeIn {
   from {
     opacity: 0;

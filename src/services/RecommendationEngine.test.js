@@ -1,7 +1,9 @@
 import { RecommendationEngine } from './RecommendationEngine';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
+import RecommendationPreferenceService from './RecommendationPreferenceService';
 import { StartupPersonalizationService } from './StartupPersonalizationService';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
+import { RecommendationExplainer } from './RecommendationExplainer';
 import StorageService from './StorageService';
 import { invalidateRecommendationWeightsCache } from './RecommendationWeights';
 
@@ -661,6 +663,53 @@ describe('RecommendationEngine', () => {
       expect(result).toHaveLength(3);
       expect(names).not.toContain('Puzzle Surprise');
       expect(names).not.toContain('Action Unplayed');
+    });
+  });
+
+  describe('buildRecommendationEntry', () => {
+    afterEach(() => {
+      RecommendationExplainer.getDetailedExplanation.mockReturnValue('mock-explanation');
+    });
+
+    test('preserves the explanation object and exposes positive feedback separately', () => {
+      const explanation = { previewReasons: ['Game-specific reason'], summary: 'Strong pick' };
+      RecommendationExplainer.getDetailedExplanation.mockReturnValue(explanation);
+      const spy = jest.spyOn(UserBehaviorProfile, 'getRecommendationOutcomeSignal').mockReturnValue({
+        adjustment: 16,
+        suppress: false,
+        reason: 'Raised by your earlier feedback',
+      });
+
+      const entry = RecommendationEngine.buildRecommendationEntry(baseGame(), 'perfect-play');
+
+      expect(entry.explanation).toBe(explanation);
+      expect(entry.feedbackReason).toBe('Raised by your earlier feedback');
+      expect(typeof entry.explanation).toBe('object');
+
+      spy.mockRestore();
+    });
+
+    test('feedbackReason stays null without a positive outcome signal', () => {
+      const spy = jest
+        .spyOn(UserBehaviorProfile, 'getRecommendationOutcomeSignal')
+        .mockReturnValue({ adjustment: 0, suppress: false, reason: null });
+      const entry = RecommendationEngine.buildRecommendationEntry(baseGame(), 'perfect-play');
+      expect(entry.feedbackReason).toBe(null);
+      spy.mockRestore();
+    });
+  });
+
+  describe('set-aside preferences', () => {
+    test('a set-aside game is filtered out of perfect-play recommendations', () => {
+      const lib = [baseGame({ appid: '1', name: 'Set Aside Game' }), baseGame({ appid: '2', name: 'Normal Game' })];
+      RecommendationPreferenceService.setPreference('set aside game', 'technical');
+      const result = RecommendationEngine.getPerfectPlayRecommendations(lib, null, null, null, 3);
+      expect(JSON.stringify(result)).not.toContain('Set Aside Game');
+    });
+
+    test('buildRecommendationEntry returns null for a set-aside game', () => {
+      RecommendationPreferenceService.setPreference('Game', 'not-for-me');
+      expect(RecommendationEngine.buildRecommendationEntry(baseGame(), 'perfect-play')).toBeNull();
     });
   });
 });

@@ -8,7 +8,6 @@
   flex-direction: column;
   gap: 10px;
 }
-
 .librarians-notes-header {
   display: flex;
   align-items: center;
@@ -28,7 +27,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-
 .librarians-notes-loading {
   display: flex;
   align-items: center;
@@ -56,14 +54,12 @@
   color: var(--text-secondary, #94a3b8);
   line-height: 1.5;
 }
-
 .librarians-notes-empty-line {
   margin: 0;
   font-size: 12px;
   color: var(--text-secondary, #94a3b8);
   font-style: italic;
 }
-
 .librarians-notes-enable {
   align-self: flex-start;
   padding: 6px 12px;
@@ -78,7 +74,6 @@
 .librarians-notes-enable:hover {
   filter: brightness(1.08);
 }
-
 .librarians-notes-row {
   display: flex;
   align-items: flex-start;
@@ -95,7 +90,6 @@
   min-width: 0;
   flex: 1 1 auto;
 }
-
 .librarians-notes-label {
   display: block;
   font-size: 10.5px;
@@ -104,7 +98,6 @@
   color: var(--text-secondary, #94a3b8);
   margin-bottom: 3px;
 }
-
 .librarians-notes-row code {
   display: block;
   background: rgba(15, 23, 42, 0.55);
@@ -117,7 +110,6 @@
   word-break: break-all;
   white-space: pre-wrap;
 }
-
 .librarians-controller-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -141,25 +133,6 @@
   color: var(--text-primary, #e2e8f0);
   font-size: 11px;
 }
-.librarian-controller-row.tone-good {
-  border-color: rgba(16, 185, 129, 0.4);
-}
-.librarian-controller-row.tone-good strong {
-  color: #6ee7b7;
-}
-.librarian-controller-row.tone-meh {
-  border-color: rgba(234, 179, 8, 0.35);
-}
-.librarian-controller-row.tone-meh strong {
-  color: #fde68a;
-}
-.librarian-controller-row.tone-bad {
-  border-color: rgba(239, 68, 68, 0.35);
-}
-.librarian-controller-row.tone-bad strong {
-  color: #fca5a5;
-}
-
 .librarians-notes-link {
   align-self: flex-start;
   display: inline-flex;

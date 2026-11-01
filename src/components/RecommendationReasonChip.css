@@ -12,19 +12,16 @@
   max-width: 100%;
   margin-top: 8px;
 }
-
 .recommendation-reason-confidence {
   font-weight: 700;
   white-space: nowrap;
   color: var(--accent-primary, #818cf8);
 }
-
 .recommendation-reason-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .familiarity-chip {
   padding: 1px 6px;
   border-radius: 4px;
@@ -33,19 +30,16 @@
   text-transform: capitalize;
   white-space: nowrap;
 }
-
 .familiarity-chip.familiar {
   background: rgba(99, 102, 241, 0.2);
   color: #a5b4fc;
   border: 1px solid rgba(99, 102, 241, 0.3);
 }
-
 .familiarity-chip.fresh {
   background: rgba(34, 197, 94, 0.2);
   color: #86efac;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
-
 @media (max-width: 480px) {
   .recommendation-reason-chip {
     font-size: 0.75rem;

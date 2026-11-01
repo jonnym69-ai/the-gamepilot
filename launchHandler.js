@@ -310,6 +310,9 @@ class GameLauncher {
         case 'Emulated':
           return this.launchEmulated(game);
 
+        case 'Manual':
+          return this.launchManual(game);
+
         default:
           return createLaunchResult(false, 'unknown', `Unsupported platform: ${game.platform}`);
       }
@@ -809,6 +812,38 @@ class GameLauncher {
     }
 
     return createLaunchResult(false, 'unknown', 'itch.io app not found for launch');
+  }
+
+  // Manual / external games: user-picked executable, shortcut, or URL file.
+  // shell.openPath resolves .lnk shortcuts and opens .url files the way
+  // Explorer would, and works cross-platform (unlike `start ""`).
+  async launchManual(game) {
+    console.log('🕹️ Manual game data:', game);
+
+    const executablePath = String(game.executablePath || game.exePath || '').trim();
+    if (!executablePath) {
+      return createLaunchResult(false, 'unknown', `No executable recorded for ${game.name}`);
+    }
+
+    if (!fs.existsSync(executablePath)) {
+      return createLaunchResult(
+        false,
+        'unknown',
+        `The file for ${game.name} was not found — it may have been moved or deleted.`
+      );
+    }
+
+    try {
+      const openError = await this.shell.openPath(executablePath);
+      if (openError) {
+        console.error('❌ Manual game launch failed:', openError);
+        return createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${openError}`);
+      }
+      return createLaunchResult(true, 'direct', `Launched ${game.name}`, { executablePath });
+    } catch (error) {
+      console.error('❌ Manual game launch failed:', error);
+      return createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`);
+    }
   }
 
   async launchEmulated(game) {

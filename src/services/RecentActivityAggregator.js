@@ -222,11 +222,30 @@ export const buildRecentActivityBreakdown = (days = 30) => {
         totalMinutes: 0,
         firstPlayed: ts,
         lastPlayed: ts,
+        appid: null,
+        coverUrl: '',
       };
     }
     const gs = gameStats[gameName];
     gs.sessions += 1;
     gs.totalMinutes += minutes;
+    if (!gs.appid) {
+      // Only treat the id as a Steam appid when the session claims Steam (or an
+      // explicit appid field) — a numeric GOG/Epic id would resolve the wrong
+      // artwork URL otherwise.
+      const platformKey = String(platform).toLowerCase();
+      const numericId = Number(session?.appid ?? session?.steamAppId ?? session?.gameId);
+      if (
+        Number.isFinite(numericId) &&
+        numericId > 0 &&
+        (session?.appid || session?.steamAppId || platformKey === 'steam')
+      ) {
+        gs.appid = numericId;
+      }
+    }
+    if (!gs.coverUrl && session?.coverUrl) {
+      gs.coverUrl = session.coverUrl;
+    }
     if (ts) {
       if (!gs.firstPlayed || ts < gs.firstPlayed) gs.firstPlayed = ts;
       if (!gs.lastPlayed || ts > gs.lastPlayed) gs.lastPlayed = ts;

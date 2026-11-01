@@ -1,15 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { MOODS, GENRES, getGenresForMood } from '../constants/GenresMoods';
 import { RecommendationEngine } from '../services/RecommendationEngine';
 import { RecommendationTuningService } from '../services/RecommendationTuningService';
 import { getFamiliarityBias, setFamiliarityBias } from '../services/RecommendationWeights';
+import { resolveGameArtworkBundle } from '../services/GameArtworkService';
 import { RecommendationReasonChip } from './RecommendationReasonChip';
+import LazyImage from './LazyImage';
 import '../styles/PerfectPlaySelector.css';
 
 export function PerfectPlaySelector({ library = [], onGameSelected = () => {} }) {
-  const [selectedMoods, setSelectedMoods] = useState([]);
-  const [selectedGenres, setSelectedGenres] = useState([]);
-  const [availableMinutes, setAvailableMinutes] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [tuning, setTuning] = useState(() => RecommendationTuningService.getTuning());
   const [familiarityBias, setFamiliarityBiasState] = useState(() => getFamiliarityBias());
@@ -19,32 +17,12 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
     setTuning(next);
   };
 
-  // Toggle mood selection
-  const toggleMood = (mood) => {
-    setSelectedMoods((prev) => (prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]));
-  };
-
-  // Toggle genre selection
-  const toggleGenre = (genre) => {
-    setSelectedGenres((prev) => (prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]));
-  };
-
-  // Get recommendations when selections change
+  // Picks are always on — ranked purely by play history and tuning.
   const recommendationResult = useMemo(() => {
-    if (selectedMoods.length === 0 && selectedGenres.length === 0 && availableMinutes === null) {
-      return null;
-    }
-
     RecommendationTuningService.applyTuningToWeights();
-    return RecommendationEngine.getPerfectPlaySelectionResult(
-      library,
-      selectedMoods,
-      selectedGenres,
-      availableMinutes,
-      3
-    );
+    return RecommendationEngine.getPerfectPlayResult(library, null, null, null, 10);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [library, selectedMoods, selectedGenres, availableMinutes, tuning, familiarityBias]);
+  }, [library, tuning, familiarityBias]);
 
   const matchingGames = recommendationResult?.games || [];
   const matchingEntries = recommendationResult?.entries || [];
@@ -60,96 +38,14 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
     onGameSelected(game);
   };
 
-  // Get genres for selected moods
-  const genresForSelectedMoods = useMemo(() => {
-    if (selectedMoods.length === 0) {
-      return new Set();
-    }
-
-    const genres = new Set();
-    selectedMoods.forEach((mood) => {
-      getGenresForMood(mood).forEach((genre) => genres.add(genre));
-    });
-    return genres;
-  }, [selectedMoods]);
-
   return (
     <div className="perfect-play-selector">
       <div className="selector-header">
-        <h2>🎮 Perfect Play</h2>
-        <p>Select moods and genres to find your perfect game</p>
+        <h2>🎮 For You</h2>
+        <p>Top picks from your library, ranked by how you actually play.</p>
       </div>
 
       <div className="selector-content">
-        {/* Moods Section */}
-        <div className="selector-section">
-          <h3>😌 Select Moods ({selectedMoods.length})</h3>
-          <div className="mood-grid">
-            {MOODS.map((mood) => (
-              <button
-                key={mood}
-                className={`mood-button ${selectedMoods.includes(mood) ? 'selected' : ''}`}
-                onClick={() => toggleMood(mood)}
-              >
-                {mood}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Genres Section */}
-        <details className="selector-section selector-advanced">
-          <summary>Filter by genre ({selectedGenres.length} selected)</summary>
-          <h3>🎨 Select Genres ({selectedGenres.length})</h3>
-          <div className="genre-grid">
-            {GENRES.map((genre) => (
-              <button
-                key={genre}
-                className={`genre-button ${selectedGenres.includes(genre) ? 'selected' : ''} ${
-                  selectedMoods.length > 0 && !genresForSelectedMoods.has(genre) ? 'disabled' : ''
-                }`}
-                onClick={() => toggleGenre(genre)}
-                disabled={selectedMoods.length > 0 && !genresForSelectedMoods.has(genre)}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
-        </details>
-
-        {/* Time Selection */}
-        <div className="selector-section">
-          <h3>⏱️ Available Time</h3>
-          <div className="time-selection">
-            <div className="time-options">
-              <button
-                className={`time-button ${availableMinutes === null ? 'selected' : ''}`}
-                onClick={() => setAvailableMinutes(null)}
-              >
-                Any Time
-              </button>
-              <button
-                className={`time-button ${availableMinutes === 30 ? 'selected' : ''}`}
-                onClick={() => setAvailableMinutes(30)}
-              >
-                30 min
-              </button>
-              <button
-                className={`time-button ${availableMinutes === 60 ? 'selected' : ''}`}
-                onClick={() => setAvailableMinutes(60)}
-              >
-                1 hour
-              </button>
-              <button
-                className={`time-button ${availableMinutes === 120 ? 'selected' : ''}`}
-                onClick={() => setAvailableMinutes(120)}
-              >
-                2 hours
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* Tuning Controls */}
         <details className="selector-section tuning-section selector-advanced">
           <summary>Fine-tune recommendations</summary>
@@ -235,20 +131,33 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
         </details>
 
         {/* Results Section */}
-        {(selectedMoods.length > 0 || selectedGenres.length > 0 || availableMinutes !== null) && (
-          <div className="selector-section results-section">
-            <h3>
-              📊 Results: {recommendationResult?.totalMatches || 0} game
-              {(recommendationResult?.totalMatches || 0) !== 1 ? 's' : ''} found
-            </h3>
+        <div className="selector-section results-section">
+          <h3>{matchingGames.length} picks for right now</h3>
 
-            {matchingGames.length > 0 ? (
-              <>
-                {/* Best Recommendation */}
-                {bestRecommendation && (
-                  <div className="best-recommendation">
-                    <h4>✨ Best Match</h4>
-                    <div className="recommendation-card">
+          {matchingGames.length > 0 ? (
+            <>
+              {/* Best Recommendation */}
+              {bestRecommendation && (
+                <div className="best-recommendation">
+                  <h4>✨ Best Match</h4>
+                  <div className="recommendation-card">
+                    {(() => {
+                      const bundle = resolveGameArtworkBundle(bestRecommendation, {
+                        surface: 'portrait',
+                        fallbackSurface: 'library_card',
+                      });
+                      return (
+                        <div className="recommendation-art">
+                          <LazyImage
+                            src={bundle.artwork}
+                            fallbackSrc={bundle.fallbackSrc}
+                            alt={bestRecommendation.name}
+                            placeholder={bundle.placeholder}
+                          />
+                        </div>
+                      );
+                    })()}
+                    <div className="recommendation-card-body">
                       <div className="game-title">{bestRecommendation.name}</div>
                       <div className="game-meta">
                         <span className="platform">{bestRecommendation.platform}</span>
@@ -256,9 +165,9 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                       </div>
                       <RecommendationReasonChip
                         game={bestRecommendation}
-                        mood={selectedMoods[0] || null}
-                        genre={selectedGenres[0] || null}
-                        timeAvailable={availableMinutes}
+                        mood={null}
+                        genre={null}
+                        timeAvailable={null}
                         recommendationType="perfect-play"
                       />
                       <button className="select-button" onClick={() => handleSelectGame(bestRecommendation)}>
@@ -266,66 +175,70 @@ export function PerfectPlaySelector({ library = [], onGameSelected = () => {} })
                       </button>
                     </div>
                   </div>
-                )}
-
-                {/* All Matching Games */}
-                <div className="all-recommendations">
-                  {matchingEntries.length > 1 && <h4>Other picks</h4>}
-                  <div className="games-list">
-                    {matchingEntries
-                      .filter((entry) => entry.game !== bestRecommendation)
-                      .map((entry, idx) => {
-                        const game = entry.game;
-
-                        return (
-                          <button
-                            type="button"
-                            key={game.appid || game.name || idx}
-                            className={`game-item ${selectedGame === game ? 'selected' : ''}`}
-                            aria-label={`Play ${game.name}`}
-                            onClick={() => handleSelectGame(game)}
-                          >
-                            <div className="game-rank">{idx + 1}</div>
-                            <div className="game-info">
-                              <div className="game-name">{game.name}</div>
-                              <div className="game-platform">{game.platform}</div>
-                              <RecommendationReasonChip
-                                game={game}
-                                mood={selectedMoods[0] || null}
-                                genre={selectedGenres[0] || null}
-                                timeAvailable={availableMinutes}
-                                recommendationType="perfect-play"
-                              />
-                            </div>
-                            <div className="game-stats">
-                              <span>{game.launch_count || 0} plays</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                  </div>
-                  {(recommendationResult?.totalMatches || 0) > matchingEntries.length && (
-                    <div className="more-games">
-                      +{(recommendationResult?.totalMatches || 0) - matchingEntries.length} more games
-                    </div>
-                  )}
                 </div>
-              </>
-            ) : (
-              <div className="no-results">
-                <p>No games found matching your criteria.</p>
-                <p>Try adjusting your mood, genre, or time selection.</p>
-              </div>
-            )}
-          </div>
-        )}
+              )}
 
-        {/* Empty State */}
-        {selectedMoods.length === 0 && selectedGenres.length === 0 && availableMinutes === null && (
-          <div className="empty-state">
-            <p>Pick a mood or the time you have to get started.</p>
-          </div>
-        )}
+              {/* All Matching Games */}
+              <div className="all-recommendations">
+                {matchingEntries.length > 1 && <h4>Other picks</h4>}
+                <div className="games-list">
+                  {matchingEntries
+                    .filter((entry) => entry.game !== bestRecommendation)
+                    .map((entry, idx) => {
+                      const game = entry.game;
+
+                      return (
+                        <button
+                          type="button"
+                          key={game.appid || game.name || idx}
+                          className={`game-item ${selectedGame === game ? 'selected' : ''}`}
+                          aria-label={`Play ${game.name}`}
+                          onClick={() => handleSelectGame(game)}
+                        >
+                          <div className="game-rank">{idx + 1}</div>
+                          {(() => {
+                            const bundle = resolveGameArtworkBundle(game, {
+                              surface: 'portrait',
+                              fallbackSurface: 'library_card',
+                            });
+                            return (
+                              <div className="game-item-art" aria-hidden="true">
+                                <LazyImage
+                                  src={bundle.artwork}
+                                  fallbackSrc={bundle.fallbackSrc}
+                                  alt=""
+                                  placeholder={bundle.placeholder}
+                                />
+                              </div>
+                            );
+                          })()}
+                          <div className="game-info">
+                            <div className="game-name">{game.name}</div>
+                            <div className="game-platform">{game.platform}</div>
+                            <RecommendationReasonChip
+                              game={game}
+                              mood={null}
+                              genre={null}
+                              timeAvailable={null}
+                              recommendationType="perfect-play"
+                            />
+                          </div>
+                          <div className="game-stats">
+                            <span>{game.launch_count || 0} plays</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="no-results">
+              <p>No picks to show right now.</p>
+              <p>Scan your library or adjust the tuning controls above.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

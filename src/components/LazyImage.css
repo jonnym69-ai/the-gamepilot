@@ -3,7 +3,6 @@
   overflow: hidden;
   border-radius: inherit;
 }
-
 .lazy-image-placeholder {
   position: absolute;
   top: 0;
@@ -16,7 +15,6 @@
   background: rgba(0, 0, 0, 0.1);
   border-radius: inherit;
 }
-
 .lazy-image-spinner {
   width: 24px;
   height: 24px;
@@ -25,17 +23,17 @@
   border-radius: 50%;
   position: absolute;
   z-index: 1;
+
   /* Removed animation to prevent flashing/glitching that could trigger seizures */
+
   opacity: 0.6;
 }
-
 .lazy-image-placeholder-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   opacity: 0.3;
 }
-
 .lazy-image {
   width: 100%;
   height: 100%;
@@ -45,28 +43,24 @@
   border-radius: inherit;
   will-change: opacity;
 }
-
 .lazy-image-loaded {
   opacity: 1;
 }
-
 /* Prevent strobe effect on failed images */
+
 .lazy-image-container[data-error='true'] .lazy-image {
   opacity: 0;
   transition: opacity 0.8s ease-in-out;
 }
-
 .lazy-image-container[data-error='true'] .lazy-image-placeholder {
   opacity: 1;
   transition: opacity 0.8s ease-in-out;
 }
-
 .home-page .game-card .lazy-image-container,
 .results-section .game-card .lazy-image-container {
   height: 184px;
   width: 100%;
 }
-
 /* Steam-style portrait poster override. The fixed 184px height above locks
    the container to a landscape box regardless of any aspect-ratio set on it,
    which is what was squishing/cropping portrait cover art into a 16:9 frame.
@@ -74,36 +68,24 @@
    this wrapper, not the <img>) resets height to auto so aspect-ratio can
    actually take effect. Scoped one level deeper than the fixed-height rule
    above (specificity 0-4-0 vs 0-3-0) so it wins without !important. */
+
 .home-page .game-card .lazy-image-container.home-grid-poster {
   height: auto;
   aspect-ratio: 2 / 3;
   width: 100%;
 }
-
 .library-page .game-card .lazy-image-container {
   height: 100%;
   width: 100%;
 }
-
 .game-modal .screenshot-main .lazy-image-container {
   height: 100%;
   width: 100%;
 }
-
 .game-modal .screenshot-thumbnails .lazy-image-container {
   height: 45px;
   width: 80px;
 }
-
-/* Fallback for browsers that don't support Intersection Observer */
-.no-intersectionobserver .lazy-image {
-  opacity: 1;
-}
-
-.no-intersectionobserver .lazy-image-placeholder {
-  display: none;
-}
-
 .lazy-image-fallback {
   position: absolute;
   top: 0;
@@ -120,7 +102,6 @@
   z-index: 2;
   border: 1px dashed rgba(255, 255, 255, 0.12);
 }
-
 .lazy-image-fallback-content {
   display: flex;
   flex-direction: column;
@@ -132,7 +113,6 @@
   gap: 6px;
   overflow: hidden;
 }
-
 .fallback-game-name {
   font-size: 13px;
   font-weight: 700;
@@ -143,7 +123,6 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
   letter-spacing: -0.01em;
 }
-
 .fallback-details {
   display: flex;
   flex-direction: row;
@@ -153,7 +132,6 @@
   width: 100%;
   font-size: 10px;
 }
-
 .fallback-platform,
 .fallback-genre,
 .fallback-mood {

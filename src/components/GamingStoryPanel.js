@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, Clock, Sparkles, TrendingUp } from 'lucide-react';
 import { formatPlaytime } from '../utils/formatPlaytime';
+import BoldText from './BoldText';
 import './GamingStoryPanel.css';
 
 function GamingStoryPanel({ story }) {
@@ -92,12 +93,9 @@ function GamingStoryPanel({ story }) {
         <h3>{title}</h3>
         <p className="gaming-story-panel-subtitle">{subtitle}</p>
 
-        <p
-          className="gaming-story-panel-narrative"
-          dangerouslySetInnerHTML={{
-            __html: narrative.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'),
-          }}
-        />
+        <p className="gaming-story-panel-narrative">
+          <BoldText>{narrative}</BoldText>
+        </p>
 
         <div className="gaming-story-panel-meta">
           <div className="gaming-story-panel-stat">

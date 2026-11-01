@@ -82,3 +82,29 @@ test('zero-minute sessions produce finite chart coordinates', () => {
   });
   context.fillRect.mock.calls.forEach((args) => args.forEach((value) => expect(Number.isFinite(value)).toBe(true)));
 });
+
+test('draws cover thumbs for top games when images are provided', () => {
+  Object.assign(context, {
+    save: jest.fn(),
+    restore: jest.fn(),
+    beginPath: jest.fn(),
+    clip: jest.fn(),
+    rect: jest.fn(),
+    roundRect: jest.fn(),
+    drawImage: jest.fn(),
+  });
+  const canvas = document.createElement('canvas');
+  const hadesCover = { width: 600, height: 900 };
+  drawSessionHistoryCard(canvas, breakdown, '', { Hades: hadesCover });
+  expect(context.drawImage).toHaveBeenCalledWith(hadesCover, 96, 582, 30, 44);
+  // Name shifts right to make room for the cover.
+  expect(context.fillText).toHaveBeenCalledWith('Hades', 140, 620);
+});
+
+test('keeps the swatch-only legend when no images resolve', () => {
+  Object.assign(context, { drawImage: jest.fn() });
+  const canvas = document.createElement('canvas');
+  drawSessionHistoryCard(canvas, breakdown, '', {});
+  expect(context.drawImage).not.toHaveBeenCalled();
+  expect(context.fillText).toHaveBeenCalledWith('Hades', 88, 620);
+});

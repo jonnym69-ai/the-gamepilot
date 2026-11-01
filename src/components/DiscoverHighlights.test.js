@@ -1,12 +1,20 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import DiscoverHighlights from './DiscoverHighlights';
+import { ToastProvider } from './Toast';
 import { FreeGameRadar } from '../services/FreeGameRadar';
 import { openExternalUrl } from '../services/ElectronBridge';
 import StorageService from '../services/StorageService';
 
 jest.mock('./LazyImage', () => ({ alt }) => <img alt={alt} />);
 jest.mock('../services/ElectronBridge', () => ({ openExternalUrl: jest.fn().mockResolvedValue(true) }));
+
+const renderHighlights = (props = {}) =>
+  render(
+    <ToastProvider>
+      <DiscoverHighlights library={[]} {...props} />
+    </ToastProvider>
+  );
 const NOW = new Date('2026-09-27T12:00:00Z').getTime();
 const offer = {
   id: 'epic-test',
@@ -58,7 +66,7 @@ afterEach(() => {
 });
 
 test('shows free offers and future dates separately, opens Epic only on request', async () => {
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   expect(await screen.findByText('Free Adventure')).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
   expect(screen.getByText('Coming next')).toBeInTheDocument();
@@ -70,14 +78,14 @@ test('shows free offers and future dates separately, opens Epic only on request'
 });
 
 test('hiding the radar is persistent and stops requests until it is shown again', async () => {
-  const { unmount } = render(<DiscoverHighlights library={[]} />);
+  const { unmount } = renderHighlights();
   await screen.findByText('Free Adventure');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Hide radar' }));
   unmount();
   FreeGameRadar.getEpicRadar.mockClear();
   FreeGameRadar.getGiveaways.mockClear();
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   expect(FreeGameRadar.getEpicRadar).not.toHaveBeenCalled();
   expect(FreeGameRadar.getGiveaways).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Show free games radar' }));
@@ -93,7 +101,7 @@ test('shows stale data honestly and supports a manual retry', async () => {
     stale: true,
     error: 'Offline.',
   });
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   expect(await screen.findByText('Last seen free')).toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
   const epicRadar = screen.getByRole('region', { name: 'Epic Free Games' });
@@ -110,7 +118,7 @@ test('expired offers disappear while the page stays open', async () => {
     checkedAt: NOW,
     stale: false,
   });
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   await screen.findByText('Free Adventure');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
   act(() => jest.advanceTimersByTime(60000));
@@ -120,7 +128,7 @@ test('expired offers disappear while the page stays open', async () => {
 test('rediscovery uses a separate spotlight and preserves its launch callback', async () => {
   StorageService.set('discoverEpicRadarVisible', false);
   const launch = jest.fn();
-  render(<DiscoverHighlights library={library} onLaunchGame={launch} />);
+  renderHighlights({ library, onLaunchGame: launch });
   expect(screen.getByRole('heading', { name: 'Rediscover your library' })).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: "Today's Spotlight" })).not.toBeInTheDocument();
   expect(screen.getByText(/No playtime recorded here yet/)).toBeInTheDocument();
@@ -131,7 +139,7 @@ test('rediscovery uses a separate spotlight and preserves its launch callback', 
 });
 
 test('shows cross-platform giveaways with honest dates and opens them only on request', async () => {
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   expect(await screen.findByText('Cool Giveaway')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'More free games' })).toBeInTheDocument();
   expect(screen.getByText(/Free to keep · Steam/)).toBeInTheDocument();
@@ -140,7 +148,7 @@ test('shows cross-platform giveaways with honest dates and opens them only on re
 });
 
 test('external discovery shows one category at a time and stops giveaway timers on essentials', async () => {
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   await screen.findByText('Free Adventure');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh Epic offers' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Free-to-play essentials' }));
@@ -160,7 +168,7 @@ test('external discovery shows one category at a time and stops giveaway timers 
 });
 
 test('giveaway cache wording matches on-open and manual refresh behaviour', async () => {
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   await screen.findByText('Cool Giveaway');
   const giveaways = within(screen.getByRole('region', { name: 'More free games' }));
   expect(giveaways.getByText(/Checks when opened/)).toBeInTheDocument();
@@ -172,7 +180,7 @@ test('giveaway cache wording matches on-open and manual refresh behaviour', asyn
 });
 
 test('giveaway badge counts new listings since the previous visit without nagging on first run', async () => {
-  const { unmount } = render(<DiscoverHighlights library={[]} />);
+  const { unmount } = renderHighlights();
   await screen.findByText('Cool Giveaway');
   expect(screen.queryByText(/new since your last visit/)).not.toBeInTheDocument();
   unmount();
@@ -206,8 +214,43 @@ test('giveaway badge counts new listings since the previous visit without naggin
     stale: false,
   });
 
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   expect(await screen.findByText('1 new since your last visit')).toBeInTheDocument();
+});
+
+test('giveaway Add to library picks an executable and records a manual game', async () => {
+  window.electronAPI = {
+    pickExecutable: jest.fn().mockResolvedValue({ ok: true, filePath: 'C:\\Games\\cool-game.exe' }),
+  };
+  renderHighlights();
+  await screen.findByText('Cool Giveaway');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add Cool Giveaway to your library' }));
+
+  await waitFor(() => expect(window.electronAPI.pickExecutable).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(StorageService.get('manualGamesV1', [])).toEqual([
+      expect.objectContaining({
+        name: 'Cool Giveaway',
+        exePath: 'C:\\Games\\cool-game.exe',
+        platform: 'Manual',
+        source: 'manual',
+      }),
+    ])
+  );
+  expect(await screen.findByText(/it'll show in your library/)).toBeInTheDocument();
+  delete window.electronAPI;
+});
+
+test('giveaway Add to library does nothing without the desktop bridge', async () => {
+  delete window.electronAPI;
+  renderHighlights();
+  await screen.findByText('Cool Giveaway');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add Cool Giveaway to your library' }));
+
+  expect(StorageService.get('manualGamesV1', [])).toEqual([]);
+  expect(await screen.findByText(/needs the desktop app/)).toBeInTheDocument();
 });
 
 test('giveaway feed reports failures honestly without breaking the Epic radar', async () => {
@@ -217,7 +260,7 @@ test('giveaway feed reports failures honestly without breaking the Epic radar', 
     stale: true,
     error: 'Giveaway listings are temporarily unavailable.',
   });
-  render(<DiscoverHighlights library={[]} />);
+  renderHighlights();
   expect(await screen.findByText('Free Adventure')).toBeInTheDocument();
   expect(await screen.findByText(/Giveaway listings are temporarily unavailable/)).toBeInTheDocument();
 });

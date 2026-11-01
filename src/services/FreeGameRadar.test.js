@@ -145,3 +145,53 @@ test('giveaway feed caches results and falls back to stale data without a bridge
   expect(stale.games).toHaveLength(1);
   expect(stale.error).toMatch(/desktop app/i);
 });
+
+const steamItem = (id, extra = {}) => ({
+  id,
+  name: `Steam Game ${id}`,
+  small_capsule_image: `https://cdn.example/steam/${id}.jpg`,
+  ...extra,
+});
+
+const gogProduct = (id, extra = {}) => ({
+  id,
+  title: `GOG Game ${id}`,
+  slug: `gog-game-${id}`,
+  price: { isFree: true, final: 0 },
+  image: `https://cdn.example/gog/${id}.jpg`,
+  ...extra,
+});
+
+test('store free games arrive via the desktop bridge and merge with Epic offers', async () => {
+  window.electronAPI.epicFreeGames.mockResolvedValue({ ok: true, elements: [entry('current', [current])] });
+  window.electronAPI.storeFreeGames = jest.fn().mockResolvedValue({
+    ok: true,
+    steam: {
+      freegames: [steamItem(10)],
+      specials: [
+        steamItem(20, { discount_percent: 100, discount_expiration: Date.parse('2026-09-30T00:00:00Z') / 1000 }),
+        steamItem(30, { discount_percent: 50 }),
+      ],
+    },
+    gog: [gogProduct(40), gogProduct(41, { price: { isFree: false, final: 999 } })],
+  });
+  const games = await FreeGameRadar.getFreeGames({ forceRefresh: true });
+  expect(games.map((game) => game.id)).toEqual(['steam-20', 'epic-current', 'gog-40', 'steam-10']);
+  expect(games.find((game) => game.id === 'steam-20').type).toBe('free-to-keep');
+  expect(games.find((game) => game.id === 'gog-40').url).toBe('https://www.gog.com/game/gog-game-40');
+  expect(window.electronAPI.storeFreeGames).toHaveBeenCalledWith();
+});
+
+test('store free games tolerate one source failing without blanking the other', async () => {
+  window.electronAPI.storeFreeGames = jest.fn().mockResolvedValue({ ok: true, steam: null, gog: [gogProduct(40)] });
+  const games = await FreeGameRadar.getFreeGames({ forceRefresh: true });
+  expect(games.map((game) => game.id)).toEqual(['gog-40']);
+});
+
+test('store free games return only Epic offers when the bridge fails or is missing', async () => {
+  window.electronAPI.epicFreeGames.mockResolvedValue({ ok: true, elements: [entry('current', [current])] });
+  window.electronAPI.storeFreeGames = jest.fn().mockResolvedValue({ ok: false });
+  expect((await FreeGameRadar.getFreeGames({ forceRefresh: true })).map((game) => game.id)).toEqual(['epic-current']);
+  delete window.electronAPI.storeFreeGames;
+  expect((await FreeGameRadar.getFreeGames({ forceRefresh: true })).map((game) => game.id)).toEqual(['epic-current']);
+});

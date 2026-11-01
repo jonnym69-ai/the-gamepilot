@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import moodThemes from '../themes/moodThemes.json';
-import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
 import StorageService from '../services/StorageService';
 import './AnimatedBackground.css';
 
@@ -22,10 +21,6 @@ const AnimatedBackground = ({ themeId }) => {
     if (!themeId) return null;
     const theme = moodThemes.find((entry) => entry.id === themeId);
     if (!theme || !theme.animation || !theme.animation.enabled) return null;
-
-    if (theme.isPremium && !ProgressionUnlockService.isThemeUnlocked(theme.id)) {
-      return null;
-    }
 
     return {
       type: theme.animation.type,

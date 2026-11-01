@@ -7,7 +7,6 @@
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
   border-left: 3px solid var(--accent-color, #ff8c42);
 }
-
 .whats-new-header {
   display: flex;
   align-items: center;
@@ -15,7 +14,6 @@
   margin-bottom: 10px;
   color: var(--accent-color, #ff8c42);
 }
-
 .whats-new-title {
   flex: 1;
   font-size: 0.78rem;
@@ -24,7 +22,6 @@
   text-transform: uppercase;
   color: var(--text-primary, #fff);
 }
-
 .whats-new-dismiss {
   display: flex;
   align-items: center;
@@ -37,12 +34,10 @@
   color: var(--text-secondary, #aaa);
   cursor: pointer;
 }
-
 .whats-new-dismiss:hover {
   color: var(--text-primary, #fff);
   border-color: var(--text-secondary, #aaa);
 }
-
 .whats-new-list {
   margin: 0 0 12px;
   padding-left: 18px;
@@ -50,13 +45,11 @@
   flex-direction: column;
   gap: 6px;
 }
-
 .whats-new-list li {
   font-size: 0.85rem;
   color: var(--text-secondary, #ccc);
   line-height: 1.45;
 }
-
 .whats-new-gotit {
   padding: 6px 16px;
   border-radius: 999px;
@@ -67,7 +60,6 @@
   font-weight: 600;
   cursor: pointer;
 }
-
 .whats-new-gotit:hover {
   background: var(--accent-color, #ff8c42);
   color: #14181f;

@@ -3,6 +3,9 @@ import StorageService from './StorageService';
 const BACKUP_VERSION = '1.0';
 const BACKUP_TYPE = 'gamepilot-backup';
 const EXCLUDED_KEYS = ['backupInProgress', 'migrationBannerDismissed'];
+// Credentials never enter backups and are never replaced by a restore —
+// locally configured connections must survive a backup round-trip.
+const CREDENTIAL_KEYS = new Set(['itchApiKeyV1', 'retroAchievementsApiKey', 'discordWebhookUrl']);
 
 const BackupService = {
   /**
@@ -11,7 +14,7 @@ const BackupService = {
    */
   createBackup() {
     try {
-      const keys = StorageService.keys().filter((key) => !EXCLUDED_KEYS.includes(key));
+      const keys = StorageService.keys().filter((key) => !EXCLUDED_KEYS.includes(key) && !CREDENTIAL_KEYS.has(key));
       const data = {};
       for (const key of keys) {
         data[key] = StorageService.get(key);
@@ -107,11 +110,13 @@ const BackupService = {
       const { data } = backup;
       const keys = Object.keys(data);
       if (options.overwrite) {
-        StorageService.clear();
+        StorageService.keys()
+          .filter((key) => !CREDENTIAL_KEYS.has(key))
+          .forEach((key) => StorageService.remove(key));
       }
       let restored = 0;
       for (const key of keys) {
-        if (data[key] === undefined) continue;
+        if (CREDENTIAL_KEYS.has(key) || data[key] === undefined) continue;
         StorageService.set(key, data[key]);
         restored += 1;
       }

@@ -85,6 +85,8 @@ const LazyImage = ({
   platform,
   genre,
   mood,
+  onLoad,
+  onError,
   ...props
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -160,12 +162,13 @@ const LazyImage = ({
     };
   }, []);
 
-  const handleLoad = () => {
+  const handleLoad = (e) => {
     setIsLoaded(true);
     setHasError(false);
+    onLoad?.(e);
   };
 
-  const handleError = () => {
+  const handleError = (e) => {
     if (activeSrc) {
       addToFailedCache(activeSrc);
     }
@@ -180,6 +183,7 @@ const LazyImage = ({
 
     setHasError(true);
     setIsLoaded(true);
+    onError?.(e);
   };
 
   const imageSrc = useMemo(() => {

@@ -1,10 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import moodThemes from './themes/moodThemes.json';
 import proThemes from './themes/proThemes.json';
-import { AchievementTracker } from './AchievementSystem';
 import StorageService from './services/StorageService';
-import InterfacePreferencesService from './services/InterfacePreferencesService';
-import { SeasonalRewardService } from './services/SeasonalRewardService';
 import EntitlementService from './services/EntitlementService';
 
 const ALL_THEME_DEFS = [...moodThemes, ...proThemes];
@@ -89,8 +86,6 @@ const convertMoodThemeToCSS = (theme) => ({
   '--gamepilot-title': getThemeSpecificTitle(theme.id),
   '--home-title': getThemeSpecificHomeTitle(theme.id),
   '--library-title': getThemeSpecificLibraryTitle(theme.id),
-  '--stats-title': getThemeSpecificStatsTitle(theme.id),
-  '--achievements-title': getThemeSpecificAchievementsTitle(theme.id),
   '--profile-title': getThemeSpecificProfileTitle(theme.id),
   '--settings-title': getThemeSpecificSettingsTitle(theme.id),
 });
@@ -153,48 +148,6 @@ const getThemeSpecificLibraryTitle = (themeId) => {
     galaxy: '🌌 Cosmic Gateway',
   };
   return titles[themeId] || '📚 Library';
-};
-
-const getThemeSpecificStatsTitle = (themeId) => {
-  const titles = {
-    relaxed: '🌴 Chill Stats',
-    social: '🔥 Social Analytics',
-    focused: '⚡ Focus Metrics',
-    creative: '🎨 Art Insights',
-    competitive: '⚔️ Battle Statistics',
-    sunset: '🌅 Sunset Analytics',
-    midnight: '🌙 Midnight Metrics',
-    retro: '🎮 16-Bit High Scores',
-    forest: '🌳 Forest Stats',
-    ocean: '🌊 Ocean Analytics',
-    zen: '🎮 8-Bit Stats',
-    candy: '🍭 Candy Insights',
-    cyberpunk: '🤖 Cyberpunk Data',
-    noir: '� Comic Stats',
-    galaxy: '🌌 Cosmic Statistics',
-  };
-  return titles[themeId] || '📊 Statistics';
-};
-
-const getThemeSpecificAchievementsTitle = (themeId) => {
-  const titles = {
-    relaxed: '🌴 Chill Achievements',
-    social: '🔥 Social Trophies',
-    focused: '⚡ Focus Medals',
-    creative: '🎨 Art Awards',
-    competitive: '⚔️ Battle Badges',
-    sunset: '🌅 Sunset Awards',
-    midnight: '🌙 Midnight Badges',
-    retro: '🎮 16-Bit Achievements',
-    forest: '🌳 Forest Medals',
-    ocean: '🌊 Ocean Trophies',
-    zen: '🎮 8-Bit Achievements',
-    candy: '🍭 Candy Trophies',
-    cyberpunk: '🤖 Cyberpunk Badges',
-    noir: '� Comic Achievements',
-    galaxy: '🌌 Cosmic Achievements',
-  };
-  return titles[themeId] || '🏆 Achievements';
 };
 
 const getThemeSpecificProfileTitle = (themeId) => {
@@ -273,74 +226,25 @@ export const ThemeProvider = ({ children }) => {
       );
     }
 
-    // Check if autoSeasonalTheme is enabled
-    const autoSeasonal = StorageService.getString('autoSeasonalTheme');
-    if (autoSeasonal === 'true') {
-      const seasonalTheme = SeasonalRewardService.getSeasonThemeId();
-      if (seasonalTheme && allThemes[seasonalTheme]) {
-        return seasonalTheme;
-      }
-    }
-
     return 'dark';
   });
 
-  const [bigScreenMode, setBigScreenMode] = useState(() => !!InterfacePreferencesService.get('bigScreenMode'));
   const [compactMode, setCompactMode] = useState(() => StorageService.getString('compactMode') === 'true');
   const [autoTheme, setAutoTheme] = useState(() => StorageService.getString('autoTheme') === 'true');
-
-  // Validate Patreon code and apply XP boost (no direct content unlocks)
-  const validatePatreonCode = (code) => {
-    const result = AchievementTracker.activatePatreonXPBoost(code);
-    if (!result.success) {
-      return result;
-    }
-
-    const xpStats = AchievementTracker.getXPStats();
-
-    return {
-      ...result,
-      message: `${result.message} Current level: ${xpStats.level} (${xpStats.totalXP.toLocaleString()} XP).`,
-      level: xpStats.level,
-      totalXP: xpStats.totalXP,
-    };
-  };
-
-  // Legacy API surface retained for compatibility with older UI flows.
-  const selectThemesWithCredits = () => {
-    return {
-      success: false,
-      message: 'Theme credits have been retired. Themes now unlock through XP progression.',
-    };
-  };
-
-  // Founder-exclusive themes require a founder tier; all other themes are free
-  const isPatreonTheme = (themeId) => {
-    const meta = moodThemes.find((t) => t.id === themeId);
-    return Boolean(meta?.founderExclusive);
-  };
-
-  // Check if user has an active Patreon boost (any tier)
-  const hasPatreonAccess = useCallback(() => {
-    const profile = AchievementTracker.getPatreonBoostProfile();
-    return Boolean(profile?.code) && profile.tier !== null && profile.tier !== 'none';
-  }, []);
-
-  // Founder-exclusive themes require founder status; everything else is open
-  const hasPremiumAccess = useCallback(() => {
-    return true;
-  }, []);
-
-  const hasFounderAccess = useCallback(() => {
-    const profile = AchievementTracker.getPatreonBoostProfile();
-    return Boolean(profile?.tier);
-  }, []);
 
   // Get all available themes
   const getAvailableThemes = () => {
     const themes = {
-      light: { name: 'Light', id: 'light' },
-      dark: { name: 'Dark', id: 'dark' },
+      light: {
+        name: 'Light',
+        id: 'light',
+        preview: 'linear-gradient(135deg, #fdf7ef 0%, #e6d3b8 100%)',
+      },
+      dark: {
+        name: 'Dark',
+        id: 'dark',
+        preview: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+      },
     };
 
     // Add mood + Pro themes
@@ -348,8 +252,10 @@ export const ThemeProvider = ({ children }) => {
       themes[theme.id] = {
         name: theme.name,
         id: theme.id,
-        patreonExclusive: isPatreonTheme(theme.id),
         proOnly: isProOnlyTheme(theme.id),
+        preview:
+          theme.palette?.background ||
+          `linear-gradient(135deg, ${theme.palette?.primary || '#667eea'}, ${theme.palette?.accent || '#764ba2'})`,
       };
     });
 
@@ -533,21 +439,6 @@ export const ThemeProvider = ({ children }) => {
   }, [currentTheme]);
 
   useEffect(() => {
-    if (bigScreenMode) {
-      document.body.classList.add('big-screen-mode');
-    } else {
-      document.body.classList.remove('big-screen-mode');
-    }
-  }, [bigScreenMode]);
-
-  useEffect(() => {
-    const unsubscribe = InterfacePreferencesService.subscribe((prefs) => {
-      setBigScreenMode(!!prefs.bigScreenMode);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
     if (compactMode) {
       document.body.classList.add('compact-mode');
     } else {
@@ -570,14 +461,12 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     const activeTheme = ALL_THEME_DEFS.find((theme) => theme.id === currentTheme);
-    const locked =
-      (isPatreonTheme(activeTheme?.id) && !hasFounderAccess()) ||
-      (isProOnlyTheme(activeTheme?.id) && !EntitlementService.isPro());
+    const locked = isProOnlyTheme(activeTheme?.id) && !EntitlementService.isPro();
     if (locked) {
       setCurrentTheme('dark');
       StorageService.setString('theme', 'dark');
     }
-  }, [currentTheme, hasFounderAccess]);
+  }, [currentTheme]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -593,7 +482,6 @@ export const ThemeProvider = ({ children }) => {
       const allThemes = getAvailableThemes();
       if (!allThemes[themeId]) return;
       const meta = ALL_THEME_DEFS.find((theme) => theme.id === themeId);
-      if (isPatreonTheme(meta?.id) && !hasFounderAccess()) return;
       if (isProOnlyTheme(meta?.id) && !EntitlementService.isPro()) return;
       setCurrentTheme(themeId);
       StorageService.setString('theme', themeId);
@@ -602,14 +490,6 @@ export const ThemeProvider = ({ children }) => {
     return () => window.removeEventListener('gamepilot:request-theme', handleRequest);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const toggleBigScreenMode = () => {
-    const next = !bigScreenMode;
-    InterfacePreferencesService.set('bigScreenMode', next);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('gamepilot:bigscreen-toggled', { detail: { enabled: next } }));
-    }
-  };
 
   const toggleCompactMode = () => {
     setCompactMode((prev) => {
@@ -633,9 +513,6 @@ export const ThemeProvider = ({ children }) => {
       const allThemes = getAvailableThemes();
       if (allThemes[themeId]) {
         const selectedTheme = ALL_THEME_DEFS.find((theme) => theme.id === themeId);
-        if (isPatreonTheme(selectedTheme?.id) && !hasFounderAccess()) {
-          return false;
-        }
         if (isProOnlyTheme(selectedTheme?.id) && !EntitlementService.isPro()) {
           return false;
         }
@@ -656,16 +533,7 @@ export const ThemeProvider = ({ children }) => {
     moodThemes,
     proThemes,
     getThemeMeta: (themeId) => ALL_THEME_DEFS.find((theme) => theme.id === themeId),
-    getFounderTier: () => AchievementTracker.getPatreonBoostProfile().tier || null,
-    validatePatreonCode,
-    selectThemesWithCredits,
-    isPatreonTheme,
-    hasPatreonAccess,
-    hasPremiumAccess,
-    hasFounderAccess,
     getAvailableThemes,
-    bigScreenMode,
-    toggleBigScreenMode,
     compactMode,
     toggleCompactMode,
     autoTheme,
@@ -689,8 +557,6 @@ export {
   getThemeSpecificTitle,
   getThemeSpecificHomeTitle,
   getThemeSpecificLibraryTitle,
-  getThemeSpecificStatsTitle,
-  getThemeSpecificAchievementsTitle,
   getThemeSpecificProfileTitle,
   getThemeSpecificSettingsTitle,
 };

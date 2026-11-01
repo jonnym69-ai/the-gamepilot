@@ -182,6 +182,50 @@ class SessionRepository {
     StorageService.set(SESSION_HISTORY_KEY, this.cache.sessionHistory);
   }
 
+  /**
+   * Adopt a SQLite snapshot ({ activeSessions, sessionHistory }) as the
+   * renderer cache and mirror it to the localStorage fallback.
+   */
+  static syncCacheFromSnapshot(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') return false;
+    this.cache = {
+      activeSessions: isPlainObject(snapshot.activeSessions) ? clone(snapshot.activeSessions) : {},
+      sessionHistory: Array.isArray(snapshot.sessionHistory) ? clone(snapshot.sessionHistory) : [],
+    };
+    this.persistFallback();
+    return true;
+  }
+
+  /**
+   * SQLite is the source of truth. When it rejects a replace (history-shrink
+   * guard) the on-disk record wins — pull it back into the cache instead of
+   * leaving a truncated copy behind.
+   */
+  static async resyncFromSqlite(context) {
+    if (!this.api?.sessionStoreGetSnapshot) return false;
+    try {
+      const snapshot = await this.api.sessionStoreGetSnapshot();
+      const synced = this.syncCacheFromSnapshot(snapshot);
+      if (synced) {
+        console.error(`SessionRepository: SQLite rejected ${context}; cache re-synced from disk.`);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('gamepilot:session-storage-ready', { detail: this.getSnapshot() }));
+        }
+      }
+      return synced;
+    } catch (error) {
+      console.error(`SessionRepository: failed to re-sync after rejected ${context}:`, error);
+      return false;
+    }
+  }
+
+  static handleReplaceResult(result, context) {
+    if (result && typeof result === 'object' && (result.rejected || result.ok === false)) {
+      console.error(`SessionRepository: SQLite rejected session history ${context}:`, result);
+      this.resyncFromSqlite(context);
+    }
+  }
+
   static getActiveSessions() {
     return clone(isPlainObject(this.cache.activeSessions) ? this.cache.activeSessions : {});
   }
@@ -244,18 +288,36 @@ class SessionRepository {
     history[index] = { ...history[index], ...(patch && typeof patch === 'object' ? patch : {}) };
     this.cache.sessionHistory = history;
     this.persistFallback();
-    this.api?.sessionStoreReplaceHistory?.(this.cache.sessionHistory).catch((error) => {
-      console.error('Failed to persist session entry update:', error);
-    });
+    this.api
+      ?.sessionStoreReplaceHistory?.(this.cache.sessionHistory)
+      .then((result) => this.handleReplaceResult(result, 'entry update'))
+      .catch((error) => {
+        console.error('Failed to persist session entry update:', error);
+      });
     return true;
   }
 
-  static replaceHistory(history) {
+  /**
+   * Replace the whole history. Pass { force: true } for explicit user
+   * intent (backup import) to bypass the main-process shrink guard.
+   * Returns the IPC write promise (resolving to true) when the bridge
+   * exists so callers can await durability; true otherwise.
+   */
+  static replaceHistory(history, { force = false } = {}) {
     this.cache.sessionHistory = this.dedupeSessionHistory(Array.isArray(history) ? history : []);
     StorageService.set(SESSION_HISTORY_KEY, this.cache.sessionHistory);
-    this.api?.sessionStoreReplaceHistory?.(this.cache.sessionHistory).catch((error) => {
-      console.error('Failed to replace SQLite session history:', error);
-    });
+    const write = this.api?.sessionStoreReplaceHistory?.(this.cache.sessionHistory, { force });
+    if (write?.then) {
+      return write
+        .then((result) => {
+          this.handleReplaceResult(result, 'replace');
+          return true;
+        })
+        .catch((error) => {
+          console.error('Failed to replace SQLite session history:', error);
+          return true;
+        });
+    }
     return true;
   }
 
@@ -270,11 +332,65 @@ class SessionRepository {
     if (after !== before) {
       this.cache.sessionHistory = cleaned;
       this.persistFallback();
-      this.api?.sessionStoreReplaceHistory?.(this.cache.sessionHistory).catch((error) => {
-        console.error('Failed to persist sanitized session history:', error);
-      });
+      this.api
+        ?.sessionStoreReplaceHistory?.(this.cache.sessionHistory)
+        .then((result) => this.handleReplaceResult(result, 'sanitize'))
+        .catch((error) => {
+          console.error('Failed to persist sanitized session history:', error);
+        });
     }
     return { before, after, removed: Math.max(0, before - after) };
+  }
+
+  /**
+   * Snapshot read straight from SQLite (does not touch the cache). Used by
+   * the session-backups panel for the "sessions on disk" count.
+   */
+  static async getDiskSnapshot() {
+    if (!this.api?.sessionStoreGetSnapshot) return null;
+    try {
+      return await this.api.sessionStoreGetSnapshot();
+    } catch (error) {
+      console.error('Failed to read SQLite session snapshot:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Rolling history backups kept by the main process
+   * (userData/session-backups). [] when the bridge is unavailable.
+   */
+  static async listBackups() {
+    if (!this.api?.sessionStoreListBackups) return [];
+    try {
+      const backups = await this.api.sessionStoreListBackups();
+      return Array.isArray(backups) ? backups : [];
+    } catch (error) {
+      console.error('Failed to list session history backups:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Restore the on-disk history from a named backup, then adopt the returned
+   * snapshot and notify listeners. The main process takes a 'pre-restore'
+   * safety copy first.
+   */
+  static async restoreBackup(fileName) {
+    if (!this.api?.sessionStoreRestoreBackup) return { ok: false, error: 'unavailable' };
+    try {
+      const result = await this.api.sessionStoreRestoreBackup(fileName);
+      if (result?.ok && result.snapshot) {
+        this.syncCacheFromSnapshot(result.snapshot);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('gamepilot:session-storage-ready', { detail: this.getSnapshot() }));
+        }
+      }
+      return result;
+    } catch (error) {
+      console.error('Failed to restore session history backup:', error);
+      return { ok: false, error: String(error?.message || error) };
+    }
   }
 
   static clear() {

@@ -5,13 +5,11 @@
   padding: 12px 14px;
   margin-top: 10px;
 }
-
 .steam-profile-body {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-
 .steam-profile-avatar {
   width: 44px;
   height: 44px;
@@ -19,7 +17,6 @@
   object-fit: cover;
   flex-shrink: 0;
 }
-
 .steam-profile-avatar-fallback {
   display: inline-flex;
   align-items: center;
@@ -29,7 +26,6 @@
   font-size: 18px;
   font-weight: 700;
 }
-
 .steam-profile-main {
   flex: 1;
   min-width: 0;
@@ -37,7 +33,6 @@
   flex-direction: column;
   gap: 4px;
 }
-
 .steam-profile-name {
   font-size: 14px;
   font-weight: 600;
@@ -49,7 +44,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .steam-profile-private {
   font-size: 10px;
   font-weight: 600;
@@ -61,13 +55,11 @@
   padding: 1px 5px;
   flex-shrink: 0;
 }
-
 .steam-profile-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
 }
-
 .steam-profile-stat {
   display: inline-flex;
   align-items: center;
@@ -75,7 +67,6 @@
   font-size: 12px;
   color: var(--text-secondary, rgba(255, 255, 255, 0.7));
 }
-
 .steam-profile-link {
   color: var(--text-secondary, rgba(255, 255, 255, 0.7));
   display: inline-flex;
@@ -84,12 +75,10 @@
   border-radius: 6px;
   flex-shrink: 0;
 }
-
 .steam-profile-link:hover {
   color: var(--text-primary, #fff);
   background: rgba(255, 255, 255, 0.06);
 }
-
 .steam-profile-note {
   margin: 0;
   font-size: 12px;

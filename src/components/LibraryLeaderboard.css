@@ -5,7 +5,6 @@
   border-radius: 12px;
   background: var(--bg-secondary, #18212e);
 }
-
 .library-leaderboard-header {
   display: flex;
   align-items: flex-start;
@@ -13,19 +12,16 @@
   gap: 12px;
   margin-bottom: 12px;
 }
-
 .library-leaderboard-header h3 {
   margin: 0 0 4px;
   font-size: 1rem;
   color: var(--text-primary, #e8eaf0);
 }
-
 .library-leaderboard-sub {
   margin: 0;
   font-size: 0.8rem;
   color: var(--text-secondary, #aab4c4);
 }
-
 .library-leaderboard-controls {
   display: flex;
   flex-direction: column;
@@ -33,13 +29,11 @@
   gap: 6px;
   flex-shrink: 0;
 }
-
 .library-leaderboard-limits {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
 }
-
 .library-leaderboard-limit {
   padding: 5px 12px;
   border-radius: 999px;
@@ -53,18 +47,15 @@
     border-color 0.15s,
     color 0.15s;
 }
-
 .library-leaderboard-limit:hover {
   border-color: var(--accent-color, #ff8c1a);
   color: var(--accent-color, #ff8c1a);
 }
-
 .library-leaderboard-limit.active {
   background: var(--accent-color, #ff8c1a);
   border-color: var(--accent-color, #ff8c1a);
   color: #14181f;
 }
-
 .library-leaderboard-list {
   list-style: none;
   margin: 0;
@@ -73,7 +64,6 @@
   flex-direction: column;
   gap: 6px;
 }
-
 .library-leaderboard-row {
   display: flex;
   align-items: center;
@@ -90,12 +80,10 @@
     border-color 0.15s,
     background 0.15s;
 }
-
 .library-leaderboard-row:hover {
   border-color: var(--accent-color, #ff8c1a);
   background: rgba(255, 140, 26, 0.06);
 }
-
 .library-leaderboard-rank {
   flex-shrink: 0;
   width: 34px;
@@ -105,11 +93,9 @@
   color: var(--text-secondary, #aab4c4);
   text-align: center;
 }
-
 .library-leaderboard-rank.podium {
   color: var(--accent-color, #ff8c1a);
 }
-
 .library-leaderboard-art {
   flex-shrink: 0;
   width: 34px;
@@ -118,14 +104,12 @@
   border-radius: 5px;
   background: rgba(0, 0, 0, 0.35);
 }
-
 .library-leaderboard-art .lazy-image-container,
 .library-leaderboard-art img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .library-leaderboard-info {
   display: flex;
   flex-direction: column;
@@ -133,7 +117,6 @@
   min-width: 0;
   flex: 1;
 }
-
 .library-leaderboard-name {
   font-size: 0.88rem;
   font-weight: 600;
@@ -141,7 +124,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .library-leaderboard-meta {
   font-size: 0.72rem;
   color: var(--text-secondary, #aab4c4);
@@ -149,7 +131,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .library-leaderboard-trophy {
   flex-shrink: 0;
   display: inline-flex;
@@ -164,14 +145,12 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
-
 .library-leaderboard-note {
   margin: 0;
   padding: 14px 4px;
   font-size: 0.85rem;
   color: var(--text-secondary, #aab4c4);
 }
-
 .library-leaderboard-retry {
   display: inline-flex;
   align-items: center;
@@ -186,11 +165,9 @@
   font-weight: 600;
   cursor: pointer;
 }
-
 .library-leaderboard-retry:hover {
   border-color: var(--accent-color, #ff8c1a);
 }
-
 .library-leaderboard-fetched {
   margin: 8px 0 0;
   font-size: 0.7rem;

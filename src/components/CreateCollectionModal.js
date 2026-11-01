@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Folder, Save, Trash2 } from 'lucide-react';
 import { UserRuleCollectionService } from '../services/UserRuleCollectionService';
 import { MOODS } from '../constants/GenresMoods';
@@ -143,15 +144,21 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="ccm-overlay" onClick={onClose}>
-      <div className="ccm-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="ccm-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create Smart Collection"
+      >
         <div className="ccm-header">
           <div className="ccm-title">
             <Folder size={20} />
             <h3>Create Smart Collection</h3>
           </div>
-          <button type="button" className="ccm-close" onClick={onClose}>
+          <button type="button" className="ccm-close" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -324,6 +331,7 @@ export default function CreateCollectionModal({ isOpen, onClose, library = [], o
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

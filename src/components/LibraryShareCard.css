@@ -18,7 +18,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   overflow: hidden;
 }
-
 .library-share-card-cover {
   position: absolute;
   inset: 0;
@@ -28,7 +27,6 @@
   opacity: 0.18;
   filter: saturate(0.6) brightness(0.7);
 }
-
 .library-share-card-cover-overlay {
   position: absolute;
   inset: 0;
@@ -41,7 +39,6 @@
     linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.7) 100%);
   z-index: 0;
 }
-
 .library-share-card-glow {
   position: absolute;
   top: -200px;
@@ -52,7 +49,6 @@
   background: radial-gradient(circle, var(--recap-glow) 0%, rgba(255, 107, 53, 0) 70%);
   pointer-events: none;
 }
-
 .library-share-watermark {
   position: absolute;
   bottom: -48px;
@@ -62,14 +58,12 @@
   transform: rotate(-12deg);
   z-index: 0;
 }
-
 .library-share-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 1;
 }
-
 .library-share-card-brand {
   font-size: 22px;
   font-weight: 900;
@@ -77,7 +71,6 @@
   color: var(--recap-accent);
   text-transform: uppercase;
 }
-
 .library-share-card-tag {
   font-size: 18px;
   font-weight: 600;
@@ -85,7 +78,6 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-
 .library-share-card-body {
   flex: 1;
   display: flex;
@@ -94,18 +86,15 @@
   z-index: 1;
   margin-top: 24px;
 }
-
 .library-share-card-eyebrow {
   font-size: 22px;
   color: var(--recap-muted);
   margin-bottom: 20px;
   letter-spacing: 0.02em;
 }
-
 .library-share-card-headline {
   margin-bottom: 36px;
 }
-
 .library-share-card-stat strong {
   display: block;
   font-size: 132px;
@@ -114,7 +103,6 @@
   color: var(--recap-accent);
   text-shadow: 0 12px 40px var(--recap-glow);
 }
-
 .library-share-card-stat span {
   display: block;
   font-size: 32px;
@@ -122,14 +110,12 @@
   margin-top: 8px;
   letter-spacing: 0.02em;
 }
-
 .library-share-card-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 24px;
   margin-bottom: 48px;
 }
-
 .library-share-card-strip > div {
   background: var(--recap-surface);
   border: 1px solid var(--recap-surface-border);
@@ -137,7 +123,6 @@
   padding: 28px 20px;
   text-align: center;
 }
-
 .library-share-card-strip strong {
   display: block;
   font-size: 40px;
@@ -145,21 +130,18 @@
   color: var(--recap-text);
   margin-bottom: 6px;
 }
-
 .library-share-card-strip span {
   font-size: 18px;
   color: var(--recap-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 .library-share-card-top-games {
   background: var(--recap-surface);
   border: 1px solid var(--recap-surface-border);
   border-radius: 20px;
   padding: 32px;
 }
-
 .library-share-card-section-label {
   display: block;
   font-size: 16px;
@@ -169,13 +151,11 @@
   letter-spacing: 0.08em;
   margin-bottom: 16px;
 }
-
 .library-share-card-top-games-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
-
 .library-share-top-game {
   display: flex;
   align-items: center;
@@ -184,20 +164,17 @@
   border-radius: 14px;
   padding: 16px 18px;
 }
-
 .library-share-top-game-rank {
   font-size: 18px;
   font-weight: 800;
   color: var(--recap-accent);
   min-width: 34px;
 }
-
 .library-share-top-game-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
-
 .library-share-top-game-info strong {
   font-size: 22px;
   font-weight: 700;
@@ -206,20 +183,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .library-share-top-game-info span {
   font-size: 16px;
   color: var(--recap-muted);
   margin-top: 2px;
 }
-
 .library-share-card-footer {
   z-index: 1;
   text-align: center;
   margin-top: auto;
   padding-top: 24px;
 }
-
 .library-share-card-cta {
   display: block;
   font-size: 16px;
@@ -227,7 +201,6 @@
   font-weight: 600;
   margin-bottom: 8px;
 }
-
 .library-share-card-tagline {
   display: block;
   font-size: 14px;

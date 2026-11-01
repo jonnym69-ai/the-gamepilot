@@ -1,9 +1,9 @@
 /**
  * Theme and visual-mode orchestration.
  *
- * Owns the active theme id and big-screen-mode flag, applies the
- * theme class to document.body, persists the theme to localStorage,
- * and listens for cross-component theme/big-screen toggle events.
+ * Owns the active theme id, applies the theme class to document.body,
+ * persists the theme to localStorage, and listens for cross-component
+ * theme toggle events.
  */
 
 import { useEffect, useState } from 'react';
@@ -28,8 +28,6 @@ export default function useTheme() {
     const savedTheme = localStorage.getItem('gamepilot-theme');
     return savedTheme || 'relaxed';
   });
-  const [bigScreenMode, setBigScreenMode] = useState(() => localStorage.getItem('gamepilot-bigScreenMode') === 'true');
-
   // Listen for themeChange events from other components (e.g. Settings).
   useEffect(() => {
     const handleThemeChange = (event) => {
@@ -51,41 +49,26 @@ export default function useTheme() {
     }
 
     const themeClass = resolveThemeClassName(theme);
-    const bigScreenMode = localStorage.getItem('gamepilot-bigScreenMode') === 'true';
-    const newBodyClass = `App ${themeClass}${animationsEnabled ? '' : ' no-animations'}${bigScreenMode ? ' big-screen-mode' : ''}`;
 
     if (theme !== themeClass) {
       setTheme(themeClass);
     }
 
-    // Only update if the class has actually changed
-    if (document.body.className !== newBodyClass) {
-      document.body.className = newBodyClass;
-      localStorage.setItem('gamepilot-theme', themeClass);
-    }
-  }, [theme]);
-
-  // React to big-screen mode toggle from ThemeContext
-  useEffect(() => {
-    const handleBigScreenToggle = () => {
-      const animationsEnabled = localStorage.getItem('animationsEnabled') !== 'false';
-      const themeClass = resolveThemeClassName(theme);
-      const bigScreenMode = localStorage.getItem('gamepilot-bigScreenMode') === 'true';
-      const newBodyClass = `App ${themeClass}${animationsEnabled ? '' : ' no-animations'}${bigScreenMode ? ' big-screen-mode' : ''}`;
-      if (document.body.className !== newBodyClass) {
-        document.body.className = newBodyClass;
+    // Mutate only the classes this hook owns. InterfacePreferencesService and
+    // ThemeContext apply their own body classes (compact-mode, has-user-accent,
+    // reduced-motion, ornament-*, etc.) — assigning className wholesale would
+    // wipe them on every theme change.
+    const bodyClassList = document.body.classList;
+    VALID_THEME_IDS.forEach((themeId) => {
+      if (themeId !== themeClass) {
+        bodyClassList.remove(themeId);
       }
-    };
-    window.addEventListener('gamepilot:bigscreen-toggled', handleBigScreenToggle);
-    const handleBigScreenState = (e) => {
-      setBigScreenMode(!!e?.detail?.enabled);
-    };
-    window.addEventListener('gamepilot:bigscreen-toggled', handleBigScreenState);
-    return () => {
-      window.removeEventListener('gamepilot:bigscreen-toggled', handleBigScreenToggle);
-      window.removeEventListener('gamepilot:bigscreen-toggled', handleBigScreenState);
-    };
+    });
+    bodyClassList.add('App');
+    bodyClassList.add(themeClass);
+    bodyClassList.toggle('no-animations', !animationsEnabled);
+    localStorage.setItem('gamepilot-theme', themeClass);
   }, [theme]);
 
-  return { theme, setTheme, bigScreenMode, setBigScreenMode };
+  return { theme, setTheme };
 }

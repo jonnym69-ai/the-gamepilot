@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import NavBar from './NavBar';
-import ProGate from './components/ProGate';
-import EntitlementService from './services/EntitlementService';
+import ReclaimSpacePanel from './components/ReclaimSpacePanel';
 import {
   HardDrive,
   RefreshCw,
@@ -203,6 +202,7 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
     return (
       <div className="storage-manager-page">
         <NavBar />
+        <ReclaimSpacePanel />
         <div className="storage-manager-empty">
           <HardDrive size={28} />
           <h1>Library Reclaimer is off</h1>
@@ -227,6 +227,8 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   return (
     <div className="storage-manager-page">
       <NavBar />
+
+      <ReclaimSpacePanel />
 
       <header className="storage-manager-hero">
         <div className="storage-manager-hero-text">
@@ -451,12 +453,4 @@ function StorageManager({ library = [], onLaunchGame = () => {} }) {
   );
 }
 
-export default function StorageManagerPage(props) {
-  if (EntitlementService.hasFeature('storage-manager')) return <StorageManager {...props} />;
-  return (
-    <div className="storage-manager-page">
-      <NavBar />
-      <ProGate feature="storage-manager" />
-    </div>
-  );
-}
+export default StorageManager;

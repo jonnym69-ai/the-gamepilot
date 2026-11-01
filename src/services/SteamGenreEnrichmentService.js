@@ -42,10 +42,11 @@ const STEAM_TO_GAMEPILOT_GENRE_MAP = {
  */
 const STEAM_CATEGORY_TO_GENRE_MAP = {
   multiplayer: 'Multiplayer',
-  'co-op': ['Multiplayer', 'Party'],
-  'local co-op': ['Multiplayer', 'Party'],
-  'online co-op': ['Multiplayer', 'Party'],
-  'split screen': ['Multiplayer', 'Party'],
+  'co-op': 'Multiplayer',
+  'local co-op': 'Multiplayer',
+  'online co-op': 'Multiplayer',
+  'split screen': 'Multiplayer',
+  'shared/split screen co-op': 'Multiplayer',
   'cross-platform multiplayer': 'Multiplayer',
   pvp: 'Multiplayer',
   'online pvp': 'Multiplayer',
@@ -70,8 +71,25 @@ const STEAM_CATEGORY_TO_GENRE_MAP = {
  * Service that enriches Steam games with accurate genres from the Steam Store API.
  * Results are cached to avoid repeated API calls.
  */
+const PLAY_MODES = new Set([
+  'single-player',
+  'multiplayer',
+  'co-op',
+  'local co-op',
+  'online co-op',
+  'split screen',
+  'shared/split screen co-op',
+  'shared/split screen pvp',
+  'online pvp',
+  'local pvp',
+  'pvp',
+  'cross-platform multiplayer',
+  'mmo',
+]);
+
 export class SteamGenreEnrichmentService {
-  static CACHE_KEY = 'steamGenreCacheV2';
+  static CACHE_KEY = 'steamGenreCacheV3';
+  static LEGACY_CACHE_KEY = 'steamGenreCacheV2';
   static CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   static getCache() {
@@ -141,6 +159,43 @@ export class SteamGenreEnrichmentService {
   }
 
   /**
+   * Preserve Steam's own mode categories (Single-player, Online Co-op, …)
+   * separately from genre labels — co-op is a mode, not a Party genre.
+   */
+  static extractPlayModes(steamCategories = []) {
+    const modes = new Set();
+    steamCategories.forEach((entry) => {
+      const label = String(entry?.description || entry || '')
+        .toLowerCase()
+        .trim();
+      if (PLAY_MODES.has(label)) modes.add(label);
+    });
+    return Array.from(modes);
+  }
+
+  /**
+   * Look up the cached play modes for an app, if a fresh fetch stored them.
+   */
+  static getCachedPlayModes(appId) {
+    const entry = this.getCache()[appId];
+    return Array.isArray(entry?.playModes) ? entry.playModes : null;
+  }
+
+  /**
+   * The previous cache (V2) inferred Party from co-op categories. Only that
+   * specific provenance allows a one-time Party strip — manual or unproven
+   * Party labels stay untouched.
+   */
+  static getLegacyCache() {
+    try {
+      const data = StorageService.get(this.LEGACY_CACHE_KEY, {});
+      return data && typeof data === 'object' ? data : {};
+    } catch {
+      return {};
+    }
+  }
+
+  /**
    * Fetch genres + categories for a single Steam app from the Steam Store API.
    */
   static async fetchSteamGenres(appId) {
@@ -178,9 +233,11 @@ export class SteamGenreEnrichmentService {
       const mappedCategories = this.mapSteamCategories(steamCategories);
       const combined = [...new Set([...mappedGenres, ...mappedCategories])];
       const normalized = normalizeGenres(combined);
+      const playModes = this.extractPlayModes(steamCategories);
 
       cache[appId] = {
         genres: normalized,
+        playModes,
         cachedAt: Date.now(),
       };
       this.saveCache(cache);
@@ -200,6 +257,7 @@ export class SteamGenreEnrichmentService {
 
     const enriched = [];
     const steamGames = library.filter((g) => g?.appid && String(g.appid).length > 2 && g.platform === 'Steam');
+    const legacyCache = this.getLegacyCache();
 
     // Fetch in small batches to avoid hammering the API
     const batchSize = 5;
@@ -226,18 +284,34 @@ export class SteamGenreEnrichmentService {
 
       const currentGenres = Array.isArray(game.genres) ? game.genres : [];
       const isGenericFallback = currentGenres.length === 1 && currentGenres[0] === 'Story-driven';
+      const playModes = this.getCachedPlayModes(game.appid);
+
+      // One-time correction: V2 inferred Party from co-op categories. Strip it
+      // only when this app's V2 cache entry proves that inference, the current
+      // labels still carry it, and fresh metadata no longer does. A manual or
+      // otherwise-unproven Party stays.
+      const v2InferredParty =
+        game.steamGenreEnrichmentVersion !== 3 &&
+        Array.isArray(legacyCache[game.appid]?.genres) &&
+        legacyCache[game.appid].genres.includes('Party') &&
+        currentGenres.includes('Party') &&
+        !steamGenres.includes('Party');
 
       if (isGenericFallback || currentGenres.length === 0) {
         enriched.push({
           ...game,
           genres: steamGenres,
+          ...(playModes ? { playModes } : {}),
+          steamGenreEnrichmentVersion: 3,
         });
       } else {
         // Merge without duplicates, preferring existing order then appending new
         const merged = [...new Set([...currentGenres, ...steamGenres])];
         enriched.push({
           ...game,
-          genres: merged,
+          genres: v2InferredParty ? merged.filter((genre) => genre !== 'Party') : merged,
+          ...(playModes ? { playModes } : {}),
+          steamGenreEnrichmentVersion: 3,
         });
       }
     }

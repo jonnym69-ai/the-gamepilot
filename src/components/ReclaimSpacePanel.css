@@ -1,0 +1,198 @@
+.reclaim-space-panel {
+  margin: 16px 20px 0;
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--card-bg), var(--input-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.2);
+}
+
+.reclaim-space-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  color: var(--header-text, var(--text-color));
+}
+
+.reclaim-space-title h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.reclaim-space-header p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.82;
+  line-height: 1.55;
+  max-width: 720px;
+}
+
+.reclaim-space-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  color: var(--text-color);
+  opacity: 0.75;
+}
+
+.reclaim-space-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.reclaim-space-total {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--header-text, var(--text-color));
+}
+
+.reclaim-space-panel button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.reclaim-space-panel button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--accent-color);
+}
+
+.reclaim-space-panel button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.reclaim-space-clean {
+  margin-top: 14px;
+  background: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
+  color: #fff !important;
+}
+
+.reclaim-space-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.reclaim-space-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+}
+
+.reclaim-space-item input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color);
+  cursor: pointer;
+}
+
+.reclaim-space-item-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reclaim-space-item-copy strong {
+  color: var(--header-text, var(--text-color));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reclaim-space-item-copy small {
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 0.78rem;
+}
+
+.reclaim-space-item-bytes {
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+}
+
+.reclaim-space-confirm {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(251, 146, 60, 0.08);
+  border: 1px solid rgba(251, 146, 60, 0.4);
+}
+
+.reclaim-space-confirm p {
+  margin: 0 0 12px;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.reclaim-space-confirm-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.reclaim-space-error {
+  margin: 12px 0 0;
+  color: #fca5a5;
+}
+
+.reclaim-space-results {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.reclaim-space-results p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.reclaim-space-results ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--text-color);
+  opacity: 0.8;
+  font-size: 0.88rem;
+}
+
+.reclaim-space-scan .spin {
+  animation: reclaim-spin 1s linear infinite;
+}
+
+@keyframes reclaim-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -9,11 +9,9 @@
   background: #10141e;
   color: #e9edf5;
 }
-
 .ra-share-dialog::backdrop {
   background: rgb(0 0 0 / 75%);
 }
-
 .ra-share-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -21,7 +19,6 @@
   justify-content: space-between;
   gap: 12px;
 }
-
 .ra-share-dialog button,
 .ra-share-dialog input {
   padding: 10px 16px;
@@ -30,16 +27,13 @@
   background: #202938;
   color: #fff;
 }
-
 .ra-share-dialog button:disabled {
   opacity: 0.5;
 }
-
 .ra-share-dialog :focus-visible {
   outline: 2px solid #ff854f;
   outline-offset: 3px;
 }
-
 .ra-share-name {
   display: flex;
   flex-wrap: wrap;
@@ -47,27 +41,24 @@
   gap: 12px;
   margin-bottom: 16px;
 }
-
 .ra-share-canvas {
   display: block;
   width: 100%;
   height: auto;
   margin-bottom: 20px;
 }
-
 .recent-activity-page {
   min-height: 100vh;
   background: var(--bg, #0f1117);
   color: var(--text, #e0e0e0);
 }
-
 .recent-activity-content {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 20px 60px;
 }
-
 /* Header */
+
 .recent-activity-header {
   display: flex;
   align-items: center;
@@ -75,7 +66,6 @@
   margin-bottom: 28px;
   flex-wrap: wrap;
 }
-
 .recent-activity-back-btn {
   background: var(--card, #1a1d27);
   border: 1px solid var(--card-border, #2a2d3a);
@@ -87,35 +77,29 @@
   align-items: center;
   transition: border-color 0.2s;
 }
-
 .recent-activity-back-btn:hover {
   border-color: var(--accent-color, #ff6b35);
 }
-
 .recent-activity-title-section {
   flex: 1;
   min-width: 200px;
 }
-
 .recent-activity-title {
   font-size: 1.8rem;
   margin: 0;
   color: var(--header-text, #fff);
 }
-
 .recent-activity-subtitle {
   font-size: 0.9rem;
   color: var(--text-secondary, #888);
   margin: 4px 0 0;
 }
-
 .recent-activity-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
-
 .recent-activity-period-toggle {
   display: flex;
   gap: 4px;
@@ -124,7 +108,6 @@
   border-radius: 999px;
   padding: 4px;
 }
-
 .recent-activity-period-btn {
   background: transparent;
   border: none;
@@ -136,16 +119,13 @@
   font-weight: 500;
   transition: all 0.2s;
 }
-
 .recent-activity-period-btn:hover {
   color: var(--text, #e0e0e0);
 }
-
 .recent-activity-period-btn.active {
   background: var(--accent-color, #ff6b35);
   color: #fff;
 }
-
 .recent-activity-refresh-btn {
   background: var(--card, #1a1d27);
   border: 1px solid var(--card-border, #2a2d3a);
@@ -157,27 +137,25 @@
   align-items: center;
   transition: border-color 0.2s;
 }
-
 .recent-activity-refresh-btn:hover {
   border-color: var(--accent-color, #ff6b35);
 }
-
 /* Loading */
+
 .recent-activity-loading {
   text-align: center;
   padding: 60px 20px;
   color: var(--text-secondary, #888);
   font-size: 1rem;
 }
-
 /* Overview Cards */
+
 .recent-activity-overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
-
 .recent-activity-overview-card {
   background: var(--card, #1a1d27);
   border: 1px solid var(--card-border, #2a2d3a);
@@ -186,8 +164,14 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
 }
-
+.recent-activity-overview-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-color, #ff6b35);
+}
 .recent-activity-overview-icon {
   width: 44px;
   height: 44px;
@@ -199,18 +183,15 @@
   justify-content: center;
   flex-shrink: 0;
 }
-
 .recent-activity-overview-info {
   min-width: 0;
 }
-
 .recent-activity-overview-label {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-secondary, #888);
 }
-
 .recent-activity-overview-value {
   font-size: 1.25rem;
   font-weight: 700;
@@ -219,14 +200,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .recent-activity-overview-subtitle {
   font-size: 0.8rem;
   color: var(--text-secondary, #888);
   margin-top: 2px;
 }
-
 /* Sections */
+
 .recent-activity-section {
   background: var(--card, #1a1d27);
   border: 1px solid var(--card-border, #2a2d3a);
@@ -234,24 +214,21 @@
   padding: 24px;
   margin-bottom: 24px;
 }
-
 .recent-activity-section-title {
   font-size: 1.2rem;
   margin: 0 0 4px;
   color: var(--header-text, #fff);
 }
-
 .recent-activity-section-desc {
   font-size: 0.85rem;
   color: var(--text-secondary, #888);
   margin: 0 0 20px;
 }
-
 /* Stacked Bar Chart */
+
 .ra-stacked-chart {
   width: 100%;
 }
-
 .ra-stacked-bars {
   display: flex;
   align-items: flex-end;
@@ -261,7 +238,6 @@
   position: relative;
   overflow-x: auto;
 }
-
 .ra-stacked-bar-col {
   flex: 1;
   min-width: 8px;
@@ -272,7 +248,6 @@
   position: relative;
   justify-content: flex-end;
 }
-
 .ra-stacked-bar {
   width: 100%;
   max-width: 24px;
@@ -283,16 +258,13 @@
   min-height: 0;
   transition: opacity 0.2s;
 }
-
 .ra-stacked-bar-col:hover .ra-stacked-bar {
   opacity: 0.85;
 }
-
 .ra-stacked-bar-segment {
   width: 100%;
   min-height: 1px;
 }
-
 .ra-stacked-bar-label {
   position: absolute;
   bottom: 0;
@@ -300,7 +272,6 @@
   color: var(--text-secondary, #888);
   white-space: nowrap;
 }
-
 .ra-stacked-legend {
   display: flex;
   flex-wrap: wrap;
@@ -309,7 +280,6 @@
   padding-top: 12px;
   border-top: 1px solid var(--card-border, #2a2d3a);
 }
-
 .ra-legend-item {
   display: flex;
   align-items: center;
@@ -317,25 +287,22 @@
   font-size: 0.8rem;
   color: var(--text-secondary, #888);
 }
-
 .ra-legend-dot {
   width: 10px;
   height: 10px;
   border-radius: 3px;
   flex-shrink: 0;
 }
-
 /* Per-game Table */
+
 .recent-activity-table-wrap {
   overflow-x: auto;
 }
-
 .recent-activity-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
-
 .recent-activity-table th {
   text-align: left;
   padding: 10px 12px;
@@ -346,23 +313,19 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .recent-activity-table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--card-border, #2a2d3a);
   color: var(--text, #e0e0e0);
 }
-
 .recent-activity-table tbody tr:hover {
   background: rgba(255, 107, 53, 0.05);
 }
-
 .ra-rank {
   color: var(--text-secondary, #888);
   width: 32px;
   text-align: center;
 }
-
 .ra-game-name {
   font-weight: 600;
   display: flex;
@@ -370,40 +333,36 @@
   gap: 8px;
   min-width: 150px;
 }
-
 .ra-color-dot {
   width: 10px;
   height: 10px;
   border-radius: 3px;
   flex-shrink: 0;
 }
-
 .ra-minutes {
   font-weight: 600;
   color: var(--accent-color, #ff6b35);
 }
-
 /* Charts grid (reuse from Stats) */
+
 .recent-activity-section .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
 }
-
 /* Patterns grid */
+
 .recent-activity-patterns-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 20px;
 }
-
 .recent-activity-pattern-card {
   background: var(--bg, #0f1117);
   border: 1px solid var(--card-border, #2a2d3a);
   border-radius: 12px;
   padding: 18px;
 }
-
 .recent-activity-pattern-card h3 {
   font-size: 1rem;
   margin: 0 0 16px;
@@ -412,14 +371,12 @@
   align-items: center;
   gap: 8px;
 }
-
 .recent-activity-bar-row {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
 }
-
 .ra-bar-label {
   font-size: 0.85rem;
   color: var(--text, #e0e0e0);
@@ -428,7 +385,6 @@
   align-items: center;
   gap: 6px;
 }
-
 .ra-bar-track {
   flex: 1;
   height: 8px;
@@ -436,54 +392,70 @@
   border-radius: 4px;
   overflow: hidden;
 }
-
 .ra-bar-fill {
   height: 100%;
   background: var(--accent-color, #ff6b35);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
-
 .ra-bar-value {
   font-size: 0.8rem;
   color: var(--text-secondary, #888);
   min-width: 120px;
   text-align: right;
 }
+/* Share-of-period column in the per-game table */
 
+.ra-share-cell {
+  min-width: 110px;
+}
+.ra-share-track {
+  height: 6px;
+  background: var(--card-border, #2a2d3a);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.ra-share-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.ra-share-value {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #888);
+}
+.ra-bar-label svg {
+  color: var(--accent-color, #ff6b35);
+  flex-shrink: 0;
+}
 /* Responsive */
+
 @media (max-width: 768px) {
   .recent-activity-content {
     padding: 16px 12px 40px;
   }
-
   .recent-activity-header {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .recent-activity-controls {
     width: 100%;
     justify-content: space-between;
   }
-
   .recent-activity-period-toggle {
     flex: 1;
     justify-content: space-between;
   }
-
   .recent-activity-overview-grid {
     grid-template-columns: 1fr;
   }
-
   .recent-activity-patterns-grid {
     grid-template-columns: 1fr;
   }
-
   .ra-bar-label {
     min-width: 100px;
   }
-
   .ra-bar-value {
     min-width: 90px;
   }

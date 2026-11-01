@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Gamepad2, Trophy, Clock, Layers, Target, Sparkles } from 'lucide-react';
 import { isGameUnplayed } from '../services/RecommendationEngine';
+import BoldText from './BoldText';
 import './StatsDrivenStory.css';
 
 const HOURS_THRESHOLD = 100;
@@ -157,12 +158,9 @@ function StatsDrivenStory({ library = [], libraryStats = null }) {
           <div className="stats-driven-insight-icon">{insight.icon}</div>
           <div className="stats-driven-insight-content">
             <div className="stats-driven-insight-title">{insight.title}</div>
-            <div
-              className="stats-driven-insight-text"
-              dangerouslySetInnerHTML={{
-                __html: insight.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
-              }}
-            />
+            <div className="stats-driven-insight-text">
+              <BoldText>{insight.text}</BoldText>
+            </div>
           </div>
           <div className="stats-driven-insight-highlight">{insight.highlight}</div>
         </div>

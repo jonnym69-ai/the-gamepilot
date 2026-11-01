@@ -15,7 +15,6 @@
   padding: 60px;
   box-sizing: border-box;
 }
-
 .top-rated-share-card-glow {
   position: absolute;
   inset: -50%;
@@ -24,7 +23,6 @@
   pointer-events: none;
   z-index: 0;
 }
-
 .top-rated-share-card-cover {
   position: absolute;
   inset: 0;
@@ -34,7 +32,6 @@
   opacity: 0.18;
   filter: saturate(0.6) brightness(0.7);
 }
-
 .top-rated-share-card-cover-grid {
   position: absolute;
   inset: 0;
@@ -46,14 +43,12 @@
   padding: 4px;
   box-sizing: border-box;
 }
-
 .top-rated-share-card-cover-cell {
   background-size: cover;
   background-position: center;
   filter: saturate(0.7) brightness(0.55);
   opacity: 0.9;
 }
-
 .top-rated-share-card-cover-overlay {
   position: absolute;
   inset: 0;
@@ -66,7 +61,6 @@
     linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.7) 100%);
   z-index: 0;
 }
-
 .top-rated-watermark {
   position: absolute;
   bottom: -40px;
@@ -76,7 +70,6 @@
   z-index: 0;
   transform: rotate(-12deg);
 }
-
 .top-rated-share-card-header {
   position: relative;
   z-index: 1;
@@ -85,14 +78,12 @@
   align-items: center;
   margin-bottom: 28px;
 }
-
 .top-rated-share-card-brand {
   font-weight: 800;
   font-size: 1.4rem;
   letter-spacing: 0.12em;
   color: #ffffff;
 }
-
 .top-rated-share-card-tag {
   font-size: 0.95rem;
   font-weight: 600;
@@ -102,7 +93,6 @@
   color: #fbbf24;
   border: 1px solid rgba(251, 191, 36, 0.35);
 }
-
 .top-rated-share-card-body {
   position: relative;
   z-index: 1;
@@ -111,43 +101,36 @@
   flex-direction: column;
   gap: 24px;
 }
-
 .top-rated-share-card-eyebrow {
   font-size: 1.15rem;
   color: #9ca3af;
   font-weight: 500;
 }
-
 .top-rated-share-card-headline {
   display: flex;
   gap: 24px;
 }
-
 .top-rated-share-card-stat {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-
 .top-rated-share-card-stat strong {
   font-size: 4.5rem;
   font-weight: 800;
   line-height: 1;
   color: #ffffff;
 }
-
 .top-rated-share-card-stat span {
   font-size: 1.1rem;
   color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-
 .top-rated-share-card-strip {
   display: flex;
   gap: 20px;
 }
-
 .top-rated-share-card-strip div {
   display: flex;
   flex-direction: column;
@@ -157,26 +140,22 @@
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 .top-rated-share-card-strip strong {
   font-size: 1.6rem;
   font-weight: 700;
   color: #fbbf24;
 }
-
 .top-rated-share-card-strip span {
   font-size: 0.85rem;
   color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-
 .top-rated-share-card-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-
 .top-rated-share-card-section-label {
   font-size: 0.9rem;
   color: #9ca3af;
@@ -184,7 +163,6 @@
   letter-spacing: 0.1em;
   margin-bottom: 4px;
 }
-
 .top-rated-share-card-row {
   display: flex;
   align-items: center;
@@ -194,14 +172,12 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
-
 .top-rated-share-card-rank {
   font-size: 1.1rem;
   font-weight: 700;
   color: #8b5cf6;
   min-width: 34px;
 }
-
 .top-rated-share-card-info {
   flex: 1;
   display: flex;
@@ -209,7 +185,6 @@
   gap: 2px;
   min-width: 0;
 }
-
 .top-rated-share-card-info strong {
   font-size: 1.2rem;
   font-weight: 600;
@@ -217,19 +192,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .top-rated-share-card-info span {
   font-size: 0.85rem;
   color: #9ca3af;
 }
-
 .top-rated-share-card-stars {
   display: flex;
   gap: 1px;
   color: #fbbf24;
   flex-shrink: 0;
 }
-
 .top-rated-share-card-footer {
   position: relative;
   z-index: 1;
@@ -239,12 +211,10 @@
   margin-top: auto;
   padding-top: 28px;
 }
-
 .top-rated-share-card-cta {
   font-size: 0.95rem;
   color: #9ca3af;
 }
-
 .top-rated-share-card-tagline {
   font-size: 0.8rem;
   color: #6b7280;

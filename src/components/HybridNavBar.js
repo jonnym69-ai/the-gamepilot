@@ -4,30 +4,22 @@ import {
   Menu,
   X,
   Search,
-  BookOpen,
   MessageSquarePlus,
-  Monitor,
-  Palette,
-  Trophy,
   Gift,
-  Database,
-  Download,
-  Link as LinkIcon,
   Crown,
   Activity,
+  CalendarDays,
+  HardDrive,
+  Flame,
 } from 'lucide-react';
-import { useTheme } from '../ThemeContext';
 
-// Primary nav: Home · Library · Recs · Stats · Profile · Settings
-// More menu: Hall of Champions, Year in Review, Recent Activity, Wishlist,
-// Progress (Goals/Habits, Achievements, Rewards), Tools (Storage Manager,
-// Export Hub, Gaming Links), Feedback, Themes, TV Mode
+// Primary nav: Home · Library · Recs · Profile · Settings
+// More menu: Your Gaming Life, Hall of Champions, Recent Activity, Wishlist, Storage Manager, Feedback
 
 function HybridNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const location = useLocation();
   const dropdownRef = useRef(null);
-  const { bigScreenMode, toggleBigScreenMode } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -93,10 +85,7 @@ function HybridNavBar() {
         <NavLink to="/recommendations" className="nav-link" title="Playstyle recommendations">
           Recs
         </NavLink>
-        <NavLink to="/stats" className="nav-link" title="Light local stats that feed your story">
-          Stats
-        </NavLink>
-        <NavLink to="/profile" className="nav-link" title="Your gaming persona and roasts">
+        <NavLink to="/profile" className="nav-link" title="Your gaming persona and story">
           Profile
         </NavLink>
         <NavLink to="/settings" className="nav-link" title="Preferences and configuration">
@@ -123,6 +112,14 @@ function HybridNavBar() {
             <div className="dropdown-section">
               <div className="dropdown-section-title">Story</div>
               <Link
+                to="/year-in-review"
+                className="dropdown-item"
+                onClick={closeDropdown}
+                title="Your gaming life — eras, year recaps, and journal"
+              >
+                <CalendarDays size={16} className="dropdown-item-icon" /> Your Gaming Life
+              </Link>
+              <Link
                 to="/timeline"
                 className="dropdown-item"
                 onClick={closeDropdown}
@@ -131,18 +128,10 @@ function HybridNavBar() {
                 <Crown size={16} className="dropdown-item-icon" /> Hall of Champions
               </Link>
               <Link
-                to="/year-in-review"
-                className="dropdown-item"
-                onClick={closeDropdown}
-                title="Your yearly gaming story arc"
-              >
-                <BookOpen size={16} className="dropdown-item-icon" /> Year in Review
-              </Link>
-              <Link
                 to="/recent-activity"
                 className="dropdown-item"
                 onClick={closeDropdown}
-                title="Detailed breakdown of your last X days of play"
+                title="Detailed breakdown of your last days of play"
               >
                 <Activity size={16} className="dropdown-item-icon" /> Recent Activity
               </Link>
@@ -154,16 +143,13 @@ function HybridNavBar() {
               >
                 <Gift size={16} className="dropdown-item-icon" /> Wishlist
               </Link>
-            </div>
-            <div className="dropdown-section">
-              <div className="dropdown-section-title">Progression</div>
               <Link
-                to="/progress"
+                to="/trending"
                 className="dropdown-item"
                 onClick={closeDropdown}
-                title="Goals, achievements, and unlockable rewards"
+                title="Steam's most-played games right now, crossed with your library"
               >
-                <Trophy size={16} className="dropdown-item-icon" /> Progress
+                <Flame size={16} className="dropdown-item-icon" /> Trending
               </Link>
             </div>
             <div className="dropdown-section">
@@ -172,25 +158,9 @@ function HybridNavBar() {
                 to="/storage-manager"
                 className="dropdown-item"
                 onClick={closeDropdown}
-                title="Compare installed game sizes and reclaim disk space"
+                title="Game install sizes and reclaimable space"
               >
-                <Database size={16} className="dropdown-item-icon" /> Storage Manager
-              </Link>
-              <Link
-                to="/export-hub"
-                className="dropdown-item"
-                onClick={closeDropdown}
-                title="Export your data and stats"
-              >
-                <Download size={16} className="dropdown-item-icon" /> Export Hub
-              </Link>
-              <Link
-                to="/gaming-links"
-                className="dropdown-item"
-                onClick={closeDropdown}
-                title="Your gaming bookmarks and useful links"
-              >
-                <LinkIcon size={16} className="dropdown-item-icon" /> Gaming Links
+                <HardDrive size={16} className="dropdown-item-icon" /> Storage Manager
               </Link>
             </div>
             <div className="dropdown-section">
@@ -203,29 +173,6 @@ function HybridNavBar() {
               >
                 <MessageSquarePlus size={16} className="dropdown-item-icon" /> Feedback
               </Link>
-            </div>
-            <div className="dropdown-section">
-              <div className="dropdown-section-title">View</div>
-              <Link
-                to="/themes"
-                className="dropdown-item"
-                onClick={closeDropdown}
-                title="Change mood themes and seasonal looks"
-              >
-                <Palette size={16} className="dropdown-item-icon" /> Themes
-              </Link>
-              <button
-                type="button"
-                className="dropdown-item"
-                onClick={() => {
-                  toggleBigScreenMode();
-                  closeDropdown();
-                }}
-                title={bigScreenMode ? 'Switch to normal desktop view' : 'Switch to TV / controller-friendly view'}
-              >
-                <Monitor size={16} className="dropdown-item-icon" />
-                {bigScreenMode ? 'Exit TV Mode' : 'TV Mode'}
-              </button>
             </div>
           </div>
         )}

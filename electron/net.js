@@ -5,7 +5,7 @@ const electron = require('electron');
  * Used by HLTB, PCGW, Steam, and wishlist bridges to avoid CORS and
  * Node TLS fingerprint blocking.
  */
-const httpsRequest = (url, body = null, headers = {}) =>
+const httpsRequest = (url, body = null, headers = {}, timeoutMs = 8000) =>
   new Promise((resolve, reject) => {
     let req;
     try {
@@ -30,7 +30,7 @@ const httpsRequest = (url, body = null, headers = {}) =>
         req.abort();
       } catch {}
       reject(new Error('httpsRequest timeout'));
-    }, 8000);
+    }, timeoutMs);
     req.on('close', () => clearTimeout(timer));
 
     if (headers) {

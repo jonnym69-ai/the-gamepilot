@@ -65,7 +65,7 @@ export function HomeSection({ className = '', eyebrow, title, copy, compact = fa
   );
 }
 
-export function RecommendationReasoning({ entry }) {
+export function RecommendationReasoning({ entry, showConfidence = true }) {
   const explanation = entry?.explanation;
 
   if (!explanation) {
@@ -85,11 +85,13 @@ export function RecommendationReasoning({ entry }) {
 
   return (
     <>
-      <div className="recommendation-badge-container">
-        <div className="confidence-badge" title={`${confidence}% confident match · ${matchScore}/100 match score`}>
-          {Math.round(confidence)}% match
+      {showConfidence && (
+        <div className="recommendation-badge-container">
+          <div className="confidence-badge" title={`${confidence}% confident match · ${matchScore}/100 match score`}>
+            {Math.round(confidence)}% match
+          </div>
         </div>
-      </div>
+      )}
       <div className="recommendation-reasoning">
         {globalHook && <div className="reasoning-global-hook">{globalHook}</div>}
         {gameSpecificHook && <div className="reasoning-game-hook">{gameSpecificHook}</div>}
@@ -223,7 +225,7 @@ export function BuyShelfCard({
           The best value pick from your wishlist, matched to what you actually play.
         </div>
       </div>
-      <RecommendationReasoning entry={entry} />
+      <RecommendationReasoning entry={entry} showConfidence={false} />
       <div className="game-card-image-wrapper">
         {artwork ? (
           <LazyImage src={artwork} alt={game.name} className="game-image home-grid-poster" />
@@ -235,7 +237,11 @@ export function BuyShelfCard({
       </div>
       <h4 className="game-name">{game.name}</h4>
       <div className="game-info">
-        {typeof meta.buyScore === 'number' && <span className="game-genre">{meta.buyScore}% match</span>}
+        {meta.conviction === 'strong' ? (
+          <span className="game-genre buy-shelf-conviction">Strong fit</span>
+        ) : (
+          meta.primaryReason && <span className="game-genre">{meta.primaryReason}</span>
+        )}
         {price && <span className="game-playtime">{price.priceFormatted || `$${price.price}`}</span>}
       </div>
       {hasCycle && (

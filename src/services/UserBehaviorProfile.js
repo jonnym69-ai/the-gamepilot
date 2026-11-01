@@ -6,6 +6,7 @@
 
 import StorageService from './StorageService';
 import { PersonaPerformanceInsights } from './PersonaPerformanceInsights';
+import RecommendationPreferenceService from './RecommendationPreferenceService';
 import { canonicalizeMood } from '../constants/GenresMoods';
 
 // Lazy import to avoid circular dependency (RecommendationEngine imports UserBehaviorProfile)
@@ -664,7 +665,10 @@ export class UserBehaviorProfile {
   }
 
   static shouldSuppressRecommendation(gameId, gameName = null) {
-    return this.getRecommendationOutcomeSignal(gameId, gameName).suppress;
+    return (
+      RecommendationPreferenceService.isSetAside(gameName || gameId) ||
+      this.getRecommendationOutcomeSignal(gameId, gameName).suppress
+    );
   }
 
   /**

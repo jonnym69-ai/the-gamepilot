@@ -99,6 +99,25 @@ describe('PlayNextService.getPlayNext', () => {
     expect(result.primary.reason).toBe("Day 34 of The Zomboid Era. The run isn't over.");
   });
 
+  test('resume carries the session journal note when present', () => {
+    PlaytimeAutoLogger.getSessionHistory.mockReturnValue([
+      { ...sessionAt(5 * HOURS, 'Project Zomboid'), note: 'cleared the mall basement' },
+    ]);
+    RecommendationEngine.getPerfectPlayResult.mockReturnValue({ entries: [entry('Terraria')] });
+
+    const result = PlayNextService.getPlayNext(library);
+
+    expect(result.mode).toBe('resume');
+    expect(result.primary.note).toBe('cleared the mall basement');
+  });
+
+  test('resume note is null when the session has no journal entry', () => {
+    PlaytimeAutoLogger.getSessionHistory.mockReturnValue([sessionAt(5 * HOURS, 'Project Zomboid')]);
+    RecommendationEngine.getPerfectPlayResult.mockReturnValue({ entries: [entry('Terraria')] });
+
+    expect(PlayNextService.getPlayNext(library).primary.note).toBeNull();
+  });
+
   test('falls through to a pick when the last session is stale', () => {
     PlaytimeAutoLogger.getSessionHistory.mockReturnValue([sessionAt(10 * DAYS, 'Project Zomboid')]);
     RecommendationEngine.getPerfectPlayResult.mockReturnValue({ entries: [entry('Terraria')] });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCcw, Calendar, Clock, Gamepad2, Trophy, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, RefreshCcw, Calendar, Clock, Gamepad2, Trophy, Sun, Sunrise, Sunset, Moon } from 'lucide-react';
 import NavBar from './NavBar';
 import EmptyState from './components/EmptyState';
 import SessionHistoryShare from './components/SessionHistoryShare';
@@ -83,6 +83,11 @@ function RecentActivity() {
     return map;
   }, [breakdown]);
 
+  const periodTotalMinutes = useMemo(() => {
+    if (!breakdown?.perGameBreakdown) return 0;
+    return breakdown.perGameBreakdown.reduce((sum, game) => sum + game.totalMinutes, 0);
+  }, [breakdown]);
+
   const handlePeriodChange = useCallback((value) => {
     setDays(value);
   }, []);
@@ -93,7 +98,7 @@ function RecentActivity() {
       {shareSnapshot && <SessionHistoryShare breakdown={shareSnapshot} onClose={() => setShareSnapshot(null)} />}
       <div className="recent-activity-content">
         <div className="recent-activity-header">
-          <button className="recent-activity-back-btn" onClick={() => navigate('/stats')} title="Back to Stats">
+          <button className="recent-activity-back-btn" onClick={() => navigate('/?view=activity')} title="Back">
             <ArrowLeft size={20} />
           </button>
           <div className="recent-activity-title-section">
@@ -196,26 +201,39 @@ function RecentActivity() {
                       <th>Game</th>
                       <th>Sessions</th>
                       <th>Total</th>
+                      <th>Share</th>
                       <th>Avg Session</th>
                       <th>First Played</th>
                       <th>Last Played</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {breakdown.perGameBreakdown.map((game, index) => (
-                      <tr key={game.name}>
-                        <td className="ra-rank">{index + 1}</td>
-                        <td className="ra-game-name">
-                          <span className="ra-color-dot" style={{ background: gameColorMap[game.name] }} />
-                          {game.name}
-                        </td>
-                        <td>{game.sessions}</td>
-                        <td className="ra-minutes">{formatDuration(game.totalMinutes)}</td>
-                        <td>{formatDuration(game.avgSessionMinutes)}</td>
-                        <td>{game.firstPlayedLabel}</td>
-                        <td>{game.lastPlayedLabel}</td>
-                      </tr>
-                    ))}
+                    {breakdown.perGameBreakdown.map((game, index) => {
+                      const sharePct = periodTotalMinutes > 0 ? (game.totalMinutes / periodTotalMinutes) * 100 : 0;
+                      return (
+                        <tr key={game.name}>
+                          <td className="ra-rank">{index + 1}</td>
+                          <td className="ra-game-name">
+                            <span className="ra-color-dot" style={{ background: gameColorMap[game.name] }} />
+                            {game.name}
+                          </td>
+                          <td>{game.sessions}</td>
+                          <td className="ra-minutes">{formatDuration(game.totalMinutes)}</td>
+                          <td className="ra-share-cell">
+                            <div className="ra-share-track">
+                              <div
+                                className="ra-share-fill"
+                                style={{ width: `${sharePct}%`, background: gameColorMap[game.name] }}
+                              />
+                            </div>
+                            <span className="ra-share-value">{Math.round(sharePct)}%</span>
+                          </td>
+                          <td>{formatDuration(game.avgSessionMinutes)}</td>
+                          <td>{game.firstPlayedLabel}</td>
+                          <td>{game.lastPlayedLabel}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -254,11 +272,17 @@ function RecentActivity() {
                   {Object.entries(breakdown.timeOfDayCounts).map(([label, minutes]) => {
                     const total = Object.values(breakdown.timeOfDayCounts).reduce((a, b) => a + b, 0);
                     const pct = total > 0 ? Math.round((minutes / total) * 100) : 0;
+                    const TimeIcon = label.includes('Night')
+                      ? Moon
+                      : label.includes('Evening')
+                        ? Sunset
+                        : label.includes('Morning')
+                          ? Sunrise
+                          : Sun;
                     return (
                       <div key={label} className="recent-activity-bar-row">
                         <span className="ra-bar-label">
-                          {label.includes('Night') && <Moon size={14} />}
-                          {label.includes('Morning') && <Sun size={14} />}
+                          <TimeIcon size={14} />
                           {label}
                         </span>
                         <div className="ra-bar-track">

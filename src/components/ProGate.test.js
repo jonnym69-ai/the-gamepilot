@@ -4,15 +4,9 @@ import { MemoryRouter } from 'react-router-dom';
 import ProGate from './ProGate';
 import RecommendationTunerPanel from './RecommendationTunerPanel';
 import CinematicExport from './CinematicExport';
-import StorageManager from '../StorageManager';
 import StorageService from '../services/StorageService';
-import DiskUsageService from '../services/DiskUsageService';
-import { HardwareDetector } from '../services/HardwareDetector';
 
 jest.mock('../NavBar', () => () => null);
-jest.mock('../services/HardwareDetector', () => ({
-  HardwareDetector: { getSystemInfo: jest.fn().mockResolvedValue(null) },
-}));
 
 const renderInRouter = (ui) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
@@ -73,11 +67,4 @@ test('cinematic export renders its real format and export controls', () => {
 test('closed cinematic entry renders nothing', () => {
   const { container } = renderInRouter(<CinematicExport isOpen={false} library={[]} />);
   expect(container).toBeEmptyDOMElement();
-});
-
-test('Library Reclaimer mounts its real page', async () => {
-  jest.spyOn(DiskUsageService, 'isEnabled').mockReturnValue(true);
-  renderInRouter(<StorageManager library={[]} />);
-  expect(await screen.findByRole('heading', { name: 'Library Reclaimer' })).toBeInTheDocument();
-  expect(HardwareDetector.getSystemInfo).toHaveBeenCalledTimes(1);
 });

@@ -2136,6 +2136,57 @@ const buildPersonaEvidence = (archetype, signals, game) => {
   return evidence.slice(0, 5);
 };
 
+// Receipts for sub-trait chips — every label must be able to show the data
+// that produced it, or it doesn't ship. Strings mirror buildPersonaEvidence
+// style: short, numeric, and honest about sample size.
+const formatClockHour = (hour) => {
+  const h = ((Number(hour) % 24) + 24) % 24;
+  return `${h % 12 || 12}${h >= 12 ? 'pm' : 'am'}`;
+};
+
+const SUB_TRAIT_EVIDENCE = {
+  backlog_hoarder: (s) => [`${s.neverPlayedGames} of ${s.totalGames} games never played`],
+  replay_junkie: (s) => [
+    `Top 3 games take ${Math.round(s.top3SessionShare * 100)}% of ${s.totalSessions} tracked sessions`,
+    ...(s.topGame?.name ? [`${s.topGame.name} leads your session history`] : []),
+  ],
+  night_owl: (s) => [`Peak play starts around ${formatClockHour(s.peakHour)}`],
+  early_riser: (s) => [`Peak play starts around ${formatClockHour(s.peakHour)}`],
+  genre_specialist: (s) => [`${Math.round(s.dominantGenreShare * 100)}% of your playtime is ${s.dominantGenre}`],
+  platform_hopper: (s) => [`Playing across ${s.platformCount} different platforms`],
+  early_access_volunteer: (s) => [`${Math.round(s.earlyAccessRatio * 100)}% of your tagged games are Early Access`],
+  patient_gamer: (s) => [`Games you play average a ${s.avgReleaseYear} release year`],
+  day_one_daredevil: (s) => [`Games you play average a ${s.avgReleaseYear} release year`],
+  indie_devout: (s) => [`${Math.round(s.indieRatio * 100)}% of your tagged games are indie`],
+  franchise_prisoner: (s) =>
+    [
+      s.topFranchise && s.topFranchiseShare > 0.4
+        ? `${s.topFranchise[0]} is ${Math.round(s.topFranchiseShare * 100)}% of your library`
+        : null,
+      !(s.topFranchise && s.topFranchiseShare > 0.4) && s.topPub
+        ? `${Math.round(s.topPubShare * 100)}% of your library comes from ${s.topPub[0]}`
+        : null,
+    ].filter(Boolean),
+  pain_connoisseur: (s) => [
+    `${Math.round(s.challengeRatio * 100)}% of your playtime is punishing games`,
+    `${s.hardGameCount} hard games in your library`,
+  ],
+  weekend_warrior_trait: (s) => [`${Math.round(s.weekendSessionRatio * 100)}% of recent sessions land on weekends`],
+  lunch_break_trait: (s) => [`${Math.round(s.shortSessionRatio * 100)}% of recent sessions run under 30 min`],
+  modder_trait: (s) => [`${Math.round(s.modFriendlyRatio * 100)}% of your library is mod-friendly`],
+  sampler: (s) => [`You've played ${Math.round(s.playedRatio * 100)}% of your ${s.totalGames} games`],
+  founder_supporter: () => ['You backed GamePilot early'],
+  secondary_theme: (s) =>
+    s.secondaryTheme
+      ? [`${Math.round(s.secondaryTheme.share * 100)}% of your current rotation is ${s.secondaryTheme.shortName}`]
+      : [],
+};
+
+const buildSubTraitEvidence = (trait, signals) => {
+  const build = SUB_TRAIT_EVIDENCE[trait?.id];
+  return build ? build(signals).slice(0, 3) : [];
+};
+
 const pickArchetypeRoast = (archetype, signals, seed, game) => {
   if (!archetype) return 'GamePilot is still learning your style.';
   const targetGame = game || signals.lastPlayedGame || signals.topGame;
@@ -2244,6 +2295,7 @@ export class GamingPersonaService {
       id: trait.id,
       label: trait.label,
       description: pickRoast(trait.roasts, baseSeed + 2),
+      evidence: buildSubTraitEvidence(trait, signals),
     }));
 
     // Theme layer: the dominant world the player inhabits (zombies, space...)
@@ -2264,6 +2316,7 @@ export class GamingPersonaService {
           ],
           baseSeed + 3
         ),
+        evidence: buildSubTraitEvidence({ id: 'secondary_theme' }, signals),
       });
     }
 
@@ -2345,6 +2398,7 @@ export class GamingPersonaService {
       founder: FounderService.getFounderProfile(),
       signals: {
         totalGames: signals.totalGames,
+        adaptiveSessionCount: signals.adaptiveSessionCount,
         playedRatio: Math.round(signals.playedRatio * 100),
         avgReleaseYear: signals.avgReleaseYear,
         dominantGenre: signals.dominantGenre,

@@ -13,18 +13,15 @@
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
-
 .hltb-chip svg {
   opacity: 0.85;
 }
-
 .hltb-chip--pending {
   opacity: 0.6;
   background: rgba(148, 163, 184, 0.12);
   color: #cbd5e1;
   border-color: rgba(148, 163, 184, 0.25);
 }
-
 .hltb-chip--main {
   background: rgba(99, 102, 241, 0.18);
   color: #c7d2fe;
@@ -40,7 +37,6 @@
   color: #fbcfe8;
   border-color: rgba(236, 72, 153, 0.3);
 }
-
 .hltb-chip-row {
   display: inline-flex;
   flex-wrap: wrap;

@@ -1,4 +1,5 @@
 import StorageService from './StorageService';
+import OwnedEnrichmentService from './OwnedEnrichmentService';
 
 const EPIC_CACHE_KEY = 'epicFreeGameRadarCacheV1';
 const GAMERPOWER_CACHE_KEY = 'gamerpowerRadarCacheV1';
@@ -12,8 +13,6 @@ export const getEpicOfferState = (game, now = Date.now()) => {
   return start > now ? 'upcoming' : 'available';
 };
 const EPIC_FREE_GAMES_URL = 'https://store.epicgames.com/free-games';
-const STEAM_FEATURED_URL = 'https://store.steampowered.com/api/featuredcategories/';
-const GOG_FREEBIES_URL = 'https://www.gog.com/games/ajax/filtered?priceRange=0,0&discounted=true&page=1';
 const CACHE_KEY = 'freeGameRadarCacheV2';
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
@@ -98,46 +97,38 @@ const normalizeSteamFreeGame = (item, type = 'free-to-play') => {
   };
 };
 
-const fetchSteamFreeGames = async () => {
-  try {
-    const response = await fetch(STEAM_FEATURED_URL);
-    if (!response.ok) return [];
-    const data = await response.json();
-    const results = [];
+const normalizeSteamFreeGames = (data) => {
+  const results = [];
 
-    // Permanently free-to-play games
-    const freeGames = data?.freegames?.items || data?.free_games?.items || [];
-    for (const item of freeGames) {
-      const normalized = normalizeSteamFreeGame(item, 'free-to-play');
-      if (normalized) results.push(normalized);
-    }
-
-    // Specials with 100% discount = free-to-keep or free weekend
-    const specials = data?.specials?.items || [];
-    for (const item of specials) {
-      const discount = Number(item.discount_percent || item.discount || 0);
-      const isFree = discount >= 100 || item.is_free_weekend || item.is_free_to_keep;
-      if (!isFree) continue;
-      const normalized = normalizeSteamFreeGame(item, item.is_free_weekend ? 'free-weekend' : 'free-to-keep');
-      if (normalized) results.push(normalized);
-    }
-
-    // Deduplicate by app id
-    const seen = new Set();
-    return results.filter((game) => {
-      if (seen.has(game.id)) return false;
-      seen.add(game.id);
-      return true;
-    });
-  } catch {
-    return [];
+  // Permanently free-to-play games
+  for (const item of data?.freegames || []) {
+    const normalized = normalizeSteamFreeGame(item, 'free-to-play');
+    if (normalized) results.push(normalized);
   }
+
+  // Specials with 100% discount = free-to-keep or free weekend
+  for (const item of data?.specials || []) {
+    const discount = Number(item.discount_percent || item.discount || 0);
+    const isFree = discount >= 100 || item.is_free_weekend || item.is_free_to_keep;
+    if (!isFree) continue;
+    const normalized = normalizeSteamFreeGame(item, item.is_free_weekend ? 'free-weekend' : 'free-to-keep');
+    if (normalized) results.push(normalized);
+  }
+
+  // Deduplicate by app id
+  const seen = new Set();
+  return results.filter((game) => {
+    if (seen.has(game.id)) return false;
+    seen.add(game.id);
+    return true;
+  });
 };
 
 const normalizeGOGProduct = (product) => {
   if (!product) return null;
   const price = product.price || {};
-  const isFree = price.isFree === true || price.finalMoney?.amount === 0 || price.final === 0;
+  const isFree =
+    price.isFree === true || price.finalMoney?.amount === 0 || price.final === 0 || Number(price.finalAmount) === 0;
   if (!isFree) return null;
 
   const id = product.id || product.slug;
@@ -158,20 +149,24 @@ const normalizeGOGProduct = (product) => {
   };
 };
 
-const fetchGOGFreeGames = async () => {
+const normalizeGOGFreeGames = (products) =>
+  (Array.isArray(products) ? products : []).map(normalizeGOGProduct).filter(Boolean);
+
+// Steam and GOG free-game endpoints send no CORS headers, so they are fetched
+// in the main process via the 'store-free-games' bridge. Either source may be
+// null on failure — the other still gets normalized.
+const fetchStoreFreeGames = async () => {
   try {
-    const response = await fetch(GOG_FREEBIES_URL);
-    if (!response.ok) return [];
-    const data = await response.json();
-    const products = data?.products || [];
-    const results = [];
-    for (const product of products) {
-      const normalized = normalizeGOGProduct(product);
-      if (normalized) results.push(normalized);
-    }
-    return results;
+    const api = typeof window !== 'undefined' && window.electronAPI?.storeFreeGames;
+    if (!api) return { steam: null, gog: null };
+    const result = await api();
+    if (!result?.ok) return { steam: null, gog: null };
+    return {
+      steam: result.steam || null,
+      gog: Array.isArray(result.gog) ? result.gog : null,
+    };
   } catch {
-    return [];
+    return { steam: null, gog: null };
   }
 };
 
@@ -235,6 +230,7 @@ export const FreeGameRadar = {
             checkedAt: Date.now(),
           };
           StorageService.set(GAMERPOWER_CACHE_KEY, next);
+          OwnedEnrichmentService.recordSeenGiveaways(next.games);
           return { ...next, stale: false, error: '' };
         } catch (error) {
           return {
@@ -269,6 +265,7 @@ export const FreeGameRadar = {
           if (!result?.ok || !Array.isArray(result.elements)) throw new Error('Epic offers could not be refreshed.');
           const next = { games: normalizeEpicGames(result.elements), checkedAt: Date.now() };
           StorageService.set(EPIC_CACHE_KEY, next);
+          OwnedEnrichmentService.recordSeenGiveaways(next.games);
           return { ...next, stale: false, error: '' };
         } catch (error) {
           return { games, checkedAt: validCache ? cached.checkedAt : null, stale: true, error: error.message };
@@ -288,11 +285,9 @@ export const FreeGameRadar = {
       return cached.games;
     }
 
-    const [epicGames, steamGames, gogGames] = await Promise.all([
-      fetchEpicFreeGames(forceRefresh),
-      fetchSteamFreeGames(),
-      fetchGOGFreeGames(),
-    ]);
+    const [epicGames, storeFeed] = await Promise.all([fetchEpicFreeGames(forceRefresh), fetchStoreFreeGames()]);
+    const steamGames = normalizeSteamFreeGames(storeFeed.steam);
+    const gogGames = normalizeGOGFreeGames(storeFeed.gog);
 
     const allGames = [...epicGames, ...steamGames, ...gogGames].sort((a, b) => {
       // Sort by end date (ending soonest first), then by source
@@ -303,6 +298,7 @@ export const FreeGameRadar = {
     });
 
     StorageService.set(CACHE_KEY, { timestamp: now, games: allGames });
+    OwnedEnrichmentService.recordSeenGiveaways(allGames);
     return allGames;
   },
 };

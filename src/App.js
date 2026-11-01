@@ -5,13 +5,13 @@ import { ThemeProvider } from './ThemeContext';
 import ControllerSupport from './components/ControllerSupport';
 import ErrorBoundary from './components/ErrorBoundary';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
+import BackToTop from './components/BackToTop';
 import { normalizeLibraryData } from './services/LibraryDataService';
+import ManualGamesService, { MANUAL_GAMES_CHANGED_EVENT } from './services/ManualGamesService';
 import TrayMenuService from './services/TrayMenuService';
 import { ToastProvider, useToast } from './components/Toast';
 import { RECOMMENDATION_OUTCOME } from './services/UserBehaviorProfile';
 import StorageService from './services/StorageService';
-import PeriodChampionService from './services/PeriodChampionService';
-import { getSpeech } from './services/ChampionSpeechService';
 import CommandPalette from './components/CommandPalette';
 import QuickLaunchHotbar from './components/QuickLaunchHotbar';
 import AnimatedBackground from './components/AnimatedBackground';
@@ -23,41 +23,35 @@ import useGamingStory from './hooks/useGamingStory';
 import useDynamicBackdrop from './hooks/useDynamicBackdrop';
 import useStillPlayingPrompt from './hooks/useStillPlayingPrompt';
 import useSessionNotifications from './hooks/useSessionNotifications';
+import useFreeGameNotifications from './hooks/useFreeGameNotifications';
 import useLibraryLoading from './hooks/useLibraryLoading';
 import useLibraryScanner from './hooks/useLibraryScanner';
-import useSeasonalFeatures from './hooks/useSeasonalFeatures';
 import useSessionLifecycle from './hooks/useSessionLifecycle';
 import useGameLaunching from './hooks/useGameLaunching';
+import useInstallCompletion from './hooks/useInstallCompletion';
+import InstallCompleteModal from './components/InstallCompleteModal';
 
 // Core pages loaded eagerly.
 const Home = lazy(() => import('./Home'));
 const Library = lazy(() => import('./Library'));
 
 // Secondary pages loaded on demand.
-const Stats = lazy(() => import('./Stats'));
 const RecentActivity = lazy(() => import('./RecentActivity'));
 const Settings = lazy(() => import('./Settings'));
 const Profile = lazy(() => import('./Profile'));
 const YearInReview = lazy(() => import('./YearInReview'));
+const StorageManager = lazy(() => import('./StorageManager'));
 const Timeline = lazy(() => import('./Timeline'));
 
-const GamingLinks = lazy(() => import('./GamingLinks'));
-const Themes = lazy(() => import('./Themes'));
-const Habits = lazy(() => import('./Habits'));
-const Achievements = lazy(() => import('./Achievements'));
-const ExportHub = lazy(() => import('./ExportHub'));
-const StorageManager = lazy(() => import('./StorageManager'));
 const Recommendations = lazy(() => import('./Recommendations'));
+const Trending = lazy(() => import('./Trending'));
 const GameBarOverlay = lazy(() => import('./components/GameBarOverlay'));
-const Rewards = lazy(() => import('./Rewards'));
 const Feedback = lazy(() => import('./Feedback'));
 const WishlistPage = lazy(() => import('./WishlistPage'));
 
 // Conditionally-rendered UI components loaded on demand.
-const BigScreenMode = lazy(() => import('./components/BigScreenMode'));
 const GamingStoryCard = lazy(() => import('./components/GamingStoryCard'));
 const GuidedTour = lazy(() => import('./components/GuidedTour'));
-const SeasonalHideAndSeek = lazy(() => import('./components/SeasonalHideAndSeek'));
 
 // One-time migration: copy legacy 'gameLibrary' key to prefixed 'gamepilot-library'
 StorageService.migrate();
@@ -77,13 +71,13 @@ export default function App() {
 function AppContent() {
   const [library, setLibrary] = useState([]);
   const { filterMood, setFilterMood, filterTime, setFilterTime, filterGenre, setFilterGenre } = useLibraryFilters();
-  const { theme, setTheme, bigScreenMode } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [lastPlayedGame, setLastPlayedGame] = useState(null);
   const [dynamicCoverBg, setDynamicCoverBg] = useState(() => StorageService.getString('dynamicCoverBg') === 'true');
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(
     () => StorageService.getString('minimizeOnLaunch') !== 'false'
   );
-  const { success: toastSuccess, roast: toastRoast } = useToast();
+  const { success: toastSuccess } = useToast();
 
   // Memoization caches for performance
   const playtimeStatsCache = useRef(new Map());
@@ -104,7 +98,7 @@ function AppContent() {
   });
 
   // 4. Session lifecycle
-  const { activeSessions, handleEndSession, refreshActiveSessions, sessionStorageReady } = useSessionLifecycle({
+  const { activeSessions, handleEndSession, refreshActiveSessions } = useSessionLifecycle({
     library,
     setLibrary,
     saveLibrary,
@@ -113,8 +107,7 @@ function AppContent() {
     hasLoadedLibrary,
   });
 
-  // 5. Seasonal features + game launching
-  const { trackGamePlay } = useSeasonalFeatures({ library });
+  // 5. Game launching
   const { handleLaunchGame } = useGameLaunching({
     library,
     setLibrary,
@@ -123,7 +116,6 @@ function AppContent() {
     handleEndSession,
     refreshActiveSessions,
     minimizeOnLaunch,
-    trackGamePlay,
   });
 
   // 6. Prompts + notifications
@@ -133,6 +125,12 @@ function AppContent() {
   });
   const { recommendationOutcomePrompt, submitRecommendationOutcome, disableRecommendationOutcomePrompts } =
     useSessionNotifications();
+  useFreeGameNotifications();
+  const {
+    completed: installCompleted,
+    dismiss: dismissInstallComplete,
+    playNow: playInstalledGame,
+  } = useInstallCompletion({ library, setLibrary, saveLibrary });
 
   // 7. Dynamic backdrop
   useDynamicBackdrop({ lastPlayedGame, dynamicCoverBg });
@@ -141,32 +139,6 @@ function AppContent() {
   useGlobalInput();
 
   // --- Remaining App-level effects ---
-
-  // Champion toast notifications
-  useEffect(() => {
-    if (!sessionStorageReady) return;
-    try {
-      const newlyLocked = PeriodChampionService.lockChampionsIfNeeded({ library });
-      if (Array.isArray(newlyLocked) && newlyLocked.length > 0) {
-        const personalityEnabled = StorageService.getString('personalityToastsEnabled', 'true') === 'true';
-        if (personalityEnabled) {
-          newlyLocked.forEach((champion) => {
-            const speech = getSpeech(champion.period, champion.periodKey);
-            if (speech?.speech) {
-              const periodLabel =
-                champion.period === 'week' ? 'Weekly' : champion.period === 'month' ? 'Monthly' : 'Yearly';
-              setTimeout(
-                () => toastRoast(`${periodLabel} Champion: ${champion.game.name}. "${speech.speech}"`, 7000),
-                1000
-              );
-            }
-          });
-        }
-      }
-    } catch {
-      /* non-critical */
-    }
-  }, [library, sessionStorageReady, toastRoast]);
 
   // Clear playtime stats cache when library changes
   useEffect(() => {
@@ -192,6 +164,20 @@ function AppContent() {
     return () => window.clearTimeout(timer);
   }, [library]);
 
+  // Re-sync the library whenever a manual (user-picked) game is added or
+  // removed from any surface — Library toolbar, giveaway cards, etc.
+  useEffect(() => {
+    const syncManualGames = () => {
+      setLibrary((currentLibrary) => {
+        const mergedLibrary = ManualGamesService.mergeIntoLibrary(currentLibrary);
+        saveLibrary(mergedLibrary);
+        return mergedLibrary;
+      });
+    };
+    window.addEventListener(MANUAL_GAMES_CHANGED_EVENT, syncManualGames);
+    return () => window.removeEventListener(MANUAL_GAMES_CHANGED_EVENT, syncManualGames);
+  }, [saveLibrary]);
+
   // --- Library update handler (used by Library page) ---
   const handleLibraryUpdated = useCallback(
     (updatedLibrary) => {
@@ -213,6 +199,7 @@ function AppContent() {
     handleUpdateMood,
     handleAddSessionNote,
     handleTogglePlayedElsewhere,
+    handleSetMetadataOverride,
   } = useLibraryCuration({ library, setLibrary, saveLibrary, toastSuccess });
 
   return (
@@ -370,30 +357,7 @@ function AppContent() {
                 </RouteErrorBoundary>
               }
             />
-            <Route
-              path="/dashboard"
-              element={
-                <RouteErrorBoundary>
-                  <Home
-                    mode="dashboard"
-                    library={library}
-                    onLaunchGame={handleLaunchGame}
-                    onScan={scanLocalLibrary}
-                    lastPlayedGame={lastPlayedGame}
-                    activeSessions={activeSessions}
-                    endSession={handleEndSession}
-                    mood={filterMood}
-                    time={filterTime}
-                    selectedGenre={filterGenre}
-                    setMood={setFilterMood}
-                    setTime={setFilterTime}
-                    setSelectedGenre={setFilterGenre}
-                    theme={theme}
-                    loading={loading}
-                  />
-                </RouteErrorBoundary>
-              }
-            />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
             <Route
               path="/library"
               element={
@@ -417,45 +381,27 @@ function AppContent() {
                     onUpdateMood={handleUpdateMood}
                     onAddSessionNote={handleAddSessionNote}
                     onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
+                    onUpdateMetadata={handleSetMetadataOverride}
                     loading={loading}
                   />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
-            <Route
-              path="/stats"
-              element={
-                <RouteErrorBoundary>
-                  <Stats library={library} />
-                </RouteErrorBoundary>
-              }
-            />
+            <Route path="/stats" element={<Navigate to="/" replace />} />
             <Route
               path="/recent-activity"
               element={
                 <RouteErrorBoundary>
                   <RecentActivity />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
             <Route path="/gaming-dna" element={<Navigate to="/profile" replace />} />
-            <Route
-              path="/themes"
-              element={
-                <RouteErrorBoundary>
-                  <Themes />
-                </RouteErrorBoundary>
-              }
-            />
-            <Route path="/progress" element={<Navigate to="/habits" replace />} />
-            <Route
-              path="/habits"
-              element={
-                <RouteErrorBoundary>
-                  <Habits library={library} />
-                </RouteErrorBoundary>
-              }
-            />
+            <Route path="/themes" element={<Navigate to="/settings" replace />} />
+            <Route path="/progress" element={<Navigate to="/" replace />} />
+            <Route path="/habits" element={<Navigate to="/" replace />} />
             <Route
               path="/settings"
               element={
@@ -469,6 +415,7 @@ function AppContent() {
                     minimizeOnLaunch={minimizeOnLaunch}
                     setMinimizeOnLaunch={setMinimizeOnLaunch}
                   />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
@@ -477,6 +424,7 @@ function AppContent() {
               element={
                 <RouteErrorBoundary>
                   <Profile library={library} />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
@@ -485,6 +433,16 @@ function AppContent() {
               element={
                 <RouteErrorBoundary>
                   <YearInReview library={library} />
+                  <BackToTop />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
+              path="/gaming-life"
+              element={
+                <RouteErrorBoundary>
+                  <YearInReview library={library} />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
@@ -493,48 +451,53 @@ function AppContent() {
               element={
                 <RouteErrorBoundary>
                   <Timeline library={library} />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
-            <Route
-              path="/gaming-links"
-              element={
-                <RouteErrorBoundary>
-                  <GamingLinks theme={theme} library={library} onUpdateCoverArt={handleUpdateCoverArt} />
-                </RouteErrorBoundary>
-              }
-            />
+            <Route path="/gaming-links" element={<Navigate to="/" replace />} />
             <Route path="/library-intelligence" element={<Navigate to="/recommendations" replace />} />
-            <Route
-              path="/achievements"
-              element={
-                <RouteErrorBoundary>
-                  <Achievements theme={theme} />
-                </RouteErrorBoundary>
-              }
-            />
-            <Route
-              path="/export-hub"
-              element={
-                <RouteErrorBoundary>
-                  <ExportHub library={library} />
-                </RouteErrorBoundary>
-              }
-            />
+            <Route path="/achievements" element={<Navigate to="/" replace />} />
+            <Route path="/export-hub" element={<Navigate to="/" replace />} />
             <Route
               path="/storage-manager"
               element={
                 <RouteErrorBoundary>
                   <StorageManager library={library} onLaunchGame={handleLaunchGame} />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
             <Route path="/swipe-deck" element={<Navigate to="/recommendations" replace />} />
             <Route
+              path="/trending"
+              element={
+                <RouteErrorBoundary>
+                  <Trending
+                    library={library}
+                    onLaunchGame={handleLaunchGame}
+                    onToggleFavorite={handleToggleFavorite}
+                    onToggleHidden={handleToggleHidden}
+                    onUpdateRating={handleUpdateRating}
+                    onUpdateCollections={handleUpdateCollections}
+                    onUpdateCompletion={handleUpdateCompletion}
+                    onUpdateNotes={handleUpdateNotes}
+                    onUpdateCoverArt={handleUpdateCoverArt}
+                    onUpdateMood={handleUpdateMood}
+                    onAddSessionNote={handleAddSessionNote}
+                    onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
+                    onUpdateMetadata={handleSetMetadataOverride}
+                  />
+                  <BackToTop />
+                </RouteErrorBoundary>
+              }
+            />
+            <Route
               path="/recommendations"
               element={
                 <RouteErrorBoundary>
                   <Recommendations library={library} onLaunchGame={handleLaunchGame} />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
@@ -543,18 +506,12 @@ function AppContent() {
               element={
                 <RouteErrorBoundary>
                   <WishlistPage library={library} onLaunchGame={handleLaunchGame} />
+                  <BackToTop />
                 </RouteErrorBoundary>
               }
             />
             <Route path="/gamebar" element={<GameBarOverlay />} />
-            <Route
-              path="/rewards"
-              element={
-                <RouteErrorBoundary>
-                  <Rewards />
-                </RouteErrorBoundary>
-              }
-            />
+            <Route path="/rewards" element={<Navigate to="/" replace />} />
             <Route
               path="/feedback"
               element={
@@ -566,34 +523,20 @@ function AppContent() {
           </Routes>
         </Suspense>
       </ErrorBoundary>
-      {bigScreenMode && (
-        <Suspense fallback={null}>
-          <BigScreenMode
-            library={library}
-            onLaunchGame={handleLaunchGame}
-            activeSessions={activeSessions}
-            onEndSession={handleEndSession}
-            lastPlayedGame={lastPlayedGame}
-            onUpdateRating={handleUpdateRating}
-            onToggleFavorite={handleToggleFavorite}
-            onUpdateCollections={handleUpdateCollections}
-            onToggleHidden={handleToggleHidden}
-            onUpdateCompletion={handleUpdateCompletion}
-            onUpdateNotes={handleUpdateNotes}
-            onUpdateCoverArt={handleUpdateCoverArt}
-            onUpdateMood={handleUpdateMood}
-            onAddSessionNote={handleAddSessionNote}
-            onTogglePlayedElsewhere={handleTogglePlayedElsewhere}
-          />
-        </Suspense>
-      )}
-      <Suspense fallback={null}>
-        <SeasonalHideAndSeek />
-      </Suspense>
       {!loading && (
         <Suspense fallback={null}>
           <GuidedTour />
         </Suspense>
+      )}
+      {installCompleted && (
+        <InstallCompleteModal
+          game={installCompleted}
+          onPlay={(game) => {
+            playInstalledGame(game);
+            dismissInstallComplete();
+          }}
+          onDismiss={dismissInstallComplete}
+        />
       )}
     </div>
   );

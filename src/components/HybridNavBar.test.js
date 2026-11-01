@@ -27,10 +27,7 @@ jest.mock(
 );
 
 jest.mock('../ThemeContext', () => ({
-  useTheme: () => ({
-    bigScreenMode: false,
-    toggleBigScreenMode: jest.fn(),
-  }),
+  useTheme: () => ({}),
 }));
 
 const renderNavigation = (route = '/') => {
@@ -85,11 +82,13 @@ describe('HybridNavBar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'More navigation options' }));
 
-    expect(screen.getByText('Progress')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Progress/ }).getAttribute('href')).toBe('/progress');
-    expect(screen.getByText('Storage Manager')).toBeTruthy();
-    expect(screen.queryByText(/Performance Cockpit/)).toBeNull();
-    expect(screen.getByText('Export Hub')).toBeTruthy();
-    expect(screen.getByText('Gaming Links')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Hall of Champions/ }).getAttribute('href')).toBe('/timeline');
+    expect(screen.getByRole('link', { name: /Recent Activity/ }).getAttribute('href')).toBe('/recent-activity');
+    expect(screen.getByRole('link', { name: /Wishlist/ }).getAttribute('href')).toBe('/wishlist');
+    expect(screen.getByRole('link', { name: /Feedback/ }).getAttribute('href')).toBe('/feedback');
+    expect(screen.getByRole('link', { name: /Storage Manager/ }).getAttribute('href')).toBe('/storage-manager');
+    expect(screen.getByRole('link', { name: /Your Gaming Life/ }).getAttribute('href')).toBe('/year-in-review');
+    expect(screen.queryByText(/Export Hub/)).toBeNull();
+    expect(screen.queryByText(/Gaming Links/)).toBeNull();
   });
 });

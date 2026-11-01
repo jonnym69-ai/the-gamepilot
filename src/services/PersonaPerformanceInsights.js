@@ -1,15 +1,13 @@
+import { getGameSessionContext } from './GameSessionContext';
+
 class PersonaPerformanceInsights {
-  static estimateSessionMinutes(game = {}) {
+  static estimateSessionMinutes(game = {}, history) {
     if (!game) return null;
-    if (typeof game.estimated_session_minutes === 'number') {
-      return Math.max(10, Math.round(game.estimated_session_minutes));
-    }
-    if (game.time_played && game.launch_count) {
-      const avg = Math.max(10, Math.round(game.time_played / Math.max(game.launch_count, 1)));
-      return avg;
-    }
-    if (game.time_played) {
-      return Math.max(10, Math.round(game.time_played));
+    const { medianMinutes } = getGameSessionContext(game, history);
+    if (Number.isFinite(medianMinutes) && medianMinutes > 0) return medianMinutes;
+    const explicit = game.estimated_session_minutes;
+    if (typeof explicit === 'number' && Number.isFinite(explicit) && explicit > 0) {
+      return Math.max(10, Math.round(explicit));
     }
     return null;
   }

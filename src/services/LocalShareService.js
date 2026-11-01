@@ -188,11 +188,11 @@ export class LocalShareService {
       `I played like a ${persona}.`,
     ];
 
-    const storyArc = snapshot?.seasonalStory?.arc;
-    if (storyArc) {
+    const storyParagraphs = Array.isArray(snapshot?.story?.paragraphs) ? snapshot.story.paragraphs : [];
+    if (storyParagraphs.length > 0) {
       lines.push('');
       lines.push(`The Story of My ${selectedYear} Gaming Year`);
-      lines.push(storyArc);
+      storyParagraphs.slice(0, 3).forEach((paragraph) => lines.push(paragraph.text));
     }
 
     if (topGames.length > 0) {

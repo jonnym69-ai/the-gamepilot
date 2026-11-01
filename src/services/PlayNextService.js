@@ -100,9 +100,10 @@ export class PlayNextService {
       } catch {
         /* era flavour is optional */
       }
+      const note = typeof lastSession.session.note === 'string' ? lastSession.session.note.trim() : '';
       return {
         mode: 'resume',
-        primary: { game: resumeGame, reason, detail: null },
+        primary: { game: resumeGame, reason, detail: null, note: note || null },
         alternates: entries,
       };
     }

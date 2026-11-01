@@ -3,13 +3,12 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { FreeGameRadar } from './services/FreeGameRadar';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
 import Home from './Home';
+import { ToastProvider } from './components/Toast';
 import PlayNextService from './services/PlayNextService';
 import CurrentEraService from './services/CurrentEraService';
 import SessionRepository from './services/SessionRepository';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import WishlistService from './services/WishlistService';
-import { ProgressionUnlockService } from './services/ProgressionUnlockService';
-import { getTodayLayoutStyle } from './components/HomeLayoutContent';
 
 jest.mock('./services/FreeGameRadar', () => ({
   ...jest.requireActual('./services/FreeGameRadar'),
@@ -19,14 +18,9 @@ jest.mock('./services/FreeGameRadar', () => ({
   },
 }));
 jest.mock('./NavBar', () => () => null);
-jest.mock('./components/LazyImage', () => ({ alt }) => <img alt={alt} />);
-jest.mock('./components/MilestoneToast', () => () => null);
+jest.mock('./components/LazyImage', () => ({ alt, onLoad }) => <img alt={alt} onLoad={onLoad} />);
 jest.mock('./components/LibrarianHubCarousel', () => () => <div>Identity hub</div>);
 jest.mock('./components/DailyDoodleTitle', () => () => <div>Daily doodle</div>);
-jest.mock('./components/DailyParadox', () => () => <div>Daily paradox</div>);
-jest.mock('./components/PatchNotesBadge', () => () => <div>Patch notes</div>);
-jest.mock('./components/WeeklyDigestCard', () => () => <div>Weekly digest</div>);
-jest.mock('./components/SmartNudgeCard', () => () => <div>Smart nudge</div>);
 
 const game = { name: 'Hades', platform: 'Steam', appid: 1145360, time_played: 120, genres: ['Action'] };
 
@@ -63,7 +57,9 @@ function BackButton() {
 function setup(props = {}, route = '/') {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <Home library={[game]} {...props} />
+      <ToastProvider>
+        <Home library={[game]} {...props} />
+      </ToastProvider>
       <BackButton />
     </MemoryRouter>
   );
@@ -97,7 +93,6 @@ test('manual views preserve deeper features and browser back navigation', () => 
   expect(screen.queryByRole('heading', { name: "Today's Spotlight" })).not.toBeInTheDocument();
   expect(navigation.getByRole('link', { name: 'Discover' })).toHaveAttribute('aria-current', 'page');
   fireEvent.click(navigation.getByRole('link', { name: 'Activity' }));
-  expect(screen.getByText('Weekly digest')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Session history' })).toHaveAttribute('href', '/recent-activity');
   expect(screen.queryByRole('heading', { name: 'Perfect Play', exact: true })).not.toBeInTheDocument();
   fireEvent.click(navigation.getByRole('link', { name: 'Identity' }));
@@ -138,7 +133,9 @@ test('empty libraries get scan-first onboarding, not empty recommendation stacks
   expect(screen.queryByRole('heading', { name: 'Play Next' })).not.toBeInTheDocument();
   rerender(
     <MemoryRouter>
-      <Home library={[]} loading onScan={scan} />
+      <ToastProvider>
+        <Home library={[]} loading onScan={scan} />
+      </ToastProvider>
     </MemoryRouter>
   );
   expect(screen.getByRole('button', { name: 'Scanning...' })).toBeDisabled();
@@ -149,14 +146,6 @@ test('an invalid view falls back to Today and a missing pick has a useful fallba
   setup({}, '/?view=unknown');
   expect(screen.getByRole('main')).toHaveAttribute('aria-label', 'Today');
   expect(screen.getByText(/No pick just yet/)).toBeInTheDocument();
-});
-
-test('Dashboard retains its guided tools and weekly widgets', () => {
-  setup({ mode: 'dashboard' }, '/dashboard');
-  expect(screen.getByText('Library Today')).toBeInTheDocument();
-  expect(screen.getByText('Weekly digest')).toBeInTheDocument();
-  expect(screen.getByText('Tools & Recommendations')).toBeInTheDocument();
-  expect(screen.queryByRole('navigation', { name: 'Home sections' })).not.toBeInTheDocument();
 });
 
 test('a directly opened Identity view survives remounting', () => {
@@ -180,33 +169,174 @@ test('Activity view explains empty states instead of showing a blank stack', () 
   SessionRepository.getSessionHistory.mockReturnValue([]);
   setup({}, '/?view=activity');
   expect(screen.getByText(/No sessions recorded yet/)).toBeInTheDocument();
-  expect(screen.getByText(/Nothing to report yet — play a few games/)).toBeInTheDocument();
 });
 
-test.each(['mission_control', 'focus_finder', 'dashboard_split', 'streamer_overlay', 'arcade_cabinet'])(
-  '%s applies the Today layout and preserves every Home tab and session control',
-  (layout) => {
-    jest.spyOn(ProgressionUnlockService, 'getTotalXP').mockReturnValue(1000000);
-    ProgressionUnlockService.selectHomeLayoutVariant(layout);
-    const endSession = jest.fn();
-    setup({ activeSessions: { Hades: { startTime: Date.now() } }, endSession });
-    expect(screen.getByTestId('home-page')).toHaveStyle(getTodayLayoutStyle(layout));
-    expect(screen.getByRole('heading', { name: 'Play Next' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: "Today's Spotlight" })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Your story' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'End session' }));
-    expect(endSession).toHaveBeenCalledWith('Hades');
-    const navigation = within(screen.getByRole('navigation', { name: 'Home sections' }));
-    for (const view of ['Discover', 'Activity', 'Identity', 'Wishlist', 'Today']) {
-      fireEvent.click(navigation.getByRole('link', { name: view, exact: true }));
-      expect(navigation.getByRole('link', { name: view, exact: true })).toHaveAttribute('aria-current', 'page');
-    }
+test('Today preserves every Home tab and session control', () => {
+  const endSession = jest.fn();
+  setup({ activeSessions: { Hades: { startTime: Date.now() } }, endSession });
+  expect(screen.getByRole('heading', { name: 'Play Next' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: "Today's Spotlight" })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Your story' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'End session' }));
+  expect(endSession).toHaveBeenCalledWith('Hades');
+  const navigation = within(screen.getByRole('navigation', { name: 'Home sections' }));
+  for (const view of ['Discover', 'Activity', 'Identity', 'Wishlist', 'Today']) {
+    fireEvent.click(navigation.getByRole('link', { name: view, exact: true }));
+    expect(navigation.getByRole('link', { name: view, exact: true })).toHaveAttribute('aria-current', 'page');
   }
-);
+});
 
 test('active sessions can still be ended directly from Today', () => {
   const endSession = jest.fn();
   setup({ activeSessions: { Hades: { startTime: Date.now() } }, endSession });
   fireEvent.click(screen.getByRole('button', { name: 'End session' }));
   expect(endSession).toHaveBeenCalledWith('Hades');
+});
+
+const wishlistEntry = (name, conviction = 'strong', overrides = {}) => {
+  const reason = overrides.reason || `Fits the same groove as Project Zomboid.`;
+  return {
+    id: name,
+    game: { name, appid: overrides.appid || 999001, genres: overrides.genres || ['Survival'] },
+    genre: 'Survival',
+    explanation: { confidence: 0 },
+    meta: {
+      conviction,
+      primaryReason: reason,
+      buyReasons: [reason],
+      evidence: conviction === 'strong' ? ['cluster', 'signature-genre'] : [],
+      ownedAlternative: overrides.ownedAlternative || null,
+      wishlistItem: { name, currentPrice: { price: 9.99, priceFormatted: '$9.99' } },
+    },
+  };
+};
+
+test('Buy Next cycles one wishlist card at a time and never shows a percentage', () => {
+  BuyRecommendationService.getSnapshot.mockReturnValue({
+    enabled: true,
+    strongCount: 3,
+    backlogFallback: null,
+    entries: [
+      wishlistEntry('Rust'),
+      wishlistEntry('Valheim II', { appid: 999002 }),
+      wishlistEntry('Sons of the Forest', { appid: 999003 }),
+    ],
+    message: 'Ranked from your wishlist and what you actually play.',
+  });
+  setup({}, '/?view=wishlist');
+
+  expect(screen.getByRole('heading', { name: 'Rust' })).toBeInTheDocument();
+  expect(screen.getByText('1 / 3')).toBeInTheDocument();
+  expect(screen.getByText('Strong fit')).toBeInTheDocument();
+  expect(screen.queryByText(/% match/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Next pick' }));
+  expect(screen.getByRole('heading', { name: 'Valheim II' })).toBeInTheDocument();
+  expect(screen.getByText('2 / 3')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Next pick' }));
+  expect(screen.getByRole('heading', { name: 'Sons of the Forest' })).toBeInTheDocument();
+  expect(screen.getByText('3 / 3')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Next pick' }));
+  expect(screen.getByRole('heading', { name: 'Rust' })).toBeInTheDocument();
+  expect(screen.getByText('1 / 3')).toBeInTheDocument();
+});
+
+test('Buy Next with no strong picks shows the not-ready message and a backlog alternative', () => {
+  const launch = jest.fn();
+  const backlogGame = { name: 'Dusty Shelf', appid: 111, genres: ['Survival'], time_played: 0 };
+  BuyRecommendationService.getSnapshot.mockReturnValue({
+    enabled: true,
+    strongCount: 0,
+    backlogFallback: {
+      game: backlogGame,
+      sharedGenres: ['Survival'],
+      reason: 'Unplayed, and it sits right in your Survival lane.',
+    },
+    entries: [wishlistEntry('Meh Game', 'weak')],
+    message: 'Nothing on your wishlist is calling yet — you might not be ready to buy.',
+  });
+  setup({ onLaunchGame: launch }, '/?view=wishlist');
+
+  expect(screen.getByText(/might not be ready to buy/)).toBeInTheDocument();
+  expect(screen.getByText('Try this from your backlog instead')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Dusty Shelf' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Meh Game' })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  expect(launch).toHaveBeenCalledWith(backlogGame);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Show wishlist picks anyway' }));
+  expect(screen.getByRole('heading', { name: 'Meh Game' })).toBeInTheDocument();
+});
+
+test('Buy Next card renders cover-fit art over a blurred backdrop layer', () => {
+  BuyRecommendationService.getSnapshot.mockReturnValue({
+    enabled: true,
+    strongCount: 1,
+    backlogFallback: null,
+    entries: [wishlistEntry('Rust')],
+    message: 'Ranked from your wishlist and what you actually play.',
+  });
+  setup({}, '/?view=wishlist');
+
+  expect(screen.getByTestId('buy-next-art-backdrop')).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.getByRole('img', { name: 'Rust' })).toBeInTheDocument();
+});
+
+test('Buy Next art slot switches to a landscape aspect when the loaded art is landscape', () => {
+  BuyRecommendationService.getSnapshot.mockReturnValue({
+    enabled: true,
+    strongCount: 1,
+    backlogFallback: null,
+    entries: [wishlistEntry('Rust')],
+    message: 'Ranked from your wishlist and what you actually play.',
+  });
+  setup({}, '/?view=wishlist');
+
+  expect(screen.getByTestId('buy-next-art')).not.toHaveClass('buy-next-art--landscape');
+
+  const img = screen.getByRole('img', { name: 'Rust' });
+  Object.defineProperty(img, 'naturalWidth', { value: 460, configurable: true });
+  Object.defineProperty(img, 'naturalHeight', { value: 215, configurable: true });
+  fireEvent.load(img);
+
+  expect(screen.getByTestId('buy-next-art')).toHaveClass('buy-next-art--landscape');
+});
+
+test('an owned-alternative line on a strong pick launches the owned game', () => {
+  const launch = jest.fn();
+  const ownedGame = { name: 'Owned Survival', appid: 555, genres: ['Survival'], time_played: 0 };
+  BuyRecommendationService.getSnapshot.mockReturnValue({
+    enabled: true,
+    strongCount: 1,
+    backlogFallback: null,
+    entries: [
+      wishlistEntry('Rust', 'strong', {
+        ownedAlternative: { name: 'Owned Survival', appid: 555, sharedGenres: ['Survival'], game: ownedGame },
+      }),
+    ],
+    message: 'Ranked from your wishlist and what you actually play.',
+  });
+  setup({ onLaunchGame: launch }, '/?view=wishlist');
+
+  expect(screen.getByText(/You already own Owned Survival in this space/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  expect(launch).toHaveBeenCalledWith(ownedGame);
+});
+
+test('Today surfaces games newly added to the library with one-tap play tiles', () => {
+  localStorage.setItem('gamepilot-scanTimestampsV1', JSON.stringify({ Hades: Date.now() }));
+  setup();
+
+  expect(screen.getByText('New to your library')).toBeInTheDocument();
+  const tile = screen.getByRole('button', { name: 'Play Hades' });
+  expect(within(tile).getByText('added today')).toBeInTheDocument();
+});
+
+test('New to your library stays hidden when nothing was scanned recently', () => {
+  setup();
+  expect(screen.queryByText('New to your library')).not.toBeInTheDocument();
 });

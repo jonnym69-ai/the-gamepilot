@@ -23,8 +23,17 @@ const thisMonth = (day) => {
   return new Date(now.getFullYear(), now.getMonth(), day).toISOString();
 };
 
+// Pin "now" to mid-month: fixtures place sessions on this month's day 1 and 2,
+// which fall in the future (and get correctly excluded) when the suite runs on
+// the 1st or early 2nd of a real month.
 beforeEach(() => {
   jest.clearAllMocks();
+  const real = new Date();
+  jest.useFakeTimers().setSystemTime(new Date(real.getFullYear(), real.getMonth(), 15, 12));
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 test('hides when the month has no sessions', () => {

@@ -3,7 +3,6 @@ import { useToast } from '../components/Toast';
 import { PlaytimeAutoLogger } from '../services/PlaytimeAutoLogger';
 import SessionRepository from '../services/SessionRepository';
 import { HabitTrackerService } from '../services/HabitTrackerService';
-import { AchievementTracker } from '../AchievementSystem';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { getResolvedMood } from '../constants/GenresMoods';
 import {
@@ -30,17 +29,6 @@ const incrementPlaytimeBucket = (bucket, key, minutes) => ({
   ...(bucket || {}),
   [key]: normalizeTrackedNumber(bucket?.[key]) + normalizeTrackedNumber(minutes),
 });
-
-const getSessionXPSnapshot = () => {
-  try {
-    return {
-      habit: Number(HabitTrackerService.getHabitXP()?.total) || 0,
-      bonus: Number(AchievementTracker.getBonusRewardStats()?.totalXP) || 0,
-    };
-  } catch {
-    return { habit: 0, bonus: 0 };
-  }
-};
 
 /**
  * Manages the full session lifecycle — starting, ending, recovering,
@@ -86,7 +74,6 @@ export default function useSessionLifecycle({
         return null;
       }
 
-      const xpSnapshotBefore = getSessionXPSnapshot();
       const sessionResult = PlaytimeAutoLogger.endSession(gameName, sessionMetadata);
       if (!sessionResult) {
         return null;
@@ -104,20 +91,6 @@ export default function useSessionLifecycle({
       } catch (habitError) {
         console.error('Habit tracking failed during session end:', habitError);
       }
-
-      AchievementTracker.recordSessionDurationAchievements(sessionResult.playtimeMinutes || 0);
-      AchievementTracker.checkAndUnlockAchievements();
-
-      const xpSnapshotAfter = getSessionXPSnapshot();
-      // Session minutes always earn 0.5 XP/min (see getXPStats); the habit and
-      // bonus deltas capture the session, first-session-of-day, streak and any
-      // goal-completion XP this session triggered.
-      const xpEarned = Math.max(
-        0,
-        Math.round(normalizeTrackedNumber(sessionResult.playtimeMinutes) * 0.5) +
-          (xpSnapshotAfter.habit - xpSnapshotBefore.habit) +
-          (xpSnapshotAfter.bonus - xpSnapshotBefore.bonus)
-      );
 
       let endedGameSnapshot = null;
 
@@ -184,7 +157,6 @@ export default function useSessionLifecycle({
               ? endedGameSnapshot.genres.find((genre) => genre && genre !== 'Unknown') || null
               : null,
             playtimeMinutes: normalizeTrackedNumber(sessionResult.playtimeMinutes),
-            xpEarned,
             sessionId: sessionResult.sessionId || null,
             endTime: sessionResult.endTime || Date.now(),
             recommendationType: recommendationLaunch?.recommendationType || null,

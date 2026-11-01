@@ -12,7 +12,8 @@ import StorageService from './StorageService';
 
 // Bumped V1 -> V2 when the hybrid Steam-AppID + normalized-title resolver
 // shipped, so stale negatives from the v1 single-tier lookup don't shadow it.
-const CACHE_KEY = 'pcgwCacheV2';
+// V2 -> V3 because V2 collapsed "unknown" controller values to "no".
+const CACHE_KEY = 'pcgwCacheV3';
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const PENDING_TTL_MS = 6 * 60 * 60 * 1000; // misses re-try after 6h
 const SETTINGS_KEY = 'pcgwEnabled';
@@ -107,15 +108,17 @@ const extractControllerSupport = (wikitext) => {
     if (!v) return null;
     if (v.includes('true') || v === 'yes' || v === 'native') return 'yes';
     if (v.includes('hackable') || v.includes('limited') || v.includes('partial')) return 'limited';
-    if (v.includes('false') || v === 'no' || v === 'unknown') return 'no';
+    if (v === 'unknown') return 'unknown';
+    if (v.includes('false') || v === 'no') return 'no';
     return v;
   };
   result.fullController = findRow('full controller support');
   result.controllerRemap = findRow('controller remapping');
   result.xinput = findRow('xinput-compatible controllers');
   result.playstation = findRow('playstation controllers');
-  // If everything is null, return null so UI can hide.
-  if (!result.fullController && !result.xinput && !result.playstation) return null;
+  // If everything is null, return null so UI can hide — remap alone counts as
+  // real data worth showing.
+  if (!result.fullController && !result.xinput && !result.playstation && !result.controllerRemap) return null;
   return result;
 };
 

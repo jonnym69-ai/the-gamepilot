@@ -1,6 +1,7 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import GameModal from './GameModal';
+import SessionRepository from '../services/SessionRepository';
 
 jest.mock('./Toast', () => ({ useToast: () => ({ success: jest.fn(), error: jest.fn() }) }));
 jest.mock('./LazyImage', () => ({ alt }) => <img alt={alt} />);
@@ -8,6 +9,18 @@ jest.mock('./LibrariansNotes', () => () => null);
 jest.mock('./SaveBackupPanel', () => () => null);
 jest.mock('./SteamSnapshot', () => () => null);
 jest.mock('./PatchNewsPanel', () => () => null);
+jest.mock('./YouTubeVideosPanel', () => () => null);
+jest.mock('../services/SessionRepository', () => {
+  const actual = jest.requireActual('../services/SessionRepository');
+  return {
+    __esModule: true,
+    default: {
+      ...actual.default,
+      getSessionHistory: jest.fn(() => []),
+      dedupeSessionHistory: (history) => actual.default.dedupeSessionHistory(history),
+    },
+  };
+});
 jest.mock('./UninstallModal', () => () => null);
 jest.mock('./ShareMenu', () => ({ ShareMenu: () => null }));
 jest.mock('./GameShareCard', () => ({ GameShareCard: () => null }));
@@ -34,6 +47,7 @@ const result = (appid = 774361, description = 'A punishing action-platformer.') 
 beforeEach(() => {
   localStorage.clear();
   HTMLElement.prototype.scrollTo = jest.fn();
+  SessionRepository.getSessionHistory.mockReturnValue([]);
   window.electronAPI = { steamStoreDetails: jest.fn().mockResolvedValue(result()) };
 });
 
@@ -94,10 +108,23 @@ test('opens the Steam library without launching the game', async () => {
   window.electronAPI.openSteamLibrary = jest.fn().mockResolvedValue(true);
   const onLaunch = jest.fn();
   render(<GameModal game={game} isOpen onLaunch={onLaunch} onClose={jest.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Steam Library' }));
+  // Steam navigation lives in the footer overflow menu
+  fireEvent.click(screen.getByRole('button', { name: /More/ }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Steam Library' }));
   await waitFor(() => expect(window.electronAPI.openSteamLibrary).toHaveBeenCalledWith('774361'));
   expect(onLaunch).not.toHaveBeenCalled();
   await screen.findByText('A punishing action-platformer.');
+});
+
+test('secondary actions live in the overflow menu and run their callbacks', () => {
+  const onToggleFavorite = jest.fn();
+  render(<GameModal game={game} isOpen onClose={jest.fn()} onToggleFavorite={onToggleFavorite} />);
+
+  // Favorites action is hidden until the menu opens
+  expect(screen.queryByRole('menuitem', { name: 'Add to Favorites' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /More/ }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Add to Favorites' }));
+  expect(onToggleFavorite).toHaveBeenCalledTimes(1);
 });
 
 test('does not offer Steam navigation for another launcher or malformed ID', () => {
@@ -112,4 +139,65 @@ test('rejects a mismatched game returned by the bridge', async () => {
   render(<GameModal game={game} isOpen onClose={jest.fn()} />);
   expect(await screen.findByRole('button', { name: 'Retry Steam details' })).toBeInTheDocument();
   expect(screen.queryByText('Wrong game')).not.toBeInTheDocument();
+});
+
+test('shows recorded session metrics and merged notes for the game', async () => {
+  SessionRepository.getSessionHistory.mockReturnValue([
+    {
+      sessionId: 's1',
+      gameName: 'Blasphemous',
+      timestamp: '2026-10-01T12:00:00Z',
+      playtimeMinutes: 30,
+      note: 'Beat the boss',
+    },
+    {
+      sessionId: 's2',
+      gameName: 'Blasphemous',
+      timestamp: '2026-10-02T12:00:00Z',
+      playtimeMinutes: 60,
+      note: 'Almost finished',
+    },
+    {
+      sessionId: 's3',
+      gameName: 'Blasphemous',
+      timestamp: '2026-09-15T12:00:00Z',
+      playtimeMinutes: 45,
+    },
+  ]);
+  const noted = {
+    ...game,
+    sessionNotes: [{ timestamp: Date.parse('2026-10-05T12:00:00Z'), text: 'Manual note here' }],
+  };
+  render(<GameModal game={noted} isOpen onClose={jest.fn()} />);
+
+  expect(await screen.findByText(/3 recorded sessions/)).toBeInTheDocument();
+  expect(screen.getByText(/Typical recorded session: 45 min/)).toBeInTheDocument();
+  expect(screen.getByText(/Played across 2 calendar months/)).toBeInTheDocument();
+
+  const noteTexts = ['Manual note here', 'Almost finished', 'Beat the boss'];
+  const items = screen
+    .getAllByRole('listitem')
+    .filter((item) => noteTexts.some((text) => item.textContent.includes(text)));
+  expect(items).toHaveLength(3);
+  expect(items[0]).toHaveTextContent('Manual note here');
+});
+
+test('does not fabricate a session summary from imported playtime', async () => {
+  render(<GameModal game={{ ...game, playtimeForever: 99999 }} isOpen onClose={jest.fn()} />);
+  expect(
+    await screen.findByText(/No recorded sessions yet\. Imported playtime does not tell us when you played\./)
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Typical recorded session/)).not.toBeInTheDocument();
+});
+
+test('a store description with markup renders as text without executable nodes', async () => {
+  window.electronAPI.steamStoreDetails.mockResolvedValue(
+    result(774361, '<img src=x onerror=alert(1)><script>alert(2)</script>Safe <i>harbour</i> sim.')
+  );
+  render(<GameModal game={game} isOpen onClose={jest.fn()} />);
+  // Tags are stripped, so the payload text stays literal and no img/script/italic
+  // nodes are ever created inside the description.
+  const description = await screen.findByText(/Safe harbour sim\./, { selector: '.game-description' });
+  expect(within(description).queryByRole('img')).not.toBeInTheDocument();
+  expect(description).toHaveTextContent('alert(2)Safe harbour sim.');
 });

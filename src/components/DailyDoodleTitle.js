@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { ProgressionUnlockService } from '../services/ProgressionUnlockService';
+
 import StorageService from '../services/StorageService';
 import DateTimeFormatService from '../services/DateTimeFormatService';
 import GamingPersonaService from '../services/GamingPersonaService';
@@ -370,12 +370,6 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const [doodleStyle, setDoodleStyle] = useState(() => StorageService.getString('doodleStyleOverride') || 'auto');
   const [daySignature, setDaySignature] = useState(getDayOfYear());
   const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
-  const [selectedLogoAnimation, setSelectedLogoAnimation] = useState(
-    () => ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway'
-  );
-  const [profileCustomization, setProfileCustomization] = useState(() =>
-    ProgressionUnlockService.getProfileCustomization()
-  );
   const [doodleWordmark, setDoodleWordmark] = useState(() =>
     StorageService.getString('doodleWordmark', DEFAULT_WORDMARK)
   );
@@ -383,7 +377,7 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const [isSparkling, setIsSparkling] = useState(false);
   const doodleEnabled = StorageService.getString('enableDailyDoodle') !== 'false';
   const preferredTimeZone = StorageService.getString('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const resolvedLogoAnimation = selectedLogoAnimation || 'synthwave-runway';
+  const resolvedLogoAnimation = 'synthwave-runway';
 
   useEffect(() => {
     const syncSignature = () => setDaySignature(getDayOfYear());
@@ -404,33 +398,13 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       setDoodleWordmark(StorageService.getString('doodleWordmark', DEFAULT_WORDMARK));
     };
 
-    const handleRewardPresentationUpdated = (event) => {
-      const nextAnimation = event?.detail?.selectedLogoAnimation;
-      if (nextAnimation) {
-        setSelectedLogoAnimation(nextAnimation);
-        return;
-      }
-
-      setSelectedLogoAnimation(
-        ProgressionUnlockService.getRewardPresentationCustomization()?.selectedLogoAnimation || 'synthwave-runway'
-      );
-    };
-
-    const handleProfileUpdated = () => {
-      setProfileCustomization(ProgressionUnlockService.getProfileCustomization());
-    };
-
     const handleDoodleStyleUpdated = () => {
       setDoodleStyle(StorageService.getString('doodleStyleOverride') || 'auto');
     };
 
-    window.addEventListener('gamepilot:reward-presentation-updated', handleRewardPresentationUpdated);
-    window.addEventListener('gamepilot:profile-updated', handleProfileUpdated);
     window.addEventListener('gamepilot:doodle-style-updated', handleDoodleStyleUpdated);
     window.addEventListener('gamepilot:doodle-wordmark-updated', handleDoodleWordmarkUpdated);
     return () => {
-      window.removeEventListener('gamepilot:reward-presentation-updated', handleRewardPresentationUpdated);
-      window.removeEventListener('gamepilot:profile-updated', handleProfileUpdated);
       window.removeEventListener('gamepilot:doodle-style-updated', handleDoodleStyleUpdated);
       window.removeEventListener('gamepilot:doodle-wordmark-updated', handleDoodleWordmarkUpdated);
     };
@@ -463,11 +437,8 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
   const isLight = useMemo(() => {
     if (doodleStyle === 'dark') return false;
     if (doodleStyle === 'light') return true;
-    const banners = ProgressionUnlockService.getProfileBanners();
-    const banner = banners.find((b) => b.id === profileCustomization.selectedBanner);
-    if (banner?.preview) return isColorLight(banner.preview);
     return isColorLight(doodle.background);
-  }, [doodle, doodleStyle, profileCustomization.selectedBanner]);
+  }, [doodle, doodleStyle]);
 
   const transitionVariant = useMemo(() => {
     if (normalizedTheme) {
@@ -582,20 +553,6 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
     });
   }, [doodle, wordmark, isSparkling]);
 
-  // Reward-derived styling
-  const rewardShellStyles = useMemo(() => {
-    const frames = ProgressionUnlockService.getProfileFrames();
-    const banners = ProgressionUnlockService.getProfileBanners();
-    const frame = frames.find((f) => f.id === profileCustomization.selectedFrame);
-    const banner = banners.find((b) => b.id === profileCustomization.selectedBanner);
-
-    return {
-      frameBorder: frame?.accentColor ? `1px solid ${frame.accentColor}` : undefined,
-      frameShadow: frame?.shadowColor ? `0 20px 45px ${frame.shadowColor}` : undefined,
-      bannerBackground: banner?.preview || undefined,
-    };
-  }, [profileCustomization.selectedFrame, profileCustomization.selectedBanner]);
-
   // Minimal greeting and message
   const greeting = username ? `Welcome back, ${username}` : 'Welcome to GamePilot';
   const avatarSrc = profilePic || LOGO_SRC;
@@ -633,9 +590,9 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
         className={`doodle-shell pattern-${doodle.pattern}${isLight ? ' doodle-shell--light' : ''}`}
         style={{
           fontFamily: doodle.fontFamily,
-          background: rewardShellStyles.bannerBackground || doodle.background,
-          border: rewardShellStyles.frameBorder || doodle.border,
-          boxShadow: rewardShellStyles.frameShadow || doodle.shadow,
+          background: doodle.background,
+          border: doodle.border,
+          boxShadow: doodle.shadow,
         }}
       >
         <div className="doodle-orbit" />

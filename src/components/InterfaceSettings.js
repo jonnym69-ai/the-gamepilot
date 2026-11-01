@@ -1,23 +1,14 @@
 import React from 'react';
-import { Eye, EyeOff, Focus, RotateCcw, BookOpen, Scale, Sparkles } from 'lucide-react';
+import { EyeOff, RotateCcw, BookOpen, Scale, Sparkles, Check, Pipette } from 'lucide-react';
 import InterfacePreferencesService from '../services/InterfacePreferencesService';
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
 
-const NAV_TOGGLES = [];
-
 const HOME_TOGGLES = [
-  {
-    key: 'showHomeHeroSummary',
-    label: 'Library summary line',
-    hint: 'Shows "X games tracked across Y platforms" in the hero.',
-  },
-  { key: 'showHomeBacklogRescue', label: 'Backlog rescue card', hint: 'Recommendation of a backlog game to finish.' },
   {
     key: 'showHomeShelves',
     label: 'Curated shelves',
-    hint: 'Tonight\u2019s pick / Continue / Rediscover / Favourite cards.',
+    hint: 'Tonight\u2019s pick / rediscover, and favourite cards on Home.',
   },
-  { key: 'showHomeLauncherSummary', label: 'Launcher summary grid', hint: 'Platform badges and scan status row.' },
 ];
 
 const DENSITY_TOGGLES = [
@@ -49,7 +40,40 @@ const ACCENT_PRESETS = [
   { label: 'Sky', value: '#38bdf8' },
   { label: 'Rose', value: '#f43f5e' },
   { label: 'Amber', value: '#f59e0b' },
+  { label: 'Crimson', value: '#dc2626' },
+  { label: 'Lime', value: '#84cc16' },
+  { label: 'Teal', value: '#14b8a6' },
+  { label: 'Indigo', value: '#6366f1' },
+  { label: 'Fuchsia', value: '#d946ef' },
+  { label: 'Gold', value: '#eab308' },
 ];
+
+const FOLLOW_THEME_SWATCH = 'conic-gradient(#ff6b35,#10b981,#8b5cf6,#38bdf8,#ff6b35)';
+
+const accentSwatchColumn = {
+  position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 4,
+  width: 56,
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  color: 'var(--text-primary)',
+  fontSize: 11,
+  cursor: 'pointer',
+};
+
+const accentSwatchCircle = (active) => ({
+  display: 'grid',
+  placeItems: 'center',
+  width: 28,
+  height: 28,
+  borderRadius: '50%',
+  border: active ? '2px solid var(--accent-primary, #ff6b35)' : '1px solid var(--border-primary)',
+  boxShadow: active ? '0 0 0 2px var(--user-accent-soft, rgba(255, 107, 53, 0.18))' : 'none',
+});
 
 const ToggleRow = ({ pref, prefKey, label, hint, onChange }) => (
   <div className="setting-item" style={{ alignItems: 'flex-start' }}>
@@ -76,9 +100,15 @@ export default function InterfaceSettings() {
 
   const handleChange = (key, value) => InterfacePreferencesService.set(key, value);
   const handleAccent = (value) => InterfacePreferencesService.set('accentOverride', value);
-  const handleFocusHome = () => InterfacePreferencesService.applyFocusHomePreset();
+  const handleCustomAccent = (value) => InterfacePreferencesService.setCustomAccent(value);
   const handleReset = () => InterfacePreferencesService.resetAll();
   const experienceMode = InterfacePreferencesService.getExperienceMode();
+
+  const recentAccents = (prefs.recentAccents || []).filter((hex) => !ACCENT_PRESETS.some((p) => p.value === hex));
+  const customAccentActive = !!prefs.accentOverride && !ACCENT_PRESETS.some((p) => p.value === prefs.accentOverride);
+  const activeCheck = (
+    <Check size={14} strokeWidth={3} color="#fff" style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.8))' }} />
+  );
 
   const EXPERIENCE_PRESETS = [
     {
@@ -149,15 +179,6 @@ export default function InterfaceSettings() {
       >
         <button
           type="button"
-          className="save-btn"
-          onClick={handleFocusHome}
-          title="Minimal Home with just recommendations and continue-playing"
-        >
-          <Focus size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          Focus Home preset
-        </button>
-        <button
-          type="button"
           className="data-button reset"
           onClick={handleReset}
           title="Reset all interface preferences to defaults"
@@ -165,16 +186,6 @@ export default function InterfaceSettings() {
           <RotateCcw size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
           Reset interface
         </button>
-      </div>
-
-      <div className="interface-group">
-        <h4 style={{ margin: '8px 0 6px' }}>
-          <Eye size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-          Navbar
-        </h4>
-        {NAV_TOGGLES.map((t) => (
-          <ToggleRow key={t.key} pref={prefs} prefKey={t.key} label={t.label} hint={t.hint} onChange={handleChange} />
-        ))}
       </div>
 
       <div className="interface-group" style={{ marginTop: '14px' }}>
@@ -242,35 +253,118 @@ export default function InterfaceSettings() {
                 type="button"
                 onClick={() => handleAccent(preset.value)}
                 className={`accent-swatch ${active ? 'active' : ''}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 12px',
-                  borderRadius: 999,
-                  border: active ? '2px solid var(--accent-primary, #ff6b35)' : '1px solid var(--border-primary)',
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                }}
+                style={accentSwatchColumn}
                 title={preset.label}
+                aria-pressed={active}
               >
                 <span
                   aria-hidden
                   style={{
-                    display: 'inline-block',
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    background: preset.value || 'conic-gradient(#ff6b35,#10b981,#8b5cf6,#38bdf8,#ff6b35)',
-                    border: '1px solid rgba(255,255,255,0.25)',
+                    ...accentSwatchCircle(active),
+                    background: preset.value || FOLLOW_THEME_SWATCH,
                   }}
-                />
+                >
+                  {active && activeCheck}
+                </span>
                 {preset.label}
               </button>
             );
           })}
+          <label
+            className="accent-swatch accent-swatch-custom"
+            style={accentSwatchColumn}
+            title="Pick a custom accent color"
+          >
+            <span
+              aria-hidden
+              style={{
+                ...accentSwatchCircle(customAccentActive),
+                background: prefs.accentOverride || 'var(--bg-secondary)',
+              }}
+            >
+              {customAccentActive ? activeCheck : <Pipette size={13} />}
+            </span>
+            Custom
+            <input
+              type="color"
+              aria-label="Custom accent color"
+              value={prefs.accentOverride || '#ff6b35'}
+              onChange={(e) => handleCustomAccent(e.target.value)}
+              style={{
+                position: 'absolute',
+                width: 1,
+                height: 1,
+                opacity: 0,
+                pointerEvents: 'none',
+              }}
+            />
+          </label>
+        </div>
+        {recentAccents.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
+            <span style={{ fontSize: 11, opacity: 0.55 }}>Recent:</span>
+            {recentAccents.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => handleCustomAccent(hex)}
+                title={hex}
+                aria-label={`Recent accent ${hex}`}
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: hex,
+                  border:
+                    prefs.accentOverride === hex
+                      ? '2px solid var(--accent-primary, #ff6b35)'
+                      : '1px solid var(--border-primary)',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              />
+            ))}
+          </div>
+        )}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            marginTop: '12px',
+            padding: '10px 14px',
+            borderRadius: 10,
+            border: '1px solid var(--border-primary)',
+            background: 'var(--bg-secondary)',
+            width: 'fit-content',
+          }}
+        >
+          <button
+            type="button"
+            style={{
+              padding: '6px 14px',
+              borderRadius: 8,
+              border: 'none',
+              background: 'var(--accent-primary, #ff6b35)',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'default',
+            }}
+          >
+            Sample button
+          </button>
+          <span className="toggle-switch" aria-hidden="true">
+            <input type="checkbox" checked readOnly disabled tabIndex={-1} />
+            <span className="toggle-slider" />
+          </span>
+          <a
+            href="#accent-preview"
+            onClick={(e) => e.preventDefault()}
+            style={{ color: 'var(--link-primary, #ff6b35)', fontSize: 12 }}
+          >
+            Sample link
+          </a>
         </div>
       </div>
     </div>

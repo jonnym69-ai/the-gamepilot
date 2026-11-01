@@ -369,7 +369,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
               {buySnapshot.entries.map((entry) => {
                 const g = entry.game || {};
                 const m = entry.meta || {};
-                const reason = (m.buyReasons || [])[0];
+                const reason = m.primaryReason || (m.buyReasons || [])[0];
                 const price = m.wishlistItem?.currentPrice;
                 const steamUrl = g.appid
                   ? `https://store.steampowered.com/app/${g.appid}`
@@ -377,7 +377,9 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                 return (
                   <div key={entry.id || g.name} className="wishlist-suggestion">
                     <div className="wishlist-suggestion-main">
-                      <span className="wishlist-suggestion-score">{m.buyScore || 0}%</span>
+                      {m.conviction === 'strong' && (
+                        <span className="wishlist-suggestion-score strong">Strong fit</span>
+                      )}
                       <div className="wishlist-suggestion-text">
                         <span className="wishlist-suggestion-name">
                           {g.name}

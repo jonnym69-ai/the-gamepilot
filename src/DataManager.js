@@ -23,10 +23,16 @@ const EXPORT_EXCLUDED_KEYS = new Set([
   'steamPriceCache',
   'steamNewsCacheV1',
   'pcgwCacheV2',
+  'pcgwCacheV3',
   'patch_notes_cache',
   'systemInfo',
   'libraryCache',
   'lastLibraryHash',
+  // Credentials never leave this machine in a backup, and an imported
+  // backup must never replace credentials already configured locally.
+  'itchApiKeyV1',
+  'retroAchievementsApiKey',
+  'discordWebhookUrl',
 ]);
 
 const JSON_STORAGE_DEFAULTS = Object.freeze({
@@ -306,16 +312,16 @@ export class DataManager {
       // Session history lives in SQLite once initialized; localStorage is only
       // a fallback mirror. Route the restore through the repository so both
       // stores are replaced, and await the main-process write so the immediate
-      // reload cannot race past it.
+      // reload cannot race past it. { force: true } — an explicit import is
+      // allowed to shrink history, bypassing the replace guard.
       if (Object.prototype.hasOwnProperty.call(data, 'sessionHistory')) {
         const history = coerceImportedValue(data.sessionHistory);
         if (Array.isArray(history)) {
           try {
-            await electronAPI()?.sessionStoreReplaceHistory?.(SessionRepository.dedupeSessionHistory(history));
+            await SessionRepository.replaceHistory(history, { force: true });
           } catch (error) {
             console.error('Failed to restore session history to SQLite:', error);
           }
-          SessionRepository.replaceHistory(history);
         }
       }
 

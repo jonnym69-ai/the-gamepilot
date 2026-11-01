@@ -10,7 +10,6 @@
   width: min(520px, calc(100vw - 48px));
   max-height: calc(100vh - 220px);
 }
-
 .toast {
   background: var(--card);
   border: 1px solid var(--card-border);
@@ -31,12 +30,10 @@
   backdrop-filter: blur(10px);
   word-break: break-word;
 }
-
 .toast-visible {
   transform: translateX(0) scale(1);
   opacity: 1;
 }
-
 .toast::before {
   content: '';
   position: absolute;
@@ -45,34 +42,18 @@
   bottom: 0;
   width: 5px;
 }
-
-.toast-success::before {
-  background: #10b981;
-}
-
 .toast-error::before {
   background: #ef4444;
 }
-
-.toast-warning::before {
-  background: #f59e0b;
-}
-
-.toast-info::before {
-  background: #ff6b35;
-}
-
 .toast-roast::before {
   background: #a855f7;
 }
-
 .toast-content {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
-
 .toast-message {
   color: var(--text);
   font-size: 14px;
@@ -81,7 +62,6 @@
   min-width: 0;
   padding-top: 2px;
 }
-
 .toast-close {
   background: none;
   border: none;
@@ -99,38 +79,21 @@
   opacity: 0.55;
   flex-shrink: 0;
 }
-
 .toast-close:hover {
   opacity: 1;
   background: rgba(255, 255, 255, 0.12);
   transform: scale(1.1) rotate(90deg);
 }
-
 .toast-close:active {
   transform: scale(0.95);
 }
-
-.toast-success {
-  border-left-color: #10b981;
-}
-
 .toast-error {
   border-left-color: #ef4444;
 }
-
-.toast-warning {
-  border-left-color: #f59e0b;
-}
-
-.toast-info {
-  border-left-color: #ff6b35;
-}
-
 .toast-roast {
   border-left-color: #a855f7;
   background: linear-gradient(135deg, var(--card) 0%, rgba(168, 85, 247, 0.08) 100%);
 }
-
 .toast-roast-icon {
   display: inline-flex;
   align-items: center;
@@ -146,15 +109,12 @@
   flex-shrink: 0;
   margin-top: 1px;
 }
-
 .toast-roast .toast-message {
   font-style: italic;
 }
-
 .toast-persistent {
   border-left-width: 4px;
 }
-
 .toast-dismiss-hint {
   display: block;
   margin-top: 6px;
@@ -165,7 +125,6 @@
   font-style: italic;
   opacity: 0.7;
 }
-
 @media (max-width: 768px) {
   .toast-container {
     top: 12px;
@@ -174,7 +133,6 @@
     width: auto;
     max-height: calc(100vh - 180px);
   }
-
   .toast {
     min-width: auto;
     max-width: none;

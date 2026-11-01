@@ -124,3 +124,31 @@ test('playing now mode notes when the desktop bridge is missing', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Playing now' }));
   expect(await screen.findByText(/need the desktop app/i)).toBeInTheDocument();
 });
+
+test('playing now fills top 20 beyond the chart and sorts all rows by concurrent', async () => {
+  const owned = [
+    game('Chart Hit', 10, 730),
+    ...Array.from({ length: 18 }, (_, index) => game(`Indie ${index + 1}`, (18 - index) * 50, 500000 + index)),
+  ];
+  window.electronAPI = {
+    steamMostPlayed: jest.fn().mockResolvedValue({
+      ok: true,
+      rows: [{ appid: 730, rank: 7, concurrent: 500, peak: 900 }],
+      fetchedAt: Date.now(),
+    }),
+    steamPlayerCount: jest
+      .fn()
+      .mockImplementation((appid) => Promise.resolve({ ok: true, count: appid === 500000 ? 99999 : 1000 })),
+  };
+
+  render(<LibraryLeaderboard library={owned} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Playing now' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Top 20' }));
+
+  // 1 chart match + supplement fills the board past the old 10-call cap.
+  const rows = await screen.findAllByRole('button', { name: /^Launch / });
+  expect(rows.length).toBe(19);
+  // The 99,999-player indie outranks the #7 chart hit.
+  const names = rows.map((row) => row.getAttribute('aria-label'));
+  expect(names.indexOf('Launch Indie 1')).toBeLessThan(names.indexOf('Launch Chart Hit'));
+});

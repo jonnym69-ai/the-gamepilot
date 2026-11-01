@@ -1,5 +1,5 @@
 import StorageService from './StorageService';
-import { RecommendationEngine } from './RecommendationEngine';
+import { RecommendationEngine, isGameUnplayed } from './RecommendationEngine';
 import { getGameGenres } from '../GameGenreDatabase';
 import { GamingIdentity } from '../GamingIdentity';
 import { UserBehaviorProfile } from './UserBehaviorProfile';
@@ -21,86 +21,11 @@ const getPlaytime = (game = {}) => Number(game.time_played || game.playtime || g
 
 const getRating = (game = {}) => Number(game.userRating || game.rating || game.score || 0);
 
-const scoreBuyReason = (reason, gameName) => {
-  if (!reason || !gameName) return 0;
-  let score = 0;
-  const lower = reason.toLowerCase();
-  const gameNameLower = String(gameName).toLowerCase();
-
-  // Mentions the actual game -> very distinctive.
-  if (lower.includes(gameNameLower)) score += 4;
-
-  // Persona/taste reasons -> highly distinctive and characterful.
-  if (
-    /matches your .* tastes|fits your .* vibe|your .* side loves|your .* instincts|your .* eye spots|your .* dna|your .* energy|your .* habits|approved for this mood|friendly for this mood/i.test(
-      lower
-    )
-  )
-    score += 5;
-
-  // Concrete value signals -> distinctive.
-  if (/threshold|historical low|budget|alert/i.test(lower)) score += 3;
-  if (/fits your .* pattern/i.test(lower)) score += 2;
-  if (/finish \d+%/i.test(lower)) score += 2;
-  if (/signature games/i.test(lower)) score += 1;
-  if (/familiar genre profile|fresh pick/i.test(lower)) score += 1;
-
-  // Generic boilerplate that repeats across every card -> deprioritize.
-  if (/chosen .* filter/i.test(lower)) score -= 1;
-  if (/strongest local genre signals/i.test(lower)) score -= 2;
-  if (/launcher.*you already use/i.test(lower)) score -= 2;
-
-  return score;
-};
-
-const prioritizeBuyReasons = (reasons, gameName) => {
-  if (!Array.isArray(reasons) || reasons.length === 0) return reasons;
-
-  const daySeed = new Date().toISOString().slice(0, 10);
-  const baseSeed =
-    String(gameName)
-      .split('')
-      .reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0) +
-    daySeed.split('').reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0);
-
-  const scored = reasons.map((reason, index) => ({
-    reason,
-    index,
-    score: scoreBuyReason(reason, gameName),
-  }));
-
-  const groups = [];
-  scored.forEach((item) => {
-    const last = groups[groups.length - 1];
-    if (last && last[0].score === item.score) {
-      last.push(item);
-    } else {
-      groups.push([item]);
-    }
-  });
-
-  groups.sort((a, b) => b[0].score - a[0].score);
-
-  const rotated = groups.flatMap((group, groupIndex) => {
-    if (group.length <= 1) return group;
-    const offset = Math.abs(baseSeed + groupIndex) % group.length;
-    return [...group.slice(offset), ...group.slice(0, offset)];
-  });
-
-  rotated.sort((a, b) => {
-    if (a.score !== b.score) return b.score - a.score;
-    return a.index - b.index;
-  });
-
-  return rotated.map((item) => item.reason);
-};
-
 const getGenres = (game = {}) =>
   Array.isArray(game.genres) ? game.genres.filter((genre) => genre && genre !== 'Unknown') : [];
 
 const buildTasteProfile = (library = []) => {
   const genreScores = new Map();
-  const platformScores = new Map();
   const anchors = [];
 
   library.forEach((game) => {
@@ -114,10 +39,6 @@ const buildTasteProfile = (library = []) => {
       genreScores.set(genre, (genreScores.get(genre) || 0) + weight);
     });
 
-    if (game.platform) {
-      platformScores.set(game.platform, (platformScores.get(game.platform) || 0) + Math.max(1, Math.round(weight / 2)));
-    }
-
     anchors.push({
       name: game.name || game.title || 'Played game',
       weight,
@@ -130,10 +51,6 @@ const buildTasteProfile = (library = []) => {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([genre]) => genre);
-  const topPlatforms = [...platformScores.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([platform]) => platform);
   const topAnchors = anchors.sort((a, b) => b.weight - a.weight).slice(0, 3);
 
   // Pull signature games + taste clusters from the full identity stack
@@ -189,7 +106,6 @@ const buildTasteProfile = (library = []) => {
 
   return {
     topGenres,
-    topPlatforms,
     topAnchors,
     signatureGames,
     tasteClusters,
@@ -276,6 +192,11 @@ class BuyRecommendationService {
       cachedRecentIdentity = null;
     }
 
+    // Unplayed owned games power both the per-entry "you already own this
+    // space" line and the backlog fallback when nothing on the wishlist earns
+    // a strong recommendation.
+    const unplayedLibrary = (library || []).filter((game) => game && isGameUnplayed(game));
+
     const entries = unowned
       .map((item) => {
         const itemGenres = resolveItemGenres(item);
@@ -301,10 +222,8 @@ class BuyRecommendationService {
         };
         const genres = getGenres(gameLike);
         const genreMatches = genres.filter((genre) => tasteProfile.topGenres.includes(genre));
-        const platformMatch = gameLike.platform && tasteProfile.topPlatforms.includes(gameLike.platform);
         const threshold = item.threshold;
         const historicalLow = item.historicalLow?.price;
-        const matchesGenreFilter = genreFilter && itemGenres.some((g) => g.toLowerCase() === genreFilter.toLowerCase());
         const underBudget = maxPrice && typeof price === 'number' && price <= maxPrice;
 
         // --- New identity-driven signals ---
@@ -318,7 +237,7 @@ class BuyRecommendationService {
             const familiarMatches = itemGenres.filter((g) => fp.familiarGenres.includes(g));
             if (familiarMatches.length > 0) {
               familiarityMatch = true;
-              familiarityReason = `Matches your familiar genre profile: ${familiarMatches.join(', ')}`;
+              familiarityReason = `Squarely in the genres you already know — ${familiarMatches.join(', ')}.`;
             }
           } else if (familiarityBias === 'fresh') {
             // Fresh: matches genres from unexplored library games, OR genres
@@ -327,12 +246,8 @@ class BuyRecommendationService {
             const novelMatches = itemGenres.filter((g) => !fp.familiarGenres.includes(g));
             if (freshMatches.length > 0 || novelMatches.length > 0) {
               familiarityMatch = true;
-              const reasonParts = [];
-              if (freshMatches.length > 0)
-                reasonParts.push(`matches your unexplored library genres: ${freshMatches.join(', ')}`);
-              if (novelMatches.length > 0 && freshMatches.length === 0)
-                reasonParts.push(`genres outside your comfort zone: ${novelMatches.join(', ')}`);
-              familiarityReason = `Fresh pick — ${reasonParts.join('; ')}`;
+              const freshList = freshMatches.length > 0 ? freshMatches : novelMatches;
+              familiarityReason = `A step outside your usual genres — ${freshList.join(', ')}.`;
             }
           }
         }
@@ -371,8 +286,6 @@ class BuyRecommendationService {
         let buyScore = 35; // lower base to create more differentiation
         buyScore += genreMatches.length * 10;
         buyScore += signatureGenreMatches.length * 8; // games sharing genres with your signature titles
-        if (platformMatch) buyScore += 6;
-        if (matchesGenreFilter) buyScore += 10;
         if (underBudget) buyScore += 8;
         if (typeof price === 'number' && typeof threshold === 'number' && price <= threshold) buyScore += 18;
         if (typeof price === 'number' && typeof historicalLow === 'number' && price <= historicalLow) buyScore += 12;
@@ -394,7 +307,7 @@ class BuyRecommendationService {
             );
             if (focusGenreMatches.length > 0) {
               buyScore += Math.min(10, focusGenreMatches.length * 5);
-              focusReason = `${item.name} shares ${focusGenreMatches.join(', ')} with your current ${focus.primary?.name || 'rotation'} streak`;
+              focusReason = `Same lane as your current ${focus.primary?.name || 'rotation'} run.`;
             }
           }
         } catch {
@@ -412,7 +325,7 @@ class BuyRecommendationService {
             const personaMatches = genres.filter((g) => affinityGenres.includes(g));
             if (personaMatches.length > 0) {
               buyScore += Math.min(12, personaMatches.length * 6);
-              personaReason = `${item.name} matches your ${persona.label.toLowerCase()} tastes (${personaMatches.join(', ')})`;
+              personaReason = `Fits your ${persona.label.toLowerCase()} tastes.`;
             }
           }
         } catch {
@@ -436,44 +349,99 @@ class BuyRecommendationService {
           /* recent identity optional */
         }
 
-        buyScore = Math.max(0, Math.min(100, buyScore));
+        // buyScore stays unclamped: it orders the shortlist internally and is
+        // never surfaced as a percentage.
+        buyScore = Math.max(0, buyScore);
 
-        const gameName = item.name;
         const priceFormatted =
           item.currentPrice?.priceFormatted || (typeof price === 'number' ? `$${price.toFixed(2)}` : null);
 
-        const rawReasons = [
-          matchesGenreFilter ? `Matches your chosen ${genreFilter} filter` : null,
-          typeof price === 'number' && typeof threshold === 'number' && price <= threshold && priceFormatted
-            ? `${gameName} is ${priceFormatted}, under your ${threshold.toFixed(2)} alert`
-            : null,
-          typeof price === 'number' && typeof historicalLow === 'number' && price <= historicalLow && priceFormatted
-            ? `${gameName} is at its recorded historical low (${priceFormatted})`
-            : null,
-          underBudget ? `${gameName} fits inside your $${maxPrice} budget` : null,
+        const priceAlert = typeof price === 'number' && typeof threshold === 'number' && price <= threshold;
+        const atHistoricalLow =
+          typeof price === 'number' && typeof historicalLow === 'number' && price <= historicalLow;
+        const topGenreMatches = genreMatches.filter(
+          (genre) => genre === tasteProfile.topGenres[0] || genre === tasteProfile.topGenres[1]
+        );
+
+        // Strong evidence: signals that actually argue for the purchase.
+        const evidence = [];
+        if (matchedClusters.length > 0) evidence.push('cluster');
+        if (signatureGenreMatches.length > 0) evidence.push('signature-genre');
+        if (completionBoostGenres.length > 0) evidence.push('finish-rate');
+        if (topGenreMatches.length > 0) evidence.push('top-genre');
+        if (priceAlert) evidence.push('price-alert');
+        if (atHistoricalLow) evidence.push('historical-low');
+        if (focusReason) evidence.push('focus');
+        const conviction = evidence.length >= 2 ? 'strong' : 'weak';
+
+        // An unplayed owned game in the same space is the honest counterpoint.
+        const ownedAlternative = unplayedLibrary.reduce((best, owned) => {
+          const shared = getGenres(owned).filter((genre) => genres.includes(genre));
+          if (shared.length === 0) return best;
+          if (!best || shared.length > best.sharedGenres.length) {
+            return {
+              name: owned.name || owned.title || 'A library game',
+              appid: owned.appid ?? null,
+              sharedGenres: shared,
+              game: owned,
+            };
+          }
+          return best;
+        }, null);
+
+        // Reasons are emitted in priority order so the first one can headline
+        // the card; `primary: false` entries stay available for the wishlist
+        // list but never lead.
+        const reasonStack = [
+          atHistoricalLow && priceFormatted
+            ? { primary: true, text: `It's ${priceFormatted} — the lowest price we've seen for it.` }
+            : priceAlert && priceFormatted
+              ? { primary: true, text: `It's ${priceFormatted} — below your $${threshold.toFixed(2)} alert.` }
+              : null,
           matchedClusters.length > 0
-            ? `${gameName} fits your ${matchedClusters[0].label} pattern (${matchedClusters[0].gameNames.slice(0, 2).join(', ')})`
+            ? {
+                primary: true,
+                text: `Fits the same groove as ${matchedClusters[0].gameNames.slice(0, 2).join(' and ')}.`,
+              }
             : null,
           completionBoostGenres.length > 0
-            ? `You finish ${completionBoostGenres[0]} games ${tasteProfile.genreCompletionRates[completionBoostGenres[0]]}% of the time — ${gameName} is in that space`
+            ? {
+                primary: true,
+                text: `You actually finish ${completionBoostGenres[0]} games — ${tasteProfile.genreCompletionRates[completionBoostGenres[0]]}% of the time.`,
+              }
             : null,
           signatureGenreMatches.length > 0
-            ? `${gameName} shares ${signatureGenreMatches.join(', ')} DNA with your signature games`
+            ? {
+                primary: true,
+                text: `Shares ${signatureGenreMatches.slice(0, 2).join(' and ')} with your most-played games.`,
+              }
             : null,
-          familiarityReason ? `${gameName}: ${familiarityReason}` : null,
+          focusReason ? { primary: true, text: focusReason } : null,
+          topGenreMatches.length > 0
+            ? { primary: true, text: `Sits right in your ${topGenreMatches.join(' / ')} lane.` }
+            : null,
+          genreMatches.length > topGenreMatches.length
+            ? {
+                primary: false,
+                text: `Also touches ${genreMatches.filter((genre) => !topGenreMatches.includes(genre)).join(', ')}.`,
+              }
+            : null,
+          familiarityReason ? { primary: true, text: familiarityReason } : null,
+          personaReason ? { primary: true, text: personaReason } : null,
           ratedGenreMatches.length > 0
-            ? `${gameName} overlaps with your highly-rated ${ratedGenreMatches[0]} games`
+            ? { primary: false, text: `Your highest-rated games lean ${ratedGenreMatches[0]}.` }
             : null,
-          genreMatches.length > 0
-            ? `${gameName} matches your strongest local genre signals: ${genreMatches.join(', ')}`
-            : null,
-          platformMatch ? `${gameName} is on ${gameLike.platform}, a launcher you use often` : null,
-          personaReason ? personaReason : null,
-          focusReason ? focusReason : null,
-          item.notes ? `You left a note for ${gameName}` : null,
+          underBudget ? { primary: false, text: `Inside your $${maxPrice} budget.` } : null,
+          item.notes ? { primary: false, text: 'You left a note on it.' } : null,
         ].filter(Boolean);
 
-        const reasons = prioritizeBuyReasons(rawReasons, gameName).slice(0, 4);
+        const primaryReason =
+          (reasonStack.find((reason) => reason.primary) || {}).text ||
+          "It's on your wishlist and nothing argues against it.";
+        const reasons = reasonStack.map((reason) => reason.text);
+        if (reasons.length === 0) {
+          reasons.push(primaryReason);
+        }
 
         const entry = RecommendationEngine.buildRecommendationEntry(
           gameLike,
@@ -483,18 +451,22 @@ class BuyRecommendationService {
           null,
           {
             buyScore,
-            buyReasons: reasons.length > 0 ? reasons : ['Ranked from your local wishlist and play-history signals.'],
+            buyReasons: reasons,
+            primaryReason,
+            evidence,
+            conviction,
+            ownedAlternative,
             wishlistItem: item,
           }
         );
 
-        if (entry && reasons.length > 0) {
+        if (entry) {
           entry.explanation = {
-            ...entry.explanation,
+            ...(typeof entry.explanation === 'object' && entry.explanation ? entry.explanation : {}),
             reasons,
             previewReasons: reasons.slice(0, 3),
             fullExplanation: reasons.join('\n'),
-            summary: `${entry.explanation.confidence}% confident match - ${reasons[0]}`,
+            summary: primaryReason,
           };
         }
 
@@ -506,6 +478,7 @@ class BuyRecommendationService {
     // Diversity pass: penalize entries whose primary genre is already
     // represented by a higher-ranked pick. This prevents the top 3 from
     // all being the same genre, giving the user a more varied shortlist.
+    // It applies to the raw (unclamped) score, so it actually differentiates.
     const DIVERSITY_PENALTY = 8;
     const seenGenres = new Set();
     const diversified = entries.map((entry) => {
@@ -518,10 +491,6 @@ class BuyRecommendationService {
           meta: {
             ...entry.meta,
             buyScore: adjustedScore,
-            buyReasons: [
-              ...(entry.meta?.buyReasons || []),
-              `Similar to a higher-ranked pick — adjusted for variety.`,
-            ].slice(0, 5),
           },
         };
       }
@@ -529,10 +498,38 @@ class BuyRecommendationService {
       return entry;
     });
 
-    const allEntries = diversified.sort(
-      (left, right) => Number(right.meta?.buyScore || 0) - Number(left.meta?.buyScore || 0)
-    );
+    // Strong picks surface before weak ones, then raw score breaks ties.
+    const allEntries = diversified.sort((left, right) => {
+      const leftStrong = left.meta?.conviction === 'strong' ? 1 : 0;
+      const rightStrong = right.meta?.conviction === 'strong' ? 1 : 0;
+      if (leftStrong !== rightStrong) return rightStrong - leftStrong;
+      return Number(right.meta?.buyScore || 0) - Number(left.meta?.buyScore || 0);
+    });
     const finalEntries = allEntries.slice(0, MAX_RESULTS);
+    const strongCount = allEntries.filter((entry) => entry.meta?.conviction === 'strong').length;
+
+    // When nothing on the wishlist earns a strong pick, point at the unplayed
+    // owned game closest to the player's top genres instead.
+    let backlogFallback = null;
+    if (strongCount === 0 && unplayedLibrary.length > 0) {
+      const topGenres = tasteProfile.topGenres || [];
+      let best = null;
+      unplayedLibrary.forEach((game) => {
+        const shared = getGenres(game).filter((genre) => topGenres.includes(genre));
+        if (shared.length === 0) return;
+        const weight = shared.reduce((sum, genre) => sum + (topGenres.length - topGenres.indexOf(genre)), 0);
+        if (!best || weight > best.weight) {
+          best = { game, sharedGenres: shared, weight };
+        }
+      });
+      if (best) {
+        backlogFallback = {
+          game: best.game,
+          sharedGenres: best.sharedGenres,
+          reason: `Unplayed, and it sits right in your ${best.sharedGenres.slice(0, 2).join(' / ')} lane.`,
+        };
+      }
+    }
 
     const hasActiveFilter = Boolean(genreFilter || maxPrice);
 
@@ -540,6 +537,8 @@ class BuyRecommendationService {
       enabled,
       entries: finalEntries,
       allEntries,
+      strongCount,
+      backlogFallback,
       candidateCount: candidates.length,
       availableGenres,
       appliedFilters: { genre: genreFilter, maxPrice },
@@ -555,11 +554,15 @@ class BuyRecommendationService {
         recommendedGameIds: entries.map((entry) => getGameId(entry.game)).filter(Boolean),
       },
       message:
-        entries.length > 0
-          ? 'Local buy recommendations ranked from your wishlist, owned-library taste, and cached price context.'
+        finalEntries.length > 0
+          ? strongCount === 0
+            ? 'Nothing on your wishlist is calling yet — you might not be ready to buy.'
+            : 'Ranked from your wishlist and what you actually play.'
           : hasActiveFilter
             ? 'No wishlist games match these filters. Try a different genre or a higher price.'
-            : 'Add games to Wishlist to let GamePilot rank what may be worth buying next.',
+            : backlogFallback
+              ? 'Nothing on your wishlist is calling yet — you might not be ready to buy.'
+              : 'Add games to Wishlist to let GamePilot rank what may be worth buying next.',
     };
   }
 }

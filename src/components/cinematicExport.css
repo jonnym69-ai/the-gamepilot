@@ -14,9 +14,8 @@
   justify-content: center;
   z-index: 10001;
   padding: 20px;
-  animation: fadeIn 0.2s ease-out;
+  animation: cinematic-fade-in 0.2s ease-out;
 }
-
 .cinematic-export-modal {
   background: var(--card);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -27,10 +26,9 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cinematic-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
-
 .cinematic-export-modal-founder {
   --cinematic-founder-accent: #fb923c;
   --cinematic-founder-surface: rgba(251, 146, 60, 0.14);
@@ -39,22 +37,6 @@
     0 24px 48px rgba(0, 0, 0, 0.4),
     0 0 32px var(--cinematic-founder-surface);
 }
-
-.cinematic-export-modal-founder-silver {
-  --cinematic-founder-accent: #cbd5e1;
-  --cinematic-founder-surface: rgba(203, 213, 225, 0.14);
-}
-
-.cinematic-export-modal-founder-gold {
-  --cinematic-founder-accent: #facc15;
-  --cinematic-founder-surface: rgba(250, 204, 21, 0.16);
-}
-
-.cinematic-export-modal-founder-platinum {
-  --cinematic-founder-accent: #e5e7eb;
-  --cinematic-founder-surface: rgba(229, 231, 235, 0.14);
-}
-
 @keyframes modalSlideIn {
   from {
     opacity: 0;
@@ -66,6 +48,26 @@
   }
 }
 
+@keyframes cinematic-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cinematic-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .cinematic-export-header {
   display: flex;
   justify-content: space-between;
@@ -73,7 +75,6 @@
   padding: 24px 24px 16px;
   border-bottom: 1px solid var(--border-color, #2a3f5f);
 }
-
 .cinematic-export-header h2 {
   margin: 0;
   color: var(--text);
@@ -83,7 +84,6 @@
   align-items: center;
   gap: 8px;
 }
-
 .close-button {
   background: none;
   border: none;
@@ -93,19 +93,16 @@
   border-radius: 8px;
   transition: all 0.2s ease;
 }
-
 .close-button:hover {
   background: var(--bg-active);
   color: var(--text-inverse);
 }
-
 .cinematic-export-content {
   padding: 16px 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
-
 .cinematic-founder-banner {
   grid-column: 1 / -1;
   display: inline-flex;
@@ -120,11 +117,9 @@
   font-weight: 800;
   letter-spacing: 0.04em;
 }
-
 .export-section {
   margin-bottom: 24px;
 }
-
 .export-section h3 {
   display: flex;
   align-items: center;
@@ -134,14 +129,12 @@
   font-size: 1.1em;
   font-weight: 500;
 }
-
 .format-options,
 .background-options {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 .format-option,
 .background-option {
   display: flex;
@@ -155,14 +148,12 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .format-option:hover,
 .background-option:hover {
   background: var(--button-secondary-hover, #3a4f6f);
   border-color: #ff6b35;
   transform: translateY(-1px);
 }
-
 .format-option.active,
 .background-option.active {
   background: #ff6b35;
@@ -170,7 +161,6 @@
   color: #ff6b35;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
 }
-
 .format-preview,
 .background-preview {
   width: 40px;
@@ -179,28 +169,23 @@
   border: 2px solid var(--border-color, #3a4f6f);
   flex-shrink: 0;
 }
-
 .vertical-preview {
   background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
   aspect-ratio: 9/16;
 }
-
 .square-preview {
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
   aspect-ratio: 1/1;
 }
-
 .wide-preview {
   background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
   aspect-ratio: 16/9;
 }
-
 .blurred-preview {
   background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
   position: relative;
   overflow: hidden;
 }
-
 .blurred-preview::after {
   content: '';
   position: absolute;
@@ -210,12 +195,10 @@
   bottom: 0;
   background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
 }
-
 .gradient-preview {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   position: relative;
 }
-
 .gradient-preview::after {
   content: '';
   position: absolute;
@@ -225,19 +208,6 @@
   bottom: 0;
   background: radial-gradient(circle at center, transparent 70%, rgba(255, 255, 255, 0.1) 100%);
 }
-
-.format-option-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.format-option-content span {
-  font-size: 0.9em;
-  color: var(--text-muted, #8892b0);
-}
-
 .format-dimensions {
   font-size: 0.8em;
   color: var(--text-muted, #8892b0);
@@ -247,7 +217,6 @@
   border-radius: 4px;
   margin-top: 4px;
 }
-
 .canvas-container {
   display: flex;
   justify-content: center;
@@ -258,33 +227,27 @@
   border-radius: 12px;
   min-height: 300px;
 }
-
 .cinematic-canvas {
   max-width: 100%;
   max-height: 100%;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
-
 .cinematic-canvas.vertical {
   max-height: 400px;
 }
-
 .cinematic-canvas.square {
   max-height: 300px;
 }
-
 .cinematic-canvas.wide {
   max-height: 250px;
 }
-
 .cinematic-export-footer {
   display: flex;
   justify-content: center;
   padding: 16px 24px 24px;
   border-top: 1px solid var(--border-color, #2a3f5f);
 }
-
 .export-button {
   display: flex;
   align-items: center;
@@ -299,57 +262,48 @@
   min-width: 200px;
   justify-content: center;
 }
-
 .export-button.primary {
   background: #ff6b35;
   color: white;
 }
-
 .export-button.primary:hover {
   background: var(--button-primary-hover, #3d8bfd);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
 }
-
 .export-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
-
 .export-button:disabled:hover {
   transform: none;
   box-shadow: none;
 }
-
 /* Responsive Design */
+
 @media (max-width: 768px) {
   .cinematic-export-modal {
     width: 95%;
     max-height: 95vh;
   }
-
   .cinematic-export-content {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-
   .cinematic-export-header,
   .cinematic-export-content,
   .cinematic-export-footer {
     padding: 16px;
   }
-
   .format-options,
   .background-options {
     gap: 8px;
   }
-
   .format-option,
   .background-option {
     padding: 12px;
   }
-
   .canvas-container {
     padding: 16px;
     min-height: 200px;
@@ -360,23 +314,19 @@
   .cinematic-export-header h2 {
     font-size: 1.2em;
   }
-
   .export-section h3 {
     font-size: 1em;
   }
-
   .format-option,
   .background-option {
     padding: 8px;
     gap: 8px;
   }
-
   .format-preview,
   .background-preview {
     width: 30px;
     height: 30px;
   }
-
   .export-button {
     padding: 12px 20px;
     min-width: 150px;
