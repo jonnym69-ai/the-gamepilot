@@ -153,12 +153,10 @@
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false
     },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "jonnym69-ai",
-        "repo": "the-gamepilot"
-      }
-    ]
+    "publish": {
+      "provider": "github",
+      "owner": "jonnym69-ai",
+      "repo": "the-gamepilot"
+    }
   }
 }

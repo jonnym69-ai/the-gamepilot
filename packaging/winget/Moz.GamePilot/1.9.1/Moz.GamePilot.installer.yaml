@@ -10,6 +10,6 @@ ReleaseDate: 2026-11-01
 Installers:
 - Architecture: x64
   InstallerUrl: https://github.com/jonnym69-ai/the-gamepilot/releases/download/v1.9.1/GamePilot-Setup.exe
-  InstallerSha256: 0B091E0D2C90353DD1713BE69DB273D22F0E72EE0EC4AFDE0BCC11324813439D
+  InstallerSha256: 94A47709BE70AF3AE373B1E1D29D487075C9AA62E684D80C8D540CF57995D4C5
 ManifestType: installer
 ManifestVersion: 1.6.0
