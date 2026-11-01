@@ -4,7 +4,7 @@
   "homepage": "https://github.com/jonnym69-ai/the-gamepilot",
   "license": "MIT",
   "url": "https://github.com/jonnym69-ai/the-gamepilot/releases/download/v1.9.1/GamePilot-Setup.exe",
-  "hash": "94A47709BE70AF3AE373B1E1D29D487075C9AA62E684D80C8D540CF57995D4C5",
+  "hash": "515755991EE8047C938D48A5C7EAD85AF9F159AF00B8D0303F638403D9C6FB4A",
   "pre_install": "if (Test-Path \"$dir\\`$PLUGINSDIR\") { Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force }",
   "shortcuts": [
     [
