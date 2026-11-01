@@ -1,3 +1,51 @@
+# GamePilot v1.10.0 Release Notes
+
+## Highlights
+
+GamePilot now updates itself, protects your play record, and lets you fix the library when scans get it wrong — plus your own Steam achievements alongside your own session data.
+
+## What's new
+
+- **Auto-update**
+  - Checks GitHub Releases on launch and every six hours; downloads and installs are user-initiated.
+  - Settings → About shows the current version, a manual check button and download progress.
+  - Winget and Scoop manifests ship in `packaging/` for community package installs.
+
+- **Edit game details**
+  - Per-game overrides for sort name, genres, tags, release year, developer, publisher, cover art and hidden state.
+  - Overridden genres flow into mood, filters and recommendations; "Reset to scanned" restores everything.
+  - Pencil button in the game modal header; the scanned values are kept as placeholders.
+
+- **Your Steam achievements**
+  - Per-game unlocked/total with global rarity and unlock dates inside the game's Steam snapshot.
+  - Uses your saved Steam ID and sits behind the existing Steam online opt-in; private profiles get a pointer, not an error wall.
+
+- **Session-history protection**
+  - SQLite history is guarded against empty or truncated writes; the renderer re-syncs from disk if a write is refused.
+  - Rolling backups in `userData/session-backups` (startup + before bulk replaces, kept to ten), with a restore panel in Settings → Backup & Restore.
+  - Backup imports force the replace so restoring an older, smaller export still works.
+
+- **Bug fixes**
+  - Library card "Hide" button now actually hides the game (it was passing the wrong argument).
+  - Settings scan report shows real per-platform counts and error reasons again.
+  - Updater failures show a one-line reason instead of a raw HTTP dump.
+
+- **Housekeeping**
+  - Renderer surface consolidation continues: trusted IPC guard, Epic/itch account bridges, install watcher, storage cleaner, owned-backlog shelf and Trending page are live; the retired XP/quest, seasonal and engagement-widget surfaces were removed.
+  - README re-led with the tracking story first.
+
+## Linux note
+
+The Linux build stays in the tree but is paused for this release — it's Steam-only and unverified on real hardware, so no AppImage or `latest-linux.yml` is published with v1.10.0. `latest.yml` on the Windows release feeds the updater.
+
+## Known issues
+
+- The Windows installer is unsigned (SmartScreen warning expected).
+- Auto-update activates with this release: installs of 1.9.1 will see 1.10.0 once the release is published, but this build itself needs a *following* release to test the download path end-to-end.
+- Some remote game covers may fall back to landscape artwork or a generated placeholder.
+
+---
+
 # GamePilot v1.9.0 Release Notes
 
 ## Highlights

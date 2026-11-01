@@ -2,9 +2,9 @@
 // users. Keep this short — 3 to 5 user-facing bullets, not a changelog.
 // Update alongside RELEASE_NOTES.md each release.
 export const WHATS_NEW = [
-  'Live "Playing now" leaderboard — see which of your games are on Steam’s most-played chart',
-  'Your library’s top shelf — an all-time most-played ranking on Activity',
-  'Backlog buster picks — choose under-1h/2h games to sample, then launch them straight from the list',
-  'Spotlight and Rediscover cards now offer Poster, Fill and Mosaic artwork styles',
-  'Era transitions and a monthly recap on Today as your gaming story shifts',
+  'Edit any game’s details — sort name, genres, tags, year, developer and cover art',
+  'Your own Steam achievements per game, with rarity — inside the game card',
+  'Auto-updates — GamePilot now checks GitHub releases and installs updates itself',
+  'Session-history backups — rolling on-disk copies of your play record, restore in Settings',
+  'The Settings scan report shows real per-platform counts again',
 ];

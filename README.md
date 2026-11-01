@@ -14,8 +14,8 @@ No account. No cloud. No telemetry. No AI in the app — everything it "knows" a
 
 ## Download
 
-- **Windows:** [GamePilot-Setup.exe](https://github.com/jonnym69-ai/the-gamepilot/releases/latest) — Windows 10/11. SmartScreen will warn about the unsigned installer: **More info → Run anyway**.
-- **Linux (beta):** x86_64 AppImage on the same releases page. Steam-first; works on Steam Deck in Desktop Mode — add it to Steam as a non-Steam game for Gaming Mode.
+- **Windows:** [GamePilot-Setup.exe](https://github.com/jonnym69-ai/the-gamepilot/releases/latest) — Windows 10/11, auto-updates built in. SmartScreen will warn about the unsigned installer: **More info → Run anyway**.
+- **Linux:** paused — the Steam-only beta needs hardware validation, so no AppImage ships with the current release. The build stays in the tree (`npm run build-electron-linux`) if you want to try it yourself.
 - **itch.io:** <https://moz91.itch.io/gamepilot>
 
 ## What it tracks

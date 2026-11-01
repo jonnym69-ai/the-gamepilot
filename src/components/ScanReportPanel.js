@@ -106,8 +106,10 @@ export function ScanReportPanel() {
         <div className="scan-report-platforms">
           {entries.map(([platform, info]) => {
             const status = info?.scanStatus || 'unknown';
-            const count = platformCounts[platform] || info?.count || 0;
-            const reason = info?.reason || info?.message || null;
+            // platformStatus is keyed by display name and carries gameCount;
+            // platformCounts is keyed by the internal scanner key (info.key).
+            const count = platformCounts[info?.key] ?? platformCounts[platform] ?? info?.gameCount ?? info?.count ?? 0;
+            const reason = info?.error || info?.reason || info?.message || null;
 
             return (
               <div key={platform} className={`scan-report-row scan-status-${status}`}>
