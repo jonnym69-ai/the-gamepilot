@@ -13,6 +13,7 @@ import {
   Sparkles,
   Upload,
   Wrench,
+  Pencil,
   MoreHorizontal,
 } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
@@ -791,9 +792,20 @@ const GameModal = ({
                 )}
               </div>
             </div>
-            <button className="game-modal-close" onClick={onClose}>
-              <X size={24} />
-            </button>
+            <div className="game-modal-header-actions">
+              <button
+                type="button"
+                className="game-modal-close game-modal-header-edit"
+                onClick={() => setShowEditDetails(true)}
+                title="Edit details"
+                aria-label="Edit details"
+              >
+                <Pencil size={20} />
+              </button>
+              <button className="game-modal-close" onClick={onClose} aria-label="Close">
+                <X size={24} />
+              </button>
+            </div>
           </div>
 
           <div className="game-modal-body" ref={modalBodyRef}>

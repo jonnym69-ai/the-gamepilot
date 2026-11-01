@@ -19,6 +19,23 @@ const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 const INITIAL_STATE = { status: 'idle', version: null, percent: null, error: null };
 
+/**
+ * electron-updater errors embed full HTTP dumps. Reduce them to one line the
+ * Settings card can show; the full detail still goes to the logger.
+ */
+function describeUpdateError(error) {
+  const message = String(error?.message || error || '');
+  if (/latest\.yml|latest-linux\.yml|latest-mac\.yml/i.test(message) && /404/.test(message)) {
+    return 'The latest GitHub release has no update feed yet.';
+  }
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|net::ERR_|ENETUNREACH|EAI_AGAIN/i.test(message)) {
+    return 'Could not reach GitHub — check your connection.';
+  }
+  if (/404/.test(message)) return 'No releases found on GitHub.';
+  if (/sha512|checksum/i.test(message)) return 'Downloaded update failed verification.';
+  return message.split('\n')[0].slice(0, 160) || 'Unknown error';
+}
+
 function registerIpcHandlers(ipcMain, deps) {
   const { getMainWindow } = deps;
 
@@ -64,9 +81,7 @@ function registerIpcHandlers(ipcMain, deps) {
   autoUpdater.on('update-downloaded', (info) =>
     setState({ status: 'downloaded', version: info?.version || state.version, percent: null, error: null })
   );
-  autoUpdater.on('error', (error) =>
-    setState({ status: 'error', percent: null, error: String(error?.message || error) })
-  );
+  autoUpdater.on('error', (error) => setState({ status: 'error', percent: null, error: describeUpdateError(error) }));
 
   const runCheck = () => {
     try {
@@ -87,8 +102,8 @@ function registerIpcHandlers(ipcMain, deps) {
       const result = await autoUpdater.checkForUpdates();
       return { ok: true, status: state.status, version: result?.updateInfo?.version || state.version };
     } catch (error) {
-      setState({ status: 'error', error: String(error?.message || error) });
-      return { ok: false, status: 'error', error: String(error?.message || error) };
+      setState({ status: 'error', error: describeUpdateError(error) });
+      return { ok: false, status: 'error', error: describeUpdateError(error) };
     }
   });
 
@@ -97,8 +112,8 @@ function registerIpcHandlers(ipcMain, deps) {
       await autoUpdater.downloadUpdate();
       return { ok: true, status: state.status, version: state.version };
     } catch (error) {
-      setState({ status: 'error', error: String(error?.message || error) });
-      return { ok: false, status: 'error', error: String(error?.message || error) };
+      setState({ status: 'error', error: describeUpdateError(error) });
+      return { ok: false, status: 'error', error: describeUpdateError(error) };
     }
   });
 
@@ -107,7 +122,7 @@ function registerIpcHandlers(ipcMain, deps) {
       autoUpdater.quitAndInstall();
       return { ok: true };
     } catch (error) {
-      return { ok: false, status: 'error', error: String(error?.message || error) };
+      return { ok: false, status: 'error', error: describeUpdateError(error) };
     }
   });
 
