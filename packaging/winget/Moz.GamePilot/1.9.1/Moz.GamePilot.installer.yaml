@@ -1,6 +1,6 @@
 PackageIdentifier: Moz.GamePilot
 PackageVersion: 1.9.1
-InstallerType: nsis
+InstallerType: nullsoft
 InstallModes:
 - interactive
 - silent
