@@ -4,7 +4,7 @@ export function getTodayLayoutStyle() {
   return {
     '--home-today-columns': 'minmax(0, 1.2fr) minmax(0, 1fr)',
     '--home-today-areas': '"doodle doodle" "strip strip" "play spotlight" "story spotlight"',
-    '--home-today-width': '1240px',
+    '--home-today-width': 'var(--content-max-width, 1800px)',
     '--home-today-padding': '24px',
     '--home-today-art-width': '120px',
     '--home-today-border-width': '1px',

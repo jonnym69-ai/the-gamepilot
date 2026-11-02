@@ -6,7 +6,7 @@
   padding: 40px 20px;
 }
 .settings-container > div {
-  max-width: 1400px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   padding: 0 25px;
 }

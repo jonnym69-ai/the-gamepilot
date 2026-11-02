@@ -53,7 +53,7 @@
   color: var(--text, #e0e0e0);
 }
 .recent-activity-content {
-  max-width: 1200px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   padding: 24px 20px 60px;
 }

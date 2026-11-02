@@ -13,7 +13,8 @@
   --space-lg: 24px;
   --space-xl: 32px;
   --space-2xl: 48px;
-  --content-max-width: 1300px;
+  --content-max-width: 1800px;
+  --content-gutter: clamp(16px, 2.5vw, 40px);
   --transition-fast: 0.15s cubic-bezier(0.22, 1, 0.36, 1);
   --transition-base: 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   --transition-slow: 0.4s cubic-bezier(0.22, 1, 0.36, 1);

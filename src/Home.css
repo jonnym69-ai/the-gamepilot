@@ -263,9 +263,9 @@
 /* Main Content Container */
 
 .home-content {
-  max-width: 1300px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 var(--content-gutter);
 
   /* Ensure select dropdowns can appear */
 
@@ -696,7 +696,7 @@
 /* Library Today section: 3x2 grid layout */
 
 .library-today-grid {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 @media (max-width: 1200px) {
   .library-today-grid {
@@ -1918,7 +1918,7 @@
 
 .discovery-skeleton-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
 .discovery-skeleton-card {
@@ -1975,7 +1975,7 @@
 }
 .discovery-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
 @keyframes discovery-card-enter {

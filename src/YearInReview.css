@@ -78,7 +78,7 @@
 }
 
 .year-review-shell {
-  max-width: 1320px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   padding: 24px 20px 40px;
 }
