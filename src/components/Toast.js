@@ -40,11 +40,11 @@ export const ToastProvider = ({ children }) => {
   }, []);
 
   const addToast = useCallback(
-    (message, type = 'info', duration = 3000) => {
+    (message, type = 'info', duration = 3000, action = null) => {
       nextId.current += 1;
       const id = `toast-${Date.now()}-${nextId.current}`;
       const effectiveDuration = resolveToastDuration(duration);
-      const newToast = { id, message: String(message || ''), type, duration: effectiveDuration };
+      const newToast = { id, message: String(message || ''), type, duration: effectiveDuration, action };
 
       setToasts((current) => [...current.slice(-3), newToast]);
 
@@ -73,7 +73,7 @@ export const ToastProvider = ({ children }) => {
       success: (message, duration) => addToast(message, 'success', duration),
       error: (message, duration) => addToast(message, 'error', duration),
       warning: (message, duration) => addToast(message, 'warning', duration),
-      info: (message, duration) => addToast(message, 'info', duration),
+      info: (message, duration, action) => addToast(message, 'info', duration, action),
       roast: (message, duration) => addToast(message, 'roast', duration),
       toasts,
     }),
@@ -128,6 +128,18 @@ const Toast = ({ toast, removeToast }) => {
           </span>
         )}
         <span className="toast-message">{toast.message}</span>
+        {toast.action && toast.action.label && (
+          <button
+            className="toast-action"
+            type="button"
+            onClick={() => {
+              toast.action.onClick?.();
+              handleClose();
+            }}
+          >
+            {toast.action.label}
+          </button>
+        )}
         <button className="toast-close" onClick={handleClose} type="button" aria-label="Dismiss notification">
           <span aria-hidden="true">×</span>
         </button>

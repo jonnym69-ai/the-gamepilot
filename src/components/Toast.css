@@ -139,3 +139,21 @@
     padding: 16px 18px;
   }
 }
+
+.toast-action {
+  margin-left: 8px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.toast-action:hover {
+  background: rgba(255, 255, 255, 0.15);
+}

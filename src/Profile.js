@@ -1183,788 +1183,804 @@ const Profile = ({ theme, library = [] }) => {
                     <p>"{welcomeMessage}"</p>
                   </div>
 
-                  <SteamProfileCard />
+                  <div className="profile-display-columns">
+                    <div className="profile-display-primary">
+                      <SteamProfileCard />
 
-                  {displayedPersona && (
-                    <div className="gaming-persona-card">
-                      <div className="gaming-persona-card-header">
-                        <Sparkles size={18} />
-                        <span>Your Gaming Persona</span>
-                        <div className="gaming-persona-window-switch">
-                          <button
-                            type="button"
-                            className={personaWindow === 'all' ? 'active' : ''}
-                            onClick={() => setPersonaWindow('all')}
-                          >
-                            All-time
-                          </button>
-                          <button
-                            type="button"
-                            className={personaWindow === 'recent' ? 'active' : ''}
-                            onClick={() => setPersonaWindow('recent')}
-                          >
-                            Recent
-                          </button>
-                        </div>
-                        <button
-                          onClick={handleRerollPersona}
-                          className="gaming-persona-reroll"
-                          title="Reroll roast"
-                          type="button"
-                        >
-                          <Dices size={14} />
-                          Reroll roast
-                        </button>
-                        <ShareMenu
-                          imageAvailable={Boolean(displayedPersona)}
-                          onCopyText={handleCopyPersonaShareText}
-                          onCopyImage={handleCopyIdentityShareCard}
-                          onSaveImage={handleDownloadIdentityShareCard}
-                          onShareText={handleSharePersonaToChannel}
-                          onShareToDiscord={handleSharePersonaToDiscord}
-                          onShareToMessenger={handleSharePersonaToMessenger}
-                          onDownloadText={handleCopyPersonaShareText}
-                          onNativeShare={handleNativeSharePersona}
-                          buildCaption={() =>
-                            ProfileService.appendSocialLinksToShareText(
-                              LocalShareService.buildPersonaShareText(displayedPersona, username)
-                            )
-                          }
-                          disabled={isCapturingIdentity}
-                          triggerLabel="Share Persona"
-                        />
-                      </div>
-                      {displayedPersona.secondaryPersona && (
-                        <div className="gaming-persona-variant-switch">
-                          <button
-                            type="button"
-                            className={personaVariant === 'primary' ? 'active' : ''}
-                            onClick={() => setPersonaVariant('primary')}
-                          >
-                            {displayedPersona.primaryPersona?.label?.replace(/^The /, '') || 'Main'}
-                          </button>
-                          <button
-                            type="button"
-                            className={personaVariant === 'secondary' ? 'active' : ''}
-                            onClick={() => setPersonaVariant('secondary')}
-                          >
-                            {displayedPersona.secondaryPersona?.label?.replace(/^The /, '') || 'Alt'}
-                          </button>
-                        </div>
-                      )}
-                      {(() => {
-                        const isSecondary = personaVariant === 'secondary' && displayedPersona.secondaryPersona;
-                        const active = isSecondary
-                          ? displayedPersona.secondaryPersona
-                          : displayedPersona.primaryPersona;
-                        const roast = isSecondary ? active?.roast : displayedPersona.summaryRoast;
-                        return (
-                          <div className="gaming-persona-primary">
-                            <h3>{active?.label || 'Gamer in Progress'}</h3>
-                            {active?.description && <p className="gaming-persona-description">{active.description}</p>}
-                            {displayedPersona?.contextLine && (
-                              <p className="gaming-persona-context-line">{displayedPersona.contextLine}</p>
-                            )}
-                            <p className="gaming-persona-roast">{roast}</p>
-                            {active?.evidence?.length > 0 && (
-                              <div className="gaming-persona-evidence" aria-label="Persona evidence">
-                                {active.evidence.map((item) => (
-                                  <span key={item}>{item}</span>
-                                ))}
-                              </div>
-                            )}
-                            {active?.basedOnGame && (
-                              <span className="gaming-persona-basis">
-                                Built from your actual play history, led by {active.basedOnGame}
-                              </span>
-                            )}
-                            {displayedPersona.signals?.adaptiveSessionCount > 0 && (
-                              <span className="gaming-persona-basis">
-                                {displayedPersona.mode === 'all-time'
-                                  ? `Based on ${displayedPersona.signals.adaptiveSessionCount} tracked sessions`
-                                  : `Based on your last ${displayedPersona.signals.adaptiveSessionCount} tracked sessions`}
-                              </span>
-                            )}
+                      {displayedPersona && (
+                        <div className="gaming-persona-card">
+                          <div className="gaming-persona-card-header">
+                            <Sparkles size={18} />
+                            <span>Your Gaming Persona</span>
+                            <div className="gaming-persona-window-switch">
+                              <button
+                                type="button"
+                                className={personaWindow === 'all' ? 'active' : ''}
+                                onClick={() => setPersonaWindow('all')}
+                              >
+                                All-time
+                              </button>
+                              <button
+                                type="button"
+                                className={personaWindow === 'recent' ? 'active' : ''}
+                                onClick={() => setPersonaWindow('recent')}
+                              >
+                                Recent
+                              </button>
+                            </div>
+                            <button
+                              onClick={handleRerollPersona}
+                              className="gaming-persona-reroll"
+                              title="Reroll roast"
+                              type="button"
+                            >
+                              <Dices size={14} />
+                              Reroll roast
+                            </button>
+                            <ShareMenu
+                              imageAvailable={Boolean(displayedPersona)}
+                              onCopyText={handleCopyPersonaShareText}
+                              onCopyImage={handleCopyIdentityShareCard}
+                              onSaveImage={handleDownloadIdentityShareCard}
+                              onShareText={handleSharePersonaToChannel}
+                              onShareToDiscord={handleSharePersonaToDiscord}
+                              onShareToMessenger={handleSharePersonaToMessenger}
+                              onDownloadText={handleCopyPersonaShareText}
+                              onNativeShare={handleNativeSharePersona}
+                              buildCaption={() =>
+                                ProfileService.appendSocialLinksToShareText(
+                                  LocalShareService.buildPersonaShareText(displayedPersona, username)
+                                )
+                              }
+                              disabled={isCapturingIdentity}
+                              triggerLabel="Share Persona"
+                            />
                           </div>
-                        );
-                      })()}
-                      {displayedPersona.subTraits.length > 0 && (
-                        <div className="gaming-persona-traits">
-                          {displayedPersona.subTraits.map((trait) => {
-                            const isExpanded = expandedTraitId === trait.id;
+                          {displayedPersona.secondaryPersona && (
+                            <div className="gaming-persona-variant-switch">
+                              <button
+                                type="button"
+                                className={personaVariant === 'primary' ? 'active' : ''}
+                                onClick={() => setPersonaVariant('primary')}
+                              >
+                                {displayedPersona.primaryPersona?.label?.replace(/^The /, '') || 'Main'}
+                              </button>
+                              <button
+                                type="button"
+                                className={personaVariant === 'secondary' ? 'active' : ''}
+                                onClick={() => setPersonaVariant('secondary')}
+                              >
+                                {displayedPersona.secondaryPersona?.label?.replace(/^The /, '') || 'Alt'}
+                              </button>
+                            </div>
+                          )}
+                          {(() => {
+                            const isSecondary = personaVariant === 'secondary' && displayedPersona.secondaryPersona;
+                            const active = isSecondary
+                              ? displayedPersona.secondaryPersona
+                              : displayedPersona.primaryPersona;
+                            const roast = isSecondary ? active?.roast : displayedPersona.summaryRoast;
                             return (
-                              <React.Fragment key={trait.id}>
-                                <button
-                                  type="button"
-                                  className={`gaming-persona-trait${isExpanded ? ' active' : ''}`}
-                                  title={trait.description}
-                                  aria-expanded={isExpanded}
-                                  onClick={() => setExpandedTraitId(isExpanded ? null : trait.id)}
-                                >
-                                  {trait.label}
-                                </button>
-                                {isExpanded && (
-                                  <div className="gaming-persona-trait-receipts" role="region">
-                                    <p className="gaming-persona-trait-roast">{trait.description}</p>
-                                    {trait.evidence?.length > 0 && (
-                                      <div
-                                        className="gaming-persona-evidence"
-                                        aria-label={`Why you're tagged ${trait.label}`}
-                                      >
-                                        {trait.evidence.map((item) => (
-                                          <span key={item}>{item}</span>
-                                        ))}
-                                      </div>
-                                    )}
+                              <div className="gaming-persona-primary">
+                                <h3>{active?.label || 'Gamer in Progress'}</h3>
+                                {active?.description && (
+                                  <p className="gaming-persona-description">{active.description}</p>
+                                )}
+                                {displayedPersona?.contextLine && (
+                                  <p className="gaming-persona-context-line">{displayedPersona.contextLine}</p>
+                                )}
+                                <p className="gaming-persona-roast">{roast}</p>
+                                {active?.evidence?.length > 0 && (
+                                  <div className="gaming-persona-evidence" aria-label="Persona evidence">
+                                    {active.evidence.map((item) => (
+                                      <span key={item}>{item}</span>
+                                    ))}
                                   </div>
                                 )}
-                              </React.Fragment>
+                                {active?.basedOnGame && (
+                                  <span className="gaming-persona-basis">
+                                    Built from your actual play history, led by {active.basedOnGame}
+                                  </span>
+                                )}
+                                {displayedPersona.signals?.adaptiveSessionCount > 0 && (
+                                  <span className="gaming-persona-basis">
+                                    {displayedPersona.mode === 'all-time'
+                                      ? `Based on ${displayedPersona.signals.adaptiveSessionCount} tracked sessions`
+                                      : `Based on your last ${displayedPersona.signals.adaptiveSessionCount} tracked sessions`}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          {displayedPersona.subTraits.length > 0 && (
+                            <div className="gaming-persona-traits">
+                              {displayedPersona.subTraits.map((trait) => {
+                                const isExpanded = expandedTraitId === trait.id;
+                                return (
+                                  <React.Fragment key={trait.id}>
+                                    <button
+                                      type="button"
+                                      className={`gaming-persona-trait${isExpanded ? ' active' : ''}`}
+                                      title={trait.description}
+                                      aria-expanded={isExpanded}
+                                      onClick={() => setExpandedTraitId(isExpanded ? null : trait.id)}
+                                    >
+                                      {trait.label}
+                                    </button>
+                                    {isExpanded && (
+                                      <div className="gaming-persona-trait-receipts" role="region">
+                                        <p className="gaming-persona-trait-roast">{trait.description}</p>
+                                        {trait.evidence?.length > 0 && (
+                                          <div
+                                            className="gaming-persona-evidence"
+                                            aria-label={`Why you're tagged ${trait.label}`}
+                                          >
+                                            {trait.evidence.map((item) => (
+                                              <span key={item}>{item}</span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {displayedPersona.confidence === 'low' && (
+                            <p className="gaming-persona-confidence">
+                              Play a few more games and GamePilot will sharpen this roast.
+                            </p>
+                          )}
+                          <button
+                            onClick={() => setShowPersonaDebug((prev) => !prev)}
+                            className="gaming-persona-debug-toggle"
+                            type="button"
+                          >
+                            {showPersonaDebug ? 'Hide debug' : 'Debug persona'}
+                          </button>
+                          {showPersonaDebug && (
+                            <div className="gaming-persona-debug">
+                              <div className="gaming-persona-debug-section">
+                                <strong>Signals</strong>
+                                <pre>{JSON.stringify(displayedPersona.signals, null, 2)}</pre>
+                              </div>
+                              <div className="gaming-persona-debug-section">
+                                <strong>Archetype scores</strong>
+                                <pre>{JSON.stringify(displayedPersona.allArchetypes, null, 2)}</pre>
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                            <button
+                              onClick={() => setShowPersonaPicker((prev) => !prev)}
+                              className="gaming-persona-debug-toggle"
+                              type="button"
+                            >
+                              {showPersonaPicker ? 'Hide picker' : 'Choose persona'}
+                            </button>
+                            {pinnedPersonaId && (
+                              <button
+                                onClick={handleUnpinPersona}
+                                className="gaming-persona-debug-toggle"
+                                type="button"
+                                style={{ borderColor: 'var(--accent, #6c5ce7)', color: 'var(--accent, #6c5ce7)' }}
+                              >
+                                Unpin (
+                                {displayedPersona?.allArchetypes?.find((a) => a.id === pinnedPersonaId)?.label ||
+                                  'Custom'}
+                                )
+                              </button>
+                            )}
+                          </div>
+                          {pinnedPersonaId && (
+                            <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: '4px 0 0' }}>
+                              Pinned — this persona overrides auto-detection everywhere in GamePilot.
+                            </p>
+                          )}
+                          {showPersonaPicker && displayedPersona?.allArchetypes && (
+                            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              <p style={{ fontSize: '0.75rem', opacity: 0.6, margin: '0 0 4px' }}>
+                                Pin a persona to override auto-detection. Scores show how well each fits your play.
+                              </p>
+                              {displayedPersona.allArchetypes
+                                .filter((a) => a.score > 0)
+                                .map((arch) => (
+                                  <div
+                                    key={arch.id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      gap: 8,
+                                      padding: '8px 12px',
+                                      borderRadius: 8,
+                                      border: `1px solid ${arch.id === pinnedPersonaId ? 'var(--accent, #6c5ce7)' : 'rgba(255,255,255,0.1)'}`,
+                                      background: arch.id === pinnedPersonaId ? 'rgba(108,92,231,0.1)' : 'transparent',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                      <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{arch.label}</span>
+                                      <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>Score: {arch.score}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        arch.id === pinnedPersonaId ? handleUnpinPersona() : handlePinPersona(arch.id)
+                                      }
+                                      style={{
+                                        padding: '4px 14px',
+                                        borderRadius: 6,
+                                        border: '1px solid rgba(255,255,255,0.15)',
+                                        background:
+                                          arch.id === pinnedPersonaId ? 'var(--accent, #6c5ce7)' : 'transparent',
+                                        color: arch.id === pinnedPersonaId ? '#fff' : 'inherit',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {arch.id === pinnedPersonaId ? 'Pinned' : 'Pin'}
+                                    </button>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="profile-display-secondary">
+                      {socialLinks.length > 0 && (
+                        <div
+                          className="profile-social-links"
+                          style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}
+                        >
+                          {socialLinks.map((link) => {
+                            const platform =
+                              SOCIAL_PLATFORMS.find((p) => p.key === link.platform) ||
+                              SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
+                            return (
+                              <a
+                                key={link.id}
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="profile-social-chip"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  fontSize: 13,
+                                  padding: '4px 10px',
+                                  borderRadius: 999,
+                                  border: '1px solid rgba(255,255,255,0.2)',
+                                  color: 'inherit',
+                                  textDecoration: 'none',
+                                  opacity: link.enabled ? 1 : 0.6,
+                                }}
+                                title={link.enabled ? 'Included in shares' : 'Not included in shares'}
+                              >
+                                <span>{platform.icon}</span>
+                                <span>{platform.label}</span>
+                                {!link.enabled && <span style={{ fontSize: 10, marginLeft: 2 }}>(hidden)</span>}
+                              </a>
                             );
                           })}
                         </div>
                       )}
-                      {displayedPersona.confidence === 'low' && (
-                        <p className="gaming-persona-confidence">
-                          Play a few more games and GamePilot will sharpen this roast.
-                        </p>
-                      )}
-                      <button
-                        onClick={() => setShowPersonaDebug((prev) => !prev)}
-                        className="gaming-persona-debug-toggle"
-                        type="button"
-                      >
-                        {showPersonaDebug ? 'Hide debug' : 'Debug persona'}
-                      </button>
-                      {showPersonaDebug && (
-                        <div className="gaming-persona-debug">
-                          <div className="gaming-persona-debug-section">
-                            <strong>Signals</strong>
-                            <pre>{JSON.stringify(displayedPersona.signals, null, 2)}</pre>
-                          </div>
-                          <div className="gaming-persona-debug-section">
-                            <strong>Archetype scores</strong>
-                            <pre>{JSON.stringify(displayedPersona.allArchetypes, null, 2)}</pre>
-                          </div>
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                        <button
-                          onClick={() => setShowPersonaPicker((prev) => !prev)}
-                          className="gaming-persona-debug-toggle"
-                          type="button"
-                        >
-                          {showPersonaPicker ? 'Hide picker' : 'Choose persona'}
-                        </button>
-                        {pinnedPersonaId && (
-                          <button
-                            onClick={handleUnpinPersona}
-                            className="gaming-persona-debug-toggle"
-                            type="button"
-                            style={{ borderColor: 'var(--accent, #6c5ce7)', color: 'var(--accent, #6c5ce7)' }}
-                          >
-                            Unpin (
-                            {displayedPersona?.allArchetypes?.find((a) => a.id === pinnedPersonaId)?.label || 'Custom'})
-                          </button>
-                        )}
-                      </div>
-                      {pinnedPersonaId && (
-                        <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: '4px 0 0' }}>
-                          Pinned — this persona overrides auto-detection everywhere in GamePilot.
-                        </p>
-                      )}
-                      {showPersonaPicker && displayedPersona?.allArchetypes && (
-                        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <p style={{ fontSize: '0.75rem', opacity: 0.6, margin: '0 0 4px' }}>
-                            Pin a persona to override auto-detection. Scores show how well each fits your play.
-                          </p>
-                          {displayedPersona.allArchetypes
-                            .filter((a) => a.score > 0)
-                            .map((arch) => (
-                              <div
-                                key={arch.id}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: 8,
-                                  padding: '8px 12px',
-                                  borderRadius: 8,
-                                  border: `1px solid ${arch.id === pinnedPersonaId ? 'var(--accent, #6c5ce7)' : 'rgba(255,255,255,0.1)'}`,
-                                  background: arch.id === pinnedPersonaId ? 'rgba(108,92,231,0.1)' : 'transparent',
-                                }}
-                              >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{arch.label}</span>
-                                  <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>Score: {arch.score}</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    arch.id === pinnedPersonaId ? handleUnpinPersona() : handlePinPersona(arch.id)
-                                  }
-                                  style={{
-                                    padding: '4px 14px',
-                                    borderRadius: 6,
-                                    border: '1px solid rgba(255,255,255,0.15)',
-                                    background: arch.id === pinnedPersonaId ? 'var(--accent, #6c5ce7)' : 'transparent',
-                                    color: arch.id === pinnedPersonaId ? '#fff' : 'inherit',
-                                    fontSize: '0.75rem',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {arch.id === pinnedPersonaId ? 'Pinned' : 'Pin'}
-                                </button>
-                              </div>
-                            ))}
-                        </div>
-                      )}
                     </div>
-                  )}
-
-                  {socialLinks.length > 0 && (
-                    <div
-                      className="profile-social-links"
-                      style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}
-                    >
-                      {socialLinks.map((link) => {
-                        const platform =
-                          SOCIAL_PLATFORMS.find((p) => p.key === link.platform) ||
-                          SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
-                        return (
-                          <a
-                            key={link.id}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="profile-social-chip"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              fontSize: 13,
-                              padding: '4px 10px',
-                              borderRadius: 999,
-                              border: '1px solid rgba(255,255,255,0.2)',
-                              color: 'inherit',
-                              textDecoration: 'none',
-                              opacity: link.enabled ? 1 : 0.6,
-                            }}
-                            title={link.enabled ? 'Included in shares' : 'Not included in shares'}
-                          >
-                            <span>{platform.icon}</span>
-                            <span>{platform.label}</span>
-                            {!link.enabled && <span style={{ fontSize: 10, marginLeft: 2 }}>(hidden)</span>}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Gaming Identity Section */}
-          {gamingIdentity && gamingIdentity.identity && (
-            <CollapsibleSection
-              title="Gaming Identity"
-              subtitle="Playstyle breakdown, stats, and DNA profile."
-              badge={gamingIdentity.gamingPersona?.primaryPersona?.label || gamingIdentity.identity.personality}
-              defaultOpen={false}
-              icon={<User size={18} />}
-              className={getSectionClass(1)}
-            >
-              <div className="gaming-identity-card">
-                <div className="gaming-identity-card-header">
-                  <h3>Gaming Identity</h3>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      className="startup-personalization-button"
-                      onClick={() => navigate('/year-in-review')}
-                    >
-                      Your Gaming Life
-                    </button>
-                    <ShareMenu
-                      imageAvailable={Boolean(gamingIdentity)}
-                      onCopyText={handleCopyIdentityShareText}
-                      onCopyImage={handleCopyIdentityShareCard}
-                      onSaveImage={handleDownloadIdentityShareCard}
-                      onShareText={handleShareIdentityToChannel}
-                      onShareToDiscord={handleShareIdentityToDiscord}
-                      onShareToMessenger={handleShareIdentityToMessenger}
-                      onDownloadText={handleCopyIdentityShareText}
-                      onNativeShare={handleNativeShareIdentityCard}
-                      buildCaption={() =>
-                        ProfileService.appendSocialLinksToShareText(
-                          LocalShareService.buildIdentityShareText(gamingIdentity, username)
-                        )
-                      }
-                      disabled={isCapturingIdentity}
-                      triggerLabel="Share Identity"
-                    />
-                  </div>
-                </div>
-                <div className="identity-header">
-                  <div className="level-badge">
-                    <div className="level-number">{gamingIdentity.level}</div>
-                    <div className="level-text">Level</div>
-                  </div>
-                  <div className="title-section">
-                    <h4>{gamingIdentity.title}</h4>
-                    <p className="identity-description">{gamingIdentity.identity.description}</p>
-                  </div>
-                </div>
-                {startupPersonalization?.completed && (
-                  <div className="startup-personalization-panel">
-                    <div className="startup-personalization-header">
-                      <div>
-                        <span className="trait-label">Startup Personalization</span>
-                        <strong>
-                          {startupPersonalization.playerVibe} • {startupPersonalization.personalizationStyle}
-                        </strong>
-                        <p className="identity-description">
-                          Your cold-start profile seeds recommendations and identity until real play behavior takes
-                          over.
-                        </p>
-                        <div className="startup-personalization-status">
-                          <span
-                            className={`startup-personalization-status-badge strength-${startupInfluence.shortLabel.toLowerCase().replace(/\s+/g, '-')}`}
-                          >
-                            {startupInfluence.label}
-                          </span>
-                          <p>{startupInfluence.description}</p>
-                        </div>
-                      </div>
-                      <div className="startup-personalization-actions">
-                        <button
-                          type="button"
-                          className="startup-personalization-button"
-                          onClick={() => setIsEditingStartupPersonalization((current) => !current)}
-                        >
-                          {isEditingStartupPersonalization ? 'Close editor' : 'Edit inline'}
-                        </button>
-                        <button
-                          type="button"
-                          className="startup-personalization-button"
-                          onClick={handleRetunePersonalization}
-                        >
-                          Tune
-                        </button>
-                      </div>
+          <div className="profile-sections-grid">
+            {/* Gaming Identity Section */}
+            {gamingIdentity && gamingIdentity.identity && (
+              <CollapsibleSection
+                title="Gaming Identity"
+                subtitle="Playstyle breakdown, stats, and DNA profile."
+                badge={gamingIdentity.gamingPersona?.primaryPersona?.label || gamingIdentity.identity.personality}
+                defaultOpen={false}
+                icon={<User size={18} />}
+                className={getSectionClass(1)}
+              >
+                <div className="gaming-identity-card">
+                  <div className="gaming-identity-card-header">
+                    <h3>Gaming Identity</h3>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="startup-personalization-button"
+                        onClick={() => navigate('/year-in-review')}
+                      >
+                        Your Gaming Life
+                      </button>
+                      <ShareMenu
+                        imageAvailable={Boolean(gamingIdentity)}
+                        onCopyText={handleCopyIdentityShareText}
+                        onCopyImage={handleCopyIdentityShareCard}
+                        onSaveImage={handleDownloadIdentityShareCard}
+                        onShareText={handleShareIdentityToChannel}
+                        onShareToDiscord={handleShareIdentityToDiscord}
+                        onShareToMessenger={handleShareIdentityToMessenger}
+                        onDownloadText={handleCopyIdentityShareText}
+                        onNativeShare={handleNativeShareIdentityCard}
+                        buildCaption={() =>
+                          ProfileService.appendSocialLinksToShareText(
+                            LocalShareService.buildIdentityShareText(gamingIdentity, username)
+                          )
+                        }
+                        disabled={isCapturingIdentity}
+                        triggerLabel="Share Identity"
+                      />
                     </div>
-                    {isEditingStartupPersonalization && (
-                      <div className="startup-personalization-editor">
-                        <div className="startup-personalization-field">
-                          <span className="trait-label">Seeded Moods</span>
-                          <div className="startup-personalization-chip-grid">
-                            {MOODS.map((moodOption) => (
-                              <button
-                                key={moodOption}
-                                type="button"
-                                className={`startup-personalization-chip ${startupDraft.selectedMoods.includes(moodOption) ? 'selected' : ''}`}
-                                onClick={() => handleStartupDraftToggle('selectedMoods', moodOption)}
-                              >
-                                {moodOption}
-                              </button>
-                            ))}
+                  </div>
+                  <div className="identity-header">
+                    <div className="level-badge">
+                      <div className="level-number">{gamingIdentity.level}</div>
+                      <div className="level-text">Level</div>
+                    </div>
+                    <div className="title-section">
+                      <h4>{gamingIdentity.title}</h4>
+                      <p className="identity-description">{gamingIdentity.identity.description}</p>
+                    </div>
+                  </div>
+                  {startupPersonalization?.completed && (
+                    <div className="startup-personalization-panel">
+                      <div className="startup-personalization-header">
+                        <div>
+                          <span className="trait-label">Startup Personalization</span>
+                          <strong>
+                            {startupPersonalization.playerVibe} • {startupPersonalization.personalizationStyle}
+                          </strong>
+                          <p className="identity-description">
+                            Your cold-start profile seeds recommendations and identity until real play behavior takes
+                            over.
+                          </p>
+                          <div className="startup-personalization-status">
+                            <span
+                              className={`startup-personalization-status-badge strength-${startupInfluence.shortLabel.toLowerCase().replace(/\s+/g, '-')}`}
+                            >
+                              {startupInfluence.label}
+                            </span>
+                            <p>{startupInfluence.description}</p>
                           </div>
                         </div>
-                        <div className="startup-personalization-field">
-                          <span className="trait-label">Favorite Genres</span>
-                          <div className="startup-personalization-chip-grid genre-grid">
-                            {GENRES.map((genreOption) => (
-                              <button
-                                key={genreOption}
-                                type="button"
-                                className={`startup-personalization-chip ${startupDraft.favoriteGenres.includes(genreOption) ? 'selected' : ''}`}
-                                onClick={() => handleStartupDraftToggle('favoriteGenres', genreOption)}
-                              >
-                                {genreOption}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="startup-personalization-editor-grid">
-                          <label className="startup-personalization-field">
-                            <span className="trait-label">Session Preference</span>
-                            <select
-                              className="profile-select startup-personalization-select"
-                              value={startupDraft.sessionPreference}
-                              onChange={(event) =>
-                                setStartupDraft((current) => ({ ...current, sessionPreference: event.target.value }))
-                              }
-                            >
-                              {StartupPersonalizationService.getSessionOptions().map((option) => (
-                                <option key={option.id} value={option.id}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="startup-personalization-field">
-                            <span className="trait-label">Player Vibe</span>
-                            <select
-                              className="profile-select startup-personalization-select"
-                              value={startupDraft.playerVibe}
-                              onChange={(event) =>
-                                setStartupDraft((current) => ({ ...current, playerVibe: event.target.value }))
-                              }
-                            >
-                              {StartupPersonalizationService.getPlayerVibes().map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="startup-personalization-field">
-                            <span className="trait-label">Personalization Style</span>
-                            <select
-                              className="profile-select startup-personalization-select"
-                              value={startupDraft.personalizationStyle}
-                              onChange={(event) =>
-                                setStartupDraft((current) => ({ ...current, personalizationStyle: event.target.value }))
-                              }
-                            >
-                              {StartupPersonalizationService.getPersonalizationStyles().map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-                        <div className="startup-personalization-editor-actions">
+                        <div className="startup-personalization-actions">
                           <button
                             type="button"
-                            className="startup-personalization-button startup-personalization-save-btn"
-                            onClick={handleSaveStartupPersonalization}
+                            className="startup-personalization-button"
+                            onClick={() => setIsEditingStartupPersonalization((current) => !current)}
                           >
-                            Save tuning
+                            {isEditingStartupPersonalization ? 'Close editor' : 'Edit inline'}
                           </button>
                           <button
                             type="button"
                             className="startup-personalization-button"
-                            onClick={handleCancelStartupPersonalizationEdit}
+                            onClick={handleRetunePersonalization}
                           >
-                            Cancel
+                            Tune
                           </button>
                         </div>
                       </div>
-                    )}
-                    <div className="identity-stats startup-personalization-stats">
-                      <div className="identity-trait">
-                        <span className="trait-label">Seeded Moods</span>
-                        <span className="trait-value">
-                          {startupPersonalization.selectedMoods.join(', ') || 'Not set'}
-                        </span>
-                      </div>
-                      <div className="identity-trait">
-                        <span className="trait-label">Favorite Genres</span>
-                        <span className="trait-value">
-                          {startupPersonalization.favoriteGenres.join(', ') || 'Not set'}
-                        </span>
-                      </div>
-                      <div className="identity-trait">
-                        <span className="trait-label">Session Preference</span>
-                        <span className="trait-value">{startupPersonalization.sessionPreference}</span>
+                      {isEditingStartupPersonalization && (
+                        <div className="startup-personalization-editor">
+                          <div className="startup-personalization-field">
+                            <span className="trait-label">Seeded Moods</span>
+                            <div className="startup-personalization-chip-grid">
+                              {MOODS.map((moodOption) => (
+                                <button
+                                  key={moodOption}
+                                  type="button"
+                                  className={`startup-personalization-chip ${startupDraft.selectedMoods.includes(moodOption) ? 'selected' : ''}`}
+                                  onClick={() => handleStartupDraftToggle('selectedMoods', moodOption)}
+                                >
+                                  {moodOption}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="startup-personalization-field">
+                            <span className="trait-label">Favorite Genres</span>
+                            <div className="startup-personalization-chip-grid genre-grid">
+                              {GENRES.map((genreOption) => (
+                                <button
+                                  key={genreOption}
+                                  type="button"
+                                  className={`startup-personalization-chip ${startupDraft.favoriteGenres.includes(genreOption) ? 'selected' : ''}`}
+                                  onClick={() => handleStartupDraftToggle('favoriteGenres', genreOption)}
+                                >
+                                  {genreOption}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="startup-personalization-editor-grid">
+                            <label className="startup-personalization-field">
+                              <span className="trait-label">Session Preference</span>
+                              <select
+                                className="profile-select startup-personalization-select"
+                                value={startupDraft.sessionPreference}
+                                onChange={(event) =>
+                                  setStartupDraft((current) => ({ ...current, sessionPreference: event.target.value }))
+                                }
+                              >
+                                {StartupPersonalizationService.getSessionOptions().map((option) => (
+                                  <option key={option.id} value={option.id}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="startup-personalization-field">
+                              <span className="trait-label">Player Vibe</span>
+                              <select
+                                className="profile-select startup-personalization-select"
+                                value={startupDraft.playerVibe}
+                                onChange={(event) =>
+                                  setStartupDraft((current) => ({ ...current, playerVibe: event.target.value }))
+                                }
+                              >
+                                {StartupPersonalizationService.getPlayerVibes().map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="startup-personalization-field">
+                              <span className="trait-label">Personalization Style</span>
+                              <select
+                                className="profile-select startup-personalization-select"
+                                value={startupDraft.personalizationStyle}
+                                onChange={(event) =>
+                                  setStartupDraft((current) => ({
+                                    ...current,
+                                    personalizationStyle: event.target.value,
+                                  }))
+                                }
+                              >
+                                {StartupPersonalizationService.getPersonalizationStyles().map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                          <div className="startup-personalization-editor-actions">
+                            <button
+                              type="button"
+                              className="startup-personalization-button startup-personalization-save-btn"
+                              onClick={handleSaveStartupPersonalization}
+                            >
+                              Save tuning
+                            </button>
+                            <button
+                              type="button"
+                              className="startup-personalization-button"
+                              onClick={handleCancelStartupPersonalizationEdit}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="identity-stats startup-personalization-stats">
+                        <div className="identity-trait">
+                          <span className="trait-label">Seeded Moods</span>
+                          <span className="trait-value">
+                            {startupPersonalization.selectedMoods.join(', ') || 'Not set'}
+                          </span>
+                        </div>
+                        <div className="identity-trait">
+                          <span className="trait-label">Favorite Genres</span>
+                          <span className="trait-value">
+                            {startupPersonalization.favoriteGenres.join(', ') || 'Not set'}
+                          </span>
+                        </div>
+                        <div className="identity-trait">
+                          <span className="trait-label">Session Preference</span>
+                          <span className="trait-value">{startupPersonalization.sessionPreference}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                <div className="identity-stats">
-                  <div className="identity-trait">
-                    <span className="trait-label">Personality:</span>
-                    <span className="trait-value">{gamingIdentity.identity.personality}</span>
-                  </div>
-                  <div className="identity-trait">
-                    <span className="trait-label">Play Style:</span>
-                    <span className="trait-value">{gamingIdentity.identity.playStyle}</span>
-                  </div>
-                  <div className="identity-trait">
-                    <span className="trait-label">Favorite Mood:</span>
-                    <span className="trait-value">{gamingIdentity.identity.favoriteMood}</span>
-
-                    {gamingIdentity.identity.archetype && (
-                      <div className="identity-trait">
-                        <span className="trait-label">Archetype:</span>
-                        <span className="trait-value">{gamingIdentity.identity.archetype}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Signature Games Section (from Gaming DNA) */}
-          {gamingIdentity && gamingIdentity.signatureGames && gamingIdentity.signatureGames.length > 0 && (
-            <CollapsibleSection
-              title="Signature Games"
-              subtitle="The titles that define your taste — ranked by playtime, ratings, and engagement."
-              badge={`${gamingIdentity.signatureGames.length} titles`}
-              defaultOpen={false}
-              icon={<Flame size={18} />}
-              className={getSectionClass(1)}
-            >
-              <div className="dna-signature-games-section">
-                <div className="dna-signature-games-list">
-                  {gamingIdentity.signatureGames.map((game, idx) => (
-                    <div key={game.appid || game.name || idx} className="dna-signature-game">
-                      <span className="dna-signature-game-rank">#{idx + 1}</span>
-                      <div className="dna-signature-game-info">
-                        <span className="dna-signature-game-name">{game.name}</span>
-                        <span className="dna-signature-game-meta">
-                          {game.playtimeHours > 0 && `${game.playtimeHours}h played`}
-                          {game.playtimeHours > 0 && game.rating > 0 && ' · '}
-                          {game.rating > 0 && `${game.rating}/10`}
-                          {game.wouldReplay === true && ' · would replay'}
-                        </span>
-                        {game.genres && game.genres.length > 0 && (
-                          <span className="dna-signature-game-genres">{game.genres.join(' · ')}</span>
-                        )}
-                      </div>
-                      <span className="dna-signature-game-score">{game.score}</span>
+                  )}
+                  <div className="identity-stats">
+                    <div className="identity-trait">
+                      <span className="trait-label">Personality:</span>
+                      <span className="trait-value">{gamingIdentity.identity.personality}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Taste Clusters Section (from Gaming DNA) */}
-          {gamingIdentity && gamingIdentity.tasteClusters && gamingIdentity.tasteClusters.length > 0 && (
-            <CollapsibleSection
-              title="Taste Clusters"
-              subtitle="Emergent patterns from your play history that go beyond single-genre tags."
-              badge={`${gamingIdentity.tasteClusters.length} cluster${gamingIdentity.tasteClusters.length === 1 ? '' : 's'}`}
-              defaultOpen={false}
-              icon={<Target size={18} />}
-              className={getSectionClass(1)}
-            >
-              <div className="dna-taste-clusters-section">
-                <div className="dna-taste-clusters-list">
-                  {gamingIdentity.tasteClusters.map((cluster) => (
-                    <div key={cluster.id} className="dna-taste-cluster">
-                      <div className="dna-taste-cluster-header">
-                        <span className="dna-taste-cluster-label">{cluster.label}</span>
-                        <span className="dna-taste-cluster-count">{cluster.matchCount} signature games</span>
-                      </div>
-                      <span className="dna-taste-cluster-description">{cluster.description}</span>
-                      <span className="dna-taste-cluster-games">{cluster.gameNames.join(', ')}</span>
+                    <div className="identity-trait">
+                      <span className="trait-label">Play Style:</span>
+                      <span className="trait-value">{gamingIdentity.identity.playStyle}</span>
                     </div>
-                  ))}
+                    <div className="identity-trait">
+                      <span className="trait-label">Favorite Mood:</span>
+                      <span className="trait-value">{gamingIdentity.identity.favoriteMood}</span>
+
+                      {gamingIdentity.identity.archetype && (
+                        <div className="identity-trait">
+                          <span className="trait-label">Archetype:</span>
+                          <span className="trait-value">{gamingIdentity.identity.archetype}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Gamer Signature Section (from Gaming DNA) */}
-          {gamingIdentity && gamingIdentity.identity && (
-            <CollapsibleSection
-              title="Gamer Signature"
-              subtitle="An auto-generated signature that distills your playstyle into one line."
-              badge="Signature"
-              defaultOpen={false}
-              icon={<Award size={18} />}
-              className={getSectionClass(1)}
-            >
-              <div className="dna-signature">
-                <p className="dna-signature-text">
-                  {gamingIdentity.identity.signature ||
-                    `${gamingIdentity.title || 'Gamer'} • Level ${gamingIdentity.level || 1} • ${gamingIdentity.identity.favoriteMood || 'Curious'} • ${gamingIdentity.identity.favoriteGenre || 'Explorer'}`}
-                </p>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Gaming Story Section */}
-          <CollapsibleSection
-            title="Gaming Story"
-            subtitle="A recent chapter and an all-time one, both built from the games you actually play."
-            badge={periodStory?.period || gamingStory?.chapter || 'Anchor'}
-            defaultOpen
-            icon={<BookOpen size={18} />}
-            className={getSectionClass(14)}
-          >
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-              <ShareMenu
-                imageAvailable={Boolean(storyToShare)}
-                onCopyText={handleCopyStoryShareText}
-                onCopyImage={handleCopyStoryShareCard}
-                onSaveImage={handleDownloadStoryShareCard}
-                onShareText={handleShareStoryToChannel}
-                onShareToDiscord={handleShareStoryToDiscord}
-                onShareToMessenger={handleShareStoryToMessenger}
-                onDownloadText={handleCopyStoryShareText}
-                onNativeShare={handleNativeShareStory}
-                buildCaption={() => {
-                  if (!storyToShare) return '';
-                  return LocalShareService.buildPeriodStoryShareText(
-                    storyToShare,
-                    storyToShare.period || 'weekly',
-                    username
-                  );
-                }}
-                disabled={isCapturingStory}
-                triggerLabel="Share Story"
-              />
-            </div>
-            {/* Latest weekly chapter leads when available */}
-            {GamingStoryService.getStoryFrequency() !== 'off' && periodStory ? (
-              <GamingStoryPanel story={periodStory} />
-            ) : (
-              <GamingStoryPanel story={gamingStory} />
+              </CollapsibleSection>
             )}
 
-            {/* All-time story kept as the anchor chapter below the weekly/monthly recap */}
-            {GamingStoryService.getStoryFrequency() !== 'off' && periodStory && gamingStory ? (
-              <div style={{ marginTop: '20px' }}>
-                <h4 style={{ marginBottom: '12px', fontSize: '14px', opacity: 0.8 }}>All-Time Story & Taste</h4>
+            {/* Signature Games Section (from Gaming DNA) */}
+            {gamingIdentity && gamingIdentity.signatureGames && gamingIdentity.signatureGames.length > 0 && (
+              <CollapsibleSection
+                title="Signature Games"
+                subtitle="The titles that define your taste — ranked by playtime, ratings, and engagement."
+                badge={`${gamingIdentity.signatureGames.length} titles`}
+                defaultOpen={false}
+                icon={<Flame size={18} />}
+                className={getSectionClass(1)}
+              >
+                <div className="dna-signature-games-section">
+                  <div className="dna-signature-games-list">
+                    {gamingIdentity.signatureGames.map((game, idx) => (
+                      <div key={game.appid || game.name || idx} className="dna-signature-game">
+                        <span className="dna-signature-game-rank">#{idx + 1}</span>
+                        <div className="dna-signature-game-info">
+                          <span className="dna-signature-game-name">{game.name}</span>
+                          <span className="dna-signature-game-meta">
+                            {game.playtimeHours > 0 && `${game.playtimeHours}h played`}
+                            {game.playtimeHours > 0 && game.rating > 0 && ' · '}
+                            {game.rating > 0 && `${game.rating}/10`}
+                            {game.wouldReplay === true && ' · would replay'}
+                          </span>
+                          {game.genres && game.genres.length > 0 && (
+                            <span className="dna-signature-game-genres">{game.genres.join(' · ')}</span>
+                          )}
+                        </div>
+                        <span className="dna-signature-game-score">{game.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Taste Clusters Section (from Gaming DNA) */}
+            {gamingIdentity && gamingIdentity.tasteClusters && gamingIdentity.tasteClusters.length > 0 && (
+              <CollapsibleSection
+                title="Taste Clusters"
+                subtitle="Emergent patterns from your play history that go beyond single-genre tags."
+                badge={`${gamingIdentity.tasteClusters.length} cluster${gamingIdentity.tasteClusters.length === 1 ? '' : 's'}`}
+                defaultOpen={false}
+                icon={<Target size={18} />}
+                className={getSectionClass(1)}
+              >
+                <div className="dna-taste-clusters-section">
+                  <div className="dna-taste-clusters-list">
+                    {gamingIdentity.tasteClusters.map((cluster) => (
+                      <div key={cluster.id} className="dna-taste-cluster">
+                        <div className="dna-taste-cluster-header">
+                          <span className="dna-taste-cluster-label">{cluster.label}</span>
+                          <span className="dna-taste-cluster-count">{cluster.matchCount} signature games</span>
+                        </div>
+                        <span className="dna-taste-cluster-description">{cluster.description}</span>
+                        <span className="dna-taste-cluster-games">{cluster.gameNames.join(', ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Gamer Signature Section (from Gaming DNA) */}
+            {gamingIdentity && gamingIdentity.identity && (
+              <CollapsibleSection
+                title="Gamer Signature"
+                subtitle="An auto-generated signature that distills your playstyle into one line."
+                badge="Signature"
+                defaultOpen={false}
+                icon={<Award size={18} />}
+                className={getSectionClass(1)}
+              >
+                <div className="dna-signature">
+                  <p className="dna-signature-text">
+                    {gamingIdentity.identity.signature ||
+                      `${gamingIdentity.title || 'Gamer'} • Level ${gamingIdentity.level || 1} • ${gamingIdentity.identity.favoriteMood || 'Curious'} • ${gamingIdentity.identity.favoriteGenre || 'Explorer'}`}
+                  </p>
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Gaming Story Section */}
+            <CollapsibleSection
+              title="Gaming Story"
+              subtitle="A recent chapter and an all-time one, both built from the games you actually play."
+              badge={periodStory?.period || gamingStory?.chapter || 'Anchor'}
+              defaultOpen
+              icon={<BookOpen size={18} />}
+              className={getSectionClass(14)}
+            >
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                <ShareMenu
+                  imageAvailable={Boolean(storyToShare)}
+                  onCopyText={handleCopyStoryShareText}
+                  onCopyImage={handleCopyStoryShareCard}
+                  onSaveImage={handleDownloadStoryShareCard}
+                  onShareText={handleShareStoryToChannel}
+                  onShareToDiscord={handleShareStoryToDiscord}
+                  onShareToMessenger={handleShareStoryToMessenger}
+                  onDownloadText={handleCopyStoryShareText}
+                  onNativeShare={handleNativeShareStory}
+                  buildCaption={() => {
+                    if (!storyToShare) return '';
+                    return LocalShareService.buildPeriodStoryShareText(
+                      storyToShare,
+                      storyToShare.period || 'weekly',
+                      username
+                    );
+                  }}
+                  disabled={isCapturingStory}
+                  triggerLabel="Share Story"
+                />
+              </div>
+              {/* Latest weekly chapter leads when available */}
+              {GamingStoryService.getStoryFrequency() !== 'off' && periodStory ? (
+                <GamingStoryPanel story={periodStory} />
+              ) : (
                 <GamingStoryPanel story={gamingStory} />
-                {/* Identity-derived taste fingerprint */}
+              )}
+
+              {/* All-time story kept as the anchor chapter below the weekly/monthly recap */}
+              {GamingStoryService.getStoryFrequency() !== 'off' && periodStory && gamingStory ? (
+                <div style={{ marginTop: '20px' }}>
+                  <h4 style={{ marginBottom: '12px', fontSize: '14px', opacity: 0.8 }}>All-Time Story & Taste</h4>
+                  <GamingStoryPanel story={gamingStory} />
+                  {/* Identity-derived taste fingerprint */}
+                  <div style={{ marginTop: '20px' }}>
+                    <TasteFingerprint />
+                  </div>
+                </div>
+              ) : (
                 <div style={{ marginTop: '20px' }}>
                   <TasteFingerprint />
                 </div>
-              </div>
-            ) : (
-              <div style={{ marginTop: '20px' }}>
-                <TasteFingerprint />
-              </div>
-            )}
-          </CollapsibleSection>
-
-          {/* Persona Evolution Section */}
-          <CollapsibleSection
-            title="Identity Arc"
-            subtitle="How your taste has shifted across your tracked sessions."
-            badge={personaEvolution ? 'Lifetime' : 'Building...'}
-            icon={<TrendingUp size={18} />}
-            className={getSectionClass(1)}
-          >
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-              <ShareMenu
-                imageAvailable={Boolean(personaEvolution && gamingIdentity)}
-                onCopyText={handleCopyIdentityArcText}
-                onCopyImage={handleCopyIdentityShareCard}
-                onSaveImage={handleDownloadIdentityShareCard}
-                onShareText={handleShareIdentityArcToChannel}
-                onShareToDiscord={handleShareIdentityToDiscord}
-                onShareToMessenger={handleShareIdentityToMessenger}
-                onDownloadText={handleCopyIdentityArcText}
-                onNativeShare={handleNativeShareIdentityCard}
-                buildCaption={buildIdentityArcCaption}
-                disabled={isCapturingIdentity}
-                triggerLabel="Share Arc"
-              />
-            </div>
-            <PersonaEvolutionCard evolution={personaEvolution} />
-          </CollapsibleSection>
-
-          {/* Completed Games Section */}
-          <CollapsibleSection
-            title="Completed Games"
-            subtitle="Track finished games and maintain your completion log."
-            badge={`${getCompletionStats().total} logged`}
-            icon={<Check size={18} />}
-            className={getSectionClass(7)}
-          >
-            <div className="gaming-identity-card">
-              <h3>Completed Games</h3>
-              <div className="completed-games-stats">
-                <div className="completion-stat">
-                  <span className="stat-number">{getCompletionStats().total}</span>
-                  <span className="stat-label">Total</span>
-                </div>
-                <div className="completion-stat">
-                  <span className="stat-number">{getCompletionStats().completionRate}%</span>
-                  <span className="stat-label">Rate</span>
-                </div>
-              </div>
-              {completedGames.length === 0 && (
-                <EmptyState
-                  icon="✅"
-                  title="No completed games logged yet"
-                  description="Track finished games here to build a personal completion log of what you've actually beaten."
-                  compact
-                  style={{ marginBottom: '18px' }}
-                />
               )}
-              {completedGames.length > 0 && (
-                <div className="completed-games-list">
-                  {completedGames.slice(0, 5).map((game, index) => (
-                    <div key={index} className="completed-game-item">
-                      <span className="completed-game-name">{game.name}</span>
-                      <div className="game-actions">
-                        <button onClick={() => markGameCompleted(game.name)} className="mark-complete-btn">
-                          100%
-                        </button>
-                        <button onClick={() => removeCompletedGame(game.name)} className="remove-game-btn">
-                          Remove
+            </CollapsibleSection>
+
+            {/* Persona Evolution Section */}
+            <CollapsibleSection
+              title="Identity Arc"
+              subtitle="How your taste has shifted across your tracked sessions."
+              badge={personaEvolution ? 'Lifetime' : 'Building...'}
+              icon={<TrendingUp size={18} />}
+              className={getSectionClass(1)}
+            >
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                <ShareMenu
+                  imageAvailable={Boolean(personaEvolution && gamingIdentity)}
+                  onCopyText={handleCopyIdentityArcText}
+                  onCopyImage={handleCopyIdentityShareCard}
+                  onSaveImage={handleDownloadIdentityShareCard}
+                  onShareText={handleShareIdentityArcToChannel}
+                  onShareToDiscord={handleShareIdentityToDiscord}
+                  onShareToMessenger={handleShareIdentityToMessenger}
+                  onDownloadText={handleCopyIdentityArcText}
+                  onNativeShare={handleNativeShareIdentityCard}
+                  buildCaption={buildIdentityArcCaption}
+                  disabled={isCapturingIdentity}
+                  triggerLabel="Share Arc"
+                />
+              </div>
+              <PersonaEvolutionCard evolution={personaEvolution} />
+            </CollapsibleSection>
+
+            {/* Completed Games Section */}
+            <CollapsibleSection
+              title="Completed Games"
+              subtitle="Track finished games and maintain your completion log."
+              badge={`${getCompletionStats().total} logged`}
+              icon={<Check size={18} />}
+              className={getSectionClass(7)}
+            >
+              <div className="gaming-identity-card">
+                <h3>Completed Games</h3>
+                <div className="completed-games-stats">
+                  <div className="completion-stat">
+                    <span className="stat-number">{getCompletionStats().total}</span>
+                    <span className="stat-label">Total</span>
+                  </div>
+                  <div className="completion-stat">
+                    <span className="stat-number">{getCompletionStats().completionRate}%</span>
+                    <span className="stat-label">Rate</span>
+                  </div>
+                </div>
+                {completedGames.length === 0 && (
+                  <EmptyState
+                    icon="✅"
+                    title="No completed games logged yet"
+                    description="Track finished games here to build a personal completion log of what you've actually beaten."
+                    compact
+                    style={{ marginBottom: '18px' }}
+                  />
+                )}
+                {completedGames.length > 0 && (
+                  <div className="completed-games-list">
+                    {completedGames.slice(0, 5).map((game, index) => (
+                      <div key={index} className="completed-game-item">
+                        <span className="completed-game-name">{game.name}</span>
+                        <div className="game-actions">
+                          <button onClick={() => markGameCompleted(game.name)} className="mark-complete-btn">
+                            100%
+                          </button>
+                          <button onClick={() => removeCompletedGame(game.name)} className="remove-game-btn">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="add-completed-game">
+                  <input
+                    type="text"
+                    placeholder="Enter game name..."
+                    className="game-input"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.target.value.trim()) {
+                        addCompletedGame(e.target.value.trim());
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            {/* Active Game Sessions Section */}
+            <CollapsibleSection
+              title="Active Game Sessions"
+              subtitle="See what is running right now and end sessions manually if needed."
+              badge={`${activeSessionGames.length} active`}
+              icon={<Clock size={18} />}
+              className={getSectionClass(5)}
+              defaultOpen={activeSessionGames.length > 0}
+            >
+              <div className="gaming-identity-card">
+                <h3>Active Game Sessions</h3>
+                {activeSessionGames.length > 0 ? (
+                  <div className="active-sessions-grid">
+                    {activeSessionGames.map((game, index) => (
+                      <div key={index} className="active-session-card">
+                        <div className="active-session-info">
+                          <div className="active-session-name">{game.name}</div>
+                          <div className="active-session-platform">{game.platform || 'Unknown platform'}</div>
+                          {game.startTime && (
+                            <div className="active-session-time">
+                              Started {new Date(game.startTime).toLocaleTimeString()}
+                            </div>
+                          )}
+                        </div>
+                        <button onClick={() => handleEndSession(game.name)} className="end-session-button">
+                          End Session
                         </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="add-completed-game">
-                <input
-                  type="text"
-                  placeholder="Enter game name..."
-                  className="game-input"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && e.target.value.trim()) {
-                      addCompletedGame(e.target.value.trim());
-                      e.target.value = '';
-                    }
-                  }}
-                />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon="⏸️"
+                    title="No active game sessions right now"
+                    description="When you launch a game through GamePilot, active sessions will appear here so you can monitor or end them manually."
+                    compact
+                  />
+                )}
               </div>
-            </div>
-          </CollapsibleSection>
-
-          {/* Active Game Sessions Section */}
-          <CollapsibleSection
-            title="Active Game Sessions"
-            subtitle="See what is running right now and end sessions manually if needed."
-            badge={`${activeSessionGames.length} active`}
-            icon={<Clock size={18} />}
-            className={getSectionClass(5)}
-            defaultOpen={activeSessionGames.length > 0}
-          >
-            <div className="gaming-identity-card">
-              <h3>Active Game Sessions</h3>
-              {activeSessionGames.length > 0 ? (
-                <div className="active-sessions-grid">
-                  {activeSessionGames.map((game, index) => (
-                    <div key={index} className="active-session-card">
-                      <div className="active-session-info">
-                        <div className="active-session-name">{game.name}</div>
-                        <div className="active-session-platform">{game.platform || 'Unknown platform'}</div>
-                        {game.startTime && (
-                          <div className="active-session-time">
-                            Started {new Date(game.startTime).toLocaleTimeString()}
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={() => handleEndSession(game.name)} className="end-session-button">
-                        End Session
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon="⏸️"
-                  title="No active game sessions right now"
-                  description="When you launch a game through GamePilot, active sessions will appear here so you can monitor or end them manually."
-                  compact
-                />
-              )}
-            </div>
-          </CollapsibleSection>
+            </CollapsibleSection>
+          </div>
 
           {/* Game Release Calendar */}
           <CollapsibleSection

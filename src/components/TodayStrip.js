@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Tag } from 'lucide-react';
+import { Tag, CalendarClock } from 'lucide-react';
 import WishlistService from '../services/WishlistService';
+import ReleaseTrackerService, { WISHLIST_RELEASES_EVENT } from '../services/ReleaseTrackerService';
 import SessionRepository from '../services/SessionRepository';
 import CurrentEraService from '../services/CurrentEraService';
 import './TodayStrip.css';
@@ -61,6 +62,18 @@ const getWishlistAlerts = () => {
   }
 };
 
+// Next day-precision release within two weeks — the only kind worth a strip chip.
+const getUpcomingRelease = (summary) => {
+  const next = summary?.nextRelease;
+  if (!next || next.precision !== 'day' || !next.releaseAt) return null;
+  const days =
+    next.daysUntil !== null && next.daysUntil !== undefined
+      ? next.daysUntil
+      : Math.round((new Date(next.releaseAt) - Date.now()) / (24 * 60 * 60 * 1000));
+  if (days > 14) return null;
+  return { ...next, daysUntil: days };
+};
+
 /**
  * A compact "today at a glance" strip for the Home Today view: this week's
  * play, the current era and wishlist price alerts. All local data — no
@@ -68,13 +81,19 @@ const getWishlistAlerts = () => {
  */
 export default function TodayStrip() {
   const [wishlistAlerts, setWishlistAlerts] = useState(getWishlistAlerts);
+  const [nextRelease, setNextRelease] = useState(() => getUpcomingRelease(ReleaseTrackerService.getSummary()));
   const week = useMemo(getWeekSummary, []);
   const era = useMemo(getEra, []);
 
   useEffect(() => {
     const refresh = () => setWishlistAlerts(getWishlistAlerts());
     window.addEventListener('gamepilot:wishlist-alerts', refresh);
-    return () => window.removeEventListener('gamepilot:wishlist-alerts', refresh);
+    const refreshReleases = () => setNextRelease(getUpcomingRelease(ReleaseTrackerService.getSummary()));
+    window.addEventListener(WISHLIST_RELEASES_EVENT, refreshReleases);
+    return () => {
+      window.removeEventListener('gamepilot:wishlist-alerts', refresh);
+      window.removeEventListener(WISHLIST_RELEASES_EVENT, refreshReleases);
+    };
   }, []);
 
   const weekTime = week ? formatWeekMinutes(week.totalMinutes) : null;
@@ -98,6 +117,20 @@ export default function TodayStrip() {
           <span>
             <strong>{era.name}</strong>
             {era.estimated ? 'Estimated from library' : `Day ${era.dayCount}`}
+          </span>
+        </Link>
+      )}
+
+      {nextRelease && (
+        <Link
+          to="/?view=wishlist"
+          className="today-strip-item"
+          aria-label={`${nextRelease.name} ${nextRelease.daysUntil <= 0 ? 'is out today' : `releases in ${nextRelease.daysUntil} days`}`}
+        >
+          <CalendarClock size={15} aria-hidden="true" />
+          <span>
+            <strong>{nextRelease.name}</strong>
+            {nextRelease.daysUntil <= 0 ? 'Out today' : `In ${nextRelease.daysUntil} days`}
           </span>
         </Link>
       )}

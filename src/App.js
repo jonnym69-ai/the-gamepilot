@@ -24,6 +24,7 @@ import useDynamicBackdrop from './hooks/useDynamicBackdrop';
 import useStillPlayingPrompt from './hooks/useStillPlayingPrompt';
 import useSessionNotifications from './hooks/useSessionNotifications';
 import useFreeGameNotifications from './hooks/useFreeGameNotifications';
+import useWishlistReleaseNotifications from './hooks/useWishlistReleaseNotifications';
 import useLibraryLoading from './hooks/useLibraryLoading';
 import useLibraryScanner from './hooks/useLibraryScanner';
 import useSessionLifecycle from './hooks/useSessionLifecycle';
@@ -126,6 +127,7 @@ function AppContent() {
   const { recommendationOutcomePrompt, submitRecommendationOutcome, disableRecommendationOutcomePrompts } =
     useSessionNotifications();
   useFreeGameNotifications();
+  useWishlistReleaseNotifications();
   const {
     completed: installCompleted,
     dismiss: dismissInstallComplete,

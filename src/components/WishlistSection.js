@@ -5,6 +5,7 @@ import EmptyState from './EmptyState';
 import { resolveGameArtwork, getGameArtworkPlaceholder } from '../services/GameArtworkService';
 import WishlistService from '../services/WishlistService';
 import BuyRecommendationService from '../services/BuyRecommendationService';
+import ReleaseTrackerService from '../services/ReleaseTrackerService';
 import { getFamiliarityBias, setFamiliarityBias } from '../services/RecommendationWeights';
 import { formatPrice, getCurrentCurrency, getCurrencySymbol, convertToUSD } from '../CurrencyConverter';
 
@@ -24,6 +25,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
   const [familiarityBias, setFamiliarityBiasState] = React.useState(() => getFamiliarityBias());
   const [healedArt, setHealedArt] = React.useState({});
   const healAttemptedRef = React.useRef(new Set());
+  const [releaseSummary, setReleaseSummary] = React.useState(() => ReleaseTrackerService.getSummary());
 
   // Genre + Price suggestions. Mood is intentionally excluded — it can't be
   // known for a game you don't own yet.
@@ -64,10 +66,19 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
       .finally(() => {
         if (!cancelled) setBackgroundChecking(false);
       });
+    if (ReleaseTrackerService.isEnabled()) {
+      ReleaseTrackerService.refresh().catch(() => {});
+    }
     return () => {
       cancelled = true;
     };
   }, [enabled, loadItems]);
+
+  React.useEffect(() => {
+    const onReleases = () => setReleaseSummary(ReleaseTrackerService.getSummary());
+    window.addEventListener('gamepilot:wishlist-releases', onReleases);
+    return () => window.removeEventListener('gamepilot:wishlist-releases', onReleases);
+  }, []);
 
   // Heal wishlist artwork for items with a Steam AppID whose stored thumb is
   // missing or points at the guessed /apps/<id>/header.jpg path — that path
@@ -237,6 +248,113 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
     return [...new Set(urls)];
   };
 
+  const upcomingByAppid = new Map((releaseSummary?.upcoming || []).map((entry) => [String(entry.appid), entry]));
+  const releasedByAppid = new Map((releaseSummary?.releasedToday || []).map((entry) => [String(entry.appid), entry]));
+  const releaseForItem = (item) => {
+    const id = item?.steamAppID || (item?.appid && /^\d+$/.test(String(item.appid)) ? item.appid : null);
+    if (!id) return null;
+    const key = String(id);
+    if (releasedByAppid.has(key)) return { ...releasedByAppid.get(key), released: true };
+    return upcomingByAppid.get(key) || null;
+  };
+  const releasingSoonItems = items.filter((item) => {
+    const release = releaseForItem(item);
+    return release && !release.released;
+  });
+
+  const renderWishlistCard = (item) => {
+    const game = item.libraryGame;
+    const placeholder = getGameArtworkPlaceholder({ game, surface: 'library_card' });
+    const [artwork, ...fallbackArtwork] = artworkCandidatesForItem(item);
+    const currentPrice = item.currentPrice;
+    const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;
+    const discount = currentPrice ? Math.round(Number(currentPrice.cut) || 0) : 0;
+    const release = releaseForItem(item);
+    const isHistoricLow =
+      currentPrice &&
+      item.historicalLow &&
+      Number.isFinite(Number(item.historicalLow.price)) &&
+      Number(currentPrice.price) <= Number(item.historicalLow.price);
+    return (
+      <div key={item.name} className={`wishlist-card ${hasDrop ? 'wishlist-card--drop' : ''}`}>
+        <div className="wishlist-card-art">
+          {artwork ? (
+            <LazyImage
+              src={artwork}
+              fallbackSrcs={fallbackArtwork}
+              alt={item.name}
+              placeholder={placeholder}
+              className="game-image"
+            />
+          ) : (
+            <div className="game-placeholder">
+              <div className="platform-icon">🎮</div>
+            </div>
+          )}
+        </div>
+        <div className="wishlist-card-body">
+          <div className="wishlist-card-title-row">
+            <span className="wishlist-card-name">{item.name}</span>
+            {game?.platform && platformIcons?.[game.platform] && (
+              <span className="wishlist-card-platform">{platformIcons[game.platform]}</span>
+            )}
+          </div>
+          {currentPrice ? (
+            <div className="wishlist-card-price">
+              <span className="wishlist-price-current">
+                {Number(currentPrice.price) === 0 ? 'Free' : formatPrice(currentPrice.price, currency)}
+              </span>
+              {discount > 0 && Number(currentPrice.retail) > Number(currentPrice.price) && (
+                <span className="wishlist-price-retail">{formatPrice(currentPrice.retail, currency)}</span>
+              )}
+              {discount > 0 && <span className="wishlist-price-cut">-{discount}%</span>}
+              {currentPrice.store && <span className="wishlist-price-store">{currentPrice.store}</span>}
+            </div>
+          ) : (
+            <span className="wishlist-price-unavailable">Price unavailable</span>
+          )}
+          {hasDrop && <span className="wishlist-drop-badge">Price drop!</span>}
+          {isHistoricLow && <span className="wishlist-historic-badge">Historic low</span>}
+          {release?.released && <span className="wishlist-release-chip wishlist-release-chip--out-now">Out now</span>}
+          {release && !release.released && (
+            <span className="wishlist-release-chip">{ReleaseTrackerService.formatCountdown(release)}</span>
+          )}
+          <div className="wishlist-card-actions">
+            <label className="wishlist-threshold-label">
+              Alert at:
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className="wishlist-threshold-input"
+                value={item.threshold || ''}
+                onChange={(e) => handleThreshold(item.name, e.target.value)}
+                placeholder="No alert"
+              />
+            </label>
+            {game && onLaunchGame && (
+              <button className="wishlist-launch-btn" onClick={() => onLaunchGame(game)}>
+                Launch
+              </button>
+            )}
+            {currentPrice?.dealID && (
+              <a
+                className="wishlist-deal-link"
+                href={`https://www.cheapshark.com/redirect?dealID=${encodeURIComponent(currentPrice.dealID)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View deal
+              </a>
+            )}
+            <button className="wishlist-remove-btn" onClick={() => handleRemove(item.name)}>
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
   return (
     <div className="results-section">
       <div className="wishlist-header-bar">
@@ -482,6 +600,12 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
         </div>
       )}
 
+      {releasingSoonItems.length > 0 && (
+        <div className="wishlist-releasing-soon">
+          <h3 className="wishlist-releasing-title">Releasing soon</h3>
+          <div className="wishlist-grid">{releasingSoonItems.map(renderWishlistCard)}</div>
+        </div>
+      )}
       {items.length === 0 ? (
         <div className="result-card">
           <EmptyState
@@ -492,96 +616,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           />
         </div>
       ) : (
-        <div className="wishlist-grid">
-          {items.map((item) => {
-            const game = item.libraryGame;
-            const placeholder = getGameArtworkPlaceholder({ game, surface: 'library_card' });
-            const [artwork, ...fallbackArtwork] = artworkCandidatesForItem(item);
-            const currentPrice = item.currentPrice;
-            const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;
-            const discount = currentPrice ? Math.round(Number(currentPrice.cut) || 0) : 0;
-            const isHistoricLow =
-              currentPrice &&
-              item.historicalLow &&
-              Number.isFinite(Number(item.historicalLow.price)) &&
-              Number(currentPrice.price) <= Number(item.historicalLow.price);
-            return (
-              <div key={item.name} className={`wishlist-card ${hasDrop ? 'wishlist-card--drop' : ''}`}>
-                <div className="wishlist-card-art">
-                  {artwork ? (
-                    <LazyImage
-                      src={artwork}
-                      fallbackSrcs={fallbackArtwork}
-                      alt={item.name}
-                      placeholder={placeholder}
-                      className="game-image"
-                    />
-                  ) : (
-                    <div className="game-placeholder">
-                      <div className="platform-icon">🎮</div>
-                    </div>
-                  )}
-                </div>
-                <div className="wishlist-card-body">
-                  <div className="wishlist-card-title-row">
-                    <span className="wishlist-card-name">{item.name}</span>
-                    {game?.platform && platformIcons?.[game.platform] && (
-                      <span className="wishlist-card-platform">{platformIcons[game.platform]}</span>
-                    )}
-                  </div>
-                  {currentPrice ? (
-                    <div className="wishlist-card-price">
-                      <span className="wishlist-price-current">
-                        {Number(currentPrice.price) === 0 ? 'Free' : formatPrice(currentPrice.price, currency)}
-                      </span>
-                      {discount > 0 && Number(currentPrice.retail) > Number(currentPrice.price) && (
-                        <span className="wishlist-price-retail">{formatPrice(currentPrice.retail, currency)}</span>
-                      )}
-                      {discount > 0 && <span className="wishlist-price-cut">-{discount}%</span>}
-                      {currentPrice.store && <span className="wishlist-price-store">{currentPrice.store}</span>}
-                    </div>
-                  ) : (
-                    <span className="wishlist-price-unavailable">Price unavailable</span>
-                  )}
-                  {hasDrop && <span className="wishlist-drop-badge">Price drop!</span>}
-                  {isHistoricLow && <span className="wishlist-historic-badge">Historic low</span>}
-                  <div className="wishlist-card-actions">
-                    <label className="wishlist-threshold-label">
-                      Alert at:
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="wishlist-threshold-input"
-                        value={item.threshold || ''}
-                        onChange={(e) => handleThreshold(item.name, e.target.value)}
-                        placeholder="No alert"
-                      />
-                    </label>
-                    {game && onLaunchGame && (
-                      <button className="wishlist-launch-btn" onClick={() => onLaunchGame(game)}>
-                        Launch
-                      </button>
-                    )}
-                    {currentPrice?.dealID && (
-                      <a
-                        className="wishlist-deal-link"
-                        href={`https://www.cheapshark.com/redirect?dealID=${encodeURIComponent(currentPrice.dealID)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View deal
-                      </a>
-                    )}
-                    <button className="wishlist-remove-btn" onClick={() => handleRemove(item.name)}>
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <div className="wishlist-grid">{items.map(renderWishlistCard)}</div>
       )}
     </div>
   );

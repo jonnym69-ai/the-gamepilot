@@ -334,3 +334,41 @@
     width: 100%;
   }
 }
+
+.wishlist-releasing-soon {
+  margin-bottom: 18px;
+}
+
+.wishlist-releasing-title {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.wishlist-release-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f5ddc8;
+  color: var(--text-primary, #e8eaf0);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+@supports (background: color-mix(in srgb, red, blue)) {
+  .wishlist-release-chip {
+    background: color-mix(in srgb, var(--accent-color, #ff8c1a) 18%, var(--bg-secondary, #18212e));
+  }
+}
+
+.wishlist-release-chip--out-now {
+  background: #c9ecd3;
+  color: var(--text-primary, #e8eaf0);
+}
+
+@supports (background: color-mix(in srgb, red, blue)) {
+  .wishlist-release-chip--out-now {
+    background: color-mix(in srgb, #22c55e 18%, var(--bg-secondary, #18212e));
+  }
+}

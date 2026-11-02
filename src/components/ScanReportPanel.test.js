@@ -54,8 +54,8 @@ describe('ScanReportPanel', () => {
       platformCounts: {},
     });
 
-    const { container } = render(<ScanReportPanel />);
-    expect(container.querySelector('.scan-report-platform-count').textContent).toBe('9');
+    render(<ScanReportPanel />);
+    expect(screen.getByText('9', { selector: '.scan-report-platform-count' })).toBeInTheDocument();
   });
 
   it('shows the error field as the row reason', () => {

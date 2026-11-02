@@ -32,6 +32,7 @@ import SteamPublicService from './services/SteamPublicService';
 import SteamNewsService from './services/SteamNewsService';
 import DiskUsageService from './services/DiskUsageService';
 import WishlistService from './services/WishlistService';
+import ReleaseTrackerService from './services/ReleaseTrackerService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
 import SteamFriendsService from './services/SteamFriendsService';
@@ -76,6 +77,7 @@ function Settings({
   const [steamNewsEnabled, setSteamNewsEnabled] = useState(() => SteamNewsService.isEnabled());
   const [diskUsageEnabled, setDiskUsageEnabled] = useState(() => DiskUsageService.isEnabled());
   const [wishlistEnabled, setWishlistEnabled] = useState(() => WishlistService.isEnabled());
+  const [releaseTrackingEnabled, setReleaseTrackingEnabled] = useState(() => ReleaseTrackerService.isEnabled());
   const [buyRecommendationsEnabled, setBuyRecommendationsEnabled] = useState(() =>
     BuyRecommendationService.isEnabled()
   );
@@ -1040,6 +1042,27 @@ function Settings({
                       <p className="setting-description">
                         On by default. Track games you want and get price-drop alerts via IsThereAnyDeal. Prices are
                         cached locally for 24 hours. No user data leaves your device.
+                      </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Release countdowns</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={releaseTrackingEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setReleaseTrackingEnabled(next);
+                            ReleaseTrackerService.setEnabled(next);
+                            success(`Release countdowns ${next ? 'enabled' : 'disabled'}.`);
+                          }}
+                          id="release-tracking-enabled"
+                        />
+                        <label htmlFor="release-tracking-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Track unreleased wishlist games and show a countdown to launch day.
                       </p>
                     </div>
 

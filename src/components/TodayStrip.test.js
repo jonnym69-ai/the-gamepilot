@@ -5,6 +5,7 @@ import TodayStrip from './TodayStrip';
 import SessionRepository from '../services/SessionRepository';
 import CurrentEraService from '../services/CurrentEraService';
 import WishlistService from '../services/WishlistService';
+import ReleaseTrackerService from '../services/ReleaseTrackerService';
 
 jest.mock('../services/SessionRepository', () => ({
   __esModule: true,
@@ -17,6 +18,11 @@ jest.mock('../services/CurrentEraService', () => ({
 jest.mock('../services/WishlistService', () => ({
   __esModule: true,
   default: { isEnabled: jest.fn(() => true), getAlertSummary: jest.fn(() => ({ count: 0 })) },
+}));
+jest.mock('../services/ReleaseTrackerService', () => ({
+  __esModule: true,
+  WISHLIST_RELEASES_EVENT: 'gamepilot:wishlist-releases',
+  default: { getSummary: jest.fn(() => null) },
 }));
 
 const renderStrip = () =>
@@ -31,6 +37,50 @@ beforeEach(() => {
   SessionRepository.getSessionHistory.mockReturnValue([]);
   CurrentEraService.getCurrentEra.mockReturnValue(null);
   WishlistService.getAlertSummary.mockReturnValue({ count: 0 });
+  ReleaseTrackerService.getSummary.mockReturnValue(null);
+});
+
+const releaseIn = (days, precision = 'day') => {
+  const releaseAt = new Date();
+  releaseAt.setDate(releaseAt.getDate() + days);
+  return {
+    upcoming: [],
+    releasedToday: [],
+    nextRelease: {
+      appid: '42',
+      name: 'Launch Day Game',
+      releaseAt: releaseAt.toISOString(),
+      precision,
+      daysUntil: days,
+    },
+  };
+};
+
+describe('wishlist release chip', () => {
+  test('shows the next release when it lands within 14 days', () => {
+    ReleaseTrackerService.getSummary.mockReturnValue(releaseIn(5));
+    renderStrip();
+    expect(screen.getByText('Launch Day Game')).toBeInTheDocument();
+    expect(screen.getByText('In 5 days')).toBeInTheDocument();
+  });
+
+  test('labels a day-zero release as out today', () => {
+    ReleaseTrackerService.getSummary.mockReturnValue(releaseIn(0));
+    renderStrip();
+    expect(screen.getByText('Out today')).toBeInTheDocument();
+  });
+
+  test('hides releases more than 14 days out', () => {
+    ReleaseTrackerService.getSummary.mockReturnValue(releaseIn(15));
+    renderStrip();
+    expect(screen.queryByText('Launch Day Game')).not.toBeInTheDocument();
+  });
+
+  test('hides non-day precision releases', () => {
+    ReleaseTrackerService.getSummary.mockReturnValue(releaseIn(3, 'quarter'));
+    renderStrip();
+    expect(screen.queryByText('Launch Day Game')).not.toBeInTheDocument();
+  });
 });
 
 test('summarises the last seven days of sessions', () => {

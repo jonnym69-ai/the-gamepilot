@@ -433,3 +433,22 @@
 .discover-quick-pick-actions .discover-quick-pick-play {
   flex: 1;
 }
+
+@media (min-width: 1500px) {
+  .discover-quick-pick-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .discover-quick-pick-card {
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+
+  .discover-quick-pick-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+}

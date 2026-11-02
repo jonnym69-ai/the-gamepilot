@@ -1576,3 +1576,65 @@
   color: var(--text, #fff);
   font-weight: 500;
 }
+
+/* Wide-screen two-column layout (>=1500px). Below that the wrappers are
+   display:contents so the original stacked layout is preserved exactly. */
+.profile-display-columns {
+  display: contents;
+}
+
+.profile-sections-grid {
+  display: contents;
+}
+
+@media (min-width: 1500px) {
+  .profile-display-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .profile-display-primary {
+    position: sticky;
+    top: 96px;
+    min-width: 0;
+  }
+
+  .profile-display-secondary {
+    min-width: 0;
+  }
+
+  /* Empty secondary (no social links) — let primary take the row, capped. */
+  .profile-display-columns:has(.profile-display-secondary:empty) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-display-columns:has(.profile-display-secondary:empty) .profile-display-primary {
+    position: static;
+    max-width: 960px;
+  }
+
+  /* The persona card's own 520px cap would otherwise defeat both layouts. */
+  .profile-display-primary .gaming-persona-card {
+    max-width: none;
+  }
+
+  .profile-sections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 640px), 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* An expanded section always spans the full row instead of squeezing
+     long-form content into a single column. */
+  .profile-sections-grid > .collapsible-folder[open] {
+    grid-column: 1 / -1;
+  }
+
+  .profile-sections-grid > * {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
