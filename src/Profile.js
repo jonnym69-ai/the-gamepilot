@@ -44,6 +44,7 @@ import { GamingStoryService } from './services/GamingStoryService';
 import { YearInReviewService } from './services/YearInReviewService';
 import { LocalShareService } from './services/LocalShareService';
 import ShareMenu from './components/ShareMenu';
+import ShowcaseCard from './components/ShowcaseCard';
 import { GENRES, MOODS } from './constants/GenresMoods';
 
 const getSessionStartTime = (sessionEntry) => {
@@ -1469,6 +1470,7 @@ const Profile = ({ theme, library = [] }) => {
                           })}
                         </div>
                       )}
+                      <ShowcaseCard library={safeLibrary} />
                     </div>
                   </div>
                 </div>

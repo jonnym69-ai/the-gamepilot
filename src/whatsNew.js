@@ -7,4 +7,5 @@ export const WHATS_NEW = [
   'Auto-updates — GamePilot now checks GitHub releases and installs updates itself',
   'Session-history backups — rolling on-disk copies of your play record, restore in Settings',
   'The Settings scan report shows real per-platform counts again',
+  'Showcase your top six games on your Profile — auto-filled from playtime, or pick your own',
 ];
