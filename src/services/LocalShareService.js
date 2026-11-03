@@ -814,6 +814,12 @@ export class LocalShareService {
     return { text, filename, title };
   }
 
+  static buildProfileShareCardPackage(username = 'Gamer') {
+    const filename = `gamepilot-profile-${new Date().toISOString().split('T')[0]}.png`;
+    const title = `${username || 'Pilot'}'s GamePilot Profile`;
+    return { filename, title };
+  }
+
   static buildPeriodStoryShareText(story = {}, period = 'weekly', username = 'Gamer') {
     if (story?.narrative) {
       const periodTitle =

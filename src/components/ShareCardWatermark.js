@@ -5,6 +5,7 @@ const SHARE_CARD_WATERMARK_CONTEXTS = {
   toprated: 'top-rated picks',
   year: 'yearly recap',
   identity: 'gaming identity',
+  profile: 'player profile',
   story: 'gaming stories',
   game: 'game card',
   multigame: 'multi-game card',

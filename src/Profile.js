@@ -10,7 +10,6 @@ import {
   Check,
   Edit2,
   TrendingUp,
-  Image as ImageIcon,
   Sparkles,
   BookOpen,
   Dices,
@@ -34,10 +33,10 @@ import GamingPersonaService from './services/GamingPersonaService';
 import GameCalendar from './components/GameCalendar';
 import EmptyState from './components/EmptyState';
 import ExportModal from './components/ExportModal';
-import CinematicExport from './components/CinematicExport';
 import PersonaEvolutionCard from './components/PersonaEvolutionCard';
 import { IdentityShareCard, IDENTITY_SHARE_CARD_SIZE_PX } from './components/IdentityShareCard';
 import { StoryShareCard, STORY_SHARE_CARD_SIZE_PX } from './components/StoryShareCard';
+import { ProfileShareCard, PROFILE_SHARE_CARD_SIZE_PX } from './components/ProfileShareCard';
 import GamingStoryPanel from './components/GamingStoryPanel';
 import TasteFingerprint from './components/TasteFingerprint';
 import { GamingStoryService } from './services/GamingStoryService';
@@ -133,7 +132,8 @@ const Profile = ({ theme, library = [] }) => {
   const [welcomeMessage, setWelcomeMessage] = useState('Ready to find your perfect play?');
   const [isEditing, setIsEditing] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isCinematicExportOpen, setIsCinematicExportOpen] = useState(false);
+  const profileShareCardRef = useRef(null);
+  const [isCapturingProfile, setIsCapturingProfile] = useState(false);
   const [startupPersonalization, setStartupPersonalization] = useState(() =>
     StartupPersonalizationService.getProfile()
   );
@@ -383,6 +383,138 @@ const Profile = ({ theme, library = [] }) => {
       }
     },
     [generateIdentityShareCardBlob, displayedPersona, username, success, error]
+  );
+
+  const generateProfileShareCardBlob = useCallback(async () => {
+    if (!profileShareCardRef.current) return null;
+    setIsCapturingProfile(true);
+    try {
+      const canvas = await html2canvas(profileShareCardRef.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true,
+        logging: false,
+      });
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    } catch (err) {
+      console.error('Failed to generate profile share card:', err);
+      return null;
+    } finally {
+      setIsCapturingProfile(false);
+    }
+  }, []);
+
+  const buildProfileShareText = useCallback(
+    () => LocalShareService.buildPersonaShareText(displayedPersona, username),
+    [displayedPersona, username]
+  );
+
+  const buildProfileShareFile = useCallback(
+    (blob) => {
+      const { filename } = LocalShareService.buildProfileShareCardPackage(username);
+      return { file: new File([blob], filename, { type: 'image/png' }), filename };
+    },
+    [username]
+  );
+
+  const handleCopyProfileShareCard = useCallback(async () => {
+    const blob = await generateProfileShareCardBlob();
+    if (!blob) {
+      error('Could not generate profile share card.');
+      return false;
+    }
+    const copied = await LocalShareService.copyImageToClipboard(blob);
+    if (copied) {
+      success('Profile card copied to clipboard.');
+    } else {
+      error('Could not copy profile card.');
+    }
+    return copied;
+  }, [generateProfileShareCardBlob, success, error]);
+
+  const handleDownloadProfileShareCard = useCallback(async () => {
+    const blob = await generateProfileShareCardBlob();
+    if (!blob) {
+      error('Could not generate profile share card.');
+      return;
+    }
+    const { filename } = LocalShareService.buildProfileShareCardPackage(username);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    success('Profile share card saved.');
+  }, [generateProfileShareCardBlob, username, success, error]);
+
+  const handleShareProfileToChannel = useCallback(
+    async (channel, text = null) => {
+      const shareText = text || buildProfileShareText();
+      const result = await LocalShareService.openShareIntent(channel, shareText);
+      if (result.success) {
+        success(`Opened ${result.label}.`);
+      } else {
+        error(result.message || 'Could not open share.');
+      }
+    },
+    [buildProfileShareText, success, error]
+  );
+
+  const handleShareProfileToDiscord = useCallback(
+    async (text = null) => {
+      const shareText = text || buildProfileShareText();
+      const blob = await generateProfileShareCardBlob();
+      const { filename } = LocalShareService.buildProfileShareCardPackage(username);
+      const result = await LocalShareService.shareToDiscord({ imageBlob: blob, text: shareText, filename });
+      if (result.success) {
+        success('Discord opened with profile card.');
+      } else {
+        error(result.message || 'Could not share to Discord.');
+      }
+    },
+    [buildProfileShareText, generateProfileShareCardBlob, username, success, error]
+  );
+
+  const handleShareProfileToMessenger = useCallback(
+    async (text = null) => {
+      const shareText = text || buildProfileShareText();
+      const blob = await generateProfileShareCardBlob();
+      const { filename } = LocalShareService.buildProfileShareCardPackage(username);
+      const result = await LocalShareService.shareToMessenger({ imageBlob: blob, text: shareText, filename });
+      if (result.success) {
+        success('Messenger opened with profile card.');
+      } else {
+        error(result.message || 'Could not share to Messenger.');
+      }
+    },
+    [buildProfileShareText, generateProfileShareCardBlob, username, success, error]
+  );
+
+  const handleNativeShareProfile = useCallback(
+    async (text = null) => {
+      const blob = await generateProfileShareCardBlob();
+      if (!blob) {
+        error('Could not generate profile share card.');
+        return;
+      }
+      const { title } = LocalShareService.buildProfileShareCardPackage(username);
+      const { file } = buildProfileShareFile(blob);
+      const shareText = text || buildProfileShareText();
+      const result = await LocalShareService.shareWithNativeShare({
+        title,
+        text: shareText,
+        files: [file],
+      });
+      if (result.success) {
+        success('Native share opened.');
+      } else {
+        error(result.message || 'Could not share.');
+      }
+    },
+    [generateProfileShareCardBlob, buildProfileShareFile, buildProfileShareText, username, success, error]
   );
 
   const handleCopyStoryShareText = useCallback(
@@ -961,23 +1093,19 @@ const Profile = ({ theme, library = [] }) => {
               </h1>
             </div>
             <div className="profile-header-actions" style={{ display: 'flex', gap: '10px' }}>
-              <button
-                className="action-btn"
-                onClick={() => setIsCinematicExportOpen(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  background: 'var(--card)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text)',
-                  cursor: 'pointer',
-                }}
-              >
-                <ImageIcon size={16} /> Cinematic Poster
-              </button>
+              <ShareMenu
+                imageAvailable={Boolean(displayedPersona)}
+                onCopyText={handleCopyPersonaShareText}
+                onCopyImage={handleCopyProfileShareCard}
+                onSaveImage={handleDownloadProfileShareCard}
+                onShareText={handleShareProfileToChannel}
+                onShareToDiscord={handleShareProfileToDiscord}
+                onShareToMessenger={handleShareProfileToMessenger}
+                onNativeShare={handleNativeShareProfile}
+                buildCaption={() => buildProfileShareText()}
+                disabled={isCapturingProfile}
+                triggerLabel="Share Profile"
+              />
               <button
                 className="action-btn"
                 onClick={() => setIsExportModalOpen(true)}
@@ -2045,16 +2173,25 @@ const Profile = ({ theme, library = [] }) => {
             </div>
           </div>
 
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              top: -10000,
+              left: -10000,
+              width: PROFILE_SHARE_CARD_SIZE_PX,
+              height: PROFILE_SHARE_CARD_SIZE_PX,
+              pointerEvents: 'none',
+              zIndex: -1,
+            }}
+          >
+            <div ref={profileShareCardRef}>
+              <ProfileShareCard username={username || 'Pilot'} persona={displayedPersona} library={safeLibrary} />
+            </div>
+          </div>
+
           {isExportModalOpen && (
             <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} library={safeLibrary} />
-          )}
-
-          {isCinematicExportOpen && (
-            <CinematicExport
-              isOpen={isCinematicExportOpen}
-              onClose={() => setIsCinematicExportOpen(false)}
-              library={safeLibrary}
-            />
           )}
         </div>
       </div>

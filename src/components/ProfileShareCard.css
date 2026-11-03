@@ -1,0 +1,238 @@
+/* Profile share card — persona + showcase, captured off-screen at 1080×1080. */
+
+.profile-share-card {
+  position: relative;
+  background: linear-gradient(135deg, #17110f 0%, #1e1530 55%, #101b2e 100%);
+  color: #ffffff;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 56px;
+}
+
+.profile-share-card-glow {
+  position: absolute;
+  top: -180px;
+  left: -120px;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.3) 0%, rgba(255, 107, 53, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.profile-share-card-mark {
+  position: absolute;
+  bottom: -48px;
+  right: -48px;
+  color: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 0;
+}
+
+.profile-share-card-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.profile-share-card-brand {
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.profile-share-card-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.profile-share-card-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  min-height: 0;
+}
+
+.profile-share-card-persona {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-share-card-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ff9a66;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.profile-share-card-title {
+  margin: 0;
+  font-size: 2.9rem;
+  font-weight: 800;
+  line-height: 1.08;
+  color: #ffe9dd;
+  overflow-wrap: anywhere;
+}
+
+.profile-share-card-subtitle {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.profile-share-card-roast {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+  font-style: italic;
+}
+
+.profile-share-card-context {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 154, 102, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-share-card-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-share-card-evidence-item {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 107, 53, 0.14);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.profile-share-card-showcase {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-share-card-showcase-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.profile-share-card-showcase-label svg {
+  color: #ff9a66;
+}
+
+.profile-share-card-covers {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+}
+
+.profile-share-card-cover {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.profile-share-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-share-card-cover-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 20px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+}
+
+.profile-share-card-cover-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.profile-share-card-cover-hours {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.profile-share-card-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.profile-share-card-cta {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.profile-share-card-tagline {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.4);
+}

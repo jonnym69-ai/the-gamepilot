@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ProGate from './ProGate';
 import RecommendationTunerPanel from './RecommendationTunerPanel';
-import CinematicExport from './CinematicExport';
 import StorageService from '../services/StorageService';
 
 jest.mock('../NavBar', () => () => null);
@@ -49,22 +48,4 @@ test('recommendation tuner mounts its editor and saves weights', () => {
   fireEvent.change(screen.getAllByRole('slider')[0], { target: { value: '40' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save Custom Weights' }));
   expect(StorageService.get('customRecommendationWeights').unplayedBonus).toBe(42);
-});
-
-test('cinematic export renders its real format and export controls', () => {
-  jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-    fillRect: jest.fn(),
-    drawImage: jest.fn(),
-    fillText: jest.fn(),
-    createLinearGradient: () => ({ addColorStop: jest.fn() }),
-    createRadialGradient: () => ({ addColorStop: jest.fn() }),
-  });
-  renderInRouter(<CinematicExport isOpen library={[]} onClose={jest.fn()} />);
-  expect(screen.getByRole('button', { name: /Vertical Poster/ })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Export Cinematic Card' })).toBeEnabled();
-});
-
-test('closed cinematic entry renders nothing', () => {
-  const { container } = renderInRouter(<CinematicExport isOpen={false} library={[]} />);
-  expect(container).toBeEmptyDOMElement();
 });
