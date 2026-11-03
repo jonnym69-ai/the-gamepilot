@@ -1,3 +1,29 @@
+# GamePilot v1.11.0 Release Notes
+
+## Highlights
+
+v1.11 makes big screens count and turns the wishlist into a release radar: full-width layouts, release countdowns, a Profile showcase, and a proper share card for your player profile.
+
+## What's new
+
+- **Full-width layouts** — pages now use the screen on large monitors (fluid up to ~1800px instead of a fixed centre column), with extra cards filling the space rather than stretching.
+- **Wishlist release tracking** — countdown chips on wishlist games, a "Releasing soon" group, a Today-strip next-release chip, and a release-day notification with a "View on Steam" action. Toggle in Settings. Vague Steam dates ("Q1 2027") stay vague — no invented countdowns.
+- **Profile Showcase** — pin your top six games beside your persona. Auto-fills from most-played; "Edit picks" opens a searchable picker to choose your own.
+- **Share Profile** — the header's share menu now exports a purpose-built profile card (persona + showcase) through the same copy/save/Discord/native-share pipeline as the other share cards, replacing the Cinematic Poster.
+- **Two-column Profile on wide screens** — persona and showcase sit side by side; expanded sections span the row.
+- **Security/maintenance** — patched Electron (cert-store mitigation), Vite and `systeminformation`, plus forced fixed versions for `sharp`, `toml` and `zod`. The unused `netlify-cli` dev dependency (and ~1000 transitive packages) was removed — audit now reports zero high-severity findings.
+
+## Linux note
+
+The Linux build remains paused — still Steam-only and unverified on real hardware. No AppImage or `latest-linux.yml` ships with v1.11.0; `latest.yml` on the Windows release feeds the updater.
+
+## Known issues
+
+- The Windows installer is unsigned (SmartScreen warning expected).
+- Some remote game covers may fall back to landscape artwork or a generated placeholder.
+
+---
+
 # GamePilot v1.10.0 Release Notes
 
 ## Highlights

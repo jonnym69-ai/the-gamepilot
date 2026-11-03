@@ -2,10 +2,9 @@
 // users. Keep this short — 3 to 5 user-facing bullets, not a changelog.
 // Update alongside RELEASE_NOTES.md each release.
 export const WHATS_NEW = [
-  'Edit any game’s details — sort name, genres, tags, year, developer and cover art',
-  'Your own Steam achievements per game, with rarity — inside the game card',
-  'Auto-updates — GamePilot now checks GitHub releases and installs updates itself',
-  'Session-history backups — rolling on-disk copies of your play record, restore in Settings',
-  'The Settings scan report shows real per-platform counts again',
-  'Showcase your top six games on your Profile — auto-filled from playtime, or pick your own',
+  'Big screens, used — layouts now fill wide monitors instead of a narrow centre column',
+  'Release countdowns — wishlist games show days-to-release, plus a release-day alert',
+  'Showcase — pin your top six games on your Profile, or let your most-played fill it',
+  'Share Profile — export your persona + showcase as a share card from the header',
+  'Security pass — patched Electron and dependencies; zero high-severity audit findings',
 ];
