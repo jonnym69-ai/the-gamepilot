@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useState } from 'react';
-import { BookOpen, Image, LayoutGrid, Maximize2, Trophy } from 'lucide-react';
+import { BookOpen, Image, LayoutGrid, Maximize2, RefreshCw, Trophy } from 'lucide-react';
 import DailySpotlightService from '../services/DailySpotlightService';
 import { getDateKey } from '../services/DateKeyService';
 import { getBlendedPlaytimeMinutes, getLibraryRank, isTopShelfRank } from '../services/gameClassification';
@@ -57,6 +57,7 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
   const [status, setStatus] = useState('');
   const [refresh, setRefresh] = useState(0);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
+  const [playersBusy, setPlayersBusy] = useState(false);
 
   useEffect(() => {
     const onOnline = () => setRefresh((value) => value + 1);
@@ -134,6 +135,21 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
     if (!ART_STYLES.some((entry) => entry.id === style)) return;
     saveArtStyle(surface, style);
     setArtStyle(style);
+  };
+  const refreshPlayers = async () => {
+    if (playersBusy) return;
+    setPlayersBusy(true);
+    try {
+      const updated = await DailySpotlightService.refreshPlayerCount(game);
+      if (updated) {
+        setFacts(updated);
+        setStatus('Player count refreshed.');
+      } else {
+        setStatus('Player count is unavailable right now. Keeping the last snapshot.');
+      }
+    } finally {
+      setPlayersBusy(false);
+    }
   };
 
   return (
@@ -261,6 +277,12 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
               Source: Steam Web API · checked {checkedAt(players.fetchedAt)}. A snapshot, not a live counter; excludes
               offline players.
             </small>
+            {enabled && window.electronAPI?.steamPlayerCount && (
+              <button type="button" className="daily-spotlight-refresh" onClick={refreshPlayers} disabled={playersBusy}>
+                <RefreshCw size={12} aria-hidden="true" className={playersBusy ? 'spin' : undefined} />
+                {playersBusy ? 'Refreshing…' : 'Refresh'}
+              </button>
+            )}
           </div>
         )}
         <dl className="daily-spotlight-personal">

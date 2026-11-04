@@ -134,6 +134,31 @@ test('retains cached facts offline with their original timestamps', async () => 
   expect(screen.getByText('123')).toBeInTheDocument();
 });
 
+test('refresh button swaps in a fresh player snapshot and keeps the old one on failure', async () => {
+  DailySpotlightService.setEnabled(true);
+  StorageService.set('dailySpotlightFactsV1', {
+    108600: {
+      schemaVersion: 2,
+      store: { developers: ['Cached Studio'], fetchedAt: NOW.getTime() },
+      players: { count: 123, fetchedAt: NOW.getTime() },
+      attemptedAt: Date.now(),
+      complete: true,
+    },
+  });
+  window.electronAPI.steamPlayerCount = jest.fn().mockResolvedValue({ ok: true, count: 999, fetchedAt: Date.now() });
+  render(<DailySpotlightCard library={[game]} />);
+  expect(screen.getByText('123')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+  expect(await screen.findByText('999')).toBeInTheDocument();
+  expect(window.electronAPI.steamPlayerCount).toHaveBeenCalledWith('108600');
+  expect(screen.getByRole('status')).toHaveTextContent(/refreshed/i);
+
+  window.electronAPI.steamPlayerCount.mockResolvedValue({ ok: false });
+  fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/unavailable/i));
+  expect(screen.getByText('999')).toBeInTheDocument();
+});
+
 test('does not display an old request under a new spotlight game', async () => {
   DailySpotlightService.setEnabled(true);
   let resolveOld;

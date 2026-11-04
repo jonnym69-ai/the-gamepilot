@@ -172,4 +172,25 @@ export default class DailySpotlightService {
     inflight.set(appid, request);
     return request;
   }
+
+  // Manual refresh of just the player snapshot — store facts still refresh once
+  // a day, but a concurrent-player count goes stale within hours. Uses the
+  // lightweight steam-player-count IPC (main process caches 5 min), then merges
+  // the fresh count into the saved entry without touching attemptedAt, so the
+  // daily facts refresh still happens on schedule.
+  static async refreshPlayerCount(game) {
+    const appid = this.getSteamAppId(game);
+    if (!appid) return null;
+    const api = typeof window !== 'undefined' && window.electronAPI?.steamPlayerCount;
+    if (!this.isEnabled() || !api || (typeof navigator !== 'undefined' && navigator.onLine === false)) return null;
+    const res = await api(appid).catch(() => null);
+    if (!res?.ok || !Number.isSafeInteger(res.count) || res.count < 0) return null;
+    const players = { count: res.count, fetchedAt: res.fetchedAt || Date.now() };
+    const cache = readCache();
+    const existing =
+      cache[appid] && typeof cache[appid] === 'object' && !Array.isArray(cache[appid]) ? cache[appid] : {};
+    const entry = { complete: false, ...existing, schemaVersion: 2, players };
+    StorageService.set(CACHE_KEY, { ...cache, [appid]: entry });
+    return entry;
+  }
 }

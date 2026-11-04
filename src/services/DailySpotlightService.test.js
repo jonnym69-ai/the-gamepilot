@@ -167,6 +167,31 @@ test('refreshes pre-fix cache entries immediately without losing saved facts whe
   expect(window.electronAPI.steamSpotlight).toHaveBeenCalledTimes(1);
 });
 
+test('refreshPlayerCount merges a fresh count without disturbing the daily schedule', async () => {
+  DailySpotlightService.setEnabled(true);
+  await DailySpotlightService.getFacts(library[0]);
+  const freshAt = NOW.getTime() + 2 * 3600000;
+  window.electronAPI.steamPlayerCount = jest.fn().mockResolvedValue({ ok: true, count: 4242, fetchedAt: freshAt });
+  const updated = await DailySpotlightService.refreshPlayerCount(library[0]);
+  expect(updated.players).toEqual({ count: 4242, fetchedAt: freshAt });
+  expect(updated.store).toEqual(store);
+  expect(updated.attemptedAt).toBe(NOW.getTime());
+  expect(window.electronAPI.steamPlayerCount).toHaveBeenCalledWith('108600');
+  expect((await DailySpotlightService.getFacts(library[0])).players.count).toBe(4242);
+  expect(window.electronAPI.steamSpotlight).toHaveBeenCalledTimes(1);
+});
+
+test('refreshPlayerCount stays honest when disabled, failing or non-Steam', async () => {
+  expect(await DailySpotlightService.refreshPlayerCount(library[0])).toBeNull();
+  DailySpotlightService.setEnabled(true);
+  expect(await DailySpotlightService.refreshPlayerCount(library[2])).toBeNull();
+  window.electronAPI.steamPlayerCount = jest.fn().mockResolvedValue({ ok: false });
+  expect(await DailySpotlightService.refreshPlayerCount(library[0])).toBeNull();
+  window.electronAPI.steamPlayerCount.mockRejectedValue(new Error('offline'));
+  expect(await DailySpotlightService.refreshPlayerCount(library[0])).toBeNull();
+  expect(DailySpotlightService.getCached(library[0])).toBeNull();
+});
+
 test('keeps cached entries bounded', async () => {
   DailySpotlightService.setEnabled(true);
   for (let appid = 1; appid <= 66; appid += 1) {

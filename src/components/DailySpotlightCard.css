@@ -251,6 +251,35 @@
   flex-basis: 100%;
   line-height: 1.5;
 }
+.daily-spotlight-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 3px 9px;
+  border: 1px solid var(--border-color, #646464);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #b0b7c3);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.daily-spotlight-refresh:hover:not(:disabled) {
+  color: var(--text-primary, #e8eaf0);
+  border-color: var(--accent-color, #ff8c1a);
+}
+.daily-spotlight-refresh:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.daily-spotlight-refresh .spin {
+  animation: spotlight-refresh-spin 0.9s linear infinite;
+}
+@keyframes spotlight-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .daily-spotlight-options summary {
   cursor: pointer;
   padding: 8px 0;
