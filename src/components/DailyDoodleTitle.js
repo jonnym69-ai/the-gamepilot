@@ -618,6 +618,9 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
             <div className="doodle-wordmark">{letters}</div>
           </div>
         </div>
+        <div className="doodle-center">
+          <span className="doodle-center-quote doodle-quote-active">{activeQuote}</span>
+        </div>
         <div
           className="doodle-meta"
           style={{
@@ -636,7 +639,6 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
             {timeLabel} <span className="doodle-meta-timezone">{timeZoneLabel}</span>
           </span>
           <span className="doodle-meta-greeting">{greeting}</span>
-          <span className="doodle-meta-tagline doodle-quote-active">{activeQuote}</span>
         </div>
       </div>
     </div>

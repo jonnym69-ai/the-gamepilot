@@ -440,12 +440,12 @@
     gap: 18px;
   }
 
-  .discover-quick-pick-card {
+  .discover-quick-pick-cards .discover-quick-pick-card {
     grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
     grid-template-rows: none;
   }
 
-  .discover-quick-pick-details {
+  .discover-quick-pick-cards .discover-quick-pick-details {
     display: flex;
     flex-direction: column;
     justify-content: center;
