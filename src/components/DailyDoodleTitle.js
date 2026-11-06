@@ -471,11 +471,24 @@ const DailyDoodleTitle = ({ username, welcomeMessage, profilePic, themeId }) => 
       else if (hour >= 12 && hour < 18) timeGreeting = '☀️ Afternoon cadence active.';
       else timeGreeting = '🔥 Prime time gaming hours.';
 
-      // Keep roast punchy so it doesn't overflow container
-      let roastShort = primary?.roast || null;
-      if (roastShort && roastShort.length > 90) {
-        roastShort = roastShort.slice(0, 87) + '...';
-      }
+      // Keep roast punchy so it doesn't overflow container — prefer ending on
+      // a sentence, fall back to a word boundary, never slice mid-word.
+      const truncateRoast = (value, max = 110) => {
+        if (!value || value.length <= max) return value;
+        const cut = value.slice(0, max);
+        const sentenceEnd = Math.max(
+          cut.lastIndexOf('. '),
+          cut.lastIndexOf('? '),
+          cut.lastIndexOf('! '),
+          cut.lastIndexOf('."'),
+          cut.lastIndexOf('?"'),
+          cut.lastIndexOf('!"')
+        );
+        if (sentenceEnd > 40) return cut.slice(0, sentenceEnd + 1);
+        const lastSpace = cut.lastIndexOf(' ');
+        return `${(lastSpace > 60 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+      };
+      let roastShort = truncateRoast(primary?.roast);
 
       const quotes = [
         welcomeMessage,
