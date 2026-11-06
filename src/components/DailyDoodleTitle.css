@@ -213,7 +213,7 @@
   font-size: clamp(0.95rem, 1.5vw, 1.3rem);
   line-height: 1.45;
   text-align: center;
-  max-width: 38ch;
+  max-width: min(60ch, 100%);
   opacity: 0.95;
   color: var(--identity-accent, var(--accent, inherit));
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
