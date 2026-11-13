@@ -5,12 +5,15 @@ import {
   Clock,
   TrendingUp,
   TrendingDown,
-  Gamepad2,
   BarChart3,
   Target,
   Sparkles,
-  Activity,
   Palette,
+  MoonStar,
+  Shapes,
+  Archive,
+  Repeat,
+  Timer,
 } from 'lucide-react';
 import { UserBehaviorProfile } from '../services/UserBehaviorProfile';
 import { StatsAggregationService } from '../services/StatsAggregationService';
@@ -23,6 +26,7 @@ import { ProfileService } from '../services/ProfileService';
 import { findLibraryGame } from '../services/PeriodChampionService';
 import { resolveGameArtworkBundle } from '../services/GameArtworkService';
 import { formatPlaytime } from '../utils/formatPlaytime';
+import { getPersonaVisual, accentToRgb } from './personaVisuals';
 import ShareMenu from './ShareMenu';
 import { HabitsShareCard } from './HabitsShareCard';
 import './HabitInsightsPanel.css';
@@ -40,9 +44,12 @@ const InsightCard = ({ icon: Icon, title, value, subtitle, tone = 'neutral' }) =
   </div>
 );
 
-const PatternRow = ({ label, detail, tone = 'neutral' }) => (
+const PatternRow = ({ icon: Icon, label, detail, tone = 'neutral' }) => (
   <div className={`habit-pattern-row tone-${tone}`}>
-    <span className="pattern-label">{label}</span>
+    <span className="pattern-label">
+      <Icon size={13} />
+      {label}
+    </span>
     <span className="pattern-detail">{detail}</span>
   </div>
 );
@@ -178,8 +185,10 @@ const HabitInsightsPanel = ({ library = [] }) => {
 
     return {
       persona,
-      gamingPersona,
       primary,
+      personaVisual: getPersonaVisual(primary?.theme?.id, primary?.id),
+      recentGenre: gamingPersona?.signals?.dominantGenre || null,
+      dominantGenreShare: gamingPersona?.signals?.dominantGenreShare || 0,
       habit,
       habitPeriodLabel: recentPeriod?.label || null,
       abandonmentRate,
@@ -247,14 +256,17 @@ const HabitInsightsPanel = ({ library = [] }) => {
 
   const {
     persona,
-    gamingPersona,
     primary,
+    personaVisual,
+    recentGenre,
+    dominantGenreShare,
     habit,
     habitPeriodLabel,
     abandonmentRate,
     genreCount,
     sessionTrend,
     recentAvg,
+    overallAvg,
     peakWindow,
     moodConsistency,
     unplayed,
@@ -310,8 +322,34 @@ const HabitInsightsPanel = ({ library = [] }) => {
     }
   };
 
+  const PersonaIcon = personaVisual.icon;
+  const hasHeatmap = heatmap && heatmap.some((h) => h.value > 0);
+  const hasTrend = sessionTrendRaw && sessionTrendRaw.length > 2;
+  const rhythmNote = [
+    habit?.lateNightSessions > 0
+      ? `${habit.lateNightSessions} late-night run${habit.lateNightSessions === 1 ? '' : 's'}`
+      : null,
+    habit?.weekendSessions > 0
+      ? `${habit.weekendSessions} weekend session${habit.weekendSessions === 1 ? '' : 's'} · ${Math.round(habit.weekendPlaytimeMinutes / 60)}h`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const hasRhythmSection = hasHeatmap || hasTrend || rhythmNote;
+  const hasPlaySection =
+    (genrePhaseSorted && genrePhaseSorted.length > 0) || (tasteClusters && tasteClusters.length > 0);
+  const personaMeta = [
+    peakWindow !== 'Not enough data' ? `Peak ${peakWindow}` : null,
+    recentGenre ? `${dominantGenreShare > 0 ? `${dominantGenreShare}% ` : ''}${recentGenre}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <div className="habit-insights-panel">
+    <div
+      className="habit-insights-panel"
+      style={{ '--persona-accent': personaVisual.accent, '--persona-accent-rgb': accentToRgb(personaVisual.accent) }}
+    >
       <div className="habit-insights-header">
         <Brain size={20} />
         <h3>Habit Insights</h3>
@@ -345,37 +383,29 @@ const HabitInsightsPanel = ({ library = [] }) => {
         </div>
       </div>
 
-      <div className="habit-insight-hero">
-        <div className="habit-insight-hero-icon">
-          <Gamepad2 size={26} />
-        </div>
-        <div className="habit-insight-hero-body">
-          <span className="habit-insight-hero-eyebrow">Gaming Identity</span>
-          <span className="habit-insight-hero-value">
-            {primary?.label || persona?.personaIdentity?.label || 'Explorer'}
+      {(primary || persona?.personaIdentity?.label) && (
+        <div className="habit-persona-strip">
+          <span className="habit-persona-emblem">
+            <PersonaIcon size={18} />
           </span>
-          <span className="habit-insight-hero-roast">
-            {gamingPersona?.summaryRoast ||
-              primary?.roast ||
-              persona?.personaIdentity?.description ||
-              'Still forming your profile'}
-          </span>
+          <span className="habit-persona-label">{primary?.label || persona?.personaIdentity?.label || 'Explorer'}</span>
+          {personaMeta && <span className="habit-persona-meta">{personaMeta}</span>}
         </div>
-      </div>
+      )}
 
       <div className="habit-insights-grid">
         <InsightCard
           icon={Clock}
           title="Peak Gaming Time"
           value={peakWindow}
-          subtitle={`Recent avg session: ${recentAvg} min`}
+          subtitle={recentAvg > 0 ? `Recent avg session: ${recentAvg} min` : 'No recent sessions tracked'}
           tone="neutral"
         />
         <InsightCard
           icon={trendIcon}
           title="Session Trend"
           value={sessionTrend}
-          subtitle={`Recent avg: ${recentAvg} min`}
+          subtitle={recentAvg > 0 ? `vs ${overallAvg} min overall avg` : 'Waiting on sessions'}
           tone={trendTone}
         />
         <InsightCard
@@ -387,35 +417,84 @@ const HabitInsightsPanel = ({ library = [] }) => {
         />
       </div>
 
+      {hasRhythmSection && (
+        <div className="habit-viz-section">
+          <h4>
+            <MoonStar size={16} />
+            When you play
+          </h4>
+          <div className="habit-viz-grid">
+            {hasHeatmap && (
+              <div className="habit-viz-block">
+                <span className="habit-viz-block-title">Time of day</span>
+                <div className="viz-heatmap">
+                  {heatmap.map((h) => (
+                    <div key={h.hour} className="viz-heatmap-cell" title={`${h.label}: ${Math.round(h.value)} min`}>
+                      <div
+                        className="viz-heatmap-bar"
+                        style={{
+                          height: `${Math.max(4, h.intensity * 100)}%`,
+                          opacity: 0.3 + h.intensity * 0.7,
+                        }}
+                      />
+                      <span className="viz-heatmap-label">{h.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {hasTrend && (
+              <div className="habit-viz-block">
+                <span className="habit-viz-block-title">Last {sessionTrendRaw.length} session lengths</span>
+                {sessionTrendRaw.every((s) => (s.minutes || 0) === 0) ? (
+                  <p className="habit-viz-empty">Session durations unavailable for these records.</p>
+                ) : (
+                  <>
+                    <div className="viz-trend">
+                      {sessionTrendRaw.map((s) => {
+                        const maxMin = Math.max(...sessionTrendRaw.map((x) => x.minutes), 1);
+                        return (
+                          <div key={s.index} className="viz-trend-cell" title={`${s.game}: ${s.minutes}m`}>
+                            <div className="viz-trend-bar" style={{ height: `${(s.minutes / maxMin) * 100}%` }} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="viz-trend-axis">
+                      <span>Older</span>
+                      <span>Newer</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          {rhythmNote && <p className="habit-rhythm-note">{rhythmNote}</p>}
+        </div>
+      )}
+
       <div className="habit-patterns-section">
         <h4>
           <Sparkles size={16} />
-          Detected Patterns{habitPeriodLabel ? ` · ${habitPeriodLabel}` : ''}
+          Your patterns{habitPeriodLabel ? ` · ${habitPeriodLabel}` : ''}
         </h4>
-        <div className="habit-patterns-list">
-          <PatternRow label="Dominant Mood" detail={moodConsistency} tone="highlight" />
+        <div className="habit-patterns-grid">
+          <PatternRow icon={Sparkles} label="Dominant Mood" detail={moodConsistency} tone="highlight" />
           <PatternRow
+            icon={Shapes}
             label="Genre Diversity"
             detail={`${genreCount} unique genres across your library`}
             tone={genreCount < 5 ? 'warn' : 'good'}
           />
           <PatternRow
+            icon={Archive}
             label="Abandonment Rate"
             detail={`${abandonmentRate}% of started games abandoned`}
             tone={abandonmentRate > 30 ? 'warn' : 'good'}
           />
-          {habit?.weekendSessions > 0 && (
-            <PatternRow
-              label="Weekend Warrior"
-              detail={`${habit.weekendSessions} weekend sessions · ${Math.round(habit.weekendPlaytimeMinutes / 60)} hours`}
-              tone="good"
-            />
-          )}
-          {habit?.lateNightSessions > 0 && (
-            <PatternRow label="Night Owl" detail={`${habit.lateNightSessions} late-night sessions`} tone="neutral" />
-          )}
           {habit?.mostReturnedTo && (
             <PatternRow
+              icon={Repeat}
               label="Most Returned To"
               detail={`${habit.mostReturnedTo.name} (${habit.mostReturnedTo.sessions} sessions)`}
               tone="highlight"
@@ -423,6 +502,7 @@ const HabitInsightsPanel = ({ library = [] }) => {
           )}
           {habit?.longestSession && (
             <PatternRow
+              icon={Timer}
               label="Longest Session"
               detail={`${habit.longestSession.gameName} — ${Math.round((habit.longestSession.playtimeMinutes / 60) * 10) / 10} hours`}
               tone="highlight"
@@ -431,99 +511,50 @@ const HabitInsightsPanel = ({ library = [] }) => {
         </div>
       </div>
 
-      {heatmap && heatmap.some((h) => h.value > 0) && (
-        <div className="habit-viz-section">
-          <h4>
-            <Activity size={16} />
-            Time-of-Day Heatmap
-          </h4>
-          <div className="viz-heatmap">
-            {heatmap.map((h) => (
-              <div key={h.hour} className="viz-heatmap-cell" title={`${h.label}: ${Math.round(h.value)} min`}>
-                <div
-                  className="viz-heatmap-bar"
-                  style={{
-                    height: `${Math.max(4, h.intensity * 100)}%`,
-                    opacity: 0.3 + h.intensity * 0.7,
-                  }}
-                />
-                <span className="viz-heatmap-label">{h.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {sessionTrendRaw && sessionTrendRaw.length > 2 && (
-        <div className="habit-viz-section">
-          <h4>
-            <BarChart3 size={16} />
-            Session Trend (Last {sessionTrendRaw.length})
-          </h4>
-          {sessionTrendRaw.every((s) => (s.minutes || 0) === 0) ? (
-            <p className="habit-viz-empty">Session durations unavailable for these records.</p>
-          ) : (
-            <>
-              <div className="viz-trend">
-                {sessionTrendRaw.map((s) => {
-                  const maxMin = Math.max(...sessionTrendRaw.map((x) => x.minutes), 1);
-                  return (
-                    <div key={s.index} className="viz-trend-cell" title={`${s.game}: ${s.minutes}m`}>
-                      <div className="viz-trend-bar" style={{ height: `${(s.minutes / maxMin) * 100}%` }} />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="viz-trend-axis">
-                <span>Older</span>
-                <span>Newer</span>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {genrePhaseSorted && genrePhaseSorted.length > 0 && (
+      {hasPlaySection && (
         <div className="habit-viz-section">
           <h4>
             <Palette size={16} />
-            Recent Genre Phases
+            What you play
           </h4>
-          <div className="viz-genres">
-            {genrePhaseSorted.map(([genre, minutes]) => {
-              const total = genrePhaseSorted.reduce((sum, [, m]) => sum + m, 0) || 1;
-              const pct = Math.round((minutes / total) * 100);
-              return (
-                <div key={genre} className="viz-genre-row">
-                  <span className="viz-genre-name">{genre}</span>
-                  <div className="viz-genre-track">
-                    <div className="viz-genre-fill" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="viz-genre-value">{pct}%</span>
+          <div className="habit-viz-grid">
+            {genrePhaseSorted && genrePhaseSorted.length > 0 && (
+              <div className="habit-viz-block">
+                <span className="habit-viz-block-title">Recent genre phases</span>
+                <div className="viz-genres">
+                  {genrePhaseSorted.map(([genre, minutes]) => {
+                    const total = genrePhaseSorted.reduce((sum, [, m]) => sum + m, 0) || 1;
+                    const pct = Math.round((minutes / total) * 100);
+                    return (
+                      <div key={genre} className="viz-genre-row">
+                        <span className="viz-genre-name">{genre}</span>
+                        <div className="viz-genre-track">
+                          <div className="viz-genre-fill" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="viz-genre-value">{pct}%</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {tasteClusters && tasteClusters.length > 0 && (
-        <div className="habit-viz-section">
-          <h4>
-            <Target size={16} />
-            Detected Taste Clusters
-          </h4>
-          <div className="viz-taste-clusters">
-            {tasteClusters.map((cluster) => (
-              <div key={cluster.id} className="viz-taste-cluster">
-                <div className="viz-taste-cluster-header">
-                  <span className="viz-taste-cluster-label">{cluster.label}</span>
-                  <span className="viz-taste-cluster-count">{cluster.matchCount} signature games</span>
-                </div>
-                <span className="viz-taste-cluster-description">{cluster.description}</span>
-                <span className="viz-taste-cluster-games">{cluster.gameNames.join(', ')}</span>
               </div>
-            ))}
+            )}
+            {tasteClusters && tasteClusters.length > 0 && (
+              <div className="habit-viz-block">
+                <span className="habit-viz-block-title">Taste clusters</span>
+                <div className="viz-taste-clusters">
+                  {tasteClusters.map((cluster) => (
+                    <div key={cluster.id} className="viz-taste-cluster">
+                      <div className="viz-taste-cluster-header">
+                        <span className="viz-taste-cluster-label">{cluster.label}</span>
+                        <span className="viz-taste-cluster-count">{cluster.matchCount} signature games</span>
+                      </div>
+                      <span className="viz-taste-cluster-description">{cluster.description}</span>
+                      <span className="viz-taste-cluster-games">{cluster.gameNames.join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

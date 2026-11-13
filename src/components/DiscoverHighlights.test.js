@@ -33,6 +33,9 @@ const library = [
 beforeEach(() => {
   jest.useFakeTimers().setSystemTime(NOW);
   localStorage.clear();
+  // The spotlight mystery veil is on by default; these tests assert the
+  // revealed card contents.
+  StorageService.set('spotlightMysteryRevealV1', false);
   jest.spyOn(FreeGameRadar, 'getEpicRadar').mockResolvedValue({
     games: [
       offer,

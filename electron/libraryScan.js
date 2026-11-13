@@ -41,6 +41,19 @@ function registerIpcHandlers(ipcMain, deps) {
     }
   });
 
+  // Per-game launch options: alternative executables stored on the game
+  // record. Args are split into an argv array in the renderer; the main
+  // process re-validates the exe path before spawning (no shell).
+  ipcMain.handle('launch-exe', async (_event, payload) => {
+    try {
+      const exe = String(payload?.executablePath || '').trim();
+      const args = typeof payload?.args === 'string' ? payload.args.slice(0, 300) : [];
+      return await gameLauncher.launchCustomExe({ executablePath: exe, args });
+    } catch (error) {
+      return { success: false, message: error?.message || 'Launch failed' };
+    }
+  });
+
   ipcMain.handle('scan-game-libraries', async (_event, options = {}) => {
     try {
       if (!options || options.manual !== true) {

@@ -473,6 +473,16 @@ const fetchStoreDetails = async (id) => {
           }))
           .filter((image) => image.path_full && image.path_thumbnail)
           .slice(0, 8),
+        movies: (Array.isArray(source.movies) ? source.movies : [])
+          .map((movie) => ({
+            id: movie?.id,
+            name: spotlightText(movie?.name),
+            thumbnail: steamImageUrl(movie?.thumbnail) || null,
+            webm: steamImageUrl(movie?.webm?.max) || steamImageUrl(movie?.webm?.['480']) || null,
+            mp4: steamImageUrl(movie?.mp4?.max) || steamImageUrl(movie?.mp4?.['480']) || null,
+          }))
+          .filter((movie) => movie.thumbnail && (movie.webm || movie.mp4))
+          .slice(0, 4),
       };
       storeDetailsCache.delete(id);
       storeDetailsCache.set(id, { data, expiresAt: Date.now() + 86400000 });
@@ -734,14 +744,10 @@ function registerIpcHandlers(ipcMain) {
     if (!appid) return { ok: false, error: 'invalid-appid' };
 
     try {
-      const res = await httpsRequest(
-        `${STEAM_ACHIEVEMENTS_RELAY_URL}?steamid=${cleanId}&appid=${appid}`,
-        null,
-        {
-          'User-Agent': 'GamePilot/1.9',
-          Accept: 'application/json',
-        }
-      );
+      const res = await httpsRequest(`${STEAM_ACHIEVEMENTS_RELAY_URL}?steamid=${cleanId}&appid=${appid}`, null, {
+        'User-Agent': 'GamePilot/1.9',
+        Accept: 'application/json',
+      });
       const data = JSON.parse(res.body || '{}');
       if (res.status === 403 || data?.error === 'private-profile') {
         return { ok: false, error: 'private-profile' };
@@ -910,18 +916,9 @@ function registerIpcHandlers(ipcMain) {
     if (cached && Date.now() < cached.expiresAt) return { ok: true, ...cached.data, cached: true };
 
     try {
-      const res = await httpsRequest(`${STEAM_FRIENDS_RELAY_URL}?steamid=${cleanId}`, null, {
-        'User-Agent': 'GamePilot/1.9',
-        Accept: 'application/json',
-      });
-      if (res.status === 403) return { ok: false, error: 'friends-list-private' };
-      if (res.status !== 200) return { ok: false, error: 'friends-unavailable' };
-      const data = JSON.parse(res.body || '{}');
-      if (!Array.isArray(data?.friends)) return { ok: false, error: 'friends-unavailable' };
-      const result = {
-        friends: data.friends.slice(0, 200),
-        fetchedAt: Number(data.fetchedAt) || Date.now(),
-      };
+      const result = await fetchSteamFriends(cleanId);
+      if (!result.ok) return result;
+      result.cached = false;
       FRIENDS_CACHE.delete(cleanId);
       FRIENDS_CACHE.set(cleanId, { data: result, expiresAt: Date.now() + FRIENDS_CACHE_TTL_MS });
       if (FRIENDS_CACHE.size > 8) FRIENDS_CACHE.delete(FRIENDS_CACHE.keys().next().value);
@@ -1031,4 +1028,25 @@ function registerIpcHandlers(ipcMain) {
   });
 }
 
-module.exports = { registerIpcHandlers };
+// Shared fetcher — the 'steam-friends' handler caches around this; the
+// notifications friends-watcher calls it directly on its own interval.
+const fetchSteamFriends = async (steamId) => {
+  try {
+    const res = await httpsRequest(`${STEAM_FRIENDS_RELAY_URL}?steamid=${steamId}`, null, {
+      'User-Agent': 'GamePilot/1.9',
+      Accept: 'application/json',
+    });
+    if (res.status === 403) return { ok: false, error: 'friends-list-private' };
+    if (res.status !== 200) return { ok: false, error: 'friends-unavailable' };
+    const data = JSON.parse(res.body || '{}');
+    if (!Array.isArray(data?.friends)) return { ok: false, error: 'friends-unavailable' };
+    return {
+      friends: data.friends.slice(0, 200),
+      fetchedAt: Number(data.fetchedAt) || Date.now(),
+    };
+  } catch {
+    return { ok: false, error: 'friends-unavailable' };
+  }
+};
+
+module.exports = { registerIpcHandlers, fetchSteamFriends };

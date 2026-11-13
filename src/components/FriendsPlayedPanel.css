@@ -1,0 +1,74 @@
+.friends-played-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.friends-played-head h3 {
+  margin: 0;
+}
+
+.friends-played-head svg {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.friends-played-compare {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.14));
+  border-radius: 8px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary, #e8eaf0);
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.friends-played-compare:hover {
+  border-color: var(--accent-color, #ff8c1a);
+}
+
+.friends-played-note {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #8b919f);
+}
+
+.friends-played-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.friends-played-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.84rem;
+}
+
+.friends-played-list img,
+.friends-played-avatar-fallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+}
+
+.friends-played-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary, #e8eaf0);
+}
+
+.friends-played-hours {
+  color: var(--text-muted, #8b919f);
+  font-variant-numeric: tabular-nums;
+}

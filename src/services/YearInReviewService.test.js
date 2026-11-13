@@ -3,6 +3,9 @@ import { StatsAggregationService } from './StatsAggregationService';
 import SessionRepository from './SessionRepository';
 import CurrentEraService from './CurrentEraService';
 import { findLibraryGame } from './PeriodChampionService';
+import SteamAchievementsService from './SteamAchievementsService';
+import SteamPublicService from './SteamPublicService';
+import { GameCurationService } from './GameCurationService';
 
 jest.mock('./StatsAggregationService', () => ({
   StatsAggregationService: { getNormalizedSessionHistory: jest.fn(() => []) },
@@ -33,6 +36,9 @@ jest.mock('./CurrentEraService', () => ({
   __esModule: true,
   default: { getCurrentEra: jest.fn(() => ({ history: [] })) },
 }));
+jest.mock('./SteamAchievementsService');
+jest.mock('./SteamPublicService');
+jest.mock('./GameCurationService');
 
 const session = ({ game, genre = 'RPG', mood = 'Cozy', minutes = 60, year = 2024, month = 0, day = 10 }) => ({
   gameName: game,
@@ -51,6 +57,11 @@ beforeEach(() => {
   StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([]);
   SessionRepository.getSessionHistory.mockReturnValue([]);
   CurrentEraService.getCurrentEra.mockReturnValue({ history: [] });
+  SteamAchievementsService.getCachedForGame.mockReturnValue(null);
+  SteamPublicService.appIdOf.mockImplementation((game) => game?.appid || '');
+  findLibraryGame.mockImplementation(() => null);
+  GameCurationService.getAllCompletions.mockReturnValue({});
+  GameCurationService.getCompletionHistory.mockReturnValue({});
 });
 
 describe('YearInReviewService eras', () => {
@@ -306,5 +317,202 @@ describe('YearInReviewService story covers', () => {
     const newcomers = snapshot.story.paragraphs.find((p) => p.id === 'newcomers');
 
     expect(newcomers.covers?.map((cover) => cover.name)).toEqual(['Terraria', 'Rust']);
+  });
+});
+
+describe('YearInReviewService milestones', () => {
+  test('finished keeps one entry per game at the highest status reached in the year', () => {
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      session({ game: 'Celeste', month: 3, day: 4 }),
+      session({ game: 'Stardew Valley', month: 5, day: 1 }),
+    ]);
+    GameCurationService.getAllCompletions.mockReturnValue({
+      Celeste: {
+        status: 'completed',
+        history: [
+          { status: 'beaten', previousStatus: 'playing', timestamp: Date.UTC(2024, 2, 10), note: '' },
+          { status: 'completed', previousStatus: 'beaten', timestamp: Date.UTC(2024, 3, 5), note: '' },
+        ],
+      },
+      'Stardew Valley': {
+        status: 'beaten',
+        history: [
+          { status: '100%', previousStatus: 'beaten', timestamp: Date.UTC(2023, 11, 30), note: '' },
+          { status: 'beaten', previousStatus: 'playing', timestamp: Date.UTC(2024, 5, 1), note: '' },
+        ],
+      },
+      'Ancient Game': {
+        status: 'beaten',
+        history: [{ status: 'beaten', previousStatus: 'playing', timestamp: Date.UTC(2023, 6, 1), note: '' }],
+      },
+    });
+
+    const snapshot = YearInReviewService.getYearSnapshot([], 2024);
+    const finished = snapshot.milestones.finished;
+
+    expect(finished).toHaveLength(2);
+    expect(finished[0].name).toBe('Celeste');
+    expect(finished[0].status).toBe('completed');
+    expect(finished[0].at).toBe(Date.UTC(2024, 3, 5));
+    // The '100%' entry happened last year — 2024's highest status is 'beaten'.
+    expect(finished[1].name).toBe('Stardew Valley');
+    expect(finished[1].status).toBe('beaten');
+    expect(finished[1].at).toBe(Date.UTC(2024, 5, 1));
+    expect(snapshot.milestones.hasAny).toBe(true);
+  });
+
+  test('a Steam finish maps the detection note to the session that held the unlock', () => {
+    const unlockMs = new Date(2024, 5, 1, 21, 0, 0).getTime();
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      { ...session({ game: 'Stardew Valley', minutes: 90 }), timestamp: new Date(unlockMs) },
+    ]);
+    findLibraryGame.mockReturnValue({ name: 'Stardew Valley', appid: '413150' });
+    SteamAchievementsService.getCachedForGame.mockReturnValue({
+      ok: true,
+      achievements: [{ apiname: 'A1', name: 'Farm Finale', achieved: true, unlockTime: unlockMs / 1000 }],
+    });
+    GameCurationService.getAllCompletions.mockReturnValue({
+      'Stardew Valley': {
+        status: 'beaten',
+        history: [
+          {
+            status: 'beaten',
+            previousStatus: 'playing',
+            timestamp: unlockMs + 60000,
+            note: 'Detected via Steam achievement "Farm Finale"',
+          },
+        ],
+      },
+    });
+
+    const snapshot = YearInReviewService.getYearSnapshot([{ name: 'Stardew Valley', appid: '413150' }], 2024);
+    const entry = snapshot.milestones.finished[0];
+
+    expect(entry.finishingSession).toEqual({ unlockMs, endTime: unlockMs, minutes: 90 });
+  });
+
+  test('a non-Steam finish uses the last session ending within 24h before it', () => {
+    const finishAt = new Date(2024, 5, 2, 12, 0, 0).getTime();
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      { ...session({ game: 'Celeste', minutes: 60 }), timestamp: new Date(2024, 5, 1, 20, 0, 0) },
+      { ...session({ game: 'Celeste', minutes: 30 }), timestamp: new Date(2024, 4, 1, 20, 0, 0) },
+    ]);
+    GameCurationService.getAllCompletions.mockReturnValue({
+      Celeste: {
+        status: 'beaten',
+        history: [{ status: 'beaten', previousStatus: 'playing', timestamp: finishAt, note: '' }],
+      },
+    });
+
+    const snapshot = YearInReviewService.getYearSnapshot([], 2024);
+    const entry = snapshot.milestones.finished[0];
+
+    expect(entry.finishingSession).toEqual({ endTime: new Date(2024, 5, 1, 20, 0, 0).getTime(), minutes: 60 });
+  });
+
+  test('comebacks flag a return after a 60+ day gap and ignore shorter gaps', () => {
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      session({ game: 'Factorio', month: 0, day: 5 }),
+      session({ game: 'Factorio', month: 5, day: 20 }),
+      session({ game: 'Factorio', month: 6, day: 25 }),
+      session({ game: 'Slay the Spire', month: 0, day: 10 }),
+      session({ game: 'Slay the Spire', month: 1, day: 15 }),
+    ]);
+
+    const snapshot = YearInReviewService.getYearSnapshot([], 2024);
+    const comebacks = snapshot.milestones.comebacks;
+
+    expect(comebacks).toHaveLength(1);
+    expect(comebacks[0].name).toBe('Factorio');
+    expect(comebacks[0].gapDays).toBeGreaterThanOrEqual(60);
+    expect(comebacks[0].returnedAt).toBe(new Date(2024, 5, 20, 20, 0, 0).getTime());
+  });
+
+  test('a comeback can span the new-year boundary', () => {
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      session({ game: 'Factorio', year: 2023, month: 10, day: 1 }),
+      session({ game: 'Factorio', year: 2024, month: 1, day: 15 }),
+    ]);
+
+    const snapshot = YearInReviewService.getYearSnapshot([], 2024);
+
+    expect(snapshot.milestones.comebacks).toHaveLength(1);
+    expect(snapshot.milestones.comebacks[0].name).toBe('Factorio');
+    expect(snapshot.milestones.comebacks[0].gapDays).toBeGreaterThanOrEqual(60);
+  });
+
+  test('firsts only include games never played before this year', () => {
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      session({ game: 'Old Faithful', year: 2023, month: 5 }),
+      session({ game: 'Old Faithful', year: 2024, month: 0, minutes: 100 }),
+      session({ game: 'Terraria', year: 2024, month: 1, minutes: 200 }),
+    ]);
+
+    const snapshot = YearInReviewService.getYearSnapshot([], 2024);
+
+    expect(snapshot.milestones.firstsCount).toBe(1);
+    expect(snapshot.milestones.firsts[0].name).toBe('Terraria');
+    expect(snapshot.milestones.firsts[0].playtimeMinutes).toBe(200);
+    expect(snapshot.milestones.firsts[0].firstPlayedAt).toBe(new Date(2024, 1, 10, 20, 0, 0).getTime());
+  });
+
+  test('records compute the longest streak across a month boundary, the biggest month and busiest day', () => {
+    const noon = (month, day, minutes = 60) => ({
+      ...session({ game: 'Daily Game', minutes }),
+      timestamp: new Date(2024, month, day, 12, 0, 0),
+    });
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      noon(0, 30),
+      noon(0, 31),
+      noon(1, 1, 120),
+      noon(1, 1, 120),
+      noon(1, 2, 120),
+      noon(5, 10),
+      noon(5, 12),
+    ]);
+
+    const snapshot = YearInReviewService.getYearSnapshot([], 2024);
+    const records = snapshot.milestones.records;
+
+    expect(records.longestStreakDays.days).toBe(4);
+    expect(records.biggestMonth).toEqual({ label: 'February', minutes: 360 });
+    expect(records.mostSessionsDay.count).toBe(2);
+  });
+
+  test('achievements stay null while no Steam game has cached data', () => {
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([session({ game: 'Hades' })]);
+    SteamAchievementsService.getCachedForGame.mockReturnValue(null);
+
+    const snapshot = YearInReviewService.getYearSnapshot([{ name: 'Hades', appid: '1145360' }], 2024);
+
+    expect(snapshot.milestones.achievements).toBeNull();
+  });
+
+  test('achievements count in-year unlocks, games, the rarest unlock and the busiest day', () => {
+    const firstUnlock = new Date(2024, 3, 10, 12, 0, 0).getTime();
+    const secondUnlock = new Date(2024, 3, 10, 18, 0, 0).getTime();
+    const lastYearUnlock = new Date(2023, 3, 10, 12, 0, 0).getTime();
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([session({ game: 'Hades' })]);
+    SteamAchievementsService.getCachedForGame.mockImplementation((appid) =>
+      String(appid) === '1145360'
+        ? {
+            ok: true,
+            achievements: [
+              { apiname: 'A1', name: 'Rare One', achieved: true, unlockTime: firstUnlock / 1000, percent: 2.5 },
+              { apiname: 'A2', name: 'Common One', achieved: true, unlockTime: secondUnlock / 1000, percent: 40 },
+              { apiname: 'A3', name: 'Old One', achieved: true, unlockTime: lastYearUnlock / 1000, percent: 1 },
+              { apiname: 'A4', name: 'Locked', achieved: false, unlockTime: 0 },
+            ],
+          }
+        : null
+    );
+
+    const snapshot = YearInReviewService.getYearSnapshot([{ name: 'Hades', appid: '1145360' }], 2024);
+    const achievements = snapshot.milestones.achievements;
+
+    expect(achievements.unlockedThisYear).toBe(2);
+    expect(achievements.gamesWithUnlocks).toBe(1);
+    expect(achievements.rarest).toMatchObject({ name: 'Rare One', gameName: 'Hades', percent: 2.5 });
+    expect(achievements.busiestDay.count).toBe(2);
   });
 });

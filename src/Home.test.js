@@ -20,6 +20,7 @@ jest.mock('./services/FreeGameRadar', () => ({
 jest.mock('./NavBar', () => () => null);
 jest.mock('./components/LazyImage', () => ({ alt, onLoad }) => <img alt={alt} onLoad={onLoad} />);
 jest.mock('./components/LibrarianHubCarousel', () => () => <div>Identity hub</div>);
+jest.mock('./components/GamerIdentityCard', () => () => <div>Persona card</div>);
 jest.mock('./components/DailyDoodleTitle', () => () => <div>Daily doodle</div>);
 
 const game = { name: 'Hades', platform: 'Steam', appid: 1145360, time_played: 120, genres: ['Action'] };

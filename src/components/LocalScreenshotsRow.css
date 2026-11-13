@@ -1,0 +1,48 @@
+.local-shots {
+  padding: 4px 2px 0;
+}
+
+.local-shots-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8b919f);
+}
+
+.local-shots-label svg {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.local-shots-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.local-shots-thumb {
+  flex: 0 0 120px;
+  padding: 0;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary, #18212e);
+  cursor: zoom-in;
+}
+
+.local-shots-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  opacity: 0.9;
+}
+
+.local-shots-thumb:hover img {
+  opacity: 1;
+}

@@ -1,0 +1,97 @@
+.gaming-vitals {
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.gaming-vitals-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gaming-vitals-head svg {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.gaming-vitals-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-primary, #e8eaf0);
+}
+
+.gaming-vitals-focus {
+  margin-left: auto;
+  font-size: 0.76rem;
+  color: var(--text-muted, #8b919f);
+}
+
+.gaming-vitals-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.gaming-vitals-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 90px;
+}
+
+.gaming-vitals-stat strong {
+  font-size: 0.92rem;
+  color: var(--text-primary, #e8eaf0);
+  font-weight: 600;
+}
+
+.gaming-vitals-stat span {
+  font-size: 0.74rem;
+  color: var(--text-muted, #8b919f);
+}
+
+.gaming-vitals-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.06));
+}
+
+.gaming-vitals-seg {
+  display: block;
+}
+
+.gaming-vitals-seg-deep {
+  background: var(--accent-color, #ff8c1a);
+}
+
+.gaming-vitals-seg-steady {
+  background: color-mix(in srgb, var(--accent-color, #ff8c1a) 55%, transparent);
+}
+
+.gaming-vitals-seg-hop {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.gaming-vitals-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 0.74rem;
+  color: var(--text-muted, #8b919f);
+}
+
+.gaming-vitals-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}

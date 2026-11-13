@@ -73,6 +73,7 @@ const buildMonitorMatcher = (game = {}) => {
   const aumid = `${game.aumid || ''}`.trim().toLowerCase();
   const appid = typeof game.appid !== 'undefined' && game.appid !== null ? String(game.appid).toLowerCase() : '';
   const gameName = `${game.name || ''}`.trim();
+  const romPath = `${game.romPath || ''}`.trim().toLowerCase();
 
   return {
     resolvedExecutablePath,
@@ -81,6 +82,8 @@ const buildMonitorMatcher = (game = {}) => {
     launchId,
     aumid,
     appid,
+    romPath,
+    romName: romPath ? normalizeMatcherValue(path.basename(romPath)) : '',
     nameSlug: normalizeMatcherValue(gameName),
     nameTokens: Array.from(new Set(tokenizeMatcherValue(gameName))),
   };
@@ -108,14 +111,32 @@ const processMatchesMonitor = (processInfo, monitor) => {
     return false;
   }
 
-  if (monitor.baselinePids.has(pid) && !monitor.trackedPids.has(pid)) {
-    return false;
+  // A PID we spawned ourselves (or already tracked) is always the game.
+  if (monitor.trackedPids.has(pid)) {
+    return true;
   }
 
   const processName = `${processInfo.name || ''}`.toLowerCase();
   const processPath = `${processInfo.path || ''}`.toLowerCase();
   const commandLine = `${processInfo.command || processInfo.params || ''}`.toLowerCase();
   const matcher = monitor.matcher;
+
+  // Emulated games share the emulator exe across every ROM — only count the
+  // process when the specific ROM appears on its command line. This stops
+  // emulator-UI browsing and other ROMs from being attributed to this game.
+  // The ROM check is game-specific on its own, so the baseline-PID guard
+  // below is skipped here: direct spawns already exist when the baseline is
+  // taken and would otherwise be excluded forever.
+  if (matcher.romPath) {
+    return Boolean(
+      commandLine.includes(matcher.romPath) ||
+        (matcher.romName && normalizeMatcherValue(commandLine).includes(matcher.romName))
+    );
+  }
+
+  if (monitor.baselinePids.has(pid)) {
+    return false;
+  }
 
   const exactExecutablePathMatch = Boolean(
     matcher.resolvedExecutablePath && processPath && processPath === matcher.resolvedExecutablePath
@@ -259,13 +280,21 @@ function registerIpcHandlers(ipcMain) {
       (await getProcessList()).map(({ pid }) => Number(pid)).filter((pid) => Number.isFinite(pid) && pid > 0)
     );
 
+    // PIDs the launcher spawned directly (emulators) are tracked from the
+    // start — they predate the baseline snapshot, so they'd be excluded by it.
+    const seededPids = new Set(
+      (Array.isArray(payload?.pids) ? payload.pids : [payload?.pid])
+        .map((pid) => Number(pid))
+        .filter((pid) => Number.isFinite(pid) && pid > 0)
+    );
+
     const monitor = {
       monitorId,
       game,
       webContents: event.sender,
       matcher: buildMonitorMatcher(game),
       baselinePids,
-      trackedPids: new Set(),
+      trackedPids: seededPids,
       createdAt: Date.now(),
       detectionDeadline: Date.now() + 120000,
       intervalId: null,
@@ -317,6 +346,7 @@ module.exports = {
   tokenizeMatcherValue,
   getProcessList,
   buildMonitorMatcher,
+  processMatchesMonitor,
   stopGameMonitor,
   pollGameMonitor,
   stopAllGameMonitors,

@@ -3,9 +3,13 @@ import { UserBehaviorProfile } from './UserBehaviorProfile';
 import { getDateKey } from './DateKeyService';
 import GamingPersonaService from './GamingPersonaService';
 import PeriodChampionService, { findLibraryGame } from './PeriodChampionService';
-import { getGameArtworkPlaceholder, resolveGameArtworkBundle } from './GameArtworkService';
+import { getGameArtworkPlaceholder, resolveGameArtwork, resolveGameArtworkBundle } from './GameArtworkService';
 import SessionRepository from './SessionRepository';
 import CurrentEraService from './CurrentEraService';
+import SteamAchievementsService from './SteamAchievementsService';
+import SteamPublicService from './SteamPublicService';
+import { GameCurationService } from './GameCurationService';
+import AchievementCompletionService from './AchievementCompletionService';
 
 const MONTH_LABELS = Object.freeze([
   'Jan',
@@ -68,7 +72,9 @@ const getPersonaVoice = () => {
   const persona = GamingPersonaService.getPersona(null, null, { mode: 'all-time' });
   const primary = persona?.primaryPersona;
   return {
+    id: primary?.id || null,
     label: primary?.label || null,
+    themeId: primary?.theme?.id || null,
     roast: persona?.summaryRoast || primary?.roast || null,
     voice: primary?.voice || null,
   };
@@ -894,6 +900,327 @@ const buildStory = ({ sessions, allSessions, year, topGames, deepStats, monthly,
   return { paragraphs };
 };
 
+// --- Milestones --------------------------------------------------------------
+// What the player accomplished this year, all from local data: finishes from
+// the completion history, cached Steam achievement unlocks, comebacks after
+// long gaps, first-time games, and day/month records. Nothing is fabricated —
+// a section with no underlying data simply comes back empty.
+
+const MILESTONE_FINISHED_RANK = { beaten: 1, completed: 2, '100%': 3 };
+const MILESTONE_COMEBACK_DAYS = 60;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const milestoneMs = (value) => {
+  if (value == null) return 0;
+  const ms = typeof value === 'number' ? value : new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+};
+
+const milestoneGameKey = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .trim();
+
+// Sessions for a completion-history game name, tolerating id-vs-name keys.
+const sessionsForGame = (sessions, name, appid) => {
+  const wanted = milestoneGameKey(name);
+  const wantedId = appid ? String(appid) : null;
+  return (Array.isArray(sessions) ? sessions : []).filter((session) => {
+    if (milestoneGameKey(session?.gameName) === wanted) return true;
+    return wantedId !== null && String(session?.gameId ?? '') === wantedId;
+  });
+};
+
+const milestoneCover = (library, name, gameSessions = []) => {
+  const libGame = findLibraryGame(library, name);
+  const artwork = libGame ? resolveGameArtwork(libGame, { surface: 'portrait' }) : '';
+  if (artwork) return artwork;
+  return gameSessions.map((session) => session?.coverUrl).find(Boolean) || '';
+};
+
+// The session a finish happened in. Steam games get evidence from the cached
+// achievement data — the achievement named in the completion note when there
+// is one ("Detected via Steam achievement \"X\""), otherwise the last unlock
+// before the finish timestamp. Other games fall back to the last session for
+// the game ending within 24h before the finish.
+const resolveFinishingSession = ({ name, milestone, library, allSessions }) => {
+  const libGame = findLibraryGame(library, name);
+  const appid = libGame ? SteamPublicService.appIdOf?.(libGame) || String(libGame?.appid || '') : '';
+
+  if (appid) {
+    const list = SteamAchievementsService.getCachedForGame?.(appid)?.achievements || [];
+    const achieved = list.filter((achievement) => achievement?.achieved);
+    const noteMatch = /Detected via Steam achievement "([^"]+)"/.exec(String(milestone.note || ''));
+    let hit = noteMatch ? achieved.find((achievement) => achievement?.name === noteMatch[1]) || null : null;
+    if (!hit) {
+      hit =
+        achieved
+          .map((achievement) => ({
+            achievement,
+            ms: AchievementCompletionService.unlockMs(achievement?.unlockTime),
+          }))
+          .filter((entry) => entry.ms > 0 && entry.ms <= milestone.at)
+          .sort((left, right) => right.ms - left.ms)[0]?.achievement || null;
+    }
+    const unlockMs = AchievementCompletionService.unlockMs(hit?.unlockTime);
+    return AchievementCompletionService.sessionEvidenceOf(
+      AchievementCompletionService.sessionForUnlockMs(name, unlockMs, allSessions),
+      unlockMs
+    );
+  }
+
+  const last = sessionsForGame(allSessions, name)
+    .map((session) => ({
+      session,
+      end: AchievementCompletionService.sessionWindowMs(session)?.end || milestoneMs(session?.timestamp),
+    }))
+    .filter((entry) => entry.end > 0 && entry.end <= milestone.at && milestone.at - entry.end <= DAY_MS)
+    .sort((left, right) => right.end - left.end)[0];
+  if (!last) return null;
+  return { endTime: last.end, minutes: Math.round(Number(last.session?.playtimeMinutes) || 0) };
+};
+
+const buildFinishedMilestones = ({ completions, sessions, allSessions, library, year }) => {
+  const finished = [];
+  Object.entries(completions || {}).forEach(([name, record]) => {
+    const history = Array.isArray(record?.history) ? record.history : [];
+    // The highest status the game's history reached inside this year — the
+    // earliest entry that reached it supplies the date.
+    let best = null;
+    history.forEach((entry) => {
+      const rank = MILESTONE_FINISHED_RANK[entry?.status];
+      const at = milestoneMs(entry?.timestamp);
+      if (!rank || !at || new Date(at).getFullYear() !== year) return;
+      if (!best || rank > best.rank) best = { rank, status: entry.status, at, note: entry.note };
+    });
+    if (!best) return;
+
+    const libGame = findLibraryGame(library, name);
+    const appid = libGame ? SteamPublicService.appIdOf?.(libGame) || String(libGame?.appid || '') : '';
+    const yearSessions = sessionsForGame(sessions, name, appid);
+    finished.push({
+      name,
+      status: best.status,
+      at: best.at,
+      coverUrl: milestoneCover(library, name, yearSessions),
+      finishingSession: resolveFinishingSession({ name, milestone: best, library, allSessions }),
+      playtimeMinutes: yearSessions.reduce((sum, session) => sum + (Number(session?.playtimeMinutes) || 0), 0),
+    });
+  });
+  return finished.sort((left, right) => left.at - right.at || left.name.localeCompare(right.name));
+};
+
+// Achievement unlocks landed inside the year, read from the local Steam
+// achievement cache only — never the network. Null when nothing is cached.
+const buildAchievementMilestones = (library, year) => {
+  const steamGames = (Array.isArray(library) ? library : [])
+    .map((game) => ({
+      name: String(game?.name || game?.title || '').trim(),
+      appid: SteamPublicService.appIdOf?.(game) || String(game?.appid || ''),
+    }))
+    .filter((game) => game.name && game.appid);
+
+  let sawCache = false;
+  let unlockedThisYear = 0;
+  const gamesWithUnlocks = new Set();
+  const dayCounts = {};
+  let rarest = null;
+
+  steamGames.forEach((game) => {
+    const cached = SteamAchievementsService.getCachedForGame?.(game.appid);
+    if (!cached?.ok) return;
+    sawCache = true;
+    (Array.isArray(cached.achievements) ? cached.achievements : []).forEach((achievement) => {
+      if (!achievement?.achieved) return;
+      const unlockedAt = AchievementCompletionService.unlockMs(achievement?.unlockTime);
+      if (!unlockedAt || new Date(unlockedAt).getFullYear() !== year) return;
+      unlockedThisYear += 1;
+      gamesWithUnlocks.add(game.name);
+      const dateKey = getDateKey(new Date(unlockedAt));
+      if (dateKey) dayCounts[dateKey] = (dayCounts[dateKey] || 0) + 1;
+      const percent = achievement?.percent == null ? null : Number(achievement.percent);
+      if (percent !== null && Number.isFinite(percent) && (!rarest || percent < rarest.percent)) {
+        rarest = {
+          name: achievement.name || achievement.apiname || 'Achievement',
+          gameName: game.name,
+          percent,
+          unlockedAt,
+        };
+      }
+    });
+  });
+
+  if (!sawCache) return null;
+  const busiest = Object.entries(dayCounts).sort(
+    (left, right) => right[1] - left[1] || left[0].localeCompare(right[0])
+  )[0];
+  return {
+    unlockedThisYear,
+    gamesWithUnlocks: gamesWithUnlocks.size,
+    rarest,
+    busiestDay: busiest ? { date: busiest[0], count: busiest[1] } : null,
+  };
+};
+
+// A game is a comeback when a session this year follows a 60+ day gap since
+// the previous session for that game. One entry per game — the largest gap.
+const buildComebackMilestones = ({ sessions, allSessions, library }) => {
+  const timelines = new Map();
+  (Array.isArray(allSessions) ? allSessions : []).forEach((session) => {
+    const key = milestoneGameKey(session?.gameName || session?.gameId);
+    const ms = milestoneMs(session?.timestamp);
+    if (!key || !ms) return;
+    const list = timelines.get(key) || [];
+    list.push(ms);
+    timelines.set(key, list);
+  });
+  timelines.forEach((list) => list.sort((a, b) => a - b));
+
+  const found = new Map();
+  (Array.isArray(sessions) ? sessions : []).forEach((session) => {
+    const key = milestoneGameKey(session?.gameName || session?.gameId);
+    const ms = milestoneMs(session?.timestamp);
+    const timeline = key ? timelines.get(key) : null;
+    if (!ms || !timeline) return;
+    let previous = null;
+    for (let index = timeline.length - 1; index >= 0; index -= 1) {
+      if (timeline[index] < ms) {
+        previous = timeline[index];
+        break;
+      }
+    }
+    if (!previous) return;
+    const gapDays = Math.floor((ms - previous) / DAY_MS);
+    if (gapDays < MILESTONE_COMEBACK_DAYS) return;
+    const existing = found.get(key);
+    if (!existing || gapDays > existing.gapDays) {
+      found.set(key, { name: session.gameName || key, gapDays, returnedAt: ms, gameKey: key });
+    }
+  });
+
+  return Array.from(found.values())
+    .sort((left, right) => right.gapDays - left.gapDays || left.returnedAt - right.returnedAt)
+    .slice(0, 5)
+    .map((entry) => ({
+      name: entry.name,
+      gapDays: entry.gapDays,
+      returnedAt: entry.returnedAt,
+      coverUrl: milestoneCover(library, entry.name, sessionsForGame(sessions, entry.name)),
+    }));
+};
+
+// Games whose first-ever session landed this year — "new to you" titles.
+const buildFirstsMilestones = ({ sessions, allSessions, library, year }) => {
+  const firstEver = new Map();
+  (Array.isArray(allSessions) ? allSessions : []).forEach((session) => {
+    const key = milestoneGameKey(session?.gameName || session?.gameId);
+    const ms = milestoneMs(session?.timestamp);
+    if (!key || !ms) return;
+    const current = firstEver.get(key);
+    if (!current || ms < current) firstEver.set(key, ms);
+  });
+
+  const yearGames = new Map();
+  (Array.isArray(sessions) ? sessions : []).forEach((session) => {
+    const key = milestoneGameKey(session?.gameName || session?.gameId);
+    if (!key) return;
+    const entry = yearGames.get(key) || { name: session.gameName || key, minutes: 0, sessions: [] };
+    entry.minutes += Number(session?.playtimeMinutes) || 0;
+    entry.sessions.push(session);
+    yearGames.set(key, entry);
+  });
+
+  const firsts = [];
+  yearGames.forEach((entry, key) => {
+    const firstPlayedAt = firstEver.get(key);
+    if (!firstPlayedAt || new Date(firstPlayedAt).getFullYear() !== year) return;
+    firsts.push({
+      name: entry.name,
+      firstPlayedAt,
+      coverUrl: milestoneCover(library, entry.name, entry.sessions),
+      playtimeMinutes: entry.minutes,
+    });
+  });
+  firsts.sort((left, right) => right.playtimeMinutes - left.playtimeMinutes || left.name.localeCompare(right.name));
+  return { firsts: firsts.slice(0, 6), firstsCount: firsts.length };
+};
+
+// Calendar records for the year: longest run of consecutive days with a
+// session, the biggest month by minutes, the day with the most sessions.
+const buildMilestoneRecords = (sessions = []) => {
+  const dayKeys = new Set();
+  const dayCounts = new Map();
+  const monthMinutes = new Map();
+  (Array.isArray(sessions) ? sessions : []).forEach((session) => {
+    const timestamp = session?.timestamp;
+    if (!(timestamp instanceof Date) || Number.isNaN(timestamp.getTime())) return;
+    const dateKey = getDateKey(timestamp);
+    if (dateKey) {
+      dayKeys.add(dateKey);
+      dayCounts.set(dateKey, (dayCounts.get(dateKey) || 0) + 1);
+    }
+    monthMinutes.set(
+      timestamp.getMonth(),
+      (monthMinutes.get(timestamp.getMonth()) || 0) + (session.playtimeMinutes || 0)
+    );
+  });
+
+  let longestStreakDays = null;
+  let runStart = null;
+  let runLength = 0;
+  let previousDay = null;
+  [...dayKeys].sort().forEach((dateKey) => {
+    const dayIndex = Date.parse(`${dateKey}T00:00:00Z`) / DAY_MS;
+    if (previousDay !== null && dayIndex === previousDay + 1) {
+      runLength += 1;
+    } else {
+      runStart = dateKey;
+      runLength = 1;
+    }
+    previousDay = dayIndex;
+    if (!longestStreakDays || runLength > longestStreakDays.days) {
+      longestStreakDays = { days: runLength, startDate: runStart, endDate: dateKey };
+    }
+  });
+
+  const biggest = [...monthMinutes.entries()].sort((left, right) => right[1] - left[1] || left[0] - right[0])[0];
+  const busiest = [...dayCounts.entries()].sort(
+    (left, right) => right[1] - left[1] || left[0].localeCompare(right[0])
+  )[0];
+
+  return {
+    longestStreakDays,
+    biggestMonth: biggest ? { label: FULL_MONTH_LABELS[biggest[0]], minutes: biggest[1] } : null,
+    mostSessionsDay: busiest ? { date: busiest[0], count: busiest[1] } : null,
+  };
+};
+
+const buildMilestones = ({ sessions = [], allSessions = [], library = [], year }) => {
+  const safeYear = Number(year) || new Date().getFullYear();
+  const safeAll = Array.isArray(allSessions) && allSessions.length > 0 ? allSessions : sessions;
+
+  let completions = {};
+  try {
+    completions = GameCurationService.getAllCompletions?.() || GameCurationService.getCompletionHistory?.() || {};
+  } catch {
+    completions = {};
+  }
+
+  const finished = buildFinishedMilestones({ completions, sessions, allSessions: safeAll, library, year: safeYear });
+  const achievements = buildAchievementMilestones(library, safeYear);
+  const comebacks = buildComebackMilestones({ sessions, allSessions: safeAll, library });
+  const { firsts, firstsCount } = buildFirstsMilestones({ sessions, allSessions: safeAll, library, year: safeYear });
+  const records = buildMilestoneRecords(sessions);
+  const hasAny =
+    finished.length > 0 ||
+    Boolean(achievements && achievements.unlockedThisYear > 0) ||
+    comebacks.length > 0 ||
+    firsts.length > 0 ||
+    Object.values(records).some(Boolean);
+
+  return { hasAny, finished, achievements, comebacks, firsts, firstsCount, records };
+};
+
 const buildHabitSummary = (selectedYear, sessions = []) => {
   const yearSessions = sessions.filter((s) => new Date(s.timestamp || 0).getFullYear() === selectedYear);
   const daysActive = new Set(yearSessions.map((s) => getDateKey(s.timestamp))).size;
@@ -1005,6 +1332,23 @@ export class YearInReviewService {
     return StatsAggregationService.getNormalizedSessionHistory(library);
   }
 
+  static buildMilestones({ sessions = [], allSessions = [], library = [], year } = {}) {
+    try {
+      return buildMilestones({ sessions, allSessions, library, year });
+    } catch (e) {
+      console.error('YearInReviewService: Failed to build milestones', e);
+      return {
+        finished: [],
+        achievements: null,
+        comebacks: [],
+        firsts: [],
+        firstsCount: 0,
+        records: {},
+        hasAny: false,
+      };
+    }
+  }
+
   static getLifetimePersonaEvolution(library = []) {
     try {
       const sessions = StatsAggregationService.getNormalizedSessionHistory(library);
@@ -1051,7 +1395,9 @@ export class YearInReviewService {
       const gamingPersona = getPersonaVoice();
       const persona = {
         ...basePersona,
+        identityId: gamingPersona.id || null,
         identityLabel: gamingPersona.label || basePersona.identityLabel,
+        identityThemeId: gamingPersona.themeId || null,
         identityDescription: basePersona.identityDescription,
         roast: gamingPersona.roast || null,
       };
@@ -1076,6 +1422,7 @@ export class YearInReviewService {
         persona,
         library,
       });
+      const milestones = this.buildMilestones({ sessions, allSessions, library, year: safeYear });
 
       return {
         year: safeYear,
@@ -1093,6 +1440,7 @@ export class YearInReviewService {
         championJourney,
         eras,
         journalNotes,
+        milestones,
         summaryCards: buildSummaryCards({
           year: safeYear,
           summary,
@@ -1162,6 +1510,15 @@ export class YearInReviewService {
         championJourney: { yearChampion: null, monthlyChampions: [] },
         eras: { stretches: [], recorded: [] },
         journalNotes: [],
+        milestones: {
+          finished: [],
+          achievements: null,
+          comebacks: [],
+          firsts: [],
+          firstsCount: 0,
+          records: {},
+          hasAny: false,
+        },
         summaryCards: buildSummaryCards({
           year: fallbackYear,
           summary: fallbackSummary,
@@ -1191,6 +1548,7 @@ export class YearInReviewService {
         championJourney: snapshot.championJourney,
         eras: snapshot.eras,
         journalNotes: snapshot.journalNotes,
+        milestones: snapshot.milestones,
         topGames: snapshot.topGames,
         distributions: {
           topPlatforms: snapshot.distributions.topPlatforms,

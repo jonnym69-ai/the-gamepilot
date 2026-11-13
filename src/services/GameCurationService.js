@@ -260,7 +260,33 @@ function deleteSessionNote(gameKey, timestamp) {
 
 // ---------- Metadata Overrides ----------
 
-const METADATA_OVERRIDE_FIELDS = ['sortName', 'genres', 'tags', 'releaseYear', 'developer', 'publisher'];
+const METADATA_OVERRIDE_FIELDS = [
+  'sortName',
+  'genres',
+  'tags',
+  'releaseYear',
+  'developer',
+  'publisher',
+  'launchArgs',
+  'altExecutables',
+  'attachments',
+];
+
+const sanitizeLabelPathList = (value, pathKey) =>
+  (Array.isArray(value) ? value : [])
+    .map((entry) => ({
+      label: String(entry?.label || '')
+        .trim()
+        .slice(0, 80),
+      [pathKey]: String(entry?.[pathKey] || '')
+        .trim()
+        .slice(0, 500),
+      args: String(entry?.args || '')
+        .trim()
+        .slice(0, 300),
+    }))
+    .filter((entry) => entry.label && entry[pathKey])
+    .slice(0, 10);
 
 function getMetadataOverrides() {
   const all = StorageService.get(KEYS.metadataOverrides, {});
@@ -292,6 +318,20 @@ function setMetadataOverride(gameKey, patch = {}) {
       const list = [
         ...new Set((Array.isArray(value) ? value : [value]).map((item) => String(item).trim()).filter(Boolean)),
       ];
+      if (list.length > 0) current[field] = list;
+      else delete current[field];
+      return;
+    }
+    if (field === 'altExecutables') {
+      const list = sanitizeLabelPathList(value, 'path');
+      if (list.length > 0) current[field] = list;
+      else delete current[field];
+      return;
+    }
+    if (field === 'attachments') {
+      const list = sanitizeLabelPathList(value, 'url')
+        .map(({ label, url }) => ({ label, url }))
+        .filter((entry) => /^(https?|file):/i.test(entry.url));
       if (list.length > 0) current[field] = list;
       else delete current[field];
       return;
@@ -351,6 +391,17 @@ function getDuplicateMerges() {
 function mergeDuplicateGames(primaryKey, duplicateKeys) {
   const merges = getDuplicateMerges();
   merges[primaryKey] = duplicateKeys;
+  StorageService.set(KEYS.duplicates, merges);
+}
+
+function unmergeDuplicateGames(primaryKey) {
+  const merges = getDuplicateMerges();
+  const normalized = normalizeForDedup(primaryKey);
+  delete merges[primaryKey];
+  Object.keys(merges).forEach((key) => {
+    merges[key] = (merges[key] || []).filter((d) => normalizeForDedup(d) !== normalized);
+    if (merges[key].length === 0) delete merges[key];
+  });
   StorageService.set(KEYS.duplicates, merges);
 }
 
@@ -434,6 +485,13 @@ function enrichGame(game) {
     if (metadataOverride.releaseYear != null) metadataPatch.releaseYear = metadataOverride.releaseYear;
     if (metadataOverride.developer) metadataPatch.developer = metadataOverride.developer;
     if (metadataOverride.publisher) metadataPatch.publisher = metadataOverride.publisher;
+    if (metadataOverride.launchArgs) metadataPatch.launchArgs = metadataOverride.launchArgs;
+    if (Array.isArray(metadataOverride.altExecutables)) {
+      metadataPatch.altExecutables = metadataOverride.altExecutables;
+    }
+    if (Array.isArray(metadataOverride.attachments)) {
+      metadataPatch.attachments = metadataOverride.attachments;
+    }
   }
 
   return {
@@ -491,6 +549,7 @@ export const GameCurationService = {
   toggleHiddenGame,
   // Completion
   getCompletionHistory,
+  getAllCompletions: getCompletionHistory,
   getGameCompletion,
   setGameCompletion,
   COMPLETION_STATUSES,
@@ -511,6 +570,7 @@ export const GameCurationService = {
   findDuplicates,
   getDuplicateMerges,
   mergeDuplicateGames,
+  unmergeDuplicateGames,
   getMergedGameKey,
   isDuplicateMerged,
   // Played elsewhere

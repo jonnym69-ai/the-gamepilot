@@ -44,6 +44,10 @@ import SaveBackupPanel from './SaveBackupPanel';
 import SteamSnapshot from './SteamSnapshot';
 import PatchNewsPanel from './PatchNewsPanel';
 import YouTubeVideosPanel from './YouTubeVideosPanel';
+import GameTrailersRow from './GameTrailersRow';
+import LocalScreenshotsRow from './LocalScreenshotsRow';
+import GameMemoirPanel from './GameMemoirPanel';
+import FriendsPlayedPanel from './FriendsPlayedPanel';
 import RecommendationPreferenceControl from './RecommendationPreferenceControl';
 import UninstallModal from './UninstallModal';
 import useInterfacePreferences from '../hooks/useInterfacePreferences';
@@ -864,6 +868,8 @@ const GameModal = ({
                         </div>
                       </div>
                     )}
+                    <GameTrailersRow movies={gameDetails?.movies} label={`${game.name} trailers`} />
+                    <LocalScreenshotsRow appid={steamAppid} gameName={game.name} />
                   </div>
 
                   {detailsError && (
@@ -916,14 +922,66 @@ const GameModal = ({
 
                   <SteamSnapshot game={game} />
 
+                  <div className="game-info-panel">
+                    <FriendsPlayedPanel game={game} />
+                  </div>
+
                   <PatchNewsPanel game={game} />
 
                   <YouTubeVideosPanel key={game.name || game.title} game={game} />
 
                   <LibrariansNotes game={game} />
+
+                  {(Array.isArray(game.altExecutables) && game.altExecutables.length > 0) ||
+                  (Array.isArray(game.attachments) && game.attachments.length > 0) ? (
+                    <div className="game-info-panel">
+                      {Array.isArray(game.altExecutables) && game.altExecutables.length > 0 && (
+                        <>
+                          <h3>Launch actions</h3>
+                          <div className="game-alt-actions">
+                            {game.altExecutables.map((action, i) => (
+                              <button
+                                key={`${action.label}-${i}`}
+                                type="button"
+                                className="game-action-btn"
+                                onClick={() =>
+                                  window.electronAPI?.launchExe?.({
+                                    executablePath: action.path,
+                                    args: action.args || '',
+                                  })
+                                }
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      {Array.isArray(game.attachments) && game.attachments.length > 0 && (
+                        <>
+                          <h3>Attachments</h3>
+                          <div className="game-attachments">
+                            {game.attachments.map((link, i) => (
+                              <button
+                                key={`${link.label}-${i}`}
+                                type="button"
+                                className="game-action-btn"
+                                onClick={() => openExternalUrl(link.url)}
+                              >
+                                {link.label}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="game-modal-secondary">
+                  <div className="game-info-panel">
+                    <GameMemoirPanel game={game} library={library} />
+                  </div>
                   <div className="game-info-panel">
                     <h3>Your sessions &amp; notes</h3>
                     {sessionContext.sessionCount > 0 ? (

@@ -14,6 +14,35 @@ const ART_STYLES = [
   { id: 'mosaic', label: 'Mosaic', Icon: LayoutGrid },
 ];
 const ART_STYLES_KEY = 'spotlightArtStyles';
+// Mystery reveal: each day's pick starts veiled (blurred art, "?" cover) until
+// the user clicks Reveal. The revealed flag is stored per surface against the
+// pick's key — a new pick tomorrow re-veils itself. The opt-out pref is global.
+const REVEALED_KEY = 'spotlightRevealedV1';
+const MYSTERY_PREF_KEY = 'spotlightMysteryRevealV1';
+const readRevealed = () => {
+  try {
+    const stored = StorageService.get(REVEALED_KEY, {});
+    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+  } catch {
+    return {};
+  }
+};
+const isRevealed = (surface, pickKey) => Boolean(pickKey) && readRevealed()[surface] === pickKey;
+const markRevealed = (surface, pickKey) => {
+  try {
+    StorageService.set(REVEALED_KEY, { ...readRevealed(), [surface]: pickKey });
+  } catch {
+    /* non-persistent storage — the veil still lifts for this mount */
+  }
+};
+const getMysteryEnabled = () => StorageService.get(MYSTERY_PREF_KEY, true) !== false;
+const saveMysteryEnabled = (enabled) => {
+  try {
+    StorageService.set(MYSTERY_PREF_KEY, enabled !== false);
+  } catch {
+    /* session-only opt-out still applies */
+  }
+};
 const readArtStyles = () => {
   try {
     const stored = StorageService.get(ART_STYLES_KEY, {});
@@ -58,6 +87,20 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
   const [refresh, setRefresh] = useState(0);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
   const [playersBusy, setPlayersBusy] = useState(false);
+  const pickKey = DailySpotlightService.getKey(game);
+  const [mysteryEnabled, setMysteryEnabled] = useState(() => getMysteryEnabled());
+  const [revealed, setRevealed] = useState(() => isRevealed(surface, pickKey));
+  const [justRevealed, setJustRevealed] = useState(false);
+  const reveal = (forGood = false) => {
+    if (forGood) {
+      saveMysteryEnabled(false);
+      setMysteryEnabled(false);
+    }
+    markRevealed(surface, pickKey);
+    setJustRevealed(true);
+    setRevealed(true);
+  };
+  const veiled = mysteryEnabled && !revealed;
 
   useEffect(() => {
     const onOnline = () => setRefresh((value) => value + 1);
@@ -153,7 +196,7 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
   };
 
   return (
-    <section className="daily-spotlight" aria-labelledby={`${id}-heading`}>
+    <section className={`daily-spotlight${justRevealed ? ' just-revealed' : ''}`} aria-labelledby={`${id}-heading`}>
       <header className="daily-spotlight-heading">
         <BookOpen size={17} aria-hidden="true" />
         <h2 id={`${id}-heading`}>{rediscovery ? 'Rediscover your library' : "Today's Spotlight"}</h2>
@@ -174,175 +217,219 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
         </div>
         <time dateTime={day}>{day}</time>
       </header>
-      <div
-        className="daily-spotlight-art"
-        data-art-style={artStyle}
-        style={artwork ? { '--spotlight-backdrop': `url("${artwork}")` } : undefined}
-      >
-        {artStyle === 'mosaic' ? (
-          <div className="daily-spotlight-mosaic">
-            {Array.from({ length: 4 }, (_, index) => (
-              <div key={index} className="daily-spotlight-mosaic-tile">
-                <LazyImage
-                  src={mosaicSources[index % mosaicSources.length] || placeholder}
-                  placeholder={placeholder}
-                  alt={index === 0 ? `${gameName} artwork` : ''}
-                />
-              </div>
-            ))}
-          </div>
-        ) : artStyle === 'fill' ? (
-          <LazyImage
-            src={fallbackSrc || artwork || placeholder}
-            fallbackSrcs={[artwork].filter((source) => source && source !== fallbackSrc)}
-            placeholder={placeholder}
-            alt={`${gameName} artwork`}
-          />
-        ) : (
-          <LazyImage
-            src={artwork || placeholder}
-            fallbackSrc={artwork ? fallbackSrc : undefined}
-            placeholder={placeholder}
-            alt={`${gameName} artwork`}
-          />
-        )}
-      </div>
-      {screenshots.length > 0 && (
-        <div className="daily-spotlight-gallery">
-          <div className="daily-spotlight-screenshot">
-            <LazyImage
-              src={screenshot.path_full}
-              placeholder={placeholder}
-              alt={`${gameName} screenshot ${selectedIndex + 1}`}
-            />
-          </div>
-          <p aria-live="polite">
-            Steam screenshots · {selectedIndex + 1} / {screenshots.length}
-          </p>
-          {screenshots.length > 1 && (
-            <div className="daily-spotlight-thumbnails" role="group" aria-label={`${gameName} screenshots`}>
-              {screenshots.map((image, index) => (
-                <button
-                  key={`${image.path_full}-${index}`}
-                  type="button"
-                  aria-label={`Show ${gameName} screenshot ${index + 1}`}
-                  aria-pressed={index === selectedIndex}
-                  onClick={() => setCurrentScreenshot(index)}
-                >
-                  <LazyImage src={image.path_thumbnail} placeholder={placeholder} alt="" />
-                </button>
-              ))}
+      {veiled && (
+        <div
+          className="daily-spotlight-veil"
+          style={artwork ? { '--spotlight-backdrop': `url("${artwork}")` } : undefined}
+        >
+          <div className="daily-spotlight-veil-inner">
+            <p className="daily-spotlight-eyebrow">Mystery pick</p>
+            <p className="daily-spotlight-veil-mark" aria-hidden="true">
+              ?
+            </p>
+            <p className="daily-spotlight-veil-copy">
+              Today's pick is under wraps. Squint at the blur and take a guess — or just look.
+            </p>
+            <div className="daily-spotlight-veil-actions">
+              <button type="button" className="daily-spotlight-reveal" onClick={() => reveal()}>
+                Reveal the pick
+              </button>
+              <button type="button" className="daily-spotlight-veil-nomore" onClick={() => reveal(true)}>
+                don't hide it again
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
-      <div className="daily-spotlight-body">
-        <p className="daily-spotlight-eyebrow">
-          {rediscovery ? 'Already yours · worth another look' : 'From your library · daily discovery'}
-        </p>
-        <h3>{gameName}</h3>
-        {topShelf && (
-          <p className="daily-spotlight-rank">
-            <Trophy size={13} aria-hidden="true" />
-            Top shelf — #{libraryRank.rank} of {libraryRank.total} in your library
-          </p>
-        )}
-        {reason && <p className="daily-spotlight-intro">{reason}</p>}
-        {store?.shortDescription && <p className="daily-spotlight-blurb">{blurb(store.shortDescription)}</p>}
-        {rediscovery && onLaunchGame && (
-          <button className="discover-launch" type="button" onClick={() => onLaunchGame(game)}>
-            Play {gameName}
-          </button>
-        )}
-        {rows.length > 0 && (
-          <dl className="daily-spotlight-facts">
-            {rows.map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
+      {!veiled && (
+        <>
+          <div
+            className="daily-spotlight-art"
+            data-art-style={artStyle}
+            style={artwork ? { '--spotlight-backdrop': `url("${artwork}")` } : undefined}
+          >
+            {artStyle === 'mosaic' ? (
+              <div className="daily-spotlight-mosaic">
+                {Array.from({ length: 4 }, (_, index) => (
+                  <div key={index} className="daily-spotlight-mosaic-tile">
+                    <LazyImage
+                      src={mosaicSources[index % mosaicSources.length] || placeholder}
+                      placeholder={placeholder}
+                      alt={index === 0 ? `${gameName} artwork` : ''}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </dl>
-        )}
-        {store && checkedAt(store.fetchedAt) ? (
-          <p className="daily-spotlight-source">Source: Steam store · checked {checkedAt(store.fetchedAt)}.</p>
-        ) : rows.length > 0 ? (
-          <p className="daily-spotlight-source">Facts from your saved library.</p>
-        ) : null}
-        {showPlayers && (
-          <div className="daily-spotlight-players">
-            <strong>{players.count.toLocaleString()}</strong>
-            <span>Concurrent Steam players</span>
-            <small>
-              Source: Steam Web API · checked {checkedAt(players.fetchedAt)}. A snapshot, not a live counter; excludes
-              offline players.
-            </small>
-            {enabled && window.electronAPI?.steamPlayerCount && (
-              <button type="button" className="daily-spotlight-refresh" onClick={refreshPlayers} disabled={playersBusy}>
-                <RefreshCw size={12} aria-hidden="true" className={playersBusy ? 'spin' : undefined} />
-                {playersBusy ? 'Refreshing…' : 'Refresh'}
-              </button>
+            ) : artStyle === 'fill' ? (
+              <LazyImage
+                src={fallbackSrc || artwork || placeholder}
+                fallbackSrcs={[artwork].filter((source) => source && source !== fallbackSrc)}
+                placeholder={placeholder}
+                alt={`${gameName} artwork`}
+              />
+            ) : (
+              <LazyImage
+                src={artwork || placeholder}
+                fallbackSrc={artwork ? fallbackSrc : undefined}
+                placeholder={placeholder}
+                alt={`${gameName} artwork`}
+              />
             )}
           </div>
-        )}
-        <dl className="daily-spotlight-personal">
-          <div>
-            <dt>Your library playtime</dt>
-            <dd>{playtime}</dd>
-          </div>
-          <div>
-            <dt>Your platform</dt>
-            <dd>{text(game.platform) || 'Local'}</dd>
-          </div>
-          {libraryRank && libraryRank.minutes > 0 && (
-            <div>
-              <dt>Library rank</dt>
-              <dd>
-                #{libraryRank.rank} of {libraryRank.total}
-              </dd>
+          {screenshots.length > 0 && (
+            <div className="daily-spotlight-gallery">
+              <div className="daily-spotlight-screenshot">
+                <LazyImage
+                  src={screenshot.path_full}
+                  placeholder={placeholder}
+                  alt={`${gameName} screenshot ${selectedIndex + 1}`}
+                />
+              </div>
+              <p aria-live="polite">
+                Steam screenshots · {selectedIndex + 1} / {screenshots.length}
+              </p>
+              {screenshots.length > 1 && (
+                <div className="daily-spotlight-thumbnails" role="group" aria-label={`${gameName} screenshots`}>
+                  {screenshots.map((image, index) => (
+                    <button
+                      key={`${image.path_full}-${index}`}
+                      type="button"
+                      aria-label={`Show ${gameName} screenshot ${index + 1}`}
+                      aria-pressed={index === selectedIndex}
+                      onClick={() => setCurrentScreenshot(index)}
+                    >
+                      <LazyImage src={image.path_thumbnail} placeholder={placeholder} alt="" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </dl>
-        {!appid && (
-          <p className="daily-spotlight-source">
-            Online facts currently cover Steam games. No sales or player counts are inferred for other platforms.
-          </p>
-        )}
-        <label className="daily-spotlight-toggle">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(event) => {
-              DailySpotlightService.setEnabled(event.target.checked);
-              setEnabled(DailySpotlightService.isEnabled());
-            }}
-          />
-          Online Steam facts for Spotlight
-        </label>
-        <details className="daily-spotlight-options">
-          <summary>About these facts &amp; privacy</summary>
-          <p>
-            Off by default. When enabled, Spotlight sends only the featured game's public app ID to Steam. No account,
-            play history or full library is sent. Screenshots load from Steam's image servers while enabled; image files
-            may need a connection. Library artwork uses the same loading as your library.
-          </p>
-          <p>
-            Facts are saved locally and normally refreshed once a day. Missing facts are omitted. Release dates refer to
-            the Steam listing; player counts are not copies sold. Your library playtime includes imported totals where
-            available.
-          </p>
-        </details>
-        {appid && !enabled && (
-          <p className="daily-spotlight-source">
-            {store || showPlayers
-              ? 'Online refresh is off. Saved facts remain available.'
-              : 'Enable online Steam facts above for release details and player snapshots.'}
-          </p>
-        )}
-        <p className="daily-spotlight-status" role="status">
-          {status}
-        </p>
-      </div>
+          <div className="daily-spotlight-body">
+            <p className="daily-spotlight-eyebrow">
+              {rediscovery ? 'Already yours · worth another look' : 'From your library · daily discovery'}
+            </p>
+            <h3>{gameName}</h3>
+            {topShelf && (
+              <p className="daily-spotlight-rank">
+                <Trophy size={13} aria-hidden="true" />
+                Top shelf — #{libraryRank.rank} of {libraryRank.total} in your library
+              </p>
+            )}
+            {reason && <p className="daily-spotlight-intro">{reason}</p>}
+            {store?.shortDescription && <p className="daily-spotlight-blurb">{blurb(store.shortDescription)}</p>}
+            {rediscovery && onLaunchGame && (
+              <button className="discover-launch" type="button" onClick={() => onLaunchGame(game)}>
+                Play {gameName}
+              </button>
+            )}
+            {rows.length > 0 && (
+              <dl className="daily-spotlight-facts">
+                {rows.map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {store && checkedAt(store.fetchedAt) ? (
+              <p className="daily-spotlight-source">Source: Steam store · checked {checkedAt(store.fetchedAt)}.</p>
+            ) : rows.length > 0 ? (
+              <p className="daily-spotlight-source">Facts from your saved library.</p>
+            ) : null}
+            {showPlayers && (
+              <div className="daily-spotlight-players">
+                <strong>{players.count.toLocaleString()}</strong>
+                <span>Concurrent Steam players</span>
+                <small>
+                  Source: Steam Web API · checked {checkedAt(players.fetchedAt)}. A snapshot, not a live counter;
+                  excludes offline players.
+                </small>
+                {enabled && window.electronAPI?.steamPlayerCount && (
+                  <button
+                    type="button"
+                    className="daily-spotlight-refresh"
+                    onClick={refreshPlayers}
+                    disabled={playersBusy}
+                  >
+                    <RefreshCw size={12} aria-hidden="true" className={playersBusy ? 'spin' : undefined} />
+                    {playersBusy ? 'Refreshing…' : 'Refresh'}
+                  </button>
+                )}
+              </div>
+            )}
+            <dl className="daily-spotlight-personal">
+              <div>
+                <dt>Your library playtime</dt>
+                <dd>{playtime}</dd>
+              </div>
+              <div>
+                <dt>Your platform</dt>
+                <dd>{text(game.platform) || 'Local'}</dd>
+              </div>
+              {libraryRank && libraryRank.minutes > 0 && (
+                <div>
+                  <dt>Library rank</dt>
+                  <dd>
+                    #{libraryRank.rank} of {libraryRank.total}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            {!appid && (
+              <p className="daily-spotlight-source">
+                Online facts currently cover Steam games. No sales or player counts are inferred for other platforms.
+              </p>
+            )}
+            <label className="daily-spotlight-toggle">
+              <input
+                type="checkbox"
+                checked={mysteryEnabled}
+                onChange={(event) => {
+                  saveMysteryEnabled(event.target.checked);
+                  setMysteryEnabled(getMysteryEnabled());
+                }}
+              />
+              Daily mystery reveal
+            </label>
+            <label className="daily-spotlight-toggle">
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(event) => {
+                  DailySpotlightService.setEnabled(event.target.checked);
+                  setEnabled(DailySpotlightService.isEnabled());
+                }}
+              />
+              Online Steam facts for Spotlight
+            </label>
+            <details className="daily-spotlight-options">
+              <summary>About these facts &amp; privacy</summary>
+              <p>
+                Off by default. When enabled, Spotlight sends only the featured game's public app ID to Steam. No
+                account, play history or full library is sent. Screenshots load from Steam's image servers while
+                enabled; image files may need a connection. Library artwork uses the same loading as your library.
+              </p>
+              <p>
+                Facts are saved locally and normally refreshed once a day. Missing facts are omitted. Release dates
+                refer to the Steam listing; player counts are not copies sold. Your library playtime includes imported
+                totals where available.
+              </p>
+            </details>
+            {appid && !enabled && (
+              <p className="daily-spotlight-source">
+                {store || showPlayers
+                  ? 'Online refresh is off. Saved facts remain available.'
+                  : 'Enable online Steam facts above for release details and player snapshots.'}
+              </p>
+            )}
+            <p className="daily-spotlight-status" role="status">
+              {status}
+            </p>
+          </div>
+        </>
+      )}
     </section>
   );
 }

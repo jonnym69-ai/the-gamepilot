@@ -1,0 +1,75 @@
+.game-memoir h3 {
+  margin: 0 0 10px;
+}
+
+.game-memoir-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.game-memoir-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  font-size: 0.8rem;
+}
+
+.game-memoir-stat svg {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.game-memoir-stat-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8b919f);
+}
+
+.game-memoir-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.84rem;
+  color: var(--text-secondary, #b8bcc8);
+}
+
+.game-memoir-lines li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.game-memoir-lines svg {
+  color: var(--accent-color, #ff8c1a);
+  flex-shrink: 0;
+}
+
+.game-memoir-title-earned strong {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.game-memoir-note {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent-color, #ff8c1a);
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.04));
+  border-radius: 0 8px 8px 0;
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--text-secondary, #b8bcc8);
+}
+
+.game-memoir-note cite {
+  font-style: normal;
+  color: var(--text-muted, #8b919f);
+}

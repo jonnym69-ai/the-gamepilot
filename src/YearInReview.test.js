@@ -6,6 +6,7 @@ import { YearInReviewService } from './services/YearInReviewService';
 import { getRecapSeasonYear } from './utils/recapSeason';
 
 jest.mock('html2canvas', () => ({ __esModule: true, default: jest.fn() }));
+jest.mock('./components/LazyImage', () => ({ alt }) => <img alt={alt} />);
 jest.mock('./services/YearInReviewService', () => ({
   YearInReviewService: {
     getAvailableYears: jest.fn(() => [2024]),
@@ -100,6 +101,41 @@ const baseSnapshot = {
     recorded: [],
   },
   journalNotes: [{ gameName: 'Stardew Valley', note: 'good farm day', dateLabel: 'Jan 10', playtimeMinutes: 60 }],
+  milestones: {
+    hasAny: true,
+    finished: [
+      {
+        name: 'Celeste',
+        status: 'completed',
+        at: new Date(2024, 5, 5, 20).getTime(),
+        coverUrl: 'https://img/celeste.jpg',
+        finishingSession: { endTime: new Date(2024, 5, 5, 20).getTime(), minutes: 180 },
+        playtimeMinutes: 1800,
+      },
+      {
+        name: 'Baldurs Gate 3',
+        status: 'beaten',
+        at: new Date(2024, 8, 12, 21).getTime(),
+        coverUrl: '',
+        finishingSession: null,
+        playtimeMinutes: 600,
+      },
+    ],
+    achievements: {
+      unlockedThisYear: 12,
+      gamesWithUnlocks: 3,
+      rarest: { name: 'Cloud Nine', gameName: 'Celeste', percent: 1.2, unlockedAt: new Date(2024, 5, 5).getTime() },
+      busiestDay: { date: '2024-06-05', count: 4 },
+    },
+    comebacks: [{ name: 'Rust', gapDays: 92, returnedAt: new Date(2024, 3, 3, 19).getTime(), coverUrl: '' }],
+    firsts: [{ name: 'Hades', firstPlayedAt: new Date(2024, 1, 2, 20).getTime(), coverUrl: '', playtimeMinutes: 300 }],
+    firstsCount: 5,
+    records: {
+      longestStreakDays: { days: 6, startDate: '2024-01-05', endDate: '2024-01-10' },
+      biggestMonth: { label: 'February', minutes: 1800 },
+      mostSessionsDay: { date: '2024-02-04', count: 3 },
+    },
+  },
 };
 
 const renderPage = () =>
@@ -117,11 +153,11 @@ beforeEach(() => {
   getRecapSeasonYear.mockReturnValue(null);
 });
 
-test('renders four tabs with Overview active by default', () => {
+test('renders five tabs with Overview active by default', () => {
   renderPage();
 
   const tabs = screen.getAllByRole('tab');
-  expect(tabs.map((tab) => tab.textContent)).toEqual(['Overview', 'Story', 'Eras', 'Numbers']);
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Overview', 'Story', 'Milestones', 'Eras', 'Numbers']);
   expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
 
   // Overview shows the uniform glance grid, the single identity card and the era strip.
@@ -160,6 +196,54 @@ test('Story tab renders the generated narrative paragraphs', () => {
   expect(panel.getByText('Your year started on 10 Jan with Stardew Valley.')).toBeInTheDocument();
   expect(panel.getByText('Verdict: RPG steady player.')).toBeInTheDocument();
   expect(panel.getByText(/good farm day/)).toBeInTheDocument(); // journal lives on the story tab
+});
+
+test('Milestones tab renders finished games, achievements, comebacks, firsts and records', () => {
+  renderPage();
+  selectTab('Milestones');
+
+  const panel = within(screen.getByRole('tabpanel'));
+  expect(panel.getByRole('heading', { name: /Milestones/ })).toBeInTheDocument();
+
+  // Finished grid: name, status chip and the finishing-session line.
+  expect(panel.getByText('Celeste')).toBeInTheDocument();
+  expect(panel.getByText('Completed')).toBeInTheDocument();
+  expect(panel.getByText('Beaten')).toBeInTheDocument();
+  expect(panel.getByText(/Rolled credits in a 3h session/)).toBeInTheDocument();
+
+  // Achievements stat row.
+  expect(panel.getByText('Unlocked this year')).toBeInTheDocument();
+  expect(panel.getByText('12')).toBeInTheDocument();
+  expect(panel.getByText('Cloud Nine')).toBeInTheDocument();
+  expect(panel.getByText(/1\.2% of players/)).toBeInTheDocument();
+
+  // Comebacks, firsts and records.
+  expect(panel.getByText(/Rust — back after 92 days/)).toBeInTheDocument();
+  expect(panel.getByText('5 new games this year')).toBeInTheDocument();
+  expect(panel.getByText('Hades')).toBeInTheDocument();
+  expect(panel.getByText('Longest streak')).toBeInTheDocument();
+  expect(panel.getByText('6 days')).toBeInTheDocument();
+  expect(panel.getByText('February')).toBeInTheDocument();
+});
+
+test('Milestones tab shows the finished empty state when nothing is marked', () => {
+  YearInReviewService.getYearSnapshot.mockReturnValue({
+    ...baseSnapshot,
+    milestones: {
+      finished: [],
+      achievements: null,
+      comebacks: [],
+      firsts: [],
+      firstsCount: 0,
+      records: {},
+      hasAny: false,
+    },
+  });
+  renderPage();
+  selectTab('Milestones');
+
+  const panel = within(screen.getByRole('tabpanel'));
+  expect(panel.getByText(/Nothing marked finished yet/)).toBeInTheDocument();
 });
 
 test('Eras tab renders stretches and the era timeline', () => {

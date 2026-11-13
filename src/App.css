@@ -169,7 +169,7 @@ body.hide-themed-page-titles .page-title::before {
 
 body.has-user-accent {
   --accent-primary: var(--user-accent) !important;
-  --accent-secondary: var(--user-accent-strong) !important;
+  --accent-secondary: var(--user-accent-secondary, var(--user-accent-strong)) !important;
   --accent-color: var(--user-accent) !important;
   --text-accent: var(--user-accent) !important;
   --link-primary: var(--user-accent) !important;
@@ -179,6 +179,15 @@ body.has-user-accent {
 }
 body.has-user-accent .storage-manager-progress-bar {
   background: linear-gradient(90deg, var(--user-accent), var(--user-accent-strong));
+}
+
+/* "Tinted headers" reach option — headings take the accent pair's secondary
+   (or primary when no secondary is set). Element-level selectors only; page
+   styles with class selectors still win their own specificity fight. */
+body.has-user-accent.tint-headers h1,
+body.has-user-accent.tint-headers h2,
+body.has-user-accent.tint-headers h3 {
+  color: var(--user-accent-secondary, var(--user-accent));
 }
 .page-loading-fallback {
   min-height: calc(100vh - var(--app-navbar-offset));

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Pencil, RotateCcw, Save, X } from 'lucide-react';
 import { GameCurationService } from '../services/GameCurationService';
 import { getAllGenres } from '../constants/GenresMoods';
+import SgdbArtworkBrowser from './SgdbArtworkBrowser';
 import './EditGameModal.css';
 
 const GENRE_SUGGESTIONS = getAllGenres();
@@ -91,6 +92,9 @@ export default function EditGameModal({ game, isOpen, onClose, onSave, onUpdateC
   const [hidden, setHidden] = useState(false);
   const [genreInput, setGenreInput] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [launchArgs, setLaunchArgs] = useState('');
+  const [altExes, setAltExes] = useState([]);
+  const [attachments, setAttachments] = useState([]);
 
   useEffect(() => {
     if (!isOpen || !game) return undefined;
@@ -104,6 +108,9 @@ export default function EditGameModal({ game, isOpen, onClose, onSave, onUpdateC
     setHidden(Boolean(game.isHidden));
     setGenreInput('');
     setTagInput('');
+    setLaunchArgs(game.launchArgs || '');
+    setAltExes(Array.isArray(game.altExecutables) ? game.altExecutables : []);
+    setAttachments(Array.isArray(game.attachments) ? game.attachments : []);
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') onClose?.();
     };
@@ -138,6 +145,19 @@ export default function EditGameModal({ game, isOpen, onClose, onSave, onUpdateC
     const nextPublisher = publisher.trim();
     if (nextPublisher && nextPublisher !== (scanned.publisher || '')) patch.publisher = nextPublisher;
     else if (prev.publisher) patch.publisher = '';
+
+    const nextArgs = launchArgs.trim();
+    if (nextArgs !== (game.launchArgs || '')) patch.launchArgs = nextArgs;
+
+    const cleanAlts = altExes.filter((e) => e.label?.trim() && e.path?.trim());
+    if (JSON.stringify(cleanAlts) !== JSON.stringify(game.altExecutables || [])) {
+      patch.altExecutables = cleanAlts;
+    }
+
+    const cleanAttachments = attachments.filter((e) => e.label?.trim() && e.url?.trim());
+    if (JSON.stringify(cleanAttachments) !== JSON.stringify(game.attachments || [])) {
+      patch.attachments = cleanAttachments;
+    }
 
     const hasContent = Object.values(patch).some(
       (value) => !(value == null || value === '' || (Array.isArray(value) && value.length === 0))
@@ -252,6 +272,43 @@ export default function EditGameModal({ game, isOpen, onClose, onSave, onUpdateC
               onChange={(e) => setCoverUrl(e.target.value)}
               placeholder="Paste image URL…"
             />
+            <SgdbArtworkBrowser gameName={game.name} onPick={(url) => setCoverUrl(url)} />
+          </div>
+
+          <div className="egm-section">
+            <label>Launch options</label>
+            <input
+              type="text"
+              value={launchArgs}
+              onChange={(e) => setLaunchArgs(e.target.value)}
+              placeholder="Arguments, e.g. -windowed -novid"
+            />
+            <span className="egm-hint">Passed to the game's executable for manually-added games.</span>
+            <EntryListEditor
+              entries={altExes}
+              setEntries={setAltExes}
+              pathKey="path"
+              pathPlaceholder="C:\…\other.exe"
+              entryLabel="action"
+              withArgs
+            />
+            <span className="egm-hint">
+              Alternative actions — e.g. a level editor or dedicated server — shown as extra launch buttons.
+            </span>
+          </div>
+
+          <div className="egm-section">
+            <label>Attachments</label>
+            <EntryListEditor
+              entries={attachments}
+              setEntries={setAttachments}
+              pathKey="url"
+              pathPlaceholder="https://… or file:///…"
+              entryLabel="link"
+            />
+            <span className="egm-hint">
+              Manuals, guides and links — https:// and file:/// targets open from the game.
+            </span>
           </div>
 
           <div className="egm-section egm-toggle">
@@ -280,6 +337,71 @@ export default function EditGameModal({ game, isOpen, onClose, onSave, onUpdateC
     document.body
   );
 }
+
+const EntryListEditor = ({ entries, setEntries, pathKey, pathPlaceholder, entryLabel, withArgs }) => {
+  const [draftLabel, setDraftLabel] = useState('');
+  const [draftPath, setDraftPath] = useState('');
+  const [draftArgs, setDraftArgs] = useState('');
+
+  const add = () => {
+    const label = draftLabel.trim();
+    const path = draftPath.trim();
+    if (!label || !path) return;
+    setEntries([...entries, { label, [pathKey]: path, ...(withArgs ? { args: draftArgs.trim() } : {}) }]);
+    setDraftLabel('');
+    setDraftPath('');
+    setDraftArgs('');
+  };
+
+  return (
+    <div className="egm-entry-list">
+      {entries.map((entry, i) => (
+        <div key={`${entry.label}-${i}`} className="egm-entry-row">
+          <span className="egm-entry-text">
+            {entry.label} — <code>{entry[pathKey]}</code>
+            {entry.args ? ` ${entry.args}` : ''}
+          </span>
+          <button
+            type="button"
+            className="egm-entry-remove"
+            aria-label={`Remove ${entry.label}`}
+            onClick={() => setEntries(entries.filter((_, j) => j !== i))}
+          >
+            <X size={13} />
+          </button>
+        </div>
+      ))}
+      <div className="egm-entry-add">
+        <input
+          type="text"
+          value={draftLabel}
+          onChange={(e) => setDraftLabel(e.target.value)}
+          placeholder={`${entryLabel} name`}
+          aria-label={`New ${entryLabel} name`}
+        />
+        <input
+          type="text"
+          value={draftPath}
+          onChange={(e) => setDraftPath(e.target.value)}
+          placeholder={pathPlaceholder}
+          aria-label={`New ${entryLabel} target`}
+        />
+        {withArgs && (
+          <input
+            type="text"
+            value={draftArgs}
+            onChange={(e) => setDraftArgs(e.target.value)}
+            placeholder="args (optional)"
+            aria-label={`New ${entryLabel} arguments`}
+          />
+        )}
+        <button type="button" className="egm-btn egm-btn-secondary" onClick={add}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const scannedGenresPlaceholder = (genres) =>
   Array.isArray(genres) && genres.length > 0 ? `Scanned: ${genres.join(', ')}` : '';

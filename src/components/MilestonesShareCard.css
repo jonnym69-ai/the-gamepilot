@@ -1,0 +1,178 @@
+.milestones-share-card {
+  width: 1080px;
+  height: 1080px;
+  position: relative;
+  background: #0d1117;
+  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.milestones-share-bg {
+  position: absolute;
+  inset: -40px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(32px) brightness(0.5);
+  transform: scale(1.05);
+}
+.milestones-share-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.16), transparent 60%),
+    linear-gradient(to bottom, rgba(13, 17, 23, 0.7) 0%, rgba(13, 17, 23, 0.95) 100%);
+}
+.milestones-share-inner {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 64px;
+  box-sizing: border-box;
+}
+.milestones-share-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.milestones-share-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(251, 191, 36, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  padding: 12px 24px;
+  border-radius: 40px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fcd34d;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.milestones-share-username-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 10px 22px;
+  border-radius: 40px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.milestones-share-spotlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: auto 0;
+}
+.milestones-share-year {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.75);
+  margin-bottom: 10px;
+}
+.milestones-share-number {
+  font-size: 7.5rem;
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+  color: #ffffff;
+  text-shadow: 0 6px 32px rgba(0, 0, 0, 0.6);
+}
+.milestones-share-number-label {
+  margin-top: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fcd34d;
+}
+.milestones-share-box {
+  background: rgba(20, 24, 33, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid #fbbf24;
+  border-radius: 16px;
+  padding: 22px 30px;
+  margin-bottom: 20px;
+}
+.milestones-share-box-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fcd34d;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+.milestones-share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.milestones-share-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.milestones-share-game {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.milestones-share-status {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.14);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  padding: 4px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.milestones-share-more {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.milestones-share-moments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.milestones-share-moment {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.milestones-share-moment svg {
+  color: #fcd34d;
+  flex-shrink: 0;
+}
+.milestones-share-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.milestones-share-footer .footer-tagline {
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 600;
+}

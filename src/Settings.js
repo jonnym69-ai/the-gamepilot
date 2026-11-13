@@ -36,6 +36,7 @@ import ReleaseTrackerService from './services/ReleaseTrackerService';
 import BuyRecommendationService from './services/BuyRecommendationService';
 import SteamWishlistService from './services/SteamWishlistService';
 import SteamFriendsService from './services/SteamFriendsService';
+import NotificationService from './services/NotificationService';
 import SteamProfileService from './services/SteamProfileService';
 import SteamOwnedGamesService from './services/SteamOwnedGamesService';
 import EpicAccountService from './services/EpicAccountService';
@@ -87,6 +88,8 @@ function Settings({
   const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
   const [steamProfileEnabled, setSteamProfileEnabled] = useState(() => SteamProfileService.isEnabled());
   const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
+  const [notifFriendsEnabled, setNotifFriendsEnabled] = useState(() => NotificationService.getPrefs().friends);
+  const [notifDealsEnabled, setNotifDealsEnabled] = useState(() => NotificationService.getPrefs().deals);
   const [steamOwnedGamesEnabled, setSteamOwnedGamesEnabled] = useState(() => SteamOwnedGamesService.isEnabled());
   const [epicLinked, setEpicLinked] = useState(() => EpicAccountService.isLinked());
   const [itchKey, setItchKey] = useState(() => ItchAccountService.getApiKey());
@@ -1186,6 +1189,7 @@ function Settings({
                             const next = e.target.checked;
                             setSteamFriendsEnabled(next);
                             SteamFriendsService.setEnabled(next);
+                            NotificationService.syncFriendsWatch(library);
                             success(`Steam friends presence ${next ? 'enabled' : 'disabled'}.`);
                           }}
                           id="steam-friends-enabled"
@@ -1223,6 +1227,52 @@ function Settings({
                           />
                         </div>
                       )}
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Friend playing alerts</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={notifFriendsEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setNotifFriendsEnabled(next);
+                            NotificationService.setPref('friends', next);
+                            NotificationService.syncFriendsWatch(library);
+                            success(
+                              `Friend playing alerts ${next ? 'on — GamePilot will toast when a friend starts a game you own' : 'off'}.`
+                            );
+                          }}
+                          id="notif-friends-enabled"
+                        />
+                        <label htmlFor="notif-friends-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Windows notifications when a Steam friend starts playing a game in your library — works while
+                        GamePilot sits in the tray. Requires Steam friends presence to be enabled.
+                      </p>
+                    </div>
+
+                    <div className="setting-item">
+                      <label>Wishlist deal alerts</label>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={notifDealsEnabled}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setNotifDealsEnabled(next);
+                            NotificationService.setPref('deals', next);
+                            success(`Wishlist deal alerts ${next ? 'on' : 'off'}.`);
+                          }}
+                          id="notif-deals-enabled"
+                        />
+                        <label htmlFor="notif-deals-enabled" className="toggle-slider"></label>
+                      </div>
+                      <p className="setting-description">
+                        Toast once when a wishlisted game hits your target price or a new historical low.
+                      </p>
                     </div>
 
                     <div className="setting-item">

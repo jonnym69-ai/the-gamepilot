@@ -137,6 +137,13 @@ class SteamAchievementsService {
     });
     return summary;
   }
+
+  /** Cache-only full result for one appid — never hits the network. */
+  static getCachedForGame(appid) {
+    const id = cleanAppId(appid);
+    if (!id) return null;
+    return readCachedResult(id, { touch: false });
+  }
 }
 
 export default SteamAchievementsService;

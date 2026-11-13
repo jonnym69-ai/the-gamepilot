@@ -8,7 +8,11 @@ import {
   Download,
   Hourglass,
   ListOrdered,
+  Medal,
   NotebookPen,
+  Play,
+  RotateCcw,
+  Sparkles,
   TrendingUp,
   Trophy,
 } from 'lucide-react';
@@ -18,10 +22,14 @@ import { getRecapSeasonYear } from './utils/recapSeason';
 import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import { LocalShareService } from './services/LocalShareService';
 import ProfileService from './services/ProfileService';
+import PersonaHistoryService from './services/PersonaHistoryService';
+import { getGameArtworkPlaceholder } from './services/GameArtworkService';
 import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
 import { YearInReviewStoryShareCard } from './components/YearInReviewStoryShareCard';
+import { MilestonesShareCard, buildMilestonesShareCaption } from './components/MilestonesShareCard';
 import { EraTimelineBar, eraTimelineColor } from './components/EraTimelineBar';
 import ShareMenu from './components/ShareMenu';
+import YearWrappedModal from './components/YearWrappedModal';
 import LazyImage from './components/LazyImage';
 import { formatPlaytime } from './utils/formatPlaytime';
 import './YearInReview.css';
@@ -31,9 +39,18 @@ const COLOR_FUNCTION_PATTERN = /\b(color\(|color-mix\()/i;
 const YEAR_REVIEW_TABS = Object.freeze([
   { id: 'overview', label: 'Overview' },
   { id: 'story', label: 'Story' },
+  { id: 'milestones', label: 'Milestones' },
   { id: 'eras', label: 'Eras' },
   { id: 'numbers', label: 'Numbers' },
 ]);
+
+const MILESTONE_STATUS_LABELS = Object.freeze({ beaten: 'Beaten', completed: 'Completed', '100%': '100%' });
+
+const formatMilestoneDate = (ms) => {
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
 
 const MONTH_TICK_LABELS = Object.freeze([
   'Jan',
@@ -143,24 +160,51 @@ function YearInReview({ library = [] }) {
   const exportRef = useRef(null);
   const shareCardRef = useRef(null);
   const storyShareCardRef = useRef(null);
+  const milestonesShareCardRef = useRef(null);
   const noticeTimeoutRef = useRef(null);
   const tabButtonRefs = useRef({});
   const [isCapturingStory, setIsCapturingStory] = useState(false);
+  const [isCapturingMilestones, setIsCapturingMilestones] = useState(false);
   const [isCapturingAll, setIsCapturingAll] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
+  // ?wrapped=1 lands straight in the slide presentation (Home prompt deep link).
+  const [wrappedOpen, setWrappedOpen] = useState(() => searchParams.get('wrapped') === '1');
+  const closeWrapped = useCallback(() => {
+    setWrappedOpen(false);
+    setSearchParams((previous) => {
+      const params = new URLSearchParams(previous);
+      params.delete('wrapped');
+      return params;
+    });
+  }, [setSearchParams]);
   const activeTab = YEAR_REVIEW_TABS.some((tab) => tab.id === requestedTab) ? requestedTab : 'overview';
+  const requestedYear = Number(searchParams.get('year'));
+  const requestedYearValid =
+    Number.isInteger(requestedYear) && requestedYear >= 1970 && requestedYear <= new Date().getFullYear() + 1;
   const availableYears = useMemo(() => YearInReviewService.getAvailableYears(library || []), [library]);
-  const [selectedYear, setSelectedYear] = useState(() => availableYears[0] || new Date().getFullYear());
+  const yearOptions = useMemo(() => {
+    if (requestedYearValid && !availableYears.includes(requestedYear)) {
+      return [...availableYears, requestedYear].sort((left, right) => right - left);
+    }
+    return availableYears;
+  }, [availableYears, requestedYear, requestedYearValid]);
+  const [selectedYear, setSelectedYear] = useState(() =>
+    requestedYearValid ? requestedYear : availableYears[0] || new Date().getFullYear()
+  );
   const [statusMessage, setStatusMessage] = useState('');
   const [isExportingImage, setIsExportingImage] = useState(false);
   const [isExportingShare, setIsExportingShare] = useState(false);
 
   useEffect(() => {
-    if (!availableYears.includes(selectedYear)) {
+    if (requestedYearValid) {
+      if (selectedYear !== requestedYear) {
+        setSelectedYear(requestedYear);
+      }
+    } else if (!availableYears.includes(selectedYear)) {
       setSelectedYear(availableYears[0] || new Date().getFullYear());
     }
-  }, [availableYears, selectedYear]);
+  }, [availableYears, selectedYear, requestedYear, requestedYearValid]);
 
   useEffect(
     () => () => {
@@ -183,6 +227,21 @@ function YearInReview({ library = [] }) {
     () => YearInReviewService.getYearSnapshot(library || getEmptyLibraryFallback(), selectedYear),
     [library, selectedYear]
   );
+
+  // Persist the year's persona into the yearbook — past years immediately,
+  // the current year only once it's settled (Dec 20 onward).
+  useEffect(() => {
+    if (!snapshot?.hasData || !snapshot?.persona?.identityLabel) return;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    if (snapshot.year > currentYear) return;
+    if (snapshot.year === currentYear && (now.getMonth() !== 11 || now.getDate() < 20)) return;
+    PersonaHistoryService.archiveYear(snapshot.year, {
+      id: snapshot.persona.identityId || snapshot.persona.identityLabel,
+      label: snapshot.persona.identityLabel,
+      themeId: snapshot.persona.identityThemeId || null,
+    });
+  }, [snapshot]);
 
   const pilotName = useMemo(() => ProfileService.getCurrentUsername() || 'Pilot', []);
 
@@ -483,6 +542,28 @@ function YearInReview({ library = [] }) {
     return ProfileService.appendSocialLinksToShareText(lines.join('\n'));
   }, [snapshot.story, selectedYear]);
 
+  const buildMilestonesCaption = useCallback(
+    () =>
+      ProfileService.appendSocialLinksToShareText(
+        buildMilestonesShareCaption(snapshot?.milestones, selectedYear, pilotName)
+      ),
+    [snapshot, selectedYear, pilotName]
+  );
+
+  const captureMilestonesCard = useCallback(async () => {
+    if (!milestonesShareCardRef.current) {
+      showStatus('Could not generate milestones card.');
+      return null;
+    }
+    const canvas = await html2canvas(milestonesShareCardRef.current, {
+      scale: 2,
+      backgroundColor: null,
+      useCORS: true,
+      logging: false,
+    });
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }, [showStatus]);
+
   const storyLeadText = useMemo(() => {
     const paragraphs = snapshot?.story?.paragraphs || [];
     return paragraphs
@@ -513,8 +594,19 @@ function YearInReview({ library = [] }) {
           <div className="year-review-controls">
             <label className="year-review-year-picker">
               <span>Review year</span>
-              <select value={selectedYear} onChange={(event) => setSelectedYear(Number(event.target.value))}>
-                {availableYears.map((year) => (
+              <select
+                value={selectedYear}
+                onChange={(event) => {
+                  const nextYear = Number(event.target.value);
+                  setSelectedYear(nextYear);
+                  setSearchParams((previous) => {
+                    const params = new URLSearchParams(previous);
+                    params.set('year', String(nextYear));
+                    return params;
+                  });
+                }}
+              >
+                {yearOptions.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>
@@ -522,6 +614,12 @@ function YearInReview({ library = [] }) {
               </select>
             </label>
             <div className="year-review-actions">
+              {snapshot?.hasData && (
+                <button type="button" className="year-review-watch" onClick={() => setWrappedOpen(true)}>
+                  <Play size={16} />
+                  <span>Watch the wrap</span>
+                </button>
+              )}
               <ShareMenu
                 onCopyText={handleCopyShareText}
                 onCopyImage={handleCopyShareCardImage}
@@ -842,6 +940,278 @@ function YearInReview({ library = [] }) {
                       </ul>
                     </article>
                   )}
+                </div>
+              )}
+
+              {(activeTab === 'milestones' || isCapturingAll) && (
+                <div
+                  role="tabpanel"
+                  id="year-review-panel-milestones"
+                  aria-labelledby="year-review-tab-milestones"
+                  className="year-review-tabpanel"
+                >
+                  <article className="year-review-panel year-review-milestones-panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h2>
+                          <Trophy size={20} /> Milestones
+                        </h2>
+                        <p>What you finished, found and came back to in {selectedYear}.</p>
+                      </div>
+                      {snapshot.milestones?.hasAny && (
+                        <ShareMenu
+                          triggerLabel="Share Milestones"
+                          imageAvailable
+                          disabled={isCapturingMilestones}
+                          onCopyText={async () => LocalShareService.copyTextToClipboard(buildMilestonesCaption())}
+                          onCopyImage={async () => {
+                            setIsCapturingMilestones(true);
+                            try {
+                              const blob = await captureMilestonesCard();
+                              if (!blob) return false;
+                              const copied = await LocalShareService.copyImageToClipboard(blob);
+                              showStatus(copied ? 'Milestones card copied.' : 'Could not copy milestones card.');
+                              return copied;
+                            } catch (err) {
+                              console.error(err);
+                              showStatus('Could not generate milestones card.');
+                              return false;
+                            } finally {
+                              setIsCapturingMilestones(false);
+                            }
+                          }}
+                          onSaveImage={async () => {
+                            setIsCapturingMilestones(true);
+                            try {
+                              const blob = await captureMilestonesCard();
+                              if (!blob) return;
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = `gamepilot-milestones-${selectedYear}.png`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              URL.revokeObjectURL(url);
+                              showStatus('Milestones card saved.');
+                            } catch (err) {
+                              console.error(err);
+                              showStatus('Could not generate milestones card.');
+                            } finally {
+                              setIsCapturingMilestones(false);
+                            }
+                          }}
+                          onShareText={async (channel) =>
+                            LocalShareService.openShareIntent(channel, buildMilestonesCaption())
+                          }
+                          onDownloadText={() => {
+                            LocalShareService.downloadShareText(
+                              buildMilestonesCaption(),
+                              `milestones-${selectedYear}.txt`
+                            );
+                            showStatus('Milestones caption downloaded.');
+                          }}
+                          buildCaption={buildMilestonesCaption}
+                          onNativeShare={async () => {
+                            setIsCapturingMilestones(true);
+                            try {
+                              const blob = await captureMilestonesCard();
+                              if (!blob) return;
+                              const file = new File([blob], `gamepilot-milestones-${selectedYear}.png`, {
+                                type: 'image/png',
+                              });
+                              const result = await LocalShareService.shareWithNativeShare({
+                                title: `My ${selectedYear} Gaming Milestones`,
+                                text: buildMilestonesCaption(),
+                                files: [file],
+                              });
+                              showStatus(
+                                result.success ? 'Native share opened.' : result.message || 'Could not share.'
+                              );
+                            } catch (err) {
+                              console.error(err);
+                              showStatus('Could not generate milestones card.');
+                            } finally {
+                              setIsCapturingMilestones(false);
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    <section className="year-review-milestone-section" aria-label="Finished games">
+                      <h3 className="year-review-milestone-heading">Finished</h3>
+                      {snapshot.milestones?.finished?.length > 0 ? (
+                        <div className="year-review-finished-grid">
+                          {snapshot.milestones.finished.map((game) => (
+                            <article key={game.name} className="year-review-finished-card">
+                              <div className="year-review-finished-cover">
+                                <LazyImage
+                                  src={game.coverUrl}
+                                  placeholder={getGameArtworkPlaceholder({
+                                    game: { name: game.name },
+                                    surface: 'portrait',
+                                  })}
+                                  gameName={game.name}
+                                  alt={`${game.name} cover`}
+                                />
+                                <span
+                                  className={`year-review-status-chip status-${String(game.status).replace('%', 'pct')}`}
+                                >
+                                  {MILESTONE_STATUS_LABELS[game.status] || game.status}
+                                </span>
+                              </div>
+                              <div className="year-review-finished-copy">
+                                <strong>{game.name}</strong>
+                                <span>{formatMilestoneDate(game.at)}</span>
+                                {game.finishingSession && (
+                                  <small>
+                                    Rolled credits in a {formatPlaytime(game.finishingSession.minutes)} session on{' '}
+                                    {formatMilestoneDate(game.finishingSession.endTime)}
+                                  </small>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="year-review-milestone-empty">
+                          Nothing marked finished yet — confirm beaten games from the Achievement Sweep on Home →
+                          Identity.
+                        </p>
+                      )}
+                    </section>
+
+                    {snapshot.milestones?.achievements && (
+                      <section className="year-review-milestone-section" aria-label="Achievement milestones">
+                        <h3 className="year-review-milestone-heading">
+                          <Medal size={16} /> Achievements
+                        </h3>
+                        <div className="year-review-milestone-stats">
+                          <div className="year-review-milestone-stat">
+                            <span>Unlocked this year</span>
+                            <strong>{snapshot.milestones.achievements.unlockedThisYear}</strong>
+                          </div>
+                          <div className="year-review-milestone-stat">
+                            <span>Games with unlocks</span>
+                            <strong>{snapshot.milestones.achievements.gamesWithUnlocks}</strong>
+                          </div>
+                          {snapshot.milestones.achievements.rarest && (
+                            <div className="year-review-milestone-stat">
+                              <span>Rarest unlock</span>
+                              <strong>{snapshot.milestones.achievements.rarest.name}</strong>
+                              <p>
+                                {snapshot.milestones.achievements.rarest.percent}% of players ·{' '}
+                                {snapshot.milestones.achievements.rarest.gameName}
+                              </p>
+                            </div>
+                          )}
+                          {snapshot.milestones.achievements.busiestDay && (
+                            <div className="year-review-milestone-stat">
+                              <span>Biggest unlock day</span>
+                              <strong>{snapshot.milestones.achievements.busiestDay.count}</strong>
+                              <p>{formatMilestoneDate(snapshot.milestones.achievements.busiestDay.date)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    )}
+
+                    {snapshot.milestones?.comebacks?.length > 0 && (
+                      <section className="year-review-milestone-section" aria-label="Comeback games">
+                        <h3 className="year-review-milestone-heading">
+                          <RotateCcw size={16} /> Comebacks
+                        </h3>
+                        <ul className="year-review-comeback-list">
+                          {snapshot.milestones.comebacks.map((entry) => (
+                            <li key={entry.name}>
+                              <LazyImage
+                                className="year-review-comeback-cover"
+                                src={entry.coverUrl}
+                                placeholder={getGameArtworkPlaceholder({
+                                  game: { name: entry.name },
+                                  surface: 'portrait',
+                                })}
+                                gameName={entry.name}
+                                alt=""
+                              />
+                              <span>
+                                {entry.name} — back after {entry.gapDays} days ({formatMilestoneDate(entry.returnedAt)})
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+
+                    {snapshot.milestones?.firsts?.length > 0 && (
+                      <section className="year-review-milestone-section" aria-label="First-time games">
+                        <h3 className="year-review-milestone-heading">
+                          <Sparkles size={16} /> Firsts
+                          <span className="year-review-milestone-sub">
+                            {snapshot.milestones.firstsCount} new games this year
+                          </span>
+                        </h3>
+                        <div className="year-review-firsts-row">
+                          {snapshot.milestones.firsts.map((game) => (
+                            <div key={game.name} className="year-review-first-tile">
+                              <LazyImage
+                                className="year-review-first-cover"
+                                src={game.coverUrl}
+                                placeholder={getGameArtworkPlaceholder({
+                                  game: { name: game.name },
+                                  surface: 'portrait',
+                                })}
+                                gameName={game.name}
+                                alt={`${game.name} cover`}
+                              />
+                              <strong>{game.name}</strong>
+                              <span>{formatPlaytime(game.playtimeMinutes)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {(snapshot.milestones?.records?.longestStreakDays ||
+                      snapshot.milestones?.records?.biggestMonth ||
+                      snapshot.milestones?.records?.mostSessionsDay) && (
+                      <section className="year-review-milestone-section" aria-label="Yearly records">
+                        <h3 className="year-review-milestone-heading">
+                          <Calendar size={16} /> Records
+                        </h3>
+                        <div className="year-review-milestone-stats">
+                          {snapshot.milestones.records.longestStreakDays && (
+                            <div className="year-review-milestone-stat">
+                              <span>Longest streak</span>
+                              <strong>
+                                {snapshot.milestones.records.longestStreakDays.days} day
+                                {snapshot.milestones.records.longestStreakDays.days === 1 ? '' : 's'}
+                              </strong>
+                              <p>
+                                {formatMilestoneDate(snapshot.milestones.records.longestStreakDays.startDate)} –{' '}
+                                {formatMilestoneDate(snapshot.milestones.records.longestStreakDays.endDate)}
+                              </p>
+                            </div>
+                          )}
+                          {snapshot.milestones.records.biggestMonth && (
+                            <div className="year-review-milestone-stat">
+                              <span>Biggest month</span>
+                              <strong>{snapshot.milestones.records.biggestMonth.label}</strong>
+                              <p>{formatPlaytime(snapshot.milestones.records.biggestMonth.minutes)}</p>
+                            </div>
+                          )}
+                          {snapshot.milestones.records.mostSessionsDay && (
+                            <div className="year-review-milestone-stat">
+                              <span>Most sessions in a day</span>
+                              <strong>{snapshot.milestones.records.mostSessionsDay.count}</strong>
+                              <p>{formatMilestoneDate(snapshot.milestones.records.mostSessionsDay.date)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    )}
+                  </article>
                 </div>
               )}
 
@@ -1216,7 +1586,30 @@ function YearInReview({ library = [] }) {
             )}
           </div>
         </div>
+
+        {/* Offscreen milestones share card — captured when sharing the milestones tab. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            opacity: 0,
+            pointerEvents: 'none',
+            zIndex: -1,
+          }}
+        >
+          <div ref={milestonesShareCardRef}>
+            {snapshot?.milestones?.hasAny && (
+              <MilestonesShareCard milestones={snapshot.milestones} year={selectedYear} username={pilotName} />
+            )}
+          </div>
+        </div>
       </div>
+
+      {wrappedOpen && snapshot?.hasData && (
+        <YearWrappedModal snapshot={snapshot} year={selectedYear} username={pilotName} onClose={closeWrapped} />
+      )}
     </div>
   );
 }

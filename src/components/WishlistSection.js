@@ -9,6 +9,67 @@ import ReleaseTrackerService from '../services/ReleaseTrackerService';
 import { getFamiliarityBias, setFamiliarityBias } from '../services/RecommendationWeights';
 import { formatPrice, getCurrentCurrency, getCurrencySymbol, convertToUSD } from '../CurrencyConverter';
 
+// Mini price-history chart built from our own daily price checks, anchored by
+// CheapShark's all-time-low when we have a recorded date for it. No chart lib —
+// a plain SVG polyline keeps this dependency-free.
+function PriceSparkline({ item, currency }) {
+  const history = Array.isArray(item.priceHistory)
+    ? item.priceHistory.filter((p) => p && Number.isFinite(p.p) && Number.isFinite(p.t))
+    : [];
+  const low = item.historicalLow?.price;
+  const lowRecorded = item.historicalLow?.recorded;
+  const points = [...history];
+  if (
+    typeof low === 'number' &&
+    Number.isFinite(low) &&
+    typeof lowRecorded === 'number' &&
+    (!history.length || lowRecorded < history[0].t)
+  ) {
+    points.unshift({ t: lowRecorded, p: low });
+  }
+  if (points.length === 0) {
+    return <p className="wishlist-spark-empty">Price history builds up with each daily check.</p>;
+  }
+  const W = 200;
+  const H = 46;
+  const PAD = 6;
+  const prices = points.map((p) => p.p);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const span = Math.max(max - min, 0.01);
+  const t0 = points[0].t;
+  const t1 = points[points.length - 1].t;
+  const x = (t) => (t1 === t0 ? W / 2 : PAD + ((t - t0) / (t1 - t0)) * (W - PAD * 2));
+  const y = (p) => H - PAD - ((p - min) / span) * (H - PAD * 2);
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.t).toFixed(1)},${y(p.p).toFixed(1)}`).join(' ');
+  return (
+    <div className="wishlist-spark">
+      <svg viewBox={`0 0 ${W} ${H}`} className="wishlist-spark-svg" role="img" aria-label="Price history">
+        {typeof low === 'number' && Number.isFinite(low) && low >= min && low <= max && (
+          <line x1={PAD} x2={W - PAD} y1={y(low)} y2={y(low)} className="wishlist-spark-lowline" />
+        )}
+        {points.length > 1 && <path d={path} className="wishlist-spark-line" />}
+        {points.map((p, i) => (
+          <circle
+            key={`${p.t}-${i}`}
+            cx={x(p.t)}
+            cy={y(p.p)}
+            r={i === points.length - 1 ? 3 : 1.8}
+            className={i === points.length - 1 ? 'wishlist-spark-dot-last' : 'wishlist-spark-dot'}
+          />
+        ))}
+      </svg>
+      <div className="wishlist-spark-caption">
+        <span>Low {formatPrice(min, currency)}</span>
+        <span>
+          {points.length} check{points.length !== 1 ? 's' : ''}
+        </span>
+        <span>Now {formatPrice(prices[prices.length - 1], currency)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function WishlistSection({ library = [], platformIcons, onLaunchGame }) {
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -26,6 +87,11 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
   const [healedArt, setHealedArt] = React.useState({});
   const healAttemptedRef = React.useRef(new Set());
   const [releaseSummary, setReleaseSummary] = React.useState(() => ReleaseTrackerService.getSummary());
+  const [sortMode, setSortMode] = React.useState('ranked');
+  const [onSaleOnly, setOnSaleOnly] = React.useState(false);
+  const [expandedKey, setExpandedKey] = React.useState(null);
+  const [reviews, setReviews] = React.useState({});
+  const [dragKey, setDragKey] = React.useState(null);
 
   // Genre + Price suggestions. Mood is intentionally excluded — it can't be
   // known for a game you don't own yet.
@@ -116,6 +182,49 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
       }
       if (!cancelled && Object.keys(healed).length > 0) {
         setHealedArt((current) => ({ ...current, ...healed }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
+
+  // Steam review scores on cards — Steam wishlist parity. Results persist on
+  // the wishlist entry (`item.review`) for a week so the bridge isn't hit on
+  // every visit; sequential, capped per render, and best-effort.
+  React.useEffect(() => {
+    const api = window.electronAPI?.steamAppReviews;
+    if (typeof api !== 'function' || items.length === 0) return undefined;
+    const WEEK = 7 * 24 * 60 * 60 * 1000;
+    const targets = items
+      .filter((item) => {
+        const id = item.steamAppID || (item.appid && /^\d+$/.test(String(item.appid)) ? item.appid : null);
+        if (!id) return false;
+        const r = item.review;
+        return !(r && r.fetchedAt && Date.now() - r.fetchedAt < WEEK);
+      })
+      .slice(0, 12);
+    if (targets.length === 0) return undefined;
+    let cancelled = false;
+    (async () => {
+      for (const item of targets) {
+        if (cancelled) return;
+        const id = String(item.steamAppID || item.appid);
+        try {
+          const res = await api(id);
+          const s = res?.summary;
+          if (res?.ok && s && Number(s.total_reviews) > 0) {
+            const review = {
+              desc: String(s.review_score_desc || 'Reviewed'),
+              pct: Math.round((Number(s.total_positive) / Number(s.total_reviews)) * 100),
+              fetchedAt: Date.now(),
+            };
+            if (!cancelled) setReviews((m) => ({ ...m, [item.key]: review }));
+            WishlistService.backfillGame(item.name, { review });
+          }
+        } catch {
+          /* review fetch is best-effort */
+        }
       }
     })();
     return () => {
@@ -262,6 +371,61 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
     return release && !release.released;
   });
 
+  const isOnSale = (item) =>
+    Boolean(
+      item.currentPrice &&
+        (Number(item.currentPrice.cut) > 0 ||
+          (item.historicalLow && item.currentPrice.price <= item.historicalLow.price))
+    );
+
+  // Steam-parity sorting + the GG.deals-style "wishlist cost" readout. A plain
+  // derivation (not useMemo) because the `!enabled` early return happens first.
+  const displayItems = (() => {
+    const list = onSaleOnly ? items.filter(isOnSale) : items;
+    const arr = [...list];
+    const priceOf = (i) =>
+      typeof i.currentPrice?.price === 'number' && Number.isFinite(i.currentPrice.price)
+        ? i.currentPrice.price
+        : Infinity;
+    switch (sortMode) {
+      case 'price':
+        arr.sort((a, b) => priceOf(a) - priceOf(b));
+        break;
+      case 'discount':
+        arr.sort((a, b) => (Number(b.currentPrice?.cut) || 0) - (Number(a.currentPrice?.cut) || 0));
+        break;
+      case 'added':
+        arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+        break;
+      case 'name':
+        arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        break;
+      case 'release':
+        arr.sort((a, b) => {
+          const ra = releaseForItem(a)?.releaseAt;
+          const rb = releaseForItem(b)?.releaseAt;
+          return (ra ? new Date(ra).getTime() : Infinity) - (rb ? new Date(rb).getTime() : Infinity);
+        });
+        break;
+      default:
+        break; // ranked = stored order, draggable
+    }
+    return arr;
+  })();
+
+  const totals = items.reduce(
+    (acc, item) => {
+      const p = item.currentPrice?.price;
+      if (typeof p === 'number' && Number.isFinite(p)) {
+        acc.sum += p;
+        acc.priced += 1;
+        acc.save += Math.max(0, (Number(item.currentPrice.retail) || p) - p);
+      }
+      return acc;
+    },
+    { sum: 0, save: 0, priced: 0 }
+  );
+
   const renderWishlistCard = (item) => {
     const game = item.libraryGame;
     const placeholder = getGameArtworkPlaceholder({ game, surface: 'library_card' });
@@ -270,13 +434,48 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
     const hasDrop = currentPrice && item.threshold && currentPrice.price <= item.threshold;
     const discount = currentPrice ? Math.round(Number(currentPrice.cut) || 0) : 0;
     const release = releaseForItem(item);
-    const isHistoricLow =
-      currentPrice &&
-      item.historicalLow &&
-      Number.isFinite(Number(item.historicalLow.price)) &&
-      Number(currentPrice.price) <= Number(item.historicalLow.price);
+    const verdict = WishlistService.getVerdict(item);
+    const review = reviews[item.key] || item.review;
+    const expanded = expandedKey === item.key;
+    const deals = Array.isArray(item.deals) ? item.deals : [];
+    const draggable = sortMode === 'ranked' && !onSaleOnly;
     return (
-      <div key={item.name} className={`wishlist-card ${hasDrop ? 'wishlist-card--drop' : ''}`}>
+      <div
+        key={item.name}
+        className={`wishlist-card ${hasDrop ? 'wishlist-card--drop' : ''} ${
+          dragKey === item.key ? 'wishlist-card--dragging' : ''
+        }`}
+        draggable={draggable}
+        onDragStart={
+          draggable
+            ? (e) => {
+                setDragKey(item.key);
+                e.dataTransfer.effectAllowed = 'move';
+              }
+            : undefined
+        }
+        onDragEnd={() => setDragKey(null)}
+        onDragOver={
+          draggable
+            ? (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+              }
+            : undefined
+        }
+        onDrop={
+          draggable
+            ? (e) => {
+                e.preventDefault();
+                if (dragKey && dragKey !== item.key) {
+                  WishlistService.moveItem(dragKey, item.name);
+                  loadItems();
+                }
+                setDragKey(null);
+              }
+            : undefined
+        }
+      >
         <div className="wishlist-card-art">
           {artwork ? (
             <LazyImage
@@ -298,6 +497,14 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
             {game?.platform && platformIcons?.[game.platform] && (
               <span className="wishlist-card-platform">{platformIcons[game.platform]}</span>
             )}
+            {review && (
+              <span
+                className={`wishlist-review-chip ${review.pct >= 70 ? 'wishlist-review-chip--good' : review.pct >= 40 ? 'wishlist-review-chip--mixed' : 'wishlist-review-chip--poor'}`}
+                title={`${review.pct}% of ${'Steam'} reviews are positive`}
+              >
+                {review.desc} · {review.pct}%
+              </span>
+            )}
           </div>
           {currentPrice ? (
             <div className="wishlist-card-price">
@@ -313,8 +520,13 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           ) : (
             <span className="wishlist-price-unavailable">Price unavailable</span>
           )}
-          {hasDrop && <span className="wishlist-drop-badge">Price drop!</span>}
-          {isHistoricLow && <span className="wishlist-historic-badge">Historic low</span>}
+          {verdict && (
+            <span className={`wishlist-verdict wishlist-verdict--${verdict.kind}`}>
+              {verdict.kind === 'wait' && verdict.reference != null
+                ? `${verdict.label} (${formatPrice(verdict.reference, currency)})`
+                : verdict.label}
+            </span>
+          )}
           {release?.released && <span className="wishlist-release-chip wishlist-release-chip--out-now">Out now</span>}
           {release && !release.released && (
             <span className="wishlist-release-chip">{ReleaseTrackerService.formatCountdown(release)}</span>
@@ -347,10 +559,62 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
                 View deal
               </a>
             )}
+            <button
+              className="wishlist-details-btn"
+              onClick={() => setExpandedKey(expanded ? null : item.key)}
+              title="Price history and all store offers"
+            >
+              {expanded ? 'Hide details' : deals.length > 1 ? `Details · ${deals.length} stores` : 'Details'}
+            </button>
             <button className="wishlist-remove-btn" onClick={() => handleRemove(item.name)}>
               Remove
             </button>
           </div>
+          {expanded && (
+            <div className="wishlist-card-details">
+              <PriceSparkline item={item} currency={currency} />
+              {deals.length > 0 && (
+                <div className="wishlist-stores">
+                  <div className="wishlist-stores-title">
+                    Best offers across {deals.length} store{deals.length !== 1 ? 's' : ''}
+                  </div>
+                  {deals.map((d, i) => (
+                    <a
+                      key={`${d.store}-${i}`}
+                      className="wishlist-store-row"
+                      href={
+                        d.dealID
+                          ? `https://www.cheapshark.com/redirect?dealID=${encodeURIComponent(d.dealID)}`
+                          : undefined
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span className="wishlist-store-name">{d.store}</span>
+                      <span className="wishlist-store-cut">{d.cut > 0 ? `-${Math.round(d.cut)}%` : ''}</span>
+                      <span className="wishlist-store-price">
+                        {d.price === 0 ? 'Free' : formatPrice(d.price, currency)}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
+              <label className="wishlist-notes-label">
+                Notes
+                <textarea
+                  className="wishlist-notes-input"
+                  defaultValue={item.notes || ''}
+                  placeholder="Why this one? Wait for a bigger cut?"
+                  rows={2}
+                  onBlur={(e) => {
+                    if (e.target.value !== (item.notes || '')) {
+                      WishlistService.setNotes(item.name, e.target.value);
+                    }
+                  }}
+                />
+              </label>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -372,6 +636,12 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           <span className="wishlist-count">
             {items.length} game{items.length !== 1 ? 's' : ''}
           </span>
+          {totals.priced > 0 && (
+            <span className="wishlist-totals" title="What your wishlist would cost at current best prices">
+              {formatPrice(totals.sum, currency)} total
+              {totals.save > 0 && ` · save ${formatPrice(totals.save, currency)}`}
+            </span>
+          )}
           {backgroundChecking && <span className="wishlist-checking">Checking prices...</span>}
         </div>
         <div className="wishlist-header-right">
@@ -392,6 +662,31 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           </button>
         </div>
       </div>
+
+      {items.length > 0 && (
+        <div className="wishlist-toolbar">
+          <select
+            className="wishlist-sort-select"
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value)}
+            title="Sort the wishlist"
+          >
+            <option value="ranked">Your ranking</option>
+            <option value="price">Price: low → high</option>
+            <option value="discount">Biggest discount</option>
+            <option value="added">Recently added</option>
+            <option value="name">Name A–Z</option>
+            <option value="release">Release date</option>
+          </select>
+          <label className="wishlist-onsale-toggle">
+            <input type="checkbox" checked={onSaleOnly} onChange={(e) => setOnSaleOnly(e.target.checked)} />
+            On sale only
+          </label>
+          {sortMode === 'ranked' && !onSaleOnly && items.length > 1 && (
+            <span className="wishlist-drag-hint">drag cards to rank</span>
+          )}
+        </div>
+      )}
 
       {alertCount > 0 && (
         <div className="wishlist-alert-strip">
@@ -616,7 +911,7 @@ export default function WishlistSection({ library = [], platformIcons, onLaunchG
           />
         </div>
       ) : (
-        <div className="wishlist-grid">{items.map(renderWishlistCard)}</div>
+        <div className="wishlist-grid">{displayItems.map(renderWishlistCard)}</div>
       )}
     </div>
   );

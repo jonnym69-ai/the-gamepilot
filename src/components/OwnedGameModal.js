@@ -6,6 +6,8 @@ import { getSteamStoreDetails } from '../services/SteamStoreService';
 import { formatPlaytime } from '../utils/formatPlaytime';
 import stripHtml from '../utils/stripHtml';
 import YouTubeVideosPanel from './YouTubeVideosPanel';
+import SteamSnapshot from './SteamSnapshot';
+import GameTrailersRow from './GameTrailersRow';
 import RecommendationPreferenceControl from './RecommendationPreferenceControl';
 import './OwnedGameModal.css';
 
@@ -121,6 +123,7 @@ export default function OwnedGameModal({ game, onClose, onInstall, installing = 
       developers: Array.isArray(steam?.developers) ? steam.developers.filter(Boolean) : [],
       releaseDate: steam?.release_date?.date || gog?.releaseDate || null,
       metacritic: steam?.metacritic?.score || null,
+      trailers: Array.isArray(steam?.movies) ? steam.movies : [],
       storeUrl: STORE_URLS[game.source]?.(game) || gog?.storeUrl || null,
     };
   }, [game, details]);
@@ -226,6 +229,10 @@ export default function OwnedGameModal({ game, onClose, onInstall, installing = 
               )}
             </div>
           )}
+
+          <GameTrailersRow movies={view.trailers} label={`${view.title} trailers`} />
+
+          <SteamSnapshot game={game} />
 
           <YouTubeVideosPanel key={game.name || game.title} game={game} />
           <RecommendationPreferenceControl game={game} />

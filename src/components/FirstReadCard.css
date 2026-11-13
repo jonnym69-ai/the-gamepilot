@@ -1,0 +1,122 @@
+.first-read {
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.first-read-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.first-read-head svg {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.first-read-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-primary, #e8eaf0);
+}
+
+.first-read-tag {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-muted, #8b919f);
+  font-style: italic;
+}
+
+.first-read-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.first-read-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 90px;
+  max-width: 180px;
+}
+
+.first-read-stat strong {
+  font-size: 0.92rem;
+  color: var(--text-primary, #e8eaf0);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.first-read-stat span {
+  font-size: 0.74rem;
+  color: var(--text-muted, #8b919f);
+}
+
+.first-read-top-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #8b919f);
+  margin-bottom: 6px;
+}
+
+.first-read-top-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8rem;
+  color: var(--text-primary, #e8eaf0);
+}
+
+.first-read-top-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.first-read-top-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.first-read-top-hours {
+  margin-left: auto;
+  color: var(--accent-color, #ff8c1a);
+  font-weight: 600;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.first-read-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.first-read-genre {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color, #ff8c1a) 14%, transparent);
+  color: var(--accent-color, #ff8c1a);
+}
+
+.first-read-foot {
+  margin: 12px 0 0;
+  font-size: 0.76rem;
+  color: var(--text-muted, #8b919f);
+  border-top: 1px dashed var(--border-color, rgba(255, 255, 255, 0.1));
+  padding-top: 10px;
+}

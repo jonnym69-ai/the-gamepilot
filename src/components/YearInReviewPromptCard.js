@@ -30,7 +30,8 @@ export default function YearInReviewPromptCard({ library = [], now }) {
           null
         ) || null;
       const topGame = snapshot.topGames?.[0]?.name || null;
-      return { year, summary: snapshot.summary, topEra, topGame, stretches };
+      const finishedCount = Array.isArray(snapshot.milestones?.finished) ? snapshot.milestones.finished.length : 0;
+      return { year, summary: snapshot.summary, topEra, topGame, stretches, finishedCount };
     } catch (error) {
       console.warn('YearInReviewPromptCard: snapshot failed', error);
       return null;
@@ -44,13 +45,15 @@ export default function YearInReviewPromptCard({ library = [], now }) {
     setDismissed(String(prompt.year));
   };
 
-  const { year, summary, topEra, topGame, stretches } = prompt;
+  const { year, summary, topEra, topGame, stretches, finishedCount } = prompt;
   const headline = `${summary.playtimeHours}h across ${summary.uniqueGames} game${summary.uniqueGames === 1 ? '' : 's'}`;
+  const finishedLine =
+    finishedCount > 0 ? ` You finished ${finishedCount} game${finishedCount === 1 ? '' : 's'} this year.` : '';
   const teaser = topEra
-    ? `${headline} — and it was the year of ${eraPhrase(topEra.name)}.`
+    ? `${headline} — and it was the year of ${eraPhrase(topEra.name)}.${finishedLine}`
     : topGame
-      ? `${headline} — ${topGame} led the way.`
-      : `${headline}, all tracked locally.`;
+      ? `${headline} — ${topGame} led the way.${finishedLine}`
+      : `${headline}, all tracked locally.${finishedLine}`;
 
   return (
     <aside className="yir-prompt-card" aria-label="Year in review">
@@ -70,8 +73,8 @@ export default function YearInReviewPromptCard({ library = [], now }) {
           <EraTimelineBar stretches={stretches} compact />
         </div>
       )}
-      <Link to="/year-in-review" className="yir-prompt-cta">
-        See your year <ArrowRight size={15} aria-hidden="true" />
+      <Link to={`/year-in-review?year=${year}&tab=milestones&wrapped=1`} className="yir-prompt-cta">
+        Watch your year <ArrowRight size={15} aria-hidden="true" />
       </Link>
     </aside>
   );

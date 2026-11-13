@@ -9,6 +9,7 @@ const {
   KNOWN_LAUNCHER_PROCESS_NAMES,
   getProcessList,
   buildMonitorMatcher,
+  normalizeMatcherValue,
   activeGameMonitors,
 } = require('./processMonitor');
 
@@ -44,6 +45,8 @@ const buildWatchEntry = (game = {}) => {
     resolvedExecutablePath: matcher.resolvedExecutablePath,
     installDir: matcher.installDir,
     executableName: matcher.executableName,
+    romPath: matcher.romPath,
+    romName: matcher.romName,
   };
 };
 
@@ -68,6 +71,17 @@ const processMatchesWatchEntry = (processInfo, entry) => {
 
   if (KNOWN_LAUNCHER_PROCESS_NAMES.has(processName)) {
     return false;
+  }
+
+  // Emulated entries all share the emulator exe — only a process whose
+  // command line names this specific ROM counts. Without this gate, one
+  // running emulator logs a session for every game on the platform.
+  if (entry.romPath || String(entry.platform || '').toLowerCase() === 'emulated') {
+    if (!entry.romPath) return false;
+    return Boolean(
+      commandLine.includes(entry.romPath) ||
+        (entry.romName && normalizeMatcherValue(commandLine).includes(entry.romName))
+    );
   }
 
   if (entry.resolvedExecutablePath && processPath && processPath === entry.resolvedExecutablePath) {
@@ -237,5 +251,7 @@ function registerIpcHandlers(ipcMain, deps) {
 module.exports = {
   registerIpcHandlers,
   stopPassiveWatchInterval,
+  buildWatchEntry,
+  processMatchesWatchEntry,
   NON_GAME_WATCH_TITLES,
 };

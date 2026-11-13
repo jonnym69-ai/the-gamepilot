@@ -101,10 +101,11 @@ export class GameLaunchCoordinatorService {
     return { startedNewSession };
   }
 
-  static monitorLaunchedGame(launchedGame, onEndSession) {
+  static monitorLaunchedGame(launchedGame, onEndSession, { pid = null } = {}) {
     DiscordPresenceService.startGamePresence(launchedGame);
     GameProcessMonitor.stopMonitoringByGame(launchedGame.name);
     GameProcessMonitor.startMonitoring(launchedGame, {
+      pid,
       onGameClosed: (closedGame) => {
         DiscordPresenceService.stopGamePresence();
         DiscordPresenceService.setIdlePresence();
@@ -198,7 +199,7 @@ export class GameLaunchCoordinatorService {
     }
 
     const { startedNewSession } = this.reconcileSessionAfterLaunch(launchedGame);
-    this.monitorLaunchedGame(launchedGame, onEndSession);
+    this.monitorLaunchedGame(launchedGame, onEndSession, { pid: result?.metadata?.pid ?? null });
     this.trackLaunchSideEffects(startedNewSession, launchedGame, game);
 
     return {

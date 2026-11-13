@@ -69,7 +69,7 @@ const EMULATOR_DEFS = [
   {
     key: 'pcsx2',
     label: 'PCSX2',
-    exes: ['pcsx2.exe', 'pcsx2-qtx64-avx2.exe', 'pcsx2x64-avx2.exe'],
+    exes: ['pcsx2-qt.exe', 'pcsx2.exe', 'pcsx2-qtx64.exe', 'pcsx2-qtx64-avx2.exe', 'pcsx2x64-avx2.exe'],
     locations: ['%ProgramFiles%\\PCSX2', '%ProgramFiles(x86)%\\PCSX2'],
     docDirs: ['PCSX2'],
     platforms: ['PlayStation 2'],
@@ -265,6 +265,73 @@ const emulatorDataRoots = (def, emuDir) => {
   return roots.filter(Boolean);
 };
 
+// Detect installed emulators by checking canonical locations plus a bounded
+// one-level scan of common roots (Desktop, Downloads, C:\Emulators). Also used
+// by launchHandler to self-heal entries whose stored emulator path is stale.
+const detectInstalledEmulators = () => {
+  const found = [];
+  const seen = new Set();
+
+  const record = (def, exePath) => {
+    const resolved = path.normalize(exePath);
+    const key = `${def.key}:${resolved.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    found.push({
+      key: def.key,
+      name: def.label,
+      emulatorPath: resolved,
+      platforms: def.platforms,
+    });
+  };
+
+  EMULATOR_DEFS.forEach((def) => {
+    (def.locations || []).forEach((location) => {
+      const dir = expandEnvPath(location);
+      def.exes.forEach((exe) => {
+        const exePath = path.join(dir, exe);
+        try {
+          if (fs.existsSync(exePath)) record(def, exePath);
+        } catch (error) {
+          /* ignore unreadable paths */
+        }
+      });
+    });
+  });
+
+  const roots = [
+    userDir('desktop'),
+    userDir('downloads'),
+    'C:\\Emulators',
+    'C:\\Program Files',
+    'C:\\Program Files (x86)',
+  ].filter(Boolean);
+  roots.forEach((root) => {
+    let entries = [];
+    try {
+      entries = fs.readdirSync(root, { withFileTypes: true });
+    } catch (error) {
+      return;
+    }
+    const dirs = entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(root, entry.name));
+    // Include the root itself too — some users drop exes straight on the Desktop.
+    [root, ...dirs].forEach((dir) => {
+      EMULATOR_DEFS.forEach((def) => {
+        def.exes.forEach((exe) => {
+          const exePath = path.join(dir, exe);
+          try {
+            if (fs.existsSync(exePath)) record(def, exePath);
+          } catch (error) {
+            /* ignore */
+          }
+        });
+      });
+    });
+  });
+
+  return found;
+};
+
 function registerIpcHandlers(ipcMain) {
   ipcMain.handle('choose-emulator-executable', async () => {
     try {
@@ -365,69 +432,7 @@ function registerIpcHandlers(ipcMain) {
 
   // Detect installed emulators by checking canonical locations plus a bounded
   // one-level scan of common roots (Desktop, Downloads, C:\Emulators).
-  ipcMain.handle('detect-emulators', async () => {
-    const found = [];
-    const seen = new Set();
-
-    const record = (def, exePath) => {
-      const resolved = path.normalize(exePath);
-      const key = `${def.key}:${resolved.toLowerCase()}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      found.push({
-        key: def.key,
-        name: def.label,
-        emulatorPath: resolved,
-        platforms: def.platforms,
-      });
-    };
-
-    EMULATOR_DEFS.forEach((def) => {
-      (def.locations || []).forEach((location) => {
-        const dir = expandEnvPath(location);
-        def.exes.forEach((exe) => {
-          const exePath = path.join(dir, exe);
-          try {
-            if (fs.existsSync(exePath)) record(def, exePath);
-          } catch (error) {
-            /* ignore unreadable paths */
-          }
-        });
-      });
-    });
-
-    const roots = [
-      userDir('desktop'),
-      userDir('downloads'),
-      'C:\\Emulators',
-      'C:\\Program Files',
-      'C:\\Program Files (x86)',
-    ].filter(Boolean);
-    roots.forEach((root) => {
-      let entries = [];
-      try {
-        entries = fs.readdirSync(root, { withFileTypes: true });
-      } catch (error) {
-        return;
-      }
-      const dirs = entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(root, entry.name));
-      // Include the root itself too — some users drop exes straight on the Desktop.
-      [root, ...dirs].forEach((dir) => {
-        EMULATOR_DEFS.forEach((def) => {
-          def.exes.forEach((exe) => {
-            const exePath = path.join(dir, exe);
-            try {
-              if (fs.existsSync(exePath)) record(def, exePath);
-            } catch (error) {
-              /* ignore */
-            }
-          });
-        });
-      });
-    });
-
-    return found;
-  });
+  ipcMain.handle('detect-emulators', async () => detectInstalledEmulators());
 
   // BIOS/firmware check for a profile. Payload: { emulatorPath, consolePlatform,
   // customBiosDirs?: [] }. Returns { platform, required, ok, found, missing,
@@ -525,4 +530,4 @@ function registerIpcHandlers(ipcMain) {
   });
 }
 
-module.exports = { registerIpcHandlers };
+module.exports = { registerIpcHandlers, detectInstalledEmulators };

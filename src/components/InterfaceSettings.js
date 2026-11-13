@@ -50,6 +50,15 @@ const ACCENT_PRESETS = [
 
 const FOLLOW_THEME_SWATCH = 'conic-gradient(#ff6b35,#10b981,#8b5cf6,#38bdf8,#ff6b35)';
 
+// Curated two-tone pairs — tested so gradients never grey out in the middle.
+const ACCENT_PAIRS = [
+  { label: 'Fire', primary: '#ff6b35', secondary: '#f7b733' },
+  { label: 'Sunset', primary: '#f43f5e', secondary: '#f59e0b' },
+  { label: 'Forest', primary: '#10b981', secondary: '#84cc16' },
+  { label: 'Ocean', primary: '#38bdf8', secondary: '#6366f1' },
+  { label: 'Vaporwave', primary: '#8b5cf6', secondary: '#d946ef' },
+];
+
 const accentSwatchColumn = {
   position: 'relative',
   display: 'flex',
@@ -87,6 +96,7 @@ const ToggleRow = ({ pref, prefKey, label, hint, onChange }) => (
       <input
         id={`iface-${prefKey}`}
         type="checkbox"
+        aria-label={label}
         checked={!!pref[prefKey]}
         onChange={(e) => onChange(prefKey, e.target.checked)}
       />
@@ -101,11 +111,18 @@ export default function InterfaceSettings() {
   const handleChange = (key, value) => InterfacePreferencesService.set(key, value);
   const handleAccent = (value) => InterfacePreferencesService.set('accentOverride', value);
   const handleCustomAccent = (value) => InterfacePreferencesService.setCustomAccent(value);
+  const handleAccentSecondary = (value) => InterfacePreferencesService.set('accentSecondaryOverride', value);
+  const handleCustomAccentSecondary = (value) => InterfacePreferencesService.setCustomAccentSecondary(value);
+  const handleAccentPair = (pair) =>
+    InterfacePreferencesService.update({ accentOverride: pair.primary, accentSecondaryOverride: pair.secondary });
   const handleReset = () => InterfacePreferencesService.resetAll();
   const experienceMode = InterfacePreferencesService.getExperienceMode();
 
   const recentAccents = (prefs.recentAccents || []).filter((hex) => !ACCENT_PRESETS.some((p) => p.value === hex));
   const customAccentActive = !!prefs.accentOverride && !ACCENT_PRESETS.some((p) => p.value === prefs.accentOverride);
+  const secondaryPresets = ACCENT_PRESETS.filter((p) => p.value !== null);
+  const customSecondaryActive =
+    !!prefs.accentSecondaryOverride && !secondaryPresets.some((p) => p.value === prefs.accentSecondaryOverride);
   const activeCheck = (
     <Check size={14} strokeWidth={3} color="#fff" style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.8))' }} />
   );
@@ -366,6 +383,166 @@ export default function InterfaceSettings() {
             Sample link
           </a>
         </div>
+
+        {prefs.accentOverride && (
+          <div style={{ marginTop: '16px' }} role="group" aria-label="Secondary accent">
+            <h4 style={{ margin: '8px 0 6px' }}>Secondary accent</h4>
+            <p className="setting-description" style={{ margin: '0 0 8px', opacity: 0.72, fontSize: '12px' }}>
+              Colors the far end of gradient sweeps. &quot;Auto&quot; derives a darker shade of your accent.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+              <span style={{ fontSize: 11, opacity: 0.55 }}>Quick pairs:</span>
+              {ACCENT_PAIRS.map((pair) => {
+                const active =
+                  prefs.accentOverride === pair.primary && prefs.accentSecondaryOverride === pair.secondary;
+                return (
+                  <button
+                    key={pair.label}
+                    type="button"
+                    onClick={() => handleAccentPair(pair)}
+                    title={`${pair.label}: ${pair.primary} → ${pair.secondary}`}
+                    aria-pressed={active}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 10px',
+                      borderRadius: 8,
+                      border: active ? '2px solid var(--accent-primary, #ff6b35)' : '1px solid var(--border-primary)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${pair.primary}, ${pair.secondary})`,
+                      }}
+                    />
+                    {pair.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => handleAccentSecondary(null)}
+                className={`accent-swatch ${!prefs.accentSecondaryOverride ? 'active' : ''}`}
+                style={accentSwatchColumn}
+                title="Auto — darker shade of your accent"
+                aria-pressed={!prefs.accentSecondaryOverride}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    ...accentSwatchCircle(!prefs.accentSecondaryOverride),
+                    background: 'var(--user-accent-strong, var(--accent-secondary, #ff8c42))',
+                  }}
+                >
+                  {!prefs.accentSecondaryOverride && activeCheck}
+                </span>
+                Auto
+              </button>
+              {secondaryPresets.map((preset) => {
+                const active = prefs.accentSecondaryOverride === preset.value;
+                return (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => handleAccentSecondary(preset.value)}
+                    className={`accent-swatch ${active ? 'active' : ''}`}
+                    style={accentSwatchColumn}
+                    title={preset.label}
+                    aria-pressed={active}
+                  >
+                    <span aria-hidden style={{ ...accentSwatchCircle(active), background: preset.value }}>
+                      {active && activeCheck}
+                    </span>
+                    {preset.label}
+                  </button>
+                );
+              })}
+              <label
+                className="accent-swatch accent-swatch-custom"
+                style={accentSwatchColumn}
+                title="Pick a custom secondary accent"
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    ...accentSwatchCircle(customSecondaryActive),
+                    background: prefs.accentSecondaryOverride || 'var(--bg-secondary)',
+                  }}
+                >
+                  {customSecondaryActive ? activeCheck : <Pipette size={13} />}
+                </span>
+                Custom
+                <input
+                  type="color"
+                  aria-label="Custom secondary accent color"
+                  value={prefs.accentSecondaryOverride || '#ff8c42'}
+                  onChange={(e) => handleCustomAccentSecondary(e.target.value)}
+                  style={{
+                    position: 'absolute',
+                    width: 1,
+                    height: 1,
+                    opacity: 0,
+                    pointerEvents: 'none',
+                  }}
+                />
+              </label>
+            </div>
+            <div
+              aria-hidden
+              style={{
+                marginTop: '12px',
+                height: 34,
+                borderRadius: 10,
+                border: '1px solid var(--border-primary)',
+                background:
+                  'linear-gradient(135deg, var(--user-accent, #ff6b35), var(--user-accent-secondary, var(--user-accent-strong, #ff8c42)))',
+                width: 'fit-content',
+                minWidth: 260,
+              }}
+            />
+          </div>
+        )}
+
+        {prefs.accentOverride && (
+          <div style={{ marginTop: '16px' }} role="group" aria-label="Accent reach">
+            <h4 style={{ margin: '8px 0 6px' }}>Accent reach</h4>
+            <p className="setting-description" style={{ margin: '0 0 8px', opacity: 0.72, fontSize: '12px' }}>
+              Blend your accent beyond buttons and links. Uses the secondary accent when one is set.
+            </p>
+            <ToggleRow
+              pref={prefs}
+              prefKey="accentTintHeaders"
+              label="Tinted headers"
+              hint="Page and section headings take the accent color."
+              onChange={handleChange}
+            />
+            <ToggleRow
+              pref={prefs}
+              prefKey="accentTintBorders"
+              label="Tinted borders"
+              hint="Container and card borders pick up a noticeable accent blend."
+              onChange={handleChange}
+            />
+            <ToggleRow
+              pref={prefs}
+              prefKey="accentTintText"
+              label="Tinted text"
+              hint="Subtle accent wash over body text — keeps contrast readable."
+              onChange={handleChange}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

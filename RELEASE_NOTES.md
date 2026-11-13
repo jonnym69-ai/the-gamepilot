@@ -1,3 +1,41 @@
+# GamePilot v1.12.0 Release Notes
+
+## Highlights
+
+v1.12 turns GamePilot into a tracker and deepens the story: a vitals readout for your gaming rhythm, a day-one history for brand-new installs, a wishlist that out-guns Steam's own, and a game modal that finally shows everything it knows.
+
+## What's new
+
+- **Gaming vitals** — a tracker-style card on Home: tonight's sessions vs rest days, deep/steady/hop session mix, your usual start time, streaks, and this week vs your own baseline. Descriptive, never judgemental.
+- **Your history so far** — a day-one read built from imported Steam/GOG/Epic playtime: total hours, most-played elsewhere, per-launcher spread, latest activity. New installs get a real story immediately; it steps aside once live sessions take over.
+- **Wishlist, upgraded**
+  - Per-store comparison — every offer CheapShark returns, cheapest first, with per-store deal links.
+  - Local price history + sparkline — each daily check becomes a data point; chart with all-time-low marker.
+  - Buy/wait verdicts per card ("Historic low — buy now", "Historically cheaper").
+  - Steam review chip ("Very Positive · 92%") via the reviews bridge.
+  - Sort (ranking/price/discount/added/name/release), on-sale filter, drag-to-rank ordering, and a wishlist total + potential savings line.
+- **Game modal depth** — per-game memoir (sessions, longest run, era, completion, signature title), Steam trailers, owned-game SteamSnapshot, your local Steam screenshots, and a friends-played comparison from public Steam libraries.
+- **Native notifications** — opt-in toasts when a friend starts a game you own (background watcher, deduped) and when a wishlist game hits your price or a new low. Toggle in Settings.
+- **SteamGridDB artwork** — bring your own free SGDB key and browse grids/heroes/logos per game from Edit details → cover art.
+- **Launch options + attachments** — launch arguments and alternative executables per game; attach manuals/links and open them from the modal.
+- **Duplicate manager** — merge same-title copies across launchers with a preferred-launch pick; unmerge restores.
+- **Completion shelves** — Now Playing / Beaten / The Backlog join the library carousel.
+- **Gaming diary** — one feed of journal notes, firsts, finishes, and era chapter-breaks; consecutive same-name eras collapse into one earliest onset.
+- **Wrapped persona share card** — copy/save the persona verdict slide as a 1080×1080 card.
+- **Launcher hardening** — emulator paths self-heal (installer-exe and missing-exe detection), emulated launches write diagnostics, secondary accent can reach headers/borders/text.
+
+## Linux note
+
+The Linux build remains paused — still Steam-only and unverified on real hardware. No AppImage or `latest-linux.yml` ships with v1.12.0; `latest.yml` on the Windows release feeds the updater.
+
+## Known issues
+
+- The Windows installer is unsigned (SmartScreen warning expected).
+- Price history is self-accumulated — sparklines fill in over days, not retroactively.
+- Some remote game covers may fall back to landscape artwork or a generated placeholder.
+
+---
+
 # GamePilot v1.11.0 Release Notes
 
 ## Highlights

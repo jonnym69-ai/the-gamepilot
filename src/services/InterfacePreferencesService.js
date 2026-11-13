@@ -20,6 +20,12 @@ const DEFAULTS = Object.freeze({
   ornamentLevel: 'full',
   // Accent override (null = follow theme)
   accentOverride: null,
+  // Optional second accent for gradients (null = derived darker shade)
+  accentSecondaryOverride: null,
+  // Accent reach — blend the accent pair into surfaces beyond buttons/links
+  accentTintHeaders: false,
+  accentTintBorders: false,
+  accentTintText: false,
   // Up to 5 most recent custom accent hexes
   recentAccents: [],
   // Pinned game ids (string list) for Library quick row
@@ -115,7 +121,56 @@ const SECTION_CLASS_MAP = {
   showThemedPageTitles: 'hide-themed-page-titles',
 };
 
-const applyBodyClasses = (prefs) => {
+// Surface tinting. Themes write --text-*/--border-* as INLINE styles on :root,
+// so a stylesheet override would always lose — tints are computed color-mix()
+// blends written into the same slots, with each slot's original value recorded
+// so untinting (or a theme change) restores cleanly.
+const ACCENT_TINT_GROUPS = [
+  {
+    pref: 'accentTintBorders',
+    vars: [
+      { v: '--border-primary', pct: 24 },
+      { v: '--border-secondary', pct: 24 },
+      { v: '--border-color', pct: 24 },
+    ],
+  },
+  {
+    pref: 'accentTintText',
+    vars: [
+      { v: '--text-primary', pct: 10 },
+      { v: '--text-color', pct: 10 },
+      { v: '--text-secondary', pct: 18 },
+      { v: '--text-muted', pct: 18 },
+    ],
+  },
+];
+const tintOriginals = new Map(); // varName -> original inline value (null = absent)
+
+const restoreTintedVars = (rootStyle) => {
+  tintOriginals.forEach((original, varName) => {
+    if (original === null) rootStyle.removeProperty(varName);
+    else rootStyle.setProperty(varName, original);
+  });
+  tintOriginals.clear();
+};
+
+const applyAccentTints = (prefs, rootStyle) => {
+  if (!isValidAccent(prefs.accentOverride) || !prefs.accentOverride) return;
+  const tintHex =
+    isValidAccent(prefs.accentSecondaryOverride) && prefs.accentSecondaryOverride
+      ? prefs.accentSecondaryOverride
+      : prefs.accentOverride;
+  ACCENT_TINT_GROUPS.forEach(({ pref, vars }) => {
+    if (!prefs[pref]) return;
+    vars.forEach(({ v, pct }) => {
+      const original = rootStyle.getPropertyValue(v);
+      tintOriginals.set(v, original === '' ? null : original);
+      rootStyle.setProperty(v, `color-mix(in srgb, ${tintHex} ${pct}%, ${original === '' ? 'transparent' : original})`);
+    });
+  });
+};
+
+const applyBodyClasses = (prefs, opts) => {
   if (typeof document === 'undefined') return;
   const body = document.body;
   body.classList.toggle('compact-mode', !!prefs.compactMode);
@@ -127,18 +182,49 @@ const applyBodyClasses = (prefs) => {
   const level = ['plain', 'balanced', 'full'].includes(prefs.ornamentLevel) ? prefs.ornamentLevel : 'full';
   body.classList.add(`ornament-${level}`);
   const rootStyle = document.documentElement.style;
+  if (opts?.skipRestore) tintOriginals.clear();
+  else restoreTintedVars(rootStyle);
   if (isValidAccent(prefs.accentOverride) && prefs.accentOverride) {
     rootStyle.setProperty('--user-accent', prefs.accentOverride);
     rootStyle.setProperty('--user-accent-soft', accentSoft(prefs.accentOverride));
     rootStyle.setProperty('--user-accent-strong', accentStrong(prefs.accentOverride));
+    if (isValidAccent(prefs.accentSecondaryOverride) && prefs.accentSecondaryOverride) {
+      rootStyle.setProperty('--user-accent-secondary', prefs.accentSecondaryOverride);
+      rootStyle.setProperty('--user-accent-secondary-soft', accentSoft(prefs.accentSecondaryOverride));
+    } else {
+      rootStyle.removeProperty('--user-accent-secondary');
+      rootStyle.removeProperty('--user-accent-secondary-soft');
+    }
     body.classList.add('has-user-accent');
+    applyAccentTints(prefs, rootStyle);
   } else {
     rootStyle.removeProperty('--user-accent');
     rootStyle.removeProperty('--user-accent-soft');
     rootStyle.removeProperty('--user-accent-strong');
+    rootStyle.removeProperty('--user-accent-secondary');
+    rootStyle.removeProperty('--user-accent-secondary-soft');
     body.classList.remove('has-user-accent');
   }
+  body.classList.toggle(
+    'tint-headers',
+    !!prefs.accentTintHeaders && !!prefs.accentOverride && isValidAccent(prefs.accentOverride)
+  );
 };
+
+// Theme changes rewrite the same :root slots the tints live in. The bound
+// listener is registered once per window (module reloads in tests would
+// otherwise stack stale handlers) and always routes to the latest instance's
+// apply — skipping the restore step, since the old theme's originals no
+// longer belong in the freshly rewritten slots.
+if (typeof window !== 'undefined') {
+  window.__gpInterfacePrefsApply = (opts) => applyBodyClasses(cache, opts);
+  if (!window.__gpInterfacePrefsBound) {
+    window.__gpInterfacePrefsBound = true;
+    window.addEventListener('themeChange', () => {
+      window.__gpInterfacePrefsApply?.({ skipRestore: true });
+    });
+  }
+}
 
 applyBodyClasses(cache);
 
@@ -155,7 +241,7 @@ const InterfacePreferencesService = {
 
   set(key, value) {
     if (!(key in DEFAULTS)) return;
-    if (key === 'accentOverride' && !isValidAccent(value)) return;
+    if ((key === 'accentOverride' || key === 'accentSecondaryOverride') && !isValidAccent(value)) return;
     cache = { ...cache, [key]: value };
     StorageService.set(STORAGE_KEY, cache);
     applyBodyClasses(cache);
@@ -166,6 +252,9 @@ const InterfacePreferencesService = {
     const clean = { ...partial };
     if ('accentOverride' in clean && !isValidAccent(clean.accentOverride)) {
       delete clean.accentOverride;
+    }
+    if ('accentSecondaryOverride' in clean && !isValidAccent(clean.accentSecondaryOverride)) {
+      delete clean.accentSecondaryOverride;
     }
     cache = { ...cache, ...clean };
     StorageService.set(STORAGE_KEY, cache);
@@ -233,6 +322,17 @@ const InterfacePreferencesService = {
       MAX_RECENT_ACCENTS
     );
     this.update({ accentOverride: value, recentAccents: recents });
+    return true;
+  },
+
+  setCustomAccentSecondary(hex) {
+    const value = String(hex || '').toLowerCase();
+    if (!ACCENT_HEX_RE.test(value)) return false;
+    const recents = [value, ...(cache.recentAccents || []).filter((c) => String(c).toLowerCase() !== value)].slice(
+      0,
+      MAX_RECENT_ACCENTS
+    );
+    this.update({ accentSecondaryOverride: value, recentAccents: recents });
     return true;
   },
 

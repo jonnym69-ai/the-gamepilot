@@ -190,3 +190,54 @@
     grid-template-columns: 1fr;
   }
 }
+
+.egm-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.egm-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted, #9aa0ab);
+}
+
+.egm-entry-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.egm-entry-text code {
+  font-size: 0.76rem;
+  opacity: 0.8;
+}
+
+.egm-entry-remove {
+  border: none;
+  background: none;
+  color: var(--text-muted, #9aa0ab);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.egm-entry-remove:hover {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.egm-entry-add {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.egm-entry-add input {
+  flex: 1;
+  min-width: 120px;
+}

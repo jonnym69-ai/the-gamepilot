@@ -2,9 +2,9 @@
 // users. Keep this short — 3 to 5 user-facing bullets, not a changelog.
 // Update alongside RELEASE_NOTES.md each release.
 export const WHATS_NEW = [
-  'Big screens, used — layouts now fill wide monitors instead of a narrow centre column',
-  'Release countdowns — wishlist games show days-to-release, plus a release-day alert',
-  'Showcase — pin your top six games on your Profile, or let your most-played fill it',
-  'Share Profile — export your persona + showcase as a share card from the header',
-  'Security pass — patched Electron and dependencies; zero high-severity audit findings',
+  'Gaming vitals — a tracker-style readout on Home: session depth, your usual start time, weekly rhythm',
+  'Your history so far — day-one read built from your imported Steam/GOG/Epic playtime',
+  'Wishlist leveled up — compare every store, price-history chart, buy/wait verdicts, review scores, drag to rank',
+  'Game memoirs + trailers + your own Steam screenshots, inside every game modal',
+  'Notifications — opt-in toasts when a friend starts a game you own or a wishlist deal lands',
 ];

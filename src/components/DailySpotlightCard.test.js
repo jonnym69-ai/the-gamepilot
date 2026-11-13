@@ -11,6 +11,9 @@ const NOW = new Date('2026-09-23T12:00:00Z');
 beforeEach(() => {
   localStorage.clear();
   StorageService.setString('timezone', 'UTC');
+  // Mystery reveal is on by default — the existing suite exercises the revealed
+  // card, so tests opt out here unless they test the veil itself.
+  StorageService.set('spotlightMysteryRevealV1', false);
   window.electronAPI = { steamSpotlight: jest.fn().mockResolvedValue({ ok: false }) };
 });
 
@@ -255,4 +258,46 @@ test('low-ranked games get a rank line without the badge', () => {
   // Zomboid (120m) ranks #4 of 4 — outside the top-shelf cutoff.
   expect(screen.getByText('#4 of 4')).toBeInTheDocument();
   expect(screen.queryByText(/top shelf/i)).not.toBeInTheDocument();
+});
+
+test('mystery reveal veils the pick until Reveal is clicked, then stays revealed', async () => {
+  StorageService.set('spotlightMysteryRevealV1', true);
+  const view = render(<DailySpotlightCard library={[game]} />);
+
+  expect(screen.getByRole('button', { name: 'Reveal the pick' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Project Zomboid' })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Reveal the pick' }));
+  expect(screen.getByRole('heading', { name: 'Project Zomboid' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Reveal the pick' })).not.toBeInTheDocument();
+
+  // Same pick stays revealed across remounts for the rest of the day.
+  view.unmount();
+  render(<DailySpotlightCard library={[game]} />);
+  expect(screen.getByRole('heading', { name: 'Project Zomboid' })).toBeInTheDocument();
+});
+
+test('a different pick veils again even after revealing', () => {
+  StorageService.set('spotlightMysteryRevealV1', true);
+  const view = render(<DailySpotlightCard library={[game]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Reveal the pick' }));
+  expect(screen.getByRole('heading', { name: 'Project Zomboid' })).toBeInTheDocument();
+
+  view.unmount();
+  const other = { name: 'Slime Rancher', platform: 'Steam', appid: 433340, time_played: 60 };
+  render(<DailySpotlightCard library={[other]} />);
+  expect(screen.getByRole('button', { name: 'Reveal the pick' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Slime Rancher' })).not.toBeInTheDocument();
+});
+
+test('"don\'t hide it again" reveals now and turns the mystery off for future picks', () => {
+  StorageService.set('spotlightMysteryRevealV1', true);
+  render(<DailySpotlightCard library={[game]} />);
+  fireEvent.click(screen.getByRole('button', { name: "don't hide it again" }));
+  expect(screen.getByRole('heading', { name: 'Project Zomboid' })).toBeInTheDocument();
+  expect(StorageService.get('spotlightMysteryRevealV1', true)).toBe(false);
+
+  // The revealed card still offers the toggle so the mystery can come back.
+  const toggle = screen.getByRole('checkbox', { name: /daily mystery reveal/i });
+  expect(toggle).not.toBeChecked();
 });

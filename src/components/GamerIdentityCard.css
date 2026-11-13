@@ -1,9 +1,13 @@
 .gamer-identity-card {
+  --persona-accent: var(--accent, #3dd9ff);
+  --persona-accent-rgb: 61, 217, 255;
   background: var(--surface-elevated, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(var(--persona-accent-rgb), 0.28);
+  border-top: 3px solid var(--persona-accent);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 16px;
+  box-shadow: 0 8px 28px rgba(var(--persona-accent-rgb), 0.07);
 }
 .gamer-identity-card.empty {
   display: flex;
@@ -65,10 +69,53 @@
   justify-content: center;
   width: 64px;
   height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(61, 217, 255, 0.2), rgba(155, 92, 255, 0.2));
-  color: var(--accent, #3dd9ff);
+  border-radius: 14px;
+  background: rgba(var(--persona-accent-rgb), 0.14);
+  border: 1px solid rgba(var(--persona-accent-rgb), 0.45);
+  box-shadow: 0 0 18px rgba(var(--persona-accent-rgb), 0.18);
+  color: var(--persona-accent);
   flex-shrink: 0;
+}
+.gamer-epithet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  width: fit-content;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+.gamer-roast-headline {
+  color: var(--text-primary, #f1f5f9);
+}
+.gamer-roast-charges {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.gamer-roast-charges li {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+  padding-left: 14px;
+  position: relative;
+}
+.gamer-roast-charges li::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: var(--persona-accent);
+  font-weight: 700;
 }
 .gamer-identity-body {
   display: flex;
@@ -96,14 +143,64 @@
   margin-top: 4px;
 }
 .gamer-tag {
+  position: relative;
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--accent-muted, rgba(61, 217, 255, 0.12));
-  color: var(--accent, #3dd9ff);
+  background: rgba(var(--persona-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--persona-accent-rgb), 0.3);
+  color: var(--persona-accent);
+}
+.gamer-tag[tabindex] {
+  cursor: help;
+}
+.gamer-tag-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 190px;
+  max-width: 250px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-elevated, #1e293b);
+  border: 1px solid rgba(var(--persona-accent-rgb), 0.35);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  font-size: 0.72rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s,
+    visibility 0.15s;
+  pointer-events: none;
+  z-index: 30;
+}
+.gamer-tag:hover .gamer-tag-tip,
+.gamer-tag:focus .gamer-tag-tip,
+.gamer-tag:focus-within .gamer-tag-tip {
+  opacity: 1;
+  visibility: visible;
+}
+.gamer-tag-tip-desc {
+  display: block;
+  color: var(--text-primary, #f1f5f9);
+  margin-bottom: 4px;
+}
+.gamer-tag-tip-evidence {
+  display: block;
+}
+.gamer-tag-tip-evidence::before {
+  content: '· ';
+  color: var(--persona-accent);
 }
 .gamer-card-stats {
   display: flex;
@@ -130,6 +227,115 @@
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-primary, #f1f5f9);
+}
+.gamer-receipts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.05));
+}
+.gamer-receipts-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary, #64748b);
+}
+.gamer-receipts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gamer-receipt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.gamer-receipt-art {
+  width: 64px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid rgba(var(--persona-accent-rgb), 0.3);
+  flex-shrink: 0;
+}
+.gamer-receipt-art.is-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--persona-accent-rgb), 0.08);
+  color: var(--persona-accent);
+}
+.gamer-receipt-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gamer-receipt-hours {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--persona-accent);
+}
+.gamer-rival {
+  color: var(--text-secondary, #94a3b8);
+}
+.gamer-evidence {
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  color: var(--text-tertiary, #64748b);
+}
+.gamer-evidence summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary, #64748b);
+}
+.gamer-evidence summary::-webkit-details-marker {
+  display: none;
+}
+.gamer-evidence summary:hover {
+  color: var(--persona-accent);
+}
+.gamer-evidence-caret {
+  transition: transform 0.15s;
+}
+.gamer-evidence[open] .gamer-evidence-caret {
+  transform: rotate(180deg);
+}
+.gamer-evidence ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gamer-evidence li {
+  padding-left: 14px;
+  position: relative;
+  color: var(--text-secondary, #94a3b8);
+}
+.gamer-evidence li::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: var(--persona-accent);
+  font-weight: 700;
 }
 .gamer-card-footer {
   display: flex;
@@ -186,4 +392,178 @@
   color: var(--accent, #3dd9ff);
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* Rarity tier chip — how decisive the verdict was. Legendary gets a shimmer. */
+.gamer-tier-badge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: rgba(var(--persona-accent-rgb, 61, 217, 255), 0.14);
+  color: var(--persona-accent, #3dd9ff);
+}
+.gamer-tier-badge.tier-common {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+.gamer-tier-badge.tier-rare {
+  background: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+}
+.gamer-tier-badge.tier-epic {
+  background: rgba(167, 139, 250, 0.16);
+  color: #a78bfa;
+}
+.gamer-tier-badge.tier-legendary {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.22), rgba(248, 113, 113, 0.18), rgba(251, 191, 36, 0.22));
+  background-size: 200% 100%;
+  color: #fbbf24;
+  animation: gamer-tier-shimmer 3s linear infinite;
+}
+@keyframes gamer-tier-shimmer {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Era strip — the live era folded into the character sheet. */
+.gamer-era-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(var(--persona-accent-rgb, 61, 217, 255), 0.08);
+  border: 1px solid rgba(var(--persona-accent-rgb, 61, 217, 255), 0.2);
+  color: var(--persona-accent, #3dd9ff);
+  font-size: 12px;
+}
+.gamer-era-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.gamer-era-meta {
+  color: var(--text-secondary, #8b9bb4);
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Attributes — persona signals rendered like a character sheet. */
+.gamer-sheet {
+  margin-top: 14px;
+}
+.gamer-sheet-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--persona-accent, #3dd9ff);
+  margin-bottom: 8px;
+}
+.gamer-sheet-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+.gamer-sheet-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 11px;
+}
+.gamer-sheet-name {
+  flex: 0 0 96px;
+  font-weight: 700;
+  color: var(--text-secondary, #8b9bb4);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.gamer-sheet-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+}
+.gamer-sheet-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--persona-accent, #3dd9ff);
+}
+.gamer-sheet-value {
+  flex: 0 0 auto;
+  min-width: 34px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+@media (max-width: 640px) {
+  .gamer-sheet-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Past lives — previous primary personas. */
+.gamer-past-lives {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.gamer-past-lives-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary, #8b9bb4);
+}
+.gamer-past-lives-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.gamer-past-life {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: var(--text-secondary, #8b9bb4);
+}
+
+/* Yearbook — the persona archived once a year settles. */
+.gamer-yearbook {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.gamer-yearbook-chip {
+  gap: 6px;
+}
+.gamer-yearbook-year {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(61, 217, 255, 0.14);
+  border: 1px solid rgba(61, 217, 255, 0.3);
+  color: var(--text-accent, var(--accent-color, #3dd9ff));
 }

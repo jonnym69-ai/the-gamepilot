@@ -33,6 +33,69 @@ const parseShellCommand = (command = '') => {
   return args;
 };
 
+// Persistent launch diagnostics — stdout is invisible in the packaged app, so
+// emulator launches append a JSON line to <userData>/launch-diagnostics.log.
+// Trimmed to the last 200 lines. Safe no-op outside Electron.
+const writeLaunchDiagnostic = (entry) => {
+  try {
+    const { app } = require('electron');
+    if (!app?.getPath) return;
+    const file = path.join(app.getPath('userData'), 'launch-diagnostics.log');
+    const line = JSON.stringify({ at: new Date().toISOString(), ...entry });
+    let existing = '';
+    try {
+      existing = fs.readFileSync(file, 'utf8');
+    } catch {
+      existing = '';
+    }
+    const lines = existing.split('\n').filter(Boolean);
+    lines.push(line);
+    fs.writeFileSync(file, `${lines.slice(-200).join('\n')}\n`, 'utf8');
+  } catch {
+    /* diagnostics are best-effort */
+  }
+};
+
+// A profile pointing at the emulator's *installer* (e.g.
+// "PCSX2-v2.6.3-windows-x64-installer.exe") runs the setup wizard on every
+// launch instead of the game. Catch it by filename so the user gets told
+// exactly what to fix rather than a mystery dialog.
+const looksLikeInstaller = (exePath = '') =>
+  /(^|[-_ .])(installer|setup|install|web-?install|online-?install)([-_ .]|\.exe$|$)/i.test(
+    path.basename(String(exePath || ''))
+  );
+
+// Lazily pull in the emulator detector — plain require keeps jest happy (the
+// module degrades to a no-op outside Electron) and detection stays opt-in.
+const detectInstalledEmulatorList = () => {
+  try {
+    const { detectInstalledEmulators } = require('./electron/emulator');
+    return detectInstalledEmulators() || [];
+  } catch {
+    return [];
+  }
+};
+
+// Entries scanned while a profile pointed at an installer — or an exe that has
+// since been removed — keep the dead path forever. When the stored path is
+// unusable, find the real installed emulator by the entry's emulator key/label
+// (or console platform) and launch with that instead of failing.
+const findInstalledEmulatorExe = (game) => {
+  const wanted = String(game?.emulator || '')
+    .trim()
+    .toLowerCase();
+  const platform = String(game?.consolePlatform || game?.brandPlatform || '').trim();
+  const detected = detectInstalledEmulatorList();
+  const match =
+    detected.find(
+      (entry) =>
+        wanted &&
+        (String(entry.key || '').toLowerCase() === wanted || String(entry.name || '').toLowerCase() === wanted)
+    ) || detected.find((entry) => platform && (entry.platforms || []).includes(platform));
+  const exe = String(match?.emulatorPath || '').trim();
+  return exe && fs.existsSync(exe) && !looksLikeInstaller(exe) ? exe : null;
+};
+
 const LAUNCH_MODES = Object.freeze({
   DIRECT: 'direct',
   PROTOCOL: 'protocol',
@@ -265,6 +328,33 @@ class GameLauncher {
     }
 
     try {
+      // Emulator games are identified by their launch data, not the platform
+      // label — entries can carry 'Emulated' or a console name depending on
+      // when they were scanned, and console-labelled ones fell through to
+      // "Unsupported platform" without ever launching.
+      if (
+        normalizedPlatform === 'Emulated' ||
+        game.romPath ||
+        String(game.launchType || game.source || '').toLowerCase() === 'emulator'
+      ) {
+        return this.launchEmulated(game);
+      }
+
+      if (game.emulatorPath || game.emulator) {
+        // Looks emulator-ish but failed the dispatch test — record it so a
+        // "wrong path" launch (e.g. platform 'PC' with an emulator attached)
+        // shows up in the diagnostics instead of silently going elsewhere.
+        writeLaunchDiagnostic({
+          stage: 'dispatch',
+          outcome: 'emulator-fields-but-not-dispatched',
+          name: game.name,
+          platform: game.platform,
+          launchType: game.launchType,
+          source: game.source,
+          hasRomPath: Boolean(game.romPath),
+        });
+      }
+
       switch (normalizedPlatform) {
         case 'Steam':
           return this.launchSteam(game);
@@ -306,9 +396,6 @@ class GameLauncher {
 
         case 'Itch.io':
           return this.launchItch(game);
-
-        case 'Emulated':
-          return this.launchEmulated(game);
 
         case 'Manual':
           return this.launchManual(game);
@@ -833,6 +920,11 @@ class GameLauncher {
       );
     }
 
+    const args = parseShellCommand(game.launchArgs || '');
+    if (args.length > 0) {
+      return this.launchCustomExe({ executablePath, args });
+    }
+
     try {
       const openError = await this.shell.openPath(executablePath);
       if (openError) {
@@ -846,39 +938,128 @@ class GameLauncher {
     }
   }
 
+  // Launch a user-configured alternative executable with optional arguments.
+  // Used by per-game "launch options" — the path must exist and end in .exe
+  // so a tampered game record can't run arbitrary shell commands.
+  async launchCustomExe({ executablePath, args = [] }) {
+    const exe = String(executablePath || '').trim();
+    if (!exe || !fs.existsSync(exe)) {
+      return createLaunchResult(false, 'unknown', 'The executable was not found — it may have been moved or deleted.');
+    }
+    if (!/\.exe$/i.test(exe)) {
+      return createLaunchResult(false, 'unknown', 'Only .exe files can be launched this way.');
+    }
+    try {
+      const argList =
+        typeof args === 'string'
+          ? parseShellCommand(args)
+          : (Array.isArray(args) ? args : []).map((arg) => String(arg)).slice(0, 40);
+      const child = spawn(exe, argList, { detached: true, stdio: 'ignore', cwd: path.dirname(exe) });
+      child.unref();
+      writeLaunchDiagnostic({ stage: 'custom-exe', outcome: 'spawned', exe, args: argList, pid: child.pid ?? null });
+      return createLaunchResult(true, 'direct', 'Launched', { executablePath: exe });
+    } catch (error) {
+      writeLaunchDiagnostic({ stage: 'custom-exe', outcome: 'spawn-threw', exe, error: String(error) });
+      return createLaunchResult(false, 'unknown', `Failed to launch: ${error.message}`);
+    }
+  }
+
   async launchEmulated(game) {
     console.log('🕹️ Emulated game data:', game);
 
-    const emulatorPath = String(game.emulatorPath || game.executablePath || '').trim();
+    let emulatorPath = String(game.emulatorPath || game.executablePath || '').trim();
     const romPath = String(game.romPath || '').trim();
     const launchTemplate = String(game.executable || game.launchTemplate || '"{emulator}" "{rom}"').trim();
 
-    if (!emulatorPath || !fs.existsSync(emulatorPath)) {
-      return createLaunchResult(false, 'unknown', `Emulator executable not found for ${game.name}`);
+    const record = {
+      name: game.name,
+      platform: game.platform,
+      brandPlatform: game.brandPlatform,
+      emulator: game.emulator,
+      emulatorPath,
+      romPath,
+      executable: game.executable,
+      launchTemplate: game.launchTemplate,
+      executablePath: game.executablePath,
+      launchType: game.launchType,
+      source: game.source,
+    };
+
+    const storedMissing = !emulatorPath || !fs.existsSync(emulatorPath);
+    const storedIsInstaller = !storedMissing && looksLikeInstaller(emulatorPath);
+    if (storedMissing || storedIsInstaller) {
+      const healed = findInstalledEmulatorExe(game);
+      if (healed) {
+        writeLaunchDiagnostic({
+          stage: 'emulated',
+          outcome: 'emulator-self-healed',
+          record,
+          storedPath: emulatorPath,
+          healedPath: healed,
+        });
+        emulatorPath = healed;
+        record.emulatorPath = healed;
+      } else if (storedMissing) {
+        writeLaunchDiagnostic({ stage: 'emulated', outcome: 'emulator-missing', record });
+        return createLaunchResult(false, 'unknown', `Emulator executable not found for ${game.name}`);
+      } else {
+        writeLaunchDiagnostic({ stage: 'emulated', outcome: 'emulator-is-installer', record });
+        return createLaunchResult(
+          false,
+          'unknown',
+          `The ${game.emulator || 'emulator'} profile points at an installer (${path.basename(emulatorPath)}), not the emulator itself. Open Library → Emulators and choose the installed program, e.g. pcsx2-qt.exe.`
+        );
+      }
     }
 
     if (!romPath || !fs.existsSync(romPath)) {
+      writeLaunchDiagnostic({ stage: 'emulated', outcome: 'rom-missing', record });
       return createLaunchResult(false, 'unknown', `ROM file not found for ${game.name}`);
     }
 
-    const command = launchTemplate.replace(/\{emulator\}/g, emulatorPath).replace(/\{rom\}/g, romPath);
+    // Tokenize the template BEFORE substituting so ROM/emulator paths with
+    // spaces always survive as single arguments — substituting into a string
+    // first and re-splitting mangled unquoted paths and left PCSX2 opening
+    // its game list instead of booting the ROM.
+    const templateTokens = parseShellCommand(launchTemplate).map((token) =>
+      token.replace(/\{emulator\}/g, emulatorPath).replace(/\{rom\}/g, romPath)
+    );
+    let exe = templateTokens.shift() || emulatorPath;
+    // A template can hardcode the exe itself (e.g. scanned while the profile
+    // pointed at the installer) — fall back to the validated emulator path.
+    if (!fs.existsSync(exe) || looksLikeInstaller(exe)) exe = emulatorPath;
+    const args = templateTokens;
 
-    const args = parseShellCommand(command);
-    const exe = args.shift();
-
-    if (!exe || !fs.existsSync(exe)) {
-      return createLaunchResult(false, 'unknown', `Emulator executable not found for ${game.name}`);
-    }
+    // Guarantee the ROM actually reaches the emulator — a template without a
+    // {rom} placeholder, or a bare exe path, would otherwise just open the UI.
+    if (!/\{rom\}/.test(launchTemplate)) args.push(romPath);
 
     try {
-      const child = spawn(exe, args, { detached: true, stdio: 'ignore' });
+      // Start in the emulator's own folder — exactly like double-clicking the
+      // exe. Emulators resolve settings/BIOS/memcard paths relative to their
+      // working directory; inheriting GamePilot's cwd made PCSX2 think it was
+      // a fresh install and open its first-run setup wizard every launch.
+      const cwd = path.dirname(exe);
+      const child = spawn(exe, args, { detached: true, stdio: 'ignore', cwd });
       child.unref();
+      writeLaunchDiagnostic({ stage: 'emulated', outcome: 'spawned', record, exe, args, cwd, pid: child.pid ?? null });
+      child.on?.('error', (error) =>
+        writeLaunchDiagnostic({ stage: 'emulated', outcome: 'spawn-error', name: game.name, error: String(error) })
+      );
+      child.on?.('exit', (code, signal) =>
+        writeLaunchDiagnostic({ stage: 'emulated', outcome: 'exited', name: game.name, code, signal })
+      );
       return createLaunchResult(true, 'direct', `Launched ${game.name} via ${game.emulator || 'emulator'}`, {
         emulatorPath,
         romPath,
+        // Hand the spawned PID to the process monitor so it can track this
+        // exact process even though it already exists by the time the
+        // monitor's baseline is taken.
+        pid: Number.isFinite(child.pid) ? child.pid : null,
       });
     } catch (error) {
       console.error('❌ Emulator launch failed:', error);
+      writeLaunchDiagnostic({ stage: 'emulated', outcome: 'spawn-threw', record, exe, args, error: String(error) });
       return createLaunchResult(false, 'unknown', `Failed to launch ${game.name}: ${error.message}`);
     }
   }
@@ -886,3 +1067,4 @@ class GameLauncher {
 
 module.exports = GameLauncher;
 module.exports.isLaunchPlatformSupported = isLaunchPlatformSupported;
+module.exports.looksLikeInstaller = looksLikeInstaller;

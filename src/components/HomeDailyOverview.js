@@ -14,6 +14,8 @@ import { CurrentEraCard, RecentSessionsSummary } from './IdentityWidgets';
 import EraTransitionCard from './EraTransitionCard';
 import YearInReviewPromptCard from './YearInReviewPromptCard';
 import MonthlyRecapStrip from './MonthlyRecapStrip';
+import GamingVitalsCard from './GamingVitalsCard';
+import FirstReadCard from './FirstReadCard';
 import LiveYearCard from './LiveYearCard';
 import DeepRunCard from './DeepRunCard';
 import WhatsNewCard from './WhatsNewCard';
@@ -208,6 +210,8 @@ export default function HomeDailyOverview({
                 Explore identity <ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>
+            <FirstReadCard library={library} />
+            <GamingVitalsCard />
             <YearInReviewPromptCard library={library} />
             <EraTransitionCard />
             <CurrentEraCard compact />

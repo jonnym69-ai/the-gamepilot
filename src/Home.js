@@ -5,6 +5,7 @@ import BuyRecommendationService from './services/BuyRecommendationService';
 import { MOODS } from './constants/GenresMoods';
 import WishlistService from './services/WishlistService';
 import { HabitTrackerService } from './services/HabitTrackerService';
+import NotificationService from './services/NotificationService';
 import CollapsibleSection from './components/CollapsibleSection';
 import { Sparkles } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -12,6 +13,7 @@ import HomeDailyOverview, { HOME_VIEWS, HomeViewNavigation } from './components/
 import BacklogBusterList from './components/BacklogBusterList';
 import FinishableThisWeekend from './components/FinishableThisWeekend';
 import LibraryLeaderboard from './components/LibraryLeaderboard';
+import GamingDiaryFeed from './components/GamingDiaryFeed';
 import DiscoverHighlights from './components/DiscoverHighlights';
 import TrendingNowCard from './components/TrendingNowCard';
 import { RecommendationEngine } from './services/RecommendationEngine';
@@ -26,6 +28,7 @@ import LazyImage from './components/LazyImage';
 import WishlistSection from './components/WishlistSection';
 import EnergyVibePicker from './components/EnergyVibePicker';
 import LibrarianHubCarousel from './components/LibrarianHubCarousel';
+import GamerIdentityCard from './components/GamerIdentityCard';
 import RecentlyPlayedShelf from './components/RecentlyPlayedShelf';
 import WelcomeBackCard from './components/WelcomeBackCard';
 import { SessionService } from './services/SessionService';
@@ -49,6 +52,7 @@ import {
   RecentSessionsSummary,
   CurrentChampionCard,
 } from './components/IdentityWidgets';
+import AchievementCompletionCard from './components/AchievementCompletionCard';
 import EraArchiveCard from './components/EraArchiveCard';
 import GettingStartedModal from './components/GettingStartedModal';
 import {
@@ -169,6 +173,12 @@ function Home({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keep the main-process friends watcher in step with the library and the
+  // user's notification prefs — Today mounts on every app open.
+  useEffect(() => {
+    NotificationService.syncFriendsWatch(library);
+  }, [library]);
 
   useEffect(() => {
     const lastTs = StorageService.get('lastSessionTimestamp', null);
@@ -1396,6 +1406,7 @@ function Home({
           </div>
           <div className="home-persona-section">
             <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
+            <AchievementCompletionCard library={library} />
           </div>
 
           <div className="home-activity-section">
@@ -1406,6 +1417,7 @@ function Home({
             <LibraryLeaderboard library={library} onLaunchGame={handleTrackedLaunch} />
             <RecentlyPlayedShelf library={library} onLaunchGame={onLaunchGame} />
             <RecentSessionsSummary />
+            <GamingDiaryFeed games={library} />
             <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
           </div>
 
@@ -1487,6 +1499,7 @@ function Home({
               <Link to="/profile">Full profile</Link>
               <Link to="/year-in-review">Your Gaming Life</Link>
             </nav>
+            <GamerIdentityCard library={library} />
             <CurrentEraCard library={safeLibrary} />
             <EraArchiveCard />
             <CurrentChampionCard library={safeLibrary} />

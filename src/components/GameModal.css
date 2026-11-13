@@ -1192,3 +1192,37 @@
   color: var(--text-primary, #fff);
   border-color: rgba(255, 255, 255, 0.25);
 }
+
+.game-alt-actions,
+.game-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.game-attachments {
+  margin-bottom: 0;
+}
+
+.game-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e8eaf0;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.game-action-btn:hover {
+  border-color: var(--accent-color, #ff8c1a);
+  background: rgba(255, 255, 255, 0.09);
+}

@@ -34,6 +34,7 @@ import EmptyLibraryState from './components/EmptyLibraryState';
 import LazyImage from './components/LazyImage';
 import BackToTopButton from './components/BackToTopButton';
 import NotInstalledSection from './components/NotInstalledSection';
+import DuplicateManagerPanel from './components/DuplicateManagerPanel';
 import HLTBChip from './components/HLTBChip';
 import PatchNewsBadge from './components/PatchNewsBadge';
 import DiskSizeChip from './components/DiskSizeChip';
@@ -1024,8 +1025,16 @@ function Library({
     const selectedPath = await window.electronAPI.chooseEmulatorExecutable();
     if (selectedPath) {
       handleEmulatorDraftChange('emulatorPath', selectedPath);
+      // Picking the emulator's installer is an easy mistake and makes every
+      // launch open the setup wizard — flag it right away.
+      const fileName = String(selectedPath).split(/[\\/]/).pop() || '';
+      if (/(^|[-_ .])(installer|setup|install)([-_ .]|\.exe$|$)/i.test(fileName)) {
+        toastError(
+          `${fileName} looks like an installer, not the emulator. Run it once to install, then choose the installed program (e.g. pcsx2-qt.exe).`
+        );
+      }
     }
-  }, [handleEmulatorDraftChange]);
+  }, [handleEmulatorDraftChange, toastError]);
 
   const chooseRomFolder = useCallback(async () => {
     if (!window.electronAPI?.chooseRomFolder) {
@@ -1358,6 +1367,7 @@ function Library({
       const matchesCompletion =
         !localFilterCompletion || (game.completionStatus || 'not-started') === localFilterCompletion;
       const matchesHidden = showHidden ? true : !(game.isHidden || false);
+      const matchesMerged = !game.isDuplicateMerged;
       const matchesCover = !missingCoverOnly || hasMissingCoverArt(game);
 
       return (
@@ -1369,6 +1379,7 @@ function Library({
         matchesReplayIntent &&
         matchesCompletion &&
         matchesHidden &&
+        matchesMerged &&
         matchesCover
       );
     });
@@ -1955,6 +1966,25 @@ function Library({
         .slice(0, 7),
     [library]
   );
+  const nowPlayingShelfGames = useMemo(
+    () => library.filter((game) => game.completionStatus === 'playing').slice(0, 8),
+    [library]
+  );
+  const beatenShelfGames = useMemo(
+    () =>
+      library
+        .filter((game) => ['beaten', 'completed', '100%'].includes(game.completionStatus))
+        .sort((a, b) => (b.time_played || 0) - (a.time_played || 0))
+        .slice(0, 8),
+    [library]
+  );
+  const backlogShelfGames = useMemo(
+    () =>
+      library
+        .filter((game) => (game.completionStatus || 'not-started') === 'not-started' && !(game.time_played > 0))
+        .slice(0, 8),
+    [library]
+  );
   const activeFilterCount =
     [
       localFilterPlatform,
@@ -2480,6 +2510,11 @@ function Library({
             </p>
           </div>
 
+          <DuplicateManagerPanel
+            games={library}
+            onChanged={() => onLibraryUpdated(GameCurationService.enrichLibrary(library))}
+          />
+
           {/* Unified Shelf Carousel */}
           {(() => {
             const allSections = [
@@ -2511,6 +2546,27 @@ function Library({
                 title: 'Newly Added Games',
                 games: recentlyAddedShelfGames,
                 getBadge: () => 'New',
+              },
+              {
+                id: 'now-playing',
+                kicker: 'In progress',
+                title: 'Now Playing',
+                games: nowPlayingShelfGames,
+                getBadge: () => 'Playing',
+              },
+              {
+                id: 'beaten',
+                kicker: 'Credits rolled',
+                title: 'Beaten',
+                games: beatenShelfGames,
+                getBadge: (g) => (g.completionStatus === '100%' ? '100%' : 'Beaten'),
+              },
+              {
+                id: 'backlog',
+                kicker: 'Waiting their turn',
+                title: 'The Backlog',
+                games: backlogShelfGames,
+                getBadge: () => null,
               },
             ];
             // Only show shelves that actually have games so an empty Pinned shelf

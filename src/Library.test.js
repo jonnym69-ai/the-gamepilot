@@ -202,8 +202,9 @@ describe('Library Component', () => {
     ];
     await renderLibrary({ library });
 
-    const zebra = screen.getByText('Zebra Game');
-    const mango = screen.getByText('Mango Game');
+    // Both names also appear in the Backlog shelf — the last copies are the grid cards.
+    const zebra = screen.getAllByText('Zebra Game').at(-1);
+    const mango = screen.getAllByText('Mango Game').at(-1);
     // sortName "Aardvark Game" pulls Zebra ahead of Mango alphabetically.
     expect(zebra.compareDocumentPosition(mango) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

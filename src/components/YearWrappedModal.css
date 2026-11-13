@@ -1,0 +1,402 @@
+/* Wrapped presentation — fullscreen slide deck over the Year in Review
+   snapshot. Blurred cover art per slide, oversized numbers, dot progress. */
+.wrapped-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 8, 14, 0.96);
+}
+
+.wrapped-slide {
+  position: relative;
+  width: min(860px, 92vw);
+  min-height: min(560px, 78vh);
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  animation: wrapped-slide-in 0.45s ease both;
+}
+
+@keyframes wrapped-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wrapped-slide-art {
+  position: absolute;
+  inset: -40px;
+  background-size: cover;
+  background-position: center 20%;
+  filter: blur(26px) saturate(1.25);
+  opacity: 0.5;
+}
+
+.wrapped-slide-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(10, 10, 18, 0.55), rgba(10, 10, 18, 0.9));
+}
+
+.wrapped-slide-inner {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 56px 48px 72px;
+  gap: 14px;
+}
+
+.wrapped-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--user-accent, var(--accent-primary, #ff6b35));
+}
+
+.wrapped-mega {
+  margin: 0;
+  font-size: clamp(44px, 7vw, 76px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.wrapped-number {
+  margin: 0;
+  font-size: clamp(56px, 9vw, 104px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.wrapped-title {
+  margin: 0;
+  font-size: clamp(30px, 4.6vw, 52px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #fff;
+  max-width: 22ch;
+}
+
+.wrapped-sub {
+  margin: 0;
+  font-size: clamp(15px, 1.9vw, 19px);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 52ch;
+}
+
+.wrapped-names {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  max-width: 56ch;
+}
+
+.wrapped-lineup {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  width: min(420px, 80%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wrapped-lineup li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.wrapped-lineup-hours {
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wrapped-records {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.wrapped-record {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wrapped-record strong {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.wrapped-record span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--user-accent, var(--accent-primary, #ff6b35));
+}
+
+.wrapped-record small {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.wrapped-callout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 560px;
+  text-align: left;
+}
+
+.wrapped-callout svg {
+  color: var(--user-accent, var(--accent-primary, #ff6b35));
+  flex-shrink: 0;
+}
+
+/* Persona reveal — the only slide that colors itself by the verdict. */
+.wrapped-persona-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 4px;
+}
+
+.wrapped-persona-emblem {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  color: var(--persona-accent);
+  background: rgba(var(--persona-accent-rgb, 61, 217, 255), 0.14);
+  border: 2px solid var(--persona-accent);
+  box-shadow:
+    0 0 32px rgba(var(--persona-accent-rgb, 61, 217, 255), 0.35),
+    inset 0 0 24px rgba(var(--persona-accent-rgb, 61, 217, 255), 0.12);
+}
+
+.wrapped-persona-label {
+  color: var(--persona-accent);
+}
+
+.wrapped-evidence {
+  margin-top: 6px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(var(--persona-accent-rgb, 61, 217, 255), 0.3);
+  text-align: left;
+  max-width: 520px;
+}
+
+.wrapped-evidence-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--persona-accent);
+}
+
+.wrapped-evidence ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.wrapped-roast {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 52ch;
+}
+
+/* Chrome — close, nav arrows, progress dots. */
+.wrapped-close {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.wrapped-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.wrapped-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.wrapped-nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.wrapped-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.wrapped-nav-prev {
+  left: max(18px, calc((100vw - 920px) / 2 - 68px));
+}
+
+.wrapped-nav-next {
+  right: max(18px, calc((100vw - 920px) / 2 - 68px));
+}
+
+.wrapped-progress {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  gap: 7px;
+}
+
+.wrapped-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.wrapped-dot.done {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.wrapped-dot.active {
+  background: var(--user-accent, var(--accent-primary, #ff6b35));
+  transform: scale(1.35);
+}
+
+body.reduced-motion .wrapped-slide {
+  animation: none;
+}
+
+@media (max-width: 640px) {
+  .wrapped-slide-inner {
+    padding: 40px 22px 64px;
+  }
+
+  .wrapped-nav {
+    display: none;
+  }
+}
+
+.wrapped-share-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.wrapped-share-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8eaf0;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.wrapped-share-btn:hover:not(:disabled) {
+  border-color: var(--persona-accent, #ff8c1a);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.wrapped-share-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.wrapped-share-offscreen {
+  position: absolute;
+  left: -20000px;
+  top: 0;
+  pointer-events: none;
+}

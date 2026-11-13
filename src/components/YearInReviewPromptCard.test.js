@@ -45,7 +45,10 @@ test('shows an era-led teaser in December for the current year', () => {
   expect(YearInReviewService.getYearSnapshot).toHaveBeenCalledWith([], 2026);
   expect(screen.getByText(/your 2026 in review is ready/i)).toBeInTheDocument();
   expect(screen.getByText(/214\.5h across 38 games — and it was the year of the Zomboid Era\./i)).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /see your year/i })).toHaveAttribute('href', '/year-in-review');
+  expect(screen.getByRole('link', { name: /watch your year/i })).toHaveAttribute(
+    'href',
+    '/year-in-review?year=2026&tab=milestones&wrapped=1'
+  );
 });
 
 test('points at the previous year during the early-January grace window', () => {

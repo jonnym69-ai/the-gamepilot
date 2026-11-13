@@ -162,3 +162,83 @@ describe('WishlistService price fetch', () => {
     expect(item.thumb).toBe('https://cdn.example.com/hk.jpg');
   });
 });
+
+describe('WishlistService store compare, history, ranking and verdicts', () => {
+  const mockDealResponse =
+    (deals, low = null) =>
+    (url) => {
+      if (url.includes('/games?title=')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ gameID: '42', steamAppID: '1145360' }]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ info: {}, deals, cheapestPriceEver: low }),
+      });
+    };
+
+  afterEach(() => {
+    delete global.fetch;
+  });
+
+  it('stores every store offer sorted cheapest-first', async () => {
+    WishlistService.addGame({ name: 'Hades' });
+    global.fetch = jest.fn(
+      mockDealResponse([
+        { storeID: '1', price: '12.99', retailPrice: '24.99', savings: '48', dealID: 'd1' },
+        { storeID: '7', price: '9.99', retailPrice: '24.99', savings: '60', dealID: 'd2' },
+      ])
+    );
+    await WishlistService.fetchPrice('Hades', { force: true });
+    const item = WishlistService.getWishlist()[0];
+    expect(item.deals.map((d) => d.store)).toEqual(['GOG', 'Steam']);
+    expect(item.deals[0].price).toBe(9.99);
+    expect(item.currentPrice.store).toBe('GOG');
+  });
+
+  it('appends one price-history point per calendar day', async () => {
+    WishlistService.addGame({ name: 'Celeste' });
+    global.fetch = jest.fn(
+      mockDealResponse([{ storeID: '1', price: '9.99', retailPrice: '19.99', savings: '50', dealID: 'x' }])
+    );
+    await WishlistService.fetchPrice('Celeste', { force: true });
+    expect(WishlistService.getWishlist()[0].priceHistory).toHaveLength(1);
+    await WishlistService.fetchPrice('Celeste', { force: true });
+    expect(WishlistService.getWishlist()[0].priceHistory).toHaveLength(1); // same day replaces, not appends
+    const items = WishlistService.getWishlist();
+    items[0].priceHistory = [{ t: Date.now() - 86400000, p: 14.99 }, ...items[0].priceHistory];
+    StorageService.set('wishlistItemsV1', items);
+    await WishlistService.fetchPrice('Celeste', { force: true });
+    expect(WishlistService.getWishlist()[0].priceHistory).toHaveLength(2);
+  });
+
+  it('reorders items with moveItem', () => {
+    WishlistService.addGame({ name: 'A One' });
+    WishlistService.addGame({ name: 'B Two' });
+    WishlistService.addGame({ name: 'C Three' });
+    WishlistService.moveItem('C Three', 'A One');
+    expect(WishlistService.getWishlist().map((i) => i.name)).toEqual(['C Three', 'A One', 'B Two']);
+    WishlistService.moveItem('A One', null);
+    expect(WishlistService.getWishlist().map((i) => i.name)).toEqual(['C Three', 'B Two', 'A One']);
+  });
+
+  it('returns buy/wait verdicts from stored price data', () => {
+    expect(WishlistService.getVerdict({ currentPrice: { price: 5 }, historicalLow: { price: 7 } }).kind).toBe('low');
+    expect(
+      WishlistService.getVerdict({ currentPrice: { price: 8, cut: 0 }, threshold: 10, historicalLow: { price: 6 } })
+        .kind
+    ).toBe('target');
+    expect(WishlistService.getVerdict({ currentPrice: { price: 10, cut: 55 }, historicalLow: { price: 2 } }).kind).toBe(
+      'deal'
+    );
+    expect(WishlistService.getVerdict({ currentPrice: { price: 20, cut: 5 }, historicalLow: { price: 8 } }).kind).toBe(
+      'wait'
+    );
+    expect(WishlistService.getVerdict({ currentPrice: { price: 20, cut: 5 }, historicalLow: { price: 19 } }).kind).toBe(
+      'fair'
+    );
+    expect(WishlistService.getVerdict({ currentPrice: null })).toBeNull();
+  });
+});

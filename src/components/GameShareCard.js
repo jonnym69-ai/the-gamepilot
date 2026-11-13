@@ -81,7 +81,17 @@ export function buildGameShareData(game = {}, gameStats = {}) {
   const avgSessionLength =
     safeStats.averageSessionLength || safeStats.avgSessionLength || launchData?.averageSessionLength || 0;
 
-  const completionStatus = safeGame.completed ? 'Completed' : timePlayed > 0 ? 'In Progress' : 'Backlog';
+  const curationStatus = String(safeGame.completionStatus || '').toLowerCase();
+  const completionStatus =
+    curationStatus === 'beaten'
+      ? 'Beaten'
+      : curationStatus === '100%'
+        ? '100%'
+        : curationStatus === 'completed' || safeGame.completed
+          ? 'Completed'
+          : curationStatus === 'playing' || timePlayed > 0
+            ? 'In Progress'
+            : 'Backlog';
 
   const platform = safeGame.platform || safeGame.brandPlatform || safeGame.launchSources?.[0]?.platform || null;
   const genre =
@@ -100,6 +110,7 @@ export function buildGameShareData(game = {}, gameStats = {}) {
     firstPlayedGamePilot: launchData?.firstPlayed || firstPlayedFromSessions || null,
     lastPlayedSteam: safeGame.last_played || null,
     completionStatus,
+    beatenSession: safeStats.beatenSession || null,
     platform,
     genre,
     mood,
@@ -136,6 +147,26 @@ export function buildGameShareCaption(data = {}) {
 
   if (genre && mood) {
     templates.push(`My ${mood} ${genre} pick right now: ${name}. ${playtime} well spent 🎮`);
+  }
+
+  if (completion === 'Beaten' || completion === '100%') {
+    // The session where it happened is the best line — lead with it.
+    if (data.beatenSession?.minutes > 0) {
+      const when = data.beatenSession.day ? ` on ${data.beatenSession.day}` : '';
+      return `Finished ${name} in a ${formatPlaytime(data.beatenSession.minutes)} session${when} ✅`;
+    }
+    const lines =
+      completion === 'Beaten'
+        ? [
+            `Beat ${name}. ${playtime} on the clock — worth every minute ✅`,
+            `Credits rolled on ${name} after ${playtime}. Done and dusted ✅`,
+            `${name}: beaten. ${playtime} well spent. The backlog mourns ✅`,
+          ]
+        : [
+            `100% on ${name}. Every single achievement. ${playtime} well spent 🏆`,
+            `Nothing left on the table — ${name} fully cleared in ${playtime} 🏆`,
+          ];
+    return lines[Math.floor(Math.random() * lines.length)];
   }
 
   if (completion === 'Completed') {
@@ -211,8 +242,14 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
                 {data.platform}
               </span>
             )}
-            <span className={`game-share-card-badge ${data.completionStatus === 'Completed' ? 'completed-badge' : ''}`}>
-              {data.completionStatus === 'Completed' ? <CheckCircle2 size={14} /> : <Zap size={14} />}
+            <span
+              className={`game-share-card-badge ${['Completed', 'Beaten', '100%'].includes(data.completionStatus) ? 'completed-badge' : ''}`}
+            >
+              {['Completed', 'Beaten', '100%'].includes(data.completionStatus) ? (
+                <CheckCircle2 size={14} />
+              ) : (
+                <Zap size={14} />
+              )}
               {data.completionStatus}
             </span>
           </div>

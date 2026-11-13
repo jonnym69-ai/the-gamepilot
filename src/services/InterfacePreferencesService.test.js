@@ -190,6 +190,136 @@ describe('InterfacePreferencesService', () => {
     });
   });
 
+  describe('secondary accent override', () => {
+    test('sets --user-accent-secondary only when a primary accent is active', () => {
+      const root = document.documentElement.style;
+      InterfacePreferencesService.set('accentSecondaryOverride', '#38bdf8');
+      expect(root.getPropertyValue('--user-accent-secondary')).toBe('');
+
+      InterfacePreferencesService.set('accentOverride', '#8b5cf6');
+      expect(root.getPropertyValue('--user-accent-secondary')).toBe('#38bdf8');
+      expect(root.getPropertyValue('--user-accent-secondary-soft')).toBe('rgba(56, 189, 248, 0.18)');
+    });
+
+    test('rejects non-hex secondary values', () => {
+      InterfacePreferencesService.set('accentOverride', '#8b5cf6');
+      InterfacePreferencesService.set('accentSecondaryOverride', 'blue');
+      expect(InterfacePreferencesService.get('accentSecondaryOverride')).toBe(null);
+      expect(document.documentElement.style.getPropertyValue('--user-accent-secondary')).toBe('');
+    });
+
+    test('clears with null and when the primary accent is removed', () => {
+      const root = document.documentElement.style;
+      InterfacePreferencesService.set('accentOverride', '#8b5cf6');
+      InterfacePreferencesService.set('accentSecondaryOverride', '#38bdf8');
+      InterfacePreferencesService.set('accentSecondaryOverride', null);
+      expect(root.getPropertyValue('--user-accent-secondary')).toBe('');
+
+      InterfacePreferencesService.set('accentSecondaryOverride', '#38bdf8');
+      InterfacePreferencesService.set('accentOverride', null);
+      expect(root.getPropertyValue('--user-accent-secondary')).toBe('');
+      expect(document.body.classList.contains('has-user-accent')).toBe(false);
+    });
+
+    test('update() drops an invalid secondary but keeps other keys', () => {
+      InterfacePreferencesService.update({ accentSecondaryOverride: 'red', accentOverride: '#8b5cf6' });
+      expect(InterfacePreferencesService.get('accentSecondaryOverride')).toBe(null);
+      expect(InterfacePreferencesService.get('accentOverride')).toBe('#8b5cf6');
+    });
+
+    test('setCustomAccentSecondary validates, normalizes, and records recents', () => {
+      expect(InterfacePreferencesService.setCustomAccentSecondary('nah')).toBe(false);
+      expect(InterfacePreferencesService.setCustomAccentSecondary('#A1B2C3')).toBe(true);
+      expect(InterfacePreferencesService.get('accentSecondaryOverride')).toBe('#a1b2c3');
+      expect(InterfacePreferencesService.get('recentAccents')[0]).toBe('#a1b2c3');
+    });
+  });
+
+  describe('accent reach tints', () => {
+    const TINT_VARS = [
+      '--border-primary',
+      '--border-secondary',
+      '--border-color',
+      '--text-primary',
+      '--text-color',
+      '--text-secondary',
+      '--text-muted',
+    ];
+
+    beforeEach(() => {
+      TINT_VARS.forEach((v) => document.documentElement.style.removeProperty(v));
+      document.body.classList.remove('tint-headers');
+    });
+
+    test('tinted borders blend the accent into theme-owned border vars and restore cleanly', () => {
+      const root = document.documentElement.style;
+      // Simulate a theme-owned inline slot.
+      root.setProperty('--border-primary', '#2a2a3a');
+      InterfacePreferencesService.set('accentOverride', '#8b5cf6');
+      InterfacePreferencesService.set('accentTintBorders', true);
+
+      const mixed = root.getPropertyValue('--border-primary');
+      expect(mixed).toContain('color-mix(in srgb, #8b5cf6 24%');
+      expect(mixed).toContain('#2a2a3a');
+      // Untouched groups stay theme-owned.
+      expect(root.getPropertyValue('--text-primary')).toBe('');
+
+      InterfacePreferencesService.set('accentTintBorders', false);
+      expect(root.getPropertyValue('--border-primary')).toBe('#2a2a3a');
+    });
+
+    test('tinted text mixes body and muted text vars', () => {
+      const root = document.documentElement.style;
+      root.setProperty('--text-secondary', 'rgba(255,255,255,0.8)');
+      InterfacePreferencesService.set('accentOverride', '#ff6b35');
+      InterfacePreferencesService.set('accentTintText', true);
+
+      expect(root.getPropertyValue('--text-primary')).toContain('color-mix(in srgb, #ff6b35 10%');
+      expect(root.getPropertyValue('--text-secondary')).toContain('color-mix(in srgb, #ff6b35 18%');
+      expect(root.getPropertyValue('--text-secondary')).toContain('rgba(255,255,255,0.8)');
+
+      InterfacePreferencesService.set('accentOverride', null);
+      expect(root.getPropertyValue('--text-secondary')).toBe('rgba(255,255,255,0.8)');
+    });
+
+    test('secondary accent drives the tint when set', () => {
+      const root = document.documentElement.style;
+      root.setProperty('--border-primary', '#2a2a3a');
+      InterfacePreferencesService.set('accentOverride', '#8b5cf6');
+      InterfacePreferencesService.set('accentSecondaryOverride', '#d946ef');
+      InterfacePreferencesService.set('accentTintBorders', true);
+      expect(root.getPropertyValue('--border-primary')).toContain('color-mix(in srgb, #d946ef 24%');
+    });
+
+    test('tinted headers toggles a body class only while an accent is active', () => {
+      InterfacePreferencesService.set('accentTintHeaders', true);
+      expect(document.body.classList.contains('tint-headers')).toBe(false);
+
+      InterfacePreferencesService.set('accentOverride', '#8b5cf6');
+      expect(document.body.classList.contains('tint-headers')).toBe(true);
+
+      InterfacePreferencesService.set('accentOverride', null);
+      expect(document.body.classList.contains('tint-headers')).toBe(false);
+    });
+
+    test('theme changes recapture the new base values instead of restoring stale ones', () => {
+      const root = document.documentElement.style;
+      root.setProperty('--border-primary', '#2a2a3a');
+      InterfacePreferencesService.set('accentOverride', '#8b5cf6');
+      InterfacePreferencesService.set('accentTintBorders', true);
+      expect(root.getPropertyValue('--border-primary')).toContain('#2a2a3a');
+
+      // Theme switch rewrites the slot, then fires themeChange.
+      root.setProperty('--border-primary', '#445566');
+      window.dispatchEvent(new CustomEvent('themeChange'));
+
+      const remixed = root.getPropertyValue('--border-primary');
+      expect(remixed).toContain('color-mix(in srgb, #8b5cf6 24%');
+      expect(remixed).toContain('#445566');
+      expect(remixed).not.toContain('#2a2a3a');
+    });
+  });
+
   describe('subscribe', () => {
     test('listeners fire on changes and unsubscribe works', () => {
       const fn = jest.fn();

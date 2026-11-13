@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { User, Brain, LayoutGrid } from 'lucide-react';
-import GamerIdentityCard from './GamerIdentityCard';
+import { Brain, LayoutGrid } from 'lucide-react';
 import HabitInsightsPanel from './HabitInsightsPanel';
 import SmartCollectionsShelf from './SmartCollectionsShelf';
 import './LibrarianHubCarousel.css';
 
 const TABS = [
-  { id: 'identity', label: 'Identity', icon: User },
   { id: 'insights', label: 'Insights', icon: Brain },
   { id: 'shelves', label: 'Smart Shelves', icon: LayoutGrid },
 ];
 
 const LibrarianHubCarousel = ({ library = [], onLaunchGame }) => {
-  const [activeTab, setActiveTab] = useState('identity');
+  const [activeTab, setActiveTab] = useState('insights');
 
   return (
     <div className="librarian-hub-carousel">
@@ -36,7 +34,6 @@ const LibrarianHubCarousel = ({ library = [], onLaunchGame }) => {
       </div>
 
       <div className="librarian-hub-panel">
-        {activeTab === 'identity' && <GamerIdentityCard library={library} />}
         {activeTab === 'insights' && <HabitInsightsPanel library={library} />}
         {activeTab === 'shelves' && <SmartCollectionsShelf library={library} onLaunchGame={onLaunchGame} />}
       </div>

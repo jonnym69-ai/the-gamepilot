@@ -4,6 +4,7 @@
 // CheapShark public API with 24h caching. No user data leaves the device.
 
 import StorageService from './StorageService';
+import NotificationService from './NotificationService';
 import { getGameGenres } from '../GameGenreDatabase';
 
 const WISHLIST_KEY = 'wishlistItemsV1';
@@ -140,7 +141,30 @@ const buildAlertSummary = (items = readWishlist()) => {
     count: drops.length + deals.filter((deal) => !drops.some((drop) => drop.key === deal.key)).length,
   };
   writeAlertSummary(summary);
+  try {
+    NotificationService.onPriceAlertSummary(summary);
+  } catch {
+    /* notifications are best-effort */
+  }
   return summary;
+};
+
+// Append a point to the item's own price history — one point per calendar day,
+// capped so a long-lived entry stays small. This builds a GG.deals-style
+// history chart from our own daily checks (CheapShark has no history endpoint).
+const mergePriceHistory = (item, entry) => {
+  const price = entry?.currentPrice?.price;
+  const history = Array.isArray(item.priceHistory) ? item.priceHistory.slice() : [];
+  if (typeof price !== 'number' || !Number.isFinite(price)) return history;
+  const t = entry.fetchedAt || Date.now();
+  const last = history[history.length - 1];
+  if (last && new Date(last.t).toDateString() === new Date(t).toDateString()) {
+    last.p = price;
+    last.t = t;
+  } else {
+    history.push({ t, p: price });
+  }
+  return history.slice(-90);
 };
 
 const applyPriceEntryToWishlist = (key, entry) => {
@@ -153,6 +177,8 @@ const applyPriceEntryToWishlist = (key, entry) => {
           priceCheckedAt: entry.fetchedAt,
           steamAppID: item.steamAppID || entry.steamAppID || '',
           thumb: item.thumb || entry.thumb || '',
+          deals: Array.isArray(entry.deals) && entry.deals.length > 0 ? entry.deals : item.deals,
+          priceHistory: mergePriceHistory(item, entry),
         }
       : item
   );
@@ -308,11 +334,15 @@ class WishlistService {
       ) {
         next.genres = patch.genres;
       }
+      if (patch.review && typeof patch.review === 'object') {
+        next.review = patch.review;
+      }
       const changed =
         next.thumb !== item.thumb ||
         next.steamAppID !== item.steamAppID ||
         next.appid !== item.appid ||
-        next.genres !== item.genres;
+        next.genres !== item.genres ||
+        next.review !== item.review;
       updated = updated || changed;
       return changed ? next : item;
     });
@@ -421,10 +451,24 @@ class WishlistService {
         let currentBest = null;
         let historicalLow = null;
         let info = null;
+        let allDeals = [];
         if (dealsResponse.ok) {
           const dealsData = await dealsResponse.json();
           info = dealsData?.info && typeof dealsData.info === 'object' ? dealsData.info : null;
           const deals = Array.isArray(dealsData?.deals) ? dealsData.deals : Array.isArray(dealsData) ? dealsData : [];
+          // Every store's offer, cheapest first — the GG.deals-style comparison
+          // table. Previously we kept only the best and discarded the rest.
+          allDeals = deals
+            .map((d) => ({
+              store: storeName(d.storeID),
+              price: parseFloat(d.price),
+              retail: parseFloat(d.retailPrice) || null,
+              cut: parseFloat(d.savings || 0),
+              dealID: d.dealID,
+            }))
+            .filter((d) => Number.isFinite(d.price))
+            .sort((a, b) => a.price - b.price)
+            .slice(0, 12);
           currentBest =
             deals.length > 0
               ? deals.reduce((best, d) => (parseFloat(d.price) < parseFloat(best.price) ? d : best), deals[0])
@@ -464,6 +508,7 @@ class WishlistService {
               }
             : null,
           historicalLow,
+          deals: allDeals,
           fetchedAt: Date.now(),
         };
 
@@ -538,6 +583,45 @@ class WishlistService {
 
   static getWishlistCount() {
     return readWishlist().length;
+  }
+
+  /**
+   * Manual ranking — array order IS the rank. Inserts `gameName` before
+   * `beforeGameName`; pass null/omitted target to move to the end.
+   */
+  static moveItem(gameName, beforeGameName = null) {
+    const items = readWishlist();
+    const from = items.findIndex((i) => i.key === slug(gameName));
+    if (from < 0) return false;
+    const [moved] = items.splice(from, 1);
+    if (!beforeGameName) {
+      items.push(moved);
+    } else {
+      const to = items.findIndex((i) => i.key === slug(beforeGameName));
+      items.splice(to < 0 ? items.length : to, 0, moved);
+    }
+    writeWishlist(items);
+    return true;
+  }
+
+  /**
+   * GG.deals-style buy/wait verdict from data we already hold.
+   * Returns { kind: 'low'|'target'|'deal'|'wait'|'fair', label, reference } —
+   * `reference` is the comparison price in USD for the caller to localise.
+   */
+  static getVerdict(item) {
+    const cur = item?.currentPrice;
+    if (!cur || typeof cur.price !== 'number' || !Number.isFinite(cur.price)) return null;
+    const low = item?.historicalLow?.price;
+    const hasLow = typeof low === 'number' && Number.isFinite(low) && low > 0;
+    if (hasLow && cur.price <= low) return { kind: 'low', label: 'Historic low — buy now', reference: low };
+    if (typeof item?.threshold === 'number' && cur.price <= item.threshold) {
+      return { kind: 'target', label: 'At your alert price', reference: item.threshold };
+    }
+    const cut = Number(cur.cut) || 0;
+    if (cut >= 50) return { kind: 'deal', label: `${Math.round(cut)}% off — strong deal`, reference: null };
+    if (hasLow && cur.price > low * 1.2) return { kind: 'wait', label: 'Historically cheaper', reference: low };
+    return { kind: 'fair', label: cut > 0 ? 'On sale' : 'Full price', reference: null };
   }
 }
 

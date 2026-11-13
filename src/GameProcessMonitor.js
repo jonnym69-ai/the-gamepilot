@@ -68,6 +68,10 @@ export class GameProcessMonitor {
     const onGameClosed = typeof callbackConfig.onGameClosed === 'function' ? callbackConfig.onGameClosed : () => {};
     const onMonitorTimeout =
       typeof callbackConfig.onMonitorTimeout === 'function' ? callbackConfig.onMonitorTimeout : () => {};
+    // PID of a process the launcher spawned directly (emulators) — lets the
+    // main-process monitor track it even though it predates its baseline.
+    const pid =
+      Number.isFinite(Number(callbackConfig.pid)) && Number(callbackConfig.pid) > 0 ? Number(callbackConfig.pid) : null;
 
     try {
       const monitorId = `${game.name}-${game.platform}-${Date.now()}`;
@@ -120,7 +124,7 @@ export class GameProcessMonitor {
       });
 
       electronAPI
-        .startGameMonitor({ monitorId, game })
+        .startGameMonitor({ monitorId, game, pid })
         .then((result) => {
           if (!result?.success) {
             this.cleanupMonitor(monitorId, false);

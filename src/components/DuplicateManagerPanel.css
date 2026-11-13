@@ -1,0 +1,82 @@
+.duplicate-manager {
+  margin: 0 0 14px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+}
+
+.duplicate-manager-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  color: var(--text-primary, #e8eaf0);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.duplicate-manager-head:hover {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.duplicate-manager-head svg:last-child {
+  margin-left: auto;
+}
+
+.duplicate-manager-body {
+  padding: 4px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.duplicate-group h4 {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  color: var(--text-primary, #e8eaf0);
+}
+
+.duplicate-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.duplicate-entry-name {
+  color: var(--text-primary, #e8eaf0);
+}
+
+.duplicate-entry-meta {
+  color: var(--text-muted, #8b919f);
+  margin-left: auto;
+}
+
+.duplicate-merge-btn {
+  margin-top: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.14));
+  border-radius: 8px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary, #e8eaf0);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.duplicate-merge-btn:hover {
+  border-color: var(--accent-color, #ff8c1a);
+}
+
+.duplicate-merged-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #8b919f);
+}
