@@ -1,12 +1,12 @@
 # GamePilot
 
-**The record of how you actually play — from one launcher that runs everything you own.**
+**Your games have been recording your life. GamePilot reads it back.**
 
 ![Today — your streak, your era, your week](screenshots/today-header.png)
 
 Steam knows your lifetime hours. GOG knows your last-played date. Nobody keeps the part that matters: the Tuesday nights, the month a single game owned you, the backlog title you finally finished at 2 a.m.
 
-GamePilot tracks real sessions across every launcher on your PC — Steam, Epic, GOG, Battle.net, itch, Xbox, emulators and manual installs — and turns them into something you can actually read back: streaks, eras, weekly and monthly champions, habits, a Year in Review that updates all year. It learns what you play and when, and uses that to pick your next game from what you already own, with the reason attached.
+GamePilot tracks real sessions across every launcher on your PC — Steam, Epic, GOG, Battle.net, itch, Xbox, emulators and manual installs — and turns them into something you can actually read back: named eras, a persona verdict with the receipts, a memoir for every game, a living diary, your gaming vitals, and a Year in Review that updates all year. It learns what you play and when, and uses that to pick your next game from what you already own, with the reason attached.
 
 And yes, it launches all of them from one place, so you stop scrolling and start playing.
 
@@ -21,25 +21,32 @@ No account. No cloud. No telemetry. No AI in the app — everything it "knows" a
 ## What it tracks
 
 - **Real sessions**, not lifetime totals — start, end, length, time of day, across every launcher, offline, with crash recovery and a one-line journal per session
+- **Gaming vitals** — a tracker-style readout: tonight's sessions vs rest days, deep runs vs short hops, your usual start time, this week against your own baseline. Descriptive, never judgemental
 - **Eras** — when a game takes over your life for a month, it gets named ("The Zomboid Era") and the transition is commemorated
 - **Hall of Champions** — the game that won each week, month and year, with hours, longest sitting and share of your play
-- **Habits** — time-of-day heatmaps, weekday patterns, streaks, monthly recaps, On This Day, and a Year in Review that's live all year
-- A persona and roast built from what you actually play (toggleable)
+- **A persona with receipts** — a character-sheet verdict on who you are as a player, built from the games, sessions and hours that actually earned it. Including a roast, because honesty is the point
+- **Memoirs** — every game gets an auto-written character sheet: sessions, longest run, which era it belonged to, when you beat it
+- **A living diary** — journal notes, first plays, finishes and era changes in one feed, written from real events
+- **Habits** — time-of-day heatmaps, weekday patterns, streaks, monthly recaps, On This Day, and a Year in Review (with shareable slides) that's live all year
 - **Your Steam achievements** per game, with rarity, alongside your own session record
-- Shareable cards for all of it — eras, champions, your year, your library
+- Shareable cards for all of it — eras, champions, personas, your year, your library
 
 ## What it does with that
 
 - Mood + time picks from your own library — with a reason attached, not a black box ("0 hours in Far Cry 6, because 'probably finished' is not a recognized status")
 - "Finishable this weekend" — backlog games whose remaining HowLongToBeat time fits the time you have
 - **Trending in your library** — live Steam player counts and global chart rank for games *you own*, not the store chart
+- **Friends on this game** — compare your playtime with friends' public Steam libraries from any game's modal
+- **Opt-in notifications** — a toast when a friend starts a game you own, or a wishlisted game hits your target price
 
 ## And the launcher part
 
 - Scans and launches games across Steam, Epic, GOG, Battle.net, Riot, itch.io, Xbox, Ubisoft, Amazon, EA, Rockstar and manual installs
 - "Owned, not installed" — Steam and GOG games you own but haven't installed, with one-click install deep links
 - Edit any game's details — sort name, genres, tags, year, developer, cover art — when the scan gets it wrong
-- Wishlist with price-drop alerts, and a giveaway radar for free-game dumps
+- **A wishlist that beats the launchers' own** — every store compared side-by-side, price-history chart built from your own daily checks, buy/wait verdicts, review scores, release countdowns, threshold alerts, drag-to-rank, and a giveaway radar for free-game dumps
+- **Every game's modal is a dossier** — memoir, Steam trailers and screenshots, your own local screenshots, achievements, review score, and friends' playtime
+- Launch args, alternate executables and attachments per game; merge duplicates across launchers; completion shelves for Now Playing / Beaten / Backlog
 - Save backups, rolling session-history backups, an uninstall planner, big-screen TV mode, Discord Rich Presence
 - Auto-updates from GitHub releases (Winget and Scoop manifests live in `packaging/`)
 
@@ -94,7 +101,7 @@ npm start                 # dev server on :3000
 
 npm run format:check
 npx eslint src --max-warnings 0
-npx jest --ci             # ~900 tests
+npx jest --ci             # ~1400 tests
 npm run build             # production renderer build
 
 npm run build-electron-win   # packages installer to ~/gamepilot-dist/
