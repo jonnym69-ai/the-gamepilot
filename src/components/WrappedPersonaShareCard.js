@@ -1,5 +1,6 @@
 import React from 'react';
 import { getPersonaVisual, accentToRgb } from './personaVisuals';
+import { getShareCardWatermark } from './ShareCardWatermark';
 
 export const WRAPPED_PERSONA_CARD_SIZE = 1080;
 
@@ -61,7 +62,9 @@ export default function WrappedPersonaShareCard({ persona, year, username }) {
           &ldquo;{p.roast}&rdquo;
         </p>
       ) : null}
-      <p style={{ marginTop: 60, fontSize: 24, color: '#565d6b' }}>GamePilot — every number from local sessions</p>
+      <p style={{ marginTop: 60, fontSize: 24, color: '#565d6b' }}>
+        {getShareCardWatermark('github', 'identity')?.cta || 'GamePilot — every number from local sessions'}
+      </p>
     </div>
   );
 }
