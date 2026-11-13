@@ -171,6 +171,11 @@ The typecheck command is optional for JS-only changes.
   `vite-plugin-node-polyfills` via `node-stdlib-browser`; never imported —
   `'crypto'` was removed from the polyfill `include` list so it is absent from
   the shipped bundle), and `sprintf-js` (`electron-builder` build-time chain).
+  Two GitHub Dependabot alerts were triaged and dismissed as tolerable risk:
+  `minimatch` (medium, DoS via glob amplification — electron-builder/eslint/
+  jest transitive; only ever matches trusted internal glob patterns) and
+  `deepmerge` (low, prototype pollution, unpatched upstream — `jest-config`
+  merge of our own trusted test config). Neither ships in the app bundle.
   Electron is at 44.x; `electron-reloader` stays at 1.x (v2 is ESM-only and
   requires Node 22; `electron.js` `require()`s it under
   `ELECTRON_ENABLE_RELOADER`).
