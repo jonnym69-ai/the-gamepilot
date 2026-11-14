@@ -1,3 +1,22 @@
+# GamePilot v1.12.2 Release Notes
+
+## Highlights
+
+v1.12.2 is a fix release.
+
+## Fixes
+
+- **Share Game and Going Live menus open** — both items in a game's More menu were silently closing before the share menu could open, so they did nothing. They now open their sharing dropdown (save/copy the card, copy caption, share to a channel).
+- **Friends on Steam works again** — the friends fetcher was returning successful results without the success flag, so the card showed "unavailable" on every load and friend notifications never fired. The request also gets a longer timeout and one automatic retry, the card retries once before showing an error, and "Compare with friends" fetches the list on demand instead of reporting nobody owns the game.
+
+## Known issues
+
+- The Windows installer is unsigned (SmartScreen warning expected).
+- Steam friends presence depends on Steam's public-profile APIs — friends who set their game details to private don't appear, and a bad connection can still show "unavailable" (the card's refresh icon retries).
+- The Linux build remains paused; no AppImage ships with v1.12.2.
+
+---
+
 # GamePilot v1.12.1 Release Notes
 
 ## Highlights
