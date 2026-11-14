@@ -15,6 +15,7 @@ import {
   Wrench,
   Pencil,
   MoreHorizontal,
+  Send,
 } from 'lucide-react';
 import { LaunchSourceMenu } from './LaunchSourceMenu';
 import { formatPrice, parseSteamPrice, storePurchasePrice, getCurrentCurrency } from '../CurrencyConverter';
@@ -46,6 +47,8 @@ import PatchNewsPanel from './PatchNewsPanel';
 import YouTubeVideosPanel from './YouTubeVideosPanel';
 import GameTrailersRow from './GameTrailersRow';
 import LocalScreenshotsRow from './LocalScreenshotsRow';
+import GameCapturesRow from './GameCapturesRow';
+import PostComposerModal from './PostComposerModal';
 import GameMemoirPanel from './GameMemoirPanel';
 import FriendsPlayedPanel from './FriendsPlayedPanel';
 import RecommendationPreferenceControl from './RecommendationPreferenceControl';
@@ -123,6 +126,7 @@ const GameModal = ({
   const [screenshots, setScreenshots] = useState([]);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
   const [showUninstall, setShowUninstall] = useState(false);
+  const [showPostComposer, setShowPostComposer] = useState(false);
   const [rating, setRating] = useState(game?.userRating || 0);
   const [replayIntent, setReplayIntent] = useState(game?.replayIntent || 'none');
   const [wouldReplay, setWouldReplay] = useState(null);
@@ -870,6 +874,7 @@ const GameModal = ({
                     )}
                     <GameTrailersRow movies={gameDetails?.movies} label={`${game.name} trailers`} />
                     <LocalScreenshotsRow appid={steamAppid} gameName={game.name} />
+                    <GameCapturesRow gameName={game.name} library={library} />
                   </div>
 
                   {detailsError && (
@@ -1746,6 +1751,20 @@ const GameModal = ({
                       disabled={isCapturing}
                     />
                   </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="game-modal-overflow-item"
+                    onClick={() => {
+                      setShowPostComposer(true);
+                      setOverflowOpen(false);
+                    }}
+                    title="Build a shareable post — Game Bar captures or cover art as the card, caption drafted for you"
+                  >
+                    <Send size={15} />
+                    Make a Post
+                  </button>
+
                   <div className="game-modal-overflow-share" onClickCapture={() => setOverflowOpen(false)}>
                     <ShareMenu
                       onCopyText={async (text = null) => {
@@ -1783,6 +1802,15 @@ const GameModal = ({
           </div>
         </div>
       </div>
+
+      {showPostComposer && (
+        <PostComposerModal
+          game={game}
+          gameStats={gameStats}
+          library={library}
+          onClose={() => setShowPostComposer(false)}
+        />
+      )}
 
       <UninstallModal
         isOpen={showUninstall}

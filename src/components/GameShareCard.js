@@ -194,7 +194,7 @@ export function buildGameShareCaption(data = {}) {
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
-export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null }) {
+export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null, coverImageOverride = null }) {
   const data = buildGameShareData(game, gameStats);
   const hasRating = data.rating > 0;
   const hasPlaytime = data.timePlayed > 0;
@@ -341,10 +341,10 @@ export function GameShareCard({ game = {}, gameStats = {}, socialLinks = null })
         {!hasPlaytime && !hasSessions && <div className="game-share-card-empty">Waiting for first session data...</div>}
       </div>
 
-      {data.coverUrl && (
+      {(coverImageOverride || data.coverUrl) && (
         <div
           className="game-share-card-cover-frame"
-          style={{ backgroundImage: `url(${data.coverUrl})` }}
+          style={{ backgroundImage: `url(${coverImageOverride || data.coverUrl})` }}
           aria-hidden="true"
         />
       )}
