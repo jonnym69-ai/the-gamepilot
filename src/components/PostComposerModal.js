@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, Copy, Download, Film, Image as ImageIcon, RefreshCw, Send, X } from 'lucide-react';
 import GameCapturesService from '../services/GameCapturesService';
 import { LocalShareService } from '../services/LocalShareService';
@@ -172,7 +173,7 @@ export default function PostComposerModal({ game, gameStats, library = [], onClo
 
   const canNativeShare = LocalShareService.canUseNativeShare();
 
-  return (
+  return createPortal(
     <div className="post-composer-overlay" role="dialog" aria-modal="true" aria-label="Make a post">
       <div className="post-composer">
         <div className="post-composer-header">
@@ -288,6 +289,7 @@ export default function PostComposerModal({ game, gameStats, library = [], onClo
           <GameShareCard game={game} gameStats={gameStats} coverImageOverride={bgDataUrl} />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
