@@ -5,8 +5,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 6, 10, 0.82);
-  backdrop-filter: blur(6px);
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(4, 6, 10, 0.94);
+  backdrop-filter: blur(14px) saturate(150%);
 }
 
 .post-composer {
@@ -14,9 +16,9 @@
   max-height: 92vh;
   overflow-y: auto;
   background: var(--bg-primary, #12161f);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
   border-radius: 16px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 40px 110px rgba(0, 0, 0, 0.8);
   padding: 20px 22px 22px;
 }
 
