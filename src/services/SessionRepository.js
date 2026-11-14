@@ -20,6 +20,21 @@ const getSessionMinutes = (entry) =>
     Math.round(Number(entry?.playtimeMinutes ?? entry?.playtime ?? entry?.duration ?? entry?.minutes ?? 0) || 0)
   );
 
+// When the session "happened" for windowing purposes: the sit-down's start.
+// Entries missing startTime anchor to end-minutes (the inferred start),
+// then to the end itself — matching GamingVitalsService's evening model.
+const getSessionStartMs = (entry) => {
+  const raw = entry?.startTime || entry?.started_at || null;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  const parsed = raw ? new Date(raw).getTime() : 0;
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  const end = getSessionTimestampMs(entry);
+  const minutes = getSessionMinutes(entry);
+  return end && minutes ? end - minutes * 60000 : end;
+};
+
+export { getSessionTimestampMs, getSessionMinutes, getSessionStartMs };
+
 /**
  * Collapse duplicate / near-duplicate session rows that can accumulate from
  * legacy localStorage + SQLite dual-writes, recovery re-settles, or missing

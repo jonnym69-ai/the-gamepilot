@@ -6,6 +6,8 @@
 // as that night's session, sleep-tracker style), and depth bands classify
 // each sit-down: deep >= 90 min, steady 15–90, hop < 15.
 
+import { getSessionMinutes, getSessionStartMs, getSessionTimestampMs } from './SessionRepository';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEEP_MIN = 90;
 const STEADY_MIN = 15;
@@ -17,13 +19,12 @@ const dateKey = (d) =>
 
 const depthBand = (minutes) => (minutes >= DEEP_MIN ? 'deep' : minutes >= STEADY_MIN ? 'steady' : 'hop');
 
-const normalize = (entry) => {
-  const end = new Date(entry?.endTime || entry?.timestamp || 0).getTime() || 0;
-  const startRaw = new Date(entry?.startTime || 0).getTime() || 0;
-  const minutes = Math.round(Number(entry?.playtimeMinutes ?? entry?.duration ?? 0) || 0);
-  const start = startRaw || (end && minutes ? end - minutes * 60000 : end);
-  return { game: entry?.gameName || 'a game', start, end, minutes };
-};
+const normalize = (entry) => ({
+  game: entry?.gameName || 'a game',
+  start: getSessionStartMs(entry),
+  end: getSessionTimestampMs(entry),
+  minutes: getSessionMinutes(entry),
+});
 
 const summarize = (sessions) => {
   const days = new Set();

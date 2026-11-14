@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Tag, CalendarClock } from 'lucide-react';
 import WishlistService from '../services/WishlistService';
 import ReleaseTrackerService, { WISHLIST_RELEASES_EVENT } from '../services/ReleaseTrackerService';
-import SessionRepository from '../services/SessionRepository';
+import SessionRepository, { getSessionMinutes, getSessionStartMs } from '../services/SessionRepository';
 import CurrentEraService from '../services/CurrentEraService';
 import './TodayStrip.css';
 
@@ -21,21 +21,11 @@ const getWeekSummary = () => {
     if (!Array.isArray(history)) return null;
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const weekSessions = history.filter((session) => {
-      const ts = new Date(session.endTime || session.timestamp || 0).getTime();
+      const ts = getSessionStartMs(session);
       return Number.isFinite(ts) && ts >= weekAgo;
     });
     if (weekSessions.length === 0) return null;
-    const totalMinutes = weekSessions.reduce(
-      (sum, session) =>
-        sum +
-        Math.max(
-          0,
-          Math.round(
-            Number(session.playtimeMinutes ?? session.playtime ?? session.duration ?? session.minutes ?? 0) || 0
-          )
-        ),
-      0
-    );
+    const totalMinutes = weekSessions.reduce((sum, session) => sum + getSessionMinutes(session), 0);
     return { sessions: weekSessions.length, totalMinutes };
   } catch {
     return null;

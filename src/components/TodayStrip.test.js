@@ -8,6 +8,7 @@ import WishlistService from '../services/WishlistService';
 import ReleaseTrackerService from '../services/ReleaseTrackerService';
 
 jest.mock('../services/SessionRepository', () => ({
+  ...jest.requireActual('../services/SessionRepository'),
   __esModule: true,
   default: { getSessionHistory: jest.fn() },
 }));
