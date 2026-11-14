@@ -75,3 +75,66 @@ describe('baseline PID handling', () => {
     expect(processMatchesMonitor(proc, monitor)).toBe(false);
   });
 });
+
+// Epic games launch through shim executables (PlayGTAV.exe, *EGSLauncher.exe)
+// and Unreal/EOS helper processes that stay running inside the install dir
+// after the real game exits. They must never satisfy the install-dir match —
+// that was the regression behind Epic sessions never detecting game-close.
+describe('game-folder helper process exclusion', () => {
+  const epicGame = {
+    name: 'Grand Theft Auto V Enhanced',
+    platform: 'Epic',
+    executable: 'com.epicgames.launcher://apps/8769e24080ea413b8ebca3f1b8c50951?action=launch&silent=true',
+    launchId: '8769e24080ea413b8ebca3f1b8c50951',
+    installDir: 'A:\\GTAVEnhanced',
+    launchExecutable: 'PlayGTAV.exe',
+  };
+
+  const epicProc = (name, procPath) => ({ pid: 900, name, path: procPath, command: procPath });
+
+  it('still matches the real game exe under the install dir', () => {
+    expect(
+      processMatchesMonitor(epicProc('GTA5_Enhanced.exe', 'a:\\gtavenhanced\\gta5_enhanced.exe'), monitorFor(epicGame))
+    ).toBe(true);
+  });
+
+  it('does not match the lingering Rockstar bootstrap stub', () => {
+    expect(
+      processMatchesMonitor(epicProc('PlayGTAV.exe', 'a:\\gtavenhanced\\playgtav.exe'), monitorFor(epicGame))
+    ).toBe(false);
+  });
+
+  it('does not match Epic EGSLauncher shims or UE/EOS helpers in the game dir', () => {
+    const arkGame = {
+      name: 'ARK: Survival Evolved',
+      platform: 'Epic',
+      executable: 'com.epicgames.launcher://apps/aafc587fbf654758802c8e41e4fb3255?action=launch&silent=true',
+      installDir: 'C:\\Program Files\\Epic Games\\ARKSurvivalEvolved',
+      launchExecutable: 'ShooterGame/Binaries/Win64/ArkEGSLauncher.exe',
+    };
+    const dir = 'c:\\program files\\epic games\\arksurvivalevolved';
+    const procs = [
+      epicProc('ArkEGSLauncher.exe', `${dir}\\shootergame\\binaries\\win64\\arkegslauncher.exe`),
+      epicProc('UnrealCEFSubProcess.exe', `${dir}\\engine\\binaries\\win64\\unrealcefsubprocess.exe`),
+      epicProc('EpicOnlineServicesInstaller.exe', `${dir}\\epiconlineservicesinstaller.exe`),
+      epicProc('CrashReportClient.exe', `${dir}\\shootergame\\binaries\\win64\\crashreportclient.exe`),
+    ];
+    const monitor = monitorFor(arkGame);
+    procs.forEach((proc) => expect(processMatchesMonitor(proc, monitor)).toBe(false));
+    expect(
+      processMatchesMonitor(
+        epicProc('ShooterGame.exe', `${dir}\\shootergame\\binaries\\win64\\shootergame.exe`),
+        monitor
+      )
+    ).toBe(true);
+  });
+
+  it('does not match anti-cheat service stubs left under the game dir', () => {
+    expect(
+      processMatchesMonitor(
+        epicProc('EasyAntiCheat_EOS.exe', 'a:\\gtavenhanced\\easyanticheat_eos.exe'),
+        monitorFor(epicGame)
+      )
+    ).toBe(false);
+  });
+});

@@ -11,6 +11,7 @@ const {
   buildMonitorMatcher,
   normalizeMatcherValue,
   activeGameMonitors,
+  isGameHelperProcess,
 } = require('./processMonitor');
 
 const PASSIVE_WATCH_POLL_MS = 30000;
@@ -70,6 +71,13 @@ const processMatchesWatchEntry = (processInfo, entry) => {
   const commandLine = `${processInfo?.command || processInfo?.params || ''}`.toLowerCase();
 
   if (KNOWN_LAUNCHER_PROCESS_NAMES.has(processName)) {
+    return false;
+  }
+
+  // Install-dir resident helpers (EGS shims, EOS, crash reporters, store
+  // bootstrap stubs like PlayGTAV.exe) outlive the real game — they must
+  // not be read as "still playing".
+  if (isGameHelperProcess(processInfo)) {
     return false;
   }
 

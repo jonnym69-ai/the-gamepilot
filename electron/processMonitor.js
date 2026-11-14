@@ -40,6 +40,51 @@ const KNOWN_LAUNCHER_PROCESS_NAMES = new Set([
 
 const activeGameMonitors = new Map();
 
+// Companion processes that live inside a game's install folder but are not
+// the game itself: Epic's *EGSLauncher.exe integration shims, EOS helpers,
+// Unreal CEF overlay subprocesses, crash reporters, anti-cheat stubs and
+// store bootstrap exes (e.g. GTA's PlayGTAV.exe). They routinely stay alive
+// after the real game exits, so they must never satisfy an install-dir
+// match — otherwise the session never sees "game closed".
+const GAME_HELPER_PROCESS_TOKENS = [
+  'egslauncher',
+  'epiconlineservices',
+  'eosoverlay',
+  'eosservice',
+  'unrealcefsubprocess',
+  'cefsubprocess',
+  'crashreport',
+  'crashreporter',
+  'crashhandler',
+  'crashpad',
+  'errorreporter',
+  'errorhandler',
+  'socialclubhelper',
+  'rockstarerrorhandler',
+  'playgtav',
+  'launchhelper',
+  'launcherhelper',
+  'gamelaunchhelper',
+  'launcher_patcher',
+  'easyanticheat',
+  'eac_launcher',
+  'eaclauncher',
+  'beservice',
+  'battleyelauncher',
+  'anticheat',
+  'gameoverlayui',
+  'redprelauncher',
+  'uplaywebcore',
+  'uplayinstaller',
+  'updater',
+  'unins',
+];
+
+const isGameHelperProcess = (processInfo) => {
+  const processName = `${processInfo?.name || ''}`.toLowerCase();
+  return Boolean(processName) && GAME_HELPER_PROCESS_TOKENS.some((token) => processName.includes(token));
+};
+
 const normalizeMatcherValue = (value = '') =>
   String(value)
     .toLowerCase()
@@ -114,6 +159,10 @@ const processMatchesMonitor = (processInfo, monitor) => {
   // A PID we spawned ourselves (or already tracked) is always the game.
   if (monitor.trackedPids.has(pid)) {
     return true;
+  }
+
+  if (isGameHelperProcess(processInfo)) {
+    return false;
   }
 
   const processName = `${processInfo.name || ''}`.toLowerCase();
@@ -341,6 +390,8 @@ function registerIpcHandlers(ipcMain) {
 
 module.exports = {
   KNOWN_LAUNCHER_PROCESS_NAMES,
+  GAME_HELPER_PROCESS_TOKENS,
+  isGameHelperProcess,
   activeGameMonitors,
   normalizeMatcherValue,
   tokenizeMatcherValue,
