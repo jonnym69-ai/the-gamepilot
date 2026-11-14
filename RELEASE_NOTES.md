@@ -1,3 +1,33 @@
+# GamePilot v1.12.1 Release Notes
+
+## Highlights
+
+v1.12.1 is a fix release. It also makes official two features that reached some later v1.12.0 downloads: Game Bar captures and Make a Post.
+
+## Fixes
+
+- **Epic sessions end on their own** — closing an Epic game now ends its session. Launcher shims and helpers that stay running inside the game folder (`PlayGTAV.exe`, `ArkEGSLauncher.exe`, crash reporters, Unreal web helpers, anti-cheat stubs) no longer keep it open. Applies to games launched from GamePilot and to games detected in the background.
+- **One "this week" number** — the Home strip and Gaming Vitals now count the same sessions (by start time) with the same playtime reader, so their weekly hours match.
+- **Pop-ups open on screen** — Make a Post, the Uninstall dialog opened from a game's More menu, the share caption dialog and the Showcase game picker were being pushed into the page flow by a background-layering rule and could open off-screen. They now stay fixed to the window.
+- **Wrapped persona share card** — carries the standard GamePilot footer link like every other share card.
+
+## What's new
+
+- **Captures** — Game Bar and NVIDIA screenshots and clips appear in the game modal, matched to a game by title or by the session that was running when they were saved. Files that match nothing are left unassigned rather than guessed.
+- **Make a Post** — from a game's More menu: a share card using one of your captures (or the cover art), a caption drafted from your real stats, and copy / save / X / Reddit / Discord actions.
+
+## Updating
+
+v1.12.0's download was replaced several times after release without a version change, so copies labelled 1.12.0 differ and were never offered these changes by the updater. v1.12.1 is the first build that delivers all of them; installed copies will be offered it.
+
+## Known issues
+
+- The Windows installer is unsigned (SmartScreen warning expected).
+- Captures are matched by file name and session time; clips recorded outside a tracked session stay unassigned.
+- The Linux build remains paused; no AppImage ships with v1.12.1.
+
+---
+
 # GamePilot v1.12.0 Release Notes
 
 ## Highlights

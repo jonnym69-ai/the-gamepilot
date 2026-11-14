@@ -2,9 +2,8 @@
 // users. Keep this short — 3 to 5 user-facing bullets, not a changelog.
 // Update alongside RELEASE_NOTES.md each release.
 export const WHATS_NEW = [
-  'Gaming vitals — a tracker-style readout on Home: session depth, your usual start time, weekly rhythm',
-  'Your history so far — day-one read built from your imported Steam/GOG/Epic playtime',
-  'Wishlist leveled up — compare every store, price-history chart, buy/wait verdicts, review scores, drag to rank',
-  'Game memoirs + trailers + your own Steam screenshots, inside every game modal',
-  'Notifications — opt-in toasts when a friend starts a game you own or a wishlist deal lands',
+  'Epic games now end their own sessions — quit the game and GamePilot notices, no manual End Session',
+  'Captures — Game Bar and NVIDIA screenshots and clips taken during a session appear in that game modal',
+  'Make a Post — turn a capture or cover art into a share card with a caption drafted from your real stats',
+  'Numbers that agree — "this week" hours on Home now match between the top strip and Gaming Vitals',
 ];
