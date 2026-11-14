@@ -479,3 +479,21 @@ The typecheck command is optional for JS-only changes.
   posts/last-played before counting. `PatchNewsPanel`'s badge says "N recent
   posts published since your last play" — it does not claim installed updates.
 - Regression checks: `npx jest src/services/GameSessionContext.test.js src/services/OwnedEnrichmentService.test.js src/services/SteamNewsService.test.js src/services/PCGamingWikiService.test.js src/components/GameModal.test.js src/components/OwnedGameModal.test.js src/components/PatchNewsPanel.test.js --ci`.
+
+## Overlays and the `.App > *` stacking rule
+
+- `src/components/AnimatedBackground.css` contains `.App > *:not(.animated-background) { position: relative; z-index: 1; }` (specificity 0,2,0). The `App` class is on `<body>` (kept there by `useTheme`) as well as on the Library and Settings page roots, so the rule applies to every direct child of `<body>` — including anything rendered with `createPortal(..., document.body)` — and to every direct child of those page roots.
+- A single-class `position: fixed` overlay in either position computes `position: relative; z-index: 1` and drops into normal page flow (below the app, or behind the game modal). New overlays must declare `position` and `z-index` with `!important` (as `.game-modal-overlay`, `.egm-overlay`, `.command-palette-overlay` do) or set them inline (as `PostComposerModal` does).
+- Jest cannot catch this: CSS is mocked. Check in a real browser by appending an element with the overlay class under `body.App` and reading its computed `position`.
+- `.library-analytics-overlay` (Library → Analytics) is a direct child of the Library root without `!important`, so by the same cascade it computes `position: relative`. It was left alone in v1.12.1 because changing it alters how the panel appears.
+- Do not change the rule itself without a cross-page, cross-theme visual pass. Lowering its specificity would turn in-flow elements such as the analytics panel into full-screen overlays; scoping it away from `<body>` would stop `#root` receiving `position: relative; z-index: 1` from it.
+- History: the Make a Post composer hit this rule. The causes recorded in commits `364015f` (z-index below the game modal) and `f4d09e7` (backdrop-filter containing block) were wrong. v1.12.1 pinned `.uninstall-modal-overlay`, `.share-caption-dialog-backdrop` and `.scpm-overlay`, which were caught the same way.
+
+## Release hygiene
+
+- Never replace the assets of a published release (`gh release upload --clobber`). It resets GitHub's download counters, and because the version is unchanged, installed copies are never offered the new build. Ship fixes as a new patch version: bump the version, add a `RELEASE_NOTES.md` entry, update `src/whatsNew.js`, rebuild, tag, and create a new release with `GamePilot-Setup.exe`, its `.blockmap` and `latest.yml`.
+- v1.12.0's assets were replaced several times after tagging, so binaries labelled 1.12.0 differ. v1.12.1 is the first build carrying every post-tag change.
+
+## Session window totals
+
+- `SessionRepository` exports `getSessionMinutes`, `getSessionStartMs` and `getSessionTimestampMs`. Any weekly or windowed total must use them (`TodayStrip` and `GamingVitalsService` do) so two surfaces cannot disagree. Tests that `jest.mock('../services/SessionRepository')` must spread `jest.requireActual(...)` to keep these named exports.

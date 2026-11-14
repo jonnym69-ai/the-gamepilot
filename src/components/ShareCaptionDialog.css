@@ -1,5 +1,5 @@
 .share-caption-dialog-backdrop {
-  position: fixed;
+  position: fixed !important;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   -webkit-backdrop-filter: blur(4px);
@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200000;
+  z-index: 200000 !important;
   padding: 16px;
   pointer-events: auto;
 }
