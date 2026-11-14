@@ -22,7 +22,6 @@ jest.mock('../services/SessionRepository', () => {
   };
 });
 jest.mock('./UninstallModal', () => () => null);
-jest.mock('./ShareMenu', () => ({ ShareMenu: () => null }));
 jest.mock('./GameShareCard', () => ({ GameShareCard: () => null }));
 jest.mock('./SessionLaunchShareCard', () => ({ SessionLaunchShareCard: () => null }));
 jest.mock('../services/RecommendationEngine', () => ({
@@ -125,6 +124,18 @@ test('secondary actions live in the overflow menu and run their callbacks', () =
   fireEvent.click(screen.getByRole('button', { name: /More/ }));
   fireEvent.click(screen.getByRole('menuitem', { name: 'Add to Favorites' }));
   expect(onToggleFavorite).toHaveBeenCalledTimes(1);
+});
+
+test('Share Game opens the share menu dropdown instead of closing the overflow menu', () => {
+  render(<GameModal game={game} isOpen onClose={jest.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: /More/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Share Game' }));
+
+  // The overflow menu also has role="menu"; the share dropdown portals to
+  // document.body, so find it among the open menus by its class.
+  const shareDropdown = screen.getAllByRole('menu').find((menu) => menu.classList.contains('share-menu-dropdown'));
+  expect(shareDropdown).toBeInTheDocument();
+  expect(within(shareDropdown).getByRole('menuitem', { name: 'Save share image' })).toBeInTheDocument();
 });
 
 test('does not offer Steam navigation for another launcher or malformed ID', () => {

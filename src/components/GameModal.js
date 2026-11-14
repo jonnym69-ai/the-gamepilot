@@ -1734,7 +1734,7 @@ const GameModal = ({
                     </button>
                   )}
 
-                  <div className="game-modal-overflow-share" onClickCapture={() => setOverflowOpen(false)}>
+                  <div className="game-modal-overflow-share" onClick={() => setOverflowOpen(false)}>
                     <ShareMenu
                       onCopyText={async (text = null) => {
                         const copied = await LocalShareService.copyTextToClipboard(text || buildGameShareText());
@@ -1765,7 +1765,7 @@ const GameModal = ({
                     Make a Post
                   </button>
 
-                  <div className="game-modal-overflow-share" onClickCapture={() => setOverflowOpen(false)}>
+                  <div className="game-modal-overflow-share" onClick={() => setOverflowOpen(false)}>
                     <ShareMenu
                       onCopyText={async (text = null) => {
                         const copied = await LocalShareService.copyTextToClipboard(text || buildGameSessionShareText());
