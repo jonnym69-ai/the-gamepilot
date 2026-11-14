@@ -23,9 +23,16 @@ export default function FriendsPlayedPanel({ game }) {
   const myMinutes = Number(game?.time_played ?? game?.playtimeForever) || 0;
 
   const compare = async () => {
-    const friends = (SteamFriendsService.getCached()?.friends || []).slice(0, MAX_FRIENDS);
+    let friends = SteamFriendsService.getCached()?.friends || [];
     if (friends.length === 0) {
-      setState({ status: 'done', rows: [], checked: 0 });
+      // The card's cache can be empty when its mount fetch timed out — ask
+      // directly before concluding nobody owns the game.
+      const fetched = await SteamFriendsService.fetchFriends();
+      if (fetched.success) friends = fetched.friends;
+    }
+    friends = friends.slice(0, MAX_FRIENDS);
+    if (friends.length === 0) {
+      setState({ status: 'error', rows: [], checked: 0 });
       return;
     }
     setState({ status: 'loading', rows: [], checked: 0 });
@@ -62,7 +69,7 @@ export default function FriendsPlayedPanel({ game }) {
         </button>
       )}
       {state.status === 'loading' && <p className="friends-played-note">Checking public libraries…</p>}
-      {state.status === 'error' && <p className="friends-played-note">Couldn’t reach Steam libraries right now.</p>}
+      {state.status === 'error' && <p className="friends-played-note">Couldn’t reach your Steam friends right now.</p>}
       {state.status === 'done' && (
         <>
           {state.rows.length === 0 ? (

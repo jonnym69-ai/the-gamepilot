@@ -7,6 +7,8 @@ const STEAM_LIBRARY_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamL
 const STEAM_ACHIEVEMENTS_RELAY_URL = 'https://gamepilot-moz.netlify.app/api/getSteamAchievements';
 const FRIENDS_CACHE = new Map();
 const FRIENDS_CACHE_TTL_MS = 60000;
+const FRIENDS_REQUEST_TIMEOUT_MS = 20000;
+const FRIENDS_RETRY_DELAY_MS = 1500;
 const PROFILE_CACHE = new Map();
 const PROFILE_CACHE_TTL_MS = 5 * 60000;
 const OWNED_CACHE = new Map();
@@ -1030,23 +1032,40 @@ function registerIpcHandlers(ipcMain) {
 
 // Shared fetcher — the 'steam-friends' handler caches around this; the
 // notifications friends-watcher calls it directly on its own interval.
+// A cold relay start plus two upstream Steam calls can outrun the default
+// 8s window, so the request gets a longer timeout and one retry. The retry
+// only applies to 'friends-unavailable' — a private list or a bad steamid
+// won't change on a second try.
 const fetchSteamFriends = async (steamId) => {
-  try {
-    const res = await httpsRequest(`${STEAM_FRIENDS_RELAY_URL}?steamid=${steamId}`, null, {
-      'User-Agent': 'GamePilot/1.9',
-      Accept: 'application/json',
-    });
-    if (res.status === 403) return { ok: false, error: 'friends-list-private' };
-    if (res.status !== 200) return { ok: false, error: 'friends-unavailable' };
-    const data = JSON.parse(res.body || '{}');
-    if (!Array.isArray(data?.friends)) return { ok: false, error: 'friends-unavailable' };
-    return {
-      friends: data.friends.slice(0, 200),
-      fetchedAt: Number(data.fetchedAt) || Date.now(),
-    };
-  } catch {
-    return { ok: false, error: 'friends-unavailable' };
-  }
+  const attempt = async () => {
+    try {
+      const res = await httpsRequest(
+        `${STEAM_FRIENDS_RELAY_URL}?steamid=${steamId}`,
+        null,
+        {
+          'User-Agent': 'GamePilot/1.9',
+          Accept: 'application/json',
+        },
+        FRIENDS_REQUEST_TIMEOUT_MS
+      );
+      if (res.status === 403) return { ok: false, error: 'friends-list-private' };
+      if (res.status !== 200) return { ok: false, error: 'friends-unavailable' };
+      const data = JSON.parse(res.body || '{}');
+      if (!Array.isArray(data?.friends)) return { ok: false, error: 'friends-unavailable' };
+      return {
+        ok: true,
+        friends: data.friends.slice(0, 200),
+        fetchedAt: Number(data.fetchedAt) || Date.now(),
+      };
+    } catch {
+      return { ok: false, error: 'friends-unavailable' };
+    }
+  };
+
+  const first = await attempt();
+  if (first.ok || first.error !== 'friends-unavailable') return first;
+  await sleep(FRIENDS_RETRY_DELAY_MS);
+  return attempt();
 };
 
 module.exports = { registerIpcHandlers, fetchSteamFriends };

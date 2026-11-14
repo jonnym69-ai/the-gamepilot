@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, RefreshCw, Users } from 'lucide-react';
 import SteamFriendsService from '../services/SteamFriendsService';
 import { getSteamAppId } from '../services/SteamStoreService';
@@ -14,6 +14,7 @@ const relativeTime = (timestamp) => {
 export default function FriendsPlayingCard({ library = [], onLaunchGame }) {
   const [state, setState] = useState({ status: 'loading', friends: [], fetchedAt: null, error: null });
   const [refreshing, setRefreshing] = useState(false);
+  const retriedRef = useRef(false);
 
   const load = useCallback(async (force = false) => {
     setRefreshing(true);
@@ -46,6 +47,15 @@ export default function FriendsPlayingCard({ library = [], onLaunchGame }) {
       cancelled = true;
     };
   }, []);
+
+  // A failed mount fetch is usually a cold relay — give it one automatic
+  // retry before leaving the error on screen. One per mount, never a loop.
+  useEffect(() => {
+    if (state.status !== 'error' || retriedRef.current) return undefined;
+    retriedRef.current = true;
+    const timer = setTimeout(() => load(true), 6000);
+    return () => clearTimeout(timer);
+  }, [state.status, load]);
 
   if (!SteamFriendsService.isEnabled() || !SteamFriendsService.getSteamId()) return null;
   if (state.status === 'loading') return null;
