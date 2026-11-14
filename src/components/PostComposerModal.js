@@ -174,7 +174,20 @@ export default function PostComposerModal({ game, gameStats, library = [], onClo
   const canNativeShare = LocalShareService.canUseNativeShare();
 
   return createPortal(
-    <div className="post-composer-overlay" role="dialog" aria-modal="true" aria-label="Make a post">
+    <div
+      className="post-composer-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Make a post"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 12000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <div className="post-composer">
         <div className="post-composer-header">
           <div>
