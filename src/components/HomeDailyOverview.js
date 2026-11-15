@@ -22,7 +22,7 @@ import WhatsNewCard from './WhatsNewCard';
 import WishlistService from '../services/WishlistService';
 import './HomeDailyOverview.css';
 
-export const HOME_VIEWS = ['today', 'discover', 'activity', 'identity', 'wishlist'];
+export const HOME_VIEWS = ['today', 'discover', 'activity', 'chronicle', 'identity', 'wishlist'];
 
 const VIEW_COPY = {
   today: ['Less browsing. More playing.', 'A game to play. A library to rediscover. A story that is yours.'],
@@ -31,6 +31,7 @@ const VIEW_COPY = {
     'Rediscover something you own, see Epic giveaways, or choose by mood and time.',
   ],
   activity: ['Your recent activity', 'Recorded sessions, recaps and milestones, in one place.'],
+  chronicle: ['Your gaming biography', 'Your gaming life, written from the sessions you actually played.'],
   identity: ['Your gaming identity', 'Your persona, eras and champions — built from how you play.'],
   wishlist: ['Worth keeping an eye on', 'Your wishlist, prices and purchase recommendations.'],
 };

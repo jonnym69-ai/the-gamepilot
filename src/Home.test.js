@@ -158,6 +158,14 @@ test('a directly opened Identity view survives remounting', () => {
   expect(screen.queryByRole('heading', { name: "Today's Spotlight" })).not.toBeInTheDocument();
 });
 
+test('Chronicle has a dedicated view and Identity keeps a compact entry point', () => {
+  setup({}, '/?view=identity');
+  fireEvent.click(screen.getByRole('link', { name: 'Open your book →' }));
+  expect(screen.getByRole('link', { name: 'Chronicle', exact: true })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByRole('heading', { name: 'Your gaming biography' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'The Gaming Life of the Player' })).toBeInTheDocument();
+});
+
 test('a new player sees honest story placeholders rather than invented progress', () => {
   CurrentEraService.getCurrentEra.mockReturnValue(null);
   SessionRepository.getSessionHistory.mockReturnValue([]);
@@ -181,7 +189,7 @@ test('Today preserves every Home tab and session control', () => {
   fireEvent.click(screen.getByRole('button', { name: 'End session' }));
   expect(endSession).toHaveBeenCalledWith('Hades');
   const navigation = within(screen.getByRole('navigation', { name: 'Home sections' }));
-  for (const view of ['Discover', 'Activity', 'Identity', 'Wishlist', 'Today']) {
+  for (const view of ['Discover', 'Activity', 'Chronicle', 'Identity', 'Wishlist', 'Today']) {
     fireEvent.click(navigation.getByRole('link', { name: view, exact: true }));
     expect(navigation.getByRole('link', { name: view, exact: true })).toHaveAttribute('aria-current', 'page');
   }

@@ -132,6 +132,7 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
       aria-label={chapter.title}
     >
       <div className={`chronicle-chapter-visual${visualSrc ? ' has-artwork' : ''}`}>
+        {visualSrc && <img src={visualSrc} alt="" className="chronicle-banner-backdrop" aria-hidden="true" />}
         {visualSrc && (
           <LazyImage
             src={visualSrc}

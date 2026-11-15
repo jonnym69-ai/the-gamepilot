@@ -7,7 +7,7 @@ import WishlistService from './services/WishlistService';
 import { HabitTrackerService } from './services/HabitTrackerService';
 import NotificationService from './services/NotificationService';
 import CollapsibleSection from './components/CollapsibleSection';
-import { Sparkles } from 'lucide-react';
+import { BookOpen, Sparkles } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import HomeDailyOverview, { HOME_VIEWS, HomeViewNavigation } from './components/HomeDailyOverview';
 import BacklogBusterList from './components/BacklogBusterList';
@@ -1405,8 +1405,18 @@ function Home({
             <TrendingNowCard library={library} onLaunchGame={handleTrackedLaunch} />
             <DiscoverHighlights library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
           </div>
-          <div className="home-persona-section">
+          <div className="home-chronicle-section">
             <ChronicleCard library={library} username={username} />
+          </div>
+          <div className="home-persona-section">
+            <div className="result-card identity-card chronicle-card chronicle-entry-card">
+              <BookOpen size={22} aria-hidden="true" />
+              <div>
+                <h3>Your Chronicle</h3>
+                <p>Your gaming life, written as an illustrated book with the session receipts behind it.</p>
+              </div>
+              <Link to="/?view=chronicle">Open your book →</Link>
+            </div>
             <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
             <AchievementCompletionCard library={library} />
           </div>

@@ -21,6 +21,7 @@ const VIEW_SECTIONS = {
     'home-backlog-section',
   ],
   activity: ['home-activity-section'],
+  chronicle: ['home-chronicle-section'],
   identity: ['home-persona-section'],
   wishlist: ['home-wishlist-section', 'home-buy-next-section'],
 };

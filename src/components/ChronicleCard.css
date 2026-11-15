@@ -13,6 +13,37 @@
   }
 }
 
+.chronicle-entry-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 18px;
+}
+.chronicle-entry-card > svg {
+  color: var(--chronicle-accent);
+}
+.chronicle-entry-card h3 {
+  margin: 0 0 4px;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.chronicle-entry-card p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--chronicle-muted);
+}
+.chronicle-entry-card a {
+  padding: 7px 11px;
+  border: 1px solid var(--chronicle-line);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--chronicle-ink);
+  text-decoration: none;
+}
+
 .chronicle-title-page {
   padding: 30px 18px 26px;
   text-align: center;
@@ -161,8 +192,19 @@
 .chronicle-chapter.is-expanded .chronicle-chapter-visual {
   height: 184px;
 }
+.chronicle-banner-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: blur(18px) brightness(0.45);
+  transform: scale(1.08);
+}
 .chronicle-chapter-visual .lazy-image-container {
   position: absolute;
+  z-index: 1;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -171,8 +213,10 @@
 .chronicle-chapter-visual .lazy-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 32%;
+  padding: 8px 16px 38px;
+  object-fit: contain;
+  object-position: right center;
+  box-sizing: border-box;
 }
 .chronicle-chapter-visual .lazy-image-fallback {
   height: 100%;
@@ -180,6 +224,7 @@
 .chronicle-chapter-visual.has-artwork::after {
   content: '';
   position: absolute;
+  z-index: 1;
   inset: 0;
   background: linear-gradient(180deg, rgba(5, 6, 10, 0.08) 10%, rgba(5, 6, 10, 0.88) 100%);
   pointer-events: none;
