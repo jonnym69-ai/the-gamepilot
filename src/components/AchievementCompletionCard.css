@@ -35,8 +35,8 @@
   height: 26px;
   border-radius: 8px;
   border: 1px solid rgba(251, 191, 36, 0.3);
-  background: transparent;
-  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.14);
+  color: #fcd34d;
   cursor: pointer;
 }
 .achievement-review-rescan:hover:not(:disabled) {

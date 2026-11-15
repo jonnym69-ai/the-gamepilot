@@ -158,7 +158,7 @@ describe('buildChronicle', () => {
     const { chapters } = buildChronicle(buildSampleSessions(), []);
     const august = chapters[1];
     expect(august.paragraphs[0]).toContain('The record had gone quiet for sixteen days');
-    expect(august.paragraphs[0]).toContain('Then came the consolidation.');
+    expect(august.paragraphs[0]).toContain('The consolidation came next.');
     expect(august.paragraphs[0]).toContain(
       'August: 113 hours, nine of every ten recorded minutes inside Project Zomboid'
     );

@@ -417,9 +417,9 @@
   padding: 6px 10px;
   border: 1px solid var(--chronicle-line);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--accent-muted, rgba(61, 217, 255, 0.14));
   font-size: 0.7rem;
-  color: var(--chronicle-muted);
+  color: var(--chronicle-ink);
   cursor: pointer;
 }
 .chronicle-share-button:hover:not(:disabled) {

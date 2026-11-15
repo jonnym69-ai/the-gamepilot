@@ -403,24 +403,24 @@ const shapeSentence = ({ month, prev, index }) => {
   }
 
   if (month.isSingleGame && domName && share > 0.95) {
-    return `Then ${month.label} went further — ${durationWords(month.minutes) || 'recorded time'} of ${domName} and not one recorded minute anywhere else.`;
+    return `${month.label} went further — ${durationWords(month.minutes) || 'recorded time'} of ${domName} and not one recorded minute anywhere else.`;
   }
   if (domName && shareDelta >= 0.3) {
-    return `Then came the consolidation. ${month.label}: ${durationWords(month.minutes) || 'recorded time'}, ${sharePhrase(share)} inside ${domName}.`;
+    return `The consolidation came next. ${month.label}: ${durationWords(month.minutes) || 'recorded time'}, ${sharePhrase(share)} inside ${domName}.`;
   }
   if (domName && shareDelta >= 0.15) {
-    return `Then ${month.label} tightened its focus — ${sharePhrase(share)} inside ${domName}, ${durationWords(month.minutes) || 'recorded time'} in all.`;
+    return `${month.label} tightened its focus — ${sharePhrase(share)} inside ${domName}, ${durationWords(month.minutes) || 'recorded time'} in all.`;
   }
   if (varietyJump >= 3) {
-    return `Then the edges returned — ${numWord(month.varietyCount)} different games passed through ${month.label}${domName ? `, led by ${domName}` : ''}.`;
+    return `The edges returned in ${month.label} — ${numWord(month.varietyCount)} different games passed through${domName ? `, led by ${domName}` : ''}.`;
   }
   if (domName && shareDelta <= -0.25) {
-    return `Then ${month.label} opened up — ${domName}'s share slipped to ${sharePhrase(share)} as other games drew time.`;
+    return `${month.label} opened up — ${domName}'s share slipped to ${sharePhrase(share)} as other games drew time.`;
   }
   if (month.varietyCount > 0) {
-    return `Then ${month.label} logged ${countWords(month.sessions, 'session')} across ${countWords(month.varietyCount, 'game')}${month.minutes > 0 ? ` — ${durationWords(month.minutes)} in all` : ''}${domName ? `, led by ${domName}` : ''}.`;
+    return `${month.label} logged ${countWords(month.sessions, 'session')} across ${countWords(month.varietyCount, 'game')}${month.minutes > 0 ? ` — ${durationWords(month.minutes)} in all` : ''}${domName ? `, led by ${domName}` : ''}.`;
   }
-  return `Then ${month.label} logged ${countWords(month.sessions, 'session')}${month.minutes > 0 ? ` — ${durationWords(month.minutes)} in all` : ''}.`;
+  return `${month.label} logged ${countWords(month.sessions, 'session')}${month.minutes > 0 ? ` — ${durationWords(month.minutes)} in all` : ''}.`;
 };
 
 const buildOthersSentence = (month) => {
