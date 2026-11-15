@@ -35,12 +35,7 @@ import DiskUsageService from './services/DiskUsageService';
 import WishlistService from './services/WishlistService';
 import ReleaseTrackerService from './services/ReleaseTrackerService';
 import BuyRecommendationService from './services/BuyRecommendationService';
-import SteamWishlistService from './services/SteamWishlistService';
-import SteamFriendsService from './services/SteamFriendsService';
 import NotificationService from './services/NotificationService';
-import SteamProfileService from './services/SteamProfileService';
-import SteamOwnedGamesService from './services/SteamOwnedGamesService';
-import EpicAccountService from './services/EpicAccountService';
 import IgdbArtworkService from './services/IgdbArtworkService';
 import ApiKeysSection, { getConnectedKeyCount } from './components/ApiKeysSection';
 import { SessionService } from './services/SessionService';
@@ -81,19 +76,8 @@ function Settings({
   const [buyRecommendationsEnabled, setBuyRecommendationsEnabled] = useState(() =>
     BuyRecommendationService.isEnabled()
   );
-  const [steamWishlistEnabled, setSteamWishlistEnabled] = useState(() => SteamWishlistService.isEnabled());
-  const [steamId, setSteamId] = useState(() => SteamWishlistService.getSteamId());
-  const [steamWishlistSyncing, setSteamWishlistSyncing] = useState(false);
-  const [steamWishlistLastResult, setSteamWishlistLastResult] = useState(() => SteamWishlistService.getLastResult());
-  const [steamProfileEnabled, setSteamProfileEnabled] = useState(() => SteamProfileService.isEnabled());
-  const [steamFriendsEnabled, setSteamFriendsEnabled] = useState(() => SteamFriendsService.isEnabled());
   const [notifFriendsEnabled, setNotifFriendsEnabled] = useState(() => NotificationService.getPrefs().friends);
   const [notifDealsEnabled, setNotifDealsEnabled] = useState(() => NotificationService.getPrefs().deals);
-  const [steamOwnedGamesEnabled, setSteamOwnedGamesEnabled] = useState(() => SteamOwnedGamesService.isEnabled());
-  const [epicLinked, setEpicLinked] = useState(() => EpicAccountService.isLinked());
-  const [epicDisplayName, setEpicDisplayName] = useState(() => EpicAccountService.getAccountMeta()?.displayName || '');
-  const [epicLinkBusy, setEpicLinkBusy] = useState(false);
-  const [epicLinkError, setEpicLinkError] = useState(null);
   const [igdbArtworkEnabled, setIgdbArtworkEnabled] = useState(() => IgdbArtworkService.isEnabled());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
@@ -142,18 +126,6 @@ function Settings({
     setCustomBgOverlay(parseInt(StorageService.getString('customBgOverlay', '30')));
     refreshShortcutSettings();
   }, [refreshShortcutSettings]);
-
-  useEffect(() => {
-    let active = true;
-    EpicAccountService.refreshStatus().then((status) => {
-      if (!active) return;
-      setEpicLinked(status.linked === true);
-      setEpicDisplayName(status.displayName || EpicAccountService.getAccountMeta()?.displayName || '');
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1088,143 +1060,6 @@ function Settings({
                     </div>
 
                     <div className="setting-item">
-                      <label>Steam Wishlist Import</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={steamWishlistEnabled}
-                          onChange={(e) => {
-                            const next = e.target.checked;
-                            setSteamWishlistEnabled(next);
-                            SteamWishlistService.setEnabled(next);
-                            success(`Steam Wishlist import ${next ? 'enabled' : 'disabled'}.`);
-                          }}
-                          id="steam-wishlist-enabled"
-                        />
-                        <label htmlFor="steam-wishlist-enabled" className="toggle-slider"></label>
-                      </div>
-                      <p className="setting-description">
-                        Off by default. Import your public Steam wishlist using your Steam64 ID. Adds those games to
-                        GamePilot's local Wishlist so Buy Recommendations can rank what to buy next. Your ID and
-                        wishlist data stay on-device.
-                      </p>
-                      {steamWishlistEnabled && (
-                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <input
-                              type="text"
-                              placeholder="Paste your Steam64 ID or profile URL..."
-                              value={steamId}
-                              onChange={(e) => {
-                                const next = e.target.value;
-                                setSteamId(next);
-                                SteamWishlistService.setSteamId(next);
-                              }}
-                              onBlur={() => {
-                                const normalized = SteamWishlistService.getSteamId();
-                                setSteamId(normalized);
-                              }}
-                              style={{
-                                flex: 1,
-                                padding: '8px 10px',
-                                borderRadius: '6px',
-                                border: '1px solid var(--border)',
-                                background: 'var(--bg)',
-                                color: 'var(--text)',
-                              }}
-                            />
-                            <button
-                              className="export-button"
-                              disabled={!SteamWishlistService.getSteamId() || steamWishlistSyncing}
-                              onClick={async () => {
-                                setSteamWishlistSyncing(true);
-                                try {
-                                  const normalized = SteamWishlistService.getSteamId();
-                                  setSteamId(normalized);
-                                  const result = await SteamWishlistService.sync();
-                                  setSteamWishlistLastResult(result);
-                                  if (result.success) {
-                                    success(
-                                      `Synced ${result.count} game${result.count === 1 ? '' : 's'} from Steam wishlist.`
-                                    );
-                                  } else {
-                                    const msg = result.error || 'Steam wishlist sync failed.';
-                                    console.warn('[Settings] Steam wishlist sync:', msg);
-                                  }
-                                } finally {
-                                  setSteamWishlistSyncing(false);
-                                }
-                              }}
-                              style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}
-                            >
-                              {steamWishlistSyncing ? 'Syncing...' : 'Sync Now'}
-                            </button>
-                          </div>
-                          {steamWishlistLastResult?.fetchedAt && (
-                            <p className="setting-description" style={{ margin: '4px 0 0' }}>
-                              {steamWishlistLastResult.success
-                                ? `Last sync: ${steamWishlistLastResult.count} new game${steamWishlistLastResult.count === 1 ? '' : 's'} added from ${steamWishlistLastResult.totalFetched} fetched.`
-                                : `Last sync failed: ${steamWishlistLastResult.error}`}
-                              {steamWishlistLastResult.success &&
-                                steamWishlistLastResult.skippedCount > 0 &&
-                                ` ${steamWishlistLastResult.skippedCount} could not be imported because Steam game details were unavailable. Try Sync Now again later.`}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Steam Friends Presence</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={steamFriendsEnabled}
-                          onChange={(e) => {
-                            const next = e.target.checked;
-                            setSteamFriendsEnabled(next);
-                            SteamFriendsService.setEnabled(next);
-                            NotificationService.syncFriendsWatch(library);
-                            success(`Steam friends presence ${next ? 'enabled' : 'disabled'}.`);
-                          }}
-                          id="steam-friends-enabled"
-                        />
-                        <label htmlFor="steam-friends-enabled" className="toggle-slider"></label>
-                      </div>
-                      <p className="setting-description">
-                        Off by default. Shows which of your Steam friends are online and what they're playing on the
-                        Today page. Uses the same Steam64 ID as wishlist import and requires your Steam friends list to
-                        be public. Presence is read-only — GamePilot never changes your Steam status or messages anyone.
-                      </p>
-                      {steamFriendsEnabled && (
-                        <div style={{ marginTop: '12px' }}>
-                          <input
-                            type="text"
-                            placeholder="Paste your Steam64 ID or profile URL..."
-                            value={steamId}
-                            onChange={(e) => {
-                              const next = e.target.value;
-                              setSteamId(next);
-                              SteamFriendsService.setSteamId(next);
-                            }}
-                            onBlur={() => {
-                              setSteamId(SteamFriendsService.getSteamId());
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '8px 10px',
-                              borderRadius: '6px',
-                              border: '1px solid var(--border)',
-                              background: 'var(--bg)',
-                              color: 'var(--text)',
-                              boxSizing: 'border-box',
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="setting-item">
                       <label>Friend playing alerts</label>
                       <div className="toggle-switch">
                         <input
@@ -1245,7 +1080,8 @@ function Settings({
                       </div>
                       <p className="setting-description">
                         Windows notifications when a Steam friend starts playing a game in your library — works while
-                        GamePilot sits in the tray. Requires Steam friends presence to be enabled.
+                        GamePilot sits in the tray. Requires Steam friends presence, set up under Integrations &amp; API
+                        Keys.
                       </p>
                     </div>
 
@@ -1268,124 +1104,6 @@ function Settings({
                       <p className="setting-description">
                         Toast once when a wishlisted game hits your target price or a new historical low.
                       </p>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Steam Profile Card</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={steamProfileEnabled}
-                          onChange={(e) => {
-                            const next = e.target.checked;
-                            setSteamProfileEnabled(next);
-                            SteamProfileService.setEnabled(next);
-                            success(`Steam profile card ${next ? 'enabled' : 'disabled'}.`);
-                          }}
-                          id="steam-profile-enabled"
-                        />
-                        <label htmlFor="steam-profile-enabled" className="toggle-slider"></label>
-                      </div>
-                      <p className="setting-description">
-                        Off by default. Shows your Steam persona name, avatar, level, badge count and join date on the
-                        Profile page. Uses the same Steam64 ID as wishlist import. Only public Steam profile data is
-                        read — nothing is posted or changed.
-                      </p>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Steam Owned Games (Not Installed)</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={steamOwnedGamesEnabled}
-                          onChange={(e) => {
-                            const next = e.target.checked;
-                            setSteamOwnedGamesEnabled(next);
-                            SteamOwnedGamesService.setEnabled(next);
-                            success(`Steam owned games ${next ? 'enabled' : 'disabled'}.`);
-                          }}
-                          id="steam-owned-games-enabled"
-                        />
-                        <label htmlFor="steam-owned-games-enabled" className="toggle-slider"></label>
-                      </div>
-                      <p className="setting-description">
-                        Off by default. Shows games you own on Steam that aren&apos;t installed, with one-click install
-                        links, in an &quot;Owned, not installed&quot; section on the Library page. Uses the same Steam64
-                        ID as wishlist import and requires your Steam game details to be public. Read-only — nothing is
-                        installed, posted or changed automatically. Steam free games appear only if they have recorded
-                        playtime.
-                      </p>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>Epic Account (Owned Games)</label>
-                      <div>
-                        {epicLinked ? (
-                          <button
-                            type="button"
-                            className="export-button"
-                            onClick={async () => {
-                              setEpicLinkBusy(true);
-                              try {
-                                await EpicAccountService.disconnect();
-                                setEpicLinked(false);
-                                setEpicDisplayName('');
-                                setEpicLinkError(null);
-                                success('Epic account disconnected.');
-                              } finally {
-                                setEpicLinkBusy(false);
-                              }
-                            }}
-                            disabled={epicLinkBusy}
-                          >
-                            {epicLinkBusy ? 'Working…' : 'Disconnect'}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="export-button"
-                            onClick={async () => {
-                              setEpicLinkBusy(true);
-                              setEpicLinkError(null);
-                              try {
-                                const result = await EpicAccountService.link();
-                                if (result.success) {
-                                  setEpicLinked(true);
-                                  setEpicDisplayName(result.displayName || '');
-                                  success(
-                                    `Epic account linked${result.displayName ? ` as ${result.displayName}` : ''}.`
-                                  );
-                                } else if (result.code !== 'cancelled') {
-                                  setEpicLinkError(result.error || 'Epic sign-in failed — try again.');
-                                }
-                              } finally {
-                                setEpicLinkBusy(false);
-                              }
-                            }}
-                            disabled={epicLinkBusy}
-                          >
-                            {epicLinkBusy ? 'Waiting for sign-in…' : 'Link Epic Account'}
-                          </button>
-                        )}
-                      </div>
-                      <p className="setting-description">
-                        Off by default. Sign in once on Epic&apos;s own page to show games you own on Epic that
-                        aren&apos;t installed, with install links, in the &quot;Owned, not installed&quot; section on
-                        the Library page. Your session token is encrypted, stored only on this PC, used solely to read
-                        your Epic library, and removed by Disconnect. Read-only — nothing is installed, posted or
-                        changed automatically.
-                      </p>
-                      {epicLinked && epicDisplayName && (
-                        <p className="setting-description" style={{ margin: '4px 0 0' }}>
-                          Linked as {epicDisplayName}.
-                        </p>
-                      )}
-                      {epicLinkError && (
-                        <p className="setting-description" style={{ margin: '4px 0 0' }}>
-                          {epicLinkError}
-                        </p>
-                      )}
                     </div>
 
                     <div className="setting-item">
@@ -1525,14 +1243,14 @@ function Settings({
               </CollapsibleSection>
 
               <CollapsibleSection
-                title="API Keys"
-                subtitle="Free keys that unlock artwork, retro achievements, itch games and video previews."
+                title="Integrations & API Keys"
+                subtitle="Connect Steam, Epic and free keys to unlock sync, artwork, achievements and more."
                 badge={getConnectedKeyCount() > 0 ? `${getConnectedKeyCount()} connected` : 'Free unlocks'}
                 icon={<KeyRound size={18} />}
                 className="settings-folder"
                 defaultOpen
               >
-                <ApiKeysSection />
+                <ApiKeysSection library={library} />
               </CollapsibleSection>
 
               <CollapsibleSection

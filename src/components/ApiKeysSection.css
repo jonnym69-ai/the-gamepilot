@@ -70,9 +70,27 @@
   gap: 10px;
 }
 
+.api-key-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0 2px;
+}
+
+.api-key-toggle-list .api-key-toggle-row {
+  justify-content: space-between;
+}
+
 .api-key-toggle-label {
   font-size: 0.85rem;
   opacity: 0.75;
+}
+
+.api-key-toggle-sub {
+  display: block;
+  font-size: 0.76rem;
+  opacity: 0.7;
+  margin-top: 2px;
 }
 
 .api-key-guide-open {

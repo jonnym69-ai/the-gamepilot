@@ -30,6 +30,7 @@ import { MilestonesShareCard, buildMilestonesShareCaption } from './components/M
 import { EraTimelineBar, eraTimelineColor } from './components/EraTimelineBar';
 import ShareMenu from './components/ShareMenu';
 import YearWrappedModal from './components/YearWrappedModal';
+import ChronicleCard from './components/ChronicleCard';
 import LazyImage from './components/LazyImage';
 import { formatPlaytime } from './utils/formatPlaytime';
 import './YearInReview.css';
@@ -38,6 +39,7 @@ const COLOR_FUNCTION_PATTERN = /\b(color\(|color-mix\()/i;
 
 const YEAR_REVIEW_TABS = Object.freeze([
   { id: 'overview', label: 'Overview' },
+  { id: 'chronicle', label: 'Chronicle' },
   { id: 'story', label: 'Story' },
   { id: 'milestones', label: 'Milestones' },
   { id: 'eras', label: 'Eras' },
@@ -773,6 +775,17 @@ function YearInReview({ library = [] }) {
                       </div>
                     </button>
                   )}
+                </div>
+              )}
+
+              {(activeTab === 'chronicle' || isCapturingAll) && (
+                <div
+                  role="tabpanel"
+                  id="year-review-panel-chronicle"
+                  aria-labelledby="year-review-tab-chronicle"
+                  className="year-review-tabpanel"
+                >
+                  <ChronicleCard library={library} username={pilotName} />
                 </div>
               )}
 

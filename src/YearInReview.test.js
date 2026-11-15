@@ -153,11 +153,18 @@ beforeEach(() => {
   getRecapSeasonYear.mockReturnValue(null);
 });
 
-test('renders five tabs with Overview active by default', () => {
+test('renders six tabs with Overview active by default', () => {
   renderPage();
 
   const tabs = screen.getAllByRole('tab');
-  expect(tabs.map((tab) => tab.textContent)).toEqual(['Overview', 'Story', 'Milestones', 'Eras', 'Numbers']);
+  expect(tabs.map((tab) => tab.textContent)).toEqual([
+    'Overview',
+    'Chronicle',
+    'Story',
+    'Milestones',
+    'Eras',
+    'Numbers',
+  ]);
   expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
 
   // Overview shows the uniform glance grid, the single identity card and the era strip.

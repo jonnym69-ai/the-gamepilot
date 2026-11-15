@@ -21,7 +21,15 @@ export default function ApiKeyGuideModal({ isOpen, onClose, guide }) {
   if (!isOpen || !guide) return null;
 
   return createPortal(
-    <div className="api-key-guide-backdrop" onClick={onClose} role="presentation">
+    // Inline pinning is deliberate: <body> itself carries the .App class, so
+    // `.App > *` CSS strips fixed positioning from anything portaled to body.
+    <div
+      className="api-key-guide-backdrop"
+      data-testid="api-key-guide-backdrop"
+      style={{ position: 'fixed', inset: 0, zIndex: 12000 }}
+      onClick={onClose}
+      role="presentation"
+    >
       <div
         className="api-key-guide"
         onClick={(event) => event.stopPropagation()}
