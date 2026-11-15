@@ -121,6 +121,13 @@ describe('buildChronicle', () => {
     expect(september.isSingleGame).toBe(true);
     expect(september.dominantGame.share).toBe(1);
     expect(september.lateNightCount).toBe(2);
+    expect(july.receipts).toHaveLength(15);
+    expect(july.receipts[0]).toEqual({
+      gameName: 'Mark of the Deep',
+      startMs: at(2026, 6, 13, 20, 0).getTime(),
+      endMs: at(2026, 6, 13, 20, 14).getTime(),
+      minutes: 14,
+    });
   });
 
   it('writes one chapter per month, oldest first, with templated titles', () => {

@@ -1,11 +1,10 @@
-/* Your Chronicle — a book-styled, in-page biographer card. Theme tokens keep
-   the shared result-card shell; serif prose and hairlines make it read like a
-   bound volume. */
+/* Your Chronicle — an in-page book, with a title page, illustrated chapters,
+   expandable evidence and a separately rendered social page for sharing. */
 .chronicle-card {
-  --chronicle-line: rgba(255, 255, 255, 0.09);
+  --chronicle-line: rgba(255, 255, 255, 0.1);
   --chronicle-ink: var(--text-primary, var(--text, #f1f5f9));
-  --chronicle-muted: var(--text-secondary, #94a3b8);
-  --chronicle-faint: var(--text-tertiary, #64748b);
+  --chronicle-muted: var(--text-secondary, #a8b0bd);
+  --chronicle-faint: var(--text-tertiary, #7f8794);
   --chronicle-accent: var(--accent, #3dd9ff);
 }
 @supports (color: color-mix(in srgb, black, white)) {
@@ -14,10 +13,12 @@
   }
 }
 
-.chronicle-header {
+.chronicle-title-page {
+  padding: 30px 18px 26px;
   text-align: center;
-  padding-bottom: 14px;
   border-bottom: 1px solid var(--chronicle-line);
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.055), transparent 60%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent);
 }
 .chronicle-title-row {
   display: flex;
@@ -26,16 +27,22 @@
   gap: 8px;
   color: var(--chronicle-accent);
 }
-.chronicle-title {
-  margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.45rem;
+.chronicle-kicker {
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.chronicle-book-title {
+  margin: 14px 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.55rem, 3vw, 2.15rem);
+  font-weight: 500;
   letter-spacing: 0.01em;
   color: var(--chronicle-ink);
 }
 .chronicle-subtitle {
-  margin: 2px 0 0;
+  margin: 7px 0 0;
   font-family: Georgia, 'Times New Roman', serif;
   font-style: italic;
   font-size: 0.9rem;
@@ -45,17 +52,23 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 10px 0 0;
-  padding: 3px 12px;
+  margin: 16px 0 0;
+  padding: 4px 12px;
   border: 1px solid var(--chronicle-line);
   border-radius: 999px;
   font-size: 0.72rem;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--chronicle-muted);
 }
-.chronicle-protagonist strong {
+.chronicle-protagonist strong,
+.chronicle-title-evidence strong {
   color: var(--chronicle-ink);
-  font-weight: 600;
+}
+.chronicle-title-evidence {
+  margin: 12px 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--chronicle-faint);
 }
 
 .chronicle-empty {
@@ -67,89 +80,193 @@
   line-height: 1.6;
 }
 
-/* Prologue — the opening page, narrower than the chapter measure. */
+.chronicle-contents {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--chronicle-line);
+}
+.chronicle-contents-label {
+  flex: 0 0 auto;
+  padding-top: 5px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--chronicle-faint);
+}
+.chronicle-contents-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chronicle-contents-list button {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.72rem;
+  text-align: left;
+  color: var(--chronicle-muted);
+  cursor: pointer;
+}
+.chronicle-contents-list button:hover,
+.chronicle-contents-list button:focus-visible {
+  border-color: var(--chronicle-line);
+  color: var(--chronicle-ink);
+  background: rgba(255, 255, 255, 0.035);
+}
+
 .chronicle-prologue {
-  max-width: 34em;
+  max-width: 38em;
   margin: 0 auto;
-  padding: 18px 0 6px;
+  padding: 30px 0;
   text-align: center;
+  scroll-margin-top: 20px;
 }
 .chronicle-prologue-heading {
-  margin: 0 0 10px;
-  font-size: 0.72rem;
+  margin: 0 0 14px;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--chronicle-faint);
 }
 .chronicle-caption {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   font-size: 0.68rem;
   font-style: italic;
   color: var(--chronicle-faint);
 }
 
 .chronicle-chapter {
-  padding: 18px 0;
+  padding: 16px 0;
+  scroll-margin-top: 16px;
 }
+.chronicle-prologue + .chronicle-chapter,
 .chronicle-chapter + .chronicle-chapter {
   border-top: 1px solid var(--chronicle-line);
 }
-.chronicle-prologue + .chronicle-chapter {
-  border-top: 1px solid var(--chronicle-line);
+.chronicle-chapter-visual {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  border: 1px solid var(--chronicle-line);
+  border-radius: 8px;
+  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06), transparent 45%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.035), rgba(0, 0, 0, 0.15));
+}
+.chronicle-chapter.is-expanded .chronicle-chapter-visual {
+  height: 184px;
+}
+.chronicle-chapter-visual .lazy-image-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.chronicle-chapter-visual .lazy-image-container img,
+.chronicle-chapter-visual .lazy-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 32%;
+}
+.chronicle-chapter-visual .lazy-image-fallback {
+  height: 100%;
+}
+.chronicle-chapter-visual.has-artwork::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 6, 10, 0.08) 10%, rgba(5, 6, 10, 0.88) 100%);
+  pointer-events: none;
 }
 .chronicle-chapter-head {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  width: 100%;
+  padding: 28px 16px 14px;
+  border: 0;
+  background: linear-gradient(180deg, transparent, rgba(4, 5, 8, 0.68));
+  text-align: left;
+  color: #f5f3ee;
+  cursor: pointer;
 }
-.chronicle-chapter-title {
-  margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.08rem;
-  font-weight: 700;
-  color: var(--chronicle-ink);
-}
-.chronicle-chapter-dates {
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--chronicle-faint);
-  white-space: nowrap;
-}
-
-.chronicle-chapter-body {
+.chronicle-chapter-heading {
   display: flex;
-  gap: 20px;
-  align-items: flex-start;
-}
-.chronicle-prose-block {
-  flex: 1;
+  flex-direction: column;
+  gap: 5px;
   min-width: 0;
 }
-.chronicle-prose {
-  margin: 0 0 12px;
+.chronicle-chapter-title {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 0.98rem;
-  line-height: 1.75;
+  font-size: 1.18rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+}
+.chronicle-chapter-dates {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245, 243, 238, 0.74);
+}
+.chronicle-chapter-chevron {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+.chronicle-chapter.is-expanded .chronicle-chapter-chevron {
+  transform: rotate(180deg);
+}
+.chronicle-artwork-credit {
+  position: absolute;
+  z-index: 2;
+  top: 9px;
+  right: 11px;
+  max-width: 65%;
+  overflow: hidden;
+  font-size: 0.62rem;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.68);
+  text-shadow: 0 1px 4px #000;
+}
+
+.chronicle-chapter-pages {
+  padding: 18px 4px 2px;
+}
+.chronicle-prose-block {
+  max-width: 70ch;
+}
+.chronicle-prose {
+  margin: 0 0 13px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+  line-height: 1.78;
   color: var(--chronicle-ink);
 }
 .chronicle-prose:last-child {
   margin-bottom: 0;
 }
-/* Drop cap — the book convention — on the first paragraph of each chapter. */
 .chronicle-prose-block > .chronicle-prose:first-child::first-letter {
+  float: left;
+  padding-right: 6px;
   font-size: 2.4em;
   font-weight: 700;
   line-height: 1;
-  padding-right: 6px;
-  float: left;
   color: var(--chronicle-accent);
 }
-
 .chronicle-still-writing {
   font-style: italic;
   color: var(--chronicle-muted);
@@ -182,70 +299,96 @@
   }
 }
 
-.chronicle-illustration {
-  flex: 0 0 112px;
-  margin: 4px 0 0;
-}
-.chronicle-illustration .lazy-image-container {
-  aspect-ratio: 2 / 3;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--chronicle-line);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
-}
-.chronicle-illustration .lazy-image-container img,
-.chronicle-illustration .lazy-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.chronicle-illustration .lazy-image-fallback {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
-}
-.chronicle-illustration .lazy-image-fallback-content {
-  padding: 8px;
-  text-align: center;
-}
-.chronicle-illustration .fallback-game-name {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--chronicle-ink);
-}
-.chronicle-illustration figcaption {
-  margin-top: 6px;
-  font-size: 0.66rem;
-  font-style: italic;
-  text-align: center;
-  color: var(--chronicle-faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .chronicle-margin-notes {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  margin-top: 12px;
+  margin-top: 16px;
   padding-top: 10px;
   border-top: 1px dashed var(--chronicle-line);
 }
 .chronicle-note {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--chronicle-faint);
 }
 .chronicle-note strong {
   color: var(--chronicle-muted);
   font-weight: 700;
 }
+.chronicle-chapter-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.chronicle-receipts {
+  min-width: 0;
+  flex: 1;
+}
+.chronicle-receipts summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  font-size: 0.7rem;
+  color: var(--chronicle-muted);
+  cursor: pointer;
+  list-style-position: inside;
+}
+.chronicle-receipt-list {
+  max-height: 230px;
+  margin: 8px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--chronicle-line);
+  border-radius: 6px;
+  list-style: none;
+}
+.chronicle-receipt-list li {
+  display: grid;
+  grid-template-columns: minmax(94px, auto) 1fr auto;
+  gap: 10px;
+  padding: 7px 9px;
+  font-size: 0.66rem;
+  color: var(--chronicle-muted);
+}
+.chronicle-receipt-list li + li {
+  border-top: 1px solid var(--chronicle-line);
+}
+.chronicle-receipt-date {
+  color: var(--chronicle-faint);
+}
+.chronicle-receipt-game {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chronicle-share-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--chronicle-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.7rem;
+  color: var(--chronicle-muted);
+  cursor: pointer;
+}
+.chronicle-share-button:hover:not(:disabled) {
+  color: var(--chronicle-ink);
+  border-color: var(--chronicle-accent);
+}
+.chronicle-share-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
 
 .chronicle-footer {
-  margin-top: 6px;
-  padding-top: 12px;
+  margin-top: 12px;
+  padding-top: 14px;
   border-top: 1px solid var(--chronicle-line);
   font-size: 0.7rem;
   font-style: italic;
@@ -253,8 +396,102 @@
   text-align: center;
 }
 
-@media (max-width: 520px) {
-  .chronicle-illustration {
-    flex-basis: 84px;
+/* Rendered off-screen only while html2canvas turns a chapter into a social page. */
+.chronicle-share-stage {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 900px;
+  pointer-events: none;
+}
+.chronicle-share-card {
+  display: flex;
+  flex-direction: column;
+  width: 900px;
+  min-height: 1125px;
+  padding: 54px;
+  overflow: hidden;
+  background: radial-gradient(circle at 100% 0%, #292038 0%, transparent 48%),
+    linear-gradient(145deg, #11131c, #090a0f 70%);
+  color: #f4f0e8;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.chronicle-share-kicker {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #b5a9c7;
+}
+.chronicle-share-card h3 {
+  margin: 20px 0 28px;
+  font-size: 52px;
+  font-weight: 500;
+  line-height: 1.12;
+}
+.chronicle-share-artwork {
+  width: 100%;
+  height: 330px;
+  object-fit: cover;
+  object-position: center 32%;
+  border: 1px solid #393342;
+  border-radius: 12px;
+}
+.chronicle-share-prose {
+  margin-top: 28px;
+  font-size: 25px;
+  line-height: 1.55;
+}
+.chronicle-share-prose p {
+  margin: 0 0 18px;
+}
+.chronicle-share-stats {
+  display: flex;
+  gap: 24px;
+  align-items: baseline;
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #393342;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  color: #b5a9c7;
+}
+.chronicle-share-stats strong {
+  font-size: 30px;
+  color: #f4f0e8;
+}
+.chronicle-share-watermark {
+  margin-top: 24px;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: #8e829f;
+}
+
+@media (max-width: 640px) {
+  .chronicle-title-page {
+    padding: 24px 8px 20px;
+  }
+  .chronicle-contents {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .chronicle-contents-label {
+    padding-top: 0;
+  }
+  .chronicle-chapter-head {
+    padding: 24px 12px 12px;
+  }
+  .chronicle-chapter-title {
+    font-size: 1rem;
+  }
+  .chronicle-chapter-actions {
+    flex-direction: column;
+  }
+  .chronicle-receipt-list li {
+    grid-template-columns: 1fr auto;
+  }
+  .chronicle-receipt-date {
+    display: none;
   }
 }

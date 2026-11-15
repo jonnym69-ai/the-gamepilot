@@ -1406,7 +1406,7 @@ function Home({
             <DiscoverHighlights library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
           </div>
           <div className="home-persona-section">
-            <ChronicleCard library={library} />
+            <ChronicleCard library={library} username={username} />
             <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
             <AchievementCompletionCard library={library} />
           </div>

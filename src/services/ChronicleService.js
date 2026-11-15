@@ -252,6 +252,12 @@ const buildPerMonth = (dated) => {
         lastMs: lastRecord.sortMs,
         firstStartMs: firstRecord.startMs || firstRecord.sortMs,
         lastEndMs: lastRecord.endMs || lastRecord.sortMs,
+        receipts: monthRecords.map((record) => ({
+          gameName: record.name,
+          startMs: record.startMs || record.sortMs,
+          endMs: record.endMs || null,
+          minutes: record.minutes,
+        })),
       };
     });
 };
