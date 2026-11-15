@@ -106,6 +106,27 @@ test('expands the recorded sessions behind a chapter', async () => {
   expect(within(screen.getAllByRole('list')[0]).getAllByRole('listitem')).toHaveLength(2);
 });
 
+test('pluralizes singular counts everywhere, including the share card', async () => {
+  SessionRepository.getSessionHistory.mockReturnValue([
+    {
+      gameName: 'Balatro',
+      playtimeMinutes: 45,
+      startTime: new Date(2026, 6, 13, 20).toISOString(),
+      endTime: new Date(2026, 6, 13, 20, 45).toISOString(),
+    },
+  ]);
+  GameCapturesService.getAttribution.mockResolvedValue({ byGame: new Map(), unattributed: [] });
+  html2canvas.mockReturnValue(new Promise(() => {})); // keep the share stage mounted
+  render(<ChronicleCard library={[{ name: 'Balatro', importedPlaytimeMinutes: 60 }]} username="Moz" />);
+
+  await screen.findAllByText(/1 recorded session/);
+  expect(screen.queryByText(/1 recorded sessions|1 sessions|1 games/)).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Share chapter' }));
+  expect(await screen.findAllByText('1 session')).not.toHaveLength(0);
+  expect(screen.getAllByText('1 game')).not.toHaveLength(0);
+});
+
 test('exports a chapter as a finished image', async () => {
   render(<ChronicleCard library={library} username="Moz" />);
 

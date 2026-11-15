@@ -8,6 +8,7 @@ import { LocalShareService } from '../services/LocalShareService';
 import { resolveGameArtworkBundle, getGameArtworkPlaceholder } from '../services/GameArtworkService';
 import { getPersonaVisual } from './personaVisuals';
 import { formatPlaytime } from '../utils/formatPlaytime';
+import { displayGameTitle } from '../utils/gameTitle';
 import LazyImage from './LazyImage';
 import './ChronicleCard.css';
 
@@ -136,7 +137,7 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
         {visualSrc && (
           <LazyImage
             src={visualSrc}
-            alt={`${visualGameName} chapter artwork`}
+            alt={`${visualGameName ? displayGameTitle(visualGameName) : 'Game'} chapter artwork`}
             placeholder={placeholder}
             fallbackSrc={bundle.fallbackSrc}
             gameName={visualGameName}
@@ -159,7 +160,9 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
         </button>
         {visualSrc && (
           <span className="chronicle-artwork-credit">
-            {captureSrc ? `Your capture · ${captureMatch.gameName}` : visualGameName}
+            {captureSrc
+              ? `Your capture · ${displayGameTitle(captureMatch.gameName)}`
+              : displayGameTitle(visualGameName)}
           </span>
         )}
       </div>
@@ -200,7 +203,8 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
             )}
             {Number.isFinite(share) && share > 0 && (
               <span className="chronicle-note">
-                <strong>{Math.round(share * 100)}%</strong> {chapter.dominantGame.name}
+                <strong>{Math.round(share * 100)}%</strong>{' '}
+                {chapter.dominantGame.displayName || chapter.dominantGame.name}
               </span>
             )}
           </div>
@@ -216,7 +220,9 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
                   {receipts.map((receipt, index) => (
                     <li key={`${receipt.startMs}-${receipt.gameName}-${index}`}>
                       <span className="chronicle-receipt-date">{formatReceiptDate(receipt.startMs)}</span>
-                      <span className="chronicle-receipt-game">{receipt.gameName || 'Untracked game'}</span>
+                      <span className="chronicle-receipt-game">
+                        {receipt.displayName || receipt.gameName || 'Untracked game'}
+                      </span>
                       <strong>{formatPlaytime(receipt.minutes)}</strong>
                     </li>
                   ))}
@@ -258,8 +264,12 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
             </div>
             <div className="chronicle-share-stats">
               <strong>{formatPlaytime(chapter.month.minutes)}</strong>
-              <span>{chapter.month.sessions} sessions</span>
-              <span>{chapter.month.varietyCount} games</span>
+              <span>
+                {chapter.month.sessions} session{chapter.month.sessions === 1 ? '' : 's'}
+              </span>
+              <span>
+                {chapter.month.varietyCount} game{chapter.month.varietyCount === 1 ? '' : 's'}
+              </span>
             </div>
             <div className="chronicle-share-watermark">GamePilot · your gaming biography</div>
           </div>
@@ -349,7 +359,9 @@ const ChronicleCard = ({ library = [], username = '' }) => {
         </p>
         {facts.totalSessions > 0 && (
           <p className="chronicle-title-evidence">
-            {facts.totalSessions} recorded sessions · {formatPlaytime(facts.totalMinutes)} · {facts.gameCount} games
+            {facts.totalSessions} recorded session{facts.totalSessions === 1 ? '' : 's'} ·{' '}
+            {formatPlaytime(facts.totalMinutes)} · {facts.gameCount} game
+            {facts.gameCount === 1 ? '' : 's'}
           </p>
         )}
       </header>

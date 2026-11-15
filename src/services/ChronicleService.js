@@ -9,6 +9,7 @@
  */
 import { getSessionMinutes, getSessionStartMs, getSessionTimestampMs } from './SessionRepository';
 import { getBlendedPlaytimeMinutes, isNonGameTitle } from './gameClassification';
+import { displayGameTitle } from '../utils/gameTitle';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -173,8 +174,11 @@ const getGenres = (game) => {
 const toRecord = (entry) => {
   const startMs = getSessionStartMs(entry);
   const endMs = getSessionTimestampMs(entry);
+  const name = normalizeName(entry?.gameName || entry?.gameId);
   return {
-    name: normalizeName(entry?.gameName || entry?.gameId),
+    name,
+    // Raw `name` stays the match/group key; prose reads `displayName`.
+    displayName: name ? displayGameTitle(name) : null,
     minutes: getSessionMinutes(entry),
     startMs,
     endMs,
@@ -209,7 +213,12 @@ const buildPerMonth = (dated) => {
         // recorded minutes but not games — they never enter name surfaces.
         if (!record.name || isNonGameTitle(record.name)) return;
         const gameKey = record.name.toLowerCase();
-        const entry = gameMap.get(gameKey) || { name: record.name, minutes: 0, sessions: 0 };
+        const entry = gameMap.get(gameKey) || {
+          name: record.name,
+          displayName: record.displayName,
+          minutes: 0,
+          sessions: 0,
+        };
         entry.minutes += record.minutes;
         entry.sessions += 1;
         gameMap.set(gameKey, entry);
@@ -237,13 +246,19 @@ const buildPerMonth = (dated) => {
         varietyCount: gameMap.size,
         isSingleGame: gameMap.size === 1,
         dominantGame: dominant
-          ? { name: dominant.name, minutes: dominant.minutes, share: minutes > 0 ? dominant.minutes / minutes : 0 }
+          ? {
+              name: dominant.name,
+              displayName: dominant.displayName,
+              minutes: dominant.minutes,
+              share: minutes > 0 ? dominant.minutes / minutes : 0,
+            }
           : null,
         topGames,
         lateNightCount: monthRecords.filter(isLateNight).length,
         longestSession: longestInMonth
           ? {
               gameName: longestInMonth.name,
+              displayName: longestInMonth.displayName,
               startedAt: longestInMonth.startMs || longestInMonth.endMs || null,
               minutes: longestInMonth.minutes,
             }
@@ -254,6 +269,7 @@ const buildPerMonth = (dated) => {
         lastEndMs: lastRecord.endMs || lastRecord.sortMs,
         receipts: monthRecords.map((record) => ({
           gameName: record.name,
+          displayName: record.displayName,
           startMs: record.startMs || record.sortMs,
           endMs: record.endMs || null,
           minutes: record.minutes,
@@ -277,7 +293,12 @@ const buildImportedTotals = (library) => {
     .filter((entry) => entry.name)
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name))
     .slice(0, 3)
-    .map((entry) => ({ name: entry.name, minutes: entry.minutes, genres: entry.genres }));
+    .map((entry) => ({
+      name: entry.name,
+      displayName: displayGameTitle(entry.name),
+      minutes: entry.minutes,
+      genres: entry.genres,
+    }));
 
   const genreMinutes = new Map();
   let genreCoveredMinutes = 0;
@@ -329,7 +350,12 @@ const buildFacts = (records, library) => {
 
   return {
     firstSession: first
-      ? { gameName: first.name, startedAt: first.startMs || first.endMs, minutes: first.minutes }
+      ? {
+          gameName: first.name,
+          displayName: first.displayName,
+          startedAt: first.startMs || first.endMs,
+          minutes: first.minutes,
+        }
       : null,
     lastSessionAt: last ? last.sortMs : null,
     totalSessions: records.length,
@@ -339,6 +365,7 @@ const buildFacts = (records, library) => {
     longestSession: longest
       ? {
           gameName: longest.name,
+          displayName: longest.displayName,
           startedAt: longest.startMs || longest.endMs || null,
           minutes: longest.minutes,
         }
@@ -366,10 +393,10 @@ const buildPrologue = (importedTotals) => {
     if (importedTotals.gameCount > 0) text += ` across ${countWords(importedTotals.gameCount, 'game')}`;
     const named = importedTotals.topGames;
     if (named.length === 1) {
-      text += ` — most of it in ${named[0].name}`;
+      text += ` — most of it in ${named[0].displayName}`;
     } else if (named.length >= 2) {
-      const leads = [`${named[0].name} at ${durationWords(named[0].minutes)}`].concat(
-        named.slice(1).map((game) => `${game.name} at ${durationWords(game.minutes)}`)
+      const leads = [`${named[0].displayName} at ${durationWords(named[0].minutes)}`].concat(
+        named.slice(1).map((game) => `${game.displayName} at ${durationWords(game.minutes)}`)
       );
       text += ` — led by ${joinList(leads)}`;
     }
@@ -384,7 +411,7 @@ const buildPrologue = (importedTotals) => {
 
 const shapeSentence = ({ month, prev, index }) => {
   const dominant = month.dominantGame;
-  const domName = dominant?.name || null;
+  const domName = dominant?.displayName || null;
   const share = dominant?.share || 0;
   const shareDelta = prev?.dominantGame ? share - prev.dominantGame.share : 0;
   const varietyJump = prev ? month.varietyCount - prev.varietyCount : 0;
@@ -433,15 +460,15 @@ const buildOthersSentence = (month) => {
   const oneOffs = others.filter((g) => !notable.includes(g) && g.sessions === 1).slice(0, 4);
 
   const bits = notable
-    .map((game) => (durationWords(game.minutes) ? `${durationWords(game.minutes)} in ${game.name}` : null))
+    .map((game) => (durationWords(game.minutes) ? `${durationWords(game.minutes)} in ${game.displayName}` : null))
     .filter(Boolean);
   if (bits.length > 0 && oneOffs.length > 0) {
     const singleSession = oneOffs.length === 1 ? 'a single recorded session for' : 'a single recorded session each for';
-    return `${capitalize(joinList(bits))}, and ${singleSession} ${joinList(oneOffs.map((g) => g.name))}.`;
+    return `${capitalize(joinList(bits))}, and ${singleSession} ${joinList(oneOffs.map((g) => g.displayName))}.`;
   }
   if (bits.length > 0) return `${capitalize(joinList(bits))}.`;
-  if (oneOffs.length === 1) return `A single recorded session went to ${oneOffs[0].name}.`;
-  if (oneOffs.length > 1) return `A single recorded session each for ${joinList(oneOffs.map((g) => g.name))}.`;
+  if (oneOffs.length === 1) return `A single recorded session went to ${oneOffs[0].displayName}.`;
+  if (oneOffs.length > 1) return `A single recorded session each for ${joinList(oneOffs.map((g) => g.displayName))}.`;
   return null;
 };
 
@@ -458,10 +485,10 @@ const buildLongestSentence = (month, facts) => {
     longest.minutes === facts.longestSession.minutes &&
     longest.startedAt === facts.longestSession.startedAt;
   if (isRecord) {
-    return `On ${date} came the longest sitting on record — ${durationWords(longest.minutes)}${longest.gameName ? ` without leaving ${longest.gameName}` : ''}.`;
+    return `On ${date} came the longest sitting on record — ${durationWords(longest.minutes)}${longest.displayName ? ` without leaving ${longest.displayName}` : ''}.`;
   }
   if (longest.minutes >= 120) {
-    return `The month's longest sitting ran ${durationWords(longest.minutes)}${longest.gameName ? ` in ${longest.gameName}` : ''} on ${date}.`;
+    return `The month's longest sitting ran ${durationWords(longest.minutes)}${longest.displayName ? ` in ${longest.displayName}` : ''} on ${date}.`;
   }
   return null;
 };
@@ -522,7 +549,7 @@ const buildChapters = (facts, dated) => {
 
     if (index === 0) {
       const first = facts.firstSession;
-      const name = first?.gameName && !isNonGameTitle(first.gameName) ? first.gameName : 'an untracked game';
+      const name = first?.gameName && !isNonGameTitle(first.gameName) ? first.displayName : 'an untracked game';
       const duration = first ? durationWords(first.minutes) : null;
       let opening = first
         ? duration
@@ -544,9 +571,9 @@ const buildChapters = (facts, dated) => {
       if (first && second && second.name && second.name !== first.gameName) {
         const gapMinutes = Math.round((second.startMs - first.startedAt) / 60000);
         if (gapMinutes > 0 && gapMinutes <= 24 * 60) {
-          opening += ` ${capitalize(durationWords(gapMinutes))} later, ${second.name} launched for the first time.`;
+          opening += ` ${capitalize(durationWords(gapMinutes))} later, ${second.displayName} launched for the first time.`;
         } else if (second.sortMs > first.startedAt) {
-          opening += ` ${second.name} followed on ${formatFullDate(second.startMs || second.sortMs)}.`;
+          opening += ` ${second.displayName} followed on ${formatFullDate(second.startMs || second.sortMs)}.`;
         }
         if (
           overallTop &&

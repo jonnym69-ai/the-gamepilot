@@ -82,6 +82,7 @@ describe('buildChronicle', () => {
 
     expect(facts.firstSession).toEqual({
       gameName: 'Mark of the Deep',
+      displayName: 'Mark of the Deep',
       startedAt: at(2026, 6, 13, 20, 0).getTime(),
       minutes: 14,
     });
@@ -93,6 +94,7 @@ describe('buildChronicle', () => {
     expect(facts.biggestGapDays).toBe(16);
     expect(facts.longestSession).toEqual({
       gameName: 'Project Zomboid',
+      displayName: 'Project Zomboid',
       startedAt: at(2026, 8, 11, 14, 0).getTime(),
       minutes: 810,
     });
@@ -124,6 +126,7 @@ describe('buildChronicle', () => {
     expect(july.receipts).toHaveLength(15);
     expect(july.receipts[0]).toEqual({
       gameName: 'Mark of the Deep',
+      displayName: 'Mark of the Deep',
       startMs: at(2026, 6, 13, 20, 0).getTime(),
       endMs: at(2026, 6, 13, 20, 14).getTime(),
       minutes: 14,
@@ -288,11 +291,11 @@ describe('buildChronicle', () => {
       session('Project Zomboid', at(2026, 6, 11, 20, 0), 300),
       session('Celeste', at(2026, 6, 12, 20, 0), 30),
       session('Hades', at(2026, 6, 13, 20, 0), 30),
-      session('The Lord of the Rings, The Two Towers', at(2026, 6, 14, 20, 0), 30),
+      session('Lock, Stock & Two Smoking Barrels', at(2026, 6, 14, 20, 0), 30),
     ];
     const { chapters } = buildChronicle(sessions, []);
     const all = chapters[0].paragraphs.join(' ');
-    expect(all).toContain('Celeste · Hades and The Lord of the Rings, The Two Towers');
+    expect(all).toContain('Celeste · Hades and Lock, Stock & Two Smoking Barrels');
 
     const plainSessions = [
       session('Project Zomboid', at(2026, 6, 10, 20, 0), 300),
@@ -304,6 +307,24 @@ describe('buildChronicle', () => {
     const plain = buildChronicle(plainSessions, []).chapters[0].paragraphs.join(' ');
     expect(plain).toContain('Balatro, Celeste and Hades');
     expect(plain).not.toContain('·');
+  });
+
+  it('renders sort-name titles in reader form while raw names stay the match key', () => {
+    const sessions = [
+      session('Matrix, The Path of Neo', at(2026, 6, 10, 20, 0), 300),
+      session('Matrix, The Path of Neo', at(2026, 6, 11, 20, 0), 300),
+      session('Witcher 3, The', at(2026, 6, 12, 20, 0), 30),
+      session('Lord of the Rings, The The Two Towers', at(2026, 6, 13, 20, 0), 30),
+    ];
+    const { chapters } = buildChronicle(sessions, []);
+    const all = chapters[0].paragraphs.join(' ');
+    expect(all).toContain('The Matrix: Path of Neo');
+    expect(all).toContain('The Witcher 3');
+    expect(all).toContain('The Lord of the Rings: The Two Towers');
+    expect(all).not.toContain('Matrix, The');
+    // The raw stored name is still the match/group key.
+    expect(chapters[0].dominantGame.name).toBe('Matrix, The Path of Neo');
+    expect(chapters[0].dominantGame.displayName).toBe('The Matrix: Path of Neo');
   });
 
   it('says "a single recorded session for" when exactly one other game appears', () => {
