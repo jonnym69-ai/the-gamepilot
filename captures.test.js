@@ -1,7 +1,7 @@
 // Game Bar capture filename parsing — the trailing timestamp is the only
 // reliable part; a title prefix is optional, and unrelated files in the
 // Videos folder must never be picked up.
-const { parseCaptureFileName } = require('./electron/captures');
+const { parseCaptureFileName, parseSteamShotName } = require('./electron/captures');
 
 describe('parseCaptureFileName', () => {
   it('parses a titled Game Bar clip', () => {
@@ -43,5 +43,22 @@ describe('parseCaptureFileName', () => {
     expect(parseCaptureFileName('jim scene.mov')).toBeNull();
     expect(parseCaptureFileName('random notes.txt')).toBeNull();
     expect(parseCaptureFileName('clip.mp4')).toBeNull();
+  });
+});
+
+describe('parseSteamShotName', () => {
+  it('parses Steam F12 screenshot names', () => {
+    expect(parseSteamShotName('20260816163851_1.jpg')).toEqual({
+      capturedAt: new Date(2026, 7, 16, 16, 38, 51).getTime(),
+    });
+    expect(parseSteamShotName('20261115093000_2.png')).toEqual({
+      capturedAt: new Date(2026, 10, 15, 9, 30, 0).getTime(),
+    });
+  });
+
+  it('rejects non-Steam names', () => {
+    expect(parseSteamShotName('Screenshot 2026-09-11 164730.png')).toBeNull();
+    expect(parseSteamShotName('2026-11-15 15-29-44.mp4')).toBeNull();
+    expect(parseSteamShotName('photo.jpg')).toBeNull();
   });
 });

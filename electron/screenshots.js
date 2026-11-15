@@ -68,6 +68,41 @@ const findScreenshotDirs = (appid) => {
   return dirs;
 };
 
+// Every userdata/<account>/760/remote/<appid>/screenshots dir for every appid —
+// the capture indexer consumes these as a per-game source.
+const findAllScreenshotDirs = () => {
+  const dirs = [];
+  for (const root of getSteamRoots()) {
+    const userdata = path.join(root, 'userdata');
+    let accounts = [];
+    try {
+      accounts = fs.readdirSync(userdata, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const account of accounts) {
+      if (!account.isDirectory() || !/^\d+$/.test(account.name)) continue;
+      const remote = path.join(userdata, account.name, '760', 'remote');
+      let apps = [];
+      try {
+        apps = fs.readdirSync(remote, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const app of apps) {
+        if (!app.isDirectory() || !/^\d+$/.test(app.name)) continue;
+        const dir = path.join(remote, app.name, 'screenshots');
+        try {
+          if (fs.existsSync(dir)) dirs.push({ dir, appid: app.name });
+        } catch {
+          /* unreadable dir — skip */
+        }
+      }
+    }
+  }
+  return dirs;
+};
+
 const readThumb = (dir, file) => {
   const candidates = [path.join(dir, 'thumbnails', file), path.join(dir, file)];
   for (const candidate of candidates) {
@@ -156,4 +191,4 @@ function registerIpcHandlers(ipcMain) {
   });
 }
 
-module.exports = { registerIpcHandlers, findScreenshotDirs, listScreenshots };
+module.exports = { registerIpcHandlers, findScreenshotDirs, findAllScreenshotDirs, listScreenshots };

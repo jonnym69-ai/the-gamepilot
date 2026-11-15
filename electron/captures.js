@@ -13,6 +13,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { shell } = require('electron');
+const { findAllScreenshotDirs } = require('./screenshots');
 
 const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp']);
 const VIDEO_EXT = new Set(['.mp4', '.mkv', '.webm', '.mov']);
@@ -25,6 +26,23 @@ const CAPTURE_NAME_RE =
   /^(?:(?<title>.+?)\s+)?(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}-\d{2}-\d{2})(?:\s*\(\d+\))?\.(?<ext>png|jpe?g|webp|mp4|mkv|webm|mov)$/i;
 const WINDOWS_SCREENSHOT_RE =
   /^Screenshot (?<date>\d{4}-\d{2}-\d{2}) (?<hour>\d{2})(?<minute>\d{2})(?<second>\d{2})\.(?<ext>png|jpe?g|webp)$/i;
+// Steam F12 shots: "20260816163851_1.jpg" under remote/<appid>/screenshots.
+const STEAM_SHOT_RE = /^(?<ts>\d{14})(?:_\d+)?\.(?<ext>jpe?g|png)$/i;
+
+const parseSteamShotName = (fileName) => {
+  const match = STEAM_SHOT_RE.exec(String(fileName || ''));
+  if (!match) return null;
+  const ts = match.groups.ts;
+  const capturedAt = new Date(
+    Number(ts.slice(0, 4)),
+    Number(ts.slice(4, 6)) - 1,
+    Number(ts.slice(6, 8)),
+    Number(ts.slice(8, 10)),
+    Number(ts.slice(10, 12)),
+    Number(ts.slice(12, 14))
+  ).getTime();
+  return Number.isFinite(capturedAt) ? { capturedAt } : null;
+};
 
 const parseCaptureFileName = (fileName) => {
   const value = String(fileName || '');
@@ -112,12 +130,42 @@ const listCaptures = () => {
       }
     }
   }
+
+  // Steam F12 screenshots — the appid folder names the game, thumbnails are
+  // never read (files only, no descent).
+  for (const { dir, appid } of findAllScreenshotDirs()) {
+    let entries = [];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      const parsed = parseSteamShotName(entry.name);
+      if (!parsed) continue;
+      const filePath = path.join(dir, entry.name);
+      items.push({
+        dir,
+        name: entry.name,
+        filePath,
+        fileUrl: `file:///${filePath.replace(/\\/g, '/')}`,
+        source: 'steam',
+        steamAppId: appid,
+        titleHint: null,
+        kind: 'image',
+        ...parsed,
+      });
+    }
+  }
+
   return items.sort((a, b) => b.capturedAt - a.capturedAt || a.name.localeCompare(b.name)).slice(0, MAX_ITEMS);
 };
 
 const isDirAllowed = (dir) => {
   const resolved = path.resolve(dir).toLowerCase();
-  return getCaptureDirs().some((root) => {
+  const roots = getCaptureDirs().concat(findAllScreenshotDirs().map((entry) => entry.dir));
+  return roots.some((root) => {
     const r = path.resolve(root).toLowerCase();
     return resolved === r || resolved.startsWith(r + path.sep);
   });
@@ -172,4 +220,4 @@ function registerIpcHandlers(ipcMain) {
   });
 }
 
-module.exports = { registerIpcHandlers, parseCaptureFileName, getCaptureDirs, listCaptures };
+module.exports = { registerIpcHandlers, parseCaptureFileName, parseSteamShotName, getCaptureDirs, listCaptures };

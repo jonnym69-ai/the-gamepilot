@@ -49,6 +49,18 @@ export class GameCapturesService {
     return this.cache;
   }
 
+  /** steamAppId on the capture → the library game carrying that appid. */
+  static matchBySteamAppId(capture, library = []) {
+    const appId = String(capture?.steamAppId || '');
+    if (!appId) return null;
+    return (
+      (Array.isArray(library) ? library : []).find((game) => {
+        const id = game?.appid ?? game?.app_id ?? game?.steamAppId ?? game?.steam_appid ?? game?.steamAppID;
+        return id != null && String(id) === appId;
+      }) || null
+    );
+  }
+
   /** filename title prefix → library game (exact-normalized, then substring). */
   static matchByTitle(capture, library = []) {
     const hint = normalizeTitle(capture?.titleHint);
@@ -95,6 +107,11 @@ export class GameCapturesService {
       const assigned = assignments[capture.filePath];
       if (assigned && library.some((game) => game?.name === assigned)) {
         push(assigned, capture);
+        continue;
+      }
+      const steamOwned = this.matchBySteamAppId(capture, library);
+      if (steamOwned) {
+        push(steamOwned.name, capture);
         continue;
       }
       const titled = this.matchByTitle(capture, library);

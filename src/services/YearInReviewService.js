@@ -10,6 +10,7 @@ import SteamAchievementsService from './SteamAchievementsService';
 import SteamPublicService from './SteamPublicService';
 import { GameCurationService } from './GameCurationService';
 import AchievementCompletionService from './AchievementCompletionService';
+import { displayGameTitle } from '../utils/gameTitle';
 
 const MONTH_LABELS = Object.freeze([
   'Jan',
@@ -616,7 +617,7 @@ const joinList = (items = []) => {
 const buildStoryOpener = (sessions = []) => {
   const first = [...sessions].sort((a, b) => a.timestamp - b.timestamp)[0];
   if (!first?.timestamp) return null;
-  let text = `Your year started on ${formatStoryDate(first.timestamp)} with ${first.gameName || 'an untracked game'}.`;
+  let text = `Your year started on ${formatStoryDate(first.timestamp)} with ${first.gameName ? displayGameTitle(first.gameName) : 'an untracked game'}.`;
   const firstMonth = first.timestamp.getMonth();
   if (firstMonth > 1) {
     text +=
@@ -634,16 +635,16 @@ const buildStoryDominantGame = (sessions = [], topGames = []) => {
   const share = top.totalPlaytime / totalMinutes;
   const percent = Math.round(share * 100);
   if (share >= 0.5) {
-    return `${top.name} took ${percent}% of your year — ${Math.round(top.totalPlaytime / 60)}h over ${top.sessions} launches.`;
+    return `${displayGameTitle(top.name)} took ${percent}% of your year — ${Math.round(top.totalPlaytime / 60)}h over ${top.sessions} launches.`;
   }
   if (share >= 0.3) {
     const others = topGames
       .slice(1, 3)
-      .map((game) => game.name)
+      .map((game) => displayGameTitle(game.name))
       .filter(Boolean);
     return others.length > 0
-      ? `${top.name} was your main game at ${percent}% of playtime, but it shared the year with ${joinList(others)}.`
-      : `${top.name} was your main game at ${percent}% of playtime.`;
+      ? `${displayGameTitle(top.name)} was your main game at ${percent}% of playtime, but it shared the year with ${joinList(others)}.`
+      : `${displayGameTitle(top.name)} was your main game at ${percent}% of playtime.`;
   }
   return null;
 };
@@ -675,7 +676,7 @@ const buildStoryEraParagraphs = (stretches = []) => {
     } else if (era.dominantMood !== previous.dominantMood && previous.dominantMood && era.dominantMood) {
       transition = `the ${previous.dominantMood} mood gave way to ${era.dominantMood}`;
     } else if (era.topGame !== previous.topGame && previous.topGame && era.topGame) {
-      transition = `${previous.topGame} handed over to ${era.topGame}`;
+      transition = `${displayGameTitle(previous.topGame)} handed over to ${displayGameTitle(era.topGame)}`;
     }
     paragraphs.push({
       id: `era-${index}`,
@@ -726,7 +727,7 @@ const buildStoryLongestSitting = (deepStats = {}) => {
   const longest = deepStats.longestSession;
   if (!longest) return null;
   const date = longest.timestamp ? formatStoryDate(longest.timestamp) : longest.dateLabel;
-  return `Your longest single sitting was ${formatStoryDuration(longest.playtimeMinutes)}${date ? ` on ${date}` : ''}${longest.gameName ? `, in ${longest.gameName}` : ''}.`;
+  return `Your longest single sitting was ${formatStoryDuration(longest.playtimeMinutes)}${date ? ` on ${date}` : ''}${longest.gameName ? `, in ${displayGameTitle(longest.gameName)}` : ''}.`;
 };
 
 const buildStoryNewcomers = (sessions = [], allSessions = [], year) => {
@@ -761,9 +762,9 @@ const buildStoryNewcomers = (sessions = [], allSessions = [], year) => {
     if (fizzled) namedGames.push(fizzled.name);
     let sentence = `You picked up ${newcomers.length} new game${newcomers.length === 1 ? '' : 's'} this year`;
     if (stuck && fizzled) {
-      sentence += `; ${stuck.name} stuck (${stuck.sessions} sessions), ${fizzled.name} didn't (1).`;
+      sentence += `; ${displayGameTitle(stuck.name)} stuck (${stuck.sessions} sessions), ${displayGameTitle(fizzled.name)} didn't (1).`;
     } else if (stuck) {
-      sentence += `; ${stuck.name} stuck (${stuck.sessions} sessions).`;
+      sentence += `; ${displayGameTitle(stuck.name)} stuck (${stuck.sessions} sessions).`;
     } else if (newcomers.length === 1) {
       sentence += ', though it only got one session.';
     } else {
@@ -817,9 +818,9 @@ const buildStorySeasons = (sessions = []) => {
     const share = minutes > 0 ? topMinutes / minutes : 0;
     const tail =
       share >= 0.75 && topKey
-        ? `, nearly all ${gameNames[topKey]}`
+        ? `, nearly all ${displayGameTitle(gameNames[topKey])}`
         : share >= 0.4 && topKey
-          ? `, mostly ${gameNames[topKey]}`
+          ? `, mostly ${displayGameTitle(gameNames[topKey])}`
           : '';
     sentences.push(`${season}: ${Math.round(minutes / 60)}h${tail}.`);
   });

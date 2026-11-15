@@ -93,6 +93,34 @@ describe('GameCapturesService attribution', () => {
     expect(unattributed).toEqual([]);
   });
 
+  it('attributes Steam screenshots by appid, ahead of session matching', () => {
+    const start = new Date(2026, 10, 15, 15, 0, 0).getTime();
+    const end = new Date(2026, 10, 15, 17, 0, 0).getTime();
+    const lib = [{ name: 'Project Zomboid', appid: '108600' }, { name: 'ARK' }];
+    const cap = {
+      ...capture('20261115163000_1.jpg', { capturedAt: new Date(2026, 10, 15, 16, 30, 0).getTime(), kind: 'image' }),
+      source: 'steam',
+      steamAppId: '108600',
+    };
+    // An ARK session was live, but the appid folder is the stronger truth.
+    const { byGame, unattributed } = GameCapturesService.attribute([cap], lib, [session('ARK', start, end)]);
+    expect(byGame.get('Project Zomboid')).toEqual([cap]);
+    expect(byGame.has('ARK')).toBe(false);
+    expect(unattributed).toEqual([]);
+  });
+
+  it('still session-matches Steam shots whose game is not in the library', () => {
+    const start = new Date(2026, 10, 15, 15, 0, 0).getTime();
+    const end = new Date(2026, 10, 15, 17, 0, 0).getTime();
+    const cap = {
+      ...capture('20261115163000_1.jpg', { capturedAt: new Date(2026, 10, 15, 16, 30, 0).getTime(), kind: 'image' }),
+      source: 'steam',
+      steamAppId: '999999',
+    };
+    const { byGame } = GameCapturesService.attribute(cap ? [cap] : [], library, [session('ARK', start, end)]);
+    expect(byGame.get('ARK')).toEqual([cap]);
+  });
+
   it('leaves unmatchable captures unattributed', () => {
     const cap = capture('2020-01-01 00-00-00.mp4', { capturedAt: new Date(2020, 0, 1).getTime() });
     const { byGame, unattributed } = GameCapturesService.attribute([cap], library, []);

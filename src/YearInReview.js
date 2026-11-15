@@ -927,6 +927,17 @@ function YearInReview({ library = [] }) {
                           </p>
                         ))}
                       </div>
+                      <p className="year-review-story-lite-note">
+                        The short version — your{' '}
+                        <button
+                          type="button"
+                          className="year-review-story-chronicle-link"
+                          onClick={() => selectTab('chronicle')}
+                        >
+                          Chronicle
+                        </button>{' '}
+                        tells the same year month by month, receipts attached.
+                      </p>
                     </section>
                   )}
 
