@@ -1,3 +1,17 @@
+# GamePilot v1.13.0 Release Notes
+
+## Highlights
+
+- **Your Chronicle** — the Identity view now opens with a book-styled biography of your gaming life. A Prologue reconstructed from your imported launcher history (clearly labelled as a reconstruction), a chapter per month of tracked play — first sessions, dominant games, longest sittings, late nights, quiet gaps — and the current chapter still being written. Every line is generated from your real recorded sessions; nothing is invented, and non-game processes like launchers never appear as games.
+
+## Known issues
+
+- The Windows installer is unsigned (SmartScreen warning expected).
+- Steam friends presence depends on Steam's public-profile APIs — friends who set their game details to private don't appear, and a bad connection can still show "unavailable" (the card's refresh icon retries).
+- The Linux build remains paused; no AppImage ships with v1.13.0.
+
+---
+
 # GamePilot v1.12.2 Release Notes
 
 ## Highlights

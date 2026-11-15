@@ -2,8 +2,8 @@
 // users. Keep this short — 3 to 5 user-facing bullets, not a changelog.
 // Update alongside RELEASE_NOTES.md each release.
 export const WHATS_NEW = [
-  'Epic games now end their own sessions — quit the game and GamePilot notices, no manual End Session',
-  'Captures — Game Bar and NVIDIA screenshots and clips taken during a session appear in that game modal',
-  'Make a Post — turn a capture or cover art into a share card with a caption drafted from your real stats',
-  'Numbers that agree — "this week" hours on Home now match between the top strip and Gaming Vitals',
+  'Your Chronicle — a book-styled biography of your gaming life now opens the Identity view: a prologue from your imported history, a chapter per month, and the current chapter still being written.',
+  'Game Bar & NVIDIA captures appear in game modals and can become Make a Post card backgrounds.',
+  'Friends on Steam works again — presence on Home, Compare with friends in game windows, and friend notifications.',
+  'Epic sessions start and end on their own, and the two "this week" totals on Home now always agree.',
 ];
