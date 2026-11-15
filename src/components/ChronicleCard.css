@@ -1,0 +1,260 @@
+/* Your Chronicle — a book-styled, in-page biographer card. Theme tokens keep
+   the shared result-card shell; serif prose and hairlines make it read like a
+   bound volume. */
+.chronicle-card {
+  --chronicle-line: rgba(255, 255, 255, 0.09);
+  --chronicle-ink: var(--text-primary, var(--text, #f1f5f9));
+  --chronicle-muted: var(--text-secondary, #94a3b8);
+  --chronicle-faint: var(--text-tertiary, #64748b);
+  --chronicle-accent: var(--accent, #3dd9ff);
+}
+@supports (color: color-mix(in srgb, black, white)) {
+  .chronicle-card {
+    --chronicle-line: color-mix(in srgb, var(--text-primary, #f1f5f9) 14%, transparent);
+  }
+}
+
+.chronicle-header {
+  text-align: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--chronicle-line);
+}
+.chronicle-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--chronicle-accent);
+}
+.chronicle-title {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--chronicle-ink);
+}
+.chronicle-subtitle {
+  margin: 2px 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--chronicle-muted);
+}
+.chronicle-protagonist {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 3px 12px;
+  border: 1px solid var(--chronicle-line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--chronicle-muted);
+}
+.chronicle-protagonist strong {
+  color: var(--chronicle-ink);
+  font-weight: 600;
+}
+
+.chronicle-empty {
+  margin: 18px 0 4px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  text-align: center;
+  color: var(--chronicle-muted);
+  line-height: 1.6;
+}
+
+/* Prologue — the opening page, narrower than the chapter measure. */
+.chronicle-prologue {
+  max-width: 34em;
+  margin: 0 auto;
+  padding: 18px 0 6px;
+  text-align: center;
+}
+.chronicle-prologue-heading {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--chronicle-faint);
+}
+.chronicle-caption {
+  margin: 8px 0 0;
+  font-size: 0.68rem;
+  font-style: italic;
+  color: var(--chronicle-faint);
+}
+
+.chronicle-chapter {
+  padding: 18px 0;
+}
+.chronicle-chapter + .chronicle-chapter {
+  border-top: 1px solid var(--chronicle-line);
+}
+.chronicle-prologue + .chronicle-chapter {
+  border-top: 1px solid var(--chronicle-line);
+}
+.chronicle-chapter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.chronicle-chapter-title {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--chronicle-ink);
+}
+.chronicle-chapter-dates {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chronicle-faint);
+  white-space: nowrap;
+}
+
+.chronicle-chapter-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.chronicle-prose-block {
+  flex: 1;
+  min-width: 0;
+}
+.chronicle-prose {
+  margin: 0 0 12px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.98rem;
+  line-height: 1.75;
+  color: var(--chronicle-ink);
+}
+.chronicle-prose:last-child {
+  margin-bottom: 0;
+}
+/* Drop cap — the book convention — on the first paragraph of each chapter. */
+.chronicle-prose-block > .chronicle-prose:first-child::first-letter {
+  font-size: 2.4em;
+  font-weight: 700;
+  line-height: 1;
+  padding-right: 6px;
+  float: left;
+  color: var(--chronicle-accent);
+}
+
+.chronicle-still-writing {
+  font-style: italic;
+  color: var(--chronicle-muted);
+}
+.chronicle-writing-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 5px;
+}
+.chronicle-writing-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--chronicle-accent);
+  animation: chronicle-dot-pulse 1.6s ease-in-out infinite;
+}
+.chronicle-writing-dots i:nth-child(2) {
+  animation-delay: 0.25s;
+}
+.chronicle-writing-dots i:nth-child(3) {
+  animation-delay: 0.5s;
+}
+@keyframes chronicle-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.chronicle-illustration {
+  flex: 0 0 112px;
+  margin: 4px 0 0;
+}
+.chronicle-illustration .lazy-image-container {
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--chronicle-line);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+.chronicle-illustration .lazy-image-container img,
+.chronicle-illustration .lazy-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.chronicle-illustration .lazy-image-fallback {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+}
+.chronicle-illustration .lazy-image-fallback-content {
+  padding: 8px;
+  text-align: center;
+}
+.chronicle-illustration .fallback-game-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--chronicle-ink);
+}
+.chronicle-illustration figcaption {
+  margin-top: 6px;
+  font-size: 0.66rem;
+  font-style: italic;
+  text-align: center;
+  color: var(--chronicle-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chronicle-margin-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--chronicle-line);
+}
+.chronicle-note {
+  font-size: 0.72rem;
+  color: var(--chronicle-faint);
+}
+.chronicle-note strong {
+  color: var(--chronicle-muted);
+  font-weight: 700;
+}
+
+.chronicle-footer {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--chronicle-line);
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--chronicle-faint);
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .chronicle-illustration {
+    flex-basis: 84px;
+  }
+}

@@ -29,6 +29,7 @@ import WishlistSection from './components/WishlistSection';
 import EnergyVibePicker from './components/EnergyVibePicker';
 import LibrarianHubCarousel from './components/LibrarianHubCarousel';
 import GamerIdentityCard from './components/GamerIdentityCard';
+import ChronicleCard from './components/ChronicleCard';
 import RecentlyPlayedShelf from './components/RecentlyPlayedShelf';
 import WelcomeBackCard from './components/WelcomeBackCard';
 import { SessionService } from './services/SessionService';
@@ -1405,6 +1406,7 @@ function Home({
             <DiscoverHighlights library={library} onLaunchGame={onLaunchGame} activeSessions={activeSessions} />
           </div>
           <div className="home-persona-section">
+            <ChronicleCard library={library} />
             <LibrarianHubCarousel library={library} onLaunchGame={onLaunchGame} />
             <AchievementCompletionCard library={library} />
           </div>
