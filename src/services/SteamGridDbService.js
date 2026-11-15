@@ -26,7 +26,8 @@ class SteamGridDbService {
   static async getArt(gameId, kind = 'grids') {
     const res = await window.electronAPI.sgdbArt({ gameId, kind, apiKey: this.getApiKey() });
     if (res?.error === 'invalid-key') throw new Error('invalid-key');
-    return res?.ok ? res.items : [];
+    if (!res?.ok) throw new Error(res?.error || 'sgdb-unavailable');
+    return res.items;
   }
 }
 

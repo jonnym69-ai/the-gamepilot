@@ -7,6 +7,7 @@ const { httpsRequest } = require('./net');
 // broken response can't inject arbitrary remote images.
 const SGDB_API_BASE = 'https://www.steamgriddb.com/api/v2';
 const CACHE_TTL_MS = 24 * 60 * 60000;
+const GRID_DIMENSIONS = '600x900,342x482,660x930,512x512,1024x1024';
 const cache = new Map();
 
 const validKey = (apiKey) => {
@@ -83,7 +84,7 @@ function registerIpcHandlers(ipcMain) {
     const kind = ['grids', 'heroes', 'logos'].includes(payload?.kind) ? payload.kind : 'grids';
     if (!key) return { ok: false, error: 'invalid-key', items: [] };
     if (!gameId) return { ok: false, error: 'missing-game', items: [] };
-    const dims = kind === 'grids' ? '?dimensions=600x900,342x462,384x512,512x512&types=static' : '?types=static';
+    const dims = kind === 'grids' ? `?dimensions=${GRID_DIMENSIONS}&types=static` : '?types=static';
     const result = await cachedGet(`${kind}:${gameId}`, `${SGDB_API_BASE}/${kind}/game/${gameId}${dims}`, key);
     if (!result.ok) return { ...result, items: [] };
     const items = (Array.isArray(result.data?.data) ? result.data.data : [])
@@ -95,4 +96,4 @@ function registerIpcHandlers(ipcMain) {
   });
 }
 
-module.exports = { registerIpcHandlers };
+module.exports = { registerIpcHandlers, GRID_DIMENSIONS };
