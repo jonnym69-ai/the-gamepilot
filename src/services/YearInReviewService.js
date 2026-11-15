@@ -324,11 +324,15 @@ const buildTopGames = (sessions = [], limit = 5) => {
         lastPlayed: session.timestamp,
         longestSessionMinutes: 0,
         avgSessionMinutes: 0,
+        monthlyMinutes: Array(12).fill(0),
       });
     }
 
     const entry = gameMap.get(key);
     entry.totalPlaytime += session.playtimeMinutes;
+    if (session.timestamp instanceof Date && !Number.isNaN(session.timestamp.getTime())) {
+      entry.monthlyMinutes[session.timestamp.getMonth()] += session.playtimeMinutes;
+    }
     entry.sessions += 1;
     entry.longestSessionMinutes = Math.max(entry.longestSessionMinutes, session.playtimeMinutes);
     if (!entry.coverUrl && session.coverUrl) {
@@ -1148,7 +1152,9 @@ const buildFirstsMilestones = ({ sessions, allSessions, library, year }) => {
 
 // Calendar records for the year: longest run of consecutive days with a
 // session, the biggest month by minutes, the day with the most sessions.
-const buildMilestoneRecords = (sessions = []) => {
+// The streak also carries the games played inside its window (for the
+// Wrapped cover strip) — a streak is a story, not just a count.
+const buildMilestoneRecords = (sessions = [], library = []) => {
   const dayKeys = new Set();
   const dayCounts = new Map();
   const monthMinutes = new Map();
@@ -1184,6 +1190,35 @@ const buildMilestoneRecords = (sessions = []) => {
     }
   });
 
+  if (longestStreakDays) {
+    const inWindow = (session) => {
+      const dateKey = getDateKey(session?.timestamp);
+      return dateKey && dateKey >= longestStreakDays.startDate && dateKey <= longestStreakDays.endDate;
+    };
+    const streakMap = new Map();
+    (Array.isArray(sessions) ? sessions : []).forEach((session) => {
+      if (!inWindow(session)) return;
+      const key = String(session?.gameId || session?.gameName || '').trim();
+      if (!key) return;
+      const entry = streakMap.get(key) || { name: session?.gameName || key, minutes: 0, sessions: [] };
+      entry.minutes += session?.playtimeMinutes || 0;
+      entry.sessions.push(session);
+      streakMap.set(key, entry);
+    });
+    const games = [...streakMap.values()].sort(
+      (left, right) => right.minutes - left.minutes || left.name.localeCompare(right.name)
+    );
+    longestStreakDays = {
+      ...longestStreakDays,
+      gameCount: games.length,
+      games: games.slice(0, 8).map((entry) => ({
+        name: entry.name,
+        minutes: entry.minutes,
+        coverUrl: milestoneCover(library, entry.name, entry.sessions),
+      })),
+    };
+  }
+
   const biggest = [...monthMinutes.entries()].sort((left, right) => right[1] - left[1] || left[0] - right[0])[0];
   const busiest = [...dayCounts.entries()].sort(
     (left, right) => right[1] - left[1] || left[0].localeCompare(right[0])
@@ -1211,7 +1246,7 @@ const buildMilestones = ({ sessions = [], allSessions = [], library = [], year }
   const achievements = buildAchievementMilestones(library, safeYear);
   const comebacks = buildComebackMilestones({ sessions, allSessions: safeAll, library });
   const { firsts, firstsCount } = buildFirstsMilestones({ sessions, allSessions: safeAll, library, year: safeYear });
-  const records = buildMilestoneRecords(sessions);
+  const records = buildMilestoneRecords(sessions, library);
   const hasAny =
     finished.length > 0 ||
     Boolean(achievements && achievements.unlockedThisYear > 0) ||
@@ -1389,6 +1424,7 @@ export class YearInReviewService {
             : 0,
         longestSessionMinutes: sessions.reduce((max, session) => Math.max(max, session.playtimeMinutes), 0),
         playtimeHours: Number((sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0) / 60).toFixed(1)),
+        totalPlaytimeMinutes: sessions.reduce((sum, session) => sum + session.playtimeMinutes, 0),
       };
       const distributions = buildDistributionSummary(sessions);
       const topGames = buildTopGames(sessions, 6);

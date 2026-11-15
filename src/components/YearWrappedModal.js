@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { getPersonaVisual, accentToRgb } from './personaVisuals';
 import { formatPlaytime } from '../utils/formatPlaytime';
+import { displayGameTitle } from '../utils/gameTitle';
 import { LocalShareService } from '../services/LocalShareService';
 import WrappedPersonaShareCard from './WrappedPersonaShareCard';
 import './YearWrappedModal.css';
@@ -28,6 +29,40 @@ const slideDate = (value) => {
   const ms = value instanceof Date ? value.getTime() : Number(value) || Date.parse(value);
   if (!ms || Number.isNaN(ms)) return '';
   return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+const prefersReducedMotion = () =>
+  (typeof document !== 'undefined' && document.body?.classList?.contains('reduced-motion')) ||
+  (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+
+// Numbers tick up from zero — keeps whatever decimals the source value had
+// (312.5h counts up to 312.5, not 313).
+const CountUp = ({ value, duration = 900 }) => {
+  const target = Math.max(0, Number(value) || 0);
+  const decimals = String(value).includes('.') ? String(value).split('.')[1].length : 0;
+  const [display, setDisplay] = useState(() =>
+    prefersReducedMotion() ? target.toFixed(decimals) : (0).toFixed(decimals)
+  );
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setDisplay(target.toFixed(decimals));
+      return undefined;
+    }
+    let raf;
+    let start;
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    const step = (now) => {
+      if (start === undefined) start = now;
+      const t = Math.min(1, (now - start) / duration);
+      setDisplay((target * ease(t)).toFixed(decimals));
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, decimals, duration]);
+
+  return <>{display}</>;
 };
 
 // Build the deck order from whatever the snapshot actually has — slides with
@@ -42,9 +77,25 @@ export const buildWrappedSlides = (snapshot, year) => {
   const habits = snapshot.habits || {};
   const milestones = snapshot.milestones || {};
   const persona = snapshot.persona || {};
+  const monthly = snapshot.monthly || {};
+  const monthEntries = Object.entries(monthly.playtimeMinutes || {});
+  const totalMinutes = summary.totalPlaytimeMinutes || monthEntries.reduce((sum, [, minutes]) => sum + minutes, 0);
 
   slides.push({ id: 'totals', summary, habits });
-  if (topGames[0]) slides.push({ id: 'topGame', games: topGames.slice(0, 5) });
+  if (monthEntries.some(([, minutes]) => minutes > 0)) {
+    slides.push({
+      id: 'months',
+      months: monthEntries,
+      totalMinutes,
+      peakLabel: milestones.records?.biggestMonth?.label,
+    });
+  }
+  if (topGames[0]) slides.push({ id: 'topGame', games: topGames.slice(0, 5), totalMinutes });
+  if (topGames[1]) slides.push({ id: 'spotlight', game: topGames[1], rank: 2, totalMinutes });
+  if (topGames[2]) slides.push({ id: 'spotlight', game: topGames[2], rank: 3, totalMinutes });
+  if ((milestones.records?.longestStreakDays?.days || 0) > 1) {
+    slides.push({ id: 'streak', streak: milestones.records.longestStreakDays });
+  }
   if (distributions.topGenres?.[0] || distributions.topMoods?.[0]) {
     slides.push({ id: 'flavor', genre: distributions.topGenres?.[0], mood: distributions.topMoods?.[0] });
   }
@@ -65,9 +116,11 @@ export const buildWrappedSlides = (snapshot, year) => {
   return slides;
 };
 
-const SlideShell = ({ slideId, coverUrl, children }) => (
+const SlideShell = ({ slideId, coverUrl, sharp = false, children }) => (
   <div className="wrapped-slide" key={slideId}>
-    {coverUrl ? <div className="wrapped-slide-art" style={{ backgroundImage: `url(${coverUrl})` }} /> : null}
+    {coverUrl ? (
+      <div className={`wrapped-slide-art${sharp ? ' sharp' : ''}`} style={{ backgroundImage: `url(${coverUrl})` }} />
+    ) : null}
     <div className="wrapped-slide-scrim" />
     <div className="wrapped-slide-inner">{children}</div>
   </div>
@@ -80,7 +133,24 @@ const Eyebrow = ({ icon: Icon, children }) => (
   </p>
 );
 
-export default function YearWrappedModal({ snapshot, year, username = 'Pilot', onClose }) {
+// 12 mini bars for a game's year — the shape of the obsession at a glance.
+const MonthlySpark = ({ minutes }) => {
+  if (!Array.isArray(minutes) || !minutes.some((value) => value > 0)) return null;
+  const max = Math.max(1, ...minutes);
+  return (
+    <div className="wrapped-sparkline" aria-hidden="true">
+      {minutes.map((value, index) => (
+        <div
+          key={index}
+          className={`wrapped-spark-bar${value > 0 ? ' lit' : ''}`}
+          style={{ '--bar-h': `${(value / max) * 100}%`, animationDelay: `${index * 40}ms` }}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default function YearWrappedModal({ snapshot, year, username = 'Pilot', onClose, onOpenChronicle }) {
   const slides = useMemo(() => buildWrappedSlides(snapshot, year), [snapshot, year]);
   const [index, setIndex] = useState(0);
   const total = slides.length;
@@ -171,7 +241,9 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
         return (
           <SlideShell slideId="totals">
             <Eyebrow icon={Clock}>The headline</Eyebrow>
-            <h2 className="wrapped-number">{s.playtimeHours}h</h2>
+            <h2 className="wrapped-number">
+              <CountUp value={s.playtimeHours} />h
+            </h2>
             <p className="wrapped-sub">
               across {s.uniqueGames} game{s.uniqueGames === 1 ? '' : 's'} in {s.sessions} session
               {s.sessions === 1 ? '' : 's'}
@@ -181,26 +253,132 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
         );
       }
 
+      case 'months': {
+        const entries = slide.months;
+        const max = Math.max(1, ...entries.map(([, minutes]) => minutes));
+        const peak = entries.reduce((best, entry) => (entry[1] > (best?.[1] || 0) ? entry : best), null);
+        const peakPct =
+          peak && slide.totalMinutes > 0 ? Math.max(1, Math.round((peak[1] / slide.totalMinutes) * 100)) : 0;
+        return (
+          <SlideShell slideId="months">
+            <Eyebrow icon={CalendarDays}>The rhythm</Eyebrow>
+            <h2 className="wrapped-title">Your year by month</h2>
+            <div className="wrapped-months">
+              {entries.map(([label, minutes], index) => (
+                <div key={label} className="wrapped-month-col">
+                  <span className="wrapped-month-hours">{minutes > 0 ? formatPlaytime(minutes) : ''}</span>
+                  <div className="wrapped-month-track">
+                    <div
+                      className={`wrapped-month-bar${peak && label === peak[0] ? ' peak' : ''}`}
+                      style={{ '--bar-h': `${(minutes / max) * 100}%`, animationDelay: `${index * 45}ms` }}
+                    />
+                  </div>
+                  <span className="wrapped-month-label">{label}</span>
+                </div>
+              ))}
+            </div>
+            {peak ? (
+              <p className="wrapped-sub">
+                {slide.peakLabel || peak[0]} was your peak{peakPct > 0 ? ` — ${peakPct}% of the year` : ''}.
+              </p>
+            ) : null}
+          </SlideShell>
+        );
+      }
+
       case 'topGame': {
         const [top, ...rest] = slide.games;
+        const share =
+          slide.totalMinutes > 0 ? Math.max(1, Math.round((top.totalPlaytime / slide.totalMinutes) * 100)) : null;
         return (
-          <SlideShell slideId="topGame" coverUrl={top.coverUrl}>
+          <SlideShell slideId="topGame" coverUrl={top.coverUrl} sharp>
             <Eyebrow icon={Crown}>Most played</Eyebrow>
-            <h2 className="wrapped-title">{top.name}</h2>
+            <h2 className="wrapped-title">{displayGameTitle(top.name)}</h2>
             <p className="wrapped-sub">
               {formatPlaytime(top.totalPlaytime)} · {top.sessions} session{top.sessions === 1 ? '' : 's'}
               {top.avgSessionMinutes ? ` · ~${formatPlaytime(top.avgSessionMinutes)} a sitting` : ''}
+              {share ? ` — ${share}% of your year` : ''}
             </p>
+            <MonthlySpark minutes={top.monthlyMinutes} />
             {rest.length > 0 && (
               <ul className="wrapped-lineup">
                 {rest.map((game) => (
                   <li key={game.id || game.name}>
-                    <span>{game.name}</span>
+                    <span>{displayGameTitle(game.name)}</span>
                     <span className="wrapped-lineup-hours">{formatPlaytime(game.totalPlaytime)}</span>
                   </li>
                 ))}
               </ul>
             )}
+          </SlideShell>
+        );
+      }
+
+      case 'spotlight': {
+        const game = slide.game;
+        const share =
+          slide.totalMinutes > 0 ? Math.max(1, Math.round((game.totalPlaytime / slide.totalMinutes) * 100)) : null;
+        return (
+          <SlideShell slideId={`spotlight-${game.id || slide.rank}`} coverUrl={game.coverUrl} sharp>
+            <Eyebrow icon={Crown}>#{slide.rank} most played</Eyebrow>
+            <h2 className="wrapped-title">{displayGameTitle(game.name)}</h2>
+            <div className="wrapped-spotlight-stats">
+              {share !== null ? (
+                <div className="wrapped-spotlight-stat">
+                  <strong>
+                    <CountUp value={share} />%
+                  </strong>
+                  <span>of your year</span>
+                </div>
+              ) : null}
+              <div className="wrapped-spotlight-stat">
+                <strong>
+                  <CountUp value={game.sessions} />
+                </strong>
+                <span>session{game.sessions === 1 ? '' : 's'}</span>
+              </div>
+              {game.avgSessionMinutes ? (
+                <div className="wrapped-spotlight-stat">
+                  <strong>{formatPlaytime(game.avgSessionMinutes)}</strong>
+                  <span>a sitting</span>
+                </div>
+              ) : null}
+            </div>
+            <MonthlySpark minutes={game.monthlyMinutes} />
+          </SlideShell>
+        );
+      }
+
+      case 'streak': {
+        const streak = slide.streak;
+        const games = Array.isArray(streak.games) ? streak.games : [];
+        const count = streak.gameCount ?? games.length;
+        return (
+          <SlideShell slideId="streak">
+            <Eyebrow icon={Flame}>The streak</Eyebrow>
+            <h2 className="wrapped-number">
+              <CountUp value={streak.days} />
+            </h2>
+            <p className="wrapped-sub">
+              consecutive days showing up — {slideDate(streak.startDate)} to {slideDate(streak.endDate)}
+              {count > 0 ? `, across ${count} different game${count === 1 ? '' : 's'}` : ''}.
+            </p>
+            {games.some((game) => game.coverUrl) ? (
+              <div className="wrapped-streak-covers">
+                {games.map((game, index) =>
+                  game.coverUrl ? (
+                    <img
+                      key={`${game.name}-${index}`}
+                      src={game.coverUrl}
+                      alt={displayGameTitle(game.name)}
+                      title={displayGameTitle(game.name)}
+                      className="wrapped-streak-cover"
+                      style={{ animationDelay: `${index * 60}ms` }}
+                    />
+                  ) : null
+                )}
+              </div>
+            ) : null}
           </SlideShell>
         );
       }
@@ -225,7 +403,7 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
             <Eyebrow icon={Moon}>The marathon</Eyebrow>
             <h2 className="wrapped-number">{formatPlaytime(s.playtimeMinutes)}</h2>
             <p className="wrapped-sub">
-              {s.gameName}
+              {displayGameTitle(s.gameName)}
               {slideDate(s.timestamp) ? ` · ${slideDate(s.timestamp)}` : ''} — your longest single sitting.
             </p>
           </SlideShell>
@@ -238,15 +416,6 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
           <SlideShell slideId="records">
             <Eyebrow icon={Flame}>Records</Eyebrow>
             <div className="wrapped-records">
-              {r.longestStreakDays && (
-                <div className="wrapped-record">
-                  <strong>{r.longestStreakDays.days}</strong>
-                  <span>day streak</span>
-                  <small>
-                    {slideDate(r.longestStreakDays.startDate)} – {slideDate(r.longestStreakDays.endDate)}
-                  </small>
-                </div>
-              )}
               {r.biggestMonth && (
                 <div className="wrapped-record">
                   <strong>{r.biggestMonth.label}</strong>
@@ -271,13 +440,16 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
         return (
           <SlideShell slideId="achievements">
             <Eyebrow icon={Medal}>Achievements</Eyebrow>
-            <h2 className="wrapped-number">{a.unlockedThisYear}</h2>
+            <h2 className="wrapped-number">
+              <CountUp value={a.unlockedThisYear} />
+            </h2>
             <p className="wrapped-sub">unlocked across {a.gamesWithUnlocks} games</p>
             {a.rarest && (
               <div className="wrapped-callout">
                 <Sparkles size={15} aria-hidden="true" />
                 <span>
-                  Rarest pull: <strong>{a.rarest.name}</strong> — {a.rarest.percent}% of players ({a.rarest.gameName})
+                  Rarest pull: <strong>{a.rarest.name}</strong> — {a.rarest.percent}% of players (
+                  {displayGameTitle(a.rarest.gameName)})
                 </span>
               </div>
             )}
@@ -290,12 +462,14 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
         return (
           <SlideShell slideId="finished" coverUrl={list.find((g) => g.coverUrl)?.coverUrl}>
             <Eyebrow icon={Trophy}>Credits rolled</Eyebrow>
-            <h2 className="wrapped-number">{list.length}</h2>
+            <h2 className="wrapped-number">
+              <CountUp value={list.length} />
+            </h2>
             <p className="wrapped-sub">game{list.length === 1 ? '' : 's'} finished this year</p>
             <ul className="wrapped-lineup">
               {list.slice(0, 5).map((game) => (
                 <li key={game.name}>
-                  <span>{game.name}</span>
+                  <span>{displayGameTitle(game.name)}</span>
                   <span className="wrapped-lineup-hours">{game.status === '100%' ? '100%' : game.status}</span>
                 </li>
               ))}
@@ -309,7 +483,7 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
         return (
           <SlideShell slideId="comeback" coverUrl={c.coverUrl}>
             <Eyebrow icon={RotateCcw}>The comeback</Eyebrow>
-            <h2 className="wrapped-title">{c.name}</h2>
+            <h2 className="wrapped-title">{displayGameTitle(c.name)}</h2>
             <p className="wrapped-sub">
               back after {c.gapDays} days away — {slideDate(c.returnedAt)}
             </p>
@@ -322,9 +496,11 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
         return (
           <SlideShell slideId="firsts" coverUrl={slide.firsts.find((g) => g.coverUrl)?.coverUrl}>
             <Eyebrow icon={Zap}>New discoveries</Eyebrow>
-            <h2 className="wrapped-number">{count}</h2>
+            <h2 className="wrapped-number">
+              <CountUp value={count} />
+            </h2>
             <p className="wrapped-sub">game{count === 1 ? '' : 's'} played for the first time</p>
-            <p className="wrapped-names">{slide.firsts.map((g) => g.name).join(' · ')}</p>
+            <p className="wrapped-names">{slide.firsts.map((g) => displayGameTitle(g.name)).join(' · ')}</p>
           </SlideShell>
         );
       }
@@ -384,9 +560,15 @@ export default function YearWrappedModal({ snapshot, year, username = 'Pilot', o
             <Eyebrow icon={CalendarDays}>{slide.year} · wrapped</Eyebrow>
             <h2 className="wrapped-title">That's your year.</h2>
             <p className="wrapped-sub">
-              Every number came from your local sessions — no cloud, no guesses. The full breakdown waits on the tabs
-              behind you.
+              Every number came from your local sessions — no cloud, no guesses.
+              {onOpenChronicle ? ' The Chronicle tells the same year month by month.' : ''}
             </p>
+            {onOpenChronicle ? (
+              <button type="button" className="wrapped-chronicle-btn" onClick={onOpenChronicle}>
+                <BookOpen size={15} aria-hidden="true" />
+                Read the full chronicle
+              </button>
+            ) : null}
           </SlideShell>
         );
     }

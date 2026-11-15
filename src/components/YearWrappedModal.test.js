@@ -4,8 +4,24 @@ import YearWrappedModal, { buildWrappedSlides } from './YearWrappedModal';
 
 const fullSnapshot = {
   hasData: true,
-  summary: { playtimeHours: 312, uniqueGames: 24, sessions: 410 },
+  summary: { playtimeHours: 312, uniqueGames: 24, sessions: 410, totalPlaytimeMinutes: 18720 },
   habits: { daysActive: 132, avgSessionMinutes: 46, sessionsCount: 410 },
+  monthly: {
+    playtimeMinutes: {
+      Jan: 800,
+      Feb: 600,
+      Mar: 1200,
+      Apr: 0,
+      May: 400,
+      Jun: 0,
+      Jul: 900,
+      Aug: 2400,
+      Sep: 1800,
+      Oct: 2600,
+      Nov: 4200,
+      Dec: 3200,
+    },
+  },
   topGames: [
     {
       id: 'a',
@@ -15,8 +31,19 @@ const fullSnapshot = {
       totalPlaytime: 4320,
       sessions: 60,
       avgSessionMinutes: 72,
+      monthlyMinutes: [0, 0, 300, 0, 0, 0, 400, 1200, 800, 900, 600, 120],
     },
-    { id: 'b', name: 'Zomboid', platform: 'Steam', totalPlaytime: 3000, sessions: 40 },
+    {
+      id: 'b',
+      name: 'Zomboid, The',
+      platform: 'Steam',
+      coverUrl: 'https://img/zb.jpg',
+      totalPlaytime: 3000,
+      sessions: 40,
+      avgSessionMinutes: 75,
+      monthlyMinutes: [0, 0, 0, 0, 0, 0, 0, 0, 1200, 900, 600, 300],
+    },
+    { id: 'c', name: 'Slime Rancher', platform: 'Steam', totalPlaytime: 1500, sessions: 30 },
   ],
   distributions: {
     topGenres: [{ label: 'Action', count: 40 }],
@@ -32,7 +59,17 @@ const fullSnapshot = {
   },
   milestones: {
     records: {
-      longestStreakDays: { days: 9, startDate: '2025-03-01', endDate: '2025-03-09' },
+      longestStreakDays: {
+        days: 9,
+        startDate: '2025-03-01',
+        endDate: '2025-03-09',
+        gameCount: 3,
+        games: [
+          { name: 'Hades', minutes: 600, coverUrl: 'https://img/hades.jpg' },
+          { name: 'Zomboid, The', minutes: 300, coverUrl: 'https://img/zb.jpg' },
+          { name: 'Slime Rancher', minutes: 60, coverUrl: '' },
+        ],
+      },
       biggestMonth: { label: 'November', minutes: 4200 },
       mostSessionsDay: { date: '2025-11-12', count: 6 },
     },
@@ -86,7 +123,11 @@ describe('buildWrappedSlides', () => {
     expect(ids).toEqual([
       'intro',
       'totals',
+      'months',
       'topGame',
+      'spotlight',
+      'spotlight',
+      'streak',
       'flavor',
       'longestSession',
       'records',
@@ -104,10 +145,17 @@ describe('buildWrappedSlides', () => {
     expect(ids).toEqual(['intro', 'totals', 'topGame', 'persona', 'outro']);
     expect(ids).not.toContain('records');
     expect(ids).not.toContain('finished');
+    expect(ids).not.toContain('months');
+    expect(ids).not.toContain('streak');
+    expect(ids).not.toContain('spotlight');
   });
 });
 
 describe('YearWrappedModal', () => {
+  // Numbers resolve instantly under reduced motion — otherwise they'd count up.
+  beforeEach(() => document.body.classList.add('reduced-motion'));
+  afterEach(() => document.body.classList.remove('reduced-motion'));
+
   test('opens on the intro slide and renders nothing without data', () => {
     const { container } = render(<YearWrappedModal snapshot={{ hasData: false }} year={2025} onClose={jest.fn()} />);
     expect(container).toBeEmptyDOMElement();
@@ -124,15 +172,63 @@ describe('YearWrappedModal', () => {
     expect(screen.getByText('312h')).toBeInTheDocument();
     expect(screen.getByText(/across 24 games in 410 sessions/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    const dots = screen.getAllByRole('button', { name: /Slide \d+/ });
+    fireEvent.click(dots[3]); // topGame
     expect(screen.getByText('Hades')).toBeInTheDocument();
     expect(screen.getByText(/72h/)).toBeInTheDocument();
+    expect(screen.getByText(/23% of your year/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
-    expect(screen.getByText('312h')).toBeInTheDocument();
+    expect(screen.getByText('Your year by month')).toBeInTheDocument();
 
     // Dots mirror the deck length.
-    expect(screen.getAllByRole('button', { name: /Slide \d+/ })).toHaveLength(12);
+    expect(dots).toHaveLength(16);
+  });
+
+  test('months slide renders the yearly bar chart and names the peak', () => {
+    render(<YearWrappedModal snapshot={fullSnapshot} year={2025} onClose={jest.fn()} />);
+    fireEvent.click(screen.getAllByRole('button', { name: /Slide \d+/ })[2]);
+
+    expect(screen.getByText('Your year by month')).toBeInTheDocument();
+    expect(screen.getByText(/November was your peak — 22% of the year/)).toBeInTheDocument();
+  });
+
+  test('spotlight slides give runners-up their own full-bleed page', () => {
+    render(<YearWrappedModal snapshot={fullSnapshot} year={2025} onClose={jest.fn()} />);
+    const dots = screen.getAllByRole('button', { name: /Slide \d+/ });
+    fireEvent.click(dots[4]);
+
+    expect(screen.getByText('#2 most played')).toBeInTheDocument();
+    expect(screen.getByText('The Zomboid')).toBeInTheDocument(); // sort-name normalized
+    expect(screen.getByText('16%')).toBeInTheDocument();
+    expect(screen.getByText('40')).toBeInTheDocument();
+
+    fireEvent.click(dots[5]);
+    expect(screen.getByText('#3 most played')).toBeInTheDocument();
+    expect(screen.getByText('Slime Rancher')).toBeInTheDocument();
+  });
+
+  test('streak slide shows the day count, date range and the games that carried it', () => {
+    render(<YearWrappedModal snapshot={fullSnapshot} year={2025} onClose={jest.fn()} />);
+    fireEvent.click(screen.getAllByRole('button', { name: /Slide \d+/ })[6]);
+
+    expect(screen.getByText('9')).toBeInTheDocument();
+    expect(screen.getByText(/consecutive days showing up — .+ to .+, across 3 different games/)).toBeInTheDocument();
+    expect(screen.getByAltText('Hades')).toBeInTheDocument();
+    expect(screen.getByAltText('The Zomboid')).toBeInTheDocument();
+    expect(screen.queryByAltText('Slime Rancher')).not.toBeInTheDocument(); // no cover — skipped
+  });
+
+  test('outro offers the Chronicle handoff when provided', () => {
+    const onOpenChronicle = jest.fn();
+    render(
+      <YearWrappedModal snapshot={fullSnapshot} year={2025} onClose={jest.fn()} onOpenChronicle={onOpenChronicle} />
+    );
+    const dots = screen.getAllByRole('button', { name: /Slide \d+/ });
+    fireEvent.click(dots[dots.length - 1]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Read the full chronicle' }));
+    expect(onOpenChronicle).toHaveBeenCalledTimes(1);
   });
 
   test('shows the persona verdict with its evidence and roast near the end', () => {

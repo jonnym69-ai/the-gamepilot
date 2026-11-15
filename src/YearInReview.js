@@ -1632,7 +1632,16 @@ function YearInReview({ library = [] }) {
       </div>
 
       {wrappedOpen && snapshot?.hasData && (
-        <YearWrappedModal snapshot={snapshot} year={selectedYear} username={pilotName} onClose={closeWrapped} />
+        <YearWrappedModal
+          snapshot={snapshot}
+          year={selectedYear}
+          username={pilotName}
+          onClose={closeWrapped}
+          onOpenChronicle={() => {
+            closeWrapped();
+            selectTab('chronicle');
+          }}
+        />
       )}
     </div>
   );
