@@ -7,7 +7,7 @@ import { getElectronAPI, openExternalUrl } from '../services/ElectronBridge';
  * configured/not-configured — the saved secret is never read back into the
  * renderer.
  */
-export default function YouTubeSettings() {
+export default function YouTubeSettings({ embedded = false }) {
   const api = getElectronAPI();
   const available = Boolean(api?.youtubeStatus && api?.youtubeSetKey && api?.youtubeClearKey);
   const [configured, setConfigured] = useState(false);
@@ -75,7 +75,7 @@ export default function YouTubeSettings() {
 
   return (
     <div className="setting-item">
-      <label htmlFor="youtube-api-key">YouTube Videos (Local Preview)</label>
+      {!embedded && <label htmlFor="youtube-api-key">YouTube Videos (Local Preview)</label>}
       {available ? (
         <div>
           <input

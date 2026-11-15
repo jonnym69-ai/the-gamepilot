@@ -16,6 +16,7 @@ import {
   MessageSquarePlus,
   Compass,
   HardDrive,
+  KeyRound,
 } from 'lucide-react';
 import InterfaceSettings from './components/InterfaceSettings';
 import ThemePicker from './components/ThemePicker';
@@ -40,10 +41,8 @@ import NotificationService from './services/NotificationService';
 import SteamProfileService from './services/SteamProfileService';
 import SteamOwnedGamesService from './services/SteamOwnedGamesService';
 import EpicAccountService from './services/EpicAccountService';
-import ItchAccountService from './services/ItchAccountService';
-import YouTubeSettings from './components/YouTubeSettings';
 import IgdbArtworkService from './services/IgdbArtworkService';
-import RetroAchievementsService from './services/RetroAchievementsService';
+import ApiKeysSection, { getConnectedKeyCount } from './components/ApiKeysSection';
 import { SessionService } from './services/SessionService';
 import { LibraryExportService } from './services/LibraryExportService';
 import { LocalShareService } from './services/LocalShareService';
@@ -92,14 +91,10 @@ function Settings({
   const [notifDealsEnabled, setNotifDealsEnabled] = useState(() => NotificationService.getPrefs().deals);
   const [steamOwnedGamesEnabled, setSteamOwnedGamesEnabled] = useState(() => SteamOwnedGamesService.isEnabled());
   const [epicLinked, setEpicLinked] = useState(() => EpicAccountService.isLinked());
-  const [itchKey, setItchKey] = useState(() => ItchAccountService.getApiKey());
   const [epicDisplayName, setEpicDisplayName] = useState(() => EpicAccountService.getAccountMeta()?.displayName || '');
   const [epicLinkBusy, setEpicLinkBusy] = useState(false);
   const [epicLinkError, setEpicLinkError] = useState(null);
   const [igdbArtworkEnabled, setIgdbArtworkEnabled] = useState(() => IgdbArtworkService.isEnabled());
-  const [raEnabled, setRaEnabled] = useState(() => RetroAchievementsService.isEnabled());
-  const [raUsername, setRaUsername] = useState(() => RetroAchievementsService.getUsername());
-  const [raApiKey, setRaApiKey] = useState(() => RetroAchievementsService.getApiKey());
   const [welcomeBackEnabled, setWelcomeBackEnabled] = useState(() => !SessionService.isWelcomeBackOptedOut());
   const [launchOnStartup, setLaunchOnStartup] = useState(false);
   const [startupLaunchSupported, setStartupLaunchSupported] = useState(false);
@@ -1394,48 +1389,6 @@ function Settings({
                     </div>
 
                     <div className="setting-item">
-                      <label>itch.io Library (Owned Games)</label>
-                      <div>
-                        <input
-                          type="password"
-                          placeholder="Paste your itch.io API key..."
-                          value={itchKey}
-                          onChange={(e) => setItchKey(e.target.value)}
-                          onBlur={() => {
-                            const next = itchKey.trim();
-                            if (next) ItchAccountService.setApiKey(next);
-                            else ItchAccountService.clear();
-                            setItchKey(ItchAccountService.getApiKey());
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: '6px',
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg)',
-                            color: 'var(--text)',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                      </div>
-                      <p className="setting-description">
-                        Off by default. itch has no OAuth for third-party apps — generate a personal API key at itch.io
-                        → user settings → API keys and paste it here. Your owned library (purchases, claimed freebies,
-                        bundle games) then shows in &quot;Owned, not installed&quot; and backlog picks. The key stays on
-                        this PC and is only used to read your owned-keys list. Clear the field to disconnect.
-                      </p>
-                      {itchKey && (
-                        <p className="setting-description" style={{ margin: '4px 0 0' }}>
-                          {ItchAccountService.getCached()?.games?.length
-                            ? `Key saved — ${ItchAccountService.getCached().games.length} itch games found.`
-                            : 'Key saved — your itch games appear on the next library refresh.'}
-                        </p>
-                      )}
-                    </div>
-
-                    <YouTubeSettings />
-
-                    <div className="setting-item">
                       <label>IGDB Cover Art Lookup</label>
                       <div className="toggle-switch">
                         <input
@@ -1460,81 +1413,6 @@ function Settings({
                         looked up on IGDB by name and given official cover art. Only the game's name is sent — no
                         playtime, account, or library data. Results are cached on-device for 30 days.
                       </p>
-                    </div>
-
-                    <div className="setting-item">
-                      <label>RetroAchievements</label>
-                      <div className="toggle-switch">
-                        <input
-                          type="checkbox"
-                          checked={raEnabled}
-                          onChange={(e) => {
-                            const next = e.target.checked;
-                            setRaEnabled(next);
-                            RetroAchievementsService.setEnabled(next);
-                            success(
-                              next
-                                ? 'RetroAchievements enabled. Rescan ROMs to match your retro library.'
-                                : 'RetroAchievements disabled.'
-                            );
-                          }}
-                          id="retro-achievements-enabled"
-                        />
-                        <label htmlFor="retro-achievements-enabled" className="toggle-slider"></label>
-                      </div>
-                      <p className="setting-description">
-                        Off by default. Matches your emulated games to the RetroAchievements catalog and shows
-                        achievement progress on library cards after the next ROM scan. Get your free web API key at
-                        retroachievements.org → Settings → Keys. Your username and key stay on-device — only the RA API
-                        sees them, and nothing is posted or changed on your account.
-                      </p>
-                      {raEnabled && (
-                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <input
-                            type="text"
-                            placeholder="RetroAchievements username"
-                            value={raUsername}
-                            onChange={(e) => {
-                              const next = e.target.value;
-                              setRaUsername(next);
-                              RetroAchievementsService.setUsername(next);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '8px 10px',
-                              borderRadius: '6px',
-                              border: '1px solid var(--border)',
-                              background: 'var(--bg)',
-                              color: 'var(--text)',
-                              boxSizing: 'border-box',
-                            }}
-                          />
-                          <input
-                            type="password"
-                            placeholder="Web API key (retroachievements.org → Settings → Keys)"
-                            value={raApiKey}
-                            onChange={(e) => {
-                              const next = e.target.value;
-                              setRaApiKey(next);
-                              RetroAchievementsService.setApiKey(next);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '8px 10px',
-                              borderRadius: '6px',
-                              border: '1px solid var(--border)',
-                              background: 'var(--bg)',
-                              color: 'var(--text)',
-                              boxSizing: 'border-box',
-                            }}
-                          />
-                          {(!raUsername.trim() || !raApiKey.trim()) && (
-                            <p className="setting-description" style={{ margin: '4px 0 0' }}>
-                              Add both a username and API key so a ROM rescan can pick up progress.
-                            </p>
-                          )}
-                        </div>
-                      )}
                     </div>
 
                     <h4 style={{ marginTop: '20px', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>System</h4>
@@ -1644,6 +1522,17 @@ function Settings({
                     </div>
                   </div>
                 </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="API Keys"
+                subtitle="Free keys that unlock artwork, retro achievements, itch games and video previews."
+                badge={getConnectedKeyCount() > 0 ? `${getConnectedKeyCount()} connected` : 'Free unlocks'}
+                icon={<KeyRound size={18} />}
+                className="settings-folder"
+                defaultOpen
+              >
+                <ApiKeysSection />
               </CollapsibleSection>
 
               <CollapsibleSection

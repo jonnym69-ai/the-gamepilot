@@ -50,8 +50,8 @@ export default function SgdbArtworkBrowser({ gameName, onPick }) {
     return (
       <div className="sgdb-browser">
         <span className="egm-hint">
-          Paste a free <strong>SteamGridDB API key</strong> (steamgriddb.com → profile → API) to browse real covers,
-          heroes and logos here. Stored locally, sent only to SteamGridDB.
+          Paste a free <strong>SteamGridDB API key</strong> to browse real covers, heroes and logos here. Not sure where
+          to get one? Settings → API Keys has a short walkthrough. Stored locally, sent only to SteamGridDB.
         </span>
         <div className="sgdb-key-row">
           <input

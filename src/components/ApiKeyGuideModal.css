@@ -1,0 +1,118 @@
+.api-key-guide-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 6, 12, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.api-key-guide {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 14px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.25));
+  background: var(--bg-secondary, #141826);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  color: var(--text-primary, var(--text-color, #e2e8f0));
+  overflow: hidden;
+}
+
+.api-key-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 0;
+}
+
+.api-key-guide-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.api-key-guide-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.api-key-guide-close:hover {
+  opacity: 1;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.api-key-guide-body {
+  padding: 8px 18px 4px;
+}
+
+.api-key-guide-lede {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
+.api-key-guide-steps {
+  margin: 0 0 12px;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.api-key-guide-note {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  line-height: 1.45;
+}
+
+.api-key-guide-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 18px 16px;
+}
+
+.api-key-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.api-key-guide-btn.secondary {
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.35));
+  background: rgba(148, 163, 184, 0.12);
+  color: inherit;
+}
+
+.api-key-guide-btn.primary {
+  border: none;
+  background: var(--accent, #6c8cff);
+  color: #fff;
+}
+
+.api-key-guide-btn.primary:hover {
+  filter: brightness(1.1);
+}
