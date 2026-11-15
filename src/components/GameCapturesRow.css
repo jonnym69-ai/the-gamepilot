@@ -70,3 +70,41 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+.captures-thumb-badge:empty {
+  display: none;
+}
+
+.captures-review {
+  margin-top: 8px;
+}
+.captures-review summary {
+  font-size: 0.74rem;
+  color: var(--text-secondary, #a7b0bf);
+  cursor: pointer;
+}
+.captures-review-note {
+  margin: 7px 0;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--text-muted, #8b919f);
+}
+.captures-review-strip {
+  max-height: 220px;
+  flex-wrap: wrap;
+  overflow-y: auto;
+}
+.captures-review-more {
+  margin-top: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  background: var(--accent-muted, rgba(61, 217, 255, 0.12));
+  font-size: 0.7rem;
+  color: var(--text-secondary, #a7b0bf);
+  cursor: pointer;
+}
+.captures-review-assigned {
+  margin: 6px 0 0;
+  font-size: 0.7rem;
+  color: var(--accent-color, #ff8c1a);
+}

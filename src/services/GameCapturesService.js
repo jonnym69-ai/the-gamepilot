@@ -1,4 +1,5 @@
 import SessionRepository from './SessionRepository';
+import StorageService from './StorageService';
 
 const api = () => (typeof window !== 'undefined' ? window.electronAPI : null);
 
@@ -6,6 +7,7 @@ const api = () => (typeof window !== 'undefined' ? window.electronAPI : null);
 // little drift past the recorded session end before calling it unattributed.
 const SESSION_GRACE_MS = 15 * 60 * 1000;
 const CACHE_TTL_MS = 60 * 1000;
+const ASSIGNMENTS_KEY = 'captureGameAssignments';
 
 const normalizeTitle = (value) =>
   String(value || '')
@@ -22,6 +24,19 @@ const sessionBounds = (session) => {
 export class GameCapturesService {
   static cache = null;
   static cacheAt = 0;
+
+  static getAssignments() {
+    const stored = StorageService.get(ASSIGNMENTS_KEY, {});
+    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+  }
+
+  static assign(capture, gameName) {
+    if (!capture?.filePath || !gameName) return false;
+    const assignments = this.getAssignments();
+    assignments[capture.filePath] = gameName;
+    StorageService.set(ASSIGNMENTS_KEY, assignments);
+    return true;
+  }
 
   static async listCaptures({ force = false } = {}) {
     const now = Date.now();
@@ -48,6 +63,9 @@ export class GameCapturesService {
 
   /** capturedAt → the session that was live then (with a post-save grace). */
   static matchBySession(capture, sessions = []) {
+    // Generic Windows screenshots can be of browsers, GamePilot, or anything
+    // else on screen. Only known gameplay recorders earn session attribution.
+    if (capture?.source === 'windows-screenshots') return null;
     const t = Number(capture?.capturedAt);
     if (!Number.isFinite(t) || t <= 0) return null;
     let best = null;
@@ -72,7 +90,13 @@ export class GameCapturesService {
       if (!byGame.has(name)) byGame.set(name, []);
       byGame.get(name).push(capture);
     };
+    const assignments = this.getAssignments();
     for (const capture of Array.isArray(captures) ? captures : []) {
+      const assigned = assignments[capture.filePath];
+      if (assigned && library.some((game) => game?.name === assigned)) {
+        push(assigned, capture);
+        continue;
+      }
       const titled = this.matchByTitle(capture, library);
       if (titled) {
         push(titled.name, capture);

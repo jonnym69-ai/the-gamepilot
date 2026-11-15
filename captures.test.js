@@ -29,6 +29,15 @@ describe('parseCaptureFileName', () => {
     expect(parsed.capturedAt).toBe(new Date(2026, 8, 1, 18, 30, 0).getTime());
   });
 
+  it('parses Windows Screenshots filenames with a compact timestamp', () => {
+    const parsed = parseCaptureFileName('Screenshot 2026-09-11 164730.png');
+    expect(parsed).toEqual({
+      titleHint: null,
+      capturedAt: new Date(2026, 8, 11, 16, 47, 30).getTime(),
+      kind: 'image',
+    });
+  });
+
   it('ignores files without a trailing timestamp', () => {
     expect(parseCaptureFileName('PZ BAKING GUIDE.mov')).toBeNull();
     expect(parseCaptureFileName('jim scene.mov')).toBeNull();

@@ -15,6 +15,8 @@ const library = [{ name: 'Grand Theft Auto V Enhanced' }, { name: 'Project Zombo
 const session = (gameName, startTime, endTime) => ({ gameName, startTime, endTime });
 
 describe('GameCapturesService attribution', () => {
+  beforeEach(() => localStorage.clear());
+
   it('attributes a titled capture to the library game', () => {
     const cap = capture('Grand Theft Auto V Enhanced 2026-11-13 22-45-12.mp4', {
       titleHint: 'Grand Theft Auto V Enhanced',
@@ -61,6 +63,33 @@ describe('GameCapturesService attribution', () => {
     ]);
     expect(byGame.get('Grand Theft Auto V Enhanced')).toEqual([cap]);
     expect(byGame.has('Project Zomboid')).toBe(false);
+    expect(unattributed).toEqual([]);
+  });
+
+  it('does not session-attribute generic Windows screenshots', () => {
+    const start = new Date(2026, 10, 3, 23, 0, 0).getTime();
+    const end = new Date(2026, 10, 4, 0, 30, 0).getTime();
+    const cap = {
+      ...capture('Screenshot 2026-11-03 235925.png', {
+        capturedAt: new Date(2026, 10, 3, 23, 59, 25).getTime(),
+        kind: 'image',
+      }),
+      source: 'windows-screenshots',
+    };
+    expect(GameCapturesService.matchBySession(cap, [session('Project Zomboid', start, end)])).toBeNull();
+  });
+
+  it('uses an explicit user assignment before other attribution rules', () => {
+    const cap = {
+      ...capture('Screenshot 2026-11-03 235925.png', {
+        capturedAt: new Date(2026, 10, 3, 23, 59, 25).getTime(),
+        kind: 'image',
+      }),
+      source: 'windows-screenshots',
+    };
+    GameCapturesService.assign(cap, 'Project Zomboid');
+    const { byGame, unattributed } = GameCapturesService.attribute([cap], library, []);
+    expect(byGame.get('Project Zomboid')).toEqual([cap]);
     expect(unattributed).toEqual([]);
   });
 

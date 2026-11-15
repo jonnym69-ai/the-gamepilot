@@ -3,10 +3,10 @@
  *
  * Reads the user's own gameplay captures from the standard record folders
  * (Xbox Game Bar → ~\Videos\Captures, NVIDIA → ~\Videos\NVIDIA, plus the
- * ~\Videos root Game Bar also writes to). Filenames carry a trailing
- * "YYYY-MM-DD HH-MM-SS" timestamp and an optional title prefix — anything
- * else in those folders is ignored, so unrelated personal videos are never
- * touched.
+ * ~\Videos root Game Bar also writes to), plus the Windows
+ * ~\Pictures\Screenshots folder ("Screenshot YYYY-MM-DD HHMMSS.png").
+ * Filenames carry a timestamp and an optional title prefix — anything else
+ * in those folders is ignored, so unrelated personal files are never touched.
  */
 
 const fs = require('fs');
@@ -16,32 +16,55 @@ const { shell } = require('electron');
 
 const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp']);
 const VIDEO_EXT = new Set(['.mp4', '.mkv', '.webm', '.mov']);
-const MAX_ITEMS = 400;
+const MAX_ITEMS = 1500;
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 // "Grand Theft Auto V Enhanced 2026-11-13 22-45-12.mp4" and bare
 // "2026-11-03 23-59-25.mp4" (Game Bar couldn't resolve a title) both parse.
 const CAPTURE_NAME_RE =
   /^(?:(?<title>.+?)\s+)?(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}-\d{2}-\d{2})(?:\s*\(\d+\))?\.(?<ext>png|jpe?g|webp|mp4|mkv|webm|mov)$/i;
+const WINDOWS_SCREENSHOT_RE =
+  /^Screenshot (?<date>\d{4}-\d{2}-\d{2}) (?<hour>\d{2})(?<minute>\d{2})(?<second>\d{2})\.(?<ext>png|jpe?g|webp)$/i;
 
 const parseCaptureFileName = (fileName) => {
-  const match = CAPTURE_NAME_RE.exec(String(fileName || ''));
-  if (!match) return null;
-  const ext = `.${match.groups.ext.toLowerCase()}`;
-  const [year, month, day] = match.groups.date.split('-').map(Number);
-  const [hour, minute, second] = match.groups.time.split('-').map(Number);
-  const capturedAt = new Date(year, month - 1, day, hour, minute, second).getTime();
+  const value = String(fileName || '');
+  const match = CAPTURE_NAME_RE.exec(value);
+  if (match) {
+    const ext = `.${match.groups.ext.toLowerCase()}`;
+    const [year, month, day] = match.groups.date.split('-').map(Number);
+    const [hour, minute, second] = match.groups.time.split('-').map(Number);
+    const capturedAt = new Date(year, month - 1, day, hour, minute, second).getTime();
+    if (!Number.isFinite(capturedAt)) return null;
+    return {
+      titleHint: match.groups.title ? match.groups.title.trim() : null,
+      capturedAt,
+      kind: VIDEO_EXT.has(ext) ? 'video' : 'image',
+    };
+  }
+
+  const screenshot = WINDOWS_SCREENSHOT_RE.exec(value);
+  if (!screenshot) return null;
+  const [year, month, day] = screenshot.groups.date.split('-').map(Number);
+  const capturedAt = new Date(
+    year,
+    month - 1,
+    day,
+    Number(screenshot.groups.hour),
+    Number(screenshot.groups.minute),
+    Number(screenshot.groups.second)
+  ).getTime();
   if (!Number.isFinite(capturedAt)) return null;
-  return {
-    titleHint: match.groups.title ? match.groups.title.trim() : null,
-    capturedAt,
-    kind: VIDEO_EXT.has(ext) ? 'video' : 'image',
-  };
+  return { titleHint: null, capturedAt, kind: 'image' };
 };
 
 const getCaptureDirs = () => {
   const videosDir = path.join(os.homedir(), 'Videos');
-  const candidates = [path.join(videosDir, 'Captures'), path.join(videosDir, 'NVIDIA'), videosDir];
+  const candidates = [
+    path.join(videosDir, 'Captures'),
+    path.join(videosDir, 'NVIDIA'),
+    videosDir,
+    path.join(os.homedir(), 'Pictures', 'Screenshots'),
+  ];
   const seen = new Set();
   return candidates.filter((dir) => {
     const resolved = path.resolve(dir).toLowerCase();
@@ -76,11 +99,14 @@ const listCaptures = () => {
         const parsed = parseCaptureFileName(entry.name);
         if (!parsed) continue;
         const filePath = path.join(scanDir, entry.name);
+        const isWindowsScreenshots =
+          path.resolve(dir).toLowerCase() === path.resolve(os.homedir(), 'Pictures', 'Screenshots').toLowerCase();
         items.push({
           dir: scanDir,
           name: entry.name,
           filePath,
           fileUrl: `file:///${filePath.replace(/\\/g, '/')}`,
+          source: isWindowsScreenshots ? 'windows-screenshots' : 'gameplay-recorder',
           ...parsed,
         });
       }
