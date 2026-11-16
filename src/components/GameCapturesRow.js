@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Clapperboard, Film } from 'lucide-react';
 import GameCapturesService from '../services/GameCapturesService';
 import SessionRepository from '../services/SessionRepository';
+import ScrollStrip from './ScrollStrip';
 import './GameCapturesRow.css';
 
 // The user's Game Bar / ShadowPlay captures attributed to this game — named
@@ -39,6 +40,9 @@ const CaptureThumb = ({ capture, onClick, actionLabel }) => {
           <Film size={22} aria-hidden="true" />
         </span>
       )}
+      <span className="captures-thumb-date" aria-hidden="true">
+        {new Date(capture.capturedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+      </span>
       <span className="captures-thumb-badge" aria-hidden="true">
         {actionLabel ? 'assign' : capture.kind === 'video' ? 'clip' : ''}
       </span>
@@ -96,11 +100,11 @@ export default function GameCapturesRow({ gameName, library = [] }) {
             <Clapperboard size={13} aria-hidden="true" />
             Captures linked to this game — {captures.length}
           </p>
-          <div className="captures-strip" role="group" aria-label={`Your ${gameName} captures`}>
+          <ScrollStrip className="captures-strip" role="group" aria-label={`Your ${gameName} captures`}>
             {captures.map((capture) => (
               <CaptureThumb key={capture.filePath} capture={capture} />
             ))}
-          </div>
+          </ScrollStrip>
         </>
       )}
 

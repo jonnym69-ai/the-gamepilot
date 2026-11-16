@@ -1,0 +1,45 @@
+.scroll-strip {
+  position: relative;
+}
+
+.scroll-strip-body {
+  scrollbar-width: none;
+}
+.scroll-strip-body::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-strip-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 50%;
+  background: rgba(10, 14, 20, 0.85);
+  color: var(--text-secondary, #a7b0bf);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+.scroll-strip-arrow:hover {
+  color: #fff;
+  background: rgba(10, 14, 20, 0.95);
+}
+.scroll-strip-arrow:focus-visible {
+  outline: 2px solid var(--accent-color, #ff8c1a);
+  outline-offset: 2px;
+}
+.scroll-strip-arrow-left {
+  left: -4px;
+}
+.scroll-strip-arrow-right {
+  right: -4px;
+}

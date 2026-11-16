@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Camera } from 'lucide-react';
+import ScrollStrip from './ScrollStrip';
 import './LocalScreenshotsRow.css';
 
 // The user's own Steam screenshots, read straight off disk
@@ -41,7 +42,7 @@ export default function LocalScreenshotsRow({ appid, gameName }) {
         <Camera size={13} aria-hidden="true" />
         Your captures — {withThumbs.length} on disk
       </p>
-      <div className="local-shots-strip" role="group" aria-label={`Your ${gameName || 'game'} screenshots`}>
+      <ScrollStrip className="local-shots-strip" role="group" aria-label={`Your ${gameName || 'game'} screenshots`}>
         {withThumbs.map((shot) => (
           <button
             key={`${shot.dir}-${shot.name}`}
@@ -58,7 +59,7 @@ export default function LocalScreenshotsRow({ appid, gameName }) {
             <img src={shot.thumb} alt="" loading="lazy" />
           </button>
         ))}
-      </div>
+      </ScrollStrip>
     </div>
   );
 }
