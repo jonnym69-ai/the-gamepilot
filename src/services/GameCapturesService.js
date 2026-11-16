@@ -66,10 +66,20 @@ export class GameCapturesService {
     const hint = normalizeTitle(capture?.titleHint);
     if (!hint || hint.length < 4) return null;
     const candidates = (Array.isArray(library) ? library : [])
-      .map((game) => ({ game, slug: normalizeTitle(game?.name) }))
+      .map((game) => {
+        const exeStem = String(game?.exePath || game?.executablePath || '')
+          .split(/[\\/]/)
+          .pop()
+          .replace(/\.exe$/i, '');
+        return { game, slug: normalizeTitle(game?.name), exeSlug: normalizeTitle(exeStem) };
+      })
       .filter(({ slug }) => slug.length >= 4);
     const exact = candidates.find(({ slug }) => slug === hint);
     if (exact) return exact.game;
+    // Recorders name files after the process they captured — an exact
+    // exe-stem hit ("HoboRPG" → HoboRPG.exe) is as strong as a title hit.
+    const exeExact = candidates.find(({ exeSlug }) => exeSlug.length >= 4 && exeSlug === hint);
+    if (exeExact) return exeExact.game;
     return candidates.find(({ slug }) => slug.includes(hint) || hint.includes(slug))?.game || null;
   }
 

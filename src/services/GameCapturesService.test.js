@@ -30,6 +30,23 @@ describe('GameCapturesService attribution', () => {
     expect(GameCapturesService.matchByTitle(cap, library)?.name).toBe('Grand Theft Auto V Enhanced');
   });
 
+  it('matches the recorder process-name prefix to the game exe stem', () => {
+    const lib = [
+      { name: 'Hobo: Tough Life', executablePath: 'A:\\SteamLibrary\\steamapps\\common\\Hobo\\HoboRPG.exe' },
+      { name: 'Project Zomboid' },
+    ];
+    const cap = capture('HoboRPG 15_11_2026 15_48_50.png', { titleHint: 'HoboRPG', capturedAt: 1 });
+    expect(GameCapturesService.matchByTitle(cap, lib)?.name).toBe('Hobo: Tough Life');
+  });
+
+  it('leaves a hint matching neither name nor exe unattributed', () => {
+    const lib = [
+      { name: 'Hobo: Tough Life', executablePath: 'A:\\SteamLibrary\\steamapps\\common\\Hobo\\HoboRPG.exe' },
+    ];
+    const cap = capture('notepad 15_11_2026 15_48_50.png', { titleHint: 'notepad', capturedAt: 1 });
+    expect(GameCapturesService.matchByTitle(cap, lib)).toBeNull();
+  });
+
   it('attributes an anonymous capture to the session that was live then', () => {
     const start = new Date(2026, 10, 3, 23, 0, 0).getTime();
     const end = new Date(2026, 10, 4, 0, 30, 0).getTime();

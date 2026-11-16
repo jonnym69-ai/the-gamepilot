@@ -29,6 +29,36 @@ describe('parseCaptureFileName', () => {
     expect(parsed.capturedAt).toBe(new Date(2026, 8, 1, 18, 30, 0).getTime());
   });
 
+  it('parses Game Bar underscore timestamps (day-first unambiguous)', () => {
+    const parsed = parseCaptureFileName('HoboRPG 15_11_2026 15_48_50.png');
+    expect(parsed.titleHint).toBe('HoboRPG');
+    expect(parsed.kind).toBe('image');
+    expect(parsed.capturedAt).toBe(new Date(2026, 10, 15, 15, 48, 50).getTime());
+  });
+
+  it('parses Game Bar underscore timestamps (month-first unambiguous)', () => {
+    const parsed = parseCaptureFileName('Fortnite 11_15_2026 09_30_00.mp4');
+    expect(parsed.titleHint).toBe('Fortnite');
+    expect(parsed.kind).toBe('video');
+    expect(parsed.capturedAt).toBe(new Date(2026, 10, 15, 9, 30, 0).getTime());
+  });
+
+  it('uses the file mtime to resolve ambiguous day/month order', () => {
+    // 05_06 could be May 6 or June 5 — mtime in June picks the day-first read.
+    const mtime = new Date(2026, 5, 5, 12, 0, 0).getTime();
+    const parsed = parseCaptureFileName('SomeGame 05_06_2026 12_00_00.png', mtime);
+    expect(parsed.capturedAt).toBe(new Date(2026, 5, 5, 12, 0, 0).getTime());
+    const mtimeMay = new Date(2026, 4, 6, 12, 0, 0).getTime();
+    expect(parseCaptureFileName('SomeGame 05_06_2026 12_00_00.png', mtimeMay).capturedAt).toBe(
+      new Date(2026, 4, 6, 12, 0, 0).getTime()
+    );
+  });
+
+  it('rejects invalid dates in the underscore format', () => {
+    expect(parseCaptureFileName('Game 31_02_2026 10_00_00.png')).toBeNull();
+    expect(parseCaptureFileName('Game 99_99_2026 10_00_00.png')).toBeNull();
+  });
+
   it('parses Windows Screenshots filenames with a compact timestamp', () => {
     const parsed = parseCaptureFileName('Screenshot 2026-09-11 164730.png');
     expect(parsed).toEqual({
