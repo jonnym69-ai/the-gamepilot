@@ -129,6 +129,24 @@ describe('game-folder helper process exclusion', () => {
     ).toBe(true);
   });
 
+  it('does not match EA App helpers that linger inside the game dir', () => {
+    const skateGame = {
+      name: 'skate.',
+      platform: 'EA',
+      installDir: 'C:\\Program Files\\EA Games\\skate',
+      launchExecutable: 'skate.exe',
+    };
+    const dir = 'c:\\program files\\ea games\\skate';
+    const monitor = monitorFor(skateGame);
+    const procs = [
+      epicProc('EALauncher.exe', `${dir}\\ealauncher.exe`),
+      epicProc('EAConnect.exe', `${dir}\\eaconnect.exe`),
+      epicProc('EALaunchHelper.exe', `${dir}\\ealaunchhelper.exe`),
+    ];
+    procs.forEach((proc) => expect(processMatchesMonitor(proc, monitor)).toBe(false));
+    expect(processMatchesMonitor(epicProc('skate.exe', `${dir}\\skate.exe`), monitor)).toBe(true);
+  });
+
   it('does not match anti-cheat service stubs left under the game dir', () => {
     expect(
       processMatchesMonitor(

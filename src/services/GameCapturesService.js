@@ -8,6 +8,7 @@ const api = () => (typeof window !== 'undefined' ? window.electronAPI : null);
 const SESSION_GRACE_MS = 15 * 60 * 1000;
 const CACHE_TTL_MS = 60 * 1000;
 const ASSIGNMENTS_KEY = 'captureGameAssignments';
+const DISMISSALS_KEY = 'captureGameDismissals';
 
 const normalizeTitle = (value) =>
   String(value || '')
@@ -30,11 +31,49 @@ export class GameCapturesService {
     return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
   }
 
+  static getDismissals() {
+    const stored = StorageService.get(DISMISSALS_KEY, {});
+    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+  }
+
+  static isDismissed(capture, gameName) {
+    const list = capture?.filePath ? this.getDismissals()[capture.filePath] : null;
+    return Array.isArray(list) && list.includes(gameName);
+  }
+
   static assign(capture, gameName) {
     if (!capture?.filePath || !gameName) return false;
+    // Re-assigning forgives an earlier "not this game" for the same pair.
+    const dismissals = this.getDismissals();
+    const dismissed = dismissals[capture.filePath];
+    if (Array.isArray(dismissed) && dismissed.includes(gameName)) {
+      dismissals[capture.filePath] = dismissed.filter((name) => name !== gameName);
+      StorageService.set(DISMISSALS_KEY, dismissals);
+    }
     const assignments = this.getAssignments();
     assignments[capture.filePath] = gameName;
     StorageService.set(ASSIGNMENTS_KEY, assignments);
+    return true;
+  }
+
+  /**
+   * "Not this game" — clears any manual link AND stops the same (file, game)
+   * pair being auto-attributed again. Other evidence may still place the
+   * capture with a different game.
+   */
+  static dismiss(capture, gameName) {
+    if (!capture?.filePath || !gameName) return false;
+    const dismissals = this.getDismissals();
+    const list = Array.isArray(dismissals[capture.filePath]) ? dismissals[capture.filePath] : [];
+    if (!list.includes(gameName)) {
+      dismissals[capture.filePath] = list.concat(gameName);
+      StorageService.set(DISMISSALS_KEY, dismissals);
+    }
+    const assignments = this.getAssignments();
+    if (assignments[capture.filePath] === gameName) {
+      delete assignments[capture.filePath];
+      StorageService.set(ASSIGNMENTS_KEY, assignments);
+    }
     return true;
   }
 
@@ -129,26 +168,21 @@ export class GameCapturesService {
     const assignments = this.getAssignments();
     for (const capture of Array.isArray(captures) ? captures : []) {
       const assigned = assignments[capture.filePath];
-      if (assigned && library.some((game) => game?.name === assigned)) {
-        push(assigned, capture);
-        continue;
+      // Evidence order: explicit assign > Steam appid > title/exe > session
+      // window. A dismissed pair is skipped and the next evidence is tried —
+      // it only blocks that specific (file, game) claim, not the capture.
+      const candidates = [
+        assigned && library.some((game) => game?.name === assigned) ? assigned : null,
+        this.matchBySteamAppId(capture, library)?.name || null,
+        this.matchByTitle(capture, library)?.name || null,
+        this.matchBySession(capture, sessions)?.gameName || null,
+      ];
+      const winner = candidates.find((name) => name && !this.isDismissed(capture, name));
+      if (winner) {
+        push(winner, capture);
+      } else {
+        unattributed.push(capture);
       }
-      const steamOwned = this.matchBySteamAppId(capture, library);
-      if (steamOwned) {
-        push(steamOwned.name, capture);
-        continue;
-      }
-      const titled = this.matchByTitle(capture, library);
-      if (titled) {
-        push(titled.name, capture);
-        continue;
-      }
-      const session = this.matchBySession(capture, sessions);
-      if (session) {
-        push(session.gameName, capture);
-        continue;
-      }
-      unattributed.push(capture);
     }
     return { byGame, unattributed };
   }

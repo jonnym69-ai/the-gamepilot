@@ -156,6 +156,42 @@ describe('GameCapturesService attribution', () => {
     expect(byGame.get('ARK')).toEqual([cap]);
   });
 
+  it('dismiss clears a manual assignment and blocks re-attribution to that game', () => {
+    const cap = capture('clip.mp4', {
+      titleHint: 'Grand Theft Auto V Enhanced',
+      capturedAt: Date.now(),
+    });
+    GameCapturesService.assign(cap, 'Project Zomboid');
+    GameCapturesService.dismiss(cap, 'Project Zomboid');
+    // The title still points at GTA — a dismissal only blocks the wrong pair.
+    const { byGame, unattributed } = GameCapturesService.attribute([cap], library, []);
+    expect(byGame.get('Grand Theft Auto V Enhanced')).toEqual([cap]);
+    expect(byGame.has('Project Zomboid')).toBe(false);
+    expect(unattributed).toEqual([]);
+  });
+
+  it('dismissed captures fall to the next evidence instead of the pool', () => {
+    const start = new Date(2026, 10, 15, 20, 0, 0).getTime();
+    const end = new Date(2026, 10, 15, 21, 0, 0).getTime();
+    const cap = capture('clip.mp4', {
+      titleHint: 'Grand Theft Auto V Enhanced',
+      capturedAt: new Date(2026, 10, 15, 20, 30, 0).getTime(),
+    });
+    GameCapturesService.dismiss(cap, 'Grand Theft Auto V Enhanced');
+    const { byGame } = GameCapturesService.attribute([cap], library, [session('ARK', start, end)]);
+    expect(byGame.get('ARK')).toEqual([cap]);
+  });
+
+  it('re-assigning a capture forgives its dismissal', () => {
+    const cap = capture('clip.mp4', { capturedAt: Date.now() });
+    GameCapturesService.dismiss(cap, 'Project Zomboid');
+    expect(GameCapturesService.isDismissed(cap, 'Project Zomboid')).toBe(true);
+    GameCapturesService.assign(cap, 'Project Zomboid');
+    expect(GameCapturesService.isDismissed(cap, 'Project Zomboid')).toBe(false);
+    const { byGame } = GameCapturesService.attribute([cap], library, []);
+    expect(byGame.get('Project Zomboid')).toEqual([cap]);
+  });
+
   it('leaves unmatchable captures unattributed', () => {
     const cap = capture('2020-01-01 00-00-00.mp4', { capturedAt: new Date(2020, 0, 1).getTime() });
     const { byGame, unattributed } = GameCapturesService.attribute([cap], library, []);

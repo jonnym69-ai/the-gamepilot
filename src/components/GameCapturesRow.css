@@ -132,3 +132,70 @@
   font-size: 0.7rem;
   color: var(--accent-color, #ff8c1a);
 }
+
+.capture-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 7, 12, 0.84);
+  backdrop-filter: blur(3px);
+}
+.capture-preview {
+  display: flex;
+  flex-direction: column;
+  max-width: min(880px, 94vw);
+  max-height: 90vh;
+  overflow: hidden;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  background: var(--bg-secondary, #18212e);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+.capture-preview-media {
+  display: block;
+  max-width: 100%;
+  max-height: 64vh;
+  object-fit: contain;
+  background: #000;
+}
+.capture-preview-meta {
+  padding: 10px 14px 2px;
+}
+.capture-preview-name {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary, #e8ecf4);
+  overflow-wrap: anywhere;
+}
+.capture-preview-date {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted, #8b919f);
+}
+.capture-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px 14px;
+}
+.capture-preview-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  background: var(--accent-muted, rgba(61, 217, 255, 0.12));
+  font-size: 0.74rem;
+  color: var(--text-secondary, #a7b0bf);
+  cursor: pointer;
+}
+.capture-preview-btn:hover {
+  color: #fff;
+}
+.capture-preview-danger {
+  border-color: rgba(255, 107, 107, 0.4);
+  color: #ff8f8f;
+}

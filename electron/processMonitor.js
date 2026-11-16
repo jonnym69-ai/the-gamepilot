@@ -69,6 +69,15 @@ const GAME_HELPER_PROCESS_TOKENS = [
   'easyanticheat',
   'eac_launcher',
   'eaclauncher',
+  // EA App installs EALauncher.exe and friends inside the game directory and
+  // they stay resident after the game exits — the install-dir match would
+  // hold the session open forever (same failure shape as Epic's shims).
+  'ealauncher',
+  'eaconnect',
+  'eaactivation',
+  'eabackground',
+  'ealocalhost',
+  'eadesktop',
   'beservice',
   'battleyelauncher',
   'anticheat',

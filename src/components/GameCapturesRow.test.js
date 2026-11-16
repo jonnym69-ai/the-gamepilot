@@ -24,7 +24,7 @@ beforeEach(() => {
   GameCapturesService.withinSessionWindow.mockReturnValue(true);
 });
 
-test('lets the user explicitly assign an unmatched screenshot to the game', async () => {
+test('lets the user preview then assign an unmatched screenshot to the game', async () => {
   GameCapturesService.getAttribution
     .mockResolvedValueOnce({ byGame: new Map(), unattributed: [capture] })
     .mockResolvedValueOnce({ byGame: new Map([['Project Zomboid', [capture]]]), unattributed: [] });
@@ -32,11 +32,33 @@ test('lets the user explicitly assign an unmatched screenshot to the game', asyn
 
   render(<GameCapturesRow gameName="Project Zomboid" library={[{ name: 'Project Zomboid' }]} />);
 
-  const assign = await screen.findByRole('button', { name: `Assign ${capture.name} to Project Zomboid` });
+  const thumb = await screen.findByRole('button', { name: /Preview Screenshot 2026-11-08 123621\.png/ });
+  fireEvent.click(thumb);
+
+  const assign = await screen.findByRole('button', { name: 'Assign to Project Zomboid' });
   fireEvent.click(assign);
 
   expect(GameCapturesService.assign).toHaveBeenCalledWith(capture, 'Project Zomboid');
   expect(await screen.findByText(/Captures linked to this game — 1/)).toBeInTheDocument();
+});
+
+test('lets the user unlink a capture that was assigned to the wrong game', async () => {
+  const linked = { ...capture, source: 'gameplay-recorder' };
+  GameCapturesService.getAttribution
+    .mockResolvedValueOnce({ byGame: new Map([['Project Zomboid', [linked]]]), unattributed: [] })
+    .mockResolvedValueOnce({ byGame: new Map(), unattributed: [linked] });
+  GameCapturesService.dismiss.mockReturnValue(true);
+
+  render(<GameCapturesRow gameName="Project Zomboid" library={[{ name: 'Project Zomboid' }]} />);
+
+  const thumb = await screen.findByRole('button', { name: /Preview Screenshot 2026-11-08 123621\.png — linked/ });
+  fireEvent.click(thumb);
+
+  const remove = await screen.findByRole('button', { name: 'Remove from Project Zomboid' });
+  fireEvent.click(remove);
+
+  expect(GameCapturesService.dismiss).toHaveBeenCalledWith(linked, 'Project Zomboid');
+  expect(await screen.findByText(/From your recorders — unmatched \(1\)/)).toBeInTheDocument();
 });
 
 test('filters generic screenshots to session windows and reveals all on toggle', async () => {
@@ -48,11 +70,11 @@ test('filters generic screenshots to session windows and reveals all on toggle',
   render(<GameCapturesRow gameName="Project Zomboid" library={[{ name: 'Project Zomboid' }]} />);
 
   expect(await screen.findByText(/Review unmatched screenshots \(1 of 2 during sessions\)/)).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: /Assign outside\.png/ })).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /Assign in-session\.png/ })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /outside\.png/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /in-session\.png/ })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('checkbox', { name: /Only screenshots taken while a session was live/ }));
-  expect(screen.getByRole('button', { name: /Assign outside\.png/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /outside\.png/ })).toBeInTheDocument();
 });
 
 test('shows unmatched recorder captures in their own strip', async () => {

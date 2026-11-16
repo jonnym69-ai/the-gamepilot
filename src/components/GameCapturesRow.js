@@ -8,7 +8,7 @@ import './GameCapturesRow.css';
 // The user's Game Bar / ShadowPlay captures attributed to this game — named
 // files by title, anonymous recorder files by session time. Generic Windows
 // screenshots are only assigned explicitly by the user, never guessed.
-const CaptureThumb = ({ capture, onClick, actionLabel }) => {
+const CaptureThumb = ({ capture, onClick, actionLabel, badge }) => {
   const [thumb, setThumb] = useState(capture.kind === 'image' ? capture.fileUrl : null);
   const [thumbTried, setThumbTried] = useState(capture.kind === 'image');
 
@@ -44,9 +44,64 @@ const CaptureThumb = ({ capture, onClick, actionLabel }) => {
         {new Date(capture.capturedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
       </span>
       <span className="captures-thumb-badge" aria-hidden="true">
-        {actionLabel ? 'assign' : capture.kind === 'video' ? 'clip' : ''}
+        {badge !== undefined ? badge : actionLabel ? 'assign' : capture.kind === 'video' ? 'clip' : ''}
       </span>
     </button>
+  );
+};
+
+// Full-size look before assigning/unlinking — stops misclicks turning into
+// wrong-game links, and is the manage surface for fixing them when they do.
+const CapturePreview = ({ capture, linked, gameName, onClose, onAssign, onDismiss }) => {
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div className="capture-preview-overlay" role="presentation" onClick={onClose}>
+      <div
+        className="capture-preview"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Preview capture ${capture.name}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {capture.kind === 'video' ? (
+          <video className="capture-preview-media" src={capture.fileUrl} controls autoPlay muted playsInline />
+        ) : (
+          <img className="capture-preview-media" src={capture.fileUrl} alt={capture.name} />
+        )}
+        <div className="capture-preview-meta">
+          <p className="capture-preview-name">{capture.titleHint || capture.name}</p>
+          <p className="capture-preview-date">{new Date(capture.capturedAt).toLocaleString()}</p>
+        </div>
+        <div className="capture-preview-actions">
+          {linked ? (
+            <button
+              type="button"
+              className="capture-preview-btn capture-preview-danger"
+              onClick={() => onDismiss(capture)}
+            >
+              Remove from {gameName}
+            </button>
+          ) : (
+            <button type="button" className="capture-preview-btn" onClick={() => onAssign(capture)}>
+              Assign to {gameName}
+            </button>
+          )}
+          <button type="button" className="capture-preview-btn" onClick={() => GameCapturesService.open(capture)}>
+            Open file
+          </button>
+          <button type="button" className="capture-preview-btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -59,6 +114,7 @@ export default function GameCapturesRow({ gameName, library = [] }) {
   const [loaded, setLoaded] = useState(false);
   const [reviewLimit, setReviewLimit] = useState(24);
   const [assignedMessage, setAssignedMessage] = useState('');
+  const [preview, setPreview] = useState(null);
 
   const load = useCallback(async () => {
     if (!gameName) return;
@@ -88,7 +144,15 @@ export default function GameCapturesRow({ gameName, library = [] }) {
 
   const assign = (capture) => {
     GameCapturesService.assign(capture, gameName);
+    setPreview(null);
     setAssignedMessage(`Assigned to ${gameName}.`);
+    load();
+  };
+
+  const dismiss = (capture) => {
+    GameCapturesService.dismiss(capture, gameName);
+    setPreview(null);
+    setAssignedMessage(`Removed from ${gameName}.`);
     load();
   };
 
@@ -102,7 +166,13 @@ export default function GameCapturesRow({ gameName, library = [] }) {
           </p>
           <ScrollStrip className="captures-strip" role="group" aria-label={`Your ${gameName} captures`}>
             {captures.map((capture) => (
-              <CaptureThumb key={capture.filePath} capture={capture} />
+              <CaptureThumb
+                key={capture.filePath}
+                capture={capture}
+                onClick={(item) => setPreview({ capture: item, linked: true })}
+                actionLabel={`Preview ${capture.name} — linked to ${gameName}`}
+                badge={capture.kind === 'video' ? 'clip' : ''}
+              />
             ))}
           </ScrollStrip>
         </>
@@ -119,8 +189,8 @@ export default function GameCapturesRow({ gameName, library = [] }) {
               <CaptureThumb
                 key={capture.filePath}
                 capture={capture}
-                onClick={assign}
-                actionLabel={`Assign ${capture.name} to ${gameName}`}
+                onClick={(item) => setPreview({ capture: item, linked: false })}
+                actionLabel={`Preview ${capture.name} — assign to ${gameName}`}
               />
             ))}
           </div>
@@ -152,8 +222,8 @@ export default function GameCapturesRow({ gameName, library = [] }) {
               <CaptureThumb
                 key={capture.filePath}
                 capture={capture}
-                onClick={assign}
-                actionLabel={`Assign ${capture.name} to ${gameName}`}
+                onClick={(item) => setPreview({ capture: item, linked: false })}
+                actionLabel={`Preview ${capture.name} — assign to ${gameName}`}
               />
             ))}
           </div>
@@ -169,6 +239,17 @@ export default function GameCapturesRow({ gameName, library = [] }) {
           )}
           {assignedMessage && <p className="captures-review-assigned">{assignedMessage}</p>}
         </details>
+      )}
+
+      {preview && (
+        <CapturePreview
+          capture={preview.capture}
+          linked={preview.linked}
+          gameName={gameName}
+          onClose={() => setPreview(null)}
+          onAssign={assign}
+          onDismiss={dismiss}
+        />
       )}
     </div>
   );
