@@ -80,30 +80,48 @@ test('renders the title page and contents, preferring a real capture for chapter
 
   expect(screen.getByRole('heading', { name: 'The Gaming Life of Moz' })).toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: 'Chronicle contents' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Prologue' }));
   expect(screen.getByText(/reconstructed from launcher records/)).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: '‹ Contents' }));
+  fireEvent.click(screen.getByRole('button', { name: /Chapter One — The Record Begins/ }));
   const captureArt = await screen.findByAltText('Project Zomboid chapter artwork');
   await waitFor(() => expect(captureArt).toHaveAttribute('src', 'data:image/png;base64,capture'));
   expect(GameCapturesService.readImageDataUrl).toHaveBeenCalled();
 });
 
-test('uses the next game for art when a dominant game repeats and collapses chapters', async () => {
+test('turns pages one leaf at a time, using the next game for art on repeats', async () => {
   render(<ChronicleCard library={library} username="Moz" />);
 
+  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
+  expect(screen.getByText('Prologue')).toBeInTheDocument();
+  expect(screen.getByText('1 / 3')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  expect(screen.getByText('Chapter I')).toBeInTheDocument();
+  expect(await screen.findByAltText('Project Zomboid chapter artwork')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  expect(screen.getByText('Chapter II')).toBeInTheDocument();
   expect(await screen.findByAltText('Terraria chapter artwork')).toHaveAttribute('src', 'Terraria-hero.jpg');
-  const chapterToggle = screen
-    .getAllByRole('button', { name: /Chapter One — The Record Begins/ })
-    .find((button) => button.hasAttribute('aria-expanded'));
-  fireEvent.click(chapterToggle);
-  expect(chapterToggle).toHaveAttribute('aria-expanded', 'false');
-  expect(screen.queryByText(/The chronicle opens/)).not.toBeInTheDocument();
+
+  // Page heads are not collapsible in book mode; Next is disabled at the end.
+  expect(screen.getByText(/Chapter Two —/)).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Chapter Two —/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: /Chapter Three/ })).not.toBeInTheDocument();
 });
 
 test('expands the recorded sessions behind a chapter', async () => {
   render(<ChronicleCard library={library} username="Moz" />);
 
-  const receipts = screen.getAllByText(/Receipts · 2 recorded sessions/)[0];
+  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+  const receipts = screen.getByText(/Receipts · 2 recorded sessions/);
   fireEvent.click(receipts);
-  expect(within(screen.getAllByRole('list')[0]).getAllByRole('listitem')).toHaveLength(2);
+  expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(2);
 });
 
 test('pluralizes singular counts everywhere, including the share card', async () => {
@@ -119,7 +137,9 @@ test('pluralizes singular counts everywhere, including the share card', async ()
   html2canvas.mockReturnValue(new Promise(() => {})); // keep the share stage mounted
   render(<ChronicleCard library={[{ name: 'Balatro', importedPlaytimeMinutes: 60 }]} username="Moz" />);
 
-  await screen.findAllByText(/1 recorded session/);
+  await screen.findByText(/1 recorded session/);
+  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
   expect(screen.queryByText(/1 recorded sessions|1 sessions|1 games/)).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: 'Share chapter' }));
@@ -130,7 +150,9 @@ test('pluralizes singular counts everywhere, including the share card', async ()
 test('exports a chapter as a finished image', async () => {
   render(<ChronicleCard library={library} username="Moz" />);
 
-  fireEvent.click(screen.getAllByRole('button', { name: 'Share chapter' })[0]);
+  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Share chapter' }));
   await waitFor(() => expect(html2canvas).toHaveBeenCalled());
   expect(LocalShareService.downloadImageFromCanvas).toHaveBeenCalledWith({ id: 'canvas' }, 'chronicle-2026-07.png');
   expect(await screen.findByRole('button', { name: 'Saved' })).toBeInTheDocument();

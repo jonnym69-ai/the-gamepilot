@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, ChevronDown, Download, Feather, ScrollText } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronLeft, ChevronRight, Download, Feather, ScrollText } from 'lucide-react';
 import SessionRepository from '../services/SessionRepository';
 import { buildChronicle } from '../services/ChronicleService';
 import GamingPersonaService from '../services/GamingPersonaService';
@@ -34,6 +34,33 @@ const monthKeyOf = (ms) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const ROMAN_TABLE = [
+  [1000, 'M'],
+  [900, 'CM'],
+  [500, 'D'],
+  [400, 'CD'],
+  [100, 'C'],
+  [90, 'XC'],
+  [50, 'L'],
+  [40, 'XL'],
+  [10, 'X'],
+  [9, 'IX'],
+  [5, 'V'],
+  [4, 'IV'],
+  [1, 'I'],
+];
+const toRoman = (num) => {
+  let value = Math.max(1, Math.floor(num) || 0);
+  return ROMAN_TABLE.reduce((out, [amount, glyph]) => {
+    let rest = out;
+    while (value >= amount) {
+      rest += glyph;
+      value -= amount;
+    }
+    return rest;
+  }, '');
+};
+
 const useProtagonist = () =>
   useMemo(() => {
     try {
@@ -62,7 +89,15 @@ const findChapterCapture = (chapter, names, capturesByGame) => {
   return null;
 };
 
-const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByGame, expanded, onToggle }) => {
+const ChronicleChapter = ({
+  chapter,
+  previousChapter,
+  libraryByName,
+  capturesByGame,
+  expanded,
+  onToggle,
+  paged = false,
+}) => {
   const dominantName = chapter.dominantGame?.name;
   const repeatsPrevious =
     dominantName && previousChapter?.dominantGame?.name?.toLowerCase() === dominantName.toLowerCase();
@@ -125,11 +160,19 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
   const receipts = chapter.month.receipts || [];
   const share = chapter.dominantGame?.share;
   const lastIndex = chapter.paragraphs.length - 1;
+  const isOpen = paged || expanded;
+
+  const heading = (
+    <span className="chronicle-chapter-heading">
+      <span className="chronicle-chapter-title">{chapter.title}</span>
+      <span className="chronicle-chapter-dates">{chapter.subtitle}</span>
+    </span>
+  );
 
   return (
     <section
       id={`chronicle-chapter-${chapter.key}`}
-      className={`chronicle-chapter${chapter.isCurrent ? ' is-current' : ''}${expanded ? ' is-expanded' : ''}`}
+      className={`chronicle-chapter${chapter.isCurrent ? ' is-current' : ''}${isOpen ? ' is-expanded' : ''}${paged ? ' is-paged' : ''}`}
       aria-label={chapter.title}
     >
       <div className={`chronicle-chapter-visual${visualSrc ? ' has-artwork' : ''}`}>
@@ -145,19 +188,20 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
             className="chronicle-banner-img"
           />
         )}
-        <button
-          type="button"
-          className="chronicle-chapter-head"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-controls={`chronicle-pages-${chapter.key}`}
-        >
-          <span className="chronicle-chapter-heading">
-            <span className="chronicle-chapter-title">{chapter.title}</span>
-            <span className="chronicle-chapter-dates">{chapter.subtitle}</span>
-          </span>
-          <ChevronDown size={17} className="chronicle-chapter-chevron" aria-hidden="true" />
-        </button>
+        {paged ? (
+          <div className="chronicle-chapter-head is-static">{heading}</div>
+        ) : (
+          <button
+            type="button"
+            className="chronicle-chapter-head"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            aria-controls={`chronicle-pages-${chapter.key}`}
+          >
+            {heading}
+            <ChevronDown size={17} className="chronicle-chapter-chevron" aria-hidden="true" />
+          </button>
+        )}
         {visualSrc && (
           <span className="chronicle-artwork-credit">
             {captureSrc
@@ -167,7 +211,7 @@ const ChronicleChapter = ({ chapter, previousChapter, libraryByName, capturesByG
         )}
       </div>
 
-      {expanded && (
+      {isOpen && (
         <div id={`chronicle-pages-${chapter.key}`} className="chronicle-chapter-pages">
           <div className="chronicle-prose-block">
             {chapter.paragraphs.map((text, index) => (
@@ -290,12 +334,45 @@ const ChronicleCard = ({ library = [], username = '' }) => {
   }, [sessions, library]);
   const protagonist = useProtagonist();
   const [capturesByGame, setCapturesByGame] = useState(() => new Map());
-  const chapterKeys = chronicle?.chapters.map((chapter) => chapter.key).join('|') || '';
-  const [expandedKeys, setExpandedKeys] = useState(() => new Set());
+
+  // Book paging: null = the cover (title + contents); otherwise one leaf at
+  // a time — prologue first, then each month's chapter.
+  const pages = useMemo(() => {
+    const list = [];
+    if (chronicle?.prologue?.exists) list.push({ type: 'prologue', key: 'prologue', folio: 'Prologue' });
+    (chronicle?.chapters || []).forEach((chapter, index) =>
+      list.push({ type: 'chapter', key: chapter.key, chapter, index, folio: `Chapter ${toRoman(index + 1)}` })
+    );
+    return list;
+  }, [chronicle]);
+  const [pageIndex, setPageIndex] = useState(null);
+  const [turnDir, setTurnDir] = useState('next');
+
+  const openBook = (index) => {
+    setTurnDir('next');
+    setPageIndex(index);
+  };
+  const turnPage = (delta) => {
+    setPageIndex((current) => {
+      const next = current + delta;
+      if (current === null || next < 0 || next >= pages.length) return current;
+      setTurnDir(delta > 0 ? 'next' : 'prev');
+      return next;
+    });
+  };
+  const closeBook = () => setPageIndex(null);
 
   useEffect(() => {
-    setExpandedKeys(new Set(chapterKeys ? chapterKeys.split('|') : []));
-  }, [chapterKeys]);
+    if (pageIndex === null) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'ArrowRight') turnPage(1);
+      else if (event.key === 'ArrowLeft') turnPage(-1);
+      else if (event.key === 'Escape') setPageIndex(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, pages.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -334,9 +411,8 @@ const ChronicleCard = ({ library = [], username = '' }) => {
     ? `Volume I · ${firstYear}${lastYear && lastYear !== firstYear ? `–${lastYear}` : ''}`
     : 'Volume I';
 
-  const navigateTo = (id) => {
-    document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-  };
+  const currentPage = pageIndex !== null ? pages[pageIndex] : null;
+  const folioOf = (page) => (page?.type === 'prologue' ? 'Prologue' : page ? `Chapter ${toRoman(page.index + 1)}` : '');
 
   return (
     <div className="result-card identity-card chronicle-card">
@@ -370,57 +446,77 @@ const ChronicleCard = ({ library = [], username = '' }) => {
         <p className="chronicle-empty">The chronicle has not begun — play something and it will start writing.</p>
       )}
 
-      {(prologue?.exists || chapters.length > 0) && (
+      {!isEmpty && currentPage === null && (
         <nav className="chronicle-contents" aria-label="Chronicle contents">
           <span className="chronicle-contents-label">Contents</span>
           <div className="chronicle-contents-list">
-            {prologue?.exists && (
-              <button type="button" onClick={() => navigateTo('chronicle-prologue')}>
-                Prologue
-              </button>
-            )}
-            {chapters.map((chapter) => (
-              <button
-                type="button"
-                key={chapter.key}
-                onClick={() => {
-                  setExpandedKeys((current) => new Set(current).add(chapter.key));
-                  navigateTo(`chronicle-chapter-${chapter.key}`);
-                }}
-              >
-                {chapter.title}
+            {pages.map((page, index) => (
+              <button type="button" key={page.key} onClick={() => openBook(index)}>
+                {page.type === 'prologue' ? 'Prologue' : page.chapter.title}
               </button>
             ))}
           </div>
+          {pages.length > 0 && (
+            <button type="button" className="chronicle-open-book" onClick={() => openBook(0)}>
+              Open the book
+            </button>
+          )}
         </nav>
       )}
 
-      {prologue?.exists && (
-        <section id="chronicle-prologue" className="chronicle-prologue" aria-label="Prologue">
-          <h4 className="chronicle-prologue-heading">Prologue · Before the Chronicle</h4>
-          <p className="chronicle-prose">{prologue.text}</p>
-          <p className="chronicle-caption">reconstructed from launcher records</p>
-        </section>
+      {currentPage && (
+        <div
+          className="chronicle-book"
+          aria-label={`${folioOf(currentPage)} — page ${pageIndex + 1} of ${pages.length}`}
+        >
+          <div className="chronicle-book-topbar">
+            <button type="button" className="chronicle-book-back" onClick={closeBook}>
+              ‹ Contents
+            </button>
+            <span className="chronicle-folio">{folioOf(currentPage)}</span>
+            <span className="chronicle-page-num">
+              {pageIndex + 1} / {pages.length}
+            </span>
+          </div>
+          <div key={currentPage.key} className={`chronicle-book-page turn-${turnDir}`}>
+            {currentPage.type === 'prologue' ? (
+              <section id="chronicle-prologue" className="chronicle-prologue" aria-label="Prologue">
+                <h4 className="chronicle-prologue-heading">Prologue · Before the Chronicle</h4>
+                <p className="chronicle-prose">{prologue.text}</p>
+                <p className="chronicle-caption">reconstructed from launcher records</p>
+              </section>
+            ) : (
+              <ChronicleChapter
+                chapter={currentPage.chapter}
+                previousChapter={currentPage.index > 0 ? chapters[currentPage.index - 1] : null}
+                libraryByName={libraryByName}
+                capturesByGame={capturesByGame}
+                paged
+              />
+            )}
+          </div>
+          <div className="chronicle-book-nav">
+            <button
+              type="button"
+              className="chronicle-turn"
+              onClick={() => turnPage(-1)}
+              disabled={pageIndex === 0}
+              aria-label="Previous page"
+            >
+              <ChevronLeft size={15} aria-hidden="true" /> Previous
+            </button>
+            <button
+              type="button"
+              className="chronicle-turn"
+              onClick={() => turnPage(1)}
+              disabled={pageIndex >= pages.length - 1}
+              aria-label="Next page"
+            >
+              Next <ChevronRight size={15} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
       )}
-
-      {chapters.map((chapter, index) => (
-        <ChronicleChapter
-          key={chapter.key}
-          chapter={chapter}
-          previousChapter={index > 0 ? chapters[index - 1] : null}
-          libraryByName={libraryByName}
-          capturesByGame={capturesByGame}
-          expanded={expandedKeys.has(chapter.key)}
-          onToggle={() =>
-            setExpandedKeys((current) => {
-              const next = new Set(current);
-              if (next.has(chapter.key)) next.delete(chapter.key);
-              else next.add(chapter.key);
-              return next;
-            })
-          }
-        />
-      ))}
 
       {facts?.totalSessions > 0 && (
         <footer className="chronicle-footer">
