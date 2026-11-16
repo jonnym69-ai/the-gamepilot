@@ -93,6 +93,18 @@
   flex-wrap: wrap;
   overflow-y: auto;
 }
+.captures-review-filter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 7px 0;
+  font-size: 0.7rem;
+  color: var(--text-secondary, #a7b0bf);
+  cursor: pointer;
+}
+.captures-review-filter input {
+  accent-color: var(--accent-color, #ff8c1a);
+}
 .captures-review-more {
   margin-top: 6px;
   padding: 5px 9px;

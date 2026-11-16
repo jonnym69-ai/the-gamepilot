@@ -101,6 +101,20 @@ export class GameCapturesService {
   }
 
   /**
+   * True when the capture fell inside a recorded session window. The review
+   * pool uses it to pre-filter generic screenshots — evidence only, the user
+   * still decides what gets linked.
+   */
+  static withinSessionWindow(capture, sessions = []) {
+    const t = Number(capture?.capturedAt);
+    if (!Number.isFinite(t) || t <= 0) return false;
+    return (Array.isArray(sessions) ? sessions : []).some((session) => {
+      const bounds = sessionBounds(session);
+      return Boolean(bounds) && t >= bounds.start && t <= bounds.end + SESSION_GRACE_MS;
+    });
+  }
+
+  /**
    * Every capture lands with a game or in the unattributed pool:
    * title-prefix first, then "which session was live when this was saved".
    * Returns { byGame: Map<gameName, captures[]>, unattributed: [] }.

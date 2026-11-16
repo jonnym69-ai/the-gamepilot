@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Clapperboard, Film } from 'lucide-react';
 import GameCapturesService from '../services/GameCapturesService';
+import SessionRepository from '../services/SessionRepository';
 import './GameCapturesRow.css';
 
 // The user's Game Bar / ShadowPlay captures attributed to this game — named
@@ -47,7 +48,10 @@ const CaptureThumb = ({ capture, onClick, actionLabel }) => {
 
 export default function GameCapturesRow({ gameName, library = [] }) {
   const [captures, setCaptures] = useState([]);
-  const [unattributed, setUnattributed] = useState([]);
+  const [unmatchedRecorder, setUnmatchedRecorder] = useState([]);
+  const [unmatchedShots, setUnmatchedShots] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [inSessionOnly, setInSessionOnly] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [reviewLimit, setReviewLimit] = useState(24);
   const [assignedMessage, setAssignedMessage] = useState('');
@@ -56,7 +60,12 @@ export default function GameCapturesRow({ gameName, library = [] }) {
     if (!gameName) return;
     const result = await GameCapturesService.getAttribution({ library });
     setCaptures(result.byGame.get(gameName) || []);
-    setUnattributed((result.unattributed || []).filter((capture) => capture.kind === 'image'));
+    const all = result.unattributed || [];
+    // Recorder files that matched nothing are almost certainly gameplay —
+    // they get their own strip. Generic screenshots stay in the review pool.
+    setUnmatchedRecorder(all.filter((capture) => capture.source !== 'windows-screenshots'));
+    setUnmatchedShots(all.filter((capture) => capture.source === 'windows-screenshots' && capture.kind === 'image'));
+    setSessions(SessionRepository.getSessionHistory() || []);
     setLoaded(true);
   }, [gameName, library]);
 
@@ -66,7 +75,12 @@ export default function GameCapturesRow({ gameName, library = [] }) {
     load().catch(() => setLoaded(true));
   }, [load]);
 
-  if (!gameName || !loaded || (captures.length === 0 && unattributed.length === 0)) return null;
+  const visibleShots = inSessionOnly
+    ? unmatchedShots.filter((capture) => GameCapturesService.withinSessionWindow(capture, sessions))
+    : unmatchedShots;
+
+  if (!gameName || !loaded || (captures.length === 0 && unmatchedRecorder.length === 0 && unmatchedShots.length === 0))
+    return null;
 
   const assign = (capture) => {
     GameCapturesService.assign(capture, gameName);
@@ -90,14 +104,14 @@ export default function GameCapturesRow({ gameName, library = [] }) {
         </>
       )}
 
-      {unattributed.length > 0 && (
-        <details className="captures-review">
-          <summary>Review unmatched screenshots ({unattributed.length})</summary>
-          <p className="captures-review-note">
-            Generic screenshots are never assigned by timestamp alone. Choose only images that belong to {gameName}.
+      {unmatchedRecorder.length > 0 && (
+        <>
+          <p className="captures-row-label">
+            <Film size={13} aria-hidden="true" />
+            From your recorders — unmatched ({unmatchedRecorder.length})
           </p>
-          <div className="captures-strip captures-review-strip" role="group" aria-label="Unmatched screenshots">
-            {unattributed.slice(0, reviewLimit).map((capture) => (
+          <div className="captures-strip captures-review-strip" role="group" aria-label="Unmatched recorder captures">
+            {unmatchedRecorder.slice(0, reviewLimit).map((capture) => (
               <CaptureThumb
                 key={capture.filePath}
                 capture={capture}
@@ -106,7 +120,45 @@ export default function GameCapturesRow({ gameName, library = [] }) {
               />
             ))}
           </div>
-          {unattributed.length > reviewLimit && (
+        </>
+      )}
+
+      {unmatchedShots.length > 0 && (
+        <details className="captures-review">
+          <summary>
+            Review unmatched screenshots (
+            {inSessionOnly
+              ? `${visibleShots.length} of ${unmatchedShots.length} during sessions`
+              : unmatchedShots.length}
+            )
+          </summary>
+          <p className="captures-review-note">
+            Generic screenshots are never assigned by timestamp alone. Choose only images that belong to {gameName}.
+          </p>
+          <label className="captures-review-filter">
+            <input
+              type="checkbox"
+              checked={inSessionOnly}
+              onChange={(event) => setInSessionOnly(event.target.checked)}
+            />
+            Only screenshots taken while a session was live
+          </label>
+          <div className="captures-strip captures-review-strip" role="group" aria-label="Unmatched screenshots">
+            {visibleShots.slice(0, reviewLimit).map((capture) => (
+              <CaptureThumb
+                key={capture.filePath}
+                capture={capture}
+                onClick={assign}
+                actionLabel={`Assign ${capture.name} to ${gameName}`}
+              />
+            ))}
+          </div>
+          {visibleShots.length === 0 && (
+            <p className="captures-review-note">
+              None were taken during a recorded session — uncheck to browse them all.
+            </p>
+          )}
+          {visibleShots.length > reviewLimit && (
             <button type="button" className="captures-review-more" onClick={() => setReviewLimit((n) => n + 24)}>
               Show more screenshots
             </button>

@@ -1,6 +1,6 @@
 import GameCapturesService from './GameCapturesService';
 
-const capture = (name, { titleHint = null, capturedAt = 0, kind = 'video' } = {}) => ({
+const capture = (name, { titleHint = null, capturedAt = 0, kind = 'video', source = 'gameplay-recorder' } = {}) => ({
   dir: 'C:\\Videos',
   name,
   filePath: `C:\\Videos\\${name}`,
@@ -8,6 +8,7 @@ const capture = (name, { titleHint = null, capturedAt = 0, kind = 'video' } = {}
   titleHint,
   capturedAt,
   kind,
+  source,
 });
 
 const library = [{ name: 'Grand Theft Auto V Enhanced' }, { name: 'Project Zomboid' }, { name: 'ARK' }];
@@ -81,6 +82,23 @@ describe('GameCapturesService attribution', () => {
     expect(byGame.get('Grand Theft Auto V Enhanced')).toEqual([cap]);
     expect(byGame.has('Project Zomboid')).toBe(false);
     expect(unattributed).toEqual([]);
+  });
+
+  it('withinSessionWindow reports session coverage for any source', () => {
+    const start = new Date(2026, 10, 15, 14, 0, 0).getTime();
+    const end = new Date(2026, 10, 15, 17, 0, 0).getTime();
+    const sessions = [session('Hobo: Tough Life', start, end)];
+    const inside = capture('Screenshot x.png', {
+      capturedAt: new Date(2026, 10, 15, 15, 48, 0).getTime(),
+      source: 'windows-screenshots',
+    });
+    const outside = capture('Screenshot y.png', {
+      capturedAt: new Date(2026, 10, 15, 20, 0, 0).getTime(),
+      source: 'windows-screenshots',
+    });
+    expect(GameCapturesService.withinSessionWindow(inside, sessions)).toBe(true);
+    expect(GameCapturesService.withinSessionWindow(outside, sessions)).toBe(false);
+    expect(GameCapturesService.withinSessionWindow({ ...inside, capturedAt: 0 }, sessions)).toBe(false);
   });
 
   it('does not session-attribute generic Windows screenshots', () => {
