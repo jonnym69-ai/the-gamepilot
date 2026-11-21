@@ -3,8 +3,20 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import DailySpotlightCard from './DailySpotlightCard';
 import DailySpotlightService from '../services/DailySpotlightService';
 import StorageService from '../services/StorageService';
+import AchievementCompletionService from '../services/AchievementCompletionService';
+import SteamAchievementsService from '../services/SteamAchievementsService';
 
 jest.mock('./LazyImage', () => ({ alt }) => <img alt={alt} />);
+
+jest.mock('../services/AchievementCompletionService', () => ({
+  __esModule: true,
+  default: { isAvailable: jest.fn(() => false) },
+}));
+
+jest.mock('../services/SteamAchievementsService', () => ({
+  __esModule: true,
+  default: { getForGame: jest.fn(() => Promise.resolve(null)) },
+}));
 const game = { name: 'Project Zomboid', platform: 'Steam', appid: 108600, time_played: 120 };
 const NOW = new Date('2026-09-23T12:00:00Z');
 
@@ -14,6 +26,8 @@ beforeEach(() => {
   // Mystery reveal is on by default — the existing suite exercises the revealed
   // card, so tests opt out here unless they test the veil itself.
   StorageService.set('spotlightMysteryRevealV1', false);
+  AchievementCompletionService.isAvailable.mockReturnValue(false);
+  SteamAchievementsService.getForGame.mockReset().mockResolvedValue(null);
   window.electronAPI = { steamSpotlight: jest.fn().mockResolvedValue({ ok: false }) };
 });
 
@@ -31,6 +45,14 @@ test('renders a useful local card without a launch nudge or automatic fact reque
   expect(screen.queryByRole('button', { name: /play|launch/i })).not.toBeInTheDocument();
   expect(screen.getByRole('checkbox', { name: /online Steam facts/i })).not.toBeChecked();
   expect(window.electronAPI.steamSpotlight).not.toHaveBeenCalled();
+});
+
+test('offers a Play button on the daily spotlight when a launch handler is provided', () => {
+  const onLaunchGame = jest.fn();
+  render(<DailySpotlightCard library={[game]} onLaunchGame={onLaunchGame} />);
+  const play = screen.getByRole('button', { name: 'Play Project Zomboid' });
+  fireEvent.click(play);
+  expect(onLaunchGame).toHaveBeenCalledWith(game);
 });
 
 test('opt-in shows sourced store facts and timestamped zero players rather than claiming live data', async () => {
@@ -300,4 +322,38 @@ test('"don\'t hide it again" reveals now and turns the mystery off for future pi
   // The revealed card still offers the toggle so the mystery can come back.
   const toggle = screen.getByRole('checkbox', { name: /daily mystery reveal/i });
   expect(toggle).not.toBeChecked();
+});
+
+test('shows achievement progress when online facts and Steam public data are enabled', async () => {
+  DailySpotlightService.setEnabled(true);
+  AchievementCompletionService.isAvailable.mockReturnValue(true);
+  SteamAchievementsService.getForGame.mockResolvedValue({ ok: true, unlocked: 12, total: 42 });
+  render(<DailySpotlightCard library={[game]} />);
+  expect(await screen.findByText('12 / 42')).toBeInTheDocument();
+  expect(screen.getByText('Achievements')).toBeInTheDocument();
+  expect(SteamAchievementsService.getForGame).toHaveBeenCalledTimes(1);
+});
+
+test('never requests achievements while online facts are off', () => {
+  DailySpotlightService.setEnabled(false);
+  AchievementCompletionService.isAvailable.mockReturnValue(true);
+  render(<DailySpotlightCard library={[game]} />);
+  expect(SteamAchievementsService.getForGame).not.toHaveBeenCalled();
+});
+
+test('skips achievements without the Steam public-data opt-in', () => {
+  DailySpotlightService.setEnabled(true);
+  AchievementCompletionService.isAvailable.mockReturnValue(false);
+  render(<DailySpotlightCard library={[game]} />);
+  expect(SteamAchievementsService.getForGame).not.toHaveBeenCalled();
+  expect(screen.queryByText('Achievements')).not.toBeInTheDocument();
+});
+
+test('shows no achievements row for games with none or failed lookups', async () => {
+  DailySpotlightService.setEnabled(true);
+  AchievementCompletionService.isAvailable.mockReturnValue(true);
+  SteamAchievementsService.getForGame.mockResolvedValue({ ok: true, unlocked: 0, total: 0 });
+  render(<DailySpotlightCard library={[game]} />);
+  await waitFor(() => expect(SteamAchievementsService.getForGame).toHaveBeenCalled());
+  expect(screen.queryByText('Achievements')).not.toBeInTheDocument();
 });

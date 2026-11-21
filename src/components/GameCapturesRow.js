@@ -8,7 +8,7 @@ import './GameCapturesRow.css';
 // The user's Game Bar / ShadowPlay captures attributed to this game — named
 // files by title, anonymous recorder files by session time. Generic Windows
 // screenshots are only assigned explicitly by the user, never guessed.
-const CaptureThumb = ({ capture, onClick, actionLabel, badge }) => {
+export const CaptureThumb = ({ capture, onClick, actionLabel, badge }) => {
   const [thumb, setThumb] = useState(capture.kind === 'image' ? capture.fileUrl : null);
   const [thumbTried, setThumbTried] = useState(capture.kind === 'image');
 

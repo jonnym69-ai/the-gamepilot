@@ -201,7 +201,7 @@ export function RecentSessionsSummary({ compact = false }) {
   );
 }
 
-export function CurrentEraCard({ compact = false, library = [] }) {
+export function CurrentEraCard({ library = [] }) {
   const shareCardRef = React.useRef(null);
   const [isCapturing, setIsCapturing] = React.useState(false);
   const username = ProfileService.getCurrentUsername();
@@ -236,25 +236,7 @@ export function CurrentEraCard({ compact = false, library = [] }) {
   }, [era?.topGame, library]);
 
   if (!era || !era.snapshot || era.snapshot.totalMinutes <= 0) {
-    return compact ? <p>Your next era is taking shape. Record a few sessions to reveal it.</p> : null;
-  }
-
-  if (compact) {
-    return (
-      <div className="home-story-era">
-        <span>Current era · {era.estimated ? 'Estimated' : `Day ${era.dayCount || 1}`}</span>
-        <h3>{era.name}</h3>
-        <p>
-          {era.flavor}
-          {era.estimated ? ' — estimated from your imported play history' : ''}
-        </p>
-        {signatureTitle && (
-          <p>
-            Signature title: <strong>{signatureTitle.name}</strong>
-          </p>
-        )}
-      </div>
-    );
+    return null;
   }
 
   const hours = (era.snapshot.totalMinutes / 60).toFixed(1);

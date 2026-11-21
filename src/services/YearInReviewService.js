@@ -5,7 +5,6 @@ import GamingPersonaService from './GamingPersonaService';
 import PeriodChampionService, { findLibraryGame } from './PeriodChampionService';
 import { getGameArtworkPlaceholder, resolveGameArtwork, resolveGameArtworkBundle } from './GameArtworkService';
 import SessionRepository from './SessionRepository';
-import CurrentEraService from './CurrentEraService';
 import SteamAchievementsService from './SteamAchievementsService';
 import SteamPublicService from './SteamPublicService';
 import { GameCurationService } from './GameCurationService';
@@ -230,33 +229,6 @@ const buildEraStretches = (sessions = []) => {
       sessionCount: stretch.sessionCount,
     };
   });
-};
-
-// Era-change markers recorded by CurrentEraService (currentEraHistory) whose
-// `since` falls inside the selected year. These are real signature flips the
-// app observed live — complementary to the month-bucketed stretches above.
-const buildRecordedEras = (year) => {
-  try {
-    const era = CurrentEraService.getCurrentEra();
-    const history = Array.isArray(era?.history) ? era.history : [];
-    const latest = history[history.length - 1];
-    return history
-      .filter((entry) => {
-        const since = new Date(entry?.since || 0);
-        return !Number.isNaN(since.getTime()) && since.getFullYear() === year;
-      })
-      .map((entry) => ({
-        name: entry.name || 'Unnamed Era',
-        topGame: entry.topGame || null,
-        genre: entry.genre || null,
-        since: entry.since,
-        dateLabel: formatReviewDate(new Date(entry.since)),
-        isCurrent: entry === latest,
-      }));
-  } catch (error) {
-    console.warn('YearInReviewService.buildRecordedEras failed', error);
-    return [];
-  }
 };
 
 // One-line session journal notes left through the post-session feedback modal.
@@ -1026,6 +998,7 @@ const buildAchievementMilestones = (library, year) => {
     .filter((game) => game.name && game.appid);
 
   let sawCache = false;
+  let checkedCount = 0;
   let unlockedThisYear = 0;
   const gamesWithUnlocks = new Set();
   const dayCounts = {};
@@ -1035,6 +1008,7 @@ const buildAchievementMilestones = (library, year) => {
     const cached = SteamAchievementsService.getCachedForGame?.(game.appid);
     if (!cached?.ok) return;
     sawCache = true;
+    checkedCount += 1;
     (Array.isArray(cached.achievements) ? cached.achievements : []).forEach((achievement) => {
       if (!achievement?.achieved) return;
       const unlockedAt = AchievementCompletionService.unlockMs(achievement?.unlockTime);
@@ -1064,6 +1038,8 @@ const buildAchievementMilestones = (library, year) => {
     gamesWithUnlocks: gamesWithUnlocks.size,
     rarest,
     busiestDay: busiest ? { date: busiest[0], count: busiest[1] } : null,
+    checkedCount,
+    steamGameCount: steamGames.length,
   };
 };
 
@@ -1368,6 +1344,33 @@ export class YearInReviewService {
     return StatsAggregationService.getNormalizedSessionHistory(library);
   }
 
+  /**
+   * Steam app IDs for games with tracked sessions inside `year`, most-played
+   * first — the games a year's unlocks could plausibly belong to. Used to warm
+   * the local achievement cache before milestone maths runs.
+   */
+  static getYearSteamAppIds(library = [], year = new Date().getFullYear()) {
+    try {
+      const safeYear = Number(year) || new Date().getFullYear();
+      const sessionCounts = new Map();
+      this.getNormalizedSessionHistory(library).forEach((session) => {
+        if (session?.timestamp?.getFullYear?.() !== safeYear) return;
+        const name = String(session?.gameName || session?.gameId || '').trim();
+        if (name) sessionCounts.set(name, (sessionCounts.get(name) || 0) + 1);
+      });
+      return [...sessionCounts.entries()]
+        .sort((left, right) => right[1] - left[1])
+        .map(([name]) => {
+          const libGame = findLibraryGame(library, name);
+          return libGame ? SteamPublicService.appIdOf?.(libGame) || String(libGame?.appid || '') : '';
+        })
+        .filter(Boolean);
+    } catch (e) {
+      console.warn('YearInReviewService.getYearSteamAppIds failed', e);
+      return [];
+    }
+  }
+
   static buildMilestones({ sessions = [], allSessions = [], library = [], year } = {}) {
     try {
       return buildMilestones({ sessions, allSessions, library, year });
@@ -1445,7 +1448,6 @@ export class YearInReviewService {
       const championJourney = buildChampionJourney(sessions, library, safeYear);
       const eras = {
         stretches: buildEraStretches(sessions),
-        recorded: buildRecordedEras(safeYear),
       };
       const journalNotes = buildJournalNotes(safeYear);
       const story = buildStory({
@@ -1545,7 +1547,7 @@ export class YearInReviewService {
         story: { paragraphs: [] },
         deepStats: buildDeepStats([], []),
         championJourney: { yearChampion: null, monthlyChampions: [] },
-        eras: { stretches: [], recorded: [] },
+        eras: { stretches: [] },
         journalNotes: [],
         milestones: {
           finished: [],

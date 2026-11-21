@@ -193,14 +193,14 @@ The typecheck command is optional for JS-only changes.
 
 ## Home navigation
 
-- `/` opens the focused Today view (`HomeDailyOverview`): the `DailyDoodleTitle` greeting banner, `TodayStrip` (last-seven-day session summary, current era, wishlist deal alerts), Play Next, Spotlight, compact era/last-session summary, and active-session end controls. All strip data is local (SessionRepository, CurrentEraService, WishlistService) — no network calls. Empty libraries show scan-first onboarding.
-- `/?view=discover|activity|identity|wishlist` opens explicit, bookmarkable Home sections. `HomeLayoutContent` only mounts the selected section group.
+- `/` opens the focused Today view (`HomeDailyOverview`): the `DailyDoodleTitle` greeting banner, Play Next, Spotlight, `GamingVitalsCard` (week rhythm, current era chip, upcoming wishlist release and deal-alert chips), era-transition/last-session summary, and active-session end controls. All card data is local (SessionRepository, CurrentEraService, WishlistService, ReleaseTrackerService) — no network calls. The standalone `TodayStrip` was folded into `GamingVitalsCard` to stop reporting the same week twice; the compact `CurrentEraCard` no longer renders on Today (the full card stays on Identity). Empty libraries show scan-first onboarding.
+- `/?view=discover|activity|identity|wishlist` opens explicit, bookmarkable Home sections. `HomeLayoutContent` only mounts the selected section group. The activity section stacks the memory surfaces: `LibraryLeaderboard`, `RecentlyPlayedShelf`, `RecentCapturesStrip` (newest attributed captures across all games via `GameCapturesService.getAttribution`, capped at 12, reuses the exported `CaptureThumb` from `GameCapturesRow`), `RecentlyUpdatedCard` (bounded `SteamNewsService.warmup` over the 25 most recently played Steam games; rows only where cached posts postdate last play; the news opt-out is honored — nothing renders with no cached hits), `RecentSessionsSummary`, `GamingDiaryFeed` (the session/event log — journal notes, status changes, first touches only; era onsets were removed as noise and the feed is capped at 12) and `WeeklyPlaySnapshot`. `RecentSessionsSummary` supplies the no-sessions empty state. `DailySpotlightCard` shows an `unlocked / total` achievements row via `SteamAchievementsService.getForGame` only when both online Steam facts and the Steam public-data opt-in are on.
 - `/dashboard` redirects to `/`. The legacy guided dashboard, challenges, Today tabs (including the daily paradox), and the engagement widgets (rivalry banner, streak badge, nostalgia card, patch-notes badge, weekly recap/digest, smart nudge) were removed — the explicit view sections replaced them.
 - Regression checks: `npx jest src/Home.test.js --ci`. Covers launch/end-session callbacks, empty states, and view navigation/back/remount.
 
 ## Eras and personas from imported playtime
 
-- `CurrentEraService.getCurrentEra()` falls back to an imported-playtime estimate when the last-30-day session window is empty: per-game weight is imported minutes (`importedPlaytimeMinutes`/`playtimeForever`/`totalPlaytime`) recency-decayed by `last_played` (10-day half-life). Estimated eras are flagged `estimated: true`, carry `dayCount: null`, are labelled "estimated" in `CurrentEraCard`/`TodayStrip`/share taglines, and never write to `currentEraHistory` — the era archive stays real-session-only.
+- `CurrentEraService.getCurrentEra()` falls back to an imported-playtime estimate when the last-30-day session window is empty: per-game weight is imported minutes (`importedPlaytimeMinutes`/`playtimeForever`/`totalPlaytime`) recency-decayed by `last_played` (10-day half-life). Estimated eras are flagged `estimated: true`, carry `dayCount: null`, are labelled "estimated" in `CurrentEraCard`/`GamingVitalsCard`/share taglines, and never write to `currentEraHistory` — the era archive stays real-session-only.
 - `CurrentEraService.getEraTransition()` derives the most recent "era ended" moment from the last two `currentEraHistory` signatures. `EraTransitionCard` on Today shows it for 14 days after the flip and dismisses per transition signature (`eraTransitionDismissedV1`). `MonthlyRecapStrip` on Today totals the current calendar month from `SessionRepository` only — no network. `CurrentEraCard` (full version, Identity section) has a Share era menu rendering `EraShareCard` (1080×1080) via html2canvas, same contract as `ChampionShareCard`.
 - The session feedback modal carries an optional 140-char one-line journal; it persists to the settled history entry via `SessionRepository.updateSessionEntry(sessionId, { note }, { gameName, endTime })` — a merge-patch on the entry, dual-written through `sessionStoreReplaceHistory`. `useSessionLifecycle` includes `sessionId` in the `gamepilot:session-ended` detail so the note targets the right entry. Notes surface in the Activity section's Recent Activity card under "Journal".
 - `WhatsNewCard` on Today shows curated `src/whatsNew.js` bullets once per `__APP_VERSION__` (`whatsNewSeenVersion`), hidden for first-run users. Update `WHATS_NEW` alongside RELEASE_NOTES.md each release.
@@ -210,7 +210,7 @@ The typecheck command is optional for JS-only changes.
 
 ## Daily Spotlight
 
-- `DailySpotlightService` selects a library game by the preferred calendar timezone and persists the day's identity. `DailySpotlightCard` appears beside Play Next on Home's Today view. Spotlight cards carry a Poster/Fill/Mosaic artwork-style picker persisted per surface via `spotlightArtStyles`. Spotlight does not launch games.
+- `DailySpotlightService` selects a library game by the preferred calendar timezone and persists the day's identity. `DailySpotlightCard` appears beside Play Next on Home's Today view. Spotlight cards carry a Poster/Fill/Mosaic artwork-style picker persisted per surface via `spotlightArtStyles`. Spotlight shows a `Play` button whenever an `onLaunchGame` handler is passed — Home's Today view and the Discover rediscovery surface both provide one.
 - Online facts are opt-in via the card (`dailySpotlightOnlineEnabled`). `steam-spotlight` IPC accepts only a validated numeric Steam AppID; it fetches store details and concurrent players independently through `electron/net.js`. No renderer fetch, API key, sales estimates or non-Steam name matching is used.
 - `dailySpotlightFactsV1` retains up to 64 cached games. Normal refresh is 24 hours, retry backoff is one hour, and failed sources retain their last successful timestamp. Cached player counts must never be labelled live. Artwork follows the existing library artwork loader, independently of the online-facts switch.
 - Steam `appdetails` can return a game's correct data under a different outer response key (observed for Blasphemous, Hades and Dota 2). Resolve only successful game entries whose internal `data.steam_appid` matches the requested ID; never accept the first entry blindly. `steam-store-details` and Spotlight share this main-process lookup, a bounded success cache and in-flight deduplication. GameModal uses the desktop bridge, not a direct renderer fetch, and offers retry on failure.
@@ -292,8 +292,8 @@ The typecheck command is optional for JS-only changes.
 
 - Wishlist pricing uses CheapShark (`/games?title=` then `/games?id=` for deals + `cheapestPriceEver`), fetched directly from the renderer — CheapShark allows CORS, no key, no relay. Prices cache 24h in `wishlistPriceCacheV1`; `refreshIfStale` is the only scheduled entry point (kicked from `HomeDailyOverview` mount and the wishlist page).
 - Cards render the full price picture: current price (or Free), retail strikethrough, discount %, store name, Price drop / Historic low badges, and a View deal link via `cheapshark.com/redirect?dealID=`. The per-item threshold is the user's alert price.
-- `wishlistAlertSummaryV1` is the local deal count; every write dispatches `gamepilot:wishlist-alerts`, which TodayStrip listens to for its "N deals" chip. Never fetch prices synchronously in the strip — read the summary only.
-- Regression checks: `npx jest src/services/WishlistService.test.js src/components/TodayStrip.test.js --ci`.
+- `wishlistAlertSummaryV1` is the local deal count; every write dispatches `gamepilot:wishlist-alerts`, which `GamingVitalsCard` listens to for its "N deals" chip. Never fetch prices synchronously in the card — read the summary only.
+- Regression checks: `npx jest src/services/WishlistService.test.js src/components/GamingVitalsCard.test.js --ci`.
 
 ## Steam library navigation
 
@@ -364,19 +364,24 @@ The typecheck command is optional for JS-only changes.
   the kicker, and `YearInReviewPromptCard` surfaces the recap on Today.
   `/gaming-life` is an alias route to the same page. The page is fed by
   `YearInReviewService.getYearSnapshot`, organised into four URL-query tabs
-  (`?tab=overview|story|eras|numbers`). It keeps top games by real tracked
+  (`?tab=overview|chronicle|milestones|numbers`; retired `story`/`eras`
+  values redirect to `chronicle`). It keeps top games by real tracked
   playtime, total time, session counts, mood/genre mix, busiest month, deep
   stats, a data-driven story (`snapshot.story.paragraphs` — short paragraphs
   each gated on the underlying fact, no roast or templated season filler), the
   champion journey, and the year's session journal notes (`note` field on
   settled history entries). The persona roast renders exactly once (Player
-  Identity card, Overview). An "Eras of your
-  year" section buckets the year's sessions by month, computes each month's
-  dominant genre/mood/top game (playtime-weighted), and merges adjacent months
-  sharing the same signature into era stretches; `currentEraHistory` entries
-  from `CurrentEraService` that fall inside the year are listed as recorded era
-  changes. Imported Steam/GOG totals are undated — they never produce months or
-  eras, and a year without tracked sessions shows an honest empty state.
+  Identity card, Overview). The Chronicle tab is the single narrative home:
+  the story paragraphs open it as "The Short Version" (with the story share
+  menu), the era stretches render as a timeline-bar spine ("The shape of your
+  year"), the champion journey and session journal follow the month-by-month
+  Chronicle entries. Era stretches bucket the year's sessions by month,
+  compute each month's dominant genre/mood/top game (playtime-weighted), and
+  merge adjacent months sharing the same signature; the standalone Eras tab
+  and its recorded-era ledger were removed — stretches and the story cover
+  the same facts. Imported Steam/GOG totals are undated — they never produce
+  months or eras, and a year without tracked sessions shows an honest empty
+  state.
 - `YearInReviewShareCard` and `YearInReviewStoryShareCard` are 1080×1080
   html2canvas targets sharing `EraShareCard`'s visual language (blurred
   artwork backdrop, badge/username pills, bordered games box, watermark
@@ -496,4 +501,4 @@ The typecheck command is optional for JS-only changes.
 
 ## Session window totals
 
-- `SessionRepository` exports `getSessionMinutes`, `getSessionStartMs` and `getSessionTimestampMs`. Any weekly or windowed total must use them (`TodayStrip` and `GamingVitalsService` do) so two surfaces cannot disagree. Tests that `jest.mock('../services/SessionRepository')` must spread `jest.requireActual(...)` to keep these named exports.
+- `SessionRepository` exports `getSessionMinutes`, `getSessionStartMs` and `getSessionTimestampMs`. Any weekly or windowed total must use them (`GamingVitalsService` and `SessionRepository` consumers do) so two surfaces cannot disagree. Tests that `jest.mock('../services/SessionRepository')` must spread `jest.requireActual(...)` to keep these named exports.

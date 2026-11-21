@@ -1,10 +1,72 @@
+.gaming-diary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+
 .gaming-diary-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 1rem;
   color: var(--text-primary, #e8eaf0);
+}
+
+.gaming-diary-windows {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.06));
+}
+
+.gaming-diary-window {
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #8b919f);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.gaming-diary-window:hover {
+  color: var(--text-primary, #e8eaf0);
+}
+
+.gaming-diary-window.active {
+  background: var(--accent-color, #ff8c1a);
+  color: #0d0f14;
+}
+
+.gaming-diary-more {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 0;
+  border: none;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  background: transparent;
+  color: var(--accent-color, #ff8c1a);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.gaming-diary-more:hover {
+  text-decoration: underline;
+}
+
+.gaming-diary-empty-window {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #8b919f);
 }
 
 .gaming-diary-title svg {
@@ -44,21 +106,6 @@
 
 .gaming-diary-icon-finish {
   color: #ffc24b;
-}
-
-.gaming-diary-icon-era {
-  color: var(--accent-color, #ff8c1a);
-  background: color-mix(in srgb, var(--accent-color, #ff8c1a) 16%, transparent);
-}
-
-/* Era onsets are milestones, not log lines — they get a faint accent wash so
-   they read as chapter breaks in the feed. */
-.gaming-diary-item:has(.gaming-diary-icon-era) {
-  background: color-mix(in srgb, var(--accent-color, #ff8c1a) 5%, transparent);
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin: 2px -10px;
-  border-bottom: none;
 }
 
 .gaming-diary-body {

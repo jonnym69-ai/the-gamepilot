@@ -1,7 +1,7 @@
 {
   "name": "gamepilot",
   "version": "1.13.0",
-  "description": "A local-first PC gaming library manager and launcher.",
+  "description": "A private, local-first gaming biography — real sessions across launchers turned into personas with receipts, named eras and roasts.",
   "private": true,
   "main": "electron.js",
   "homepage": "./",

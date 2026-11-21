@@ -475,7 +475,7 @@ class SessionDatabase {
     }
   }
 
-  async clear() {
+  async clear({ deleteBackups = false } = {}) {
     await this.readyPromise;
     // Explicit user action — a direct DELETE, deliberately not routed
     // through replaceHistory's shrink guards.
@@ -485,6 +485,11 @@ class SessionDatabase {
     transactionOn(this.historyDb, this.historyDbPath, () => {
       this.historyDb.run('DELETE FROM session_history');
     });
+    if (deleteBackups && fs.existsSync(this.backupDirPath)) {
+      fs.readdirSync(this.backupDirPath)
+        .filter((name) => BACKUP_FILE_PATTERN.test(name))
+        .forEach((name) => fs.unlinkSync(path.join(this.backupDirPath, name)));
+    }
     return true;
   }
 }

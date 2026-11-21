@@ -9,8 +9,7 @@ import FriendsPlayingCard from './FriendsPlayingCard';
 import DailySpotlightCard from './DailySpotlightCard';
 import DailyDoodleTitle from './DailyDoodleTitle';
 import OnThisDayCard from './OnThisDayCard';
-import TodayStrip from './TodayStrip';
-import { CurrentEraCard, RecentSessionsSummary } from './IdentityWidgets';
+import { RecentSessionsSummary } from './IdentityWidgets';
 import EraTransitionCard from './EraTransitionCard';
 import YearInReviewPromptCard from './YearInReviewPromptCard';
 import MonthlyRecapStrip from './MonthlyRecapStrip';
@@ -25,7 +24,10 @@ import './HomeDailyOverview.css';
 export const HOME_VIEWS = ['today', 'discover', 'activity', 'chronicle', 'identity', 'wishlist'];
 
 const VIEW_COPY = {
-  today: ['Less browsing. More playing.', 'A game to play. A library to rediscover. A story that is yours.'],
+  today: [
+    'Your games have been recording your life.',
+    'GamePilot reads it back — then helps you pick what plays next.',
+  ],
   discover: [
     'Find something worth exploring',
     'Rediscover something you own, see Epic giveaways, or choose by mood and time.',
@@ -113,8 +115,8 @@ export default function HomeDailyOverview({
 
   // Kick a background wishlist price check on Today mounts — refreshIfStale
   // self-guards on the wishlist toggle and its 24h cache, so this is a no-op
-  // when disabled or fresh. When it lands, the TodayStrip deals chip updates
-  // via the gamepilot:wishlist-alerts event.
+  // when disabled or fresh. When it lands, the GamingVitalsCard deals chip
+  // updates via the gamepilot:wishlist-alerts event.
   useEffect(() => {
     WishlistService.refreshIfStale()?.catch?.(() => {});
   }, []);
@@ -132,7 +134,6 @@ export default function HomeDailyOverview({
       {hasLibrary ? (
         <>
           <WhatsNewCard hasLibrary={hasLibrary} />
-          <TodayStrip />
           <section className="home-daily-play" aria-labelledby="home-play-heading">
             <p className="home-daily-eyebrow">Ready when you are</p>
             <h2 id="home-play-heading">Play Next</h2>
@@ -202,7 +203,7 @@ export default function HomeDailyOverview({
             )}
           </section>
           <div className="home-daily-spotlight">
-            <DailySpotlightCard library={library} />
+            <DailySpotlightCard library={library} onLaunchGame={onLaunchGame} />
           </div>
           <section className="home-daily-story" aria-labelledby="home-story-heading">
             <div className="home-daily-section-heading">
@@ -215,7 +216,6 @@ export default function HomeDailyOverview({
             <GamingVitalsCard />
             <YearInReviewPromptCard library={library} />
             <EraTransitionCard />
-            <CurrentEraCard compact />
             <DeepRunCard library={library} onLaunchGame={onLaunchGame} />
             <RecentSessionsSummary compact />
             <MonthlyRecapStrip />

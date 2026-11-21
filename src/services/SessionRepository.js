@@ -408,11 +408,11 @@ class SessionRepository {
     }
   }
 
-  static clear() {
+  static clear(options = {}) {
     this.cache = { activeSessions: {}, sessionHistory: [] };
     StorageService.remove(ACTIVE_SESSIONS_KEY);
     StorageService.remove(SESSION_HISTORY_KEY);
-    this.api?.sessionStoreClear?.().catch((error) => {
+    this.api?.sessionStoreClear?.(options).catch((error) => {
       console.error('Failed to clear SQLite session storage:', error);
     });
   }

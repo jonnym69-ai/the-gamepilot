@@ -1,7 +1,6 @@
 import { YearInReviewService } from './YearInReviewService';
 import { StatsAggregationService } from './StatsAggregationService';
 import SessionRepository from './SessionRepository';
-import CurrentEraService from './CurrentEraService';
 import { findLibraryGame } from './PeriodChampionService';
 import SteamAchievementsService from './SteamAchievementsService';
 import SteamPublicService from './SteamPublicService';
@@ -32,10 +31,6 @@ jest.mock('./SessionRepository', () => ({
   __esModule: true,
   default: { getSessionHistory: jest.fn(() => []) },
 }));
-jest.mock('./CurrentEraService', () => ({
-  __esModule: true,
-  default: { getCurrentEra: jest.fn(() => ({ history: [] })) },
-}));
 jest.mock('./SteamAchievementsService');
 jest.mock('./SteamPublicService');
 jest.mock('./GameCurationService');
@@ -56,7 +51,6 @@ beforeEach(() => {
   jest.clearAllMocks();
   StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([]);
   SessionRepository.getSessionHistory.mockReturnValue([]);
-  CurrentEraService.getCurrentEra.mockReturnValue({ history: [] });
   SteamAchievementsService.getCachedForGame.mockReturnValue(null);
   SteamPublicService.appIdOf.mockImplementation((game) => game?.appid || '');
   findLibraryGame.mockImplementation(() => null);
@@ -129,24 +123,6 @@ describe('YearInReviewService eras', () => {
 
     expect(snapshot.hasData).toBe(false);
     expect(snapshot.eras.stretches).toEqual([]);
-  });
-
-  test('includes recorded currentEraHistory entries that fall inside the year', () => {
-    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
-      session({ game: 'Stardew Valley', month: 0 }),
-    ]);
-    CurrentEraService.getCurrentEra.mockReturnValue({
-      history: [
-        { signature: 'b', name: 'The Old Era', genre: 'rts', topGame: 'AoE II', since: Date.UTC(2023, 6, 1) },
-        { signature: 'a', name: 'The Saga Era', genre: 'rpg', topGame: 'Skyrim', since: Date.UTC(2024, 2, 15) },
-      ],
-    });
-
-    const snapshot = YearInReviewService.getYearSnapshot([], 2024);
-
-    expect(snapshot.eras.recorded).toHaveLength(1);
-    expect(snapshot.eras.recorded[0].name).toBe('The Saga Era');
-    expect(snapshot.eras.recorded[0].isCurrent).toBe(true);
   });
 });
 
@@ -514,5 +490,32 @@ describe('YearInReviewService milestones', () => {
     expect(achievements.gamesWithUnlocks).toBe(1);
     expect(achievements.rarest).toMatchObject({ name: 'Rare One', gameName: 'Hades', percent: 2.5 });
     expect(achievements.busiestDay.count).toBe(2);
+    expect(achievements.checkedCount).toBe(1);
+    expect(achievements.steamGameCount).toBe(1);
+  });
+});
+
+describe('YearInReviewService.getYearSteamAppIds', () => {
+  test('returns app IDs for games with sessions in the year, most-played first', () => {
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([
+      session({ game: 'Zomboid', month: 3 }),
+      session({ game: 'Zomboid', month: 5 }),
+      session({ game: 'Hades', month: 2 }),
+      session({ game: 'Old Game', year: 2023 }),
+    ]);
+    findLibraryGame.mockImplementation((lib, name) =>
+      name === 'Zomboid'
+        ? { name: 'Zomboid', appid: '108600' }
+        : name === 'Hades'
+          ? { name: 'Hades', appid: '1145360' }
+          : null
+    );
+
+    expect(YearInReviewService.getYearSteamAppIds([], 2024)).toEqual(['108600', '1145360']);
+  });
+
+  test('returns an empty list when nothing was played that year', () => {
+    StatsAggregationService.getNormalizedSessionHistory.mockReturnValue([session({ game: 'Hades', year: 2023 })]);
+    expect(YearInReviewService.getYearSteamAppIds([], 2024)).toEqual([]);
   });
 });

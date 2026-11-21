@@ -184,6 +184,29 @@ describe('CurrentEraService.getCurrentEra imported-playtime estimate', () => {
   });
 });
 
+describe('CurrentEraService era naming', () => {
+  test('names the era after the top game when the leading genre is a weak signal', () => {
+    const day = (n) => new Date(NOW - n * DAY_MS).toISOString();
+    PlaytimeAutoLogger.getSessionHistory.mockReturnValue([
+      { sessionId: 'a', gameName: 'Co-op Night', startTime: day(1), playtimeMinutes: 100 },
+      { sessionId: 'b', gameName: 'Witchy Quest', startTime: day(2), playtimeMinutes: 95 },
+      { sessionId: 'c', gameName: 'Scary Hall', startTime: day(3), playtimeMinutes: 90 },
+      { sessionId: 'd', gameName: 'Jump Lad', startTime: day(4), playtimeMinutes: 90 },
+    ]);
+    StorageService.set('library', [
+      { name: 'Co-op Night', genres: ['Multiplayer'] },
+      { name: 'Witchy Quest', genres: ['RPG'] },
+      { name: 'Scary Hall', genres: ['Horror'] },
+      { name: 'Jump Lad', genres: ['Platformer'] },
+    ]);
+
+    const era = CurrentEraService.getCurrentEra();
+
+    // Multiplayer leads at ~27% of tagged minutes — not enough to claim a themed era.
+    expect(era.name).toBe('The Co-op Night Era');
+  });
+});
+
 describe('CurrentEraService.getEraTransition', () => {
   test('describes the ended era and its successor from the last two history entries', () => {
     seedHistory();
@@ -205,5 +228,120 @@ describe('CurrentEraService.getEraTransition', () => {
       { signature: 'x', name: 'The Saga Era', genre: 'rpg', topGame: 'Skyrim', since: NOW - 10 * DAY_MS },
     ]);
     expect(CurrentEraService.getEraTransition()).toBeNull();
+  });
+});
+
+describe('CurrentEraService era history hygiene', () => {
+  const zomboidSessions = () =>
+    PlaytimeAutoLogger.getSessionHistory.mockReturnValue(
+      [10, 8, 6, 4, 2].map((daysAgo, i) => ({
+        sessionId: `s${i}`,
+        gameName: 'Project Zomboid',
+        startTime: new Date(NOW - daysAgo * DAY_MS).toISOString(),
+        playtimeMinutes: 240,
+      }))
+    );
+
+  beforeEach(() => {
+    StorageService.set('library', [{ name: 'Project Zomboid', genres: ['Survival'] }]);
+  });
+
+  test('same-day label churn stays a pending reading, never a recorded era', () => {
+    zomboidSessions();
+
+    CurrentEraService.getCurrentEra(); // pending: survival|Project Zomboid
+    StorageService.set('library', [{ name: 'Project Zomboid', genres: ['Multiplayer'] }]);
+    CurrentEraService.getCurrentEra(); // pending resets to a different genre signature
+    StorageService.set('library', [{ name: 'Project Zomboid', genres: ['Horror', 'Survival'] }]);
+    CurrentEraService.getCurrentEra(); // and again
+
+    expect(StorageService.get('currentEraHistory', [])).toEqual([]);
+    expect(StorageService.get('currentEraPending', null)).not.toBeNull();
+  });
+
+  test('a signature that holds for two days commits with its real start date', () => {
+    zomboidSessions();
+    StorageService.set('currentEraPending', {
+      signature: 'survival|Project Zomboid',
+      name: 'The Project Zomboid Era',
+      genre: 'survival',
+      topGame: 'Project Zomboid',
+      since: NOW - 3 * DAY_MS,
+    });
+
+    const era = CurrentEraService.getCurrentEra();
+    const history = StorageService.get('currentEraHistory', []);
+
+    expect(history).toHaveLength(1);
+    expect(history[0].signature).toBe('survival|Project Zomboid');
+    expect(history[0].since).toBe(NOW - 3 * DAY_MS);
+    expect(StorageService.get('currentEraPending', null)).toBeNull();
+    expect(era.dayCount).toBeGreaterThanOrEqual(3);
+  });
+
+  test('cleans churn already sitting in stored history', () => {
+    zomboidSessions();
+    StorageService.set('currentEraHistory', [
+      {
+        signature: 'a',
+        name: 'The Project Zomboid Era',
+        genre: 'survival',
+        topGame: 'Project Zomboid',
+        since: NOW - 40 * DAY_MS,
+      },
+      {
+        signature: 'b',
+        name: 'The Project Zomboid Era',
+        genre: 'survival',
+        topGame: 'Project Zomboid',
+        since: NOW - 30 * DAY_MS,
+      },
+      {
+        signature: 'c',
+        name: 'The Guildhall Era',
+        genre: 'multiplayer',
+        topGame: 'Project Zomboid',
+        since: NOW - 36 * 60 * 60 * 1000,
+      },
+      {
+        signature: 'd',
+        name: 'The Project Zomboid Era',
+        genre: 'survival',
+        topGame: 'Project Zomboid',
+        since: NOW - 24 * 60 * 60 * 1000,
+      },
+    ]);
+
+    const era = CurrentEraService.getCurrentEra();
+    const history = StorageService.get('currentEraHistory', []);
+
+    expect(history).toHaveLength(1);
+    expect(history[0].name).toBe('The Project Zomboid Era');
+    expect(history[0].since).toBe(NOW - 40 * DAY_MS);
+    expect(era.name).toBe('The Project Zomboid Era');
+  });
+
+  test('falling back to the committed signature clears the pending sighting', () => {
+    zomboidSessions();
+    StorageService.set('currentEraHistory', [
+      {
+        signature: 'survival|Project Zomboid',
+        name: 'The Project Zomboid Era',
+        genre: 'survival',
+        topGame: 'Project Zomboid',
+        since: NOW - 20 * DAY_MS,
+      },
+    ]);
+    StorageService.set('currentEraPending', {
+      signature: 'multiplayer|Project Zomboid',
+      name: 'The Guildhall Era',
+      since: NOW - DAY_MS,
+    });
+
+    const era = CurrentEraService.getCurrentEra();
+
+    expect(StorageService.get('currentEraPending', null)).toBeNull();
+    expect(era.name).toBe('The Project Zomboid Era');
+    expect(era.dayCount).toBeGreaterThanOrEqual(20);
   });
 });

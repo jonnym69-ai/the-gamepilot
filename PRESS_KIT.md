@@ -11,8 +11,9 @@ this file when features ship.
   days and called it The Zomboid Era" beats "powerful analytics."
 - Witty but honest. The roast is the brand. Never say "revolutionary",
   "ultimate", or "all-in-one".
-- Say it once, plainly: **no accounts, no cloud, no telemetry.** It is a
-  trust signal, not a feature list.
+- Say it once, plainly: **no account or analytics telemetry; your library,
+  sessions and biography stay local.** Optional online lookups are disclosed,
+  not hidden behind a blanket "offline" claim.
 - The product is always **GamePilot** — no version numbers, no "app/tool"
   suffixes in titles.
 
@@ -20,7 +21,7 @@ this file when features ship.
 
 ### Tagline
 
-> Your games. Your habits. Your gaming story.
+> Your games have been recording your life. GamePilot reads it back.
 
 ### One-liner
 
@@ -32,8 +33,8 @@ this file when features ship.
 
 > GamePilot brings your whole PC library together — Steam, Epic, GOG, Xbox and
 > more — tracks your playtime even offline, and turns your habits into a
-> persona, named eras, and game-earned titles. No accounts, no cloud, no
-> telemetry. Free for Windows, with a Linux/Steam Deck beta.
+> persona, named eras, and game-earned titles. No account or analytics
+> telemetry; your library and sessions stay local. Free for Windows.
 
 ### Long paragraph (~100 words, for itch/Storefront "about")
 
@@ -42,9 +43,10 @@ this file when features ship.
 > 34"), hands you titles you earned with real hours, crowns a champion every
 > week, month and year, and roasts your persona so honestly you'll want to
 > share it. When you can't decide what to play, it recommends from your own
-> library by mood, session length and taste — and explains why. Everything
-> runs locally: no accounts, no cloud, no telemetry, and your data never
-> leaves your machine.
+> library by mood, session length and taste — and explains why. Your library,
+> sessions and biography stay local, with no account or analytics telemetry.
+> Optional online features send only the game names or identifiers needed for
+> the request to the relevant provider.
 
 ## Feature bullets
 
@@ -72,29 +74,19 @@ this file when features ship.
   bar overlay, themes, command palette
 - Weekly digest, streaks, milestones, seasonal events
 
-### GamePilot Pro (separate paid download, one-time)
-
-- **Era archive** — every era you have lived through, dated and ranked
-- **Year over year** — this year vs the same stretch last year: hours,
-  sessions, days, games, top title
-- **Cinematic exports** — poster, square-card and wide-banner renders of your
-  stats and story
-- **Library Reclaimer** — installed size vs last-played, so you know what is
-  actually worth the disk space
-- **Advanced recommendation tuner** — edit the real scoring weights
-- **Pro theme collection** — Ember, Aurora and Onyx, exclusive to Pro
-
-Upgrade note (always include): _Same local data folder — install Pro and
-everything carries over. No account, no activation key._
+Everything above ships in the single free build — including the era archive,
+year-over-year, cinematic exports, Library Reclaimer, the recommendation
+tuner and the full theme collection. There is no paid tier and no feature
+gating; optional support lives on itch.io (pay-what-you-want).
 
 ## Per-platform blurbs
 
 ### itch.io (storefront — conversion)
 
 Headline: **GamePilot: Your Gaming Persona, Roasted**
-Lead with the persona/era screenshot. Use the long paragraph, Free bullets,
-then a Pro section listing the six Pro features at the set price. Keep Patreon
-as a separate "support development" line — it is not Pro.
+Lead with the persona/era screenshot. Use the long paragraph and the feature
+bullets. One build, everything free — mention pay-what-you-want as a
+"support development" line only if the page supports it.
 
 ### GitHub (credibility — verification)
 
@@ -107,7 +99,7 @@ notes.
 
 Patreon is for people who want to back development: founder recognition,
 Discord role, early devlogs, votes on what gets built next. Do not sell
-features through it — that is what Pro is for.
+features through it — every build ships fully unlocked.
 
 ### Reddit / social posts
 
@@ -119,11 +111,11 @@ or persona roast — with a one-line story. Let the comments sell it.
 - Platforms: Windows 10/11 (64-bit); Linux x86_64 AppImage — beta, Steam-first
   (Steam Deck supported via non-Steam shortcut)
 - Data: stored locally at `%APPDATA%\Roaming\GamePilot\` — never synced
-- Licence: MIT (source is open; anyone can build either edition)
+- Licence: MIT (source is open; anyone can build it themselves)
 - Links:
-  - itch.io: https://moz91.itch.io/gamepilot
-  - GitHub: https://github.com/jonnym69-ai/the-gamepilot
-  - Patreon: https://www.patreon.com/cw/GamePilot
-  - Discord: https://discord.gg/cmpyavpXDE
-  - X: https://x.com/Mozog91
-  - YouTube: https://www.youtube.com/@Mozog91
+  - itch.io: <https://moz91.itch.io/gamepilot>
+  - GitHub: <https://github.com/jonnym69-ai/the-gamepilot>
+  - Patreon: <https://www.patreon.com/cw/GamePilot>
+  - Discord: <https://discord.gg/cmpyavpXDE>
+  - X: <https://x.com/Mozog91>
+  - YouTube: <https://www.youtube.com/@Mozog91>

@@ -10,7 +10,7 @@ GamePilot tracks real sessions across every launcher on your PC — Steam, Epic,
 
 And yes, it launches all of them from one place, so you stop scrolling and start playing.
 
-No account. No cloud. No telemetry. No AI in the app — everything it "knows" about you is local math on your own data. Windows 10/11, Linux in beta.
+No account or analytics telemetry. Your library, sessions and biography are stored locally. Optional online features contact the relevant third-party services with the game names or identifiers needed for the request; some Steam features use a small GamePilot Netlify relay to keep the Steam API key out of the app. No AI in the app — everything it "knows" about you is local math on your own data. Windows 10/11, Linux in beta.
 
 ## Download
 

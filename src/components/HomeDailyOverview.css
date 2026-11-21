@@ -159,20 +159,14 @@
   font-size: 0.8rem;
   text-underline-offset: 4px;
 }
-.home-story-era,
 .home-story-session {
   padding: 16px 0;
   border-bottom: 1px solid var(--home-line);
   margin-bottom: 14px;
 }
-.home-story-era h3,
 .home-story-session p {
   margin: 4px 0;
 }
-.home-story-era h3 {
-  font-size: 1.1rem;
-}
-.home-story-era > span,
 .home-story-session > span {
   color: var(--home-muted);
   font-size: 0.78rem;
@@ -286,7 +280,6 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       'doodle'
-      'strip'
       'play'
       'spotlight'
       'story';

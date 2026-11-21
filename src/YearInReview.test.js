@@ -1,8 +1,9 @@
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import YearInReview from './YearInReview';
 import { YearInReviewService } from './services/YearInReviewService';
+import SteamAchievementsService from './services/SteamAchievementsService';
 import { getRecapSeasonYear } from './utils/recapSeason';
 
 jest.mock('html2canvas', () => ({ __esModule: true, default: jest.fn() }));
@@ -11,7 +12,12 @@ jest.mock('./services/YearInReviewService', () => ({
   YearInReviewService: {
     getAvailableYears: jest.fn(() => [2024]),
     getYearSnapshot: jest.fn(),
+    getYearSteamAppIds: jest.fn(() => []),
   },
+}));
+jest.mock('./services/SteamAchievementsService', () => ({
+  __esModule: true,
+  default: { warmup: jest.fn(() => Promise.resolve(0)) },
 }));
 jest.mock('./utils/recapSeason', () => ({ getRecapSeasonYear: jest.fn(() => null) }));
 
@@ -98,7 +104,6 @@ const baseSnapshot = {
         sessionCount: 22,
       },
     ],
-    recorded: [],
   },
   journalNotes: [{ gameName: 'Stardew Valley', note: 'good farm day', dateLabel: 'Jan 10', playtimeMinutes: 60 }],
   milestones: {
@@ -126,6 +131,8 @@ const baseSnapshot = {
       gamesWithUnlocks: 3,
       rarest: { name: 'Cloud Nine', gameName: 'Celeste', percent: 1.2, unlockedAt: new Date(2024, 5, 5).getTime() },
       busiestDay: { date: '2024-06-05', count: 4 },
+      checkedCount: 8,
+      steamGameCount: 14,
     },
     comebacks: [{ name: 'Rust', gapDays: 92, returnedAt: new Date(2024, 3, 3, 19).getTime(), coverUrl: '' }],
     firsts: [{ name: 'Hades', firstPlayedAt: new Date(2024, 1, 2, 20).getTime(), coverUrl: '', playtimeMinutes: 300 }],
@@ -153,37 +160,32 @@ beforeEach(() => {
   getRecapSeasonYear.mockReturnValue(null);
 });
 
-test('renders six tabs with Overview active by default', () => {
+test('renders four tabs with Chronicle as the landing view', () => {
   renderPage();
 
   const tabs = screen.getAllByRole('tab');
-  expect(tabs.map((tab) => tab.textContent)).toEqual([
-    'Overview',
-    'Chronicle',
-    'Story',
-    'Milestones',
-    'Eras',
-    'Numbers',
-  ]);
-  expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Chronicle', 'Overview', 'Milestones', 'Numbers']);
+  expect(screen.getByRole('tab', { name: 'Chronicle' })).toHaveAttribute('aria-selected', 'true');
 
+  selectTab('Overview');
   // Overview shows the uniform glance grid, the single identity card and the era strip.
   expect(screen.getByText('2024 at a Glance')).toBeInTheDocument();
   expect(screen.getByText('Busiest Day')).toBeInTheDocument();
   expect(screen.getByText('Top Genre')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: /Player Identity/ })).toBeInTheDocument();
-  expect(screen.getByText(/open the Eras tab/)).toBeInTheDocument();
+  expect(screen.getByText(/open your Chronicle/)).toBeInTheDocument();
 });
 
 test('the persona roast appears exactly once, on Overview only', () => {
   renderPage();
 
+  selectTab('Overview');
   expect(screen.getAllByText(ROAST)).toHaveLength(1);
 
-  selectTab('Story');
+  selectTab('Chronicle');
   expect(screen.queryByText(ROAST)).not.toBeInTheDocument();
 
-  selectTab('Eras');
+  selectTab('Milestones');
   expect(screen.queryByText(ROAST)).not.toBeInTheDocument();
 
   selectTab('Numbers');
@@ -193,16 +195,17 @@ test('the persona roast appears exactly once, on Overview only', () => {
   expect(screen.getAllByText(ROAST)).toHaveLength(1);
 });
 
-test('Story tab renders the generated narrative paragraphs', () => {
+test('Chronicle tab opens with the TLDR story, era spine and journal', () => {
   renderPage();
-  selectTab('Story');
+  selectTab('Chronicle');
 
   // The offscreen story share card repeats these texts — scope to the panel.
   const panel = within(screen.getByRole('tabpanel'));
-  expect(panel.getByRole('heading', { name: 'The Story of Your Year' })).toBeInTheDocument();
+  expect(panel.getByRole('heading', { name: 'The Short Version' })).toBeInTheDocument();
   expect(panel.getByText('Your year started on 10 Jan with Stardew Valley.')).toBeInTheDocument();
   expect(panel.getByText('Verdict: RPG steady player.')).toBeInTheDocument();
-  expect(panel.getByText(/good farm day/)).toBeInTheDocument(); // journal lives on the story tab
+  expect(panel.getByText(/good farm day/)).toBeInTheDocument(); // journal lives on the chronicle tab
+  expect(panel.getByText('The shape of your year')).toBeInTheDocument();
 });
 
 test('Milestones tab renders finished games, achievements, comebacks, firsts and records', () => {
@@ -253,13 +256,22 @@ test('Milestones tab shows the finished empty state when nothing is marked', () 
   expect(panel.getByText(/Nothing marked finished yet/)).toBeInTheDocument();
 });
 
-test('Eras tab renders stretches and the era timeline', () => {
+test('Chronicle tab shows the era timeline spine with stretch legend', () => {
   renderPage();
-  selectTab('Eras');
+  selectTab('Chronicle');
 
-  expect(screen.getByText('The Eras of Your Year')).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'The Stardew Valley Era' })).toBeInTheDocument();
-  expect(screen.getByText('Jan–Feb')).toBeInTheDocument();
+  const panel = within(screen.getByRole('tabpanel'));
+  expect(panel.getByText('The shape of your year')).toBeInTheDocument();
+  expect(panel.getByText(/Jan–Feb · The Stardew Valley Era/)).toBeInTheDocument();
+});
+
+test('retired story and eras tabs redirect to the chronicle panel', () => {
+  render(
+    <MemoryRouter initialEntries={['/?tab=story']}>
+      <YearInReview library={[{ name: 'Stardew Valley' }]} />
+    </MemoryRouter>
+  );
+  expect(screen.getByRole('tab', { name: 'Chronicle' })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('Numbers tab collapses months with no sessions into one line', () => {
@@ -280,7 +292,7 @@ test('Numbers tab collapses months with no sessions into one line', () => {
 test('no streak content survives anywhere on the page', () => {
   renderPage();
 
-  for (const tab of ['Overview', 'Story', 'Eras', 'Numbers']) {
+  for (const tab of ['Overview', 'Chronicle', 'Numbers']) {
     selectTab(tab);
     expect(screen.queryByText(/streak/i)).not.toBeInTheDocument();
   }
@@ -290,7 +302,7 @@ test('shows an honest empty state when the year has no tracked sessions', () => 
   YearInReviewService.getYearSnapshot.mockReturnValue({
     ...baseSnapshot,
     hasData: false,
-    eras: { stretches: [], recorded: [] },
+    eras: { stretches: [] },
     story: { paragraphs: [] },
     journalNotes: [],
   });
@@ -312,4 +324,20 @@ test('titles the page as the year in review during the December–January season
   renderPage();
   expect(screen.getByRole('heading', { name: '2024 Year in Review', level: 1 })).toBeInTheDocument();
   expect(screen.getByText('Your Gaming Life')).toBeInTheDocument();
+});
+
+test('warms the year achievement cache and regenerates the snapshot when fetches land', async () => {
+  YearInReviewService.getYearSteamAppIds.mockReturnValue(['108600', '1145360']);
+
+  renderPage();
+
+  expect(SteamAchievementsService.warmup).toHaveBeenCalledWith(['108600', '1145360']);
+  await waitFor(() => expect(YearInReviewService.getYearSnapshot).toHaveBeenCalledTimes(2));
+});
+
+test('skips the achievement warmup when the year has no Steam session games', () => {
+  YearInReviewService.getYearSteamAppIds.mockReturnValue([]);
+  renderPage();
+
+  expect(SteamAchievementsService.warmup).not.toHaveBeenCalled();
 });

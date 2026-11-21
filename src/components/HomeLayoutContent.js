@@ -3,7 +3,7 @@ import React from 'react';
 export function getTodayLayoutStyle() {
   return {
     '--home-today-columns': 'minmax(0, 1.2fr) minmax(0, 1fr)',
-    '--home-today-areas': '"doodle doodle" "strip strip" "play spotlight" "story spotlight"',
+    '--home-today-areas': '"doodle doodle" "play spotlight" "story spotlight"',
     '--home-today-width': 'var(--content-max-width, 1800px)',
     '--home-today-padding': '24px',
     '--home-today-art-width': '120px',
@@ -33,6 +33,7 @@ export default function HomeLayoutContent({ children, view }) {
     return true;
   });
   const priority = (child) => {
+    if (view === 'identity' && hasClass(child, 'home-persona-primary')) return -1;
     if (view === 'discover' && hasClass(child, 'home-discovery-highlights')) return -2;
     if (view === 'discover' && hasClass(child, 'home-tools-section')) return -1;
     return 0;

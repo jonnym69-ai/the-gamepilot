@@ -312,6 +312,31 @@
   line-height: 1;
   color: var(--chronicle-accent);
 }
+.chronicle-journal-entries {
+  max-width: 62ch;
+  margin: 20px 0 4px 24px;
+}
+.chronicle-journal-entry {
+  margin: 0;
+  padding: 2px 0 2px 18px;
+  border-left: 2px solid var(--chronicle-accent);
+}
+.chronicle-journal-entry + .chronicle-journal-entry {
+  margin-top: 16px;
+}
+.chronicle-journal-entry p {
+  margin: 0 0 7px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.65;
+  color: var(--chronicle-ink);
+}
+.chronicle-journal-entry cite {
+  font-size: 0.7rem;
+  font-style: normal;
+  color: var(--chronicle-faint);
+}
 .chronicle-still-writing {
   font-style: italic;
   color: var(--chronicle-muted);
@@ -620,6 +645,13 @@
 }
 .chronicle-share-prose p {
   margin: 0 0 18px;
+}
+.chronicle-share-prose .chronicle-share-journal {
+  margin-top: 24px;
+  padding-left: 20px;
+  border-left: 3px solid #9d86c7;
+  font-style: italic;
+  color: #d8cee5;
 }
 .chronicle-share-stats {
   display: flex;

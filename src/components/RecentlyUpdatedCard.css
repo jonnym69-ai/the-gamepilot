@@ -1,0 +1,66 @@
+/* Recently updated rollup — games you play that posted news since last played. */
+
+.recently-updated {
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.recently-updated-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: var(--text-primary, #e8eaf0);
+}
+
+.recently-updated-title svg {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.recently-updated-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recently-updated-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary, #e8eaf0);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recently-updated-item:hover {
+  border-color: var(--accent-color, #ff8c1a);
+}
+
+.recently-updated-item strong {
+  font-size: 0.88rem;
+}
+
+.recently-updated-post {
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recently-updated-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted, #8b919f);
+}

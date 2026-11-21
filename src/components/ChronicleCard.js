@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, ChevronDown, ChevronLeft, ChevronRight, Download, Feather, ScrollText } from 'lucide-react';
 import SessionRepository from '../services/SessionRepository';
 import { buildChronicle } from '../services/ChronicleService';
+import CurrentEraService from '../services/CurrentEraService';
 import GamingPersonaService from '../services/GamingPersonaService';
 import GameCapturesService from '../services/GameCapturesService';
 import { LocalShareService } from '../services/LocalShareService';
@@ -231,6 +232,19 @@ const ChronicleChapter = ({
             ))}
           </div>
 
+          {chapter.journalEntries?.length > 0 && (
+            <div className="chronicle-journal-entries">
+              {chapter.journalEntries.map((entry) => (
+                <blockquote className="chronicle-journal-entry" key={`${entry.at}-${entry.name}`}>
+                  <p>“{entry.text}”</p>
+                  <cite>
+                    — you, {formatFooterDate(entry.at)} · {entry.displayName}
+                  </cite>
+                </blockquote>
+              ))}
+            </div>
+          )}
+
           <div className="chronicle-margin-notes">
             {Number.isFinite(chapter.month.minutes) && chapter.month.minutes > 0 && (
               <span className="chronicle-note">
@@ -305,6 +319,9 @@ const ChronicleChapter = ({
               {chapter.paragraphs.slice(0, 2).map((text, index) => (
                 <p key={index}>{text}</p>
               ))}
+              {chapter.journalEntries?.[0] && (
+                <p className="chronicle-share-journal">“{chapter.journalEntries[0].text}”</p>
+              )}
             </div>
             <div className="chronicle-share-stats">
               <strong>{formatPlaytime(chapter.month.minutes)}</strong>
@@ -327,7 +344,8 @@ const ChronicleCard = ({ library = [], username = '' }) => {
   const sessions = useMemo(() => SessionRepository.getSessionHistory(), []);
   const chronicle = useMemo(() => {
     try {
-      return buildChronicle(sessions, library);
+      const eraHistory = CurrentEraService.getCurrentEra()?.history || [];
+      return buildChronicle(sessions, library, { eraHistory });
     } catch {
       return null;
     }
@@ -347,10 +365,13 @@ const ChronicleCard = ({ library = [], username = '' }) => {
   }, [chronicle]);
   const [pageIndex, setPageIndex] = useState(null);
   const [turnDir, setTurnDir] = useState('next');
+  const activeChapterIndex = pages.findIndex((page) => page.type === 'chapter' && page.chapter.isCurrent);
+  const continuePageIndex =
+    (chronicle?.chapters?.length || 0) <= 1 ? 0 : activeChapterIndex >= 0 ? activeChapterIndex : pages.length - 1;
 
   const openBook = (index) => {
     setTurnDir('next');
-    setPageIndex(index);
+    setPageIndex(typeof index === 'number' ? index : continuePageIndex);
   };
   const turnPage = (delta) => {
     setPageIndex((current) => {
@@ -457,8 +478,8 @@ const ChronicleCard = ({ library = [], username = '' }) => {
             ))}
           </div>
           {pages.length > 0 && (
-            <button type="button" className="chronicle-open-book" onClick={() => openBook(0)}>
-              Open the book
+            <button type="button" className="chronicle-open-book" onClick={() => openBook()}>
+              {(chronicle?.chapters?.length || 0) > 1 ? 'Continue the story' : 'Open the book'}
             </button>
           )}
         </nav>

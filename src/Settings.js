@@ -1010,8 +1010,9 @@ function Settings({
                         <label htmlFor="wishlist-enabled" className="toggle-slider"></label>
                       </div>
                       <p className="setting-description">
-                        On by default. Track games you want and get price-drop alerts via IsThereAnyDeal. Prices are
-                        cached locally for 24 hours. No user data leaves your device.
+                        On by default. Track games you want and get price-drop alerts via CheapShark. When enabled and
+                        your wishlist has entries, game titles are sent to CheapShark for price lookups. Wishlist
+                        entries and prices are stored locally, with price results cached for 24 hours.
                       </p>
                     </div>
 

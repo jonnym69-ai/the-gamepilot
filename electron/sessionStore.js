@@ -29,7 +29,9 @@ function registerIpcHandlers(ipcMain, deps) {
   ipcMain.handle('session-store-restore-backup', async (_event, fileName) =>
     sessionDatabase.restoreBackup(typeof fileName === 'string' ? fileName : '')
   );
-  ipcMain.handle('session-store-clear', async () => sessionDatabase.clear());
+  ipcMain.handle('session-store-clear', async (_event, options = {}) =>
+    sessionDatabase.clear({ deleteBackups: Boolean(options?.deleteBackups) })
+  );
 }
 
 module.exports = { registerIpcHandlers };

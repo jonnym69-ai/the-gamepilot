@@ -5,7 +5,7 @@ const BACKUP_TYPE = 'gamepilot-backup';
 const EXCLUDED_KEYS = ['backupInProgress', 'migrationBannerDismissed'];
 // Credentials never enter backups and are never replaced by a restore —
 // locally configured connections must survive a backup round-trip.
-const CREDENTIAL_KEYS = new Set(['itchApiKeyV1', 'retroAchievementsApiKey', 'discordWebhookUrl']);
+const CREDENTIAL_KEYS = new Set(['itchApiKeyV1', 'retroAchievementsApiKey', 'steamGridDbApiKey', 'discordWebhookUrl']);
 
 const BackupService = {
   /**

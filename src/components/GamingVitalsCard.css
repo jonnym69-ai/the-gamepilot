@@ -95,3 +95,53 @@
   margin-right: 5px;
   vertical-align: -1px;
 }
+
+/* Folded-in glance chips (era, upcoming release, wishlist deals) — replaces
+   the standalone Today strip so the week isn't reported twice. */
+.gaming-vitals-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.gaming-vitals-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #646464);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary, #fff);
+  font-size: 0.78rem;
+  line-height: 1.3;
+  text-decoration: none;
+  text-align: left;
+}
+
+.gaming-vitals-chip > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gaming-vitals-chip-meta {
+  color: var(--text-muted, #8b919f);
+}
+
+.gaming-vitals-chip strong {
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+}
+
+.gaming-vitals-chip svg {
+  color: var(--accent-color, #ff8c1a);
+  flex-shrink: 0;
+}
+
+a.gaming-vitals-chip:hover {
+  border-color: var(--accent-color, #ff8c1a);
+}

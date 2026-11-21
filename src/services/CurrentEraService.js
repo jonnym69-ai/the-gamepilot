@@ -10,8 +10,67 @@ const HALF_LIFE_DAYS = 14;
 // a month, with a 10-day recency half-life on top of lifetime minutes.
 const ESTIMATED_ERA_HALF_LIFE_DAYS = 10;
 const ERA_HISTORY_KEY = 'currentEraHistory';
+const ERA_PENDING_KEY = 'currentEraPending';
+const ERA_HISTORY_LIMIT = 10;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// An era is a stretch, not a daily reading: a new signature must hold for two
+// days before it earns a place in the archive, and stored entries that were
+// replaced within a day are treated as label churn and dropped on read.
+const ERA_COMMIT_MS = 2 * DAY_MS;
+const ERA_FLICKER_MS = DAY_MS;
+
+const eraSignature = (genre, topGame) => `${genre || 'none'}|${topGame || 'none'}`;
+
+// Older entries encoded the derived era name inside their signature, so every
+// label change (theme flip, naming tweak) read as a new era. Signatures are
+// rebuilt from the stored genre + top game, consecutive duplicates collapse,
+// and entries superseded within a day are discarded as churn. Returns the
+// original array reference when nothing needed cleaning.
+const sanitizeEraHistory = (entries) => {
+  if (!Array.isArray(entries)) return [];
+  let changed = false;
+
+  const normalized = entries.filter(Boolean).map((entry) => {
+    const signature = eraSignature(entry.genre, entry.topGame);
+    if (signature !== entry.signature) changed = true;
+    return { ...entry, signature };
+  });
+
+  const durable = normalized.filter((entry, i) => {
+    const next = normalized[i + 1];
+    const flicker =
+      next && Number.isFinite(next.since) && Number.isFinite(entry.since) && next.since - entry.since < ERA_FLICKER_MS;
+    if (flicker) changed = true;
+    return !flicker;
+  });
+
+  const merged = [];
+  durable.forEach((entry) => {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.signature === entry.signature) {
+      changed = true; // keep the earliest `since`
+      return;
+    }
+    merged.push(entry);
+  });
+
+  const trimmed = merged.slice(-ERA_HISTORY_LIMIT);
+  if (trimmed.length !== merged.length) changed = true;
+  return changed ? trimmed : entries;
+};
+
+// The stable display name for a signature: committed/pending entries keep the
+// name they were recorded under instead of re-deriving it every call, so the
+// label doesn't flicker while the substance stays the same.
+const eraFlavorFor = (name, fallback) => {
+  const theme = ERA_THEMES.find((t) => t.name === name);
+  if (theme) return theme.flavor;
+  if (name === 'The Quiet Season') return 'the games are waiting';
+  if (name === 'The Wandering Era') return 'a bit of everything';
+  if (name && name.endsWith(' Era')) return 'one game above all';
+  return fallback;
+};
 
 const getSessionStart = (session) => {
   if (!session) return null;
@@ -256,7 +315,11 @@ const nameEra = (snapshot) => {
   if (snapshot.dominantGameShare >= 0.6 && snapshot.dominantGame?.minutes >= 600 && topGame) {
     return { name: `The ${topGame} Era`, flavor: 'one game above all', gameDominated: true };
   }
-  const theme = ERA_THEMES.find((t) => t.match.some((m) => genre.includes(m)));
+  // A themed genre name only applies when the genre genuinely dominates the
+  // window — on a weak or mixed signal the top game's own name is the more
+  // truthful (and more legible) era title.
+  const theme =
+    snapshot.dominantGenreShare >= 0.35 ? ERA_THEMES.find((t) => t.match.some((m) => genre.includes(m))) : null;
   if (theme) return { name: theme.name, flavor: theme.flavor };
   if (topGame) return { name: `The ${topGame} Era`, flavor: 'one game above all', gameDominated: true };
   return { name: 'The Wandering Era', flavor: 'a bit of everything' };
@@ -325,36 +388,93 @@ export class CurrentEraService {
         }
       : detectDrift(effectiveCurrent, previous);
 
-    const history = StorageService.get(ERA_HISTORY_KEY, []);
-    const signature = `${theme.name}|${effectiveCurrent.dominantGenre || 'none'}|${effectiveCurrent.topGames[0]?.name || 'none'}`;
-    const lastEntry = Array.isArray(history) ? history[history.length - 1] : null;
-
-    let eraHistory = Array.isArray(history) ? history : [];
-    if (!estimated && effectiveCurrent.totalMinutes > 0 && (!lastEntry || lastEntry.signature !== signature)) {
-      eraHistory = [
-        ...eraHistory.slice(-9),
-        {
-          signature,
-          name: theme.name,
-          genre: current.dominantGenre,
-          topGame: current.topGames[0]?.name || null,
-          since: now,
-        },
-      ];
+    const signature = eraSignature(effectiveCurrent.dominantGenre, effectiveCurrent.topGames[0]?.name);
+    const rawHistory = StorageService.get(ERA_HISTORY_KEY, []);
+    let eraHistory = sanitizeEraHistory(rawHistory);
+    if (eraHistory !== rawHistory) {
       try {
         StorageService.set(ERA_HISTORY_KEY, eraHistory);
       } catch {
         /* ignore */
       }
     }
+    let lastEntry = eraHistory[eraHistory.length - 1] || null;
+    let pending = StorageService.get(ERA_PENDING_KEY, null);
+    if (pending?.signature === lastEntry?.signature) {
+      try {
+        StorageService.remove(ERA_PENDING_KEY);
+      } catch {
+        /* ignore */
+      }
+      pending = null;
+    }
 
-    const currentEraEntry = eraHistory[eraHistory.length - 1];
-    const eraSince = currentEraEntry && currentEraEntry.signature === signature ? currentEraEntry.since : now;
+    // A signature only reaches the archive after holding for ERA_COMMIT_MS.
+    // Anything shorter was a wobble in the window maths, not a real era.
+    if (!estimated && effectiveCurrent.totalMinutes > 0) {
+      if (lastEntry?.signature === signature) {
+        if (pending) {
+          try {
+            StorageService.remove(ERA_PENDING_KEY);
+          } catch {
+            /* ignore */
+          }
+          pending = null;
+        }
+      } else if (pending?.signature === signature && now - pending.since >= ERA_COMMIT_MS) {
+        eraHistory = [
+          ...eraHistory.slice(-(ERA_HISTORY_LIMIT - 1)),
+          {
+            signature,
+            name: theme.name,
+            genre: effectiveCurrent.dominantGenre || null,
+            topGame: effectiveCurrent.topGames[0]?.name || null,
+            since: pending.since, // the era began when the pattern did
+          },
+        ];
+        try {
+          StorageService.set(ERA_HISTORY_KEY, eraHistory);
+          StorageService.remove(ERA_PENDING_KEY);
+        } catch {
+          /* ignore */
+        }
+        pending = null;
+        lastEntry = eraHistory[eraHistory.length - 1];
+      } else if (pending?.signature !== signature) {
+        pending = {
+          signature,
+          name: theme.name,
+          genre: effectiveCurrent.dominantGenre || null,
+          topGame: effectiveCurrent.topGames[0]?.name || null,
+          since: now,
+        };
+        try {
+          StorageService.set(ERA_PENDING_KEY, pending);
+        } catch {
+          /* ignore */
+        }
+      }
+    } else if (pending) {
+      // Nothing tracked in the window — a pending pattern can't mature while
+      // nobody is playing, so discard it rather than let it ripen on pause.
+      try {
+        StorageService.remove(ERA_PENDING_KEY);
+      } catch {
+        /* ignore */
+      }
+      pending = null;
+    }
+
+    const stable = lastEntry?.signature === signature ? lastEntry : pending?.signature === signature ? pending : null;
+    const displayName = stable?.name || theme.name;
+    const eraSince = stable?.since || now;
 
     return {
-      name: theme.name,
-      flavor: theme.flavor,
-      gameDominated: theme.gameDominated === true,
+      name: displayName,
+      flavor: eraFlavorFor(displayName, theme.flavor),
+      gameDominated: Boolean(
+        stable?.topGame ? displayName === `The ${stable.topGame} Era` : theme.gameDominated === true
+      ),
       estimated: Boolean(estimated),
       topGame: effectiveCurrent.topGames[0]?.name || null,
       dominantGameShare: effectiveCurrent.dominantGameShare,

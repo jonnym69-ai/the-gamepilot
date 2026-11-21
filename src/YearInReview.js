@@ -6,7 +6,6 @@ import {
   BookOpen,
   Calendar,
   Download,
-  Hourglass,
   ListOrdered,
   Medal,
   NotebookPen,
@@ -23,6 +22,7 @@ import { getEmptyLibraryFallback } from './services/EmptyLibraryFallbackData';
 import { LocalShareService } from './services/LocalShareService';
 import ProfileService from './services/ProfileService';
 import PersonaHistoryService from './services/PersonaHistoryService';
+import SteamAchievementsService from './services/SteamAchievementsService';
 import { getGameArtworkPlaceholder } from './services/GameArtworkService';
 import { YearInReviewShareCard, SHARE_CARD_SIZE_PX } from './components/YearInReviewShareCard';
 import { YearInReviewStoryShareCard } from './components/YearInReviewStoryShareCard';
@@ -38,13 +38,15 @@ import './YearInReview.css';
 const COLOR_FUNCTION_PATTERN = /\b(color\(|color-mix\()/i;
 
 const YEAR_REVIEW_TABS = Object.freeze([
-  { id: 'overview', label: 'Overview' },
   { id: 'chronicle', label: 'Chronicle' },
-  { id: 'story', label: 'Story' },
+  { id: 'overview', label: 'Overview' },
   { id: 'milestones', label: 'Milestones' },
-  { id: 'eras', label: 'Eras' },
   { id: 'numbers', label: 'Numbers' },
 ]);
+
+// Retired standalone tabs now live inside Chronicle (story = the TLDR,
+// eras = the timeline spine) — keep old bookmarks landing somewhere useful.
+const LEGACY_TAB_REDIRECTS = Object.freeze({ story: 'chronicle', eras: 'chronicle' });
 
 const MILESTONE_STATUS_LABELS = Object.freeze({ beaten: 'Beaten', completed: 'Completed', '100%': '100%' });
 
@@ -180,7 +182,9 @@ function YearInReview({ library = [] }) {
       return params;
     });
   }, [setSearchParams]);
-  const activeTab = YEAR_REVIEW_TABS.some((tab) => tab.id === requestedTab) ? requestedTab : 'overview';
+  const activeTab = YEAR_REVIEW_TABS.some((tab) => tab.id === requestedTab)
+    ? requestedTab
+    : LEGACY_TAB_REDIRECTS[requestedTab] || 'chronicle';
   const requestedYear = Number(searchParams.get('year'));
   const requestedYearValid =
     Number.isInteger(requestedYear) && requestedYear >= 1970 && requestedYear <= new Date().getFullYear() + 1;
@@ -197,6 +201,7 @@ function YearInReview({ library = [] }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [isExportingImage, setIsExportingImage] = useState(false);
   const [isExportingShare, setIsExportingShare] = useState(false);
+  const [achievementWarmup, setAchievementWarmup] = useState(0);
 
   useEffect(() => {
     if (requestedYearValid) {
@@ -225,9 +230,28 @@ function YearInReview({ library = [] }) {
     noticeTimeoutRef.current = window.setTimeout(() => setStatusMessage(''), 4000);
   }, []);
 
+  // The achievements milestone reads the local cache only, so it reflects
+  // whatever happens to be cached — which is usually almost nothing. Warm the
+  // year's Steam games on load (gated on the Steam public-data opt-in inside
+  // the service), then regenerate the snapshot once fetches land.
+  useEffect(() => {
+    let cancelled = false;
+    const appids = YearInReviewService.getYearSteamAppIds(library || [], selectedYear);
+    if (appids.length === 0) return undefined;
+    SteamAchievementsService.warmup(appids)
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setAchievementWarmup((tick) => tick + 1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [library, selectedYear]);
+
   const snapshot = useMemo(
     () => YearInReviewService.getYearSnapshot(library || getEmptyLibraryFallback(), selectedYear),
-    [library, selectedYear]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- achievementWarmup re-reads the warmed cache
+    [library, selectedYear, achievementWarmup]
   );
 
   // Persist the year's persona into the yearbook — past years immediately,
@@ -755,13 +779,13 @@ function YearInReview({ library = [] }) {
                   </article>
 
                   {snapshot.eras?.stretches?.length > 0 && (
-                    <button type="button" className="year-review-era-strip" onClick={() => selectTab('eras')}>
+                    <button type="button" className="year-review-era-strip" onClick={() => selectTab('chronicle')}>
                       <div className="year-review-era-strip-copy">
                         <span className="year-review-kicker">Month by month</span>
-                        <strong>The Eras of Your {selectedYear}</strong>
+                        <strong>The shape of your {selectedYear}</strong>
                         <span className="year-review-era-strip-cta">
                           {snapshot.eras.stretches.length} stretch
-                          {snapshot.eras.stretches.length === 1 ? '' : 'es'} — open the Eras tab →
+                          {snapshot.eras.stretches.length === 1 ? '' : 'es'} — open your Chronicle →
                         </span>
                       </div>
                       <EraTimelineBar stretches={snapshot.eras.stretches} />
@@ -785,22 +809,11 @@ function YearInReview({ library = [] }) {
                   aria-labelledby="year-review-tab-chronicle"
                   className="year-review-tabpanel"
                 >
-                  <ChronicleCard library={library} username={pilotName} />
-                </div>
-              )}
-
-              {(activeTab === 'story' || isCapturingAll) && (
-                <div
-                  role="tabpanel"
-                  id="year-review-panel-story"
-                  aria-labelledby="year-review-tab-story"
-                  className="year-review-tabpanel"
-                >
                   {snapshot.story?.paragraphs?.length > 0 && (
                     <section className="year-review-story-section">
                       <div className="year-review-story-header">
                         <BookOpen size={20} />
-                        <h2>The Story of Your Year</h2>
+                        <h2>The Short Version</h2>
                         <div style={{ marginLeft: 'auto' }}>
                           <ShareMenu
                             triggerLabel="Share Story"
@@ -927,17 +940,112 @@ function YearInReview({ library = [] }) {
                           </p>
                         ))}
                       </div>
-                      <p className="year-review-story-lite-note">
-                        The short version — your{' '}
-                        <button
-                          type="button"
-                          className="year-review-story-chronicle-link"
-                          onClick={() => selectTab('chronicle')}
-                        >
-                          Chronicle
-                        </button>{' '}
-                        tells the same year month by month, receipts attached.
-                      </p>
+                    </section>
+                  )}
+
+                  {snapshot.eras?.stretches?.length > 0 && (
+                    <section className="year-review-eras-spine">
+                      <span className="year-review-kicker">The shape of your year</span>
+                      <EraTimelineBar stretches={snapshot.eras.stretches} />
+                      <div className="year-review-era-strip-legend">
+                        {snapshot.eras.stretches.map((era, index) => (
+                          <span key={`${era.startMonth}-${era.endMonth}`}>
+                            <i style={{ backgroundColor: eraTimelineColor(index) }} />
+                            {era.monthLabel} · {era.name}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  <ChronicleCard library={library} username={pilotName} />
+
+                  {snapshot.championJourney?.yearChampion && (
+                    <section className="year-review-champion-journey">
+                      <div className="year-review-champion-heading">
+                        <div>
+                          <span className="year-review-kicker">Your year in games</span>
+                          <h2>
+                            <Trophy size={21} /> Champion journey
+                          </h2>
+                          <p>The games that defined each month, led by your most-played game of {selectedYear}.</p>
+                        </div>
+                      </div>
+                      <div className="year-review-year-champion">
+                        <div className="year-review-year-champion-cover">
+                          <LazyImage
+                            src={snapshot.championJourney.yearChampion.game?.portrait}
+                            fallbackSrc={snapshot.championJourney.yearChampion.game?.portraitFallback}
+                            placeholder={snapshot.championJourney.yearChampion.game?.placeholder}
+                            gameName={snapshot.championJourney.yearChampion.game?.name}
+                            platform={snapshot.championJourney.yearChampion.game?.platform}
+                            alt={`${snapshot.championJourney.yearChampion.game?.name} cover`}
+                          />
+                        </div>
+                        <div className="year-review-year-champion-copy">
+                          <span>Game of {selectedYear}</span>
+                          <h3>{snapshot.championJourney.yearChampion.game?.name}</h3>
+                          <div className="year-review-year-champion-stats">
+                            <div>
+                              <strong>{formatPlaytime(snapshot.championJourney.yearChampion.minutes)}</strong>
+                              <span>played</span>
+                            </div>
+                            <div>
+                              <strong>{snapshot.championJourney.yearChampion.sessionCount}</strong>
+                              <span>sessions</span>
+                            </div>
+                            <div>
+                              <strong>
+                                {formatPlaytime(snapshot.championJourney.yearChampion.longestSessionMinutes)}
+                              </strong>
+                              <span>longest sitting</span>
+                            </div>
+                            <div>
+                              <strong>
+                                {Math.round(
+                                  (snapshot.championJourney.yearChampion.minutes /
+                                    Math.max(1, snapshot.championJourney.yearChampion.totalPeriodMinutes)) *
+                                    100
+                                )}
+                                %
+                              </strong>
+                              <span>of yearly play</span>
+                            </div>
+                          </div>
+                          <p>
+                            {formatPlaytime(snapshot.championJourney.yearChampion.totalPeriodMinutes)} across{' '}
+                            {snapshot.championJourney.yearChampion.totalPeriodSessions} sessions and{' '}
+                            {snapshot.championJourney.yearChampion.periodGameCount} games this year.
+                          </p>
+                        </div>
+                      </div>
+                      {snapshot.championJourney.monthlyChampions.length > 0 && (
+                        <div className="year-review-month-champions">
+                          {snapshot.championJourney.monthlyChampions.map((champion) => (
+                            <article key={champion.periodKey} className="year-review-month-champion">
+                              <div className="year-review-month-cover">
+                                <LazyImage
+                                  src={champion.game?.portrait}
+                                  fallbackSrc={champion.game?.portraitFallback}
+                                  placeholder={champion.game?.placeholder}
+                                  gameName={champion.game?.name}
+                                  platform={champion.game?.platform}
+                                  alt={`${champion.game?.name} cover`}
+                                />
+                                <span>{champion.monthLabel}</span>
+                              </div>
+                              <div className="year-review-month-copy">
+                                <strong title={champion.game?.name}>{champion.game?.name}</strong>
+                                <span>
+                                  {formatPlaytime(champion.minutes)} · {champion.sessionCount} session
+                                  {champion.sessionCount === 1 ? '' : 's'}
+                                </span>
+                                <small>Longest: {formatPlaytime(champion.longestSessionMinutes)}</small>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
                     </section>
                   )}
 
@@ -1138,6 +1246,13 @@ function YearInReview({ library = [] }) {
                             </div>
                           )}
                         </div>
+                        {snapshot.milestones.achievements.checkedCount != null &&
+                          snapshot.milestones.achievements.steamGameCount != null && (
+                            <p className="year-review-milestone-note">
+                              From Steam achievement data for {snapshot.milestones.achievements.checkedCount} of{' '}
+                              {snapshot.milestones.achievements.steamGameCount} Steam games.
+                            </p>
+                          )}
                       </section>
                     )}
 
@@ -1236,170 +1351,6 @@ function YearInReview({ library = [] }) {
                       </section>
                     )}
                   </article>
-                </div>
-              )}
-
-              {(activeTab === 'eras' || isCapturingAll) && (
-                <div
-                  role="tabpanel"
-                  id="year-review-panel-eras"
-                  aria-labelledby="year-review-tab-eras"
-                  className="year-review-tabpanel"
-                >
-                  {(snapshot.eras?.stretches?.length > 0 || snapshot.eras?.recorded?.length > 0) && (
-                    <section className="year-review-eras-section">
-                      <div className="year-review-eras-header">
-                        <div>
-                          <span className="year-review-kicker">Month by month</span>
-                          <h2>
-                            <Hourglass size={21} /> The Eras of Your Year
-                          </h2>
-                          <p>
-                            Consecutive months that shared the same dominant genre, mood, and top game merge into one
-                            stretch — your {selectedYear} as a series of eras.
-                          </p>
-                        </div>
-                      </div>
-                      {snapshot.eras?.stretches?.length > 0 && (
-                        <EraTimelineBar stretches={snapshot.eras.stretches} showLabels />
-                      )}
-                      {snapshot.eras?.stretches?.length > 0 && (
-                        <div className="year-review-era-track">
-                          {snapshot.eras.stretches.map((era) => (
-                            <article
-                              key={`${era.startMonth}-${era.endMonth}`}
-                              className="year-review-era-card"
-                              style={{ flexGrow: era.monthCount }}
-                            >
-                              <span className="year-review-era-months">{era.monthLabel}</span>
-                              <h3>{era.name}</h3>
-                              <div className="year-review-era-signature">
-                                {era.dominantGenre && era.dominantGenre !== 'Unknown' && (
-                                  <span>{era.dominantGenre}</span>
-                                )}
-                                {era.dominantMood && era.dominantMood !== 'Unknown' && <span>{era.dominantMood}</span>}
-                              </div>
-                              <div className="year-review-era-stats">
-                                <span>{era.playtimeHours}h</span>
-                                <span>
-                                  {era.sessionCount} session{era.sessionCount === 1 ? '' : 's'}
-                                </span>
-                                {era.topGame && <span className="year-review-era-top-game">{era.topGame}</span>}
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      )}
-                      {snapshot.eras?.recorded?.length > 0 && (
-                        <div className="year-review-recorded-eras">
-                          <span className="year-review-recorded-eras-label">
-                            Era changes GamePilot recorded in {selectedYear}
-                          </span>
-                          <ul>
-                            {snapshot.eras.recorded.map((entry) => (
-                              <li key={`${entry.since}-${entry.name}`}>
-                                <strong>{entry.name}</strong>
-                                <span>
-                                  began {entry.dateLabel}
-                                  {entry.topGame ? ` · led by ${entry.topGame}` : ''}
-                                  {entry.isCurrent ? ' · still going' : ''}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </section>
-                  )}
-
-                  {snapshot.championJourney?.yearChampion && (
-                    <section className="year-review-champion-journey">
-                      <div className="year-review-champion-heading">
-                        <div>
-                          <span className="year-review-kicker">Your year in games</span>
-                          <h2>
-                            <Trophy size={21} /> Champion journey
-                          </h2>
-                          <p>The games that defined each month, led by your most-played game of {selectedYear}.</p>
-                        </div>
-                      </div>
-                      <div className="year-review-year-champion">
-                        <div className="year-review-year-champion-cover">
-                          <LazyImage
-                            src={snapshot.championJourney.yearChampion.game?.portrait}
-                            fallbackSrc={snapshot.championJourney.yearChampion.game?.portraitFallback}
-                            placeholder={snapshot.championJourney.yearChampion.game?.placeholder}
-                            gameName={snapshot.championJourney.yearChampion.game?.name}
-                            platform={snapshot.championJourney.yearChampion.game?.platform}
-                            alt={`${snapshot.championJourney.yearChampion.game?.name} cover`}
-                          />
-                        </div>
-                        <div className="year-review-year-champion-copy">
-                          <span>Game of {selectedYear}</span>
-                          <h3>{snapshot.championJourney.yearChampion.game?.name}</h3>
-                          <div className="year-review-year-champion-stats">
-                            <div>
-                              <strong>{formatPlaytime(snapshot.championJourney.yearChampion.minutes)}</strong>
-                              <span>played</span>
-                            </div>
-                            <div>
-                              <strong>{snapshot.championJourney.yearChampion.sessionCount}</strong>
-                              <span>sessions</span>
-                            </div>
-                            <div>
-                              <strong>
-                                {formatPlaytime(snapshot.championJourney.yearChampion.longestSessionMinutes)}
-                              </strong>
-                              <span>longest sitting</span>
-                            </div>
-                            <div>
-                              <strong>
-                                {Math.round(
-                                  (snapshot.championJourney.yearChampion.minutes /
-                                    Math.max(1, snapshot.championJourney.yearChampion.totalPeriodMinutes)) *
-                                    100
-                                )}
-                                %
-                              </strong>
-                              <span>of yearly play</span>
-                            </div>
-                          </div>
-                          <p>
-                            {formatPlaytime(snapshot.championJourney.yearChampion.totalPeriodMinutes)} across{' '}
-                            {snapshot.championJourney.yearChampion.totalPeriodSessions} sessions and{' '}
-                            {snapshot.championJourney.yearChampion.periodGameCount} games this year.
-                          </p>
-                        </div>
-                      </div>
-                      {snapshot.championJourney.monthlyChampions.length > 0 && (
-                        <div className="year-review-month-champions">
-                          {snapshot.championJourney.monthlyChampions.map((champion) => (
-                            <article key={champion.periodKey} className="year-review-month-champion">
-                              <div className="year-review-month-cover">
-                                <LazyImage
-                                  src={champion.game?.portrait}
-                                  fallbackSrc={champion.game?.portraitFallback}
-                                  placeholder={champion.game?.placeholder}
-                                  gameName={champion.game?.name}
-                                  platform={champion.game?.platform}
-                                  alt={`${champion.game?.name} cover`}
-                                />
-                                <span>{champion.monthLabel}</span>
-                              </div>
-                              <div className="year-review-month-copy">
-                                <strong title={champion.game?.name}>{champion.game?.name}</strong>
-                                <span>
-                                  {formatPlaytime(champion.minutes)} · {champion.sessionCount} session
-                                  {champion.sessionCount === 1 ? '' : 's'}
-                                </span>
-                                <small>Longest: {formatPlaytime(champion.longestSessionMinutes)}</small>
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                  )}
                 </div>
               )}
 

@@ -1,5 +1,6 @@
 import SteamAchievementsService from './SteamAchievementsService';
 import SteamOwnedGamesService from './SteamOwnedGamesService';
+import SteamPublicService from './SteamPublicService';
 import StorageService from './StorageService';
 
 jest.mock('./SteamOwnedGamesService');
@@ -35,7 +36,7 @@ const globalPayload = {
 beforeEach(() => {
   localStorage.clear();
   delete window.electronAPI;
-  jest.clearAllMocks();
+  jest.restoreAllMocks();
   SteamOwnedGamesService.getSteamId.mockReturnValue(STEAM_ID);
 });
 
@@ -126,4 +127,40 @@ test('getSummaryForGames reads the cache only', async () => {
   const summary = SteamAchievementsService.getSummaryForGames([APPID, '999']);
   expect(summary).toEqual({ [APPID]: { unlocked: 3, total: 10 } });
   expect(window.electronAPI.steamPlayerAchievements).not.toHaveBeenCalled();
+});
+
+test('warmup respects the Steam public-data opt-in', async () => {
+  jest.spyOn(SteamPublicService, 'isEnabled').mockReturnValue(false);
+  window.electronAPI = { steamPlayerAchievements: jest.fn() };
+
+  await expect(SteamAchievementsService.warmup([APPID])).resolves.toBe(0);
+  expect(window.electronAPI.steamPlayerAchievements).not.toHaveBeenCalled();
+});
+
+test('warmup does nothing without a Steam ID', async () => {
+  SteamOwnedGamesService.getSteamId.mockReturnValue('');
+  window.electronAPI = { steamPlayerAchievements: jest.fn() };
+
+  await expect(SteamAchievementsService.warmup([APPID])).resolves.toBe(0);
+  expect(window.electronAPI.steamPlayerAchievements).not.toHaveBeenCalled();
+});
+
+test('warmup fetches stale appids only and reports how many', async () => {
+  window.electronAPI = {
+    steamPlayerAchievements: jest.fn().mockResolvedValue(playerPayload()),
+    steamGlobalAchievements: jest.fn().mockResolvedValue(globalPayload),
+  };
+  StorageService.set(CACHE_KEY, {
+    [APPID]: {
+      fetchedAt: Date.now(),
+      accessedAt: Date.now(),
+      result: { ok: true, unlocked: 1, total: 2, achievements: [] },
+    },
+  });
+
+  const fetched = await SteamAchievementsService.warmup([APPID, APPID, '999'], { delayMs: 0 });
+
+  expect(fetched).toBe(1);
+  expect(window.electronAPI.steamPlayerAchievements).toHaveBeenCalledTimes(1);
+  expect(window.electronAPI.steamPlayerAchievements).toHaveBeenCalledWith({ steamId: STEAM_ID, appid: '999' });
 });

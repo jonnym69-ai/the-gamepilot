@@ -1,0 +1,34 @@
+/* Recent captures reel — newest captures across all attributed games. */
+
+.recent-captures {
+  margin-bottom: 14px;
+}
+
+.recent-captures-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: var(--text-primary, #e8eaf0);
+}
+
+.recent-captures-title svg {
+  color: var(--accent-color, #ff8c1a);
+}
+
+.recent-captures-item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recent-captures-game {
+  font-size: 0.7rem;
+  color: var(--text-muted, #8b919f);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

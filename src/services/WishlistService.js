@@ -1,7 +1,7 @@
 // WishlistService.js
 // Local-first wishlist with CheapShark price-check integration.
-// All wishlist data stays in localStorage. Price lookups hit the
-// CheapShark public API with 24h caching. No user data leaves the device.
+// Wishlist entries and cached prices stay in localStorage. When enabled,
+// price lookups send game titles to CheapShark and cache results for 24h.
 
 import StorageService from './StorageService';
 import NotificationService from './NotificationService';
@@ -116,7 +116,7 @@ const readAlertSummary = () => {
 const writeAlertSummary = (summary) => {
   try {
     StorageService.set(ALERTS_KEY, summary);
-    // Let glanceable surfaces (TodayStrip) react when background price checks
+    // Let glanceable surfaces (GamingVitalsCard) react when background price checks
     // finish — the summary is local cache, not a live fetch.
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('gamepilot:wishlist-alerts'));

@@ -133,12 +133,12 @@ describe('buildChronicle', () => {
     });
   });
 
-  it('writes one chapter per month, oldest first, with templated titles', () => {
-    const { chapters } = buildChronicle(buildSampleSessions(), []);
+  it('writes one chapter per month, oldest first, with game-led titles', () => {
+    const { chapters } = buildChronicle(buildSampleSessions(), [], { now: at(2026, 8, 30, 23).getTime() });
     expect(chapters.map((c) => c.key)).toEqual(['2026-07', '2026-08', '2026-09']);
     expect(chapters[0].title).toBe('Chapter One — The Record Begins');
-    expect(chapters[1].title).toBe('Chapter Two — The Consolidation');
-    expect(chapters[2].title).toBe('Chapter Three — The Month of One World');
+    expect(chapters[1].title).toBe('Chapter Two — The Project Zomboid Month');
+    expect(chapters[2].title).toBe('Chapter Three — Project Zomboid and Nothing Else');
     expect(chapters[0].subtitle).toBe('July 2026 · 13th–16th');
     expect(chapters[2].isCurrent).toBe(true);
     expect(chapters[0].isCurrent).toBe(false);
@@ -158,7 +158,7 @@ describe('buildChronicle', () => {
   });
 
   it('writes the consolidation and one-world chapters with the longest sitting', () => {
-    const { chapters } = buildChronicle(buildSampleSessions(), []);
+    const { chapters } = buildChronicle(buildSampleSessions(), [], { now: at(2026, 8, 30, 23).getTime() });
     const august = chapters[1];
     expect(august.paragraphs[0]).toContain('The record had gone quiet for sixteen days');
     expect(august.paragraphs[0]).toContain('The consolidation came next.');
@@ -228,7 +228,7 @@ describe('buildChronicle', () => {
       session('Mark of the Deep', at(2026, 6, 13, 20, 0), 14),
       session('Project Zomboid', at(2026, 6, 13, 20, 18), 18),
     ];
-    const { chapters } = buildChronicle(sessions, []);
+    const { chapters } = buildChronicle(sessions, [], { now: at(2026, 6, 13, 22).getTime() });
     expect(chapters).toHaveLength(1);
     const all = chapters[0].paragraphs.join(' ');
     expect(all).not.toContain('longest sitting');
@@ -341,6 +341,52 @@ describe('buildChronicle', () => {
     const plural = [...singular, session('Balatro', at(2026, 6, 14, 20, 0), 30)];
     const two = buildChronicle(plural, []).chapters[0].paragraphs.join(' ');
     expect(two).toContain('a single recorded session each for Balatro and Celeste.');
+  });
+
+  it('weaves journal entries, completions and era transitions into their monthly chapters', () => {
+    const history = [
+      session('Hades', at(2026, 6, 1, 20), 120),
+      session('Project Zomboid', at(2026, 7, 2, 20), 600, { note: 'The base finally feels like home.' }),
+      session('Project Zomboid', at(2026, 7, 5, 20), 300),
+      session('Terraria', at(2026, 7, 6, 20), 60),
+    ];
+    const eraHistory = [
+      { name: 'The Hades Era', topGame: 'Hades', since: at(2026, 6, 1, 19).getTime() },
+      { name: 'The Hades Era', topGame: 'Hades', since: at(2026, 6, 1, 19, 30).getTime() },
+      { name: 'The Project Zomboid Era', topGame: 'Project Zomboid', since: at(2026, 7, 2, 19).getTime() },
+    ];
+    const library = [
+      {
+        name: 'Project Zomboid',
+        completionHistory: [{ status: 'beaten', timestamp: at(2026, 7, 5, 22).getTime() }],
+      },
+    ];
+    const now = at(2026, 7, 31, 20).getTime();
+    const { chapters, facts } = buildChronicle(history, library, { eraHistory, now });
+
+    expect(chapters).toHaveLength(2);
+    expect(chapters[1].title).toBe('Chapter Two — Finishing Project Zomboid');
+    const august = chapters[1].paragraphs.join(' ');
+    expect(august).toContain('On August 2nd, 2026, The Project Zomboid Era began.');
+    expect(august).toContain('you marked Project Zomboid beaten after two recorded sessions.');
+    expect(chapters[1].paragraphs[0]).toContain('August moved between Project Zomboid and Terraria.');
+    expect(chapters[1].journalEntries).toEqual([
+      expect.objectContaining({ text: 'The base finally feels like home.', displayName: 'Project Zomboid' }),
+    ]);
+    expect(august).not.toContain('The base finally feels like home.');
+    expect(
+      facts.narrativeEvents.filter((event) => event.type === 'era' && event.name === 'The Hades Era')
+    ).toHaveLength(1);
+
+    const eraOnly = buildChronicle(history, [], { eraHistory, now });
+    expect(eraOnly.chapters[1].title).toBe('Chapter Two — The Project Zomboid Era');
+  });
+
+  it('does not call an old final month the current chapter', () => {
+    const { chapters } = buildChronicle(buildSampleSessions(), [], { now: at(2026, 9, 15, 20).getTime() });
+    const last = chapters[chapters.length - 1];
+    expect(last.isCurrent).toBe(false);
+    expect(last.paragraphs).not.toContain('This chapter is still being written.');
   });
 
   it('is deterministic for identical input', () => {

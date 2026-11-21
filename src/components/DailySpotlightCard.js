@@ -1,6 +1,8 @@
 import React, { useEffect, useId, useState } from 'react';
 import { BookOpen, Image, LayoutGrid, Maximize2, RefreshCw, Trophy } from 'lucide-react';
 import DailySpotlightService from '../services/DailySpotlightService';
+import AchievementCompletionService from '../services/AchievementCompletionService';
+import SteamAchievementsService from '../services/SteamAchievementsService';
 import { getDateKey } from '../services/DateKeyService';
 import { getBlendedPlaytimeMinutes, getLibraryRank, isTopShelfRank } from '../services/gameClassification';
 import { resolveGameArtworkBundle } from '../services/GameArtworkService';
@@ -87,6 +89,7 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
   const [refresh, setRefresh] = useState(0);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
   const [playersBusy, setPlayersBusy] = useState(false);
+  const [achievements, setAchievements] = useState(null);
   const pickKey = DailySpotlightService.getKey(game);
   const [mysteryEnabled, setMysteryEnabled] = useState(() => getMysteryEnabled());
   const [revealed, setRevealed] = useState(() => isRevealed(surface, pickKey));
@@ -135,6 +138,27 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
       active = false;
     };
   }, [appid, enabled, day, refresh]);
+
+  // Personal achievement progress for the spotlighted game — an online Steam
+  // fetch, so it needs both the Spotlight facts toggle and the Steam
+  // public-data opt-in. Silent when either is off or the game has none.
+  useEffect(() => {
+    let active = true;
+    setAchievements(null);
+    if (!appid || !enabled) return undefined;
+    try {
+      if (!AchievementCompletionService.isAvailable()) return undefined;
+    } catch {
+      return undefined;
+    }
+    SteamAchievementsService.getForGame(appid).then((result) => {
+      if (!active || !result?.ok || !result.total) return;
+      setAchievements({ unlocked: result.unlocked, total: result.total });
+    });
+    return () => {
+      active = false;
+    };
+  }, [appid, enabled]);
 
   const store = facts?.store;
   const players = facts?.players;
@@ -318,7 +342,7 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
             )}
             {reason && <p className="daily-spotlight-intro">{reason}</p>}
             {store?.shortDescription && <p className="daily-spotlight-blurb">{blurb(store.shortDescription)}</p>}
-            {rediscovery && onLaunchGame && (
+            {onLaunchGame && (
               <button className="discover-launch" type="button" onClick={() => onLaunchGame(game)}>
                 Play {gameName}
               </button>
@@ -373,6 +397,14 @@ function SpotlightDetails({ game, day, rediscovery = false, reason = '', onLaunc
                   <dt>Library rank</dt>
                   <dd>
                     #{libraryRank.rank} of {libraryRank.total}
+                  </dd>
+                </div>
+              )}
+              {achievements && (
+                <div>
+                  <dt>Achievements</dt>
+                  <dd>
+                    {achievements.unlocked} / {achievements.total}
                   </dd>
                 </div>
               )}

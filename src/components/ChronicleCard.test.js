@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import ChronicleCard from './ChronicleCard';
 import SessionRepository from '../services/SessionRepository';
+import CurrentEraService from '../services/CurrentEraService';
 import GameCapturesService from '../services/GameCapturesService';
 import GamingPersonaService from '../services/GamingPersonaService';
 import { LocalShareService } from '../services/LocalShareService';
@@ -12,6 +13,7 @@ jest.mock('../services/SessionRepository', () => ({
   ...jest.requireActual('../services/SessionRepository'),
   getSessionHistory: jest.fn(),
 }));
+jest.mock('../services/CurrentEraService');
 jest.mock('../services/GameCapturesService');
 jest.mock('../services/GamingPersonaService');
 jest.mock('../services/LocalShareService', () => ({
@@ -54,6 +56,7 @@ const library = [
 beforeEach(() => {
   jest.clearAllMocks();
   SessionRepository.getSessionHistory.mockReturnValue(sessions);
+  CurrentEraService.getCurrentEra.mockReturnValue(null);
   GamingPersonaService.getPublicIdentity.mockReturnValue(null);
   GameCapturesService.readImageDataUrl.mockResolvedValue('data:image/png;base64,capture');
   GameCapturesService.getAttribution.mockResolvedValue({
@@ -94,7 +97,8 @@ test('renders the title page and contents, preferring a real capture for chapter
 test('turns pages one leaf at a time, using the next game for art on repeats', async () => {
   render(<ChronicleCard library={library} username="Moz" />);
 
-  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
+  expect(screen.getByRole('button', { name: 'Continue the story' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Prologue' }));
   expect(screen.getByText('Prologue')).toBeInTheDocument();
   expect(screen.getByText('1 / 3')).toBeInTheDocument();
 
@@ -116,12 +120,31 @@ test('turns pages one leaf at a time, using the next game for art on repeats', a
 test('expands the recorded sessions behind a chapter', async () => {
   render(<ChronicleCard library={library} username="Moz" />);
 
-  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  fireEvent.click(screen.getByRole('button', { name: /Chapter One — The Record Begins/ }));
 
   const receipts = screen.getByText(/Receipts · 2 recorded sessions/);
   fireEvent.click(receipts);
   expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(2);
+});
+
+test('continues at the latest chapter for a returning reader', () => {
+  render(<ChronicleCard library={library} username="Moz" />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Continue the story' }));
+  expect(screen.getByText('Chapter II')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Previous page' })).toBeEnabled();
+});
+
+test('shows the player’s own journal words inside the chapter', () => {
+  SessionRepository.getSessionHistory.mockReturnValue([
+    { ...at(6, 13, 60), note: 'The base finally feels like home.' },
+  ]);
+  render(<ChronicleCard library={[{ name: 'Project Zomboid' }]} username="Moz" />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
+  expect(screen.getByText('“The base finally feels like home.”')).toBeInTheDocument();
+  expect(screen.getByText(/— you,/)).toBeInTheDocument();
 });
 
 test('pluralizes singular counts everywhere, including the share card', async () => {
@@ -150,8 +173,7 @@ test('pluralizes singular counts everywhere, including the share card', async ()
 test('exports a chapter as a finished image', async () => {
   render(<ChronicleCard library={library} username="Moz" />);
 
-  fireEvent.click(screen.getByRole('button', { name: 'Open the book' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  fireEvent.click(screen.getByRole('button', { name: /Chapter One — The Record Begins/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Share chapter' }));
   await waitFor(() => expect(html2canvas).toHaveBeenCalled());
   expect(LocalShareService.downloadImageFromCanvas).toHaveBeenCalledWith({ id: 'canvas' }, 'chronicle-2026-07.png');

@@ -151,8 +151,18 @@ describe('clearAllUserData', () => {
     const result = await DataManager.clearAllUserData();
 
     expect(result.success).toBe(true);
+    expect(result.message).toContain('settings, library, and session history');
     expect(StorageService.keys()).toEqual([]);
-    expect(window.electronAPI.sessionStoreClear).toHaveBeenCalled();
+    expect(window.electronAPI.sessionStoreClear).toHaveBeenCalledWith({ deleteBackups: true });
+  });
+
+  test('reports when session data or backups could not be fully removed', async () => {
+    window.electronAPI.sessionStoreClear.mockRejectedValue(new Error('backup file locked'));
+
+    const result = await DataManager.clearAllUserData();
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('could not be fully removed');
   });
 });
 
@@ -160,6 +170,7 @@ describe('credential protection', () => {
   const creds = {
     itchApiKeyV1: 'dummy-itch-key',
     retroAchievementsApiKey: 'dummy-ra-key',
+    steamGridDbApiKey: 'dummy-sgdb-key',
     discordWebhookUrl: 'https://discord.invalid/dummy-webhook',
   };
   const seedCreds = () => Object.entries(creds).forEach(([key, value]) => StorageService.setString(key, value));
@@ -172,13 +183,17 @@ describe('credential protection', () => {
     const backup = DataManager.exportUserData();
     expect(backup.data).not.toHaveProperty('itchApiKeyV1');
     expect(backup.data).not.toHaveProperty('retroAchievementsApiKey');
+    expect(backup.data).not.toHaveProperty('steamGridDbApiKey');
     expect(backup.data).not.toHaveProperty('discordWebhookUrl');
     expect(JSON.stringify(backup)).not.toContain('dummy-itch-key');
+    expect(JSON.stringify(backup)).not.toContain('dummy-sgdb-key');
     const { default: BackupService } = await import('./services/BackupService');
     const legacy = BackupService.createBackup();
     expect(legacy.data).not.toHaveProperty('itchApiKeyV1');
+    expect(legacy.data).not.toHaveProperty('steamGridDbApiKey');
     expect(legacy.data).not.toHaveProperty('discordWebhookUrl');
     expect(JSON.stringify(legacy.data)).not.toContain('dummy-ra-key');
+    expect(JSON.stringify(legacy.data)).not.toContain('dummy-sgdb-key');
   });
 
   test('a malicious backup cannot replace locally configured credentials', async () => {
@@ -189,6 +204,7 @@ describe('credential protection', () => {
         gameLibrary: '[]',
         itchApiKeyV1: 'attacker-itch',
         retroAchievementsApiKey: 'attacker-ra',
+        steamGridDbApiKey: 'attacker-sgdb',
         discordWebhookUrl: 'https://attacker.invalid/hook',
       },
     };
@@ -207,6 +223,7 @@ describe('credential protection', () => {
       data: {
         theme: 'light',
         itchApiKeyV1: 'attacker-itch',
+        steamGridDbApiKey: 'attacker-sgdb',
         discordWebhookUrl: 'https://attacker.invalid/hook',
       },
     };

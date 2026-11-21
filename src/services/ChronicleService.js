@@ -180,10 +180,16 @@ const toRecord = (entry) => {
     // Raw `name` stays the match/group key; prose reads `displayName`.
     displayName: name ? displayGameTitle(name) : null,
     minutes: getSessionMinutes(entry),
+    note: typeof entry?.note === 'string' ? entry.note.trim() : '',
     startMs,
     endMs,
     sortMs: startMs || endMs,
   };
+};
+
+const eventTime = (value) => {
+  const ms = typeof value === 'number' ? value : Date.parse(value);
+  return Number.isFinite(ms) && ms > 0 ? ms : null;
 };
 
 const isLateNight = (record) => {
@@ -325,7 +331,59 @@ const buildImportedTotals = (library) => {
   };
 };
 
-const buildFacts = (records, library) => {
+const buildNarrativeEvents = (records, library, eraHistory) => {
+  const events = [];
+
+  records.forEach((record) => {
+    const at = eventTime(record.endMs || record.sortMs);
+    if (!record.note || !at || !record.name || isNonGameTitle(record.name)) return;
+    events.push({
+      type: 'journal',
+      at,
+      name: record.name,
+      displayName: record.displayName,
+      text: record.note,
+    });
+  });
+
+  (Array.isArray(library) ? library : []).forEach((game) => {
+    const name = normalizeName(game?.name || game?.title);
+    if (!name || isNonGameTitle(name)) return;
+    (Array.isArray(game?.completionHistory) ? game.completionHistory : []).forEach((entry) => {
+      const at = eventTime(entry?.timestamp);
+      if (!at || !['beaten', 'completed', '100%', 'abandoned'].includes(entry?.status)) return;
+      events.push({
+        type: 'completion',
+        at,
+        name,
+        displayName: displayGameTitle(name),
+        status: entry.status,
+      });
+    });
+  });
+
+  const collapsedEras = [];
+  (Array.isArray(eraHistory) ? eraHistory : [])
+    .map((era) => ({ ...era, at: eventTime(era?.since) }))
+    .filter((era) => era.at && era.name)
+    .sort((a, b) => a.at - b.at)
+    .forEach((era) => {
+      if (collapsedEras[collapsedEras.length - 1]?.name === era.name) return;
+      collapsedEras.push(era);
+    });
+  collapsedEras.forEach((era) => {
+    events.push({
+      type: 'era',
+      at: era.at,
+      name: era.name,
+      gameName: era.topGame || null,
+    });
+  });
+
+  return events.sort((a, b) => a.at - b.at);
+};
+
+const buildFacts = (records, library, eraHistory = []) => {
   const dated = records.filter((r) => r.sortMs > 0).sort((a, b) => a.sortMs - b.sortMs);
   const first = dated[0] || null;
   const last = dated[dated.length - 1] || null;
@@ -347,6 +405,12 @@ const buildFacts = (records, library) => {
     const gap = Math.floor((nextStart - prevEnd) / DAY_MS);
     if (gap > biggestGapDays) biggestGapDays = gap;
   }
+
+  const narrativeEvents = buildNarrativeEvents(records, library, eraHistory);
+  const perMonth = buildPerMonth(dated).map((month) => ({
+    ...month,
+    events: narrativeEvents.filter((event) => monthKeyOf(event.at) === month.month),
+  }));
 
   return {
     firstSession: first
@@ -371,7 +435,8 @@ const buildFacts = (records, library) => {
         }
       : null,
     lateNightCount: records.filter(isLateNight).length,
-    perMonth: buildPerMonth(dated),
+    perMonth,
+    narrativeEvents,
     biggestGapDays,
     importedTotals: buildImportedTotals(library),
   };
@@ -409,7 +474,7 @@ const buildPrologue = (importedTotals) => {
   return { exists: true, text, isReconstruction: true };
 };
 
-const shapeSentence = ({ month, prev, index }) => {
+const shapeSentence = ({ month, prev, index, eventful = false }) => {
   const dominant = month.dominantGame;
   const domName = dominant?.displayName || null;
   const share = dominant?.share || 0;
@@ -427,6 +492,28 @@ const shapeSentence = ({ month, prev, index }) => {
       return `${month.label} logged ${countWords(month.sessions, 'session')} across ${countWords(month.varietyCount, 'game')}${month.minutes > 0 ? ` — ${durationWords(month.minutes)} in all` : ''}.`;
     }
     return `${month.label} logged ${countWords(month.sessions, 'session')}${month.minutes > 0 ? ` — ${durationWords(month.minutes)} in all` : ''}.`;
+  }
+
+  if (eventful && domName) {
+    if (month.isSingleGame && share > 0.95) {
+      return `${month.label} belonged entirely to ${domName}.`;
+    }
+    if (shareDelta >= 0.3) {
+      return `${month.label} drew you deeper into ${domName}.`;
+    }
+    if (shareDelta >= 0.15) {
+      return `${domName} took a firmer hold in ${month.label}.`;
+    }
+    if (varietyJump >= 3) {
+      return `The edges returned in ${month.label} as more games joined the record.`;
+    }
+    if (shareDelta <= -0.25) {
+      return `${month.label} opened up beyond ${prev?.dominantGame?.displayName || domName}.`;
+    }
+    const names = month.topGames.slice(0, 3).map((game) => game.displayName);
+    if (names.length > 1) {
+      return `${month.label} moved between ${joinList(names)}.`;
+    }
   }
 
   if (month.isSingleGame && domName && share > 0.95) {
@@ -493,14 +580,49 @@ const buildLongestSentence = (month, facts) => {
   return null;
 };
 
+const buildEventParagraph = (month, dated) => {
+  return (month.events || [])
+    .filter((event) => event.type !== 'journal')
+    .map((event) => {
+      const date = formatFullDate(event.at);
+      if (!date) return null;
+      if (event.type === 'era') return `On ${date}, ${event.name} began.`;
+      if (event.type !== 'completion') return null;
+
+      const gameKey = event.name.toLowerCase();
+      const sessionCount = dated.filter(
+        (record) => record.name?.toLowerCase() === gameKey && record.sortMs <= event.at && !isNonGameTitle(record.name)
+      ).length;
+      const after = sessionCount > 0 ? ` after ${countWords(sessionCount, 'recorded session')}` : '';
+      if (event.status === 'abandoned') return `On ${date}, you shelved ${event.displayName}${after}.`;
+      const status =
+        event.status === '100%' ? 'as 100% complete' : event.status === 'completed' ? 'as completed' : 'beaten';
+      return `On ${date}, you marked ${event.displayName} ${status}${after}.`;
+    })
+    .filter(Boolean)
+    .join(' ');
+};
+
 const chapterTitle = ({ month, prev, index }) => {
   const numeral = CHAPTER_NUMERALS[index] || String(index + 1);
+  const events = month.events || [];
+  const completion = [...events].reverse().find((event) => event.type === 'completion');
+  const era = events.find((event) => event.type === 'era');
   let body;
   if (index === 0) body = 'The Record Begins';
-  else if (month.isSingleGame && month.dominantGame && month.dominantGame.share > 0.95) {
-    body = 'The Month of One World';
+  else if (completion) {
+    body =
+      completion.status === 'abandoned'
+        ? `Walking Away From ${completion.displayName}`
+        : completion.status === '100%'
+          ? `${completion.displayName}, 100%`
+          : `Finishing ${completion.displayName}`;
+  } else if (era) {
+    body = era.name;
+  } else if (month.isSingleGame && month.dominantGame && month.dominantGame.share > 0.95) {
+    body = `${month.dominantGame.displayName} and Nothing Else`;
   } else if (month.dominantGame && prev?.dominantGame && month.dominantGame.share - prev.dominantGame.share >= 0.15) {
-    body = 'The Consolidation';
+    body = `The ${month.dominantGame.displayName} Month`;
   } else if (prev && month.varietyCount - prev.varietyCount >= 3) {
     body = 'The Edges Return';
   } else if (month.dominantGame && prev?.dominantGame && prev.dominantGame.share - month.dominantGame.share >= 0.25) {
@@ -521,7 +643,7 @@ const chapterSubtitle = (month) => {
   return `${month.label} ${month.year} · ${range}`;
 };
 
-const buildChapters = (facts, dated) => {
+const buildChapters = (facts, dated, now) => {
   const months = facts.perMonth;
   if (!months.length) return [];
 
@@ -542,7 +664,7 @@ const buildChapters = (facts, dated) => {
 
   return months.map((month, index) => {
     const prev = index > 0 ? months[index - 1] : null;
-    const isLast = index === months.length - 1;
+    const isCurrent = monthKeyOf(now) === month.month;
     month.gapBeforeDays = prev ? Math.max(0, Math.floor((month.firstStartMs - prev.lastEndMs) / DAY_MS)) : 0;
 
     const paragraphs = [];
@@ -592,7 +714,7 @@ const buildChapters = (facts, dated) => {
       if (month.gapBeforeDays >= 7) {
         shape.push(`The record had gone quiet for ${numWord(month.gapBeforeDays)} days before this.`);
       }
-      shape.push(shapeSentence({ month, prev, index }));
+      shape.push(shapeSentence({ month, prev, index, eventful: (month.events || []).length > 0 }));
       paragraphs.push(shape.join(' '));
     }
 
@@ -600,7 +722,9 @@ const buildChapters = (facts, dated) => {
     // later chapters carry it in paragraph one), then the notable games, the
     // longest sitting and the late nights, each gated on its fact.
     const details = [];
-    if (index === 0) details.push(shapeSentence({ month, prev, index }));
+    const eventParagraph = buildEventParagraph(month, dated);
+    if (eventParagraph) details.push(eventParagraph);
+    if (index === 0) details.push(shapeSentence({ month, prev, index, eventful: (month.events || []).length > 0 }));
     const othersSentence = buildOthersSentence(month);
     if (othersSentence) details.push(othersSentence);
     const longestSentence = buildLongestSentence(month, facts);
@@ -610,7 +734,7 @@ const buildChapters = (facts, dated) => {
     }
     if (details.length > 0) paragraphs.push(details.slice(0, 4).join(' '));
 
-    if (isLast) {
+    if (isCurrent) {
       paragraphs.push('This chapter is still being written.');
     }
 
@@ -619,9 +743,10 @@ const buildChapters = (facts, dated) => {
       title: chapterTitle({ month, prev, index }),
       subtitle: chapterSubtitle(month),
       paragraphs,
+      journalEntries: (month.events || []).filter((event) => event.type === 'journal'),
       dominantGame: month.dominantGame,
       month,
-      isCurrent: isLast,
+      isCurrent,
     };
   });
 };
@@ -636,15 +761,15 @@ const buildChapters = (facts, dated) => {
  * @param {Array} library - library games (name/artwork/genres/imported playtime)
  * @returns {{ generatedAt: string, prologue: object, chapters: Array, facts: object }}
  */
-export const buildChronicle = (sessions, library) => {
+export const buildChronicle = (sessions, library, options = {}) => {
   const records = (Array.isArray(sessions) ? sessions : [])
     .filter((entry) => entry && typeof entry === 'object')
     .map(toRecord);
 
-  const facts = buildFacts(records, library);
+  const facts = buildFacts(records, library, options.eraHistory);
   const dated = records.filter((r) => r.sortMs > 0).sort((a, b) => a.sortMs - b.sortMs);
   const prologue = buildPrologue(facts.importedTotals);
-  const chapters = dated.length === 0 ? [] : buildChapters(facts, dated);
+  const chapters = dated.length === 0 ? [] : buildChapters(facts, dated, eventTime(options.now) || Date.now());
 
   return {
     generatedAt: new Date().toISOString(),

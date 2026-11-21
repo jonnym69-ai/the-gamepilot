@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from './ThemeContext';
 import ControllerSupport from './components/ControllerSupport';
@@ -70,6 +70,7 @@ export default function App() {
 }
 
 function AppContent() {
+  const navigate = useNavigate();
   const [library, setLibrary] = useState([]);
   const { filterMood, setFilterMood, filterTime, setFilterTime, filterGenre, setFilterGenre } = useLibraryFilters();
   const { theme, setTheme } = useTheme();
@@ -97,6 +98,15 @@ function AppContent() {
     saveLibrary,
     showFirstStory,
   });
+  const continueFromFirstStory = useCallback(() => {
+    dismissStory();
+    navigate('/?view=identity');
+  }, [dismissStory, navigate]);
+  const startTourFromFirstStory = useCallback(() => {
+    dismissStory();
+    navigate('/');
+    window.dispatchEvent(new CustomEvent('gamepilot:start-guided-tour'));
+  }, [dismissStory, navigate]);
 
   // 4. Session lifecycle
   const { activeSessions, handleEndSession, refreshActiveSessions } = useSessionLifecycle({
@@ -212,7 +222,11 @@ function AppContent() {
       <QuickLaunchHotbar library={library} />
       {gamingStory && (
         <Suspense fallback={null}>
-          <GamingStoryCard story={gamingStory} onContinue={dismissStory} />
+          <GamingStoryCard
+            story={gamingStory}
+            onContinue={continueFromFirstStory}
+            onStartTour={startTourFromFirstStory}
+          />
         </Suspense>
       )}
       {loading && (

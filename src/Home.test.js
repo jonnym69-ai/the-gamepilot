@@ -72,7 +72,7 @@ test('Today shows the decision, Spotlight and compact story without mounting the
   expect(screen.getByRole('heading', { name: 'Play Next' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: "Today's Spotlight" })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Your story' })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'The Hades Era' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /The Hades Era/ })).toBeInTheDocument();
   expect(screen.getByText('Last recorded session')).toBeInTheDocument();
   expect(screen.queryByText('Weekly digest')).not.toBeInTheDocument();
   expect(screen.queryByText('Identity hub')).not.toBeInTheDocument();
@@ -170,7 +170,7 @@ test('a new player sees honest story placeholders rather than invented progress'
   CurrentEraService.getCurrentEra.mockReturnValue(null);
   SessionRepository.getSessionHistory.mockReturnValue([]);
   setup();
-  expect(screen.getByText(/Your next era is taking shape/)).toBeInTheDocument();
+  expect(screen.queryByLabelText('Gaming vitals')).not.toBeInTheDocument();
   expect(screen.getByText(/No sessions recorded yet/)).toBeInTheDocument();
 });
 

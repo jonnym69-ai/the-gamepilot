@@ -32,6 +32,7 @@ const EXPORT_EXCLUDED_KEYS = new Set([
   // backup must never replace credentials already configured locally.
   'itchApiKeyV1',
   'retroAchievementsApiKey',
+  'steamGridDbApiKey',
   'discordWebhookUrl',
 ]);
 
@@ -396,14 +397,19 @@ export class DataManager {
       // session history from SQLite on the next launch and the "clear"
       // silently fails for the app's most important data.
       StorageService.clear();
-      SessionRepository.clear();
+      SessionRepository.clear({ deleteBackups: true });
       try {
-        await electronAPI()?.sessionStoreClear?.();
+        await electronAPI()?.sessionStoreClear?.({ deleteBackups: true });
       } catch (error) {
         console.error('Failed to clear SQLite session databases:', error);
+        return {
+          success: false,
+          message:
+            'Local settings were cleared, but session data or backups could not be fully removed. Please try again.',
+        };
       }
 
-      return { success: true, message: 'All user data cleared successfully' };
+      return { success: true, message: 'GamePilot settings, library, and session history cleared successfully' };
     } catch (error) {
       console.error('Error clearing user data:', error);
       return { success: false, message: `Failed to clear data: ${error.message}` };

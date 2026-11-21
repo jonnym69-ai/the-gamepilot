@@ -14,6 +14,8 @@ import BacklogBusterList from './components/BacklogBusterList';
 import FinishableThisWeekend from './components/FinishableThisWeekend';
 import LibraryLeaderboard from './components/LibraryLeaderboard';
 import GamingDiaryFeed from './components/GamingDiaryFeed';
+import RecentCapturesStrip from './components/RecentCapturesStrip';
+import RecentlyUpdatedCard from './components/RecentlyUpdatedCard';
 import DiscoverHighlights from './components/DiscoverHighlights';
 import TrendingNowCard from './components/TrendingNowCard';
 import { RecommendationEngine } from './services/RecommendationEngine';
@@ -875,6 +877,7 @@ function Home({
   ).length;
   const weeklyPlayDays = weeklyHabitStats.daysPlayed || 0;
   const weeklyPlaytimeHours = weeklyHabitStats.totalHours || 0;
+
   const recentLibraryActivity = recentGames.length;
   const similarToRecentResult = React.useMemo(() => {
     if (!Array.isArray(library) || library.length === 0 || recentGames.length === 0) return null;
@@ -1428,6 +1431,8 @@ function Home({
             </nav>
             <LibraryLeaderboard library={library} onLaunchGame={handleTrackedLaunch} />
             <RecentlyPlayedShelf library={library} onLaunchGame={onLaunchGame} />
+            <RecentCapturesStrip library={library} />
+            <RecentlyUpdatedCard library={library} />
             <RecentSessionsSummary />
             <GamingDiaryFeed games={library} />
             <WeeklyPlaySnapshot weeklyStats={weeklyHabitStats} streaks={streaks} />
@@ -1501,7 +1506,7 @@ function Home({
           </CollapsibleSection>
 
           <HomeSection
-            className="home-persona-section"
+            className="home-persona-section home-persona-primary"
             eyebrow="Who You Are"
             title="Your Gaming Persona"
             copy="Built from what you're playing right now — then roasted. This is what powers your recommendations."

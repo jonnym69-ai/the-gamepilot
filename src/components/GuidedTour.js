@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import StorageService from '../services/StorageService';
 import './GuidedTour.css';
 
@@ -10,7 +10,7 @@ const TOUR_STEPS = [
     selector: null,
     emoji: '🛩️',
     title: 'Welcome to GamePilot',
-    body: 'Your local-first gaming librarian. It scans the launchers already on your PC, learns your playstyle, and turns your habits into a persona — with roasts. Nothing ever leaves your machine.',
+    body: 'Your games have been recording your life. GamePilot reads it back — your library, sessions and biography all stay on your machine.',
   },
   {
     selector: '.nav-search-pill',
@@ -20,12 +20,12 @@ const TOUR_STEPS = [
   {
     selector: 'a[href="#/"]',
     title: 'Home — Your Daily Cockpit',
-    body: 'The doodle greets you by mood and time of day, the Today strip tracks your check-in streak and week, and Play Next is always front and centre.',
+    body: 'The doodle greets you by mood and time of day, Play Next picks something worth starting, and your gaming vitals show the week taking shape.',
   },
   {
     selector: '.home-view-navigation',
-    title: 'Five Views on Home',
-    body: 'Today is the cockpit. Discover finds something to play and builds your backlog list, Activity tracks sessions, your all-time top shelf and live Steam player counts, Identity holds your persona and eras, and Wishlist watches prices.',
+    title: 'Six Views on Home',
+    body: 'Today is the cockpit. Discover finds something to play, Activity tracks sessions and recaps, Chronicle writes your biography, Identity holds your persona and eras, and Wishlist watches prices.',
   },
   {
     selector: 'a[href="#/library"]',
@@ -38,11 +38,6 @@ const TOUR_STEPS = [
     body: 'Picks matched to your moods, session length, and playstyle — pulled from your own library, not a store chart.',
   },
   {
-    selector: 'a[href="#/stats"]',
-    title: 'Stats',
-    body: 'Light local stats that feed your stories and persona. No dashboards for the sake of dashboards.',
-  },
-  {
     selector: 'a[href="#/profile"]',
     title: 'Profile',
     body: 'Your gaming persona lives here — archetypes, roasts, signature games, and your equipped identity gear.',
@@ -50,13 +45,13 @@ const TOUR_STEPS = [
   {
     selector: '.dropdown-toggle',
     title: 'More Pages',
-    body: 'Habits, Achievements, Rewards, Year in Review, Hall of Champions, Export Hub, and TV mode live under this menu.',
+    body: 'Your Gaming Life, Hall of Champions, Recent Activity, Trending, Storage Manager, and Feedback live under this menu.',
   },
   {
     selector: null,
-    emoji: '🏆',
-    title: 'Everything Unlocks Through Play',
-    body: 'Sessions earn XP. XP unlocks themes, card styles, profile frames, banners, titles, and badge showcase slots — all stored locally. Replay this tour anytime from Settings → About & Feedback.',
+    emoji: '📖',
+    title: 'The Story Is the Point',
+    body: 'Every session sharpens your persona, names your eras, and writes your Chronicle. Replay this tour anytime from Settings → About & Feedback.',
   },
 ];
 
@@ -68,7 +63,6 @@ const GuidedTour = () => {
   const [isActive, setIsActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
-  const startTimerRef = useRef(null);
 
   const finishTour = useCallback(() => {
     StorageService.set(TOUR_STORAGE_KEY, true);
@@ -82,40 +76,10 @@ const GuidedTour = () => {
     setIsActive(true);
   }, []);
 
-  // Auto-start on first run (after a short delay so the page settles)
+  // The tour is opt-in only: it starts on demand (Settings → About & Feedback,
+  // or the first-story card) rather than interrupting the first-run reveal.
   useEffect(() => {
-    if (StorageService.getString(TOUR_STORAGE_KEY) === 'true') {
-      return undefined;
-    }
-
-    const tryStart = () => {
-      // Don't stack the tour on top of an open dialog (e.g. the first-run
-      // getting-started modal) — poll until the UI is clear.
-      if (document.querySelector('.modal-overlay, [role="dialog"]')) {
-        startTimerRef.current = setTimeout(tryStart, 1500);
-        return;
-      }
-      setStepIndex(0);
-      setIsActive(true);
-    };
-
-    startTimerRef.current = setTimeout(tryStart, 700);
-
-    return () => {
-      if (startTimerRef.current) {
-        clearTimeout(startTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Listen for replay requests (e.g. from Settings)
-  useEffect(() => {
-    const handleStartRequest = () => {
-      if (startTimerRef.current) {
-        clearTimeout(startTimerRef.current);
-      }
-      startTour();
-    };
+    const handleStartRequest = () => startTour();
 
     window.addEventListener(TOUR_START_EVENT, handleStartRequest);
     return () => window.removeEventListener(TOUR_START_EVENT, handleStartRequest);

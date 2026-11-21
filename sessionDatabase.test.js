@@ -107,6 +107,24 @@ describe('SessionDatabase rolling backups', () => {
   });
 });
 
+describe('SessionDatabase clear', () => {
+  test('only an explicit full data wipe removes rolling backup files', async () => {
+    const db = await createDb();
+    await db.replaceHistory(makeEntries(4));
+    await db.backupHistory('before-clear');
+    const unrelatedFile = path.join(db.backupDirPath, 'unrelated.txt');
+    fs.writeFileSync(unrelatedFile, 'leave this file alone');
+
+    await db.clear();
+    expect(db.getSnapshot().sessionHistory).toHaveLength(0);
+    expect(await db.listBackups()).not.toHaveLength(0);
+
+    await db.clear({ deleteBackups: true });
+    expect(await db.listBackups()).toEqual([]);
+    expect(fs.readFileSync(unrelatedFile, 'utf8')).toBe('leave this file alone');
+  });
+});
+
 describe('SessionDatabase restore', () => {
   test('restoreBackup round-trips the history snapshot', async () => {
     const db = await createDb();

@@ -14,6 +14,7 @@
 
 import StorageService from './StorageService';
 import SteamOwnedGamesService from './SteamOwnedGamesService';
+import SteamPublicService from './SteamPublicService';
 
 const CACHE_KEY = 'steamPlayerAchievementsV1';
 const MAX_ENTRIES = 200;
@@ -143,6 +144,40 @@ class SteamAchievementsService {
     const id = cleanAppId(appid);
     if (!id) return null;
     return readCachedResult(id, { touch: false });
+  }
+
+  /**
+   * Bulk warmup for surfaces that read the cache broadly (Year in Review
+   * milestones) — throttled, silent on failure, and gated on the same Steam
+   * public-data opt-in + Steam ID the rest of the feature requires. Returns
+   * the number of appids actually fetched so callers can skip UI refreshes
+   * when everything was already cached.
+   */
+  static async warmup(appids, { concurrency = 2, delayMs = 400 } = {}) {
+    try {
+      if (!SteamPublicService.isEnabled()) return 0;
+    } catch {
+      return 0;
+    }
+    if (!this.getSteamId()) return 0;
+    const queue = [...new Set((appids || []).map((id) => cleanAppId(id)).filter(Boolean))];
+    const stale = queue.filter((id) => !readCachedResult(id, { touch: false }));
+    if (stale.length === 0) return 0;
+
+    let cursor = 0;
+    const workers = Array.from({ length: Math.min(concurrency, stale.length) }, async () => {
+      while (cursor < stale.length) {
+        const idx = cursor++;
+        try {
+          await this.getForGame(stale[idx]);
+        } catch {
+          /* swallow */
+        }
+        if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
+      }
+    });
+    await Promise.all(workers);
+    return stale.length;
   }
 }
 

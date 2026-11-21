@@ -60,90 +60,75 @@
 <body>
     <div class="container">
         <h1>GamePilot Privacy Policy</h1>
-        <p><strong>Last Updated:</strong> March 8, 2026</p>
-        
+        <p><strong>Last Updated:</strong> November 18, 2026</p>
+
         <div class="section">
-            <h2>1. Data Collection</h2>
-            <p>GamePilot is designed with privacy as a top priority. We collect minimal data necessary for the application to function:</p>
+            <h2>1. Local Data</h2>
+            <p>GamePilot stores the information it uses on your device, including:</p>
             <ul>
-                <li><strong>Local Game Library Data:</strong> Game titles, installation paths, and basic metadata stored locally on your device</li>
-                <li><strong>Application Settings:</strong> User preferences, theme selections, and customization options</li>
-                <li><strong>Achievement Data:</strong> Local achievement progress and gaming statistics</li>
+                <li><strong>Game library data:</strong> Game titles, installation paths, launch settings, and metadata</li>
+                <li><strong>Gaming history:</strong> Session times, playtime, optional journal notes, achievements, and biography data</li>
+                <li><strong>Application settings:</strong> Preferences, themes, customization options, and optional account identifiers</li>
             </ul>
             <div class="highlight">
-                <strong>Important:</strong> All data is stored locally on your device. GamePilot does not transmit any personal data to external servers.
+                <strong>Local-first:</strong> Your library, sessions, and biography are stored locally. No GamePilot account is required. Optional online features make the limited external requests described below.
             </div>
         </div>
 
         <div class="section">
-            <h2>2. No Data Transmission</h2>
-            <p>GamePilot operates entirely offline:</p>
-            <ul>
-                <li>No data is sent to our servers</li>
-                <li>No analytics or tracking</li>
-                <li>No telemetry collection</li>
-                <li>No third-party data sharing</li>
-            </ul>
+            <h2>2. Network Access and Telemetry</h2>
+            <p>Core session tracking, recommendations, and biography generation work without a GamePilot account or analytics service. GamePilot does not collect analytics or advertising telemetry.</p>
+            <p>The application is not entirely offline. Optional integrations, metadata lookups, price checks, update checks, and some Steam features contact external services. The information sent depends on the feature and is described in Section 4.</p>
         </div>
 
         <div class="section">
-            <h2>3. Game Detection Process</h2>
-            <p>GamePilot only reads publicly available metadata:</p>
-            <ul>
-                <li>Scans local game installation directories</li>
-                <li>Reads executable files and manifest data</li>
-                <li>Does not modify or copy game files</li>
-                <li>Does not access game save data</li>
-            </ul>
+            <h2>3. Local Scanning and Game Files</h2>
+            <p>Ordinary library scanning reads local installation directories, executable and manifest metadata, and running-process information needed for session tracking. It does not modify game files.</p>
+            <p>Separate features can access local screenshots, emulator files, and save data when you use them. Save backup or restore, uninstall planning, and storage cleaning only perform file changes after you choose those actions.</p>
         </div>
 
         <div class="section">
             <h2>4. Third-Party Services</h2>
-            <p>GamePilot may integrate with external services only when explicitly activated by you:</p>
+            <p>When you use online features, GamePilot sends the information needed for that request to the relevant provider. Examples include:</p>
             <ul>
-                <li><strong>Steam API:</strong> Only when you manually connect your Steam account</li>
-                <li><strong>Epic Games Store:</strong> Only when you manually connect your Epic account</li>
-                <li><strong>GOG Galaxy:</strong> Only when you manually connect your GOG account</li>
+                <li><strong>Steam and the GamePilot Netlify relay:</strong> Your Steam64 ID and, for achievements, an app ID. Some profile, friends, owned-library, and achievement requests use the relay so the Steam API key stays out of the application.</li>
+                <li><strong>CheapShark:</strong> Wishlist game titles for price searches and deal lookups when price checking is enabled and your wishlist has entries.</li>
+                <li><strong>Metadata and artwork providers:</strong> Game titles or public app IDs sent to services such as IGDB, SteamGridDB, HowLongToBeat, and PCGamingWiki when those lookups are used.</li>
+                <li><strong>Optional account integrations:</strong> Credentials or identifiers supplied to Epic, itch.io, RetroAchievements, YouTube, or Discord for the feature you enable.</li>
             </ul>
-            <p>These integrations are optional and require your explicit consent.</p>
+            <p>These providers have their own privacy policies and server logs. GamePilot does not sell your data or build an advertising profile from it.</p>
         </div>
 
         <div class="section">
-            <h2>5. Data Storage</h2>
-            <p>All your data is stored locally:</p>
+            <h2>5. Data Storage and Credentials</h2>
+            <p>GamePilot stores data in its local application data directory, including JSON/localStorage values, SQLite session databases, and rolling session-history backups.</p>
             <ul>
                 <li>Windows: %APPDATA%/GamePilot/</li>
-                <li>Settings and preferences in JSON format</li>
-                <li>Achievement data in local database</li>
-                <li>Theme and customization files</li>
+                <li>Linux: ~/.config/GamePilot/</li>
+                <li>Epic and YouTube tokens use Electron safeStorage encryption where available. Other optional API keys are stored locally without application-level encryption.</li>
+                <li>Known API credentials are excluded from JSON backup exports, but exports can contain personal gaming history and journal notes. Keep them private.</li>
             </ul>
         </div>
 
         <div class="section">
-            <h2>6. Your Rights</h2>
-            <p>You have complete control over your data:</p>
+            <h2>6. Your Choices</h2>
             <ul>
-                <li><strong>Access:</strong> View all stored data in the application settings</li>
-                <li><strong>Export:</strong> Export your settings and data at any time</li>
-                <li><strong>Delete:</strong> Remove all data with the "Reset All" option</li>
-                <li><strong>Opt-out:</strong> Disable any optional integrations</li>
+                <li><strong>Access and export:</strong> View and export your local data through the available settings and backup tools.</li>
+                <li><strong>Delete:</strong> The full data-clearing action removes GamePilot settings, library and session history, including rolling session-history backups. You can delete the entire GamePilot data folder to remove remaining application-created files.</li>
+                <li><strong>Opt out:</strong> Disable optional integrations and data sources where settings are provided.</li>
             </ul>
+            <p>Files you explicitly created outside the GamePilot data folder, such as exported backups or save backups, are not deleted.</p>
         </div>
 
         <div class="section">
             <h2>7. Security</h2>
-            <p>We protect your data with:</p>
-            <ul>
-                <li>Local encryption for sensitive settings</li>
-                <li>Secure file permissions</li>
-                <li>No network transmission of personal data</li>
-                <li>Regular security updates</li>
-            </ul>
+            <p>GamePilot uses an isolated, sandboxed renderer, restricted IPC handlers, transactional session writes, and safeguards against accidental history loss. These protections do not guarantee absolute security.</p>
+            <p>Local data is protected primarily by your operating-system account and device security. Data stored without application-level encryption may be readable by other software or people with access to that account.</p>
         </div>
 
         <div class="section">
             <h2>8. Children's Privacy</h2>
-            <p>GamePilot does not collect personal information from children under 13. Since all data is stored locally, parents have full control and visibility over any data stored by the application.</p>
+            <p>GamePilot has no account system and does not knowingly collect personal information from children under 13. Parents and guardians should review the optional online integrations and the privacy policies of any third-party services used.</p>
         </div>
 
         <div class="section">
@@ -156,8 +141,7 @@
             <p>If you have questions about this privacy policy:</p>
             <ul>
                 <li>Email: gamepilot91@hotmail.com</li>
-                <li>Twitter: @gamepilot</li>
-                <li>GitHub: github.com/gamepilot/gamepilot</li>
+                <li>GitHub: github.com/jonnym69-ai/the-gamepilot</li>
             </ul>
         </div>
 

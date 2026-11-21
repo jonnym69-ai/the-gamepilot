@@ -4,7 +4,7 @@ import { formatPlaytime } from '../utils/formatPlaytime';
 import BoldText from './BoldText';
 import './GamingStoryCard.css';
 
-function GamingStoryCard({ story, onContinue }) {
+function GamingStoryCard({ story, onContinue, onStartTour }) {
   if (!story) return null;
 
   const { title, subtitle, topGames, genreFingerprint, narrative } = story;
@@ -68,8 +68,13 @@ function GamingStoryCard({ story, onContinue }) {
         <div className="gaming-story-actions">
           <button className="gaming-story-primary" onClick={onContinue}>
             <Gamepad2 size={16} />
-            Continue to your cockpit
+            See my identity
           </button>
+          {onStartTour && (
+            <button className="gaming-story-secondary" type="button" onClick={onStartTour}>
+              Take the tour
+            </button>
+          )}
         </div>
       </div>
     </div>
