@@ -106,6 +106,26 @@ features through it — every build ships fully unlocked.
 Never post a feature list. Post the artifact — a screenshot of the era card
 or persona roast — with a one-line story. Let the comments sell it.
 
+## Launch video (~30 seconds)
+
+One transformation only: **hours → identity → story.** No tour, no feature
+montage, no wishlist. Record against a real library, not a fresh install.
+
+- **0–6s — the verdict.** Persona card full screen: _"Steam tells me I spent
+  150 hours in Project Zomboid. GamePilot says that makes me The Doomsday
+  Prepper Who Replays Everything."_
+- **6–13s — the receipts.** Zoom on the games, hours and session attributes:
+  _"And it shows why — using my actual sessions, not a personality quiz."_
+- **13–22s — the story.** Named era + one Chronicle chapter: _"Then it turns
+  my history into named eras and a living gaming biography."_
+- **22–28s — the difference.** _"No account. My sessions and biography stay
+  on my PC."_
+- **28–32s — the closer.** _"Your games have been recording your life.
+  GamePilot reads it back."_
+
+Success signal to listen for in comments: _"I want to see mine"_ — not
+polite compliments.
+
 ## Facts (verify before publishing)
 
 - Platforms: Windows 10/11 (64-bit); Linux x86_64 AppImage — beta, Steam-first
