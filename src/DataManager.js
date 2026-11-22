@@ -22,6 +22,7 @@ const EXPORT_EXCLUDED_KEYS = new Set([
   'steamSnapshotCacheV1',
   'steamPriceCache',
   'steamNewsCacheV1',
+  'steamNewsCacheV2',
   'pcgwCacheV2',
   'pcgwCacheV3',
   'patch_notes_cache',

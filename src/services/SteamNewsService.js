@@ -9,7 +9,7 @@
 
 import StorageService from './StorageService';
 
-const CACHE_KEY = 'steamNewsCacheV1';
+const CACHE_KEY = 'steamNewsCacheV2';
 const TTL_MS = 6 * 60 * 60 * 1000; // 6h fresh window
 const PENDING_TTL_MS = 1 * 60 * 60 * 1000; // re-try misses after 1h
 const SETTINGS_KEY = 'steamNewsEnabled';
@@ -65,6 +65,10 @@ const buildEntry = (apiResult) => {
   }
   const raw = Array.isArray(apiResult.items) ? apiResult.items : [];
   const items = raw
+    // feed_type 0 marks syndicated external feeds (regional media like
+    // PlayGround.ru). They arrive untranslated and aren't official updates,
+    // so the card only keeps in-app announcements.
+    .filter((n) => n.feed_type === undefined || n.feed_type === null || Number(n.feed_type) !== 0)
     .map((n) => ({
       gid: String(n.gid || ''),
       title: String(n.title || '').trim(),

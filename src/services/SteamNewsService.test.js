@@ -6,7 +6,7 @@ const game = (extra = {}) => ({ name: 'News Game', platform: 'Steam', appid: APP
 const item = (dateMs, title = 'Post', feedLabel = '') => ({ gid: title, title, url: 'u', dateMs, feedLabel });
 
 const seedCache = (items) => {
-  StorageService.set('steamNewsCacheV1', {
+  StorageService.set('steamNewsCacheV2', {
     [APPID]: { found: true, fetchedAt: Date.now(), items },
   });
 };
@@ -57,4 +57,36 @@ test('unparseable last_played falls back to never-played framing', () => {
   const status = SteamNewsService.getUpdateStatus(game({ last_played: 'not-a-date' }));
   expect(status.sinceLastPlayed).toBe(false);
   expect(status.latest.title).toBe('Recent');
+});
+
+test('syndicated external feeds (feed_type 0) are dropped, official posts kept', async () => {
+  window.electronAPI = {
+    steamNews: jest.fn().mockResolvedValue({
+      ok: true,
+      items: [
+        {
+          gid: '1',
+          title: 'Patch 1.0',
+          date: 1700000000,
+          contents: '',
+          feed_type: 1,
+          feedname: 'steam_community_announcements',
+        },
+        {
+          gid: '2',
+          title: 'Пост на русском',
+          date: 1700000000,
+          contents: '',
+          feed_type: 0,
+          feedname: 'PlayGround.ru - официальная группа',
+        },
+        { gid: '3', title: 'Legacy post', date: 1700000000, contents: '' },
+      ],
+    }),
+  };
+
+  const entry = await SteamNewsService.getNews(game(), { force: true });
+  expect(entry.items.map((i) => i.title)).toEqual(['Patch 1.0', 'Legacy post']);
+
+  delete window.electronAPI;
 });
